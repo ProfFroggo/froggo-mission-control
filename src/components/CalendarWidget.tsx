@@ -1,0 +1,201 @@
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, MapPin, Users, RefreshCw, ChevronRight, AlertCircle } from 'lucide-react';
+import { gateway } from '../lib/gateway';
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  location?: string;
+  attendees?: number;
+  isAllDay?: boolean;
+  account?: string;
+}
+
+export default function CalendarWidget() {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastFetch, setLastFetch] = useState<number>(0);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Ask Froggo to fetch calendar events via gog CLI
+      const result = await gateway.sendChat(
+        '[SYSTEM] Fetch calendar events for today and tomorrow. ' +
+        'Use gog CLI to check kevin.macarthur@bitso.com and kevin@carbium.io calendars. ' +
+        'Return JSON array: [{id, title, start (ISO), end (ISO), location, attendees (count)}]. ' +
+        'Only return the JSON, no other text.'
+      );
+      
+      // Try to parse JSON from response
+      if (result?.content) {
+        const jsonMatch = result.content.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          setEvents(parsed);
+          setLastFetch(Date.now());
+        }
+      }
+    } catch (e: any) {
+      console.error('Failed to fetch calendar:', e);
+      setError('Could not load calendar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Don't auto-fetch - let user trigger it to avoid token burn
+    // fetchEvents();
+  }, []);
+
+  const formatTime = (iso: string, isAllDay?: boolean) => {
+    if (isAllDay) return 'All day';
+    const date = new Date(iso);
+    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDate = (iso: string) => {
+    const date = new Date(iso);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (date.toDateString() === today.toDateString()) return 'Today';
+    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const getTimeUntil = (iso: string) => {
+    const diff = new Date(iso).getTime() - Date.now();
+    if (diff < 0) return 'Now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+    return '';
+  };
+
+  const isUrgent = (iso: string) => {
+    const diff = new Date(iso).getTime() - Date.now();
+    return diff > 0 && diff < 3600000; // Within 1 hour
+  };
+
+  // Group events by date
+  const groupedEvents = events.reduce((acc, event) => {
+    const dateKey = formatDate(event.start);
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(event);
+    return acc;
+  }, {} as Record<string, CalendarEvent[]>);
+
+  return (
+    <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
+      <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+        <h2 className="font-semibold flex items-center gap-2">
+          <Calendar size={18} className="text-blue-400" />
+          Calendar
+        </h2>
+        <button
+          onClick={fetchEvents}
+          disabled={loading}
+          className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+          title="Refresh"
+        >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      <div className="max-h-80 overflow-y-auto">
+        {loading && events.length === 0 ? (
+          <div className="p-8 text-center text-clawd-text-dim">
+            <Calendar size={32} className="mx-auto mb-3 opacity-50 animate-pulse" />
+            <p>Loading calendar...</p>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center text-clawd-text-dim">
+            <AlertCircle size={32} className="mx-auto mb-3 text-red-400" />
+            <p>{error}</p>
+            <button
+              onClick={fetchEvents}
+              className="mt-2 text-sm text-clawd-accent hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="p-8 text-center text-clawd-text-dim">
+            <Calendar size={32} className="mx-auto mb-3 opacity-50" />
+            <p>No upcoming events</p>
+            <button
+              onClick={fetchEvents}
+              className="mt-2 text-sm text-clawd-accent hover:underline"
+            >
+              Fetch calendar
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-clawd-border">
+            {Object.entries(groupedEvents).map(([date, dateEvents]) => (
+              <div key={date}>
+                <div className="px-4 py-2 text-xs font-medium text-clawd-text-dim bg-clawd-bg/50">
+                  {date}
+                </div>
+                {dateEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className={`p-4 hover:bg-clawd-bg/50 transition-colors ${
+                      isUrgent(event.start) ? 'border-l-2 border-l-yellow-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium truncate">{event.title}</span>
+                          {isUrgent(event.start) && (
+                            <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded">
+                              {getTimeUntil(event.start)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
+                          <span className="flex items-center gap-1">
+                            <Clock size={12} />
+                            {formatTime(event.start, event.isAllDay)}
+                            {event.end && !event.isAllDay && ` - ${formatTime(event.end)}`}
+                          </span>
+                          {event.location && (
+                            <span className="flex items-center gap-1 truncate">
+                              <MapPin size={12} />
+                              {event.location}
+                            </span>
+                          )}
+                          {event.attendees && event.attendees > 1 && (
+                            <span className="flex items-center gap-1">
+                              <Users size={12} />
+                              {event.attendees}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-clawd-text-dim opacity-0 group-hover:opacity-100" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {lastFetch > 0 && (
+        <div className="px-4 py-2 border-t border-clawd-border text-xs text-clawd-text-dim">
+          Updated {new Date(lastFetch).toLocaleTimeString()}
+        </div>
+      )}
+    </div>
+  );
+}
