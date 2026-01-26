@@ -2,19 +2,7 @@
 // Polls ~/clawd/approvals/queue.json for items I add
 
 import { useStore, ApprovalType } from '../store/store';
-
-declare global {
-  interface Window {
-    clawdbot?: {
-      approvals?: {
-        read: () => Promise<{ items: QueueItem[] }>;
-        clear: () => Promise<{ success: boolean }>;
-        remove: (id: string) => Promise<{ success: boolean }>;
-        onUpdate: (callback: (items: QueueItem[]) => void) => () => void;
-      };
-    };
-  }
-}
+// Types are defined in src/types/global.d.ts
 
 interface QueueItem {
   id?: string;

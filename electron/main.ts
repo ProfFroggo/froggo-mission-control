@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { exec } from 'child_process';
+import * as os from 'os';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -19,6 +21,56 @@ const isDev = process.env.ELECTRON_DEV === '1';
 console.log('App packaged:', app.isPackaged);
 console.log('Dist path:', distPath);
 console.log('isDev:', isDev);
+
+// ============== VOSK SETUP ==============
+let vosk: any = null;
+let voskModel: any = null;
+let voskRecognizer: any = null;
+let voskAvailable = false;
+
+// Model path - handle both dev and packaged app
+const VOSK_MODEL_PATH = isDev 
+  ? path.join(__dirname, '..', 'resources', 'models', 'vosk-model-en')
+  : path.join(process.resourcesPath, 'models', 'vosk-model-en');
+
+async function initVosk() {
+  try {
+    console.log('Vosk: Loading module...');
+    vosk = require('vosk-koffi');
+    
+    // Check if model exists
+    if (!fs.existsSync(VOSK_MODEL_PATH)) {
+      console.error('Vosk: Model not found at', VOSK_MODEL_PATH);
+      return;
+    }
+    
+    console.log('Vosk: Loading model from', VOSK_MODEL_PATH);
+    vosk.setLogLevel(-1); // Quiet mode
+    voskModel = new vosk.Model(VOSK_MODEL_PATH);
+    voskAvailable = true;
+    console.log('Vosk: Model loaded successfully!');
+  } catch (err) {
+    console.error('Vosk: Failed to initialize:', err);
+    voskAvailable = false;
+  }
+}
+
+// Initialize Vosk after app is ready
+app.whenReady().then(() => {
+  initVosk();
+});
+
+// Cleanup on quit
+app.on('will-quit', () => {
+  if (voskRecognizer) {
+    try { voskRecognizer.free(); } catch {}
+    voskRecognizer = null;
+  }
+  if (voskModel) {
+    try { voskModel.free(); } catch {}
+    voskModel = null;
+  }
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -76,7 +128,118 @@ app.on('activate', () => {
   }
 });
 
-// IPC handlers for Clawdbot gateway communication
+// ============== VOSK IPC HANDLERS ==============
+
+// Check if Vosk is available
+ipcMain.handle('vosk:check', async () => {
+  return { 
+    available: voskAvailable, 
+    modelPath: VOSK_MODEL_PATH,
+    modelExists: fs.existsSync(VOSK_MODEL_PATH)
+  };
+});
+
+// Start a new recognition session
+ipcMain.handle('vosk:start', async (_, sampleRate: number = 16000) => {
+  if (!voskAvailable || !voskModel) {
+    return { error: 'Vosk not available' };
+  }
+  
+  try {
+    // Clean up previous recognizer if exists
+    if (voskRecognizer) {
+      try { voskRecognizer.free(); } catch {}
+    }
+    
+    voskRecognizer = new vosk.Recognizer({ model: voskModel, sampleRate });
+    voskRecognizer.setWords(true);
+    voskRecognizer.setPartialWords(true);
+    console.log('Vosk: Started new recognition session, sampleRate:', sampleRate);
+    return { success: true };
+  } catch (err: any) {
+    console.error('Vosk: Failed to start session:', err);
+    return { error: err.message };
+  }
+});
+
+// Process audio chunk - returns partial or final result
+ipcMain.handle('vosk:audio', async (_, audioData: ArrayBuffer) => {
+  if (!voskRecognizer) {
+    return { error: 'No active session' };
+  }
+  
+  try {
+    const buffer = Buffer.from(audioData);
+    const endOfSpeech = voskRecognizer.acceptWaveform(buffer);
+    
+    if (endOfSpeech) {
+      // Speech ended - get final result
+      const result = voskRecognizer.result();
+      console.log('Vosk: End of speech -', result);
+      return { 
+        final: true, 
+        text: result.text || '',
+        words: result.result || []
+      };
+    } else {
+      // Get partial result for live display
+      const partial = voskRecognizer.partialResult();
+      return { 
+        final: false, 
+        partial: partial.partial || ''
+      };
+    }
+  } catch (err: any) {
+    console.error('Vosk: Audio processing error:', err);
+    return { error: err.message };
+  }
+});
+
+// Get final result and optionally reset
+ipcMain.handle('vosk:final', async (_, reset: boolean = false) => {
+  if (!voskRecognizer) {
+    return { error: 'No active session' };
+  }
+  
+  try {
+    const result = voskRecognizer.finalResult();
+    console.log('Vosk: Final result -', result);
+    
+    if (reset && voskModel) {
+      // Reset recognizer for next utterance
+      voskRecognizer.free();
+      voskRecognizer = new vosk.Recognizer({ model: voskModel, sampleRate: 16000 });
+      voskRecognizer.setWords(true);
+      voskRecognizer.setPartialWords(true);
+    }
+    
+    return { 
+      text: result.text || '',
+      words: result.result || []
+    };
+  } catch (err: any) {
+    console.error('Vosk: Final result error:', err);
+    return { error: err.message };
+  }
+});
+
+// Stop and cleanup the recognizer
+ipcMain.handle('vosk:stop', async () => {
+  if (voskRecognizer) {
+    try { 
+      const result = voskRecognizer.finalResult();
+      voskRecognizer.free(); 
+      voskRecognizer = null;
+      return { text: result.text || '' };
+    } catch (err: any) {
+      voskRecognizer = null;
+      return { error: err.message };
+    }
+  }
+  return { text: '' };
+});
+
+// ============== GATEWAY IPC HANDLERS ==============
 ipcMain.handle('gateway:status', async () => {
   try {
     const response = await fetch('http://localhost:18789/api/status');
@@ -95,7 +258,62 @@ ipcMain.handle('gateway:sessions', async () => {
   }
 });
 
-// Approval queue file watching
+// ============== WHISPER (Legacy - keeping for fallback) ==============
+const WHISPER_PATH = '/opt/homebrew/bin/whisper';
+const TEMP_DIR = os.tmpdir();
+
+ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
+  const tempFile = path.join(TEMP_DIR, `whisper-${Date.now()}.webm`);
+  const outputDir = TEMP_DIR;
+  
+  try {
+    // Write audio data to temp file
+    fs.writeFileSync(tempFile, Buffer.from(audioData));
+    console.log('Whisper: Saved audio to', tempFile);
+    
+    // Run whisper (use "tiny" model - fastest, good enough for voice commands)
+    return new Promise((resolve) => {
+      const cmd = `${WHISPER_PATH} "${tempFile}" --model tiny --language en --output_format txt --output_dir "${outputDir}" 2>&1`;
+      console.log('Whisper: Running', cmd);
+      
+      exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
+        // Read the output file
+        const baseName = path.basename(tempFile, '.webm');
+        const outputFile = path.join(outputDir, `${baseName}.txt`);
+        
+        let transcript = '';
+        if (fs.existsSync(outputFile)) {
+          transcript = fs.readFileSync(outputFile, 'utf-8').trim();
+          fs.unlinkSync(outputFile); // Cleanup
+        }
+        
+        // Cleanup temp audio file
+        try { fs.unlinkSync(tempFile); } catch {}
+        
+        if (error) {
+          console.error('Whisper error:', error.message);
+          resolve({ error: error.message, stdout, stderr });
+        } else {
+          console.log('Whisper transcript:', transcript);
+          resolve({ transcript, stdout });
+        }
+      });
+    });
+  } catch (error: any) {
+    console.error('Whisper failed:', error);
+    try { fs.unlinkSync(tempFile); } catch {}
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('whisper:check', async () => {
+  // Just check if the file exists - running --help is too slow
+  const available = fs.existsSync(WHISPER_PATH);
+  console.log('Whisper check:', WHISPER_PATH, 'exists:', available);
+  return { available, path: WHISPER_PATH };
+});
+
+// ============== APPROVAL QUEUE ==============
 const APPROVAL_QUEUE_PATH = path.join(process.env.HOME || '', 'clawd', 'approvals', 'queue.json');
 
 ipcMain.handle('approvals:read', async () => {

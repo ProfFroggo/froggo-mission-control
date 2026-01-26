@@ -14,5 +14,18 @@ contextBridge.exposeInMainWorld('clawdbot', {
       return () => ipcRenderer.removeAllListeners('approvals:updated');
     },
   },
+  // Vosk real-time streaming API
+  vosk: {
+    check: () => ipcRenderer.invoke('vosk:check'),
+    start: (sampleRate?: number) => ipcRenderer.invoke('vosk:start', sampleRate),
+    audio: (audioData: ArrayBuffer) => ipcRenderer.invoke('vosk:audio', audioData),
+    final: (reset?: boolean) => ipcRenderer.invoke('vosk:final', reset),
+    stop: () => ipcRenderer.invoke('vosk:stop'),
+  },
+  // Whisper (legacy/fallback)
+  whisper: {
+    check: () => ipcRenderer.invoke('whisper:check'),
+    transcribe: (audioData: ArrayBuffer) => ipcRenderer.invoke('whisper:transcribe', audioData),
+  },
   platform: process.platform,
 });
