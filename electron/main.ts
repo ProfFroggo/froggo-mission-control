@@ -233,7 +233,7 @@ function startTaskNotifyWatcher() {
   // Watch for changes to the notification file
   try {
     taskNotifyWatcher = fs.watch(path.dirname(taskNotifyPath), (eventType, filename) => {
-      if (filename === 'task-notify.json' && mainWindow) {
+      if (filename === 'task-notify.json' && mainWindow && !mainWindow.isDestroyed()) {
         try {
           const stat = fs.statSync(taskNotifyPath);
           // Only process if file was modified after last check
@@ -242,8 +242,15 @@ function startTaskNotifyWatcher() {
             const content = fs.readFileSync(taskNotifyPath, 'utf-8');
             const notification = JSON.parse(content);
             console.log('[TaskNotify] New task notification:', notification);
-            // Send to renderer
-            mainWindow.webContents.send('task-notification', notification);
+            // Send to renderer with error handling
+            try {
+              mainWindow.webContents.send('task-notification', notification);
+            } catch (sendError) {
+              // Window might be closing, ignore EPIPE errors
+              if ((sendError as any).code !== 'EPIPE') {
+                console.error('[TaskNotify] Send error:', sendError);
+              }
+            }
           }
         } catch (e) {
           // File might not exist or be invalid, ignore
@@ -303,6 +310,11 @@ app.on('will-quit', () => {
   if (modelServer) {
     modelServer.close();
     modelServer = null;
+  }
+  // Clean up task notify watcher
+  if (taskNotifyWatcher) {
+    taskNotifyWatcher.close();
+    taskNotifyWatcher = null;
   }
   // Clean up schedule processor
   stopScheduleProcessor();
