@@ -493,6 +493,700 @@ ipcMain.handle('inbox:update', async (_, id: number, updates: { status?: string;
   });
 });
 
+ipcMain.handle('inbox:approveAll', async () => {
+  return new Promise((resolve) => {
+    // Count pending items first
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) FROM inbox WHERE status='pending'"`, (_, countOut) => {
+      const count = parseInt(countOut?.trim() || '0', 10);
+      
+      // Approve all pending
+      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='approved', reviewed_at=datetime('now') WHERE status='pending'"`;
+      
+      exec(cmd, { timeout: 5000 }, (error) => {
+        if (error) {
+          resolve({ success: false, error: error.message });
+        } else {
+          resolve({ success: true, count });
+        }
+      });
+    });
+  });
+});
+
+// ============== SCREENSHOT IPC HANDLERS ==============
+ipcMain.handle('screenshot:capture', async (_, outputPath: string) => {
+  return new Promise((resolve) => {
+    if (mainWindow) {
+      mainWindow.webContents.capturePage().then((image) => {
+        const pngBuffer = image.toPNG();
+        const fs = require('fs');
+        fs.writeFileSync(outputPath, pngBuffer);
+        resolve({ success: true, path: outputPath, size: pngBuffer.length });
+      }).catch((err) => {
+        resolve({ success: false, error: String(err) });
+      });
+    } else {
+      resolve({ success: false, error: 'No main window' });
+    }
+  });
+});
+
+ipcMain.handle('screenshot:navigate', async (_, view: string) => {
+  if (mainWindow) {
+    mainWindow.webContents.send('navigate-to', view);
+    return { success: true };
+  }
+  return { success: false, error: 'No main window' };
+});
+
+// ============== SCHEDULE IPC HANDLERS ==============
+const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+
+ipcMain.handle('schedule:list', async () => {
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ${scheduleDbPath} "
+      CREATE TABLE IF NOT EXISTS schedule (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        scheduled_for TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT (datetime('now')),
+        sent_at TEXT,
+        error TEXT,
+        metadata TEXT
+      );
+      SELECT * FROM schedule ORDER BY scheduled_for ASC;
+    " -json 2>/dev/null || echo '[]'`;
+    
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      try {
+        // Filter out CREATE TABLE result
+        const lines = stdout.trim().split('\n');
+        const jsonLine = lines.find(l => l.startsWith('['));
+        const items = JSON.parse(jsonLine || '[]').map((row: any) => ({
+          id: row.id,
+          type: row.type,
+          content: row.content,
+          scheduledFor: row.scheduled_for,
+          status: row.status,
+          createdAt: row.created_at,
+          sentAt: row.sent_at,
+          error: row.error,
+          metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+        }));
+        resolve({ success: true, items });
+      } catch {
+        resolve({ success: true, items: [] });
+      }
+    });
+  });
+});
+
+ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: any }) => {
+  const id = `sched-${Date.now()}`;
+  const metadata = item.metadata ? JSON.stringify(item.metadata).replace(/'/g, "''") : null;
+  
+  return new Promise((resolve) => {
+    // Insert into database
+    const insertCmd = `sqlite3 ${scheduleDbPath} "
+      INSERT INTO schedule (id, type, content, scheduled_for, metadata)
+      VALUES ('${id}', '${item.type}', '${item.content.replace(/'/g, "''")}', '${item.scheduledFor}', ${metadata ? "'" + metadata + "'" : 'NULL'});
+    "`;
+    
+    exec(insertCmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      // Create cron job to execute at scheduled time
+      const cronTime = new Date(item.scheduledFor);
+      const cronText = item.type === 'tweet' 
+        ? `Execute scheduled tweet: ${item.content.slice(0, 50)}...`
+        : `Execute scheduled email to ${item.metadata?.recipient}: ${item.content.slice(0, 50)}...`;
+      
+      // Use Clawdbot cron API
+      fetch('http://localhost:18789/api/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add',
+          job: {
+            id: id,
+            text: cronText,
+            schedule: cronTime.toISOString(),
+            enabled: true,
+          }
+        })
+      }).then(() => {
+        resolve({ success: true, id });
+      }).catch((e) => {
+        // Cron failed but item is in DB
+        resolve({ success: true, id, warning: 'Cron job creation failed' });
+      });
+    });
+  });
+});
+
+ipcMain.handle('schedule:cancel', async (_, id: string) => {
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ${scheduleDbPath} "UPDATE schedule SET status='cancelled' WHERE id='${id}'"`;
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+      } else {
+        // Also remove cron job
+        fetch('http://localhost:18789/api/cron', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'remove', jobId: id })
+        }).catch(() => {});
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => {
+  const sets: string[] = [];
+  if (item.type) sets.push(`type='${item.type}'`);
+  if (item.content) sets.push(`content='${item.content.replace(/'/g, "''")}'`);
+  if (item.scheduledFor) sets.push(`scheduled_for='${item.scheduledFor}'`);
+  if (item.metadata) sets.push(`metadata='${JSON.stringify(item.metadata).replace(/'/g, "''")}'`);
+  
+  if (sets.length === 0) return { success: false, error: 'No updates provided' };
+  
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ${scheduleDbPath} "UPDATE schedule SET ${sets.join(', ')} WHERE id='${id}'"`;
+    exec(cmd, { timeout: 5000 }, (error) => {
+      resolve({ success: !error, error: error?.message });
+    });
+  });
+});
+
+ipcMain.handle('schedule:sendNow', async (_, id: string) => {
+  return new Promise((resolve) => {
+    // Get the scheduled item
+    exec(`sqlite3 ${scheduleDbPath} "SELECT * FROM schedule WHERE id='${id}'" -json`, (_, stdout) => {
+      try {
+        const items = JSON.parse(stdout || '[]');
+        if (items.length === 0) {
+          resolve({ success: false, error: 'Item not found' });
+          return;
+        }
+        
+        const item = items[0];
+        
+        // Execute immediately based on type
+        let execCmd = '';
+        if (item.type === 'tweet') {
+          execCmd = `bird tweet "${item.content.replace(/"/g, '\\"')}"`;
+        } else if (item.type === 'email') {
+          const meta = item.metadata ? JSON.parse(item.metadata) : {};
+          execCmd = `gog gmail send --to "${meta.recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
+        }
+        
+        if (!execCmd) {
+          resolve({ success: false, error: 'Unknown item type' });
+          return;
+        }
+        
+        exec(execCmd, { timeout: 30000 }, (execError) => {
+          // Update status
+          const status = execError ? 'failed' : 'sent';
+          const errorMsg = execError ? execError.message.replace(/'/g, "''") : null;
+          
+          exec(`sqlite3 ${scheduleDbPath} "UPDATE schedule SET status='${status}', sent_at=datetime('now')${errorMsg ? ", error='" + errorMsg + "'" : ''} WHERE id='${id}'"`, () => {
+            resolve({ success: !execError, error: execError?.message });
+          });
+        });
+      } catch (e) {
+        resolve({ success: false, error: String(e) });
+      }
+    });
+  });
+});
+
+// ============== MESSAGING SEARCH IPC HANDLERS ==============
+// NOTE: discordcli has no search command - would need to fetch recent messages and filter
+// tgcli search only searches chat names, not message content
+// wacli has proper FTS5 message search
+
+ipcMain.handle('search:discord', async () => {
+  // Discord CLI doesn't support search - return empty
+  // Future: could fetch recent DMs and filter client-side
+  return { success: false, messages: [], note: 'Discord search not available (CLI limitation)' };
+});
+
+ipcMain.handle('search:telegram', async (_, query: string) => {
+  return new Promise((resolve) => {
+    const escapedQuery = query.replace(/"/g, '\\"');
+    // tgcli search only searches chat NAMES, not message content
+    const cmd = `tgcli search "${escapedQuery}" --json 2>/dev/null || echo '{"chats":[]}'`;
+    
+    exec(cmd, { timeout: 15000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, chats: [], note: 'Telegram search failed' });
+        return;
+      }
+      try {
+        const result = JSON.parse(stdout || '{"chats":[]}');
+        // Convert chat results to message-like format
+        const chats = result.chats || result || [];
+        resolve({ 
+          success: true, 
+          messages: Array.isArray(chats) ? chats.map((c: any) => ({
+            id: c.id,
+            type: 'chat',
+            content: `Chat: ${c.name || c.title}`,
+            from: c.name || c.title,
+          })) : [],
+          note: 'Searches chat names only'
+        });
+      } catch {
+        resolve({ success: true, messages: [], raw: stdout });
+      }
+    });
+  });
+});
+
+ipcMain.handle('search:whatsapp', async (_, query: string) => {
+  return new Promise((resolve) => {
+    const escapedQuery = query.replace(/"/g, '\\"');
+    // wacli has proper FTS5 message search
+    const cmd = `wacli messages search "${escapedQuery}" --json --limit 10`;
+    
+    exec(cmd, { timeout: 15000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, messages: [], error: error.message });
+        return;
+      }
+      try {
+        const result = JSON.parse(stdout || '{}');
+        const messages = result.data?.messages || [];
+        resolve({ 
+          success: true, 
+          messages: messages.map((m: any) => ({
+            id: m.MsgID,
+            content: m.Text || m.DisplayText,
+            from: m.ChatName,
+            timestamp: m.Timestamp,
+            body: m.Text,
+          }))
+        });
+      } catch {
+        resolve({ success: true, messages: [], raw: stdout });
+      }
+    });
+  });
+});
+
+// ============== FILESYSTEM IPC HANDLERS ==============
+ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string) => {
+  try {
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, buffer);
+    return { success: true, path: filePath };
+  } catch (error: any) {
+    console.error('[FS] Write error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => {
+  try {
+    const content = fs.readFileSync(filePath, encoding as BufferEncoding || 'utf8');
+    return { success: true, content };
+  } catch (error: any) {
+    console.error('[FS] Read error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== LIBRARY IPC HANDLERS ==============
+const libraryDir = path.join(os.homedir(), 'clawd', 'library');
+
+ipcMain.handle('library:list', async (_, category?: string) => {
+  // Ensure library directory exists
+  if (!fs.existsSync(libraryDir)) {
+    fs.mkdirSync(libraryDir, { recursive: true });
+  }
+  
+  return new Promise((resolve) => {
+    const categoryFilter = category ? `WHERE category='${category}'` : '';
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM library ${categoryFilter} ORDER BY updated_at DESC" -json 2>/dev/null || echo '[]'`;
+    
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: true, files: [] });
+        return;
+      }
+      try {
+        const files = JSON.parse(stdout || '[]');
+        resolve({ success: true, files });
+      } catch {
+        resolve({ success: true, files: [] });
+      }
+    });
+  });
+});
+
+ipcMain.handle('library:upload', async () => {
+  const { dialog } = require('electron');
+  
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: 'All Files', extensions: ['*'] },
+      { name: 'Documents', extensions: ['pdf', 'doc', 'docx', 'txt', 'md'] },
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+    ],
+  });
+  
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, error: 'No file selected' };
+  }
+  
+  const sourcePath = result.filePaths[0];
+  const fileName = path.basename(sourcePath);
+  const fileId = `file-${Date.now()}`;
+  const destPath = path.join(libraryDir, fileId + '-' + fileName);
+  
+  // Ensure library dir exists
+  if (!fs.existsSync(libraryDir)) {
+    fs.mkdirSync(libraryDir, { recursive: true });
+  }
+  
+  // Copy file
+  fs.copyFileSync(sourcePath, destPath);
+  const stats = fs.statSync(destPath);
+  
+  // Determine category
+  const ext = path.extname(fileName).toLowerCase();
+  let category = 'other';
+  if (['.md', '.txt', '.draft'].includes(ext)) category = 'draft';
+  else if (['.pdf', '.doc', '.docx'].includes(ext)) category = 'document';
+  else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov'].includes(ext)) category = 'media';
+  
+  // Insert into database
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "
+      CREATE TABLE IF NOT EXISTS library (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        path TEXT NOT NULL,
+        category TEXT DEFAULT 'other',
+        size INTEGER,
+        mime_type TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        linked_tasks TEXT,
+        tags TEXT
+      );
+      INSERT INTO library (id, name, path, category, size) VALUES ('${fileId}', '${fileName.replace(/'/g, "''")}', '${destPath.replace(/'/g, "''")}', '${category}', ${stats.size});
+    "`;
+    
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+      } else {
+        resolve({ success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } });
+      }
+    });
+  });
+});
+
+ipcMain.handle('library:delete', async (_, fileId: string) => {
+  return new Promise((resolve) => {
+    // Get file path first
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT path FROM library WHERE id='${fileId}'" -json`, (_, stdout) => {
+      try {
+        const rows = JSON.parse(stdout || '[]');
+        if (rows.length > 0 && rows[0].path) {
+          // Delete file
+          if (fs.existsSync(rows[0].path)) {
+            fs.unlinkSync(rows[0].path);
+          }
+        }
+      } catch {}
+      
+      // Delete from database
+      exec(`sqlite3 ~/clawd/data/froggo.db "DELETE FROM library WHERE id='${fileId}'"`, (error) => {
+        resolve({ success: !error });
+      });
+    });
+  });
+});
+
+ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
+  return new Promise((resolve) => {
+    // Get current linked tasks
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT linked_tasks FROM library WHERE id='${fileId}'"`, (_, stdout) => {
+      let linkedTasks: string[] = [];
+      try {
+        const current = stdout?.trim();
+        if (current) linkedTasks = JSON.parse(current);
+      } catch {}
+      
+      if (!linkedTasks.includes(taskId)) {
+        linkedTasks.push(taskId);
+      }
+      
+      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE library SET linked_tasks='${JSON.stringify(linkedTasks)}', updated_at=datetime('now') WHERE id='${fileId}'"`;
+      exec(cmd, (error) => {
+        resolve({ success: !error });
+      });
+    });
+  });
+});
+
+// ============== SEARCH IPC HANDLERS ==============
+ipcMain.handle('search:local', async (_, query: string) => {
+  const escapedQuery = query.replace(/'/g, "''");
+  
+  return new Promise((resolve) => {
+    // Search froggo-db for tasks, facts, and messages
+    const cmd = `froggo-db search "${escapedQuery}" --limit 20 --json 2>/dev/null || froggo-db search "${escapedQuery}" --limit 20`;
+    
+    exec(cmd, { timeout: 15000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Search] Local search error:', error);
+        resolve({ success: false, results: [] });
+        return;
+      }
+      
+      try {
+        // Try to parse JSON output
+        const results = JSON.parse(stdout);
+        resolve({ success: true, results });
+      } catch {
+        // Parse text output into results
+        const lines = stdout.trim().split('\n').filter(l => l.trim());
+        const results = lines.slice(0, 10).map((line, i) => ({
+          id: `search-${i}`,
+          type: 'message',
+          title: line.slice(0, 50),
+          text: line,
+        }));
+        resolve({ success: true, results });
+      }
+    });
+  });
+});
+
+// ============== SYSTEM STATUS IPC HANDLERS ==============
+ipcMain.handle('system:status', async () => {
+  return new Promise((resolve) => {
+    // Check watcher status
+    exec('pgrep -f task-watcher.sh', (watcherErr) => {
+      const watcherRunning = !watcherErr;
+      
+      // Check kill switch from env file
+      exec('grep EXTERNAL_ACTIONS_ENABLED ~/clawd/config/env.sh 2>/dev/null || echo "false"', (_, envOut) => {
+        const killSwitchOn = !envOut?.includes('true');
+        
+        // Count pending inbox items
+        exec('froggo-db inbox-list 2>/dev/null | grep -c "pending" || echo 0', (_, inboxOut) => {
+          const pendingInbox = parseInt(inboxOut?.trim() || '0', 10);
+          
+          // Count in-progress tasks
+          exec('froggo-db task-list --status in-progress 2>/dev/null | wc -l || echo 0', (_, taskOut) => {
+            const inProgressTasks = parseInt(taskOut?.trim() || '0', 10);
+            
+            resolve({
+              success: true,
+              status: {
+                watcherRunning,
+                killSwitchOn,
+                pendingInbox,
+                inProgressTasks,
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// ============== SETTINGS IPC HANDLERS ==============
+ipcMain.handle('settings:get', async () => {
+  const configPath = path.join(os.homedir(), 'clawd', 'config', 'settings.json');
+  try {
+    const content = fs.readFileSync(configPath, 'utf-8');
+    return { success: true, settings: JSON.parse(content) };
+  } catch {
+    return { success: true, settings: {} };
+  }
+});
+
+ipcMain.handle('settings:save', async (_, settings: any) => {
+  const configDir = path.join(os.homedir(), 'clawd', 'config');
+  const configPath = path.join(configDir, 'settings.json');
+  
+  try {
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    fs.writeFileSync(configPath, JSON.stringify(settings, null, 2));
+    
+    // Also update environment for task-helpers.sh
+    const envLine = settings.externalActionsEnabled 
+      ? 'export EXTERNAL_ACTIONS_ENABLED=true'
+      : 'export EXTERNAL_ACTIONS_ENABLED=false';
+    const envPath = path.join(os.homedir(), 'clawd', 'config', 'env.sh');
+    fs.writeFileSync(envPath, `# Auto-generated by Froggo Dashboard\n${envLine}\nexport RATE_LIMIT_TWEETS=${settings.rateLimitTweets || 10}\nexport RATE_LIMIT_EMAILS=${settings.rateLimitEmails || 20}\n`);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Settings] Save error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== TWITTER IPC HANDLERS ==============
+ipcMain.handle('twitter:mentions', async () => {
+  return new Promise((resolve) => {
+    exec('bird mentions --json 2>/dev/null || bird mentions', { timeout: 30000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Twitter] Mentions error:', error);
+        resolve({ success: false, mentions: [], error: error.message });
+        return;
+      }
+      try {
+        // Try to parse as JSON
+        const mentions = JSON.parse(stdout);
+        resolve({ success: true, mentions });
+      } catch {
+        // Return raw text if not JSON
+        resolve({ success: true, mentions: [], raw: stdout });
+      }
+    });
+  });
+});
+
+ipcMain.handle('twitter:home', async (_, limit?: number) => {
+  const countArg = limit ? `--count ${limit}` : '--count 20';
+  return new Promise((resolve) => {
+    exec(`bird home ${countArg} --json 2>/dev/null || bird home ${countArg}`, { timeout: 30000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Twitter] Home error:', error);
+        resolve({ success: false, tweets: [], error: error.message });
+        return;
+      }
+      try {
+        const tweets = JSON.parse(stdout);
+        resolve({ success: true, tweets });
+      } catch {
+        resolve({ success: true, tweets: [], raw: stdout });
+      }
+    });
+  });
+});
+
+ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) => {
+  // Queue tweet for approval via inbox
+  const title = text.length > 50 ? `${text.slice(0, 47)}...` : text;
+  const cmd = `froggo-db inbox-add --type tweet --title "${title.replace(/"/g, '\\"')}" --content "${text.replace(/"/g, '\\"')}" --channel dashboard`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        console.error('[Twitter] Queue error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      resolve({ success: true, message: 'Tweet queued for approval in Inbox' });
+    });
+  });
+});
+
+// ============== EMAIL IPC HANDLERS ==============
+ipcMain.handle('email:unread', async (_, account?: string) => {
+  const acct = account || 'kevin@carbium.io';
+  const cmd = `GOG_ACCOUNT=${acct} gog gmail search "is:unread" --json --limit 20`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Email] Unread error:', error);
+        resolve({ success: false, emails: [], error: error.message });
+        return;
+      }
+      try {
+        const emails = JSON.parse(stdout);
+        resolve({ success: true, emails, account: acct });
+      } catch {
+        resolve({ success: true, emails: [], raw: stdout, account: acct });
+      }
+    });
+  });
+});
+
+ipcMain.handle('email:search', async (_, query: string, account?: string) => {
+  const acct = account || 'kevin@carbium.io';
+  const escapedQuery = query.replace(/"/g, '\\"');
+  const cmd = `GOG_ACCOUNT=${acct} gog gmail search "${escapedQuery}" --json --limit 20`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Email] Search error:', error);
+        resolve({ success: false, emails: [], error: error.message });
+        return;
+      }
+      try {
+        const emails = JSON.parse(stdout);
+        resolve({ success: true, emails, account: acct });
+      } catch {
+        resolve({ success: true, emails: [], raw: stdout, account: acct });
+      }
+    });
+  });
+});
+
+ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: string, account?: string) => {
+  const acct = account || 'kevin@carbium.io';
+  const title = `Email to ${to}: ${subject.slice(0, 30)}`;
+  const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
+  const cmd = `froggo-db inbox-add --type email --title "${title.replace(/"/g, '\\"')}" --content "${content.replace(/"/g, '\\"')}" --channel dashboard`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        console.error('[Email] Queue error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      resolve({ success: true, message: 'Email queued for approval in Inbox' });
+    });
+  });
+});
+
+// ============== CALENDAR IPC HANDLERS ==============
+ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => {
+  const acct = account || 'kevin.macarthur@bitso.com';
+  const daysArg = days ? `--days ${days}` : '--days 7';
+  const cmd = `GOG_ACCOUNT=${acct} gog calendar events ${daysArg} --json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Calendar] Events error:', error);
+        resolve({ success: false, events: [], error: error.message });
+        return;
+      }
+      try {
+        const events = JSON.parse(stdout);
+        resolve({ success: true, events, account: acct });
+      } catch {
+        resolve({ success: true, events: [], raw: stdout, account: acct });
+      }
+    });
+  });
+});
+
 // ============== SESSIONS IPC HANDLERS ==============
 ipcMain.handle('sessions:list', async () => {
   try {
@@ -514,6 +1208,28 @@ ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number)
   } catch (error) {
     console.error('[Sessions] History error:', error);
     return { success: false, messages: [] };
+  }
+});
+
+// Shell execution for Code Agent Dashboard, Context Control Board
+ipcMain.handle('exec:run', async (_, command: string) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+  
+  // Use the clawd workspace as default cwd for git commands
+  const workDir = path.join(process.env.HOME || '', 'clawd');
+  
+  try {
+    const { stdout, stderr } = await execAsync(command, {
+      maxBuffer: 1024 * 1024, // 1MB buffer
+      timeout: 30000, // 30s timeout
+      cwd: workDir,
+    });
+    return { success: true, stdout: stdout || '', stderr: stderr || '' };
+  } catch (error: any) {
+    console.error('[Exec] Run error:', error.message);
+    return { success: false, stdout: error.stdout || '', stderr: error.stderr || error.message };
   }
 });
 

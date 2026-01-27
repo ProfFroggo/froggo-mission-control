@@ -21,7 +21,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo' }: T
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    
+
     addTask({
       title: title.trim(),
       description: description.trim() || undefined,
@@ -29,7 +29,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo' }: T
       status,
       assignedTo: assignedTo || undefined,
     });
-    
+
     // Reset form
     setTitle('');
     setDescription('');
@@ -39,14 +39,14 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo' }: T
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div 
-        className="bg-clawd-surface rounded-xl border border-clawd-border w-full max-w-lg p-6"
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="glass-modal rounded-xl w-full max-w-lg p-6"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">New Task</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
           >
@@ -115,8 +115,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo' }: T
                 type="button"
                 onClick={() => setAssignedTo('')}
                 className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                  !assignedTo 
-                    ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent' 
+                  !assignedTo
+                    ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
                     : 'border-clawd-border hover:border-clawd-accent/50'
                 }`}
               >
@@ -129,8 +129,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo' }: T
                   type="button"
                   onClick={() => setAssignedTo(agent.id)}
                   className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                    assignedTo === agent.id 
-                      ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent' 
+                    assignedTo === agent.id
+                      ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
                       : 'border-clawd-border hover:border-clawd-accent/50'
                   }`}
                 >

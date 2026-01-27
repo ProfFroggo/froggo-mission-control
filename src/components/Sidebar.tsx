@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Twitter, Command, Inbox, Radio } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Twitter, Command, Inbox, Radio, FolderOpen, Calendar, Code, Sparkles, BarChart2 } from 'lucide-react';
 import { useStore } from '../store/store';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics';
 
 interface SidebarProps {
   currentView: View;
@@ -16,8 +16,15 @@ const navItems = [
   { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘4' },
   { id: 'kanban' as View, icon: Kanban, label: 'Tasks', shortcut: '⌘5' },
   { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘6' },
+  { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '' },
+  { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '' },
   { id: 'twitter' as View, icon: Twitter, label: 'X/Twitter', shortcut: '⌘7' },
   { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘8' },
+  { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘9' },
+  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '⌘0' },
+  { id: 'calendar' as View, icon: Calendar, label: 'Calendar', shortcut: '' },
+  { id: 'templates' as View, icon: FolderOpen, label: 'Templates', shortcut: '' },
+  { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '' },
 ];
 
 export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
@@ -30,6 +37,11 @@ export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
   // Load inbox count from froggo-db
   const loadInboxCount = async () => {
     try {
+      // Check if running in Electron with clawdbot API
+      if (!window.clawdbot?.inbox?.list) {
+        // Web mode - skip inbox loading
+        return;
+      }
       const result = await window.clawdbot.inbox.list('pending');
       if (result.success) {
         setInboxCount(result.items?.length || 0);

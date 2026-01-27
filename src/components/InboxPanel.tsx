@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw } from 'lucide-react';
+import { Inbox, Check, X, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus } from 'lucide-react';
 import { gateway } from '../lib/gateway';
+import { showToast } from './Toast';
+import { SkeletonInbox } from './Skeleton';
+import EmptyState from './EmptyState';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -39,10 +42,18 @@ export default function InboxPanel() {
   const [rejectDialogItem, setRejectDialogItem] = useState<InboxItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const rejectInputRef = useRef<HTMLInputElement>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
 
   const loadInbox = async () => {
     setLoading(true);
     try {
+      // Check if running in Electron with clawdbot API
+      if (!window.clawdbot?.inbox?.list) {
+        console.warn('[InboxPanel] clawdbot.inbox not available (web mode)');
+        setItems([]);
+        return;
+      }
       const result = await window.clawdbot.inbox.list();
       if (result.success) {
         setItems(result.items || []);
@@ -60,43 +71,84 @@ export default function InboxPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  // Derive filtered lists from items (must be before useEffect that uses them!)
   const pendingItems = items.filter(i => i.status === 'pending');
   const completedItems = items.filter(i => i.status !== 'pending');
   const filteredPending = filter === 'all' ? pendingItems : pendingItems.filter(i => i.type === filter);
 
-  const handleApprove = async (item: InboxItem) => {
-    console.log('=== APPROVE CLICKED ===');
-    console.log('[Inbox] Approving item:', item);
+  // Keyboard navigation (J/K/A/R)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle if in input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      const navItems = filteredPending;
+      if (navItems.length === 0) return;
+      
+      switch (e.key.toLowerCase()) {
+        case 'j': // Next item
+          e.preventDefault();
+          setFocusedIndex(i => Math.min(i + 1, navItems.length - 1));
+          break;
+        case 'k': // Previous item
+          e.preventDefault();
+          setFocusedIndex(i => Math.max(i - 1, 0));
+          break;
+        case 'a': // Approve focused item
+          e.preventDefault();
+          if (navItems[focusedIndex]) {
+            handleApprove(navItems[focusedIndex]);
+          }
+          break;
+        case 'r': // Reject focused item
+          e.preventDefault();
+          if (navItems[focusedIndex]) {
+            setRejectDialogItem(navItems[focusedIndex]);
+          }
+          break;
+        case 'enter':
+        case ' ': // Toggle expand
+          e.preventDefault();
+          if (navItems[focusedIndex]) {
+            setExpandedId(expandedId === navItems[focusedIndex].id ? null : navItems[focusedIndex].id);
+          }
+          break;
+      }
+    };
     
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [filteredPending, focusedIndex, expandedId]);
+
+  const handleApprove = async (item: InboxItem) => {
+    // OPTIMISTIC UI: Remove item immediately for instant feedback
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    showToast('success', 'Approved ✓', item.title);
+    
+    // Then sync in background
     try {
       await window.clawdbot.inbox.update(item.id, { status: 'approved' });
-      console.log('[Inbox] Inbox updated');
       
-      // Create task in TODO - Kevin will prioritize and move to In Progress when ready
+      // Create task as IN-PROGRESS so watcher picks it up and executes
       const taskData = {
         id: `task-${Date.now()}`,
         title: item.title,
         description: item.content,
-        status: 'todo',
-        project: item.type === 'tweet' || item.type === 'reply' ? 'X/Twitter' : 'Approved',
+        status: 'in-progress',
+        project: item.type === 'tweet' || item.type === 'reply' ? 'X/Twitter' : 
+                 item.type === 'email' ? 'Email' : 'Approved',
         assignedTo: 'main',
       };
       
-      console.log('[Inbox] Creating task:', taskData);
       const result = await window.clawdbot.tasks.sync(taskData);
-      console.log('[Inbox] Task sync result:', result);
-      
       if (!result.success) {
-        console.error('[Inbox] Failed to create task:', result.error);
-        alert(`Failed to create task: ${result.error}`);
-      } else {
-        console.log('[Inbox] Task created successfully');
+        console.error('[Inbox] Task creation failed:', result.error);
       }
-      
-      loadInbox();
     } catch (error) {
+      // Revert on error
       console.error('[Inbox] Error in handleApprove:', error);
-      alert(`Error: ${error}`);
+      showToast('error', 'Approval failed', 'Reverting...');
+      loadInbox(); // Reload to revert
     }
   };
 
@@ -112,28 +164,35 @@ export default function InboxPanel() {
     if (!rejectDialogItem) return;
     
     const reason = rejectReason.trim() || "No reason provided";
+    const item = rejectDialogItem;
     
-    await window.clawdbot.inbox.update(rejectDialogItem.id, { 
-      status: 'rejected',
-      feedback: reason 
-    });
-    
-    // Log rejection with reason so I can learn
-    await window.clawdbot.rejections.log({
-      type: rejectDialogItem.type,
-      title: rejectDialogItem.title,
-      content: rejectDialogItem.content,
-      reason: reason,
-    });
-    
-    // Notify Froggo about the rejection lesson (only if reason provided)
-    if (reason !== "No reason provided") {
-      gateway.sendToMain(`[REJECTION_LESSON] ${rejectDialogItem.type}: "${rejectDialogItem.title}"\nReason: ${reason}\n\nLearn from this and avoid similar mistakes.`);
-    }
-    
+    // OPTIMISTIC UI: Remove immediately
+    setItems(prev => prev.filter(i => i.id !== item.id));
     setRejectDialogItem(null);
     setRejectReason('');
-    loadInbox();
+    showToast('warning', 'Rejected ✗', item.title);
+    
+    // Sync in background
+    try {
+      await window.clawdbot.inbox.update(item.id, { 
+        status: 'rejected',
+        feedback: reason 
+      });
+      
+      await window.clawdbot.rejections.log({
+        type: item.type,
+        title: item.title,
+        content: item.content,
+        reason: reason,
+      });
+      
+      if (reason !== "No reason provided") {
+        gateway.sendToMain(`[REJECTION_LESSON] ${item.type}: "${item.title}"\nReason: ${reason}\n\nLearn from this.`);
+      }
+    } catch (error) {
+      console.error('[Inbox] Reject failed:', error);
+      loadInbox(); // Revert
+    }
   };
 
   const handleAdjust = async (item: InboxItem) => {
@@ -154,6 +213,42 @@ export default function InboxPanel() {
 
   const handleApproveAll = () => {
     pendingItems.forEach(item => handleApprove(item));
+  };
+
+  const toggleSelection = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(pendingItems.map(i => i.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkApprove = () => {
+    selectedIds.forEach(id => {
+      const item = pendingItems.find(i => i.id === id);
+      if (item) handleApprove(item);
+    });
+    clearSelection();
+  };
+
+  const handleBulkReject = () => {
+    selectedIds.forEach(id => {
+      const item = pendingItems.find(i => i.id === id);
+      if (item) handleReject(item, 'Bulk rejected');
+    });
+    clearSelection();
   };
 
   const formatTime = (created: string) => {
@@ -178,6 +273,7 @@ export default function InboxPanel() {
               <h1 className="text-xl font-semibold">Approval Inbox</h1>
               <p className="text-sm text-clawd-text-dim">
                 {pendingItems.length} pending • {completedItems.length} completed
+                <span className="ml-2 text-clawd-text-dim/50">• J/K to navigate • A approve • R reject</span>
               </p>
             </div>
           </div>
@@ -190,14 +286,46 @@ export default function InboxPanel() {
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
-            {pendingItems.length > 1 && (
-              <button
-                onClick={handleApproveAll}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
-              >
-                <CheckCircle size={16} />
-                Approve All
-              </button>
+            {selectedIds.size > 0 ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-clawd-text-dim">{selectedIds.size} selected</span>
+                <button
+                  onClick={handleBulkApprove}
+                  className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors text-sm"
+                >
+                  <CheckCircle size={14} />
+                  Approve
+                </button>
+                <button
+                  onClick={handleBulkReject}
+                  className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors text-sm"
+                >
+                  <XCircle size={14} />
+                  Reject
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="px-2 py-2 text-clawd-text-dim hover:text-clawd-text transition-colors text-sm"
+                >
+                  Clear
+                </button>
+              </div>
+            ) : pendingItems.length > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={selectAll}
+                  className="text-sm text-clawd-text-dim hover:text-clawd-text transition-colors"
+                >
+                  Select all
+                </button>
+                <button
+                  onClick={handleApproveAll}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+                >
+                  <CheckCircle size={16} />
+                  Approve All
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -238,28 +366,44 @@ export default function InboxPanel() {
 
       {/* Pending Items */}
       <div className="flex-1 overflow-y-auto">
-        {filteredPending.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
-            <Inbox size={64} className="opacity-20 mb-4" />
-            <p className="text-lg">No pending approvals</p>
-            <p className="text-sm">Items will appear here when they need your review</p>
+        {loading && pendingItems.length === 0 ? (
+          <div className="p-6">
+            <SkeletonInbox />
           </div>
+        ) : filteredPending.length === 0 ? (
+          <EmptyState 
+            type="inbox" 
+            description="Items will appear here when they need your review"
+          />
         ) : (
           <div className="p-6 space-y-4">
-            {filteredPending.map((item) => {
+            {filteredPending.map((item, index) => {
               const config = typeConfig[item.type];
               const Icon = config.icon;
               const isExpanded = expandedId === item.id;
               const showFeedback = feedbackId === item.id;
+              const isFocused = index === focusedIndex;
 
               return (
                 <div
                   key={item.id}
-                  className="bg-clawd-surface border border-clawd-border rounded-xl overflow-hidden hover:border-clawd-accent/30 transition-colors"
+                  className={`card overflow-hidden transition-all ${
+                    isFocused 
+                      ? 'border-clawd-accent ring-2 ring-clawd-accent/30' 
+                      : 'hover:border-clawd-accent/30'
+                  }`}
                 >
                   {/* Header */}
                   <div className="p-4 flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {/* Selection checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(item.id)}
+                        onChange={() => toggleSelection(item.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 mt-1 rounded border-clawd-border text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 bg-clawd-bg cursor-pointer"
+                      />
                       <div className={`p-2 rounded-lg ${config.color} flex-shrink-0`}>
                         <Icon size={18} />
                       </div>

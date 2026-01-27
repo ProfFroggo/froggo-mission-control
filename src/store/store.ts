@@ -6,6 +6,15 @@ import { spawnAgent, spawnWorker, matchTaskToAgent, AGENTS } from '../lib/agents
 
 export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
 
+export interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  assignedTo?: string;
+  completedAt?: number;
+  completedBy?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -13,6 +22,10 @@ export interface Task {
   status: TaskStatus;
   project: string;
   assignedTo?: string;
+  reviewerId?: string; // Review agent assigned to check work
+  subtasks?: Subtask[];
+  reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes';
+  reviewNotes?: string;
   createdAt: number;
   updatedAt: number;
 }

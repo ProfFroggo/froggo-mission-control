@@ -97,10 +97,20 @@ export default function AgentPanel() {
               const agentTasks = getAgentTasks(agent.id);
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
               
+              // Gradient accent colors per agent type
+              const gradientColors: Record<string, string> = {
+                'froggo': 'from-green-500/10 via-transparent to-transparent',
+                'coder': 'from-blue-500/10 via-transparent to-transparent',
+                'researcher': 'from-purple-500/10 via-transparent to-transparent',
+                'writer': 'from-pink-500/10 via-transparent to-transparent',
+                'chief': 'from-orange-500/10 via-transparent to-transparent',
+              };
+              const gradient = gradientColors[agent.id.toLowerCase()] || 'from-clawd-accent/5 via-transparent to-transparent';
+              
               return (
                 <div
                   key={agent.id}
-                  className="bg-clawd-surface rounded-xl border border-clawd-border p-4"
+                  className={`bg-clawd-surface rounded-xl border border-clawd-border p-4 shadow-card hover:shadow-card-hover transition-all bg-gradient-to-br ${gradient}`}
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar */}

@@ -24,22 +24,24 @@ export default function CalendarWidget() {
     setError(null);
     
     try {
-      // Ask Froggo to fetch calendar events via gog CLI
-      const result = await gateway.sendChat(
-        '[SYSTEM] Fetch calendar events for today and tomorrow. ' +
-        'Use gog CLI to check kevin.macarthur@bitso.com and kevin@carbium.io calendars. ' +
-        'Return JSON array: [{id, title, start (ISO), end (ISO), location, attendees (count)}]. ' +
-        'Only return the JSON, no other text.'
-      );
+      // Fetch calendar events directly via IPC
+      const result = await (window as any).clawdbot?.calendar?.events('kevin.macarthur@bitso.com', 3);
+      console.log('[Calendar] Events result:', result);
       
-      // Try to parse JSON from response
-      if (result?.content) {
-        const jsonMatch = result.content.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          setEvents(parsed);
-          setLastFetch(Date.now());
-        }
+      if (result?.success && result.events?.events) {
+        // Map gog output to our CalendarEvent format
+        const mapped = result.events.events.map((e: any) => ({
+          id: e.id || String(Date.now()),
+          title: e.summary || 'Untitled',
+          start: e.start?.dateTime || e.start?.date || '',
+          end: e.end?.dateTime || e.end?.date || '',
+          location: e.location || '',
+          attendees: e.attendees?.length || 0,
+          isAllDay: !!e.start?.date && !e.start?.dateTime,
+          account: 'kevin.macarthur@bitso.com',
+        }));
+        setEvents(mapped);
+        setLastFetch(Date.now());
       }
     } catch (e: any) {
       console.error('Failed to fetch calendar:', e);

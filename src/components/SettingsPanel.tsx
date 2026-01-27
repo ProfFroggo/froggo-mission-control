@@ -13,6 +13,12 @@ interface Settings {
   accentColor: string;
   autoRefresh: boolean;
   refreshInterval: number;
+  // Automation settings
+  externalActionsEnabled: boolean;
+  rateLimitTweets: number;
+  rateLimitEmails: number;
+  defaultEmailAccount: string;
+  defaultCalendarAccount: string;
 }
 
 const defaultSettings: Settings = {
@@ -25,7 +31,53 @@ const defaultSettings: Settings = {
   accentColor: '#22c55e',
   autoRefresh: true,
   refreshInterval: 30,
+  // Automation defaults
+  externalActionsEnabled: false,
+  rateLimitTweets: 10,
+  rateLimitEmails: 20,
+  defaultEmailAccount: 'kevin@carbium.io',
+  defaultCalendarAccount: 'kevin.macarthur@bitso.com',
 };
+
+// Apply theme and accent color to document
+function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string) {
+  const root = document.documentElement;
+  
+  // Determine actual theme
+  let actualTheme = theme;
+  if (theme === 'system') {
+    actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  
+  // Apply theme class
+  root.classList.remove('dark', 'light');
+  root.classList.add(actualTheme);
+  
+  // Apply theme colors
+  if (actualTheme === 'dark') {
+    root.style.setProperty('--clawd-bg', '#0a0a0a');
+    root.style.setProperty('--clawd-surface', '#141414');
+    root.style.setProperty('--clawd-border', '#262626');
+    root.style.setProperty('--clawd-text', '#fafafa');
+    root.style.setProperty('--clawd-text-dim', '#a1a1aa');
+  } else {
+    root.style.setProperty('--clawd-bg', '#fafafa');
+    root.style.setProperty('--clawd-surface', '#ffffff');
+    root.style.setProperty('--clawd-border', '#e4e4e7');
+    root.style.setProperty('--clawd-text', '#18181b');
+    root.style.setProperty('--clawd-text-dim', '#71717a');
+  }
+  
+  // Apply accent color
+  root.style.setProperty('--clawd-accent', accentColor);
+  
+  // Generate accent-dim (slightly darker)
+  const hex = accentColor.replace('#', '');
+  const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
+  const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
+  const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
+  root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
+}
 
 export default function SettingsPanel() {
   const { connected } = useStore();
@@ -35,8 +87,39 @@ export default function SettingsPanel() {
   });
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
+  // Apply theme on mount and when settings change
+  useEffect(() => {
+    applyTheme(settings.theme, settings.accentColor);
+  }, [settings.theme, settings.accentColor]);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      if (settings.theme === 'system') {
+        applyTheme('system', settings.accentColor);
+      }
+    };
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, [settings.theme, settings.accentColor]);
+
+  const handleSave = async () => {
     localStorage.setItem('froggo-settings', JSON.stringify(settings));
+    
+    // Save automation settings to config file (for task-helpers.sh)
+    try {
+      await (window as any).clawdbot?.settings?.save({
+        externalActionsEnabled: settings.externalActionsEnabled,
+        rateLimitTweets: settings.rateLimitTweets,
+        rateLimitEmails: settings.rateLimitEmails,
+        defaultEmailAccount: settings.defaultEmailAccount,
+        defaultCalendarAccount: settings.defaultCalendarAccount,
+      });
+    } catch (e) {
+      console.error('[Settings] Failed to save automation settings:', e);
+    }
+    
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     
@@ -238,6 +321,98 @@ export default function SettingsPanel() {
                 />
               </div>
             )}
+          </div>
+        </section>
+
+        {/* Automation */}
+        <section className="mb-8">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+            ⚡ Automation
+          </h2>
+          <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+            {/* Kill Switch */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium flex items-center gap-2">
+                  External Actions
+                  {settings.externalActionsEnabled ? (
+                    <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">LIVE</span>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded">BLOCKED</span>
+                  )}
+                </div>
+                <div className="text-sm text-clawd-text-dim">
+                  {settings.externalActionsEnabled 
+                    ? 'Tweets and emails will be sent when approved' 
+                    : 'All external actions blocked (safe mode)'}
+                </div>
+              </div>
+              <button
+                onClick={() => setSettings(s => ({ ...s, externalActionsEnabled: !s.externalActionsEnabled }))}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  settings.externalActionsEnabled ? 'bg-green-500' : 'bg-red-500'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  settings.externalActionsEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
+
+            {/* Rate Limits */}
+            <div>
+              <label className="block text-sm text-clawd-text-dim mb-2">
+                Tweet Rate Limit: {settings.rateLimitTweets}/hour
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="30"
+                step="1"
+                value={settings.rateLimitTweets}
+                onChange={(e) => setSettings(s => ({ ...s, rateLimitTweets: parseInt(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-clawd-text-dim mb-2">
+                Email Rate Limit: {settings.rateLimitEmails}/hour
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="50"
+                step="1"
+                value={settings.rateLimitEmails}
+                onChange={(e) => setSettings(s => ({ ...s, rateLimitEmails: parseInt(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+
+            {/* Default Accounts */}
+            <div>
+              <label className="block text-sm text-clawd-text-dim mb-1">Default Email Account</label>
+              <select
+                value={settings.defaultEmailAccount}
+                onChange={(e) => setSettings(s => ({ ...s, defaultEmailAccount: e.target.value }))}
+                className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+              >
+                <option value="kevin@carbium.io">kevin@carbium.io (Carbium)</option>
+                <option value="kevin.macarthur@bitso.com">kevin.macarthur@bitso.com (Bitso)</option>
+                <option value="kmacarthur.gpt@gmail.com">kmacarthur.gpt@gmail.com (Personal)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-clawd-text-dim mb-1">Default Calendar Account</label>
+              <select
+                value={settings.defaultCalendarAccount}
+                onChange={(e) => setSettings(s => ({ ...s, defaultCalendarAccount: e.target.value }))}
+                className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
+              >
+                <option value="kevin.macarthur@bitso.com">kevin.macarthur@bitso.com (Bitso)</option>
+                <option value="kevin@carbium.io">kevin@carbium.io (Carbium)</option>
+              </select>
+            </div>
           </div>
         </section>
 

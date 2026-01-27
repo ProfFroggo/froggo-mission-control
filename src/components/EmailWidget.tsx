@@ -27,27 +27,22 @@ export default function EmailWidget() {
     setError(null);
     
     try {
-      // Ask Froggo to check email counts
-      const result = await gateway.sendChat(
-        '[SYSTEM] Check unread email counts for all 3 accounts using gog CLI. ' +
-        'For each account, count: total unread, @action labeled, starred. ' +
-        'Return JSON array: [{email, unread, action, starred}]. Only JSON, no other text.'
+      // Fetch unread counts for each account directly via IPC
+      const results = await Promise.all(
+        ACCOUNTS.map(async (acc) => {
+          const result = await (window as any).clawdbot?.email?.unread(acc.email);
+          const unreadCount = result?.emails?.threads?.length || result?.emails?.length || 0;
+          return {
+            ...acc,
+            unread: unreadCount,
+            action: 0, // TODO: Add @action label search
+            starred: 0, // TODO: Add starred search
+          };
+        })
       );
       
-      if (result?.content) {
-        const jsonMatch = result.content.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const merged = ACCOUNTS.map(acc => ({
-            ...acc,
-            unread: parsed.find((p: any) => p.email === acc.email)?.unread || 0,
-            action: parsed.find((p: any) => p.email === acc.email)?.action || 0,
-            starred: parsed.find((p: any) => p.email === acc.email)?.starred || 0,
-          }));
-          setAccounts(merged);
-          setLastFetch(Date.now());
-        }
-      }
+      setAccounts(results);
+      setLastFetch(Date.now());
     } catch (e: any) {
       console.error('Failed to fetch email:', e);
       setError('Could not load email');

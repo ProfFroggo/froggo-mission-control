@@ -1,72 +1,151 @@
-import { useState } from 'react';
-import { Plus, RefreshCw, Trash2, Download, Loader2 } from 'lucide-react';
-import { useStore } from '../store/store';
-import { gateway } from '../lib/gateway';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Plus, MessageSquare, CheckCircle, Search, Zap, Send, X } from 'lucide-react';
+import { showToast } from './Toast';
 
-export default function QuickActions() {
-  const { addTask, addActivity, clearActivities, fetchSessions, connected } = useStore();
-  const [loading, setLoading] = useState<string | null>(null);
+interface QuickActionsProps {
+  onNewTask: () => void;
+  onSearch: () => void;
+  onApproveAll: () => void;
+}
 
-  const actions = [
-    { 
-      id: 'new-task',
-      icon: Plus, 
-      label: 'New Task', 
-      color: 'bg-clawd-accent',
-      action: () => {
-        const title = prompt('Task title:');
-        if (title?.trim()) {
-          addTask({ title: title.trim(), status: 'todo', project: 'Quick' });
-          addActivity({ type: 'task', message: `Created task: ${title}`, timestamp: Date.now() });
-        }
+export interface QuickActionsRef {
+  openQuickMessage: () => void;
+}
+
+const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll }, ref) => {
+  const [quickMessageOpen, setQuickMessageOpen] = useState(false);
+  const [quickMessage, setQuickMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  // Expose openQuickMessage via ref
+  useImperativeHandle(ref, () => ({
+    openQuickMessage: () => setQuickMessageOpen(true),
+  }));
+
+  // Focus input when opened
+  useEffect(() => {
+    if (quickMessageOpen) {
+      const textarea = document.querySelector('textarea[placeholder*="Froggo"]') as HTMLTextAreaElement;
+      textarea?.focus();
+    }
+  }, [quickMessageOpen]);
+
+  const handleQuickMessage = async () => {
+    if (!quickMessage.trim()) return;
+    
+    setSending(true);
+    try {
+      // Send via gateway
+      const response = await fetch('http://localhost:18789/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: quickMessage,
+          sessionKey: 'web:dashboard',
+        }),
+      });
+      
+      if (response.ok) {
+        showToast('success', 'Message sent', 'Froggo will respond in chat');
+        setQuickMessage('');
+        setQuickMessageOpen(false);
       }
-    },
-    { 
-      id: 'refresh',
-      icon: Download, 
-      label: 'Refresh Sessions', 
-      color: 'bg-blue-500',
-      action: async () => {
-        if (!connected) return;
-        setLoading('refresh');
-        await fetchSessions();
-        addActivity({ type: 'system', message: 'Refreshed sessions', timestamp: Date.now() });
-        setLoading(null);
-      }
-    },
-    { 
-      id: 'clear',
-      icon: Trash2, 
-      label: 'Clear Activity', 
-      color: 'bg-red-500',
-      action: () => {
-        if (confirm('Clear activity feed?')) clearActivities();
-      }
-    },
-    { 
-      id: 'reload',
-      icon: RefreshCw, 
-      label: 'Reload App', 
-      color: 'bg-gray-500',
-      action: () => window.location.reload()
-    },
-  ];
+    } catch (e) {
+      showToast('error', 'Failed to send', String(e));
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
-    <div className="space-y-2">
-      {actions.map(({ id, icon: Icon, label, color, action }) => (
-        <button
-          key={id}
-          onClick={action}
-          disabled={loading === id}
-          className="w-full flex items-center gap-3 p-3 rounded-lg bg-clawd-border/50 hover:bg-clawd-border transition-colors disabled:opacity-50"
-        >
-          <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
-            {loading === id ? <Loader2 size={16} className="text-white animate-spin" /> : <Icon size={16} className="text-white" />}
+    <div className="fixed bottom-6 right-6 z-40">
+      {/* Quick Message Modal */}
+      {quickMessageOpen && (
+        <div className="absolute bottom-16 right-0 w-80 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium flex items-center gap-2">
+              <MessageSquare size={16} className="text-clawd-accent" />
+              Quick Message
+            </h3>
+            <button
+              onClick={() => setQuickMessageOpen(false)}
+              className="p-1 hover:bg-clawd-border rounded"
+            >
+              <X size={16} />
+            </button>
           </div>
-          <span className="text-sm">{label}</span>
+          <textarea
+            value={quickMessage}
+            onChange={(e) => setQuickMessage(e.target.value)}
+            placeholder="Ask Froggo something quick..."
+            className="w-full h-24 bg-clawd-bg border border-clawd-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                handleQuickMessage();
+              }
+            }}
+          />
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={handleQuickMessage}
+              disabled={!quickMessage.trim() || sending}
+              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-50"
+            >
+              <Send size={14} />
+              {sending ? 'Sending...' : 'Send'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2 bg-clawd-surface border border-clawd-border rounded-full px-2 py-1.5 shadow-lg">
+        <button
+          onClick={onSearch}
+          className="p-2.5 rounded-full hover:bg-clawd-border transition-colors"
+          title="Search (⌘/)"
+        >
+          <Search size={18} className="text-clawd-text-dim" />
         </button>
-      ))}
+        
+        <button
+          onClick={onNewTask}
+          className="p-2.5 rounded-full hover:bg-clawd-border transition-colors"
+          title="New Task"
+        >
+          <Plus size={18} className="text-clawd-text-dim" />
+        </button>
+        
+        <button
+          onClick={() => setQuickMessageOpen(!quickMessageOpen)}
+          className={`p-2.5 rounded-full transition-colors ${
+            quickMessageOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
+          }`}
+          title="Quick Message"
+        >
+          <MessageSquare size={18} className={quickMessageOpen ? '' : 'text-clawd-text-dim'} />
+        </button>
+        
+        <button
+          onClick={onApproveAll}
+          className="p-2.5 rounded-full hover:bg-clawd-border transition-colors"
+          title="Approve All Pending"
+        >
+          <CheckCircle size={18} className="text-clawd-text-dim" />
+        </button>
+        
+        <div className="w-px h-6 bg-clawd-border mx-1" />
+        
+        <button
+          className="p-2.5 rounded-full bg-clawd-accent text-white hover:bg-clawd-accent/90 transition-colors"
+          title="Froggo"
+        >
+          <Zap size={18} />
+        </button>
+      </div>
     </div>
   );
-}
+});
+
+QuickActions.displayName = 'QuickActions';
+export default QuickActions;

@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { showToast } from './Toast';
+
+interface AttachedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl?: string;
+}
 
 interface Message {
   id: string;
@@ -21,6 +30,8 @@ export default function ChatPanel() {
   const [listening, setListening] = useState(false);
   const [connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [attachments, setAttachments] = useState<AttachedFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -29,6 +40,54 @@ export default function ChatPanel() {
   const currentMsgIdRef = useRef<string>('');
 
   const connected = connectionState === 'connected';
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file drop
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+  }, []);
+
+  const handleFiles = (files: File[]) => {
+    const newAttachments: AttachedFile[] = [];
+    
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('error', 'File too large', `${file.name} exceeds 10MB limit`);
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        newAttachments.push({
+          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          dataUrl: reader.result as string,
+        });
+        
+        if (newAttachments.length === files.length) {
+          setAttachments(prev => [...prev, ...newAttachments]);
+          showToast('success', 'File attached', `${files.length} file(s) ready to send`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return Image;
+    if (type.includes('pdf') || type.includes('document')) return FileText;
+    return File;
+  };
 
   // Scroll to bottom
   useEffect(() => {
@@ -260,14 +319,86 @@ export default function ChatPanel() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || !connected || loading) return;
+    if ((!text && attachments.length === 0) || !connected || loading) return;
+
+    // Build message content with actual file contents
+    let content = text;
+    const fileContents: string[] = [];
+    const savedFiles: string[] = [];
+    
+    for (const att of attachments) {
+      if (att.dataUrl) {
+        // Text-based files: decode and include content inline
+        const textExtensions = ['.txt', '.md', '.json', '.csv', '.js', '.ts', '.py', '.jsx', '.tsx', '.html', '.css', '.yml', '.yaml', '.xml', '.sh', '.bash', '.sql', '.r', '.rb', '.go', '.rs', '.swift', '.kt'];
+        const isTextFile = att.type.startsWith('text/') || textExtensions.some(ext => att.name.toLowerCase().endsWith(ext));
+        
+        if (isTextFile) {
+          // Text file: decode and include content
+          try {
+            const base64 = att.dataUrl.split(',')[1];
+            const decoded = atob(base64);
+            fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
+          } catch (e) {
+            fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
+          }
+        } else if (att.type.startsWith('image/')) {
+          // Image: Save to temp file and tell AI to use vision
+          try {
+            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            savedFiles.push(tempPath);
+            fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
+          } catch (e) {
+            // Fallback: include base64 hint
+            fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Image data included - use vision to analyze]`);
+          }
+        } else if (att.type === 'application/pdf') {
+          // PDF: Save and suggest extraction
+          try {
+            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            savedFiles.push(tempPath);
+            fileContents.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
+          } catch (e) {
+            fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
+          }
+        } else if (att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext))) {
+          // Audio file: Transcribe with Whisper
+          try {
+            showToast('info', 'Transcribing audio...', att.name);
+            const base64 = att.dataUrl.split(',')[1];
+            const audioBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+            const result = await (window as any).clawdbot?.whisper?.transcribe(audioBuffer);
+            
+            if (result?.transcript) {
+              fileContents.push(`\n\n🎤 AUDIO TRANSCRIPTION: ${att.name}\n\`\`\`\n${result.transcript}\n\`\`\``);
+              showToast('success', 'Audio transcribed', `${result.transcript.split(' ').length} words`);
+            } else {
+              fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Transcription failed: ${result?.error || 'unknown error'}]`);
+            }
+          } catch (e) {
+            fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Could not transcribe: ${e}]`);
+          }
+        } else {
+          // Other files: include metadata
+          fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+        }
+      }
+    }
+    
+    if (fileContents.length > 0) {
+      content = text + fileContents.join('');
+    }
 
     const userMsg: Message = {
       id: `msg-${Date.now()}-u`,
       role: 'user',
-      content: text,
+      content: text + (attachments.length > 0 ? `\n\n📎 ${attachments.length} file(s) attached` : ''),
       timestamp: Date.now(),
     };
+    
+    // Clear attachments after sending
+    setAttachments([]);
 
     const assistantId = `msg-${Date.now()}-a`;
     currentMsgIdRef.current = assistantId;
@@ -287,7 +418,8 @@ export default function ChatPanel() {
 
     try {
       // Use streaming send - events will update the message
-      await gateway.sendChatStreaming(text);
+      // Send full content including file contents
+      await gateway.sendChatStreaming(content);
       
       // Timeout fallback
       setTimeout(() => {
@@ -315,7 +447,9 @@ export default function ChatPanel() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Enter sends (without shift for newline)
+    // ⌘Enter also sends
+    if ((e.key === 'Enter' && !e.shiftKey) || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
       e.preventDefault();
       sendMessage();
     }
@@ -350,7 +484,21 @@ export default function ChatPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div 
+      className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-clawd-accent ring-inset' : ''}`}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-clawd-accent/10 backdrop-blur-sm z-10 flex items-center justify-center">
+          <div className="text-center">
+            <Paperclip size={48} className="mx-auto mb-2 text-clawd-accent" />
+            <p className="text-lg font-medium">Drop files to attach</p>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
         <div className="flex items-center gap-3">
@@ -414,34 +562,75 @@ export default function ChatPanel() {
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.map((msg, idx) => {
+            const isUser = msg.role === 'user';
+            const showAvatar = idx === 0 || messages[idx - 1]?.role !== msg.role;
+            const isLastInGroup = idx === messages.length - 1 || messages[idx + 1]?.role !== msg.role;
+            const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            return (
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-clawd-accent text-white rounded-br-md'
-                    : 'bg-clawd-surface border border-clawd-border rounded-bl-md'
-                }`}
+                key={msg.id}
+                className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${!showAvatar ? 'mt-1' : 'mt-4'}`}
               >
-                {msg.streaming && !msg.content ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 size={16} className="animate-spin" />
-                    <span className="text-sm">Thinking...</span>
+                {/* Avatar */}
+                <div className={`flex-shrink-0 w-8 ${!showAvatar ? 'invisible' : ''}`}>
+                  {isUser ? (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+                      K
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-lg">
+                      🐸
+                    </div>
+                  )}
+                </div>
+
+                {/* Message bubble */}
+                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                  <div
+                    className={`relative px-4 py-2.5 ${
+                      isUser
+                        ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white'
+                        : 'bg-clawd-surface/80 backdrop-blur-sm border border-clawd-border/50'
+                    } ${
+                      isUser
+                        ? showAvatar ? 'rounded-2xl rounded-tr-md' : isLastInGroup ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl'
+                        : showAvatar ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-tl-md' : 'rounded-2xl'
+                    } shadow-sm`}
+                  >
+                    {msg.streaming && !msg.content ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="text-sm text-clawd-text-dim">Thinking...</span>
+                      </div>
+                    ) : msg.role === 'assistant' ? (
+                      <MarkdownMessage content={msg.content} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    )}
+                    {msg.streaming && msg.content && (
+                      <div className="flex items-center gap-1 mt-2 opacity-60">
+                        <div className="w-1.5 h-1.5 bg-clawd-accent rounded-full animate-pulse" />
+                        <span className="text-xs">typing...</span>
+                      </div>
+                    )}
                   </div>
-                ) : msg.role === 'assistant' ? (
-                  <MarkdownMessage content={msg.content} />
-                ) : (
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
-                )}
-                {msg.streaming && msg.content && (
-                  <Loader2 size={12} className="animate-spin mt-2 opacity-50" />
-                )}
+                  
+                  {/* Timestamp */}
+                  {isLastInGroup && (
+                    <span className={`text-[10px] text-clawd-text-dim mt-1 ${isUser ? 'mr-1' : 'ml-1'}`}>
+                      {time}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -459,7 +648,53 @@ export default function ChatPanel() {
 
       {/* Input */}
       <div className="p-4 border-t border-clawd-border bg-clawd-surface">
+        {/* Attachment preview */}
+        {attachments.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {attachments.map((att) => {
+              const Icon = getFileIcon(att.type);
+              return (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg"
+                >
+                  <Icon size={16} className="text-clawd-accent" />
+                  <span className="text-sm truncate max-w-32">{att.name}</span>
+                  <span className="text-xs text-clawd-text-dim">
+                    {(att.size / 1024).toFixed(1)}KB
+                  </span>
+                  <button
+                    onClick={() => removeAttachment(att.id)}
+                    className="p-1 hover:bg-clawd-border rounded"
+                  >
+                    <X size={14} className="text-clawd-text-dim" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex items-end gap-3">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
+          />
+          
+          {/* Attach button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!connected}
+            className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-all"
+            title="Attach files"
+          >
+            <Paperclip size={20} />
+          </button>
+
           <button
             onClick={toggleVoice}
             disabled={!connected}
@@ -487,7 +722,7 @@ export default function ChatPanel() {
           
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || !connected || loading}
+            disabled={(!input.trim() && attachments.length === 0) || !connected || loading}
             className="p-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}

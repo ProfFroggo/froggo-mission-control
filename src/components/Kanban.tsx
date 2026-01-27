@@ -4,6 +4,18 @@ import { useStore, Task, TaskStatus } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
 
+// Format relative time
+function formatRelativeTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
+  return `${Math.floor(diff / 604800000)}w`;
+}
+
 const columns: { id: TaskStatus; title: string; color: string; bg: string }[] = [
   { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-gray-500/10' },
   { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10' },
@@ -22,6 +34,7 @@ export default function Kanban() {
     return () => clearInterval(interval);
   }, [loadTasksFromDB]);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>('todo');
   const [projectFilter, setProjectFilter] = useState<string>('all');
@@ -43,9 +56,14 @@ export default function Kanban() {
     e.dataTransfer.setData('text/plain', taskId);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
   };
 
   const handleDrop = (e: React.DragEvent, status: TaskStatus) => {
@@ -54,6 +72,12 @@ export default function Kanban() {
       moveTask(draggedTask, status);
       setDraggedTask(null);
     }
+    setDragOverColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTask(null);
+    setDragOverColumn(null);
   };
 
   const handleAddTask = (status: TaskStatus) => {
@@ -102,17 +126,20 @@ export default function Kanban() {
       <div className="flex-1 flex gap-5 p-6 overflow-x-auto">
         {columns.map((column) => {
           const columnTasks = filteredTasks.filter(t => t.status === column.id);
-          const isDragOver = draggedTask && !columnTasks.find(t => t.id === draggedTask);
+          const isDragOver = dragOverColumn === column.id;
           
           return (
             <div
               key={column.id}
               className={`flex-shrink-0 w-80 flex flex-col rounded-2xl border transition-all ${
                 isDragOver 
-                  ? 'border-clawd-accent border-dashed bg-clawd-accent/5' 
+                  ? 'border-clawd-accent border-dashed bg-clawd-accent/10 scale-[1.02] shadow-lg shadow-clawd-accent/20' 
+                  : draggedTask 
+                  ? 'border-clawd-border bg-clawd-surface/50' 
                   : 'border-clawd-border bg-clawd-surface'
               }`}
-              onDragOver={handleDragOver}
+              onDragOver={(e) => handleDragOver(e, column.id)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, column.id)}
             >
               {/* Column Header */}
@@ -141,6 +168,7 @@ export default function Kanban() {
                     task={task}
                     agents={agents}
                     onDragStart={(e) => handleDragStart(e, task.id)}
+                    onDragEnd={handleDragEnd}
                     onDelete={() => deleteTask(task.id)}
                     onAssign={(agentId) => assignTask(task.id, agentId)}
                     onStartAgent={(taskId) => spawnAgentForTask(taskId)}
@@ -182,6 +210,7 @@ interface TaskCardProps {
   task: Task;
   agents: { id: string; name: string; avatar?: string; status?: string; currentTaskId?: string }[];
   onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
   onDelete: () => void;
   onAssign: (agentId: string) => void;
   onStartAgent: (taskId: string) => void;
@@ -189,7 +218,7 @@ interface TaskCardProps {
   isDragging: boolean;
 }
 
-function TaskCard({ task, agents, onDragStart, onDelete, onAssign, onStartAgent, onClick, isDragging }: TaskCardProps) {
+function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, isDragging }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   
@@ -201,9 +230,10 @@ function TaskCard({ task, agents, onDragStart, onDelete, onAssign, onStartAgent,
     <div
       draggable
       onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`bg-clawd-bg rounded-xl p-4 border border-clawd-border hover:border-clawd-accent/50 transition-all cursor-pointer group relative ${
-        isDragging ? 'opacity-50 scale-95' : ''
+      className={`bg-clawd-bg rounded-xl p-4 border border-clawd-border shadow-card hover:shadow-card-hover hover:border-clawd-accent/50 hover:-translate-y-0.5 transition-all cursor-pointer group relative ${
+        isDragging ? 'opacity-50 scale-105 rotate-3 shadow-card-hover' : ''
       }`}
     >
       {/* Drag Handle */}
@@ -246,10 +276,16 @@ function TaskCard({ task, agents, onDragStart, onDelete, onAssign, onStartAgent,
         )}
         
         <div className="flex items-center justify-between">
-          <span className="text-xs px-2 py-1 bg-clawd-surface rounded-lg text-clawd-text-dim flex items-center gap-1">
-            <FolderOpen size={10} />
-            {task.project}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-1 bg-clawd-surface rounded-lg text-clawd-text-dim flex items-center gap-1">
+              <FolderOpen size={10} />
+              {task.project}
+            </span>
+            <span className="text-xs text-clawd-text-dim flex items-center gap-1" title={new Date(task.createdAt).toLocaleString()}>
+              <Clock size={10} />
+              {formatRelativeTime(task.createdAt)}
+            </span>
+          </div>
           
           {assignedAgent ? (
             <div className="flex items-center gap-2">

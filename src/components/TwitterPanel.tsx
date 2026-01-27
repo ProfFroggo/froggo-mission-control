@@ -38,16 +38,26 @@ export default function TwitterPanel() {
   const fetchMentions = async () => {
     setLoading(true);
     try {
-      if (connected) {
-        // Ask Froggo to fetch mentions via bird CLI
-        const result = await gateway.sendChat(
-          '[SYSTEM] Check @Prof_Frogo mentions using bird CLI. ' +
-          'Return the recent mentions with author, text, timestamp, and engagement stats. ' +
-          'Format as a summary I can review.'
-        );
-        
-        // The response will come through chat, user can see it there
-        addActivity({ type: 'task', message: 'Fetched X mentions - check Chat panel', timestamp: Date.now() });
+      const result = await (window as any).clawdbot?.twitter?.mentions();
+      console.log('[Twitter] Mentions result:', result);
+      
+      if (result?.success && result.mentions) {
+        // Map bird output to our Tweet format
+        const mapped = result.mentions.map((m: any) => ({
+          id: m.id || String(Date.now()),
+          text: m.text || m.content || '',
+          author: m.author?.username || m.user || 'unknown',
+          timestamp: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
+          likes: m.likes || m.favorite_count || 0,
+          retweets: m.retweets || m.retweet_count || 0,
+          replies: m.replies || m.reply_count || 0,
+          url: m.url || `https://x.com/i/status/${m.id}`,
+        }));
+        setMentions(mapped);
+        addActivity({ type: 'task', message: `Loaded ${mapped.length} mentions`, timestamp: Date.now() });
+      } else if (result?.raw) {
+        // Raw text output - show as single mention
+        addActivity({ type: 'task', message: 'Mentions loaded (raw format)', timestamp: Date.now() });
       }
     } catch (e) {
       console.error('Failed to fetch mentions:', e);
@@ -70,17 +80,20 @@ export default function TwitterPanel() {
   };
 
   const handlePost = async (draft: DraftTweet) => {
-    // Queue for approval instead of posting directly
-    const { addApproval } = useStore.getState();
-    addApproval({
-      type: 'tweet',
-      title: `Tweet: ${draft.text.slice(0, 50)}...`,
-      content: draft.text,
-      context: 'Composed in Twitter panel',
-      metadata: { platform: 'X/Twitter' },
-    });
-    addActivity({ type: 'task', message: `Tweet queued for approval`, timestamp: Date.now() });
-    setDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, status: 'pending' } : d));
+    // Queue for approval via froggo-db inbox
+    try {
+      const result = await (window as any).clawdbot?.twitter?.queuePost(draft.text, 'Composed in Twitter panel');
+      
+      if (result?.success) {
+        addActivity({ type: 'task', message: `Tweet queued for approval`, timestamp: Date.now() });
+        setDrafts(prev => prev.map(d => d.id === draft.id ? { ...d, status: 'pending' } : d));
+      } else {
+        console.error('[Twitter] Failed to queue:', result?.error);
+        addActivity({ type: 'error', message: `Failed to queue tweet: ${result?.error}`, timestamp: Date.now() });
+      }
+    } catch (e) {
+      console.error('[Twitter] Queue error:', e);
+    }
   };
 
   const handleDelete = (draftId: string) => {

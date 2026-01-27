@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, Clock, Zap, ArrowRight, Calendar, Mail, Search, Mic, Plus, RefreshCw, Twitter, Bell, AlertCircle } from 'lucide-react';
+import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, Clock, Zap, ArrowRight, Calendar, Mail, Search, Mic, Plus, RefreshCw, Twitter, Bell, AlertCircle, Loader2 } from 'lucide-react';
 import ActivityFeed from './ActivityFeed';
 import CalendarWidget from './CalendarWidget';
 import EmailWidget from './EmailWidget';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
+import { showToast } from './Toast';
 
-export default function Dashboard() {
+interface DashboardProps {
+  onNavigate?: (view: string) => void;
+}
+
+export default function Dashboard({ onNavigate }: DashboardProps) {
   const { connected, sessions, tasks, agents, activities, approvals, fetchSessions, addActivity, clearActivities, getUnassignedTasks, getTasksNeedingReview } = useStore();
   const [greeting, setGreeting] = useState('');
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
   const needsReview = tasks.filter(t => t.status === 'review').length;
@@ -35,11 +41,34 @@ export default function Dashboard() {
     }
   }, [connected, fetchSessions]);
 
+  const handleQuickAction = async (label: string, prompt: string) => {
+    if (!connected) {
+      showToast('Not connected to gateway', 'error');
+      return;
+    }
+    
+    setLoadingAction(label);
+    showToast(`Asking Froggo about ${label.toLowerCase()}...`, 'info');
+    
+    try {
+      await gateway.sendChat(prompt);
+      // Navigate to chat to see the response
+      if (onNavigate) {
+        onNavigate('chat');
+      }
+    } catch (error) {
+      console.error('Quick action error:', error);
+      showToast(`Failed to check ${label.toLowerCase()}`, 'error');
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   const quickActions = [
-    { icon: Calendar, label: 'Calendar', color: 'text-blue-400', action: () => gateway.sendChat("What's on my calendar today? Give me a quick summary.") },
-    { icon: Mail, label: 'Email', color: 'text-green-400', action: () => gateway.sendChat("Check my unread emails and highlight anything important") },
-    { icon: Twitter, label: 'X Mentions', color: 'text-sky-400', action: () => gateway.sendChat("Check @Prof_Frogo mentions on X and draft replies for approval") },
-    { icon: MessageSquare, label: 'Messages', color: 'text-purple-400', action: () => gateway.sendChat("Check WhatsApp and Telegram for any important messages") },
+    { icon: Calendar, label: 'Calendar', color: 'text-blue-400', prompt: "What's on my calendar today? Give me a quick summary." },
+    { icon: Mail, label: 'Email', color: 'text-green-400', prompt: "Check my unread emails and highlight anything important" },
+    { icon: Twitter, label: 'X Mentions', color: 'text-sky-400', prompt: "Check @Prof_Frogo mentions on X and draft replies for approval" },
+    { icon: MessageSquare, label: 'Messages', color: 'text-purple-400', prompt: "Check WhatsApp and Telegram for any important messages" },
   ];
 
   const getSessionIcon = (session: any) => {
@@ -110,13 +139,18 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div className="mt-6 flex gap-3">
-            {quickActions.map(({ icon: Icon, label, color, action }, i) => (
+            {quickActions.map(({ icon: Icon, label, color, prompt }, i) => (
               <button
                 key={i}
-                onClick={action}
-                className="flex items-center gap-2 px-4 py-2 bg-clawd-surface/80 backdrop-blur rounded-xl border border-clawd-border hover:border-clawd-accent transition-all hover:scale-105"
+                onClick={() => handleQuickAction(label, prompt)}
+                disabled={loadingAction === label}
+                className="flex items-center gap-2 px-4 py-2 bg-clawd-surface/80 backdrop-blur rounded-xl border border-clawd-border hover:border-clawd-accent transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-wait"
               >
-                <Icon size={18} className={color} />
+                {loadingAction === label ? (
+                  <Loader2 size={18} className={`${color} animate-spin`} />
+                ) : (
+                  <Icon size={18} className={color} />
+                )}
                 <span className="text-sm font-medium">{label}</span>
               </button>
             ))}
@@ -158,7 +192,7 @@ export default function Dashboard() {
           {/* Sessions Column */}
           <div className="col-span-2 space-y-6">
             {/* Active Sessions */}
-            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
+            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden shadow-card-lg">
               <div className="p-4 border-b border-clawd-border flex items-center justify-between">
                 <h2 className="font-semibold flex items-center gap-2">
                   <MessageSquare size={18} /> Sessions
@@ -198,7 +232,13 @@ export default function Dashboard() {
                               </span>
                             </div>
                             <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
-                              <span className="px-2 py-0.5 bg-clawd-border rounded-full">{s.channel || 'web'}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                                s.channel === 'discord' ? 'badge-discord' :
+                                s.channel === 'telegram' ? 'badge-telegram' :
+                                s.channel === 'whatsapp' ? 'badge-whatsapp' :
+                                s.channel === 'agents' ? 'badge-agents' :
+                                'badge-webchat'
+                              }`}>{s.channel || 'web'}</span>
                               <span>{(s.totalTokens || 0).toLocaleString()} tokens</span>
                               {s.model && <span className="truncate">{s.model.split('/').pop()}</span>}
                             </div>
@@ -213,7 +253,10 @@ export default function Dashboard() {
               
               {sessions.length > 6 && (
                 <div className="p-3 border-t border-clawd-border text-center">
-                  <button className="text-sm text-clawd-accent hover:underline">
+                  <button 
+                    onClick={() => onNavigate?.('sessions')}
+                    className="text-sm text-clawd-accent hover:underline"
+                  >
                     View all {sessions.length} sessions
                   </button>
                 </div>
@@ -221,12 +264,15 @@ export default function Dashboard() {
             </div>
 
             {/* Recent Tasks */}
-            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
+            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden shadow-card-lg">
               <div className="p-4 border-b border-clawd-border flex items-center justify-between">
                 <h2 className="font-semibold flex items-center gap-2">
                   <Activity size={18} /> Recent Tasks
                 </h2>
-                <button className="flex items-center gap-1 text-sm text-clawd-accent hover:underline">
+                <button 
+                  onClick={() => onNavigate?.('kanban')}
+                  className="flex items-center gap-1 text-sm text-clawd-accent hover:underline"
+                >
                   <Plus size={14} /> New Task
                 </button>
               </div>
@@ -276,12 +322,12 @@ export default function Dashboard() {
             <EmailWidget />
             
             {/* Channel Activity Feed */}
-            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden h-64">
+            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden shadow-card-lg h-64">
               <ActivityFeed />
             </div>
             
             {/* Recent Activity */}
-            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
+            <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden shadow-card-lg">
               <div className="p-4 border-b border-clawd-border flex items-center justify-between">
                 <h2 className="font-semibold flex items-center gap-2">
                   <Zap size={18} /> Recent Actions

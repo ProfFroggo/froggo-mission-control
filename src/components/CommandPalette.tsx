@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Zap, X, Send, Radio, Inbox, Brain, Database } from 'lucide-react';
+import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Radio, Inbox, Brain, Database, Twitter, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { showToast } from './Toast';
 
 interface Command {
   id: string;
@@ -91,6 +92,83 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     
     // Settings
     { id: 'settings', icon: <Settings size={16} />, label: 'Open Settings', category: 'Settings', action: () => { onNavigate('settings'); onClose(); } },
+    
+    // Quick Actions - Power-ups
+    { id: 'quick-tweet', icon: <Twitter size={16} />, label: 'Draft a Tweet', category: 'Quick', action: async () => {
+      const tweet = window.prompt('Draft tweet:');
+      if (tweet && connected) {
+        await gateway.sendChat(`Draft this tweet for approval: "${tweet}"`);
+        showToast('info', 'Tweet drafted', 'Check inbox for approval');
+        onNavigate('chat');
+      }
+      onClose();
+    }},
+    { id: 'quick-task', icon: <Plus size={16} />, label: 'Create Task', shortcut: '⌘N', category: 'Quick', action: async () => {
+      const title = window.prompt('Task title:');
+      if (title) {
+        // Add task to kanban
+        await (window as any).clawdbot?.tasks?.sync({ id: `task-${Date.now()}`, title, status: 'todo', project: 'General' });
+        showToast('success', 'Task created', title);
+      }
+      onClose();
+    }},
+    { id: 'quick-note', icon: <FileText size={16} />, label: 'Quick Note to Memory', category: 'Quick', action: async () => {
+      const note = window.prompt('Note:');
+      if (note && connected) {
+        await gateway.sendChat(`Add to today's memory log: ${note}`);
+        showToast('success', 'Note saved');
+      }
+      onClose();
+    }},
+    
+    // Focus Modes
+    { id: 'focus-work', icon: <Coffee size={16} />, label: 'Work Mode', category: 'Focus', action: () => {
+      localStorage.setItem('focusMode', JSON.stringify('work'));
+      showToast('info', 'Work Mode', 'Focus on work tasks');
+      onClose();
+      window.location.reload();
+    }},
+    { id: 'focus-family', icon: <Home size={16} />, label: 'Family Time', category: 'Focus', action: () => {
+      localStorage.setItem('focusMode', JSON.stringify('family'));
+      showToast('info', 'Family Time', 'Only urgent notifications');
+      onClose();
+      window.location.reload();
+    }},
+    { id: 'focus-dnd', icon: <Moon size={16} />, label: 'Do Not Disturb', category: 'Focus', action: () => {
+      localStorage.setItem('focusMode', JSON.stringify('dnd'));
+      showToast('info', 'DND Active', 'All notifications muted');
+      onClose();
+      window.location.reload();
+    }},
+    { id: 'focus-off', icon: <Sun size={16} />, label: 'Turn Off Focus Mode', category: 'Focus', action: () => {
+      localStorage.setItem('focusMode', 'null');
+      showToast('info', 'Focus Mode Off');
+      onClose();
+      window.location.reload();
+    }},
+    
+    // System
+    { id: 'sys-refresh', icon: <RefreshCw size={16} />, label: 'Refresh Data', category: 'System', action: () => {
+      window.location.reload();
+    }},
+    { id: 'sys-shell', icon: <Terminal size={16} />, label: 'Run Shell Command', category: 'System', action: async () => {
+      const cmd = window.prompt('Shell command:');
+      if (cmd && connected) {
+        await gateway.sendChat(`Run: ${cmd}`);
+        onNavigate('chat');
+      }
+      onClose();
+    }},
+    { id: 'sys-spawn', icon: <Play size={16} />, label: 'Spawn Agent Task', category: 'System', action: async () => {
+      const task = window.prompt('Task description:');
+      const agent = window.prompt('Agent (coder/researcher/writer):') || 'coder';
+      if (task && connected) {
+        await gateway.sendChat(`Spawn ${agent} agent to: ${task}`);
+        showToast('info', 'Agent spawning', task.slice(0, 30) + '...');
+        onNavigate('chat');
+      }
+      onClose();
+    }},
   ];
 
   const filteredCommands = commands.filter(cmd => 
@@ -139,7 +217,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-lg bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg glass-modal rounded-2xl shadow-2xl overflow-hidden">
         {/* Search Input */}
         <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
           <Search size={20} className="text-clawd-text-dim" />

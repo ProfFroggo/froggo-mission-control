@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme CSS Variables */
+:root {
+  --clawd-bg: #0a0a0a;
+  --clawd-surface: #141414;
+  --clawd-border: #262626;
+  --clawd-text: #fafafa;
+  --clawd-text-dim: #a1a1aa;
+  --clawd-accent: #22c55e;
+  --clawd-accent-dim: #16a34a;
+}
+
+/* Light theme */
+:root.light {
+  --clawd-bg: #fafafa;
+  --clawd-surface: #ffffff;
+  --clawd-border: #e4e4e7;
+  --clawd-text: #18181b;
+  --clawd-text-dim: #71717a;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -27,6 +47,125 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 4px;
+}
+
+/* Glassmorphism styles */
+.glass {
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(38, 38, 38, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-modal {
+  background: rgba(20, 20, 20, 0.9);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(38, 38, 38, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Card components with shadows */
+@layer components {
+  .card {
+    @apply bg-clawd-surface border border-clawd-border rounded-xl;
+    @apply shadow-card transition-all duration-200;
+  }
+  
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+  
+  .card-interactive {
+    @apply bg-clawd-surface border border-clawd-border rounded-xl;
+    @apply shadow-card transition-all duration-200;
+    @apply hover:shadow-card-hover hover:-translate-y-0.5;
+    @apply cursor-pointer;
+  }
+  
+  .card-lg {
+    @apply bg-clawd-surface border border-clawd-border rounded-2xl;
+    @apply shadow-card-lg;
+  }
+  
+  /* Button improvements */
+  .btn {
+    @apply transition-all duration-150;
+    @apply active:scale-95;
+  }
+  
+  .btn-primary {
+    @apply bg-clawd-accent text-white rounded-xl;
+    @apply hover:bg-clawd-accent/90 hover:shadow-glow;
+    @apply active:scale-95 transition-all duration-150;
+  }
+  
+  .btn-secondary {
+    @apply bg-clawd-border text-clawd-text rounded-xl;
+    @apply hover:bg-clawd-border/80;
+    @apply active:scale-95 transition-all duration-150;
+  }
+  
+  /* Channel badge colors */
+  .badge-discord {
+    @apply bg-[#5865F2]/20 text-[#5865F2] border-[#5865F2]/30;
+  }
+  
+  .badge-telegram {
+    @apply bg-[#229ED9]/20 text-[#229ED9] border-[#229ED9]/30;
+  }
+  
+  .badge-whatsapp {
+    @apply bg-[#25D366]/20 text-[#25D366] border-[#25D366]/30;
+  }
+  
+  .badge-webchat {
+    @apply bg-purple-500/20 text-purple-400 border-purple-500/30;
+  }
+  
+  .badge-agents {
+    @apply bg-orange-500/20 text-orange-400 border-orange-500/30;
+  }
+  
+  /* Voice orb pulse rings */
+  .voice-orb-pulse::before,
+  .voice-orb-pulse::after {
+    content: '';
+    @apply absolute inset-0 rounded-full;
+    @apply border-2 border-clawd-accent;
+    animation: pulse-ring 2s ease-out infinite;
+  }
+  
+  .voice-orb-pulse::after {
+    animation-delay: 1s;
+  }
+  
+  /* Kanban column accents */
+  .kanban-backlog { @apply border-l-gray-500; }
+  .kanban-todo { @apply border-l-blue-500; }
+  .kanban-in-progress { @apply border-l-yellow-500; }
+  .kanban-needs-approval { @apply border-l-orange-500; }
+  .kanban-done { @apply border-l-green-500; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
 
 ::-webkit-scrollbar-thumb:hover {

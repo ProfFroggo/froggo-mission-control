@@ -777,7 +777,7 @@ export default function VoicePanel() {
               <button
                 onClick={toggleConversation}
                 disabled={!canStart || processing || isMeetingActive || isMuted}
-                className={`relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 border-4 ${getOrbColor()} ${!canStart || isMeetingActive || isMuted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 border-4 ${getOrbColor()} ${listening && !isMuted ? 'voice-orb-pulse' : ''} ${!canStart || isMeetingActive || isMuted ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {getOrbIcon()}
               </button>

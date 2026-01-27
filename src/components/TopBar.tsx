@@ -1,5 +1,15 @@
-import { Phone, PhoneOff, Mic, MicOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Phone, PhoneOff, Mic, MicOff, Activity, Lock, Unlock, Inbox, Loader, Wifi, WifiOff } from 'lucide-react';
 import { useStore } from '../store/store';
+import { gateway, ConnectionState } from '../lib/gateway';
+import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
+
+interface SystemStatus {
+  watcherRunning: boolean;
+  killSwitchOn: boolean;
+  pendingInbox: number;
+  inProgressTasks: number;
+}
 
 interface TopBarProps {
   onCallClick?: () => void;
@@ -7,6 +17,40 @@ interface TopBarProps {
 
 export default function TopBar({ onCallClick }: TopBarProps) {
   const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
+  const [status, setStatus] = useState<SystemStatus>({
+    watcherRunning: false,
+    killSwitchOn: true,
+    pendingInbox: 0,
+    inProgressTasks: 0,
+  });
+  const [connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
+  const { focusMode, setFocusMode, config } = useFocusMode();
+  const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
+
+  // Track gateway connection
+  useEffect(() => {
+    const unsub = gateway.on('stateChange', ({ state }: { state: ConnectionState }) => {
+      setConnectionState(state);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const result = await (window as any).clawdbot?.system?.status();
+        if (result?.success) {
+          setStatus(result.status);
+        }
+      } catch (e) {
+        console.error('[TopBar] Status check failed:', e);
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCallClick = () => {
     toggleMeeting();
@@ -14,7 +58,70 @@ export default function TopBar({ onCallClick }: TopBarProps) {
   };
 
   return (
-    <div className="drag-region fixed top-0 right-0 h-12 z-50 flex items-center justify-end px-4 gap-2" style={{ left: '208px' }}>
+    <div className="drag-region fixed top-0 right-0 h-12 z-50 flex items-center justify-between px-4" style={{ left: '208px' }}>
+      {/* System Status Indicators */}
+      <div className="no-drag flex items-center gap-3">
+        {/* Gateway Connection */}
+        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
+          connectionState === 'connected'
+            ? 'bg-green-500/10 text-green-400'
+            : connectionState === 'connecting' || connectionState === 'authenticating'
+            ? 'bg-yellow-500/10 text-yellow-400'
+            : 'bg-red-500/10 text-red-400'
+        }`}>
+          {connectionState === 'connected' ? <Wifi size={12} /> : <WifiOff size={12} />}
+          <span>
+            {connectionState === 'connected' ? 'Online' : 
+             connectionState === 'connecting' ? 'Connecting...' :
+             connectionState === 'authenticating' ? 'Auth...' : 'Offline'}
+          </span>
+        </div>
+
+        {/* Watcher Status */}
+        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
+          status.watcherRunning 
+            ? 'bg-green-500/10 text-green-400' 
+            : 'bg-red-500/10 text-red-400'
+        }`}>
+          <Activity size={12} />
+          <span>Watcher</span>
+          <span className={`w-1.5 h-1.5 rounded-full ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} />
+        </div>
+
+        {/* Kill Switch Status */}
+        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
+          status.killSwitchOn 
+            ? 'bg-red-500/10 text-red-400' 
+            : 'bg-green-500/10 text-green-400'
+        }`}>
+          {status.killSwitchOn ? <Lock size={12} /> : <Unlock size={12} />}
+          <span>{status.killSwitchOn ? 'Blocked' : 'Live'}</span>
+        </div>
+
+        {/* Focus Mode */}
+        {focusMode && (
+          <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
+        )}
+
+        {/* Pending Inbox */}
+        {status.pendingInbox > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-yellow-500/10 text-yellow-400">
+            <Inbox size={12} />
+            <span>{status.pendingInbox} pending</span>
+          </div>
+        )}
+
+        {/* In-Progress Tasks */}
+        {status.inProgressTasks > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-blue-500/10 text-blue-400">
+            <Loader size={12} className="animate-spin" />
+            <span>{status.inProgressTasks} running</span>
+          </div>
+        )}
+      </div>
+
+      {/* Right side controls */}
+      <div className="no-drag flex items-center gap-2">
       {/* Mute status indicator */}
       {isMuted && (
         <div className="no-drag flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full">
@@ -65,6 +172,15 @@ export default function TopBar({ onCallClick }: TopBarProps) {
           <Phone size={18} />
         )}
       </button>
+      </div>
+
+      {/* Focus Mode Selector */}
+      <FocusModeSelector
+        isOpen={focusSelectorOpen}
+        onClose={() => setFocusSelectorOpen(false)}
+        currentMode={focusMode}
+        onSelectMode={setFocusMode}
+      />
     </div>
   );
 }
