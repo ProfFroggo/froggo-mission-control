@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
@@ -38,14 +38,166 @@ interface EventsData {
   account: string;
 }
 
+interface EventFormData {
+  summary: string;
+  start: string; // YYYY-MM-DDTHH:mm format for datetime-local input
+  end: string;
+  description: string;
+  location: string;
+  account: string;
+  isAllDay: boolean;
+}
+
 export default function EpicCalendar() {
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Modal state
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const accounts = ['kevin@carbium.io', 'kevin.macarthur@bitso.com'];
+
+  // Open create event modal
+  const handleCreateEvent = () => {
+    setSelectedEvent(null);
+    setModalMode('create');
+    setShowEventModal(true);
+  };
+
+  // Open edit event modal
+  const handleEditEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setModalMode('edit');
+    setShowEventModal(true);
+  };
+
+  // Create new event via gog CLI
+  const createEvent = async (formData: EventFormData): Promise<boolean> => {
+    try {
+      const { summary, start, end, description, location, account, isAllDay } = formData;
+      
+      // Convert datetime-local format to ISO format for gog CLI
+      const startISO = isAllDay 
+        ? new Date(start).toISOString().split('T')[0]
+        : new Date(start).toISOString();
+      const endISO = isAllDay
+        ? new Date(end).toISOString().split('T')[0]
+        : new Date(end).toISOString();
+
+      let command = `GOG_ACCOUNT=${account} gog calendar events create --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      
+      if (description) {
+        command += ` --description "${description.replace(/"/g, '\\"')}"`;
+      }
+      if (location) {
+        command += ` --location "${location.replace(/"/g, '\\"')}"`;
+      }
+
+      const response = await window.electron.execute(command);
+      
+      if (response.exitCode !== 0) {
+        throw new Error(response.stderr || 'Failed to create event');
+      }
+
+      // Refresh events after successful creation
+      await fetchEvents();
+      return true;
+    } catch (err) {
+      console.error('Failed to create event:', err);
+      setError(`Failed to create event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTimeout(() => setError(null), 5000);
+      return false;
+    }
+  };
+
+  // Update existing event via gog CLI
+  const updateEvent = async (eventId: string, formData: EventFormData): Promise<boolean> => {
+    try {
+      const { summary, start, end, description, location, account, isAllDay } = formData;
+      
+      // Convert datetime-local format to ISO format
+      const startISO = isAllDay 
+        ? new Date(start).toISOString().split('T')[0]
+        : new Date(start).toISOString();
+      const endISO = isAllDay
+        ? new Date(end).toISOString().split('T')[0]
+        : new Date(end).toISOString();
+
+      let command = `GOG_ACCOUNT=${account} gog calendar events update --event-id "${eventId}" --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      
+      if (description) {
+        command += ` --description "${description.replace(/"/g, '\\"')}"`;
+      }
+      if (location) {
+        command += ` --location "${location.replace(/"/g, '\\"')}"`;
+      }
+
+      const response = await window.electron.execute(command);
+      
+      if (response.exitCode !== 0) {
+        throw new Error(response.stderr || 'Failed to update event');
+      }
+
+      // Optimistic update - update local state immediately
+      setEvents(prevEvents => 
+        prevEvents.map(evt => 
+          evt.id === eventId 
+            ? { 
+                ...evt, 
+                summary, 
+                description,
+                location,
+                start: isAllDay ? { date: startISO } : { dateTime: startISO },
+                end: isAllDay ? { date: endISO } : { dateTime: endISO }
+              } 
+            : evt
+        )
+      );
+
+      // Then refresh to get server truth
+      await fetchEvents();
+      return true;
+    } catch (err) {
+      console.error('Failed to update event:', err);
+      setError(`Failed to update event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTimeout(() => setError(null), 5000);
+      // Rollback by refreshing
+      await fetchEvents();
+      return false;
+    }
+  };
+
+  // Delete event via gog CLI
+  const deleteEvent = async (eventId: string, account: string): Promise<boolean> => {
+    try {
+      const command = `GOG_ACCOUNT=${account} gog calendar events delete --event-id "${eventId}"`;
+      const response = await window.electron.execute(command);
+      
+      if (response.exitCode !== 0) {
+        throw new Error(response.stderr || 'Failed to delete event');
+      }
+
+      // Optimistic update - remove from local state immediately
+      setEvents(prevEvents => prevEvents.filter(evt => evt.id !== eventId));
+      
+      // Then refresh to confirm
+      await fetchEvents();
+      return true;
+    } catch (err) {
+      console.error('Failed to delete event:', err);
+      setError(`Failed to delete event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTimeout(() => setError(null), 5000);
+      // Rollback by refreshing
+      await fetchEvents();
+      return false;
+    }
+  };
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -186,13 +338,47 @@ export default function EpicCalendar() {
             </div>
 
             {/* Create Event Button */}
-            <button className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors">
+            <button 
+              onClick={handleCreateEvent}
+              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+            >
               <Plus size={18} />
               New Event
             </button>
           </div>
         </div>
       </div>
+
+      {/* Event Modal */}
+      {showEventModal && (
+        <EventModal
+          mode={modalMode}
+          event={selectedEvent}
+          accounts={accounts}
+          onClose={() => setShowEventModal(false)}
+          onCreate={createEvent}
+          onUpdate={updateEvent}
+          onDelete={(eventId, account) => {
+            setShowDeleteConfirm(true);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && selectedEvent && (
+        <DeleteConfirmDialog
+          eventTitle={selectedEvent.summary}
+          onConfirm={async () => {
+            const success = await deleteEvent(selectedEvent.id, selectedEvent.account!);
+            if (success) {
+              setShowDeleteConfirm(false);
+              setShowEventModal(false);
+              setSelectedEvent(null);
+            }
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
 
       {/* Calendar View */}
       <div className="flex-1 overflow-auto">
@@ -218,10 +404,10 @@ export default function EpicCalendar() {
           </div>
         ) : (
           <>
-            {view === 'month' && <MonthView currentDate={currentDate} events={events} />}
-            {view === 'week' && <WeekView currentDate={currentDate} events={events} />}
-            {view === 'day' && <DayView currentDate={currentDate} events={events} />}
-            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} />}
+            {view === 'month' && <MonthView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
+            {view === 'week' && <WeekView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
+            {view === 'day' && <DayView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
+            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
           </>
         )}
       </div>
@@ -255,15 +441,21 @@ function formatTime(date: Date): string {
 }
 
 // Event Card Component
-function EventCard({ event, compact = false }: { event: CalendarEvent; compact?: boolean }) {
+function EventCard({ event, compact = false, onClick }: { event: CalendarEvent; compact?: boolean; onClick?: (event: CalendarEvent) => void }) {
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
   const accountColor = event.account === 'kevin@carbium.io' ? 'bg-blue-500' : 'bg-purple-500';
 
   if (compact) {
     return (
-      <div className={`text-xs px-2 py-1 ${accountColor} text-white rounded mb-1 truncate cursor-pointer hover:opacity-80 transition-opacity`}
-           title={event.summary}>
+      <div 
+        className={`text-xs px-2 py-1 ${accountColor} text-white rounded mb-1 truncate cursor-pointer hover:opacity-80 transition-opacity`}
+        title={event.summary}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick?.(event);
+        }}
+      >
         {!isAllDay && <span className="font-medium">{formatTime(start)} </span>}
         {event.summary}
       </div>
@@ -271,7 +463,13 @@ function EventCard({ event, compact = false }: { event: CalendarEvent; compact?:
   }
 
   return (
-    <div className="bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-colors cursor-pointer">
+    <div 
+      className="bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-colors cursor-pointer"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(event);
+      }}
+    >
       <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold flex-1">{event.summary}</h3>
         <div className={`w-2 h-2 rounded-full ${accountColor} ml-2 mt-1`} title={event.account} />
@@ -318,7 +516,7 @@ function EventCard({ event, compact = false }: { event: CalendarEvent; compact?:
 }
 
 // Month View
-function MonthView({ currentDate, events }: { currentDate: Date; events: CalendarEvent[] }) {
+function MonthView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = getWeekStart(firstDay);
@@ -383,7 +581,7 @@ function MonthView({ currentDate, events }: { currentDate: Date; events: Calenda
                     </div>
                     <div className="space-y-1">
                       {dayEvents.slice(0, 3).map(event => (
-                        <EventCard key={event.id} event={event} compact />
+                        <EventCard key={event.id} event={event} compact onClick={onEventClick} />
                       ))}
                       {dayEvents.length > 3 && (
                         <div className="text-xs text-clawd-text-dim pl-2">
@@ -403,7 +601,7 @@ function MonthView({ currentDate, events }: { currentDate: Date; events: Calenda
 }
 
 // Week View
-function WeekView({ currentDate, events }: { currentDate: Date; events: CalendarEvent[] }) {
+function WeekView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
   const weekStart = getWeekStart(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -480,7 +678,7 @@ function WeekView({ currentDate, events }: { currentDate: Date; events: Calendar
                     } hover:bg-clawd-border/30 transition-colors cursor-pointer`}
                   >
                     {dayEvents.map(event => (
-                      <EventCard key={event.id} event={event} compact />
+                      <EventCard key={event.id} event={event} compact onClick={onEventClick} />
                     ))}
                   </div>
                 );
@@ -494,7 +692,7 @@ function WeekView({ currentDate, events }: { currentDate: Date; events: Calendar
 }
 
 // Day View
-function DayView({ currentDate, events }: { currentDate: Date; events: CalendarEvent[] }) {
+function DayView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
   const isToday = isSameDay(currentDate, today);
@@ -529,7 +727,7 @@ function DayView({ currentDate, events }: { currentDate: Date; events: CalendarE
           <div className="border-b border-clawd-border p-4 space-y-2 flex-shrink-0">
             <div className="text-xs font-semibold text-clawd-text-dim mb-2">ALL DAY</div>
             {allDayEvents.map(event => (
-              <EventCard key={event.id} event={event} compact />
+              <EventCard key={event.id} event={event} compact onClick={onEventClick} />
             ))}
           </div>
         )}
@@ -552,7 +750,7 @@ function DayView({ currentDate, events }: { currentDate: Date; events: CalendarE
                 </div>
                 <div className="flex-1 p-3 space-y-2 hover:bg-clawd-border/30 transition-colors cursor-pointer">
                   {hourEvents.map(event => (
-                    <EventCard key={event.id} event={event} />
+                    <EventCard key={event.id} event={event} onClick={onEventClick} />
                   ))}
                 </div>
               </div>
@@ -565,7 +763,7 @@ function DayView({ currentDate, events }: { currentDate: Date; events: CalendarE
 }
 
 // Agenda View
-function AgendaView({ currentDate, events }: { currentDate: Date; events: CalendarEvent[] }) {
+function AgendaView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
   // Group events by date, starting from currentDate
   const upcomingEvents = events
     .filter(event => {
@@ -622,7 +820,7 @@ function AgendaView({ currentDate, events }: { currentDate: Date; events: Calend
 
               <div className="space-y-3">
                 {dateEvents.map(event => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard key={event.id} event={event} onClick={onEventClick} />
                 ))}
               </div>
             </div>
@@ -631,4 +829,353 @@ function AgendaView({ currentDate, events }: { currentDate: Date; events: Calend
       </div>
     </div>
   );
+}
+
+// Event Modal Component
+function EventModal({
+  mode,
+  event,
+  accounts,
+  onClose,
+  onCreate,
+  onUpdate,
+  onDelete
+}: {
+  mode: 'create' | 'edit';
+  event: CalendarEvent | null;
+  accounts: string[];
+  onClose: () => void;
+  onCreate: (data: EventFormData) => Promise<boolean>;
+  onUpdate: (eventId: string, data: EventFormData) => Promise<boolean>;
+  onDelete: (eventId: string, account: string) => void;
+}) {
+  const [formData, setFormData] = useState<EventFormData>(() => {
+    if (mode === 'edit' && event) {
+      const { start, end, isAllDay } = getEventTime(event);
+      return {
+        summary: event.summary || '',
+        start: isAllDay 
+          ? start.toISOString().split('T')[0] 
+          : formatDateTimeLocal(start),
+        end: isAllDay 
+          ? end.toISOString().split('T')[0] 
+          : formatDateTimeLocal(end),
+        description: event.description || '',
+        location: event.location || '',
+        account: event.account || accounts[0],
+        isAllDay
+      };
+    }
+    
+    // Default for create mode: tomorrow at 10 AM
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const endTime = new Date(tomorrow);
+    endTime.setHours(11, 0, 0, 0);
+    
+    return {
+      summary: '',
+      start: formatDateTimeLocal(tomorrow),
+      end: formatDateTimeLocal(endTime),
+      description: '',
+      location: '',
+      account: accounts[0],
+      isAllDay: false
+    };
+  });
+
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.summary.trim()) {
+      newErrors.summary = 'Title is required';
+    }
+
+    const startDate = new Date(formData.start);
+    const endDate = new Date(formData.end);
+
+    if (endDate <= startDate) {
+      newErrors.end = 'End time must be after start time';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setSaving(true);
+    try {
+      let success = false;
+      
+      if (mode === 'create') {
+        success = await onCreate(formData);
+      } else if (event) {
+        success = await onUpdate(event.id, formData);
+      }
+
+      if (success) {
+        onClose();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (event) {
+      onDelete(event.id, formData.account);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-clawd-border sticky top-0 bg-clawd-surface z-10">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            {mode === 'create' ? (
+              <>
+                <Plus size={20} className="text-clawd-accent" />
+                Create Event
+              </>
+            ) : (
+              <>
+                <Edit2 size={20} className="text-clawd-accent" />
+                Edit Event
+              </>
+            )}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.summary}
+              onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+              className={`w-full px-4 py-2 bg-clawd-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent ${
+                errors.summary ? 'border-red-500' : 'border-clawd-border'
+              }`}
+              placeholder="Event title"
+              autoFocus
+            />
+            {errors.summary && (
+              <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle size={14} />
+                {errors.summary}
+              </p>
+            )}
+          </div>
+
+          {/* Account Selection */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Calendar Account <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.account}
+              onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+              className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+            >
+              {accounts.map(acc => (
+                <option key={acc} value={acc}>
+                  {acc}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* All-day toggle */}
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="allDay"
+              checked={formData.isAllDay}
+              onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
+              className="w-4 h-4 text-clawd-accent"
+            />
+            <label htmlFor="allDay" className="text-sm font-medium cursor-pointer">
+              All-day event
+            </label>
+          </div>
+
+          {/* Date/Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type={formData.isAllDay ? 'date' : 'datetime-local'}
+                value={formData.start}
+                onChange={(e) => setFormData({ ...formData, start: e.target.value })}
+                className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type={formData.isAllDay ? 'date' : 'datetime-local'}
+                value={formData.end}
+                onChange={(e) => setFormData({ ...formData, end: e.target.value })}
+                className={`w-full px-4 py-2 bg-clawd-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent ${
+                  errors.end ? 'border-red-500' : 'border-clawd-border'
+                }`}
+              />
+              {errors.end && (
+                <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {errors.end}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+              <MapPin size={16} />
+              Location
+            </label>
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              placeholder="Add location"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent resize-none"
+              rows={4}
+              placeholder="Add description"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-clawd-border">
+            <div>
+              {mode === 'edit' && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                >
+                  <Trash2 size={16} />
+                  Delete Event
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 hover:bg-clawd-border rounded-lg transition-colors"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  mode === 'create' ? 'Create Event' : 'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Delete Confirmation Dialog
+function DeleteConfirmDialog({
+  eventTitle,
+  onConfirm,
+  onCancel
+}: {
+  eventTitle: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+      <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="p-3 bg-red-500/10 rounded-full">
+            <Trash2 size={24} className="text-red-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Delete Event</h3>
+            <p className="text-sm text-clawd-text-dim">
+              Are you sure you want to delete "<strong>{eventTitle}</strong>"? This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 hover:bg-clawd-border rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+          >
+            Delete Event
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper function for datetime-local input format
+function formatDateTimeLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }

@@ -34,7 +34,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
   const busyAgents = agents.filter(a => a.status === 'busy').length;
   const unassignedTasks = tasks.filter(t => !t.assignedTo && t.status !== 'done');
-  const urgentTasks = tasks.filter(t => t.priority === 'urgent' && t.status !== 'done');
+  const urgentTasks = tasks.filter(t => t.priority === 'p0' && t.status !== 'done');
   const completedToday = tasks.filter(t => 
     t.status === 'done' && 
     new Date(t.updatedAt).toDateString() === new Date().toDateString()

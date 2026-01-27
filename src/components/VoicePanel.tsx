@@ -514,7 +514,7 @@ export default function VoicePanel() {
           let type: ActionItem['type'] = 'task';
           if (/schedule|meeting|calendar/i.test(text)) type = 'schedule';
           else if (/message|email|reply|send/i.test(text)) type = 'message';
-          else if (/follow up/i.test(text)) type = 'followUp';
+          else if (/follow up/i.test(text)) type = 'task';
           
           // Avoid duplicates
           if (!items.some(i => i.text.toLowerCase() === extractedText.toLowerCase())) {
