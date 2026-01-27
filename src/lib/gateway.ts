@@ -406,7 +406,7 @@ class Gateway {
   }
 
   // Send chat and return a promise that resolves when response is complete
-  // Send message directly to main session using chat.send
+  // Send message directly to Discord channel using send method
   async sendToMain(message: string): Promise<void> {
     if (!this.connected) {
       throw new Error('Not connected');
@@ -414,14 +414,15 @@ class Gateway {
 
     const idempotencyKey = `dashboard-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     
-    const result = await this.request('chat.send', {
-      sessionKey: 'main',
+    const result = await this.request('send', {
+      to: 'channel:1465351776759975977',  // Discord #get_shit_done channel
       message: message,
+      channel: 'discord',
       idempotencyKey: idempotencyKey,
     });
 
     if (!result || result.status === 'error') {
-      throw new Error(result?.error || 'Failed to send to main session');
+      throw new Error(result?.error || 'Failed to send to Discord');
     }
   }
 
