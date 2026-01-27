@@ -54,9 +54,11 @@ export default function ChatPanel() {
   }, []);
 
   // Load chat history when connected
+  // Now using webchat-specific session key, so history should be dashboard-only
   useEffect(() => {
     if (connected && !historyLoaded) {
       loadHistory();
+      setHistoryLoaded(true);
     }
   }, [connected, historyLoaded]);
 
@@ -67,12 +69,25 @@ export default function ChatPanel() {
       if (res?.messages && Array.isArray(res.messages)) {
         const history: Message[] = res.messages
           .filter((m: any) => m.role === 'user' || m.role === 'assistant')
-          .map((m: any, i: number) => ({
-            id: `hist-${i}-${Date.now()}`,
-            role: m.role as 'user' | 'assistant',
-            content: m.content || '',
-            timestamp: m.timestamp || Date.now() - (res.messages.length - i) * 1000,
-          }))
+          .map((m: any, i: number) => {
+            // Extract text from content (handle both string and array formats)
+            let content = '';
+            if (typeof m.content === 'string') {
+              content = m.content;
+            } else if (Array.isArray(m.content)) {
+              content = m.content
+                .filter((c: any) => c.type === 'text')
+                .map((c: any) => c.text)
+                .join('');
+            }
+            
+            return {
+              id: `hist-${i}-${Date.now()}`,
+              role: m.role as 'user' | 'assistant',
+              content: content || '',
+              timestamp: m.timestamp || Date.now() - (res.messages.length - i) * 1000,
+            };
+          })
           .reverse(); // Most recent last
         
         setMessages(history);
@@ -128,6 +143,45 @@ export default function ChatPanel() {
       }
     };
 
+    const handleChatEvent = (data: any) => {
+      // Handle generic 'chat' event with state field
+      console.log('[Chat] handleChatEvent:', { state: data.state, hasMsgId: !!currentMsgIdRef.current, content: data.message?.content?.[0]?.text?.slice(0, 50) });
+      
+      if (!currentMsgIdRef.current) {
+        console.log('[Chat] No current message ID, ignoring chat event');
+        return;
+      }
+
+      // Extract content from message structure
+      const content = data.message?.content?.[0]?.text || data.content || '';
+      if (content) {
+        currentResponseRef.current = content;
+        setMessages(prev => prev.map(m => 
+          m.id === currentMsgIdRef.current 
+            ? { ...m, content } 
+            : m
+        ));
+      }
+
+      // Check if final
+      if (data.state === 'final') {
+        console.log('[Chat] Got final state, clearing loading. Content length:', currentResponseRef.current.length);
+        setMessages(prev => prev.map(m => 
+          m.id === currentMsgIdRef.current 
+            ? { ...m, streaming: false } 
+            : m
+        ));
+        
+        if (speakResponses && currentResponseRef.current) {
+          speak(currentResponseRef.current);
+        }
+        
+        setLoading(false);
+        currentMsgIdRef.current = '';
+        currentResponseRef.current = '';
+      }
+    };
+
     const handleError = (data: any) => {
       console.error('[Chat] Error:', data);
       if (currentMsgIdRef.current) {
@@ -145,8 +199,9 @@ export default function ChatPanel() {
     const unsub2 = gateway.on('chat.message', handleMessage);
     const unsub3 = gateway.on('chat.end', handleEnd);
     const unsub4 = gateway.on('chat.error', handleError);
+    const unsub5 = gateway.on('chat', handleChatEvent);
 
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
   }, [speakResponses]);
 
   // Setup voice recognition

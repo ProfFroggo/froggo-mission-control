@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  Mic, Volume2, VolumeX, Phone, PhoneOff, Loader2, 
+  Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, Loader2, 
   MessageSquare, WifiOff, Zap, Brain, ListTodo
 } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { voiceService } from '../lib/voiceService';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -27,8 +28,19 @@ const ACTION_PATTERNS = {
   task: /\b(todo|task|remind|reminder|don't forget|remember to|need to|have to|should)\b/i,
 };
 
+// Using voiceService for model loading (handles packaged app correctly)
+
 export default function VoicePanel() {
   console.log('[Voice] VoicePanel component rendering');
+  
+  // Global state from store
+  const { 
+    isMuted, 
+    toggleMuted,
+    isMeetingActive, 
+    setMeetingActive,
+    addActivity 
+  } = useStore();
   
   // Core state
   const [listening, setListening] = useState(false);
@@ -38,16 +50,30 @@ export default function VoicePanel() {
   const [connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
   
   // Vosk state
-  const [voskAvailable, setVoskAvailable] = useState<boolean | null>(null);
+  const [modelLoading, setModelLoading] = useState(false);
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [modelError, setModelError] = useState<string | null>(null);
   const [partialTranscript, setPartialTranscript] = useState('');
   const [currentTranscript, setCurrentTranscript] = useState('');
   
   // Mode state
-  const [conversationMode, setConversationMode] = useState(false); // Two-way continuous
-  const [meetingMode, setMeetingMode] = useState(false); // Eavesdrop mode
+  const [conversationMode, setConversationMode] = useState(false);
+  const conversationModeRef = useRef(false);
   
-  // Conversation history
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Refs for mute state
+  const isMutedRef = useRef(isMuted);
+  
+  // Conversation history (with localStorage persistence)
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = localStorage.getItem('froggo-voice-history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    } catch {}
+    return [];
+  });
   
   // Meeting mode state
   const [meetingTranscript, setMeetingTranscript] = useState<string[]>([]);
@@ -58,38 +84,67 @@ export default function VoicePanel() {
   const [statusMessage, setStatusMessage] = useState('');
   
   // Refs
+  const modelRef = useRef<Model | null>(null);
+  const recognizerRef = useRef<KaldiRecognizer | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const listeningRef = useRef<boolean>(false);
-  const silenceTimerRef = useRef<number | null>(null);
-  const lastSpeechTimeRef = useRef<number>(0);
   
-  const { addActivity } = useStore();
+  // Speech accumulation buffer (to avoid cutting off mid-sentence)
+  const speechBufferRef = useRef<string[]>([]);
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Keep mute ref in sync
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
   
   // Settings
   const SAMPLE_RATE = 16000;
-  const SILENCE_THRESHOLD = 0.02; // Lower = more sensitive
-  const SILENCE_DURATION = 1200; // ms of silence before end of utterance
-  const MIN_SPEECH_LENGTH = 500; // ms minimum speech before accepting
+  const SILENCE_TIMEOUT_MS = 2500; // Wait 2.5s of silence before processing
+  const SENTENCE_END_TIMEOUT_MS = 1200; // Shorter timeout after sentence-ending punctuation
 
   const connected = connectionState === 'connected';
 
-  // Check Vosk availability on mount
+  // Load Vosk model via voiceService (handles packaged app correctly)
   useEffect(() => {
-    const checkVosk = async () => {
-      if (window.clawdbot?.vosk) {
-        const result = await window.clawdbot.vosk.check();
-        console.log('[Voice] Vosk check:', result);
-        setVoskAvailable(result.available && result.modelExists);
-      } else {
-        console.log('[Voice] Vosk not available (not in Electron)');
-        setVoskAvailable(false);
+    const unsubscribe = voiceService.subscribe((state, message) => {
+      console.log('[VoicePanel] voiceService state:', state, message);
+      
+      if (state === 'ready') {
+        setModelLoaded(true);
+        setModelLoading(false);
+        setStatusMessage('');
+      } else if (state === 'loading') {
+        setModelLoading(true);
+        setStatusMessage(message || 'Loading...');
+      } else if (state === 'error') {
+        setModelError(message || 'Failed to load model');
+        setModelLoading(false);
+      }
+    });
+    
+    // Check if already ready
+    if (voiceService.isReady()) {
+      setModelLoaded(true);
+      setModelLoading(false);
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      unsubscribe();
+      if (recognizerRef.current) {
+        try { recognizerRef.current.remove(); } catch {}
+        recognizerRef.current = null;
+      }
+      if (modelRef.current) {
+        try { modelRef.current.terminate(); } catch {}
+        modelRef.current = null;
       }
     };
-    checkVosk();
   }, []);
 
   // Track gateway state
@@ -101,57 +156,130 @@ export default function VoicePanel() {
     return () => { unsub(); };
   }, []);
 
+  // Persist messages to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('froggo-voice-history', JSON.stringify(messages));
+    } catch (e) {
+      console.error('[Voice] Failed to save history:', e);
+    }
+  }, [messages]);
+
   // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, meetingTranscript]);
 
-  // Speak text using Web Speech API
-  const speak = useCallback((text: string, onEnd?: () => void) => {
-    console.log('[Voice] speak() called, voiceEnabled:', voiceEnabled, 'text length:', text?.length);
+  // Speak text using ElevenLabs TTS (via sag CLI)
+  const speak = useCallback(async (text: string): Promise<void> => {
     if (!voiceEnabled || !text) {
-      onEnd?.();
       return;
     }
     
-    window.speechSynthesis.cancel();
-    console.log('[Voice] Starting TTS...');
-    
-    // Strip markdown for cleaner speech
+    // Convert to natural speech format
+    console.log('[TTS] Before clean:', text);
     const clean = text
+      // Strip code blocks
       .replace(/```[\s\S]*?```/g, 'code block')
       .replace(/`[^`]+`/g, '')
+      // Strip markdown formatting
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\*([^*]+)\*/g, '$1')
       .replace(/#+\s*/g, '')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       .replace(/[<>]/g, '')
+      // Strip emoji
+      .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]/gu, '')
+      // Convert times: "10:00" → "ten", "15:30" → "half past three"
+      .replace(/(\d{1,2}):00\b/g, (_, h) => {
+        const hour = parseInt(h);
+        const hours = ['twelve', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+        return hours[hour % 12] || h;
+      })
+      .replace(/(\d{1,2}):30\b/g, (_, h) => {
+        const hour = parseInt(h);
+        const hours = ['twelve', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+        return `half past ${hours[hour % 12] || h}`;
+      })
+      .replace(/(\d{1,2}):(\d{2})\b/g, (_, h, m) => {
+        const hour = parseInt(h);
+        const hours = ['twelve', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+        return `${hours[hour % 12] || h} ${m}`;
+      })
+      // Clean up bullets and dashes
+      .replace(/^\s*[-•]\s*/gm, '')
+      .replace(/\s*[—–]\s*/g, ', ')
+      // Newlines to natural pauses
+      .replace(/\n+/g, '. ')
+      // Clean up multiple spaces/punctuation
+      .replace(/\s+/g, ' ')
+      .replace(/\.\s*\./g, '.')
+      .replace(/,\s*,/g, ',')
+      .trim()
       .slice(0, 800);
     
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 1.1;
-    utterance.pitch = 1.0;
+    console.log('[TTS] After clean:', clean);
+    setSpeaking(true);
     
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => 
-      v.name.includes('Samantha') || 
-      v.name.includes('Karen') || 
-      v.name.includes('Daniel') ||
-      (v.lang === 'en-US' && v.localService)
-    );
-    if (preferred) utterance.voice = preferred;
-    
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => {
+    try {
+      // Use ElevenLabs via IPC if available, fallback to Web Speech
+      if (window.clawdbot?.voice?.speak) {
+        console.log('[Voice] Using ElevenLabs TTS...');
+        // Brian - Deep, Resonant and Comforting (British, soothing)
+        const result = await window.clawdbot.voice.speak(clean, 'Brian');
+        
+        if (result.success && result.path) {
+          // Play the generated audio file
+          return new Promise<void>((resolve) => {
+            const audio = new Audio(`file://${result.path}`);
+            audio.onended = () => {
+              setSpeaking(false);
+              resolve();
+            };
+            audio.onerror = () => {
+              console.error('[Voice] Audio playback error');
+              setSpeaking(false);
+              resolve();
+            };
+            audio.play();
+          });
+        } else {
+          console.warn('[Voice] ElevenLabs failed, falling back to Web Speech:', result.error);
+        }
+      }
+      
+      // Fallback to Web Speech API
+      console.log('[Voice] Using Web Speech API fallback...');
+      return new Promise<void>((resolve) => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(clean);
+        utterance.rate = 1.1;
+        utterance.pitch = 1.0;
+        
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => 
+          v.name.includes('Samantha') || 
+          v.name.includes('Karen') || 
+          v.name.includes('Daniel') ||
+          (v.lang === 'en-US' && v.localService)
+        );
+        if (preferred) utterance.voice = preferred;
+        
+        utterance.onend = () => {
+          setSpeaking(false);
+          resolve();
+        };
+        utterance.onerror = () => {
+          setSpeaking(false);
+          resolve();
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      });
+    } catch (err) {
+      console.error('[Voice] TTS error:', err);
       setSpeaking(false);
-      onEnd?.();
-    };
-    utterance.onerror = () => {
-      setSpeaking(false);
-      onEnd?.();
-    };
-    
-    window.speechSynthesis.speak(utterance);
+    }
   }, [voiceEnabled]);
 
   // Detect action items in text
@@ -173,9 +301,7 @@ export default function VoicePanel() {
 
   // Send command to gateway and get response
   const sendCommand = useCallback(async (command: string): Promise<string | null> => {
-    console.log('[Voice] sendCommand called:', command, 'connected:', connected);
     if (!connected || !command.trim()) {
-      console.log('[Voice] Skipping - not connected or empty command');
       return null;
     }
     
@@ -186,9 +312,9 @@ export default function VoicePanel() {
     addActivity({ type: 'chat', message: `🎤 ${command}`, timestamp: Date.now() });
     
     try {
-      console.log('[Voice] Sending to gateway...');
+      console.log('[Voice] Calling gateway.sendChat...');
       const result = await gateway.sendChat(`[VOICE] ${command}`);
-      console.log('[Voice] Gateway response:', result);
+      console.log('[Voice] gateway.sendChat returned:', result);
       
       if (result?.content && result.content !== 'NO_REPLY') {
         const assistantMsg: Message = { 
@@ -214,19 +340,113 @@ export default function VoicePanel() {
     }
   }, [connected, addActivity]);
 
-  // Start Vosk streaming recognition
-  const startListening = useCallback(async () => {
-    if (!voskAvailable || listening) return;
+  // Handle completed utterance
+  const handleUtterance = useCallback(async (text: string) => {
+    if (!text.trim() || processing) return;
     
-    console.log('[Voice] Starting Vosk streaming...');
+    setStatusMessage('Processing...');
+    setCurrentTranscript(text);
+    setPartialTranscript('');
+    
+    if (isMeetingActive) {
+      // In meeting mode, accumulate transcript
+      setMeetingTranscript(prev => [...prev, text]);
+      const actions = detectActionItems(text);
+      if (actions.length > 0) {
+        setMeetingActionItems(prev => [...prev, ...actions]);
+      }
+      setStatusMessage('Meeting mode active...');
+    } else if (conversationModeRef.current) {
+      // In conversation mode, send and respond
+      console.log('[Voice] Conversation mode - sending to gateway:', text);
+      
+      // Stop listening while processing to prevent feedback loop
+      listeningRef.current = false;
+      setStatusMessage('Thinking...');
+      
+      // Quick acknowledgment for longer-seeming requests
+      const needsAck = text.length > 20 || /\b(what|how|tell|explain|check|show|list)\b/i.test(text);
+      if (needsAck) {
+        // Brief acknowledgment while processing
+        const acks = ['Let me check', 'One moment', 'Looking into that', 'Checking now'];
+        const ack = acks[Math.floor(Math.random() * acks.length)];
+        await speak(ack);
+      }
+      
+      const response = await sendCommand(text);
+      console.log('[Voice] Gateway response:', response);
+      
+      if (response) {
+        setStatusMessage('Speaking...');
+        await speak(response);
+      }
+      
+      // Resume listening after speaking
+      if (conversationModeRef.current) {
+        listeningRef.current = true;
+        setStatusMessage('Listening...');
+      }
+    }
+  }, [conversationMode, isMeetingActive, sendCommand, speak, processing, detectActionItems]);
+
+  // Start listening with vosk-browser
+  const startListening = useCallback(async () => {
+    if (!voiceService.isReady() || listening) return;
+    
+    console.log('[Voice] Starting vosk-browser streaming...');
     setStatusMessage('Initializing...');
     
     try {
-      // Start Vosk session
-      const startResult = await window.clawdbot!.vosk.start(SAMPLE_RATE);
-      if (startResult.error) {
-        throw new Error(startResult.error);
+      // Create recognizer via voiceService
+      const recognizer = voiceService.createRecognizer(SAMPLE_RATE);
+      if (!recognizer) {
+        throw new Error('Failed to create recognizer');
       }
+      recognizerRef.current = recognizer;
+      
+      // Set up event handlers
+      recognizer.on('partialresult', (message: any) => {
+        const partial = message.result?.partial || '';
+        if (partial) {
+          setPartialTranscript(partial);
+        }
+      });
+      
+      recognizer.on('result', (message: any) => {
+        const text = message.result?.text || '';
+        if (text.trim()) {
+          console.log('[Voice] Fragment:', text);
+          
+          // Accumulate speech fragments
+          speechBufferRef.current.push(text);
+          const accumulated = speechBufferRef.current.join(' ');
+          
+          // Update display with accumulated text
+          setCurrentTranscript(accumulated);
+          
+          // Clear any existing silence timeout
+          if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
+          }
+          
+          // Check if this looks like end of a sentence
+          const endsWithPunctuation = /[.?!][\s]*$/.test(accumulated.trim());
+          const timeout = endsWithPunctuation ? SENTENCE_END_TIMEOUT_MS : SILENCE_TIMEOUT_MS;
+          
+          console.log('[Voice] Timeout:', timeout, 'ms (sentence end:', endsWithPunctuation, ')');
+          
+          // Set new silence timeout - only process after pause
+          silenceTimeoutRef.current = setTimeout(() => {
+            const fullText = speechBufferRef.current.join(' ').trim();
+            if (fullText) {
+              console.log('[Voice] Processing after silence:', fullText);
+              speechBufferRef.current = [];
+              setCurrentTranscript('');
+              handleUtterance(fullText);
+            }
+          }, timeout);
+        }
+      });
       
       // Get microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -239,7 +459,7 @@ export default function VoicePanel() {
       });
       streamRef.current = stream;
       
-      // Create audio context and processor
+      // Create audio context
       audioContextRef.current = new AudioContext({ sampleRate: SAMPLE_RATE });
       const source = audioContextRef.current.createMediaStreamSource(stream);
       
@@ -248,157 +468,92 @@ export default function VoicePanel() {
       analyserRef.current.fftSize = 256;
       source.connect(analyserRef.current);
       
-      // Script processor for getting raw audio data
-      processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-      source.connect(processorRef.current);
-      processorRef.current.connect(audioContextRef.current.destination);
-      
-      let hasSpoken = false;
-      let speechStartTime = 0;
-      
-      processorRef.current.onaudioprocess = async (e) => {
-        if (!listeningRef.current) return;
-        
-        // Get audio level for visualization
-        const dataArray = new Uint8Array(analyserRef.current!.frequencyBinCount);
-        analyserRef.current!.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        const level = avg / 255;
-        setAudioLevel(level);
-        
-        // Convert Float32Array to Int16 PCM
-        const input = e.inputBuffer.getChannelData(0);
-        const pcm = new Int16Array(input.length);
-        for (let i = 0; i < input.length; i++) {
-          pcm[i] = Math.max(-32768, Math.min(32767, Math.floor(input[i] * 32768)));
+      // Use AudioWorkletNode (inline blob to avoid file:// issues in packaged app)
+      const workletCode = `
+        class VoiceProcessor extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this.bufferSize = 4096;
+            this.buffer = new Float32Array(this.bufferSize);
+            this.bufferIndex = 0;
+          }
+          process(inputs) {
+            const input = inputs[0];
+            if (input && input[0]) {
+              const inputData = input[0];
+              for (let i = 0; i < inputData.length; i++) {
+                this.buffer[this.bufferIndex++] = inputData[i];
+                if (this.bufferIndex >= this.bufferSize) {
+                  this.port.postMessage({ type: 'audio', data: this.buffer.slice() });
+                  this.bufferIndex = 0;
+                }
+              }
+            }
+            return true;
+          }
         }
+        registerProcessor('voice-processor', VoiceProcessor);
+      `;
+      const blob = new Blob([workletCode], { type: 'application/javascript' });
+      const workletUrl = URL.createObjectURL(blob);
+      await audioContextRef.current.audioWorklet.addModule(workletUrl);
+      URL.revokeObjectURL(workletUrl);
+      
+      const workletNode = new AudioWorkletNode(audioContextRef.current, 'voice-processor');
+      source.connect(workletNode);
+      
+      workletNode.port.onmessage = (event) => {
+        if (!listeningRef.current || !recognizerRef.current) return;
         
-        // Send to Vosk
-        const result = await window.clawdbot!.vosk.audio(pcm.buffer);
-        
-        if (result.error) {
-          console.error('[Voice] Vosk audio error:', result.error);
+        // Skip audio processing when muted
+        if (isMutedRef.current) {
+          setAudioLevel(0);
           return;
         }
         
-        // Handle speech detection
-        if (level > SILENCE_THRESHOLD) {
-          if (!hasSpoken) {
-            speechStartTime = Date.now();
-            hasSpoken = true;
-          }
-          lastSpeechTimeRef.current = Date.now();
-          
-          // Clear any silence timer
-          if (silenceTimerRef.current) {
-            clearTimeout(silenceTimerRef.current);
-            silenceTimerRef.current = null;
-          }
+        // Get audio level for visualization
+        if (analyserRef.current) {
+          const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+          analyserRef.current.getByteFrequencyData(dataArray);
+          const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          setAudioLevel(avg / 255);
         }
         
-        if (result.final && result.text) {
-          // Got a complete phrase from Vosk
-          console.log('[Voice] Final:', result.text);
-          setCurrentTranscript(result.text);
-          setPartialTranscript('');
-          
-          if (meetingMode) {
-            // In meeting mode, accumulate transcript
-            setMeetingTranscript(prev => [...prev, result.text!]);
-            const actions = detectActionItems(result.text!);
-            if (actions.length > 0) {
-              setMeetingActionItems(prev => [...prev, ...actions]);
-            }
-          } else if (conversationMode) {
-            // In conversation mode, send and respond
-            await handleUtterance(result.text);
-          }
-          
-          hasSpoken = false;
-        } else if (result.partial) {
-          // Live partial transcript
-          setPartialTranscript(result.partial);
-          
-          // Start silence detection if we have content
-          if (result.partial && hasSpoken && !silenceTimerRef.current) {
-            const speechDuration = Date.now() - speechStartTime;
-            if (speechDuration > MIN_SPEECH_LENGTH) {
-              silenceTimerRef.current = window.setTimeout(async () => {
-                if (listeningRef.current && hasSpoken) {
-                  // Force finalize
-                  const finalResult = await window.clawdbot!.vosk.final(true);
-                  if (finalResult.text) {
-                    console.log('[Voice] Forced final:', finalResult.text);
-                    setCurrentTranscript(finalResult.text);
-                    setPartialTranscript('');
-                    
-                    if (meetingMode) {
-                      setMeetingTranscript(prev => [...prev, finalResult.text!]);
-                      const actions = detectActionItems(finalResult.text!);
-                      if (actions.length > 0) {
-                        setMeetingActionItems(prev => [...prev, ...actions]);
-                      }
-                    } else if (conversationMode) {
-                      await handleUtterance(finalResult.text);
-                    }
-                  }
-                  hasSpoken = false;
-                }
-              }, SILENCE_DURATION);
-            }
+        if (event.data.type === 'audio') {
+          try {
+            // Wrap Float32Array in AudioBuffer for vosk
+            const audioBuffer = audioContextRef.current!.createBuffer(1, event.data.data.length, SAMPLE_RATE);
+            audioBuffer.copyToChannel(event.data.data, 0);
+            recognizerRef.current.acceptWaveform(audioBuffer);
+          } catch (err) {
+            console.error('[Voice] acceptWaveform error:', err);
           }
         }
       };
       
       setListening(true);
       listeningRef.current = true;
-      setStatusMessage(meetingMode ? 'Meeting mode active...' : 'Listening...');
-      console.log('[Voice] Vosk streaming started');
+      setStatusMessage(isMeetingActive ? 'Meeting mode active...' : 'Listening...');
+      console.log('[Voice] Vosk-browser streaming started');
       
     } catch (err: any) {
       console.error('[Voice] Failed to start:', err);
       setStatusMessage(`Error: ${err.message}`);
       await stopListening();
     }
-  }, [voskAvailable, listening, meetingMode, conversationMode, detectActionItems]);
-
-  // Handle completed utterance
-  const handleUtterance = useCallback(async (text: string) => {
-    if (!text.trim() || processing) return;
-    
-    setStatusMessage('Processing...');
-    
-    // Stop listening while processing
-    if (conversationMode && listeningRef.current) {
-      // Pause audio processing but keep stream alive
-    }
-    
-    const response = await sendCommand(text);
-    
-    if (response && conversationMode) {
-      // Speak response, then restart listening
-      speak(response, () => {
-        if (conversationMode && listeningRef.current) {
-          setStatusMessage('Listening...');
-          // Reset Vosk for next utterance
-          window.clawdbot?.vosk.final(true);
-        }
-      });
-    } else if (conversationMode) {
-      setStatusMessage('Listening...');
-    }
-  }, [conversationMode, sendCommand, speak, processing]);
+  }, [modelLoaded, listening, isMeetingActive, handleUtterance]);
 
   // Stop listening
   const stopListening = useCallback(async () => {
     console.log('[Voice] Stopping...');
     listeningRef.current = false;
     
-    // Clear timers
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
+    // Clear silence timeout and speech buffer
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
     }
+    speechBufferRef.current = [];
     
     // Stop processor
     if (processorRef.current) {
@@ -418,55 +573,68 @@ export default function VoicePanel() {
       audioContextRef.current = null;
     }
     
-    // Stop Vosk
-    const result = await window.clawdbot?.vosk.stop();
-    if (result?.text) {
-      setCurrentTranscript(result.text);
+    // Remove recognizer
+    if (recognizerRef.current) {
+      try { recognizerRef.current.remove(); } catch {}
+      recognizerRef.current = null;
     }
     
     setListening(false);
     setAudioLevel(0);
     setPartialTranscript('');
+    setCurrentTranscript('');
     setStatusMessage('');
   }, []);
 
   // Toggle conversation mode
   const toggleConversation = useCallback(async () => {
     if (listening || conversationMode) {
-      // Stop
+      conversationModeRef.current = false;
       setConversationMode(false);
       await stopListening();
       window.speechSynthesis.cancel();
       setStatusMessage('Stopped');
     } else {
-      // Start conversation mode
+      conversationModeRef.current = true;
       setConversationMode(true);
-      setMeetingMode(false);
+      setMeetingActive(false);
       await startListening();
     }
-  }, [listening, conversationMode, startListening, stopListening]);
+  }, [listening, conversationMode, startListening, stopListening, setMeetingActive]);
 
-  // Toggle meeting mode
+  // Toggle meeting mode - syncs with global state
   const toggleMeeting = useCallback(async () => {
-    if (meetingMode) {
-      // End meeting - show summary
+    if (isMeetingActive) {
       await stopListening();
-      setMeetingMode(false);
+      setMeetingActive(false);
       setConversationMode(false);
       
-      // If there are action items, offer to send summary
       if (meetingActionItems.length > 0 || meetingTranscript.length > 0) {
         setStatusMessage('Meeting ended. Review action items below.');
       }
     } else {
-      // Start meeting mode
-      setMeetingMode(true);
+      setMeetingActive(true);
       setConversationMode(false);
       setMeetingTranscript([]);
       setMeetingActionItems([]);
       await startListening();
     }
-  }, [meetingMode, meetingActionItems.length, meetingTranscript.length, startListening, stopListening]);
+  }, [isMeetingActive, meetingActionItems.length, meetingTranscript.length, startListening, stopListening, setMeetingActive]);
+  
+  // Sync with global meeting state (for TopBar call button)
+  useEffect(() => {
+    const startMeetingFromGlobal = async () => {
+      if (isMeetingActive && !listening && modelLoaded) {
+        setConversationMode(false);
+        setMeetingTranscript([]);
+        setMeetingActionItems([]);
+        await startListening();
+      } else if (!isMeetingActive && listening) {
+        await stopListening();
+      }
+    };
+    startMeetingFromGlobal();
+  }, [isMeetingActive, listening, modelLoaded, startListening, stopListening]);
 
   // Send meeting summary to Froggo
   const sendMeetingSummary = useCallback(async () => {
@@ -484,10 +652,9 @@ export default function VoicePanel() {
     
     const response = await sendCommand(summary);
     if (response) {
-      speak(response);
+      await speak(response);
     }
     
-    // Clear meeting data
     setMeetingTranscript([]);
     setMeetingActionItems([]);
   }, [meetingTranscript, meetingActionItems, sendCommand, speak]);
@@ -504,20 +671,26 @@ export default function VoicePanel() {
   ];
 
   const getOrbColor = () => {
+    if (isMuted) return 'bg-red-500/20 border-red-500';
+    if (modelLoading) return 'bg-blue-500/20 border-blue-500';
     if (processing) return 'bg-yellow-500/20 border-yellow-500';
     if (speaking) return 'bg-green-500/20 border-green-500';
-    if (meetingMode) return 'bg-orange-500/20 border-orange-500';
+    if (isMeetingActive) return 'bg-orange-500/20 border-orange-500';
     if (listening) return 'bg-clawd-accent/20 border-clawd-accent';
     return 'bg-clawd-surface border-clawd-border hover:border-clawd-accent';
   };
 
   const getOrbIcon = () => {
+    if (isMuted) return <MicOff size={48} className="text-red-500" />;
+    if (modelLoading) return <Loader2 size={48} className="animate-spin text-blue-500" />;
     if (processing) return <Loader2 size={48} className="animate-spin text-yellow-500" />;
     if (speaking) return <span className="animate-pulse text-5xl">🗣️</span>;
-    if (meetingMode) return <span className="text-5xl">👂</span>;
+    if (isMeetingActive) return <span className="text-5xl">👂</span>;
     if (listening) return <span style={{ transform: `scale(${1 + audioLevel * 0.3})` }} className="text-5xl">🎤</span>;
     return <span className="text-5xl">🐸</span>;
   };
+
+  const canStart = modelLoaded && !modelError && !modelLoading;
 
   return (
     <div className="h-full flex flex-col">
@@ -527,15 +700,17 @@ export default function VoicePanel() {
           <div>
             <h1 className="text-2xl font-semibold flex items-center gap-2">
               Voice Assistant
-              {voskAvailable && <span title="Real-time Vosk"><Zap size={20} className="text-green-400" /></span>}
+              {modelLoaded && <span title="Real-time Vosk WASM"><Zap size={20} className="text-green-400" /></span>}
             </h1>
             <p className="text-clawd-text-dim text-sm flex items-center gap-2">
-              {voskAvailable === false ? (
-                <span className="text-yellow-400">Vosk not available</span>
-              ) : voskAvailable === null ? (
-                <span>Checking Vosk...</span>
+              {modelError ? (
+                <span className="text-red-400">{modelError}</span>
+              ) : modelLoading ? (
+                <span className="text-blue-400">Loading speech model...</span>
+              ) : modelLoaded ? (
+                <span className="text-green-400">⚡ Real-time Vosk WASM transcription</span>
               ) : (
-                <span className="text-green-400">⚡ Real-time Vosk transcription</span>
+                <span>Initializing...</span>
               )}
               {connectionState !== 'connected' && (
                 <span className="text-yellow-400 ml-2">
@@ -545,6 +720,16 @@ export default function VoicePanel() {
             </p>
           </div>
           <div className="flex gap-2">
+            {/* Mute button */}
+            <button
+              onClick={toggleMuted}
+              className={`p-3 rounded-xl transition-all ${
+                isMuted ? 'bg-red-500 text-white' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'
+              }`}
+              title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
+            >
+              {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+            </button>
             <button
               onClick={() => setVoiceEnabled(!voiceEnabled)}
               className={`p-3 rounded-xl transition-all ${
@@ -556,12 +741,13 @@ export default function VoicePanel() {
             </button>
             <button
               onClick={toggleMeeting}
+              disabled={!canStart}
               className={`p-3 rounded-xl transition-all ${
-                meetingMode ? 'bg-orange-500 text-white' : 'bg-clawd-border text-clawd-text-dim'
-              }`}
-              title={meetingMode ? 'End meeting mode' : 'Start meeting eavesdrop mode'}
+                isMeetingActive ? 'bg-orange-500 text-white' : 'bg-clawd-border text-clawd-text-dim'
+              } ${!canStart ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={isMeetingActive ? 'End meeting mode' : 'Start meeting eavesdrop mode'}
             >
-              {meetingMode ? <PhoneOff size={20} /> : <Phone size={20} />}
+              {isMeetingActive ? <PhoneOff size={20} /> : <Phone size={20} />}
             </button>
           </div>
         </div>
@@ -577,19 +763,21 @@ export default function VoicePanel() {
               {/* Glow effect */}
               <div 
                 className={`absolute inset-0 rounded-full blur-2xl transition-all duration-300 ${
+                  isMuted ? 'bg-red-500/20 scale-110' :
+                  modelLoading ? 'bg-blue-500/20 scale-125' :
                   processing ? 'bg-yellow-500/30 scale-150' :
                   speaking ? 'bg-green-500/30 scale-150' :
-                  meetingMode ? 'bg-orange-500/20 scale-125' :
+                  isMeetingActive ? 'bg-orange-500/20 scale-125' :
                   listening ? 'bg-clawd-accent/20' : 'bg-transparent'
                 }`}
-                style={{ transform: listening && !meetingMode ? `scale(${1 + audioLevel * 0.5})` : undefined }}
+                style={{ transform: listening && !isMeetingActive && !isMuted ? `scale(${1 + audioLevel * 0.5})` : undefined }}
               />
               
               {/* Main orb */}
               <button
                 onClick={toggleConversation}
-                disabled={processing || voskAvailable === false || meetingMode}
-                className={`relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 border-4 ${getOrbColor()} ${voskAvailable === false || meetingMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!canStart || processing || isMeetingActive || isMuted}
+                className={`relative w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 border-4 ${getOrbColor()} ${!canStart || isMeetingActive || isMuted ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {getOrbIcon()}
               </button>
@@ -599,11 +787,14 @@ export default function VoicePanel() {
           {/* Status Text */}
           <div className="text-center mb-6">
             <div className="text-lg font-medium mb-1">
-              {processing ? 'Processing...' : 
+              {isMuted ? '🔇 Muted' :
+               modelLoading ? 'Loading model...' :
+               processing ? 'Processing...' : 
                speaking ? 'Speaking...' : 
-               meetingMode ? 'Meeting Mode' :
+               isMeetingActive ? 'Meeting Mode' :
                listening ? 'Listening...' : 
-               'Tap to start conversation'}
+               canStart ? 'Tap to start conversation' :
+               'Model not ready'}
             </div>
             {statusMessage && (
               <div className="text-sm text-clawd-text-dim">{statusMessage}</div>
@@ -645,7 +836,7 @@ export default function VoicePanel() {
                 key={i}
                 onClick={async () => {
                   const response = await sendCommand(cmd);
-                  if (response) speak(response);
+                  if (response) await speak(response);
                 }}
                 disabled={!connected || processing}
                 className="w-full text-left px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm hover:border-clawd-accent transition-colors disabled:opacity-50"
@@ -658,7 +849,7 @@ export default function VoicePanel() {
 
         {/* Conversation / Meeting Panel */}
         <div className="flex-1 flex flex-col">
-          {meetingMode ? (
+          {isMeetingActive ? (
             /* Meeting Mode View */
             <div className="flex-1 flex flex-col p-6">
               <div className="flex items-center justify-between mb-4">
@@ -732,7 +923,7 @@ export default function VoicePanel() {
                   <div className="text-center">
                     <Mic size={48} className="mx-auto mb-4 opacity-30" />
                     <p>Click the frog and start speaking</p>
-                    <p className="text-sm mt-2">Real-time transcription with Vosk</p>
+                    <p className="text-sm mt-2">Real-time transcription with Vosk WASM</p>
                     <p className="text-xs mt-4 text-clawd-text-dim">
                       💡 Tip: Your words appear as you speak!
                     </p>

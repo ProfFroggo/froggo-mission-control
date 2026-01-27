@@ -2,7 +2,7 @@
 
 const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
 const DEFAULT_TOKEN = '14ac9fc2afdd3363df3842a36ab269ca4137b8059ca3b0ba';
-const SESSION_KEY = 'web:clawd-dashboard';
+const SESSION_KEY = 'web:dashboard'; // Use webchat-specific session, not shared 'main'
 
 // Load settings from localStorage
 function getSettings(): { gatewayUrl: string; gatewayToken: string } {
@@ -148,6 +148,11 @@ class Gateway {
           const payload = msg.payload || {};
           const eventSessionKey = payload?.sessionKey || '';
           const isOurSession = !eventSessionKey || eventSessionKey === this.sessionKey;
+          
+          // Debug log for chat-related events
+          if (msg.event?.startsWith('chat')) {
+            console.log('[Gateway] Chat event:', msg.event, 'isOurSession:', isOurSession, 'payload:', JSON.stringify(payload).slice(0, 200));
+          }
           
           if (msg.event === 'chat.delta' && isOurSession) {
             this.emit('chat.delta', payload);
@@ -401,6 +406,25 @@ class Gateway {
   }
 
   // Send chat and return a promise that resolves when response is complete
+  // Send message directly to main session using chat.send
+  async sendToMain(message: string): Promise<void> {
+    if (!this.connected) {
+      throw new Error('Not connected');
+    }
+
+    const idempotencyKey = `dashboard-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    
+    const result = await this.request('chat.send', {
+      sessionKey: 'main',
+      message: message,
+      idempotencyKey: idempotencyKey,
+    });
+
+    if (!result || result.status === 'error') {
+      throw new Error(result?.error || 'Failed to send to main session');
+    }
+  }
+
   sendChat(message: string): Promise<{ content: string }> {
     return new Promise(async (resolve, reject) => {
       if (!this.connected) {
@@ -417,6 +441,7 @@ class Gateway {
         unsub2();
         unsub3();
         unsub4();
+        unsub5();
       };
 
       const finish = (content: string) => {
@@ -435,20 +460,44 @@ class Gateway {
         }
       };
 
-      // Listen for streaming events
-      const unsub1 = this.on('chat.delta', (data: any) => {
+      // Track the actual runId from the gateway response
+      let ourRunId = '';
+      
+      // Listen for streaming events (gateway sends 'chat' with state field)
+      const unsub1 = this.on('chat', (data: any) => {
+        // Only process events for OUR request (filter out other sessions like Discord)
+        if (ourRunId && data.runId && data.runId !== ourRunId) {
+          // Different runId, ignore - this is from another session
+          return;
+        }
+        
+        // Extract text content
+        const text = data.message?.content?.[0]?.text || data.content || data.delta || '';
+        if (text) {
+          responseContent = text; // Full content, not delta
+        }
+        
+        // Check for final state
+        if (data.state === 'final') {
+          console.log('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
+          finish(responseContent);
+        }
+      });
+
+      // Also listen for legacy event names
+      const unsub2 = this.on('chat.delta', (data: any) => {
         if (data.delta) responseContent += data.delta;
       });
 
-      const unsub2 = this.on('chat.message', (data: any) => {
+      const unsub3 = this.on('chat.message', (data: any) => {
         if (data.content) responseContent = data.content;
       });
 
-      const unsub3 = this.on('chat.end', () => {
+      const unsub4 = this.on('chat.end', () => {
         finish(responseContent);
       });
-
-      const unsub4 = this.on('chat.error', (data: any) => {
+      
+      const unsub5 = this.on('chat.error', (data: any) => {
         fail(new Error(data.message || data.error || 'Chat error'));
       });
 
@@ -462,11 +511,19 @@ class Gateway {
       }, 120000);
 
       try {
+        console.log('[Gateway] sendChat calling request...');
         const result = await this.request('chat.send', { 
           message, 
           sessionKey: this.sessionKey, 
           idempotencyKey,
         });
+        console.log('[Gateway] sendChat request returned:', JSON.stringify(result));
+        
+        // Capture runId to filter streaming events
+        if (result?.runId) {
+          ourRunId = result.runId;
+          console.log('[Gateway] Tracking runId:', ourRunId);
+        }
         
         // If we got a direct response (non-streaming), use it
         if (result?.content) {
@@ -474,7 +531,9 @@ class Gateway {
           finish(result.content);
         }
         // Otherwise wait for streaming events
+        console.log('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
       } catch (e: any) {
+        console.error('[Gateway] sendChat error:', e);
         clearTimeout(timeout);
         fail(e);
       }

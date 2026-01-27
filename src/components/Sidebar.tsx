@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Twitter, Command, Inbox, Radio } from 'lucide-react';
 import { useStore } from '../store/store';
 
@@ -10,7 +10,7 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { id: 'inbox' as View, icon: Inbox, label: 'Inbox', shortcut: '⌘1', badge: 'approvals' },
+  { id: 'inbox' as View, icon: Inbox, label: 'Inbox', shortcut: '⌘1', badge: 'inbox' },
   { id: 'dashboard' as View, icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘2' },
   { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘3' },
   { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘4' },
@@ -22,12 +22,30 @@ const navItems = [
 
 export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
   const [expanded, setExpanded] = useState(true); // Open by default
+  const [inboxCount, setInboxCount] = useState(0);
   const { connected, tasks, sessions, activities } = useStore();
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
-  const approvals = useStore((s) => s.approvals);
-  const pendingApprovals = approvals.filter(a => a.status === 'pending').length;
-  const unreadNotifications = pendingApprovals; // Use approvals count
+  
+  // Load inbox count from froggo-db
+  const loadInboxCount = async () => {
+    try {
+      const result = await window.clawdbot.inbox.list('pending');
+      if (result.success) {
+        setInboxCount(result.items?.length || 0);
+      }
+    } catch (error) {
+      console.error('Failed to load inbox count:', error);
+    }
+  };
+  
+  useEffect(() => {
+    loadInboxCount();
+    const interval = setInterval(loadInboxCount, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, []);
+  
+  const unreadNotifications = inboxCount;
 
   return (
     <aside 
@@ -48,7 +66,7 @@ export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
           {navItems.map(({ id, icon: Icon, label, shortcut }) => {
             const isActive = currentView === id;
             let badge = 0;
-            if (id === 'inbox') badge = pendingApprovals;
+            if (id === 'inbox') badge = inboxCount;
             if (id === 'kanban') badge = activeTasks;
             if (id === 'sessions') badge = sessions.length;
             

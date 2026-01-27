@@ -74,6 +74,14 @@ interface Store {
   connected: boolean;
   setConnected: (v: boolean) => void;
 
+  // Voice controls
+  isMuted: boolean;
+  setMuted: (v: boolean) => void;
+  toggleMuted: () => void;
+  isMeetingActive: boolean;
+  setMeetingActive: (v: boolean) => void;
+  toggleMeeting: () => void;
+
   // Sessions from gateway
   sessions: Session[];
   setSessions: (s: Session[]) => void;
@@ -81,6 +89,7 @@ interface Store {
 
   // Tasks (local)
   tasks: Task[];
+  loadTasksFromDB: () => Promise<void>;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   moveTask: (id: string, status: TaskStatus) => void;
@@ -160,6 +169,14 @@ export const useStore = create<Store>()(
       connected: false,
       setConnected: (connected) => set({ connected }),
 
+      // Voice controls
+      isMuted: false,
+      setMuted: (isMuted) => set({ isMuted }),
+      toggleMuted: () => set((s) => ({ isMuted: !s.isMuted })),
+      isMeetingActive: false,
+      setMeetingActive: (isMeetingActive) => set({ isMeetingActive }),
+      toggleMeeting: () => set((s) => ({ isMeetingActive: !s.isMeetingActive })),
+
       sessions: [],
       setSessions: (sessions) => set({ sessions }),
       fetchSessions: async () => {
@@ -171,45 +188,73 @@ export const useStore = create<Store>()(
         }
       },
 
-      tasks: [
-        // X/Twitter - Prof.Froggo AI Influencer
-        { id: 'x-1', title: 'Draft weekly content plan for @Prof_Frogo', description: 'Plan 5-7 tweets for the week covering AI, crypto, tech insights. Present for approval.', status: 'todo', project: 'X/Twitter', assignedTo: 'main', createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000 },
-        { id: 'x-2', title: 'Engage with AI/crypto influencers', description: 'Find 10 relevant accounts, draft thoughtful replies. Queue for approval before posting.', status: 'todo', project: 'X/Twitter', assignedTo: 'main', createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000 },
-        { id: 'x-3', title: 'Analyze @Prof_Frogo engagement metrics', description: 'Pull stats on recent tweets, identify what performs best, report findings.', status: 'backlog', project: 'X/Twitter', assignedTo: 'researcher', createdAt: Date.now() - 172800000, updatedAt: Date.now() - 172800000 },
-        { id: 'x-4', title: 'Draft thread on AI agents workflow', description: 'Write a thread about how I work as an AI assistant. Present draft for review.', status: 'backlog', project: 'X/Twitter', assignedTo: 'main', createdAt: Date.now() - 172800000, updatedAt: Date.now() - 172800000 },
-        { id: 'x-5', title: 'Monitor mentions and DMs', description: 'Check @Prof_Frogo mentions, draft responses for approval.', status: 'in-progress', project: 'X/Twitter', assignedTo: 'main', createdAt: Date.now() - 43200000, updatedAt: Date.now() - 3600000 },
-        
-        // Voice & Dashboard
-        { id: 'task-1', title: 'Integrate ElevenLabs TTS', description: 'Replace Web Speech API with sag CLI for natural voice', status: 'todo', project: 'Voice', assignedTo: 'coder', createdAt: Date.now() - 3600000, updatedAt: Date.now() - 3600000 },
-        { id: 'task-2', title: 'Add keyboard shortcuts', description: '⌘1-5 for nav, ⌘K for command palette', status: 'backlog', project: 'Dashboard', assignedTo: 'coder', createdAt: Date.now() - 7200000, updatedAt: Date.now() - 7200000 },
-        
-        // Automation
-        { id: 'task-3', title: 'Hourly channel check', description: 'WhatsApp/Telegram/Discord - report anything needing attention', status: 'in-progress', project: 'Automation', assignedTo: 'main', createdAt: Date.now() - 86400000, updatedAt: Date.now() - 1800000 },
-        { id: 'task-4', title: 'Calendar alerts setup', description: 'Notify Kevin 30min before meetings', status: 'backlog', project: 'Automation', assignedTo: 'main', createdAt: Date.now() - 172800000, updatedAt: Date.now() - 172800000 },
-        
-        // Done
-        { id: 'done-1', title: 'Voice interface gateway fix', description: 'Voice commands now send to gateway properly', status: 'done', project: 'Voice', assignedTo: 'main', createdAt: Date.now() - 3600000, updatedAt: Date.now() - 600000 },
-        { id: 'done-2', title: 'Dashboard UI overhaul', description: 'New design with greeting, quick actions, better UX', status: 'done', project: 'Dashboard', assignedTo: 'main', createdAt: Date.now() - 7200000, updatedAt: Date.now() - 300000 },
-        { id: 'done-3', title: 'Kanban task board', description: 'Built task management with drag-drop and agent assignment', status: 'done', project: 'Dashboard', assignedTo: 'main', createdAt: Date.now() - 7200000, updatedAt: Date.now() - 300000 },
-      ],
-      addTask: (task) => set((s) => ({
-        tasks: [...s.tasks, {
+      tasks: [], // Empty - loaded from froggo-db only
+      loadTasksFromDB: async () => {
+        try {
+          const result = await (window as any).clawdbot?.tasks?.list();
+          if (result?.success && Array.isArray(result.tasks)) {
+            // Convert froggo-db tasks to store format
+            const tasks = result.tasks.map((t: any) => ({
+              id: t.id,
+              title: t.title,
+              description: t.description || '',
+              status: t.status as TaskStatus,
+              project: t.project || 'General',
+              assignedTo: t.assigned_to,
+              createdAt: t.created_at || Date.now(),
+              updatedAt: t.updated_at || Date.now(),
+            }));
+            set({ tasks });
+          }
+        } catch (error) {
+          console.error('Failed to load tasks from DB:', error);
+        }
+      },
+      addTask: (task) => {
+        const newTask = {
           ...task,
           id: `task-${Date.now()}`,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-        }]
-      })),
+        };
+        set((s) => ({
+          tasks: [...s.tasks, newTask]
+        }));
+        // Sync to froggo-db
+        (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
+      },
       updateTask: (id, updates) => set((s) => ({
         tasks: s.tasks.map(t => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
       })),
-      moveTask: (id, status) => set((s) => ({
-        tasks: s.tasks.map(t => t.id === id ? { ...t, status, updatedAt: Date.now() } : t)
-      })),
+      moveTask: (id, status) => {
+        const task = get().tasks.find(t => t.id === id);
+        set((s) => ({
+          tasks: s.tasks.map(t => t.id === id ? { ...t, status, updatedAt: Date.now() } : t)
+        }));
+        // Broadcast status change to main session
+        if (task) {
+          gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch(() => {});
+          // Sync to froggo-db
+          (window as any).clawdbot?.tasks?.update(task.id, { status }).catch(() => {});
+        }
+      },
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter(t => t.id !== id) })),
-      assignTask: (id, agentId) => set((s) => ({
-        tasks: s.tasks.map(t => t.id === id ? { ...t, assignedTo: agentId, updatedAt: Date.now() } : t)
-      })),
+      assignTask: (id, agentId) => {
+        const task = get().tasks.find(t => t.id === id);
+        const agent = agentId ? get().agents.find(a => a.id === agentId) : null;
+        set((s) => ({
+          tasks: s.tasks.map(t => t.id === id ? { ...t, assignedTo: agentId, updatedAt: Date.now() } : t)
+        }));
+        // Broadcast assignment to main session
+        if (task) {
+          const msg = agent 
+            ? `[TASK_ASSIGNED] "${task.title}" assigned to ${agent.avatar} ${agent.name}`
+            : `[TASK_UNASSIGNED] "${task.title}" unassigned`;
+          gateway.sendToSession('main', msg).catch(() => {});
+          // Sync to froggo-db
+          (window as any).clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch(() => {});
+        }
+      },
 
       agents: defaultAgents,
 
@@ -226,7 +271,13 @@ export const useStore = create<Store>()(
         if (!agent) return;
 
         try {
-          // Update task and agent status
+          // Update froggo-db FIRST to prevent race with polling
+          await (window as any).clawdbot?.tasks?.update(taskId, { 
+            status: 'in-progress',
+            assignedTo: agentId 
+          });
+
+          // Update task and agent status locally
           set((s) => ({
             agents: s.agents.map(a => 
               a.id === agentId ? { ...a, status: 'busy' as const, currentTaskId: taskId } : a
@@ -236,23 +287,9 @@ export const useStore = create<Store>()(
             ),
           }));
 
-          // Build task prompt
-          const agentRole = agent.id === 'main' ? '' : `[AGENT: ${agent.name} ${agent.avatar}]\n`;
-          const taskPrompt = `${agentRole}## Task Started from Dashboard
-
-**Task:** ${task.title}
-**Project:** ${task.project}
-**Description:** ${task.description || 'No additional details'}
-
-Work on this task. When complete:
-- If it produces external content (tweets, emails, messages), queue it for approval using [NEEDS_APPROVAL] format
-- If it's internal work, mark it done and report what was accomplished
-- If blocked, explain what's needed
-
-Start now.`;
-
-          // Send to Froggo via chat (routes through main session)
-          await gateway.sendChat(taskPrompt);
+          // Send execution trigger to Froggo (brain) in main session
+          const triggerMessage = `[TASK_START] taskId: ${taskId}`;
+          await gateway.sendToMain(triggerMessage);
 
           get().addActivity({
             type: 'agent',
@@ -415,28 +452,72 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           }, ...s.approvals]
         }));
       },
-      approveItem: (id) => set((s) => {
-        const item = s.approvals.find(a => a.id === id);
+      approveItem: (id) => {
+        const state = get();
+        const item = state.approvals.find(a => a.id === id);
         if (item) {
           // Execute the action
           executeApproval(item);
+          // Create completion task
+          const completionTask: Task = {
+            id: `task-exec-${Date.now()}`,
+            title: `Execute: ${item.title}`,
+            description: `Approved ${item.type}: ${item.content?.slice(0, 200)}...`,
+            status: 'in-progress',
+            project: 'Approvals',
+            assignedTo: 'main',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          set((s) => ({
+            approvals: s.approvals.filter(a => a.id !== id), // Remove from inbox
+            tasks: [completionTask, ...s.tasks],
+          }));
+          // Notify main session
+          gateway.sendToSession('main', `[APPROVED] Execute ${item.type}: "${item.title}"\n\nContent:\n${item.content}`).catch(() => {});
         }
-        return {
-          approvals: s.approvals.map(a => 
-            a.id === id ? { ...a, status: 'approved' as ApprovalStatus, updatedAt: Date.now() } : a
-          )
-        };
-      }),
-      rejectItem: (id) => set((s) => ({
-        approvals: s.approvals.map(a => 
-          a.id === id ? { ...a, status: 'rejected' as ApprovalStatus, updatedAt: Date.now() } : a
-        )
-      })),
-      adjustItem: (id, feedback) => set((s) => ({
-        approvals: s.approvals.map(a => 
-          a.id === id ? { ...a, status: 'adjusted' as ApprovalStatus, feedback, updatedAt: Date.now() } : a
-        )
-      })),
+      },
+      rejectItem: (id) => {
+        const state = get();
+        const item = state.approvals.find(a => a.id === id);
+        if (item) {
+          // Log rejection to froggo-db
+          (window as any).clawdbot?.rejections?.log({
+            type: item.type,
+            title: item.title,
+            content: item.content,
+            reason: 'User rejected',
+          }).catch(() => {});
+          // Notify main session
+          gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch(() => {});
+        }
+        set((s) => ({
+          approvals: s.approvals.filter(a => a.id !== id), // Delete from inbox
+        }));
+      },
+      adjustItem: (id, feedback) => {
+        const state = get();
+        const item = state.approvals.find(a => a.id === id);
+        if (item) {
+          // Create revision task
+          const revisionTask: Task = {
+            id: `task-revise-${Date.now()}`,
+            title: `Revise: ${item.title}`,
+            description: `Original ${item.type}:\n${item.content}\n\n---\nFeedback:\n${feedback}`,
+            status: 'todo',
+            project: 'Revisions',
+            assignedTo: 'main',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          set((s) => ({
+            approvals: s.approvals.filter(a => a.id !== id), // Delete from inbox
+            tasks: [revisionTask, ...s.tasks],
+          }));
+          // Notify for revision
+          gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch(() => {});
+        }
+      },
       clearCompletedApprovals: () => set((s) => ({
         approvals: s.approvals.filter(a => a.status === 'pending')
       })),
@@ -538,9 +619,10 @@ The pattern I've seen: founders who deeply understand one specific user segment 
     {
       name: 'clawd-dashboard',
       partialize: (s) => ({ 
-        tasks: s.tasks, 
+        // tasks removed - now sourced from froggo-db only
+        // approvals removed - now sourced from froggo-db inbox only
         activities: s.activities.slice(0, 50),
-        approvals: s.approvals.slice(0, 100),
+        isMuted: s.isMuted,
       }),
     }
   )

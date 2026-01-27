@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, MoreHorizontal, Bot, Trash2, FolderOpen, GripVertical, Clock, User, Play, Zap } from 'lucide-react';
 import { useStore, Task, TaskStatus } from '../store/store';
 import TaskModal from './TaskModal';
+import TaskDetailPanel from './TaskDetailPanel';
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string }[] = [
   { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-gray-500/10' },
@@ -12,11 +13,19 @@ const columns: { id: TaskStatus; title: string; color: string; bg: string }[] = 
 ];
 
 export default function Kanban() {
-  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask } = useStore();
+  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB } = useStore();
+  
+  // Load tasks from froggo-db on mount and poll
+  useEffect(() => {
+    loadTasksFromDB();
+    const interval = setInterval(loadTasksFromDB, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, [loadTasksFromDB]);
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>('todo');
   const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const projects = useMemo(() => {
     const projectSet = new Set(tasks.map(t => t.project));
@@ -135,6 +144,7 @@ export default function Kanban() {
                     onDelete={() => deleteTask(task.id)}
                     onAssign={(agentId) => assignTask(task.id, agentId)}
                     onStartAgent={(taskId) => spawnAgentForTask(taskId)}
+                    onClick={() => setSelectedTask(task)}
                     isDragging={draggedTask === task.id}
                   />
                 ))}
@@ -159,6 +169,11 @@ export default function Kanban() {
         onClose={() => setModalOpen(false)}
         initialStatus={modalStatus}
       />
+      
+      <TaskDetailPanel 
+        task={selectedTask}
+        onClose={() => setSelectedTask(null)}
+      />
     </div>
   );
 }
@@ -170,10 +185,11 @@ interface TaskCardProps {
   onDelete: () => void;
   onAssign: (agentId: string) => void;
   onStartAgent: (taskId: string) => void;
+  onClick: () => void;
   isDragging: boolean;
 }
 
-function TaskCard({ task, agents, onDragStart, onDelete, onAssign, onStartAgent, isDragging }: TaskCardProps) {
+function TaskCard({ task, agents, onDragStart, onDelete, onAssign, onStartAgent, onClick, isDragging }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   
@@ -185,7 +201,8 @@ function TaskCard({ task, agents, onDragStart, onDelete, onAssign, onStartAgent,
     <div
       draggable
       onDragStart={onDragStart}
-      className={`bg-clawd-bg rounded-xl p-4 border border-clawd-border hover:border-clawd-accent/50 transition-all cursor-grab active:cursor-grabbing group relative ${
+      onClick={onClick}
+      className={`bg-clawd-bg rounded-xl p-4 border border-clawd-border hover:border-clawd-accent/50 transition-all cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
     >

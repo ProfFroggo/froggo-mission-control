@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { initApprovalQueue } from './lib/approvalQueue';
+import './lib/voiceService'; // Preload voice model in background
+import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import Dashboard from './components/Dashboard';
 import Kanban from './components/Kanban';
 import AgentPanel from './components/AgentPanel';
 import ChatPanel from './components/ChatPanel';
 import VoicePanel from './components/VoicePanel';
+import VoskBrowserTest from './components/VoskBrowserTest';
 import SettingsPanel from './components/SettingsPanel';
 import NotificationsPanel from './components/NotificationsPanel';
 import TwitterPanel from './components/TwitterPanel';
@@ -18,11 +22,17 @@ type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const { toggleMuted, setMeetingActive } = useStore();
 
   // Initialize approval queue file watcher
   useEffect(() => {
     const cleanup = initApprovalQueue();
     return cleanup;
+  }, []);
+
+  // Handle call button click - navigate to voice and start meeting
+  const handleCallClick = useCallback(() => {
+    setCurrentView('voice');
   }, []);
 
   // Global keyboard shortcuts
@@ -32,6 +42,13 @@ function App() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setCommandPaletteOpen(prev => !prev);
+        return;
+      }
+
+      // Mute toggle - ⌘M
+      if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
+        e.preventDefault();
+        toggleMuted();
         return;
       }
 
@@ -85,18 +102,18 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [commandPaletteOpen]);
+  }, [commandPaletteOpen, toggleMuted]);
 
   return (
     <div className="flex h-screen bg-clawd-bg">
-      {/* Drag region for window controls */}
-      <div className="drag-region fixed top-0 left-0 right-0 h-8 z-40" />
+      {/* Top bar with call button */}
+      <TopBar onCallClick={handleCallClick} />
       
       {/* Sidebar */}
       <Sidebar currentView={currentView} onNavigate={setCurrentView} />
       
       {/* Main content */}
-      <main className="flex-1 overflow-hidden pt-8">
+      <main className="flex-1 overflow-hidden pt-12">
         {currentView === 'dashboard' && <Dashboard />}
         {currentView === 'kanban' && <Kanban />}
         {currentView === 'agents' && <AgentPanel />}
