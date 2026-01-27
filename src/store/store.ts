@@ -99,7 +99,7 @@ export interface GatewaySession {
 
 export interface Activity {
   id: string;
-  type: 'task' | 'chat' | 'agent' | 'system';
+  type: 'task' | 'chat' | 'agent' | 'system' | 'error';
   message: string;
   timestamp: number;
   sessionKey?: string;
