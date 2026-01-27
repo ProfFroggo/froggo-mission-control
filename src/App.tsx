@@ -192,6 +192,32 @@ function App() {
             setCurrentView('settings');
             break;
         }
+
+        // Cmd+Shift shortcuts
+        if (e.shiftKey) {
+          switch (e.key.toUpperCase()) {
+            case 'C':
+              e.preventDefault();
+              setCurrentView('context');
+              break;
+            case 'D':
+              e.preventDefault();
+              setCurrentView('codeagent');
+              break;
+            case 'L':
+              e.preventDefault();
+              setCurrentView('library');
+              break;
+            case 'S':
+              e.preventDefault();
+              setCurrentView('schedule');
+              break;
+            case 'A':
+              e.preventDefault();
+              setCurrentView('calendar');
+              break;
+          }
+        }
       }
 
       // Escape to close command palette
