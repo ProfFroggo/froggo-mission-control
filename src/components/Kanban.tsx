@@ -22,6 +22,7 @@ const columns: { id: TaskStatus; title: string; color: string; bg: string }[] = 
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10' },
   { id: 'review', title: '👀 Needs Approval', color: 'border-l-purple-500', bg: 'bg-purple-500/10' },
   { id: 'done', title: 'Done', color: 'border-l-green-500', bg: 'bg-green-500/10' },
+  { id: 'failed', title: '❌ Failed', color: 'border-l-red-500', bg: 'bg-red-500/10' },
 ];
 
 export default function Kanban() {

@@ -4,7 +4,7 @@ import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { spawnAgent, spawnWorker, matchTaskToAgent, AGENTS } from '../lib/agents';
 
-export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done';
+export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done' | 'failed';
 
 export interface Subtask {
   id: string;
