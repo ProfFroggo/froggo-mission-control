@@ -62,18 +62,29 @@ export default function CodeAgentDashboard() {
         setCommits(parsedCommits.slice(0, 10));
       }
 
-      // Load sessions list
+      // Load sessions list - show all agent sessions
       const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch(() => null);
       if (sessionsResult?.sessions) {
         const devSessions: DevSession[] = sessionsResult.sessions
-          .filter((s: any) => s.kind === 'other' || s.label?.includes('coder'))
-          .slice(0, 5)
+          .filter((s: any) => {
+            const key = s.key || s.sessionKey || '';
+            const label = s.label || '';
+            // Show main sessions, subagents, coder, discord bots
+            return key.includes('main') || 
+                   key.includes('subagent') || 
+                   key.includes('discord') ||
+                   label.includes('coder') ||
+                   label.includes('froggo') ||
+                   label.includes('worker') ||
+                   s.kind === 'other';
+          })
+          .slice(0, 10)
           .map((s: any) => ({
-            id: s.sessionId,
-            agent: s.label || 'Agent',
-            task: s.displayName || 'Unknown task',
-            status: 'idle' as const,
-            startedAt: s.updatedAt,
+            id: s.sessionId || s.key,
+            agent: s.label || s.channel || 'Agent',
+            task: s.displayName || s.key?.split(':').pop() || 'Session',
+            status: (Date.now() - (s.updatedAt || 0) < 300000 ? 'running' : 'idle') as 'running' | 'idle',
+            startedAt: s.updatedAt || s.createdAt,
             model: s.model || 'unknown',
             tokens: s.totalTokens || 0,
             cost: 0,
@@ -86,15 +97,23 @@ export default function CodeAgentDashboard() {
       const tasksResult = await (window as any).clawdbot?.tasks?.list().catch(() => null);
       if (tasksResult?.tasks) {
         const devTasks: DevTask[] = tasksResult.tasks
-          .filter((t: any) => t.project?.includes('Dev') || t.assignedTo === 'coder' || t.assignedTo === 'chief')
+          .filter((t: any) => {
+            const project = t.project || '';
+            const assignee = t.assigned_to || t.assignedTo || '';
+            return project.toLowerCase().includes('dev') || 
+                   project.toLowerCase().includes('x/twitter') ||
+                   assignee === 'coder' || 
+                   assignee === 'chief' ||
+                   assignee === 'main';
+          })
           .map((t: any) => ({
             id: t.id,
             title: t.title,
             status: t.status,
-            assignee: t.assignedTo || 'Unassigned',
+            assignee: t.assigned_to || t.assignedTo || 'Unassigned',
             commits: 0,
             tokens: 0,
-            duration: Date.now() - new Date(t.createdAt).getTime(),
+            duration: Date.now() - (t.created_at || Date.now()),
           }));
         setTasks(devTasks);
       }
