@@ -830,6 +830,19 @@ if (gateway.connected) {
   useStore.getState().setConnected(true);
 }
 
+// Set up IPC listener for task notifications from file watcher
+if (typeof window !== 'undefined' && (window as any).clawdbot?.tasks?.onNotification) {
+  (window as any).clawdbot.tasks.onNotification((notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => {
+    console.log('[Store] Task notification from file watcher:', notification);
+    useStore.getState().loadTasksFromDB();
+    useStore.getState().addActivity({
+      type: 'task',
+      message: `📋 New task from Discord: ${notification.title}`,
+      timestamp: notification.timestamp || Date.now(),
+    });
+  });
+}
+
 gateway.on('chat', (payload: any) => {
   if (payload?.final && payload?.content) {
     useStore.getState().addActivity({
@@ -856,6 +869,50 @@ gateway.on('approval.request', (payload: any) => {
       message: `📥 New approval: ${payload.title}`,
       timestamp: Date.now(),
     });
+  }
+});
+
+// Listen for task-related events for real-time updates
+// These can be triggered by the main agent after creating tasks from Discord
+gateway.on('task.created', (payload: any) => {
+  console.log('[Store] Task created event received:', payload);
+  useStore.getState().loadTasksFromDB();
+  useStore.getState().addActivity({
+    type: 'task',
+    message: `📋 New task: ${payload?.title || 'Task created'}`,
+    timestamp: Date.now(),
+  });
+});
+
+gateway.on('task.updated', (payload: any) => {
+  console.log('[Store] Task updated event received:', payload);
+  useStore.getState().loadTasksFromDB();
+});
+
+gateway.on('tasks.refresh', () => {
+  console.log('[Store] Tasks refresh event received');
+  useStore.getState().loadTasksFromDB();
+});
+
+// Catch-all listener for task-related patterns in any event
+gateway.on('*', (msg: any) => {
+  // Check if this is a task-related event we should handle
+  const content = msg?.payload?.message?.content?.[0]?.text || 
+                  msg?.payload?.content || 
+                  msg?.content || '';
+  
+  // Detect task creation patterns from main agent
+  if (typeof content === 'string' && (
+    content.includes('[TASK_CREATED]') ||
+    content.includes('[TASK_START]') ||
+    content.includes('{"detected":true')
+  )) {
+    console.log('[Store] Task pattern detected in event, refreshing tasks');
+    // Debounce to avoid multiple rapid refreshes
+    clearTimeout((window as any).__taskRefreshTimer);
+    (window as any).__taskRefreshTimer = setTimeout(() => {
+      useStore.getState().loadTasksFromDB();
+    }, 500);
   }
 });
 

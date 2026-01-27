@@ -148,6 +148,43 @@ export default function VoicePanel() {
     };
   }, []);
 
+  // SAFEGUARD: Cleanup mic/audio on window close/reload to prevent hardware lock
+  useEffect(() => {
+    const cleanup = () => {
+      console.log('[Voice] Window closing - releasing mic/audio...');
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+          console.log('[Voice] Stopped track:', track.kind);
+        });
+        streamRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
+    };
+    
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('unload', cleanup);
+    
+    // Also cleanup on visibility hidden (app backgrounded)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && listening) {
+        console.log('[Voice] App hidden while listening - keeping mic for now');
+        // Don't auto-release on hide, but log it
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('beforeunload', cleanup);
+      window.removeEventListener('unload', cleanup);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      cleanup(); // Also cleanup on component unmount
+    };
+  }, [listening]);
+
   // Track gateway state
   useEffect(() => {
     const unsub = gateway.on('stateChange', ({ state }: { state: ConnectionState }) => {
@@ -174,6 +211,13 @@ export default function VoicePanel() {
   // Speak text using ElevenLabs TTS (via sag CLI)
   const speak = useCallback(async (text: string): Promise<void> => {
     if (!voiceEnabled || !text) {
+      return;
+    }
+    
+    // Skip short filler acks - these are annoying when spoken
+    const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack|👍|✅|🐸)\s*[.!]?\s*$/i;
+    if (skipPhrases.test(text.trim())) {
+      console.log('[TTS] Skipping filler ack:', text);
       return;
     }
     
@@ -365,14 +409,13 @@ export default function VoicePanel() {
       listeningRef.current = false;
       setStatusMessage('Thinking...');
       
-      // Quick acknowledgment for longer-seeming requests
-      const needsAck = text.length > 20 || /\b(what|how|tell|explain|check|show|list)\b/i.test(text);
-      if (needsAck) {
-        // Brief acknowledgment while processing
-        const acks = ['Let me check', 'One moment', 'Looking into that', 'Checking now'];
-        const ack = acks[Math.floor(Math.random() * acks.length)];
-        await speak(ack);
-      }
+      // Quick acknowledgment disabled - was too noisy
+      // const needsAck = text.length > 20 || /\b(what|how|tell|explain|check|show|list)\b/i.test(text);
+      // if (needsAck) {
+      //   const acks = ['Let me check', 'One moment', 'Looking into that', 'Checking now'];
+      //   const ack = acks[Math.floor(Math.random() * acks.length)];
+      //   await speak(ack);
+      // }
       
       const response = await sendCommand(text);
       console.log('[Voice] Gateway response:', response);

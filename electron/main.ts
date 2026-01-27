@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, systemPreferences, protocol } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import * as os from 'os';
 import * as http from 'http';
 
@@ -64,9 +64,57 @@ function createWindow() {
     }
   });
 
+  // SAFEGUARD: Send cleanup signal before window closes
+  mainWindow.on('close', (e) => {
+    if (mainWindow) {
+      console.log('[Main] Window closing - sending cleanup signal...');
+      mainWindow.webContents.send('app-closing');
+      // Give renderer time to cleanup (mic/camera release)
+      // The actual close happens after renderer cleanup
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
+
+// Task notification file watcher
+let taskNotifyWatcher: fs.FSWatcher | null = null;
+const taskNotifyPath = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
+let lastTaskNotifyMtime = 0;
+
+function startTaskNotifyWatcher() {
+  // Ensure parent directory exists
+  const dir = path.dirname(taskNotifyPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  
+  // Watch for changes to the notification file
+  try {
+    taskNotifyWatcher = fs.watch(path.dirname(taskNotifyPath), (eventType, filename) => {
+      if (filename === 'task-notify.json' && mainWindow) {
+        try {
+          const stat = fs.statSync(taskNotifyPath);
+          // Only process if file was modified after last check
+          if (stat.mtimeMs > lastTaskNotifyMtime) {
+            lastTaskNotifyMtime = stat.mtimeMs;
+            const content = fs.readFileSync(taskNotifyPath, 'utf-8');
+            const notification = JSON.parse(content);
+            console.log('[TaskNotify] New task notification:', notification);
+            // Send to renderer
+            mainWindow.webContents.send('task-notification', notification);
+          }
+        } catch (e) {
+          // File might not exist or be invalid, ignore
+        }
+      }
+    });
+    console.log('[TaskNotify] Watching for task notifications at:', taskNotifyPath);
+  } catch (e) {
+    console.error('[TaskNotify] Failed to start watcher:', e);
+  }
 }
 
 app.whenReady().then(() => {
@@ -95,6 +143,9 @@ app.whenReady().then(() => {
       console.log(`[ModelServer] Serving models on http://127.0.0.1:${modelServerPort}`);
     });
   }
+  
+  // Start task notification watcher
+  startTaskNotifyWatcher();
   
   createWindow();
 });
@@ -1371,9 +1422,109 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
 });
 
 // ============== MESSAGES IPC HANDLERS ==============
+
+// Comms cache configuration
+const COMMS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const FROGGO_DB_PATH = '/opt/homebrew/bin/froggo-db';
+
+// Helper to run command and return promise (shared)
+const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
+  return new Promise((resolve) => {
+    const fullPath = `/opt/homebrew/bin:/usr/bin:/bin:/Users/worker/.local/bin:${process.env.PATH || ''}`;
+    exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
+        if (stderr) console.error(`[Messages] stderr: ${stderr}`);
+        resolve('');
+      } else {
+        resolve(stdout);
+      }
+    });
+  });
+};
+
+// Check comms cache freshness
+const getCommsCacheAge = async (): Promise<number> => {
+  try {
+    const raw = await runMsgCmd(`sqlite3 ~/clawd/data/froggo.db "SELECT MAX(fetched_at) FROM comms_cache"`, 2000);
+    if (raw && raw.trim()) {
+      const lastFetch = new Date(raw.trim()).getTime();
+      return Date.now() - lastFetch;
+    }
+  } catch (e) {
+    console.error('[Messages] Cache age check error:', e);
+  }
+  return Infinity;
+};
+
+// Get messages from froggo-db cache
+const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
+  try {
+    const raw = await runMsgCmd(`${FROGGO_DB_PATH} comms-recent --limit ${limit}`, 3000);
+    if (raw && raw.trim().startsWith('[')) {
+      const cached = JSON.parse(raw);
+      // Transform to match expected format
+      return cached.map((m: any) => ({
+        id: m.external_id,
+        platform: m.platform,
+        name: m.sender_name || m.sender,
+        from: m.sender,
+        preview: m.preview,
+        timestamp: m.timestamp,
+        relativeTime: m.relativeTime || '',
+        hasReply: !!m.has_reply,
+        isUrgent: !!m.is_urgent,
+      }));
+    }
+  } catch (e) {
+    console.error('[Messages] Cache read error:', e);
+  }
+  return null;
+};
+
+// Write messages to froggo-db cache
+const writeCommsToCache = async (messages: any[]): Promise<void> => {
+  try {
+    // Transform to froggo-db format
+    const cacheData = messages.map(m => ({
+      platform: m.platform,
+      external_id: m.id,
+      sender: m.from || m.name,
+      sender_name: m.name,
+      preview: m.preview,
+      timestamp: m.timestamp,
+      is_urgent: m.isUrgent || false,
+    }));
+    
+    // Write via stdin to comms-bulk
+    const tmpFile = path.join(os.tmpdir(), `comms-cache-${Date.now()}.json`);
+    fs.writeFileSync(tmpFile, JSON.stringify(cacheData));
+    await runMsgCmd(`${FROGGO_DB_PATH} comms-bulk --file "${tmpFile}"`, 5000);
+    fs.unlinkSync(tmpFile);
+    console.log(`[Messages] Cached ${messages.length} messages to froggo-db`);
+  } catch (e) {
+    console.error('[Messages] Cache write error:', e);
+  }
+};
+
 ipcMain.handle('messages:recent', async (_, limit?: number) => {
   console.log('[Messages] Handler called, limit:', limit);
   const lim = limit || 10;
+  
+  // Check cache freshness
+  const cacheAge = await getCommsCacheAge();
+  console.log(`[Messages] Cache age: ${Math.round(cacheAge / 1000)}s`);
+  
+  // If cache is fresh (< TTL), return cached data
+  if (cacheAge < COMMS_CACHE_TTL_MS) {
+    const cached = await getCommsFromCache(lim);
+    if (cached && cached.length > 0) {
+      console.log(`[Messages] Returning ${cached.length} messages from cache`);
+      return { success: true, chats: cached, fromCache: true, cacheAge: Math.round(cacheAge / 1000) };
+    }
+  }
+  
+  // Cache miss or stale - fetch fresh data
   const allMessages: any[] = [];
   
   // Full paths for CLIs (Electron GUI apps don't inherit terminal PATH)
@@ -1382,18 +1533,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
   
   // Helper to run command and return promise
   const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
-    return new Promise((resolve) => {
-      const fullPath = `/opt/homebrew/bin:/usr/bin:/bin:/Users/worker/.local/bin:${process.env.PATH || ''}`;
-      exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
-          if (stderr) console.error(`[Messages] stderr: ${stderr}`);
-          resolve('');
-        } else {
-          resolve(stdout);
-        }
-      });
-    });
+    return runMsgCmd(cmd, timeout);
   };
   
   // Helper to format relative time
@@ -1460,9 +1600,47 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
       }
     }
     
-    // ===== TELEGRAM (disabled - too slow, needs caching) =====
-    // TODO: Add background caching for Telegram messages
-    console.log('[Messages] Telegram disabled (needs caching)...');
+    // ===== TELEGRAM (from cache - tgcli is slow) =====
+    console.log('[Messages] Fetching Telegram from cache...');
+    const tgCachePath = path.join(os.homedir(), 'clawd', 'data', 'telegram-cache.json');
+    try {
+      if (fs.existsSync(tgCachePath)) {
+        const tgCacheRaw = fs.readFileSync(tgCachePath, 'utf-8');
+        const tgCache = JSON.parse(tgCacheRaw);
+        
+        // Check staleness (warn if > 15 min old)
+        const cacheAge = Date.now() - new Date(tgCache.lastUpdated).getTime();
+        const isStale = cacheAge > 15 * 60 * 1000;
+        
+        console.log(`[Messages] Telegram cache: ${tgCache.chats?.length || 0} chats, age: ${Math.round(cacheAge / 60000)}min${isStale ? ' (STALE)' : ''}`);
+        
+        for (const chat of (tgCache.chats || [])) {
+          if (!chat.lastMessage?.text || chat.lastMessage.text === '(no recent messages)') continue;
+          
+          // Build timestamp
+          let timestamp = chat.lastMessage.timestamp;
+          if (timestamp && !timestamp.includes('Z')) {
+            timestamp = timestamp + 'Z'; // Assume UTC if no timezone
+          }
+          
+          allMessages.push({
+            id: `tg-${chat.id}`,
+            platform: 'telegram',
+            name: chat.name || 'Unknown',
+            preview: (chat.lastMessage.text || '').slice(0, 100),
+            timestamp: timestamp,
+            relativeTime: relativeTime(timestamp),
+            fromMe: false,
+            isStale: isStale,
+            chatType: chat.type,
+          });
+        }
+      } else {
+        console.log('[Messages] Telegram cache not found, run telegram-cache.js to populate');
+      }
+    } catch (e) {
+      console.error('[Messages] Telegram cache read error:', e);
+    }
     
     // ===== DISCORD DMs =====
     console.log('[Messages] Fetching Discord DMs...');
@@ -1539,9 +1717,22 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
       return tb - ta;
     });
     
-    return { success: true, chats: allMessages.slice(0, lim) };
+    const result = allMessages.slice(0, lim);
+    
+    // Write to froggo-db cache (async, don't wait)
+    writeCommsToCache(result).catch(e => console.error('[Messages] Cache write failed:', e));
+    
+    return { success: true, chats: result, fromCache: false };
   } catch (e: any) {
     console.error('[Messages] Error:', e);
+    
+    // On error, try to return stale cache if available
+    const staleCache = await getCommsFromCache(lim);
+    if (staleCache && staleCache.length > 0) {
+      console.log('[Messages] Returning stale cache due to fetch error');
+      return { success: true, chats: staleCache, fromCache: true, stale: true, error: e.message };
+    }
+    
     return { success: false, chats: [], error: e.message };
   }
 });
@@ -1623,6 +1814,46 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
   } catch (e: any) {
     console.error('[Messages:Context] Error:', e);
     return { success: false, messages: [], error: e.message };
+  }
+});
+
+// ============== MESSAGE SEND HANDLER ==============
+ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform: string; to: string; message: string }) => {
+  const PATHS = {
+    wacli: '/opt/homebrew/bin/wacli',
+    tgcli: '~/.local/bin/tgcli',
+    gog: '/opt/homebrew/bin/gog'
+  };
+  
+  // Escape message for shell
+  const escapeShell = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
+  
+  try {
+    let result: string;
+    
+    switch (platform) {
+      case 'whatsapp':
+        result = execSync(`${PATHS.wacli} send ${escapeShell(to)} ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+        break;
+      case 'telegram':
+        result = execSync(`${PATHS.tgcli} send ${escapeShell(to)} ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+        break;
+      case 'email':
+        result = execSync(`${PATHS.gog} gmail send --to ${escapeShell(to)} --body ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+        break;
+      case 'discord':
+        // Use clawdbot message tool
+        result = execSync(`clawdbot message send --channel discord --to ${escapeShell(to)} --message ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+        break;
+      default:
+        return { success: false, error: `Unknown platform: ${platform}` };
+    }
+    
+    console.log(`[Messages:Send] Sent to ${platform}:${to}:`, result);
+    return { success: true, result };
+  } catch (e: any) {
+    console.error('[Messages:Send] Error:', e);
+    return { success: false, error: e.message };
   }
 });
 

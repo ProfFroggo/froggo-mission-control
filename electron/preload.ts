@@ -4,6 +4,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 const isDev = process.env.ELECTRON_DEV === '1';
 
 contextBridge.exposeInMainWorld('clawdbot', {
+  // App lifecycle events
+  app: {
+    onClosing: (callback: () => void) => {
+      ipcRenderer.on('app-closing', () => callback());
+      return () => ipcRenderer.removeAllListeners('app-closing');
+    },
+  },
   gateway: {
     status: () => ipcRenderer.invoke('gateway:status'),
     sessions: () => ipcRenderer.invoke('gateway:sessions'),
@@ -38,6 +45,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
     list: (status?: string) => ipcRenderer.invoke('tasks:list', status),
     start: (taskId: string) => ipcRenderer.invoke('tasks:start', taskId),
     complete: (taskId: string, outcome?: string) => ipcRenderer.invoke('tasks:complete', taskId, outcome),
+    // Real-time task notification listener
+    onNotification: (callback: (notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => void) => {
+      const handler = (_: any, notification: any) => callback(notification);
+      ipcRenderer.on('task-notification', handler);
+      return () => ipcRenderer.removeListener('task-notification', handler);
+    },
     // Subtask operations
     subtasks: {
       list: (taskId: string) => ipcRenderer.invoke('subtasks:list', taskId),
@@ -126,6 +139,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
   messages: {
     recent: (limit?: number) => ipcRenderer.invoke('messages:recent', limit),
     context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
+    send: (platform: string, to: string, message: string) => ipcRenderer.invoke('messages:send', { platform, to, message }),
   },
   // Email (gog CLI)
   email: {

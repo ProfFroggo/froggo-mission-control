@@ -42,13 +42,16 @@ export default function ChatPanel() {
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load messages from database on mount
+  // Load messages from database on mount - this is the source of truth
   useEffect(() => {
     const loadFromDb = async () => {
+      console.log('[Chat] Loading from froggo.db...');
       if (window.clawdbot?.chat?.loadMessages) {
         const result = await window.clawdbot.chat.loadMessages(50);
+        console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
         if (result.success && result.messages?.length > 0) {
           setMessages(result.messages);
+          setHistoryLoaded(true); // Mark as loaded so we don't overwrite with gateway history
         }
       }
     };
@@ -132,18 +135,24 @@ export default function ChatPanel() {
     return () => { unsub(); };
   }, []);
 
-  // Load chat history when connected
-  // Now using webchat-specific session key, so history should be dashboard-only
+  // Load chat history when connected (only if DB didn't have messages)
+  // DB is the source of truth - gateway history is fallback only
   useEffect(() => {
     if (connected && !historyLoaded) {
       loadHistory();
-      setHistoryLoaded(true);
     }
   }, [connected, historyLoaded]);
 
   const loadHistory = async () => {
+    // If we already have messages (from DB), don't overwrite with gateway history
+    if (messages.length > 0) {
+      console.log('[Chat] Already have', messages.length, 'messages from DB, skipping gateway history');
+      setHistoryLoaded(true);
+      return;
+    }
+    
     try {
-      console.log('[Chat] Loading history...');
+      console.log('[Chat] No DB messages, trying gateway history...');
       const res = await gateway.getChatHistory(30);
       if (res?.messages && Array.isArray(res.messages)) {
         const history: Message[] = res.messages
@@ -169,8 +178,10 @@ export default function ChatPanel() {
           })
           .reverse(); // Most recent last
         
-        setMessages(history);
-        console.log('[Chat] Loaded', history.length, 'messages');
+        if (history.length > 0) {
+          setMessages(history);
+          console.log('[Chat] Loaded', history.length, 'messages from gateway');
+        }
       }
       setHistoryLoaded(true);
     } catch (e) {
@@ -221,8 +232,10 @@ export default function ChatPanel() {
         if (brainMatch) {
           const brainMessage = brainMatch[1].trim();
           console.log('[Chat] Routing to Brain:', brainMessage.slice(0, 100));
-          // Send to main session (Brain/Froggo)
-          (window as any).clawdbot?.sessions?.send?.('main', `[From Chat Agent]\n${brainMessage}`);
+          // Send to main session via gateway WebSocket
+          gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
+            .then(() => console.log('[Chat] Successfully routed to Brain'))
+            .catch((err: any) => console.error('[Chat] Brain routing error:', err));
         }
         
         setLoading(false);
@@ -243,17 +256,23 @@ export default function ChatPanel() {
       // Extract content from message structure
       const content = data.message?.content?.[0]?.text || data.content || '';
       if (content) {
-        currentResponseRef.current = content;
-        setMessages(prev => prev.map(m => 
-          m.id === currentMsgIdRef.current 
-            ? { ...m, content } 
-            : m
-        ));
+        // Only update if this is the final/complete content, not partial
+        // Partial deltas are handled by handleDelta
+        if (data.state === 'final' || content.length > currentResponseRef.current.length) {
+          currentResponseRef.current = content;
+          setMessages(prev => prev.map(m => 
+            m.id === currentMsgIdRef.current 
+              ? { ...m, content } 
+              : m
+          ));
+        }
       }
 
       // Check if final
       if (data.state === 'final') {
         console.log('[Chat] Got final state, clearing loading. Content length:', currentResponseRef.current.length);
+        const finalContent = currentResponseRef.current;
+        
         setMessages(prev => prev.map(m => 
           m.id === currentMsgIdRef.current 
             ? { ...m, streaming: false } 
@@ -261,16 +280,33 @@ export default function ChatPanel() {
         ));
         
         // Save assistant message to database
-        if (currentResponseRef.current && window.clawdbot?.chat?.saveMessage) {
+        if (finalContent && window.clawdbot?.chat?.saveMessage) {
           window.clawdbot.chat.saveMessage({ 
             role: 'assistant', 
-            content: currentResponseRef.current, 
+            content: finalContent, 
             timestamp: Date.now() 
           });
         }
         
-        if (speakResponses && currentResponseRef.current) {
-          speak(currentResponseRef.current);
+        if (speakResponses && finalContent) {
+          speak(finalContent);
+        }
+        
+        // Check for @Brain: routing - forward to main session (Brain/Froggo)
+        const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
+        if (brainMatch) {
+          const brainMessage = brainMatch[1].trim();
+          console.log('[Chat] Routing to Brain:', brainMessage.slice(0, 100));
+          // Send to main session via gateway WebSocket (sends to Discord #get_shit_done)
+          gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
+            .then(() => {
+              console.log('[Chat] Successfully routed to Brain');
+              showToast('success', 'Routed to Brain', 'Message sent to main session');
+            })
+            .catch((err: any) => {
+              console.error('[Chat] Brain routing error:', err);
+              showToast('error', 'Brain routing failed', err.message);
+            });
         }
         
         setLoading(false);
@@ -326,6 +362,14 @@ export default function ChatPanel() {
 
   const speak = useCallback((text: string) => {
     if (!text) return;
+    
+    // Skip short filler acks - annoying when spoken
+    const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack|👍|✅|🐸)\s*[.!]?\s*$/i;
+    if (skipPhrases.test(text.trim())) {
+      console.log('[TTS] Skipping filler ack:', text);
+      return;
+    }
+    
     // Strip markdown for cleaner speech
     const clean = text
       .replace(/```[\s\S]*?```/g, 'code block')
@@ -496,9 +540,14 @@ export default function ChatPanel() {
     }
   };
 
-  const clearChat = () => {
+  const clearChat = async () => {
     setMessages([]);
     window.speechSynthesis.cancel();
+    // Also clear from database
+    if (window.clawdbot?.chat?.clearMessages) {
+      await window.clawdbot.chat.clearMessages();
+      console.log('[Chat] Cleared messages from DB');
+    }
   };
 
   const reconnect = () => {

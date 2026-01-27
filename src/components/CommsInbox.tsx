@@ -393,6 +393,7 @@ export default function CommsInbox() {
   const [refreshing, setRefreshing] = useState(false); // Background refresh indicator
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [fromCache, setFromCache] = useState(false);
   const isMounted = useRef(true);
 
   // Apply messages to state (shared between cache and fresh load)
@@ -409,74 +410,78 @@ export default function CommsInbox() {
     setUrgent(urgentMsgs);
   }, []);
 
-  // Fetch fresh data from backend
-  const fetchMessages = useCallback(async (): Promise<Message[] | null> => {
-    console.log('[CommsInbox] Fetching fresh messages...');
+  // Fetch fresh data from backend (now uses froggo-db cache on backend)
+  const fetchMessages = useCallback(async (): Promise<{ messages: Message[] | null; fromCache: boolean }> => {
+    console.log('[CommsInbox] Fetching messages...');
     try {
       const result = await (window as any).clawdbot?.messages?.recent(30);
       if (result?.success && result.chats) {
         const msgs = result.chats as Message[];
-        console.log('[CommsInbox] Fetched messages:', {
+        console.log('[CommsInbox] Got messages:', {
           total: msgs.length,
-          emails: msgs.filter(m => m.platform === 'email').length,
-          whatsapp: msgs.filter(m => m.platform === 'whatsapp').length,
-          telegram: msgs.filter(m => m.platform === 'telegram').length,
+          fromCache: result.fromCache || false,
+          cacheAge: result.cacheAge,
+          stale: result.stale,
         });
-        return msgs;
+        return { messages: msgs, fromCache: result.fromCache || false };
       }
     } catch (e) {
       console.error('[CommsInbox] Failed to fetch messages:', e);
     }
-    return null;
+    return { messages: null, fromCache: false };
   }, []);
 
-  // Load messages with stale-while-revalidate strategy
+  // Load messages - backend now handles froggo-db caching
   const loadMessages = useCallback(async (forceRefresh = false) => {
-    const cache = getCache();
-    const hasValidCache = isCacheValid(cache);
+    // Check local cache first for instant UI
+    const localCache = getCache();
+    const hasValidLocalCache = isCacheValid(localCache);
 
-    // If we have valid cache and not forcing refresh, use it and refresh in background
-    if (hasValidCache && cache && !forceRefresh) {
-      console.log('[CommsInbox] Using cached data, age:', Math.round((Date.now() - cache.timestamp) / 1000), 's');
-      applyMessages(cache.messages);
-      setLastUpdated(cache.timestamp);
+    // If we have valid local cache and not forcing refresh, show it immediately
+    if (hasValidLocalCache && localCache && !forceRefresh) {
+      console.log('[CommsInbox] Using local cache, age:', Math.round((Date.now() - localCache.timestamp) / 1000), 's');
+      applyMessages(localCache.messages);
+      setLastUpdated(localCache.timestamp);
+      setFromCache(true);
       setLoading(false);
       
-      // Background refresh if cache is older than 1 minute
-      if (Date.now() - cache.timestamp > 60 * 1000) {
+      // Background refresh if local cache is older than 1 minute
+      if (Date.now() - localCache.timestamp > 60 * 1000) {
         setRefreshing(true);
-        const fresh = await fetchMessages();
-        if (fresh && isMounted.current) {
-          applyMessages(fresh);
-          setCache(fresh);
+        const { messages, fromCache: backendCache } = await fetchMessages();
+        if (messages && isMounted.current) {
+          applyMessages(messages);
+          setCache(messages);
           setLastUpdated(Date.now());
+          setFromCache(backendCache);
           setRefreshing(false);
         }
       }
       return;
     }
 
-    // No valid cache or force refresh - show loading state
+    // No valid local cache or force refresh - show loading state
     if (forceRefresh) {
       setRefreshing(true);
     } else {
       setLoading(true);
     }
 
-    // If we have stale cache, show it while loading
-    if (cache && !hasValidCache && !forceRefresh) {
-      console.log('[CommsInbox] Using stale cache while fetching...');
-      applyMessages(cache.messages);
-      setLastUpdated(cache.timestamp);
+    // If we have stale local cache, show it while loading
+    if (localCache && !hasValidLocalCache && !forceRefresh) {
+      console.log('[CommsInbox] Using stale local cache while fetching...');
+      applyMessages(localCache.messages);
+      setLastUpdated(localCache.timestamp);
     }
 
-    const msgs = await fetchMessages();
+    const { messages, fromCache: backendCache } = await fetchMessages();
     if (!isMounted.current) return;
 
-    if (msgs) {
-      applyMessages(msgs);
-      setCache(msgs);
+    if (messages) {
+      applyMessages(messages);
+      setCache(messages); // Also update local cache
       setLastUpdated(Date.now());
+      setFromCache(backendCache);
     }
     setLoading(false);
     setRefreshing(false);
@@ -497,12 +502,24 @@ export default function CommsInbox() {
     setSelectedMessage(message);
   };
 
-  const handleSendReply = (message: Message, reply: string) => {
-    // TODO: Actually send via wacli/tgcli/etc
-    const recipient = message.name || message.from || 'Unknown';
+  const handleSendReply = async (message: Message, reply: string) => {
+    const recipient = message.chatId || message.from || message.name || 'Unknown';
     console.log('Sending reply:', { platform: message.platform, to: recipient, reply });
-    // For now, just show it was "sent"
-    alert(`Reply sent to ${recipient} via ${message.platform}!`);
+    
+    try {
+      const result = await (window as any).clawdbot?.messages?.send?.(message.platform, recipient, reply);
+      if (result?.success) {
+        // Show success toast or notification
+        console.log('Reply sent successfully:', result);
+        alert(`✅ Reply sent to ${message.name || recipient} via ${message.platform}!`);
+      } else {
+        console.error('Send failed:', result?.error);
+        alert(`❌ Failed to send: ${result?.error || 'Unknown error'}`);
+      }
+    } catch (e: any) {
+      console.error('Send error:', e);
+      alert(`❌ Error sending reply: ${e.message}`);
+    }
   };
 
   const handleScheduleReply = (message: Message, reply: string, when: string) => {
@@ -519,12 +536,23 @@ export default function CommsInbox() {
     console.log('Scheduled reply:', { platform: message.platform, to: message.from, reply, when });
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
     const draft = replyDrafts.find(d => d.id === id);
     if (draft) {
-      // TODO: Send the reply
       console.log('Sending approved reply:', draft);
-      alert(`Reply sent to ${draft.to} via ${draft.platform}!`);
+      try {
+        const result = await (window as any).clawdbot?.messages?.send?.(draft.platform, draft.to, draft.suggestedReply);
+        if (result?.success) {
+          console.log('Reply sent successfully:', result);
+          alert(`✅ Reply sent to ${draft.to} via ${draft.platform}!`);
+        } else {
+          console.error('Send failed:', result?.error);
+          alert(`❌ Failed to send: ${result?.error || 'Unknown error'}`);
+        }
+      } catch (e: any) {
+        console.error('Send error:', e);
+        alert(`❌ Error sending reply: ${e.message}`);
+      }
     }
     setReplyDrafts(replyDrafts.filter(d => d.id !== id));
   };
@@ -539,8 +567,9 @@ export default function CommsInbox() {
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold flex items-center gap-2"><Mail size={24} /> Communications Inbox</h1>
           {lastUpdated && (
-            <span className="text-xs text-clawd-text-dim">
+            <span className="text-xs text-clawd-text-dim flex items-center gap-1">
               {refreshing ? 'Updating...' : `Updated ${formatRelativeTime(lastUpdated)}`}
+              {fromCache && !refreshing && <span className="text-clawd-accent/60">(cached)</span>}
             </span>
           )}
         </div>
