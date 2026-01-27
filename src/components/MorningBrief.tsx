@@ -99,6 +99,16 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       });
     } catch (error) {
       console.error('Failed to load brief:', error);
+      // Set a minimal brief on error so UI doesn't blank
+      setBrief({
+        greeting: 'Good morning',
+        timeOfDay: 'morning',
+        pendingApprovals: 0,
+        unreadMessages: 0,
+        upcomingEvents: [],
+        recentActivity: [],
+        urgentItems: [],
+      });
     } finally {
       setLoading(false);
     }
@@ -122,7 +132,23 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
     );
   }
 
-  if (!brief) return null;
+  if (!brief) {
+    // Fallback if brief failed to load - show dismiss button
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+        <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center">
+          <h1 className="text-2xl font-bold mb-4">Good morning, Kevin 👋</h1>
+          <p className="text-clawd-text-dim mb-6">Couldn't load your brief data.</p>
+          <button
+            onClick={onDismiss}
+            className="px-6 py-3 bg-clawd-accent text-white rounded-xl font-medium hover:bg-clawd-accent/80 transition-colors"
+          >
+            Continue to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const hasItems = brief.pendingApprovals > 0 || brief.upcomingEvents.length > 0 || brief.urgentItems.length > 0;
 

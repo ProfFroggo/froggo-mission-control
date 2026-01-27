@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
