@@ -12,7 +12,7 @@ import VoicePanel from './components/VoicePanel';
 import VoskBrowserTest from './components/VoskBrowserTest';
 import SettingsPanel from './components/SettingsPanel';
 import NotificationsPanel from './components/NotificationsPanel';
-import TwitterPanel from './components/TwitterPanel';
+import XPanel from './components/XPanel';
 import InboxPanel from './components/InboxPanel';
 import CommsInbox from './components/CommsInbox';
 import SessionsPanel from './components/SessionsPanel';
@@ -20,12 +20,13 @@ import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
 import LibraryPanel from './components/LibraryPanel';
-import SchedulePanel from './components/SchedulePanel';
+import CalendarPanel from './components/CalendarPanel';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
 import MorningBrief from './components/MorningBrief';
 import CodeAgentDashboard from './components/CodeAgentDashboard';
 import ContextControlBoard from './components/ContextControlBoard';
 import ContentCalendar from './components/ContentCalendar';
+import SchedulePanel from './components/SchedulePanel';
 import TemplatesPanel from './components/TemplatesPanel';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
@@ -143,24 +144,24 @@ function App() {
         return;
       }
 
-      // Navigation shortcuts
+      // Navigation shortcuts (⌘1-9)
       if (e.metaKey || e.ctrlKey) {
         switch (e.key) {
           case '1':
             e.preventDefault();
-            setCurrentView('inbox');
+            setCurrentView('dashboard');
             break;
           case '2':
             e.preventDefault();
-            setCurrentView('dashboard');
+            setCurrentView('inbox');
             break;
           case '3':
             e.preventDefault();
-            setCurrentView('chat');
+            setCurrentView('comms');
             break;
           case '4':
             e.preventDefault();
-            setCurrentView('sessions');
+            setCurrentView('chat');
             break;
           case '5':
             e.preventDefault();
@@ -180,11 +181,11 @@ function App() {
             break;
           case '9':
             e.preventDefault();
-            setCurrentView('library');
+            setCurrentView('sessions');
             break;
           case '0':
             e.preventDefault();
-            setCurrentView('schedule');
+            setCurrentView('analytics');
             break;
           case ',':
             e.preventDefault();
@@ -220,7 +221,7 @@ function App() {
         {currentView === 'voice' && <VoicePanel />}
         {currentView === 'settings' && <SettingsPanel />}
         {currentView === 'notifications' && <NotificationsPanel />}
-        {currentView === 'twitter' && <TwitterPanel />}
+        {currentView === 'twitter' && <XPanel />}
         {currentView === 'inbox' && <InboxPanel />}
         {currentView === 'comms' && <CommsInbox />}
         {currentView === 'sessions' && <SessionsPanel />}

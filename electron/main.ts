@@ -84,6 +84,145 @@ let taskNotifyWatcher: fs.FSWatcher | null = null;
 const taskNotifyPath = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
 let lastTaskNotifyMtime = 0;
 
+// Schedule processor interval
+let scheduleProcessorInterval: NodeJS.Timeout | null = null;
+const SCHEDULE_CHECK_INTERVAL = 30000; // 30 seconds
+
+// Process scheduled items that are overdue
+async function processScheduledItems() {
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  
+  // Query for pending items where scheduled_for <= now
+  // Fetch all pending and filter in JS (handles various datetime formats)
+  const query = `SELECT * FROM schedule WHERE status='pending'`;
+  
+  exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, async (error, stdout) => {
+    if (error) {
+      console.error('[ScheduleProcessor] Query error:', error.message);
+      return;
+    }
+    
+    let items: any[] = [];
+    try {
+      const trimmed = stdout.trim();
+      if (trimmed && trimmed !== '[]') {
+        items = JSON.parse(trimmed);
+      }
+    } catch (e) {
+      // No items or parse error - that's fine
+      return;
+    }
+    
+    if (items.length === 0) return;
+    
+    // Filter for overdue items (scheduled_for <= now) handling various datetime formats
+    const now = new Date();
+    items = items.filter(item => {
+      if (!item.scheduled_for) return false;
+      const scheduledTime = new Date(item.scheduled_for);
+      return scheduledTime <= now;
+    });
+    
+    if (items.length === 0) return;
+    
+    console.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
+    
+    for (const item of items) {
+      console.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
+      
+      let execCmd = '';
+      let metadata: any = {};
+      
+      try {
+        if (item.metadata) {
+          metadata = JSON.parse(item.metadata);
+        }
+      } catch (e) {
+        console.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
+      }
+      
+      // Build command based on type
+      if (item.type === 'tweet') {
+        const escapedContent = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        execCmd = `bird tweet "${escapedContent}"`;
+      } else if (item.type === 'email') {
+        const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
+        const account = metadata.account || '';
+        
+        // GUARD: Skip emails with missing recipient or account (prevents gog auth loops)
+        if (!recipient || !recipient.trim()) {
+          console.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
+          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing recipient' WHERE id='${item.id}'"`, () => {});
+          continue;
+        }
+        if (!account || !account.trim()) {
+          console.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
+          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing GOG account' WHERE id='${item.id}'"`, () => {});
+          continue;
+        }
+        
+        const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
+        const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+        execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
+      } else {
+        console.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
+        // Mark as failed with unknown type error
+        exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Unknown type: ${item.type}' WHERE id='${item.id}'"`, () => {});
+        continue;
+      }
+      
+      console.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
+      
+      // Execute the command
+      exec(execCmd, { timeout: 60000 }, (execError, execStdout, execStderr) => {
+        if (execError) {
+          console.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
+          const errorMsg = (execError.message || '').replace(/'/g, "''").slice(0, 500);
+          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${errorMsg}' WHERE id='${item.id}'"`, () => {});
+          
+          // Notify renderer of failure
+          if (mainWindow) {
+            mainWindow.webContents.send('schedule-processed', { 
+              id: item.id, 
+              type: item.type, 
+              success: false, 
+              error: execError.message 
+            });
+          }
+        } else {
+          console.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
+          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='sent', sent_at=datetime('now') WHERE id='${item.id}'"`, () => {});
+          
+          // Notify renderer of success
+          if (mainWindow) {
+            mainWindow.webContents.send('schedule-processed', { 
+              id: item.id, 
+              type: item.type, 
+              success: true 
+            });
+          }
+        }
+      });
+    }
+  });
+}
+
+function startScheduleProcessor() {
+  console.log('[ScheduleProcessor] Starting schedule processor (every 30s)');
+  // Run immediately on start
+  processScheduledItems();
+  // Then run every 30 seconds
+  scheduleProcessorInterval = setInterval(processScheduledItems, SCHEDULE_CHECK_INTERVAL);
+}
+
+function stopScheduleProcessor() {
+  if (scheduleProcessorInterval) {
+    clearInterval(scheduleProcessorInterval);
+    scheduleProcessorInterval = null;
+    console.log('[ScheduleProcessor] Stopped');
+  }
+}
+
 function startTaskNotifyWatcher() {
   // Ensure parent directory exists
   const dir = path.dirname(taskNotifyPath);
@@ -147,6 +286,9 @@ app.whenReady().then(() => {
   // Start task notification watcher
   startTaskNotifyWatcher();
   
+  // Start schedule processor (auto-send overdue items)
+  startScheduleProcessor();
+  
   createWindow();
 });
 
@@ -162,6 +304,8 @@ app.on('will-quit', () => {
     modelServer.close();
     modelServer = null;
   }
+  // Clean up schedule processor
+  stopScheduleProcessor();
 });
 
 app.on('activate', () => {
@@ -187,6 +331,26 @@ ipcMain.handle('gateway:sessions', async () => {
   } catch (error) {
     return { error: 'Gateway not reachable' };
   }
+});
+
+// Get real sessions from Clawdbot CLI (more reliable than HTTP API)
+ipcMain.handle('gateway:sessions:list', async () => {
+  return new Promise((resolve) => {
+    exec('clawdbot sessions list --json', { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Gateway] Sessions list error:', error);
+        resolve({ success: false, sessions: [], error: error.message });
+        return;
+      }
+      try {
+        const data = JSON.parse(stdout);
+        resolve({ success: true, sessions: data.sessions || [], count: data.count || 0 });
+      } catch (e) {
+        console.error('[Gateway] Sessions parse error:', e);
+        resolve({ success: false, sessions: [], error: 'Parse error' });
+      }
+    });
+  });
 });
 
 // ============== WHISPER (Legacy - keeping for fallback) ==============
@@ -333,8 +497,18 @@ ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
 });
 
 // froggo-db task sync
-ipcMain.handle('tasks:sync', async (_, task: { id: string; title: string; status: string; project?: string; assignedTo?: string; description?: string }) => {
-  console.log('[Tasks] Sync called with:', task);
+ipcMain.handle('tasks:sync', async (_, task: { 
+  id: string; 
+  title: string; 
+  status: string; 
+  project?: string; 
+  assignedTo?: string; 
+  description?: string;
+  priority?: string;
+  dueDate?: number;
+}) => {
+  console.log('[Tasks] Sync called with:', JSON.stringify(task));
+  console.log('[Tasks] Status being set:', task.status);
   
   // Check if task exists
   return new Promise((resolve) => {
@@ -346,27 +520,24 @@ ipcMain.handle('tasks:sync', async (_, task: { id: string; title: string; status
         return;
       }
       
-      // Task doesn't exist, create it
-      const args = [
-        `"${task.title.replace(/"/g, '\\"')}"`,
-        `--id ${task.id}`,
-        task.status ? `--status ${task.status}` : '',
-        task.project ? `--project "${task.project.replace(/"/g, '\\"')}"` : '',
-        task.assignedTo ? `--assign ${task.assignedTo}` : '',
-        task.description ? `--desc "${task.description.replace(/"/g, '\\"')}"` : ''
-      ].filter(Boolean).join(' ');
+      // Task doesn't exist, create it via direct SQL for more control
+      const title = task.title.replace(/'/g, "''");
+      const desc = (task.description || '').replace(/'/g, "''");
+      const project = (task.project || 'Default').replace(/'/g, "''");
+      const dueStr = task.dueDate ? new Date(task.dueDate).toISOString() : null;
+      const nowMs = Date.now();
       
-      const addCmd = `froggo-db task-add ${args}`;
-      console.log('[Tasks] Creating task:', addCmd);
+      const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES ('${task.id}', '${title}', '${desc}', '${task.status || 'todo'}', '${project}', '${task.assignedTo || ''}', '${task.priority || ''}', ${dueStr ? `'${dueStr}'` : 'NULL'}, ${nowMs}, ${nowMs})"`;
       
-      exec(addCmd, { timeout: 10000 }, (addError, addStdout, addStderr) => {
+      console.log('[Tasks] Creating task via SQL');
+      
+      exec(insertCmd, { timeout: 10000 }, (addError, addStdout, addStderr) => {
         if (addError) {
           console.error('[Tasks] Create error:', addError.message);
           console.error('[Tasks] stderr:', addStderr);
           resolve({ success: false, error: addError.message });
         } else {
           console.log('[Tasks] Created:', task.id);
-          console.log('[Tasks] stdout:', addStdout);
           resolve({ success: true });
         }
       });
@@ -386,7 +557,24 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
   });
 });
 
-ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string }) => {
+ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string }) => {
+  // Handle planningNotes directly via SQL since froggo-db CLI doesn't support it yet
+  if (updates.planningNotes !== undefined) {
+    const escapedNotes = updates.planningNotes.replace(/'/g, "''"); // SQL escape
+    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET planning_notes='${escapedNotes}', updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
+    
+    return new Promise((resolve) => {
+      exec(sqlCmd, { timeout: 10000 }, (error) => {
+        if (error) {
+          resolve({ success: false, error: error.message });
+        } else {
+          resolve({ success: true });
+        }
+      });
+    });
+  }
+  
+  // For other fields, use froggo-db CLI
   const args = [
     updates.status ? `--status ${updates.status}` : '',
     updates.assignedTo ? `--assign ${updates.assignedTo}` : ''
@@ -442,6 +630,32 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
   return new Promise((resolve) => {
     exec(cmd, { timeout: 10000 }, (error) => {
       resolve({ success: !error });
+    });
+  });
+});
+
+// Poke a task - send message to Gateway main session asking for status update
+ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
+  console.log(`[Tasks] Poke: ${taskId} - ${title}`);
+  
+  const pokeMessage = `🫵 Poke: What's the status of "${title}"? (${taskId})`;
+  
+  return new Promise((resolve) => {
+    // Send poke message to Discord channel where Brain listens
+    // Using clawdbot message send which is quick and async
+    const escapedMessage = pokeMessage.replace(/"/g, '\\"').replace(/`/g, '\\`');
+    const discordChannelId = '1465351776759975977';  // #get_shit_done channel
+    const cmd = `/opt/homebrew/bin/clawdbot message send --target ${discordChannelId} --message "${escapedMessage}" --channel discord`;
+    
+    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Tasks] Poke error:', error.message, stderr);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      console.log('[Tasks] Poke sent to Discord:', stdout.trim());
+      resolve({ success: true, message: pokeMessage });
     });
   });
 });
@@ -682,35 +896,95 @@ ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
   });
 });
 
-// ============== INBOX IPC HANDLERS (froggo-db backed) ==============
-ipcMain.handle('inbox:list', async (_, status?: string) => {
-  const statusArg = status ? `--status ${status}` : '';
-  const cmd = `froggo-db inbox-list ${statusArg} --limit 50`;
+// ============== EMAIL IPC HANDLERS ==============
+ipcMain.handle('email:send', async (_, options: { to: string; subject: string; body: string; account?: string }) => {
+  console.log('[Email:send] Sending email to:', options.to);
+  
+  // GUARD: Require recipient and account to prevent auth loops
+  if (!options.to || !options.to.trim()) {
+    console.error('[Email:send] Missing recipient');
+    return { success: false, error: 'Missing email recipient' };
+  }
+  if (!options.account || !options.account.trim()) {
+    console.error('[Email:send] Missing account - cannot send without GOG_ACCOUNT');
+    return { success: false, error: 'Missing account - please specify which email account to send from' };
+  }
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout, stderr) => {
+    // Escape for shell
+    const escapedTo = options.to.replace(/"/g, '\\"');
+    const escapedSubject = (options.subject || 'No Subject').replace(/"/g, '\\"');
+    const escapedBody = options.body.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    
+    const cmd = `GOG_ACCOUNT="${options.account}" gog gmail send --to "${escapedTo}" --subject "${escapedSubject}" --body "${escapedBody}"`;
+    console.log('[Email:send] Command:', cmd.slice(0, 100) + '...');
+    
+    exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
       if (error) {
-        console.error('[Inbox] List error:', error.message);
+        console.error('[Email:send] Error:', error.message, stderr);
+        resolve({ success: false, error: error.message });
+      } else {
+        console.log('[Email:send] Sent successfully:', stdout);
+        resolve({ success: true, output: stdout });
+      }
+    });
+  });
+});
+
+// ============== INBOX IPC HANDLERS (froggo-db backed) ==============
+// Add inbox item with custom metadata (used for Stage 2 email items)
+ipcMain.handle('inbox:addWithMetadata', async (_, item: { 
+  type: string; 
+  title: string; 
+  content: string; 
+  context?: string; 
+  channel?: string;
+  metadata?: string;
+}) => {
+  console.log('[Inbox:addWithMetadata] Adding item:', item.title);
+  
+  return new Promise((resolve) => {
+    const now = Date.now();
+    const escapedTitle = item.title.replace(/'/g, "''");
+    const escapedContent = item.content.replace(/'/g, "''");
+    const escapedContext = (item.context || '').replace(/'/g, "''");
+    const escapedMetadata = (item.metadata || '{}').replace(/'/g, "''");
+    
+    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitle}', '${escapedContent}', '${escapedContext}', 'pending', '${item.channel || 'system'}', '${escapedMetadata}', datetime('now'))"`;
+    
+    exec(sqlCmd, { timeout: 10000 }, (error) => {
+      if (error) {
+        console.error('[Inbox:addWithMetadata] Error:', error);
+        resolve({ success: false, error: error.message });
+      } else {
+        console.log('[Inbox:addWithMetadata] Added successfully');
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:list', async (_, status?: string) => {
+  // Default to 'pending' if no status specified - we only want pending items in the inbox
+  const effectiveStatus = status || 'pending';
+  
+  return new Promise((resolve) => {
+    // Query directly via sqlite3
+    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
+    
+    exec(sqlCmd, (err, jsonOut) => {
+      if (err) {
+        console.error('[Inbox:list] Error:', err);
         resolve({ success: false, items: [] });
       } else {
-        // Parse output - froggo-db outputs human-readable format, need JSON
-        // For now, query directly via sqlite3
-        const sqlCmd = status 
-          ? `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${status}' ORDER BY created DESC LIMIT 50" -json`
-          : `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox ORDER BY created DESC LIMIT 50" -json`;
-        
-        exec(sqlCmd, (err, jsonOut) => {
-          if (err) {
-            resolve({ success: false, items: [] });
-          } else {
-            try {
-              const items = JSON.parse(jsonOut || '[]');
-              resolve({ success: true, items });
-            } catch {
-              resolve({ success: false, items: [] });
-            }
-          }
-        });
+        try {
+          const items = JSON.parse(jsonOut || '[]');
+          console.log('[Inbox:list] Returning', items.length, 'items with status:', effectiveStatus);
+          resolve({ success: true, items });
+        } catch (e) {
+          console.error('[Inbox:list] Parse error:', e);
+          resolve({ success: false, items: [] });
+        }
       }
     });
   });
@@ -778,7 +1052,15 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
   });
 });
 
-ipcMain.handle('inbox:update', async (_, id: number, updates: { status?: string; feedback?: string }) => {
+ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?: string; feedback?: string }) => {
+  console.log('[Inbox:update] Called with id:', id, 'type:', typeof id, 'updates:', updates);
+  
+  // Skip if it's a task-review item (those should go through tasks:update)
+  if (typeof id === 'string' && id.startsWith('task-review-')) {
+    console.log('[Inbox:update] Skipping task-review item');
+    return { success: true, skipped: true };
+  }
+  
   const sets: string[] = [];
   if (updates.status) sets.push(`status='${updates.status}'`);
   if (updates.feedback) sets.push(`feedback='${updates.feedback.replace(/'/g, "''")}'`);
@@ -787,9 +1069,11 @@ ipcMain.handle('inbox:update', async (_, id: number, updates: { status?: string;
   if (sets.length === 0) return { success: false };
   
   const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET ${sets.join(', ')} WHERE id=${id}"`;
+  console.log('[Inbox:update] Running:', cmd);
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
+      console.log('[Inbox:update] Result - error:', error, 'stdout:', stdout, 'stderr:', stderr);
       resolve({ success: !error });
     });
   });
@@ -811,6 +1095,131 @@ ipcMain.handle('inbox:approveAll', async () => {
           resolve({ success: true, count });
         }
       });
+    });
+  });
+});
+
+// ============== INBOX REVISION HANDLERS ==============
+// List items that need revision (for agents to process)
+ipcMain.handle('inbox:listRevisions', async () => {
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='needs-revision' ORDER BY created DESC" -json`;
+    
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Inbox] List revisions error:', error);
+        resolve({ success: false, items: [] });
+        return;
+      }
+      try {
+        const items = JSON.parse(stdout || '[]');
+        resolve({ success: true, items });
+      } catch {
+        resolve({ success: true, items: [] });
+      }
+    });
+  });
+});
+
+// Submit revised content for an inbox item
+// This creates a new pending item with the revised content and marks the original as 'revised'
+ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedContent: string, revisedTitle?: string) => {
+  console.log(`[Inbox] Submit revision for item ${originalId}`);
+  
+  return new Promise((resolve) => {
+    // First, get the original item
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${originalId}" -json`, (getErr, getOut) => {
+      if (getErr) {
+        console.error('[Inbox] Get original error:', getErr);
+        resolve({ success: false, error: 'Failed to get original item' });
+        return;
+      }
+      
+      try {
+        const items = JSON.parse(getOut || '[]');
+        if (items.length === 0) {
+          resolve({ success: false, error: 'Original item not found' });
+          return;
+        }
+        
+        const original = items[0];
+        const newTitle = revisedTitle || `[Revised] ${original.title}`;
+        const escapedTitle = newTitle.replace(/'/g, "''");
+        const escapedContent = revisedContent.replace(/'/g, "''");
+        const context = `Revision of inbox item #${originalId}. Original feedback: ${(original.feedback || 'none').replace(/'/g, "''")}`;
+        
+        // Create new pending item with revised content
+        const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('${original.type}', '${escapedTitle}', '${escapedContent}', '${context}', 'pending', '${original.source_channel || 'revision'}', datetime('now'))"`;
+        
+        exec(insertCmd, { timeout: 5000 }, (insertErr) => {
+          if (insertErr) {
+            console.error('[Inbox] Insert revision error:', insertErr);
+            resolve({ success: false, error: insertErr.message });
+            return;
+          }
+          
+          // Mark original as 'revised' (completed state)
+          const updateCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='revised', reviewed_at=datetime('now') WHERE id=${originalId}"`;
+          
+          exec(updateCmd, { timeout: 5000 }, (updateErr) => {
+            if (updateErr) {
+              console.error('[Inbox] Update original error:', updateErr);
+              // Still return success since the revision was created
+            }
+            
+            console.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
+            
+            // Notify frontend of inbox update
+            if (mainWindow) {
+              mainWindow.webContents.send('inbox-updated', { revision: true, originalId });
+            }
+            
+            resolve({ success: true, message: 'Revision submitted for approval' });
+          });
+        });
+      } catch (e: any) {
+        console.error('[Inbox] Parse error:', e);
+        resolve({ success: false, error: e.message });
+      }
+    });
+  });
+});
+
+// Get revision details for a specific item (includes original content and feedback)
+ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${itemId} AND status='needs-revision'" -json`;
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      try {
+        const items = JSON.parse(stdout || '[]');
+        if (items.length === 0) {
+          resolve({ success: false, error: 'Item not found or not in needs-revision status' });
+          return;
+        }
+        
+        const item = items[0];
+        resolve({
+          success: true,
+          item: {
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            originalContent: item.content,
+            feedback: item.feedback,
+            context: item.context,
+            created: item.created,
+            sourceChannel: item.source_channel,
+          }
+        });
+      } catch {
+        resolve({ success: false, error: 'Failed to parse item' });
+      }
     });
   });
 });
@@ -845,6 +1254,7 @@ ipcMain.handle('screenshot:navigate', async (_, view: string) => {
 const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('schedule:list', async () => {
+  console.log('[Schedule:list] Called');
   return new Promise((resolve) => {
     const cmd = `sqlite3 ${scheduleDbPath} "
       CREATE TABLE IF NOT EXISTS schedule (
@@ -862,11 +1272,14 @@ ipcMain.handle('schedule:list', async () => {
     " -json 2>/dev/null || echo '[]'`;
     
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      console.log('[Schedule:list] Raw output:', stdout?.slice(0, 200));
       try {
-        // Filter out CREATE TABLE result
-        const lines = stdout.trim().split('\n');
-        const jsonLine = lines.find(l => l.startsWith('['));
-        const items = JSON.parse(jsonLine || '[]').map((row: any) => ({
+        // JSON output may span multiple lines - find [ and take everything from there
+        const trimmed = stdout.trim();
+        const jsonStart = trimmed.indexOf('[');
+        const jsonStr = jsonStart >= 0 ? trimmed.slice(jsonStart) : '[]';
+        console.log('[Schedule:list] JSON extracted, length:', jsonStr.length);
+        const items = JSON.parse(jsonStr).map((row: any) => ({
           id: row.id,
           type: row.type,
           content: row.content,
@@ -877,8 +1290,10 @@ ipcMain.handle('schedule:list', async () => {
           error: row.error,
           metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
         }));
+        console.log('[Schedule:list] Parsed', items.length, 'items');
         resolve({ success: true, items });
-      } catch {
+      } catch (e) {
+        console.error('[Schedule:list] Error:', e);
         resolve({ success: true, items: [] });
       }
     });
@@ -886,17 +1301,55 @@ ipcMain.handle('schedule:list', async () => {
 });
 
 ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: any }) => {
+  console.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
+  
   const id = `sched-${Date.now()}`;
-  const metadata = item.metadata ? JSON.stringify(item.metadata).replace(/'/g, "''") : null;
+  // Escape for SQL single-quoted strings: double the single quotes
+  const escapedContent = item.content.replace(/'/g, "''");
+  const escapedMetadata = item.metadata 
+    ? JSON.stringify(item.metadata).replace(/'/g, "''")
+    : null;
+  
+  console.log('[Schedule:add] Escaped metadata:', escapedMetadata);
   
   return new Promise((resolve) => {
-    // Insert into database
-    const insertCmd = `sqlite3 ${scheduleDbPath} "
-      INSERT INTO schedule (id, type, content, scheduled_for, metadata)
-      VALUES ('${id}', '${item.type}', '${item.content.replace(/'/g, "''")}', '${item.scheduledFor}', ${metadata ? "'" + metadata + "'" : 'NULL'});
-    "`;
+    // First ensure the schedule table exists
+    const createTableSql = `
+      CREATE TABLE IF NOT EXISTS schedule (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        scheduled_for TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at TEXT DEFAULT (datetime('now')),
+        sent_at TEXT,
+        error TEXT,
+        metadata TEXT
+      );
+    `;
     
-    exec(insertCmd, { timeout: 5000 }, (error) => {
+    exec(`sqlite3 "${scheduleDbPath}" "${createTableSql}"`, { timeout: 5000 }, (createError) => {
+      if (createError) {
+        console.error('[Schedule:add] Failed to create table:', createError.message);
+        resolve({ success: false, error: 'Failed to initialize schedule table: ' + createError.message });
+        return;
+      }
+      
+      // Build SQL and write to temp file to avoid shell escaping nightmares
+      const metadataVal = escapedMetadata ? `'${escapedMetadata}'` : 'NULL';
+      const sql = `INSERT INTO schedule (id, type, content, scheduled_for, metadata) VALUES ('${id}', '${item.type}', '${escapedContent}', '${item.scheduledFor}', ${metadataVal});`;
+      const tmpFile = `/tmp/schedule-${id}.sql`;
+      
+      console.log('[Schedule:add] SQL:', sql);
+      console.log('[Schedule:add] Writing to:', tmpFile);
+      
+      fs.writeFileSync(tmpFile, sql);
+      const insertCmd = `sqlite3 "${scheduleDbPath}" < "${tmpFile}"`;
+      
+      exec(insertCmd, { timeout: 5000 }, (error) => {
+      // Clean up temp file
+      try { fs.unlinkSync(tmpFile); } catch {}
+      
       if (error) {
         resolve({ success: false, error: error.message });
         return;
@@ -928,6 +1381,7 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
         resolve({ success: true, id, warning: 'Cron job creation failed' });
       });
     });
+    }); // Close createTableSql exec callback
   });
 });
 
@@ -986,7 +1440,20 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
           execCmd = `bird tweet "${item.content.replace(/"/g, '\\"')}"`;
         } else if (item.type === 'email') {
           const meta = item.metadata ? JSON.parse(item.metadata) : {};
-          execCmd = `gog gmail send --to "${meta.recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
+          const recipient = meta.recipient || meta.to || '';
+          const account = meta.account || '';
+          
+          // GUARD: Require recipient and account for email sends
+          if (!recipient || !recipient.trim()) {
+            resolve({ success: false, error: 'Missing email recipient' });
+            return;
+          }
+          if (!account || !account.trim()) {
+            resolve({ success: false, error: 'Missing GOG account - cannot send email without account' });
+            return;
+          }
+          
+          execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
         }
         
         if (!execCmd) {
@@ -1347,9 +1814,132 @@ ipcMain.handle('settings:save', async (_, settings: any) => {
   }
 });
 
+// ============== AI CONTENT GENERATION ==============
+// Load Anthropic API key from environment or config
+let anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
+try {
+  const keyPath = path.join(os.homedir(), '.clawdbot', 'anthropic.key');
+  if (!anthropicApiKey && fs.existsSync(keyPath)) {
+    anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
+  }
+} catch {}
+
+ipcMain.handle('ai:generate-content', async (_, prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => {
+  console.log('[AI] Generate content called:', { type, promptLength: prompt.length, hasKey: !!anthropicApiKey });
+  
+  if (!anthropicApiKey) {
+    console.error('[AI] No Anthropic API key configured!');
+    return { success: false, error: 'No API key' };
+  }
+  
+  let systemPrompt: string;
+  let maxTokens = 1024;
+  
+  if (type === 'cleanup') {
+    // Fast cleanup for transcription errors - very concise prompt
+    systemPrompt = `Fix transcription errors in the text. Only correct obvious mistakes, preserve meaning. Return ONLY the corrected text.`;
+    maxTokens = 256;
+  } else if (type === 'chat') {
+    // Chat mode for research/planning agents
+    systemPrompt = prompt.includes('[RESEARCH]') 
+      ? `You are an X/Twitter research agent. Help research trends, competitors, topics, and content strategies. Be concise and actionable.`
+      : `You are an X/Twitter content planning agent. Help plan, strategize, and create engaging content. Be concise and actionable.`;
+  } else if (type === 'ideas') {
+    systemPrompt = `You are a social media content strategist for X (Twitter). Generate 5 unique post ideas/angles based on the given topic. Each idea should:
+- Be engaging and suitable for X/Twitter
+- Have a different angle or approach
+- Be concise (can fit in 280 characters)
+- Include relevant hashtag suggestions where appropriate
+
+Format your response as a JSON array of objects with "idea" and "hook" fields. Example:
+[{"idea": "Post idea text here", "hook": "Why this works: explanation"}]`;
+  } else {
+    systemPrompt = `You are a social media copywriter for X (Twitter). Write a compelling post draft based on the given topic. The post should:
+- Be under 280 characters
+- Be engaging and shareable
+- Include relevant hashtags if appropriate
+- Have a strong hook
+
+Return just the tweet text, nothing else.`;
+  }
+
+  // Use Anthropic API directly via fetch
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: prompt }
+        ]
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('[AI] API error:', response.status, errText);
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text || '';
+    
+    console.log('[AI] Response length:', content.length);
+
+    if (type === 'cleanup') {
+      // Return cleaned text directly
+      return { success: true, cleaned: content.trim() };
+    } else if (type === 'chat') {
+      // Return chat response
+      return { success: true, response: content.trim() };
+    } else if (type === 'ideas') {
+      try {
+        // Try to parse JSON from the response
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const ideas = JSON.parse(jsonMatch[0]);
+          return { success: true, ideas };
+        } else {
+          // Fallback: split by newlines
+          const ideas = content.trim().split('\n').filter((l: string) => l.trim()).map((line: string) => ({
+            idea: line.replace(/^\d+\.\s*/, '').trim(),
+            hook: ''
+          }));
+          return { success: true, ideas };
+        }
+      } catch (e) {
+        console.error('[AI] Parse error:', e);
+        return { success: true, ideas: [{ idea: content.trim(), hook: '' }] };
+      }
+    } else {
+      return { success: true, draft: content.trim() };
+    }
+  } catch (e: any) {
+    console.error('[AI] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
 // ============== TWITTER IPC HANDLERS ==============
 const BIRD_PATH = '/opt/homebrew/bin/bird';
 const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
+
+// Startup test: verify bird CLI is available
+exec(`${BIRD_PATH} --version`, { timeout: 5000, env: execEnv }, (error, stdout, stderr) => {
+  if (error) {
+    console.error('[Twitter] STARTUP TEST FAILED: bird CLI not available!', error.message);
+    console.error('[Twitter] stderr:', stderr);
+  } else {
+    console.log('[Twitter] STARTUP TEST OK: bird version:', stdout.trim());
+  }
+});
 
 ipcMain.handle('twitter:mentions', async () => {
   console.log('[Twitter] Mentions handler called');
@@ -1386,21 +1976,35 @@ ipcMain.handle('twitter:mentions', async () => {
 });
 
 ipcMain.handle('twitter:home', async (_, limit?: number) => {
+  console.log('[Twitter] Home handler called, limit:', limit);
   const countArg = limit ? `--count ${limit}` : '--count 20';
+  
   return new Promise((resolve) => {
-    exec(`bird home ${countArg} --json 2>/dev/null || bird home ${countArg}`, { timeout: 30000 }, (error, stdout) => {
-      if (error) {
-        console.error('[Twitter] Home error:', error);
-        resolve({ success: false, tweets: [], error: error.message });
-        return;
-      }
-      try {
-        const tweets = JSON.parse(stdout);
-        resolve({ success: true, tweets });
-      } catch {
-        resolve({ success: true, tweets: [], raw: stdout });
-      }
-    });
+    try {
+      exec(`${BIRD_PATH} home ${countArg} --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
+        console.log('[Twitter] Home exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
+        
+        if (error) {
+          console.error('[Twitter] Home error:', error.message);
+          console.error('[Twitter] stderr:', stderr);
+          resolve({ success: false, tweets: [], error: error.message, stderr });
+          return;
+        }
+        
+        try {
+          const tweets = JSON.parse(stdout || '[]');
+          console.log('[Twitter] Parsed', Array.isArray(tweets) ? tweets.length : 0, 'home tweets');
+          resolve({ success: true, tweets: Array.isArray(tweets) ? tweets : [] });
+        } catch (e: any) {
+          console.error('[Twitter] Home JSON parse error:', e.message);
+          console.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
+          resolve({ success: true, tweets: [], raw: stdout || '', parseError: e.message });
+        }
+      });
+    } catch (e: any) {
+      console.error('[Twitter] Home handler exception:', e);
+      resolve({ success: false, tweets: [], error: e.message });
+    }
   });
 });
 
@@ -1425,7 +2029,7 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
 
 // Comms cache configuration
 const COMMS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const FROGGO_DB_PATH = '/opt/homebrew/bin/froggo-db';
+const FROGGO_DB_PATH = '/Users/worker/.local/bin/froggo-db';
 
 // Helper to run command and return promise (shared)
 const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
@@ -1860,10 +2464,10 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
 // ============== EMAIL IPC HANDLERS ==============
 ipcMain.handle('email:unread', async (_, account?: string) => {
   const acct = account || 'kevin@carbium.io';
-  const cmd = `GOG_ACCOUNT=${acct} gog gmail search "is:unread" --json --limit 20`;
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 20`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error) {
         console.error('[Email] Unread error:', error);
         resolve({ success: false, emails: [], error: error.message });
@@ -1898,10 +2502,10 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
 ipcMain.handle('email:search', async (_, query: string, account?: string) => {
   const acct = account || 'kevin@carbium.io';
   const escapedQuery = query.replace(/"/g, '\\"');
-  const cmd = `GOG_ACCOUNT=${acct} gog gmail search "${escapedQuery}" --json --limit 20`;
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${escapedQuery}" --json --limit 20`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error) {
         console.error('[Email] Search error:', error);
         resolve({ success: false, emails: [], error: error.message });
@@ -1921,10 +2525,10 @@ ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: 
   const acct = account || 'kevin@carbium.io';
   const title = `Email to ${to}: ${subject.slice(0, 30)}`;
   const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
-  const cmd = `froggo-db inbox-add --type email --title "${title.replace(/"/g, '\\"')}" --content "${content.replace(/"/g, '\\"')}" --channel dashboard`;
+  const cmd = `/opt/homebrew/bin/froggo-db inbox-add --type email --title "${title.replace(/"/g, '\\"')}" --content "${content.replace(/"/g, '\\"')}" --channel dashboard`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
+    exec(cmd, { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error) => {
       if (error) {
         console.error('[Email] Queue error:', error);
         resolve({ success: false, error: error.message });
@@ -1935,14 +2539,239 @@ ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: 
   });
 });
 
+// ============== EMAIL AUTO-DETECT IMPORTANT ==============
+
+// Track processed email IDs to avoid duplicates
+const processedEmailIds = new Set<string>();
+const processedEmailsFile = path.join(os.homedir(), 'clawd', 'data', 'processed-emails.json');
+
+// Load processed emails on startup
+try {
+  if (fs.existsSync(processedEmailsFile)) {
+    const data = JSON.parse(fs.readFileSync(processedEmailsFile, 'utf-8'));
+    data.forEach((id: string) => processedEmailIds.add(id));
+    console.log(`[Email] Loaded ${processedEmailIds.size} processed email IDs`);
+  }
+} catch (e) {
+  console.error('[Email] Failed to load processed emails:', e);
+}
+
+function saveProcessedEmails() {
+  try {
+    const data = Array.from(processedEmailIds).slice(-500); // Keep last 500
+    fs.writeFileSync(processedEmailsFile, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('[Email] Failed to save processed emails:', e);
+  }
+}
+
+interface ImportantEmailResult {
+  id: string;
+  from: string;
+  subject: string;
+  reason: string;
+  priority: 'urgent' | 'high' | 'medium';
+  amount?: string;
+}
+
+function detectImportantEmail(email: any): ImportantEmailResult | null {
+  const id = email.id || email.ID || email.threadId;
+  const from = email.from || email.From || '';
+  const subject = email.subject || email.Subject || '';
+  const labels = email.labels || email.Labels || [];
+  const snippet = email.snippet || '';
+  
+  const subjectLower = subject.toLowerCase();
+  const fromLower = from.toLowerCase();
+  const combined = `${subjectLower} ${snippet.toLowerCase()}`;
+  
+  // Extract amounts (e.g., $1,500 or €500 or £1000)
+  const amountMatch = combined.match(/[\$€£]\s?[\d,]+(?:\.\d{2})?/);
+  const amount = amountMatch ? amountMatch[0] : undefined;
+  
+  // Priority: Urgent
+  const urgentPatterns = [
+    /urgent/i,
+    /immediate action/i,
+    /action required/i,
+    /expires? (today|soon|in \d)/i,
+    /deadline/i,
+    /asap/i,
+  ];
+  
+  for (const pattern of urgentPatterns) {
+    if (pattern.test(subject) || pattern.test(snippet)) {
+      return { id, from, subject, reason: 'Urgent action required', priority: 'urgent', amount };
+    }
+  }
+  
+  // Priority: High - Financial
+  const financialPatterns = [
+    /invoice/i,
+    /payment (due|received|failed|declined)/i,
+    /billing/i,
+    /receipt/i,
+    /transaction/i,
+    /wire transfer/i,
+    /bank (statement|alert|notification)/i,
+  ];
+  
+  const financialSenders = [
+    /revolut/i,
+    /stripe/i,
+    /paypal/i,
+    /wise\.com/i,
+    /mercury/i,
+    /brex/i,
+    /@.*bank/i,
+  ];
+  
+  for (const pattern of financialPatterns) {
+    if (pattern.test(subject)) {
+      return { id, from, subject, reason: 'Financial notification', priority: 'high', amount };
+    }
+  }
+  
+  for (const pattern of financialSenders) {
+    if (pattern.test(from)) {
+      return { id, from, subject, reason: `From ${from.split('<')[0].trim()}`, priority: 'high', amount };
+    }
+  }
+  
+  // Priority: High - Meeting/Calendar
+  const meetingPatterns = [
+    /meeting (request|invite|invitation)/i,
+    /calendar invite/i,
+    /event invitation/i,
+    /interview scheduled/i,
+    /you('ve| have) been invited/i,
+  ];
+  
+  for (const pattern of meetingPatterns) {
+    if (pattern.test(subject) || pattern.test(snippet)) {
+      return { id, from, subject, reason: 'Meeting invitation', priority: 'high' };
+    }
+  }
+  
+  // Priority: Medium - Gmail IMPORTANT label
+  if (labels.includes('IMPORTANT')) {
+    return { id, from, subject, reason: 'Marked important by Gmail', priority: 'medium', amount };
+  }
+  
+  // Priority: Medium - Large amounts (>$500)
+  if (amount) {
+    const numericAmount = parseFloat(amount.replace(/[\$€£,]/g, ''));
+    if (numericAmount >= 500) {
+      return { id, from, subject, reason: `Contains amount: ${amount}`, priority: 'high', amount };
+    }
+  }
+  
+  return null;
+}
+
+ipcMain.handle('email:checkImportant', async () => {
+  return runImportantEmailCheck();
+});
+
+// Auto-check for important emails every 10 minutes
+let emailCheckInterval: NodeJS.Timeout | null = null;
+
+async function runImportantEmailCheck() {
+  console.log('[Email] Checking for important emails...');
+  const results: ImportantEmailResult[] = [];
+  const newInboxItems: string[] = [];
+  
+  const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+  
+  for (const acct of emailAccounts) {
+    try {
+      const output = await new Promise<string>((resolve) => {
+        exec(
+          `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread newer_than:1d" --json --limit 20`,
+          { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } },
+          (error, stdout) => {
+            if (error) resolve('[]');
+            else resolve(stdout);
+          }
+        );
+      });
+      
+      const emails = JSON.parse(output) || [];
+      console.log(`[Email] Checking ${emails.length} emails from ${acct}`);
+      
+      for (const email of emails) {
+        const id = email.id || email.ID || email.threadId;
+        if (!id || processedEmailIds.has(id)) continue;
+        
+        const important = detectImportantEmail(email);
+        if (important) {
+          results.push(important);
+          processedEmailIds.add(id);
+          
+          // Create inbox item
+          const title = important.amount 
+            ? `${important.subject.slice(0, 50)} (${important.amount})`
+            : important.subject.slice(0, 60);
+          const content = `From: ${important.from}\nReason: ${important.reason}\nAccount: ${acct}`;
+          const escapedTitle = title.replace(/"/g, '\\"').replace(/'/g, "''");
+          const escapedContent = content.replace(/"/g, '\\"').replace(/'/g, "''");
+          
+          const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('email', '${escapedTitle}', '${escapedContent}', '${important.priority} priority', 'pending', 'email', datetime('now'))"`;
+          
+          exec(insertCmd, { timeout: 5000 }, (err) => {
+            if (err) console.error('[Email] Failed to create inbox item:', err);
+            else console.log(`[Email] Created inbox item: ${title}`);
+          });
+          
+          newInboxItems.push(title);
+        }
+      }
+    } catch (e) {
+      console.error(`[Email] Error checking ${acct}:`, e);
+    }
+  }
+  
+  // Save processed IDs
+  saveProcessedEmails();
+  
+  // Notify frontend if new items were added
+  if (newInboxItems.length > 0 && mainWindow) {
+    mainWindow.webContents.send('inbox-updated', { newItems: newInboxItems.length });
+  }
+  
+  console.log(`[Email] Found ${results.length} important emails, created ${newInboxItems.length} inbox items`);
+  return { success: true, found: results.length, created: newInboxItems.length, items: results };
+}
+
+function startEmailAutoCheck() {
+  if (emailCheckInterval) clearInterval(emailCheckInterval);
+  
+  // Initial check after 30 seconds (let app settle)
+  setTimeout(() => {
+    console.log('[Email] Running initial important email check...');
+    runImportantEmailCheck();
+  }, 30000);
+  
+  // Then every 10 minutes
+  emailCheckInterval = setInterval(() => {
+    console.log('[Email] Running periodic important email check...');
+    runImportantEmailCheck();
+  }, 10 * 60 * 1000);
+}
+
+// Start auto-check when app is ready
+app.on('ready', () => {
+  setTimeout(startEmailAutoCheck, 5000);
+});
+
 // ============== CALENDAR IPC HANDLERS ==============
 ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => {
   const acct = account || 'kevin.macarthur@bitso.com';
   const daysArg = days ? `--days ${days}` : '--days 7';
-  const cmd = `GOG_ACCOUNT=${acct} gog calendar events ${daysArg} --json`;
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar events ${daysArg} --json`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error) {
         console.error('[Calendar] Events error:', error);
         resolve({ success: false, events: [], error: error.message });
@@ -1954,6 +2783,121 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
       } catch {
         resolve({ success: true, events: [], raw: stdout, account: acct });
       }
+    });
+  });
+});
+
+ipcMain.handle('calendar:createEvent', async (_, params: any) => {
+  const { account, title, start, end, location, description, attendees, isAllDay, recurrence, timeZone } = params;
+  const acct = account || 'kevin.macarthur@bitso.com';
+  const calendarId = 'primary'; // Use primary calendar
+  
+  // Build gog calendar create command
+  let cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar create ${calendarId}`;
+  cmd += ` --summary "${title.replace(/"/g, '\\"')}"`;
+  
+  // Format dates for gog CLI (RFC3339 format or date-only for all-day)
+  if (isAllDay) {
+    cmd += ` --from "${start}"`;
+    cmd += ` --to "${end || start}"`;
+    cmd += ` --all-day`;
+  } else {
+    cmd += ` --from "${start}"`;
+    cmd += ` --to "${end || start}"`;
+  }
+  
+  if (location) cmd += ` --location "${location.replace(/"/g, '\\"')}"`;
+  if (description) cmd += ` --description "${description.replace(/"/g, '\\"')}"`;
+  
+  if (attendees && attendees.length > 0) {
+    const attendeeEmails = attendees.map((a: any) => a.email).join(',');
+    cmd += ` --attendees "${attendeeEmails}"`;
+  }
+  
+  if (recurrence && recurrence !== 'none') {
+    const rrule = recurrence === 'daily' ? 'RRULE:FREQ=DAILY' :
+                   recurrence === 'weekly' ? 'RRULE:FREQ=WEEKLY' :
+                   recurrence === 'monthly' ? 'RRULE:FREQ=MONTHLY' : '';
+    if (rrule) cmd += ` --rrule "${rrule}"`;
+  }
+  
+  console.log('[Calendar] Create event command:', cmd);
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Calendar] Create event error:', error, stderr);
+        resolve({ success: false, error: error.message || stderr });
+        return;
+      }
+      console.log('[Calendar] Create event result:', stdout);
+      resolve({ success: true, result: stdout });
+    });
+  });
+});
+
+ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
+  const { account, eventId, title, start, end, location, description, attendees, isAllDay, timeZone } = params;
+  const acct = account || 'kevin.macarthur@bitso.com';
+  const calendarId = 'primary';
+  
+  // Build gog calendar update command
+  let cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar update ${calendarId} "${eventId}"`;
+  
+  if (title) cmd += ` --summary "${title.replace(/"/g, '\\"')}"`;
+  
+  if (start) {
+    if (isAllDay) {
+      cmd += ` --from "${start}"`;
+      cmd += ` --to "${end || start}"`;
+      cmd += ` --all-day`;
+    } else {
+      cmd += ` --from "${start}"`;
+      cmd += ` --to "${end || start}"`;
+    }
+  }
+  
+  if (location !== undefined) cmd += ` --location "${location.replace(/"/g, '\\"')}"`;
+  if (description !== undefined) cmd += ` --description "${description.replace(/"/g, '\\"')}"`;
+  
+  if (attendees && attendees.length > 0) {
+    const attendeeEmails = attendees.map((a: any) => a.email).join(',');
+    cmd += ` --attendees "${attendeeEmails}"`;
+  }
+  
+  console.log('[Calendar] Update event command:', cmd);
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Calendar] Update event error:', error, stderr);
+        resolve({ success: false, error: error.message || stderr });
+        return;
+      }
+      console.log('[Calendar] Update event result:', stdout);
+      resolve({ success: true, result: stdout });
+    });
+  });
+});
+
+ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
+  const { account, eventId } = params;
+  const acct = account || 'kevin.macarthur@bitso.com';
+  const calendarId = 'primary';
+  
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar delete ${calendarId} "${eventId}"`;
+  
+  console.log('[Calendar] Delete event command:', cmd);
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Calendar] Delete event error:', error, stderr);
+        resolve({ success: false, error: error.message || stderr });
+        return;
+      }
+      console.log('[Calendar] Delete event result:', stdout);
+      resolve({ success: true, result: stdout });
     });
   });
 });

@@ -73,11 +73,13 @@ declare global {
       };
       // Task sync to froggo-db
       tasks: {
-        sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string }) => Promise<{ success: boolean }>;
+        sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
         update: (taskId: string, updates: { status?: string; assignedTo?: string }) => Promise<{ success: boolean }>;
         list: (status?: string) => Promise<{ success: boolean; tasks: any[] }>;
         start: (taskId: string) => Promise<{ success: boolean }>;
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;
+        // Poke Brain for status update
+        poke: (taskId: string, title: string) => Promise<{ success: boolean; message?: string; error?: string }>;
         // Subtask operations
         subtasks: {
           list: (taskId: string) => Promise<{ success: boolean; subtasks: SubtaskData[] }>;
@@ -100,8 +102,15 @@ declare global {
       inbox: {
         list: (status?: string) => Promise<{ success: boolean; items: any[] }>;
         add: (item: { type: string; title: string; content: string; context?: string; channel?: string }) => Promise<{ success: boolean }>;
+        // Add with custom metadata (for Stage 2 email items)
+        addWithMetadata: (item: { type: string; title: string; content: string; context?: string; channel?: string; metadata?: string }) => Promise<{ success: boolean; error?: string }>;
         update: (id: number, updates: { status?: string; feedback?: string }) => Promise<{ success: boolean }>;
         approveAll: () => Promise<{ success: boolean; count?: number }>;
+        // Revision handlers for 'needs-revision' items
+        listRevisions: () => Promise<{ success: boolean; items: any[] }>;
+        submitRevision: (originalId: number, revisedContent: string, revisedTitle?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+        getRevisionContext: (itemId: number) => Promise<{ success: boolean; item?: { id: number; type: string; title: string; originalContent: string; feedback: string; context: string; created: string; sourceChannel: string }; error?: string }>;
+        onUpdate: (callback: (data: { newItems?: number; revision?: boolean; originalId?: number }) => void) => () => void;
       };
       // Execution
       execute: {
@@ -154,7 +163,7 @@ declare global {
         get: () => Promise<{ success: boolean; settings: any }>;
         save: (settings: any) => Promise<{ success: boolean }>;
       };
-      // Twitter (bird CLI)
+      // X (bird CLI)
       twitter: {
         mentions: () => Promise<{ success: boolean; mentions?: any[]; raw?: string }>;
         home: (limit?: number) => Promise<{ success: boolean; tweets?: any[]; raw?: string }>;
@@ -169,6 +178,8 @@ declare global {
         unread: (account?: string) => Promise<{ success: boolean; emails: any[]; account?: string }>;
         search: (query: string, account?: string) => Promise<{ success: boolean; emails: any[]; account?: string }>;
         queueSend: (to: string, subject: string, body: string, account?: string) => Promise<{ success: boolean; message?: string }>;
+        // Direct send (Stage 2 email workflow)
+        send: (options: { to: string; subject: string; body: string; account?: string }) => Promise<{ success: boolean; output?: string; error?: string }>;
       };
       // Calendar (gog CLI)
       calendar: {

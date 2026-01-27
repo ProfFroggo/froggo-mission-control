@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
   gateway: {
     status: () => ipcRenderer.invoke('gateway:status'),
     sessions: () => ipcRenderer.invoke('gateway:sessions'),
+    // Get real sessions from Clawdbot CLI (includes sub-agents)
+    sessionsList: () => ipcRenderer.invoke('gateway:sessions:list'),
   },
   approvals: {
     read: () => ipcRenderer.invoke('approvals:read'),
@@ -45,6 +47,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
     list: (status?: string) => ipcRenderer.invoke('tasks:list', status),
     start: (taskId: string) => ipcRenderer.invoke('tasks:start', taskId),
     complete: (taskId: string, outcome?: string) => ipcRenderer.invoke('tasks:complete', taskId, outcome),
+    // Poke a task to get status update from Brain
+    poke: (taskId: string, title: string) => ipcRenderer.invoke('tasks:poke', taskId, title),
     // Real-time task notification listener
     onNotification: (callback: (notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => void) => {
       const handler = (_: any, notification: any) => callback(notification);
@@ -78,9 +82,21 @@ contextBridge.exposeInMainWorld('clawdbot', {
     list: (status?: string) => ipcRenderer.invoke('inbox:list', status),
     add: (item: { type: string; title: string; content: string; context?: string; channel?: string }) =>
       ipcRenderer.invoke('inbox:add', item),
+    // Add with custom metadata (for Stage 2 email items)
+    addWithMetadata: (item: { type: string; title: string; content: string; context?: string; channel?: string; metadata?: string }) =>
+      ipcRenderer.invoke('inbox:addWithMetadata', item),
     update: (id: number, updates: { status?: string; feedback?: string }) =>
       ipcRenderer.invoke('inbox:update', id, updates),
     approveAll: () => ipcRenderer.invoke('inbox:approveAll'),
+    // Revision handlers for 'needs-revision' items
+    listRevisions: () => ipcRenderer.invoke('inbox:listRevisions'),
+    submitRevision: (originalId: number, revisedContent: string, revisedTitle?: string) =>
+      ipcRenderer.invoke('inbox:submitRevision', originalId, revisedContent, revisedTitle),
+    getRevisionContext: (itemId: number) => ipcRenderer.invoke('inbox:getRevisionContext', itemId),
+    onUpdate: (callback: (data: { newItems?: number; revision?: boolean; originalId?: number }) => void) => {
+      ipcRenderer.on('inbox-updated', (_, data) => callback(data));
+      return () => ipcRenderer.removeAllListeners('inbox-updated');
+    },
   },
   // Filesystem
   fs: {
@@ -129,6 +145,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
   execute: {
     tweet: (content: string, taskId?: string) => ipcRenderer.invoke('execute:tweet', content, taskId),
   },
+  // AI Content Generation
+  ai: {
+    generateContent: (prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => 
+      ipcRenderer.invoke('ai:generate-content', prompt, type),
+  },
   // Twitter (bird CLI)
   twitter: {
     mentions: () => ipcRenderer.invoke('twitter:mentions'),
@@ -148,11 +169,18 @@ contextBridge.exposeInMainWorld('clawdbot', {
     body: (emailId: string, account?: string) => ipcRenderer.invoke('email:body', emailId, account),
     queueSend: (to: string, subject: string, body: string, account?: string) => 
       ipcRenderer.invoke('email:queue-send', to, subject, body, account),
+    // Direct send (Stage 2 email workflow)
+    send: (options: { to: string; subject: string; body: string; account?: string }) =>
+      ipcRenderer.invoke('email:send', options),
+    checkImportant: () => ipcRenderer.invoke('email:checkImportant'),
   },
   // Calendar (gog CLI)
   calendar: {
     events: (account?: string, days?: number) => ipcRenderer.invoke('calendar:events', account, days),
     today: () => ipcRenderer.invoke('calendar:events', undefined, 1), // Convenience for today's events
+    createEvent: (params: any) => ipcRenderer.invoke('calendar:createEvent', params),
+    updateEvent: (params: any) => ipcRenderer.invoke('calendar:updateEvent', params),
+    deleteEvent: (params: any) => ipcRenderer.invoke('calendar:deleteEvent', params),
   },
   // Sessions management
   sessions: {

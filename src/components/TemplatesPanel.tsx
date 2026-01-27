@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Plus, Edit3, Trash2, Copy, Search, Tag, Twitter, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+import { FileText, Plus, Edit3, Trash2, Copy, Search, Tag, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+
+// X logo component
+const XIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 
@@ -16,7 +23,7 @@ interface Template {
 }
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
-  tweet: { icon: Twitter, color: 'text-blue-400', label: 'Tweet' },
+  tweet: { icon: XIcon, color: 'text-white', label: 'Post' },
   email: { icon: Mail, color: 'text-red-400', label: 'Email' },
   message: { icon: MessageSquare, color: 'text-green-400', label: 'Message' },
   generic: { icon: FileText, color: 'text-gray-400', label: 'Generic' },

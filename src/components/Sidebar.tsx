@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Twitter, Command, Inbox, Radio, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, Radio, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail } from 'lucide-react';
 import { useStore } from '../store/store';
+
+// X logo as SVG component
+const XIcon = ({ size = 20 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics';
 
@@ -15,16 +22,16 @@ const navItems = [
   { id: 'comms' as View, icon: Mail, label: 'Inbox', shortcut: '⌘3' },
   { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘4' },
   { id: 'kanban' as View, icon: Kanban, label: 'Tasks', shortcut: '⌘5' },
-  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘5' },
-  { id: 'twitter' as View, icon: Twitter, label: 'X/Twitter', shortcut: '⌘6' },
-  { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘7' },
+  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘6' },
+  { id: 'twitter' as View, icon: XIcon, label: 'X', shortcut: '⌘7' },
+  { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘8' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '' },
   { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '' },
   { id: 'calendar' as View, icon: Calendar, label: 'Calendar', shortcut: '' },
   { id: 'templates' as View, icon: FolderOpen, label: 'Templates', shortcut: '' },
-  { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘8' },
+  { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘9' },
   { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '⌘0' },
 ];
 

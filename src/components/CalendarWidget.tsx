@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Users, RefreshCw, ChevronRight, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, RefreshCw, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 
 interface CalendarEvent {
@@ -13,7 +13,12 @@ interface CalendarEvent {
   account?: string;
 }
 
-export default function CalendarWidget() {
+interface CalendarWidgetProps {
+  expanded?: boolean;
+  onOpenFullCalendar?: () => void;
+}
+
+export default function CalendarWidget({ expanded = false, onOpenFullCalendar }: CalendarWidgetProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,23 +104,34 @@ export default function CalendarWidget() {
   }, {} as Record<string, CalendarEvent[]>);
 
   return (
-    <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
+    <div className={`bg-clawd-surface ${expanded ? 'rounded-xl' : 'rounded-2xl'} border border-clawd-border overflow-hidden`}>
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <h2 className="font-semibold flex items-center gap-2">
           <Calendar size={18} className="text-blue-400" />
           Calendar
         </h2>
-        <button
-          onClick={fetchEvents}
-          disabled={loading}
-          className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
-          title="Refresh"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+        <div className="flex gap-2">
+          {onOpenFullCalendar && (
+            <button
+              onClick={onOpenFullCalendar}
+              className="p-2 hover:bg-clawd-border rounded-lg transition-colors text-clawd-text-dim hover:text-clawd-text"
+              title="Open Full Calendar"
+            >
+              <ExternalLink size={14} />
+            </button>
+          )}
+          <button
+            onClick={fetchEvents}
+            disabled={loading}
+            className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
-      <div className="max-h-80 overflow-y-auto">
+      <div className={`${expanded ? 'max-h-96' : 'max-h-64'} overflow-y-auto`}>
         {loading && events.length === 0 ? (
           <div className="p-8 text-center text-clawd-text-dim">
             <Calendar size={32} className="mx-auto mb-3 opacity-50 animate-pulse" />

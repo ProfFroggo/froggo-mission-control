@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Twitter, Mail, MessageSquare, Calendar, Clock, Edit3, Trash2, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Clock, Edit3, Trash2, Eye } from 'lucide-react';
+
+// X logo component
+const XIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 
@@ -14,7 +21,7 @@ interface ScheduledItem {
 }
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  tweet: { icon: Twitter, color: 'text-blue-400', bg: 'bg-blue-500/20' },
+  tweet: { icon: XIcon, color: 'text-white', bg: 'bg-white/10' },
   email: { icon: Mail, color: 'text-red-400', bg: 'bg-red-500/20' },
   message: { icon: MessageSquare, color: 'text-green-400', bg: 'bg-green-500/20' },
   post: { icon: Calendar, color: 'text-purple-400', bg: 'bg-purple-500/20' },

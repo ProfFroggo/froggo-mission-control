@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Radio, Inbox, Brain, Database, Twitter, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
+import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Radio, Inbox, Brain, Database, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
+
+// X logo component
+const XIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
@@ -33,7 +40,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     { id: 'nav-sessions', icon: <Radio size={16} />, label: 'Go to Sessions', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('sessions'); onClose(); } },
     { id: 'nav-tasks', icon: <ListTodo size={16} />, label: 'Go to Tasks', shortcut: '⌘5', category: 'Navigation', action: () => { onNavigate('kanban'); onClose(); } },
     { id: 'nav-agents', icon: <Bot size={16} />, label: 'Go to Agents', shortcut: '⌘6', category: 'Navigation', action: () => { onNavigate('agents'); onClose(); } },
-    { id: 'nav-twitter', icon: <Send size={16} />, label: 'Go to X/Twitter', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
+    { id: 'nav-twitter', icon: <XIcon size={16} />, label: 'Go to X', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
     { id: 'nav-voice', icon: <Mic size={16} />, label: 'Go to Voice', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('voice'); onClose(); } },
     
     // Quick Actions
@@ -61,7 +68,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       }
       onClose();
     }},
-    { id: 'action-twitter', icon: <Send size={16} />, label: 'Check X/Twitter Mentions', category: 'Actions', action: async () => {
+    { id: 'action-twitter', icon: <XIcon size={16} />, label: 'Check X Mentions', category: 'Actions', action: async () => {
       if (connected) {
         await gateway.sendChat("Check @Prof_Frogo mentions on X and draft replies");
         addActivity({ type: 'chat', message: 'Checking X mentions...', timestamp: Date.now() });
@@ -94,7 +101,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     { id: 'settings', icon: <Settings size={16} />, label: 'Open Settings', category: 'Settings', action: () => { onNavigate('settings'); onClose(); } },
     
     // Quick Actions - Power-ups
-    { id: 'quick-tweet', icon: <Twitter size={16} />, label: 'Draft a Tweet', category: 'Quick', action: async () => {
+    { id: 'quick-tweet', icon: <XIcon size={16} />, label: 'Draft a Post', category: 'Quick', action: async () => {
       const tweet = window.prompt('Draft tweet:');
       if (tweet && connected) {
         await gateway.sendChat(`Draft this tweet for approval: "${tweet}"`);

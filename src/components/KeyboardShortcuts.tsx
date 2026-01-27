@@ -14,7 +14,7 @@ const shortcuts = [
     { keys: ['⌘', '4'], action: 'Sessions' },
     { keys: ['⌘', '5'], action: 'Tasks (Kanban)' },
     { keys: ['⌘', '6'], action: 'Agents' },
-    { keys: ['⌘', '7'], action: 'X/Twitter' },
+    { keys: ['⌘', '7'], action: 'X' },
     { keys: ['⌘', '8'], action: 'Voice' },
     { keys: ['⌘', '9'], action: 'Library' },
     { keys: ['⌘', '0'], action: 'Schedule' },

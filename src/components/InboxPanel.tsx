@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus, AlertTriangle, ShieldAlert, CalendarClock } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -70,6 +70,14 @@ export default function InboxPanel() {
   const rejectInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  
+  // Schedule modal state
+  const [scheduleModal, setScheduleModal] = useState<{
+    item: InboxItem;
+    showDatePicker: boolean;
+    date: string;
+    time: string;
+  } | null>(null);
 
   const loadInbox = async () => {
     setLoading(true);
@@ -80,10 +88,36 @@ export default function InboxPanel() {
         setItems([]);
         return;
       }
+      
+      // Load inbox items
       const result = await window.clawdbot.inbox.list();
-      if (result.success) {
-        setItems(result.items || []);
+      let allItems = result.success ? (result.items || []) : [];
+      
+      // Also load tasks in "review" status
+      try {
+        const tasksResult = await window.clawdbot.tasks.list('review');
+        if (tasksResult?.success && tasksResult.tasks?.length > 0) {
+          // Convert tasks to inbox item format
+          const taskItems = tasksResult.tasks.map((t: any) => ({
+            id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
+            type: 'task' as const,
+            title: `✅ Review: ${t.title}`,
+            content: t.description || t.last_agent_update || 'Task completed, ready for review',
+            context: `Project: ${t.project || 'General'}`,
+            status: 'pending',
+            source_channel: 'kanban',
+            created: new Date(t.created_at || Date.now()).toISOString(),
+            metadata: JSON.stringify({ taskId: t.id, project: t.project }),
+            isTask: true, // Flag to handle differently
+          }));
+          allItems = [...taskItems, ...allItems];
+        }
+      } catch (e) {
+        console.warn('[InboxPanel] Failed to load review tasks:', e);
       }
+      
+      console.log('[Inbox] loadInbox setting items:', allItems.length, 'pending:', allItems.filter(i => i.status === 'pending').length);
+      setItems(allItems);
     } catch (error) {
       console.error('Failed to load inbox:', error);
     } finally {
@@ -147,23 +181,134 @@ export default function InboxPanel() {
   }, [filteredPending, focusedIndex, expandedId]);
 
   const handleApprove = async (item: InboxItem) => {
+    // For tweets, show schedule modal
+    if (item.type === 'tweet') {
+      // Set default time to next hour rounded
+      const now = new Date();
+      now.setHours(now.getHours() + 1, 0, 0, 0);
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().slice(0, 5);
+      
+      setScheduleModal({
+        item,
+        showDatePicker: false,
+        date: dateStr,
+        time: timeStr,
+      });
+      return;
+    }
+    
+    // For emails: 2-stage workflow
+    if (item.type === 'email') {
+      // Parse metadata to check if this is Stage 2 (ready to send)
+      let metadata: any = {};
+      if (item.metadata) {
+        try {
+          metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        } catch {}
+      }
+      
+      // Stage 2: Email is ready to send - show Send/Schedule modal
+      if (metadata.readyToSend) {
+        const now = new Date();
+        now.setHours(now.getHours() + 1, 0, 0, 0);
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().slice(0, 5);
+        
+        setScheduleModal({
+          item,
+          showDatePicker: false,
+          date: dateStr,
+          time: timeStr,
+        });
+        return;
+      }
+      
+      // Stage 1: Content approved - create "Send Email to [recipient]" item
+      const recipient = metadata.recipient || metadata.to || 'recipient';
+      const subject = metadata.subject || 'No Subject';
+      const account = metadata.account || '';
+      
+      // Create Stage 2 inbox item
+      const stage2Item = {
+        type: 'email',
+        title: `📤 Send Email to ${recipient}`,
+        content: item.content,
+        context: `Subject: ${subject}${account ? ` | From: ${account}` : ''}\n\nApproved content ready to send.`,
+        channel: 'email-stage2',
+        metadata: JSON.stringify({
+          ...metadata,
+          readyToSend: true,
+          originalInboxId: item.id,
+          recipient,
+          subject,
+          account,
+        }),
+      };
+      
+      try {
+        // Add Stage 2 item to inbox
+        const result = await window.clawdbot.inbox.addWithMetadata(stage2Item);
+        
+        if (result.success) {
+          // Mark original as approved (Stage 1 complete)
+          setItems(prev => prev.filter(i => i.id !== item.id));
+          await window.clawdbot.inbox.update(item.id, { status: 'approved' });
+          showToast('success', 'Email content approved', `Ready to send to ${recipient}`);
+        } else {
+          showToast('error', 'Failed to create send task', result.error);
+        }
+      } catch (error: any) {
+        console.error('[Inbox] Stage 1 email approval error:', error);
+        showToast('error', 'Approval failed', error.message);
+      }
+      return;
+    }
+    
+    // For other types, execute immediately (existing behavior)
+    executeApproval(item);
+  };
+  
+  const executeApproval = async (item: InboxItem) => {
     // OPTIMISTIC UI: Remove item immediately for instant feedback
     setItems(prev => prev.filter(i => i.id !== item.id));
     showToast('success', 'Approved ✓', item.title);
     
     // Then sync in background
     try {
+      // Check if this is a task review (not a regular inbox item)
+      if ((item as any).isTask && item.metadata) {
+        // This is a task in review status - mark it as done
+        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (meta.taskId) {
+          await window.clawdbot.tasks.update(meta.taskId, { status: 'done' });
+          console.log('[Inbox] Task approved and marked done:', meta.taskId);
+          return;
+        }
+      }
+      
+      // Regular inbox item - update and create execution task
       await window.clawdbot.inbox.update(item.id, { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
       const projectMap: Record<string, string> = {
-        'tweet': 'X/Twitter',
-        'reply': 'X/Twitter',
+        'tweet': 'X',
+        'reply': 'X',
         'email': 'Email',
         'message': 'Message',
         'whatsapp': 'Message',
         'telegram': 'Message',
       };
+      
+      // Parse metadata safely
+      let metadata = {};
+      if (item.metadata) {
+        try {
+          metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        } catch (e) {
+          console.warn('[Inbox] Failed to parse metadata:', e);
+        }
+      }
       
       const taskData = {
         id: `task-${Date.now()}`,
@@ -172,12 +317,22 @@ export default function InboxPanel() {
         status: 'in-progress',
         project: projectMap[item.type] || 'Approved',
         assignedTo: 'main',
-        metadata: item.context ? JSON.parse(item.context) : {},
+        metadata,
       };
       
       const result = await window.clawdbot.tasks.sync(taskData);
       if (!result.success) {
         console.error('[Inbox] Task creation failed:', result.error);
+      } else {
+        // SAFEGUARD: Verify the status is correct after a brief delay
+        setTimeout(async () => {
+          try {
+            await window.clawdbot.tasks.update(taskData.id, { status: 'in-progress' });
+            console.log('[Inbox] Status verified for task:', taskData.id);
+          } catch (e) {
+            console.warn('[Inbox] Status verify failed:', e);
+          }
+        }, 500);
       }
     } catch (error) {
       // Revert on error
@@ -187,12 +342,39 @@ export default function InboxPanel() {
     }
   };
 
-  const handleReject = (item: InboxItem) => {
-    // Open rejection dialog
-    setRejectDialogItem(item);
-    setRejectReason('');
-    // Focus the input after dialog opens
-    setTimeout(() => rejectInputRef.current?.focus(), 100);
+  const handleReject = (item: InboxItem, reason?: string) => {
+    if (reason) {
+      // Direct reject with provided reason (for bulk operations)
+      directReject(item, reason);
+    } else {
+      // Open rejection dialog for manual reason
+      setRejectDialogItem(item);
+      setRejectReason('');
+      setTimeout(() => rejectInputRef.current?.focus(), 100);
+    }
+  };
+
+  const directReject = async (item: InboxItem, reason: string) => {
+    // OPTIMISTIC UI: Remove immediately
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    showToast('warning', 'Rejected ✗', item.title);
+    
+    // Sync in background
+    try {
+      await window.clawdbot.inbox.update(item.id, { 
+        status: 'rejected',
+        feedback: reason 
+      });
+      
+      await window.clawdbot.rejections.log({
+        type: item.type,
+        title: item.title,
+        content: item.content,
+        reason: reason,
+      });
+    } catch (error) {
+      console.error('Reject error:', error);
+    }
   };
 
   const confirmReject = async () => {
@@ -209,10 +391,24 @@ export default function InboxPanel() {
     
     // Sync in background
     try {
-      await window.clawdbot.inbox.update(item.id, { 
-        status: 'rejected',
-        feedback: reason 
-      });
+      // Check if this is a task review item (has string ID like "task-review-XXX")
+      const isTaskItem = (item as any).isTask || String(item.id).startsWith('task-review-');
+      
+      if (isTaskItem && item.metadata) {
+        // For task items, update the task status back to in-progress with feedback
+        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (meta.taskId) {
+          await window.clawdbot.tasks.update(meta.taskId, { status: 'in-progress' });
+          // Log activity with rejection reason
+          gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
+        }
+      } else {
+        // Regular inbox item
+        await window.clawdbot.inbox.update(item.id, { 
+          status: 'rejected',
+          feedback: reason 
+        });
+      }
       
       await window.clawdbot.rejections.log({
         type: item.type,
@@ -233,35 +429,58 @@ export default function InboxPanel() {
   const handleAdjust = async (item: InboxItem) => {
     if (!feedbackText.trim()) return;
     
-    // Update inbox item status
-    await window.clawdbot.inbox.update(item.id, { 
-      status: 'needs-revision', 
-      feedback: feedbackText 
-    });
+    console.log('[Inbox] handleAdjust called for item:', item.id, item.title, 'isTask:', (item as any).isTask);
     
-    // Create a TASK in Kanban for the revision
-    const taskData = {
-      id: `task-${Date.now()}`,
-      title: `Revise: ${item.title}`,
-      description: `Original:\n${item.content}\n\nFeedback:\n${feedbackText}\n\n[Inbox ID: ${item.id}]`,
-      status: 'in-progress',
-      project: item.type === 'tweet' || item.type === 'reply' ? 'X/Twitter' : 
-               item.type === 'email' ? 'Email' : 'Revisions',
-      assignedTo: 'main',
-    };
+    // OPTIMISTIC UI: Remove from pending list immediately
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    showToast('info', 'Revision requested', 'Creating task...');
     
-    const result = await window.clawdbot.tasks.sync(taskData);
-    if (result?.success) {
-      showToast('success', 'Revision task created', 'Check Tasks tab');
+    // Check if this is a task review item
+    const isTaskItem = (item as any).isTask || String(item.id).startsWith('task-review-');
+    console.log('[Inbox] isTaskItem:', isTaskItem, 'metadata:', item.metadata);
+    
+    if (isTaskItem && item.metadata) {
+      // For task items, update the task status back to in-progress with feedback
+      const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+      if (meta.taskId) {
+        await window.clawdbot.tasks.update(meta.taskId, { status: 'in-progress' });
+        // Send feedback to agent
+        gateway.sendToMain(`[TASK_FEEDBACK] Task "${item.title}" needs revision.\nFeedback: ${feedbackText}`);
+        showToast('success', 'Feedback sent', 'Task moved back to In Progress');
+      }
     } else {
-      showToast('info', 'Revision requested', 'Task creation may have failed');
+      // Regular inbox item - update status and create revision task
+      await window.clawdbot.inbox.update(item.id, { 
+        status: 'needs-revision', 
+        feedback: feedbackText 
+      });
+      
+      // Create a TASK in Kanban for the revision
+      const taskData = {
+        id: `task-${Date.now()}`,
+        title: `Revise: ${item.title}`,
+        description: `Original:\n${item.content}\n\nFeedback:\n${feedbackText}\n\n[Inbox ID: ${item.id}]`,
+        status: 'in-progress',
+        project: item.type === 'tweet' || item.type === 'reply' ? 'X' : 
+                 item.type === 'email' ? 'Email' : 'Revisions',
+        assignedTo: 'main',
+      };
+      
+      const result = await window.clawdbot.tasks.sync(taskData);
+      if (result?.success) {
+        showToast('success', 'Revision task created', 'Check Tasks tab');
+        await window.clawdbot.tasks.update?.(taskData.id, { status: 'in-progress' });
+      } else {
+        console.error('[Inbox] Task creation failed:', result);
+        showToast('error', 'Revision task failed', result?.error || 'Unknown error');
+      }
+      
+      console.log('[Inbox] Created revision task:', taskData.id);
     }
-    
-    console.log('[Inbox] Created revision task:', taskData.id);
     
     setFeedbackId(null);
     setFeedbackText('');
-    loadInbox();
+    // Don't reload - already removed optimistically
   };
 
   const handleApproveAll = () => {
@@ -677,6 +896,224 @@ export default function InboxPanel() {
                 Reject
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Modal */}
+      {scheduleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setScheduleModal(null)}>
+          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-lg ${typeConfig[scheduleModal.item.type].color}`}>
+                {scheduleModal.item.type === 'tweet' ? <Send size={20} /> : <Mail size={20} />}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Send or Schedule?</h3>
+                <p className="text-sm text-zinc-400">{scheduleModal.item.title}</p>
+              </div>
+            </div>
+
+            {/* Content Preview */}
+            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
+              <pre className="text-sm whitespace-pre-wrap font-mono text-zinc-300">
+                {scheduleModal.item.content}
+              </pre>
+            </div>
+
+            {/* Date/Time Picker (shown when Schedule is clicked) */}
+            {scheduleModal.showDatePicker && (
+              <div className="mb-6 p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <CalendarClock size={18} className="text-clawd-accent" />
+                  <span className="text-sm font-medium">Schedule for:</span>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs text-zinc-400 mb-1 block">Date</label>
+                    <input
+                      type="date"
+                      value={scheduleModal.date}
+                      onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-zinc-400 mb-1 block">Time</label>
+                    <input
+                      type="time"
+                      value={scheduleModal.time}
+                      onChange={(e) => setScheduleModal({ ...scheduleModal, time: e.target.value })}
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                    />
+                  </div>
+                </div>
+                {/* Friendly time display */}
+                {scheduleModal.date && scheduleModal.time && (
+                  <p className="text-xs text-zinc-400 mt-2">
+                    Will be sent on {new Date(`${scheduleModal.date}T${scheduleModal.time}`).toLocaleString(undefined, {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              {!scheduleModal.showDatePicker ? (
+                <>
+                  {/* Initial state: Send Now / Schedule */}
+                  <button
+                    onClick={async () => {
+                      const item = scheduleModal.item;
+                      setScheduleModal(null);
+                      
+                      // For emails (Stage 2), send via email:send IPC
+                      if (item.type === 'email') {
+                        let metadata: any = {};
+                        if (item.metadata) {
+                          try {
+                            metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                          } catch {}
+                        }
+                        
+                        const recipient = metadata.recipient || metadata.to;
+                        const subject = metadata.subject || 'No Subject';
+                        const account = metadata.account;
+                        
+                        if (!recipient) {
+                          showToast('error', 'No recipient', 'Email needs a recipient address');
+                          return;
+                        }
+                        
+                        // Optimistic UI
+                        setItems(prev => prev.filter(i => i.id !== item.id));
+                        showToast('info', 'Sending email...', `To: ${recipient}`);
+                        
+                        try {
+                          const result = await window.clawdbot.email.send({
+                            to: recipient,
+                            subject,
+                            body: item.content,
+                            account,
+                          });
+                          
+                          if (result.success) {
+                            await window.clawdbot.inbox.update(item.id, { status: 'approved' });
+                            showToast('success', 'Email sent ✓', `To: ${recipient}`);
+                          } else {
+                            showToast('error', 'Email failed', result.error);
+                            loadInbox(); // Revert
+                          }
+                        } catch (e: any) {
+                          showToast('error', 'Send error', e.message);
+                          loadInbox();
+                        }
+                        return;
+                      }
+                      
+                      // For tweets, use existing executeApproval
+                      executeApproval(item);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+                  >
+                    <Send size={18} />
+                    Send Now
+                  </button>
+                  <button
+                    onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: true })}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors font-medium"
+                  >
+                    <Calendar size={18} />
+                    Schedule
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Schedule picker state: Back / Confirm */}
+                  <button
+                    onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: false })}
+                    className="px-4 py-3 bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!scheduleModal.date || !scheduleModal.time) {
+                        showToast('error', 'Please select date and time');
+                        return;
+                      }
+                      
+                      const scheduledFor = `${scheduleModal.date}T${scheduleModal.time}:00`;
+                      const item = scheduleModal.item;
+                      
+                      // Parse metadata for email details
+                      let metadata: any = {};
+                      if (item.metadata) {
+                        try {
+                          metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+                        } catch {}
+                      }
+                      
+                      // Add to schedule
+                      try {
+                        const result = await window.clawdbot.schedule.add({
+                          type: item.type,
+                          content: item.content,
+                          scheduledFor,
+                          metadata: {
+                            ...metadata,
+                            title: item.title,
+                            originalInboxId: item.id,
+                          },
+                        });
+                        
+                        if (result.success) {
+                          // Remove from inbox
+                          setItems(prev => prev.filter(i => i.id !== item.id));
+                          await window.clawdbot.inbox.update(item.id, { status: 'scheduled' });
+                          
+                          const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          });
+                          showToast('success', `Scheduled for ${friendlyTime}`, item.title);
+                        } else {
+                          showToast('error', 'Failed to schedule', result.error);
+                        }
+                      } catch (e: any) {
+                        showToast('error', 'Schedule error', e.message);
+                      }
+                      
+                      setScheduleModal(null);
+                    }}
+                    disabled={!scheduleModal.date || !scheduleModal.time}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CalendarClock size={18} />
+                    Confirm Schedule
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Cancel link */}
+            <button
+              onClick={() => setScheduleModal(null)}
+              className="w-full mt-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}

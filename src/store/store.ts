@@ -4,7 +4,14 @@ import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { spawnAgent, spawnWorker, matchTaskToAgent, AGENTS } from '../lib/agents';
 
-export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done' | 'failed';
+export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed';
+export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
+
+export interface TaskLabel {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export interface Subtask {
   id: string;
@@ -34,12 +41,21 @@ export interface Task {
   title: string;
   description?: string;
   status: TaskStatus;
+  priority?: TaskPriority;
   project: string;
+  labels?: string[]; // Label IDs
   assignedTo?: string;
   reviewerId?: string; // Review agent assigned to check work
   subtasks?: Subtask[];
+  planningNotes?: string; // Planning/brainstorming notes
   reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes';
   reviewNotes?: string;
+  dueDate?: number; // Unix timestamp
+  estimatedHours?: number;
+  blockedBy?: string[]; // Task IDs this is blocked by
+  blocks?: string[]; // Task IDs this blocks
+  progress?: number; // 0-100 percentage
+  lastAgentUpdate?: string; // Last status message from agent
   createdAt: number;
   updatedAt: number;
 }
@@ -64,12 +80,37 @@ export interface Session {
   messageCount: number;
 }
 
+// Real session from Clawdbot Gateway
+export interface GatewaySession {
+  key: string;
+  kind: 'direct' | 'group';
+  updatedAt: number;
+  ageMs: number;
+  sessionId: string;
+  model?: string;
+  totalTokens?: number;
+  contextTokens?: number;
+  label?: string; // Sub-agent label when spawned with sessions_spawn
+  // Derived fields for UI
+  type: 'main' | 'subagent' | 'cron' | 'discord' | 'telegram' | 'whatsapp' | 'web' | 'other';
+  displayName: string;
+  isActive: boolean; // Active within last 5 minutes
+}
+
 export interface Activity {
   id: string;
   type: 'task' | 'chat' | 'agent' | 'system';
   message: string;
   timestamp: number;
   sessionKey?: string;
+}
+
+export interface XDraft {
+  id: string;
+  text: string;
+  scheduledFor?: string;
+  status: 'draft' | 'pending';
+  createdAt: number;
 }
 
 export type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
@@ -114,6 +155,10 @@ interface Store {
   setSessions: (s: Session[]) => void;
   fetchSessions: () => Promise<void>;
 
+  // Real Gateway sessions (from CLI)
+  gatewaySessions: GatewaySession[];
+  loadGatewaySessions: () => Promise<void>;
+
   // Tasks (local)
   tasks: Task[];
   loadTasksFromDB: () => Promise<void>;
@@ -151,6 +196,13 @@ interface Store {
   rejectItem: (id: string) => void;
   adjustItem: (id: string, feedback: string) => void;
   clearCompletedApprovals: () => void;
+
+  // X drafts
+  xDrafts: XDraft[];
+  addXDraft: (text: string, scheduledFor?: string) => XDraft;
+  updateXDraft: (id: string, updates: Partial<XDraft>) => void;
+  deleteXDraft: (id: string) => void;
+  markXDraftPosted: (id: string) => void;
 
   // Orchestration - Froggo management
   autoAssignTask: (taskId: string) => void;
@@ -225,6 +277,77 @@ export const useStore = create<Store>()(
         }
       },
 
+      // Real Gateway sessions (from CLI)
+      gatewaySessions: [],
+      loadGatewaySessions: async () => {
+        try {
+          const result = await (window as any).clawdbot?.gateway?.sessionsList();
+          if (result?.success && Array.isArray(result.sessions)) {
+            const now = Date.now();
+            const fiveMinutes = 5 * 60 * 1000;
+            
+            const processed: GatewaySession[] = result.sessions.map((s: any) => {
+              // Determine session type from key
+              const key = s.key || '';
+              const label = s.label || null;
+              let type: GatewaySession['type'] = 'other';
+              let displayName = key;
+              
+              // Sub-agents: key contains 'subagent'
+              // When label is available, use it for display name
+              if (key.includes('subagent')) {
+                type = 'subagent';
+                if (label) {
+                  displayName = label;
+                } else {
+                  // Extract UUID suffix for display
+                  const parts = key.split(':');
+                  const uuid = parts[parts.length - 1];
+                  displayName = `Sub-agent ${uuid.slice(0, 8)}`;
+                }
+              } else if (key.includes(':cron:')) {
+                type = 'cron';
+                displayName = 'Cron Job';
+              } else if (key.includes(':discord:')) {
+                type = 'discord';
+                displayName = 'Discord';
+              } else if (key.includes(':telegram:')) {
+                type = 'telegram';
+                displayName = 'Telegram';
+              } else if (key.includes(':whatsapp:')) {
+                type = 'whatsapp';
+                displayName = 'WhatsApp';
+              } else if (key.includes(':web:') || key.startsWith('web:')) {
+                type = 'web';
+                displayName = 'Web';
+              } else if (key === 'agent:main:main' || key === 'main') {
+                type = 'main';
+                displayName = 'Main Agent';
+              }
+              
+              return {
+                key: s.key,
+                kind: s.kind,
+                updatedAt: s.updatedAt,
+                ageMs: s.ageMs,
+                sessionId: s.sessionId,
+                model: s.model,
+                totalTokens: s.totalTokens,
+                contextTokens: s.contextTokens,
+                label,
+                type,
+                displayName,
+                isActive: (now - (s.updatedAt || 0)) < fiveMinutes,
+              };
+            });
+            
+            set({ gatewaySessions: processed });
+          }
+        } catch (error) {
+          console.error('Failed to load gateway sessions:', error);
+        }
+      },
+
       tasks: [], // Empty - loaded from froggo-db only
       loadTasksFromDB: async () => {
         try {
@@ -236,8 +359,14 @@ export const useStore = create<Store>()(
               title: t.title,
               description: t.description || '',
               status: t.status as TaskStatus,
+              priority: t.priority as TaskPriority | undefined,
               project: t.project || 'General',
               assignedTo: t.assigned_to,
+              reviewerId: t.reviewerId || t.reviewer_id || undefined,
+              reviewStatus: t.reviewStatus || t.review_status || undefined,
+              planningNotes: t.planning_notes || t.planningNotes || undefined,
+              dueDate: t.due_date ? new Date(t.due_date).getTime() : undefined,
+              lastAgentUpdate: t.last_agent_update || undefined,
               createdAt: t.created_at || Date.now(),
               updatedAt: t.updated_at || Date.now(),
               subtasks: [] as Subtask[],
@@ -280,15 +409,44 @@ export const useStore = create<Store>()(
       })),
       moveTask: (id, status) => {
         const task = get().tasks.find(t => t.id === id);
+        if (!task) return;
+        
+        // SAFEGUARD: Check for incomplete subtasks before marking done
+        if (status === 'done') {
+          const subtasks = task.subtasks || [];
+          const hasSubtasks = subtasks.length > 0;
+          const incompleteCount = subtasks.filter(st => !st.completed).length;
+          
+          if (hasSubtasks && incompleteCount > 0) {
+            console.warn(`[Store] Cannot mark task as done: ${incompleteCount}/${subtasks.length} subtasks incomplete`);
+            // Show user notification via activity
+            get().addActivity({
+              type: 'system',
+              message: `⚠️ Cannot mark "${task.title}" as done: ${incompleteCount}/${subtasks.length} subtasks incomplete`,
+              timestamp: Date.now(),
+            });
+            return; // Block the move
+          }
+        }
+        
+        const previousStatus = task.status;
         set((s) => ({
           tasks: s.tasks.map(t => t.id === id ? { ...t, status, updatedAt: Date.now() } : t)
         }));
         // Broadcast status change to main session
-        if (task) {
-          gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch(() => {});
-          // Sync to froggo-db
-          (window as any).clawdbot?.tasks?.update(task.id, { status }).catch(() => {});
-        }
+        gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch(() => {});
+        // Sync to froggo-db
+        (window as any).clawdbot?.tasks?.update(task.id, { status }).catch(() => {});
+        
+        // Log activity to task_activity table
+        get().logTaskActivity(id, 'status_changed', `Status changed from ${previousStatus} to ${status}`).catch(() => {});
+        
+        // Also add to activity feed
+        get().addActivity({
+          type: 'task',
+          message: `📋 "${task.title}" moved to ${status}`,
+          timestamp: Date.now(),
+        });
       },
       deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter(t => t.id !== id) })),
       assignTask: (id, agentId) => {
@@ -305,6 +463,22 @@ export const useStore = create<Store>()(
           gateway.sendToSession('main', msg).catch(() => {});
           // Sync to froggo-db
           (window as any).clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch(() => {});
+          
+          // Log activity to task_activity table
+          const action = agent ? 'assigned' : 'unassigned';
+          const message = agent 
+            ? `Task assigned to ${agent.name}`
+            : 'Task unassigned';
+          get().logTaskActivity(id, action, message, agentId).catch(() => {});
+          
+          // Also add to activity feed
+          get().addActivity({
+            type: 'task',
+            message: agent 
+              ? `🤖 "${task.title}" assigned to ${agent.avatar} ${agent.name}`
+              : `📋 "${task.title}" unassigned`,
+            timestamp: Date.now(),
+          });
         }
       },
 
@@ -480,6 +654,9 @@ export const useStore = create<Store>()(
             message: `${agent.avatar} ${agent.name} started: ${task.title}`,
             timestamp: Date.now(),
           });
+          
+          // Log to task_activity table for persistence
+          get().logTaskActivity(taskId, 'agent_started', `${agent.name} agent started working on task`, agentId).catch(() => {});
 
         } catch (e) {
           console.error('Failed to start task:', e);
@@ -591,7 +768,7 @@ Users need to trust what it will do. Surprises = churn.
 
 The goal isn't to replace humans. It's to amplify them.`,
           context: 'Drafted based on your X growth strategy - thought leadership content',
-          metadata: { platform: 'X/Twitter', scheduledFor: 'Tomorrow 9am' },
+          metadata: { platform: 'X', scheduledFor: 'Tomorrow 9am' },
           status: 'pending' as ApprovalStatus,
           createdAt: Date.now() - 1800000,
         },
@@ -603,7 +780,7 @@ The goal isn't to replace humans. It's to amplify them.`,
 
 The pattern I've seen: founders who deeply understand one specific user segment always beat generalists trying to "disrupt an industry."`,
           context: 'Replying to thread about product-market fit',
-          metadata: { platform: 'X/Twitter', replyTo: '@cobie: "PMF isn\'t about TAM..."' },
+          metadata: { platform: 'X', replyTo: '@cobie: "PMF isn\'t about TAM..."' },
           status: 'pending' as ApprovalStatus,
           createdAt: Date.now() - 3600000,
         },
@@ -706,6 +883,32 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         approvals: s.approvals.filter(a => a.status === 'pending')
       })),
 
+      // X drafts - persisted to localStorage via Zustand persist
+      xDrafts: [],
+      addXDraft: (text: string, scheduledFor?: string) => {
+        const newDraft: XDraft = {
+          id: `draft-${Date.now()}`,
+          text,
+          scheduledFor,
+          status: 'draft',
+          createdAt: Date.now(),
+        };
+        set((s) => ({
+          xDrafts: [newDraft, ...s.xDrafts]
+        }));
+        return newDraft;
+      },
+      updateXDraft: (id: string, updates: Partial<XDraft>) => set((s) => ({
+        xDrafts: s.xDrafts.map(d => d.id === id ? { ...d, ...updates } : d)
+      })),
+      deleteXDraft: (id: string) => set((s) => ({
+        xDrafts: s.xDrafts.filter(d => d.id !== id)
+      })),
+      markXDraftPosted: (id: string) => set((s) => ({
+        // Remove posted drafts entirely instead of keeping them
+        xDrafts: s.xDrafts.filter(d => d.id !== id)
+      })),
+
       // Orchestration functions for Froggo
 
       // Auto-assign a task to the best agent
@@ -739,7 +942,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
 
         // Determine if output needs Kevin's approval
         const needsKevinApproval = 
-          task.project === 'X/Twitter' ||
+          task.project === 'X' ||
           output.toLowerCase().includes('tweet') ||
           output.toLowerCase().includes('email') ||
           output.toLowerCase().includes('message') ||
@@ -748,7 +951,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         if (needsKevinApproval) {
           // Queue for Kevin's approval
           get().addApproval({
-            type: task.project === 'X/Twitter' ? 'tweet' : 'action',
+            type: task.project === 'X' ? 'tweet' : 'action',
             title: `${agent.avatar} ${agent.name}: ${task.title}`,
             content: output,
             context: `Completed by ${agent.name} agent`,
@@ -807,6 +1010,16 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         // approvals removed - now sourced from froggo-db inbox only
         activities: s.activities.slice(0, 50),
         // Don't persist isMuted - always start unmuted
+        // Persist X drafts (only non-posted ones - posted are removed by markXDraftPosted)
+        xDrafts: s.xDrafts,
+      }),
+      // Custom merge to ensure arrays are never undefined after hydration
+      merge: (persistedState: any, currentState: any) => ({
+        ...currentState,
+        ...persistedState,
+        // Ensure arrays default to empty if missing/null in persisted state
+        activities: persistedState?.activities ?? currentState.activities ?? [],
+        xDrafts: persistedState?.xDrafts ?? currentState.xDrafts ?? [],
       }),
     }
   )

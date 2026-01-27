@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Mail, Twitter, MessageSquare, RefreshCw, ExternalLink, Clock, MapPin, Users, AlertCircle } from 'lucide-react';
+import { X, Calendar, Mail, MessageSquare, RefreshCw, ExternalLink, Clock, MapPin, Users, AlertCircle } from 'lucide-react';
+
+// X logo component
+const XLogo = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 interface ModalProps {
   isOpen: boolean;
@@ -218,7 +225,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
     try {
       const clawdbot = (window as any).clawdbot;
       if (!clawdbot?.twitter?.mentions) {
-        setError('Twitter API not available');
+        setError('X API not available');
         setLoading(false);
         return;
       }
@@ -260,7 +267,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2">
-            <Twitter size={20} className="text-sky-400" />
+            <XLogo size={20} className="text-white" />
             X Mentions
           </h2>
           <div className="flex items-center gap-2">
@@ -280,7 +287,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
             <div className="p-8 text-center text-clawd-text-dim">
               <AlertCircle size={24} className="mx-auto mb-2 text-yellow-400" />
               <p>{error}</p>
-              <p className="text-xs mt-2">Twitter API may need setup</p>
+              <p className="text-xs mt-2">X API may need setup</p>
             </div>
           ) : mentions.length === 0 ? (
             <div className="p-8 text-center text-clawd-text-dim">No recent mentions</div>

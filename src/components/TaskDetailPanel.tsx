@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight } from 'lucide-react';
+import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight, HandMetal } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import { showToast } from './Toast';
 
@@ -12,11 +12,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
   const [loading, setLoading] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
-  const [activeTab, setActiveTab] = useState<'subtasks' | 'activity' | 'review'>('subtasks');
+  const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'review'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [poking, setPoking] = useState(false);
 
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isWorking = assignedAgent?.currentTaskId === task?.id;
@@ -85,6 +86,25 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       await logTaskActivity(task.id, 'task_started', `Task started by ${assignedAgent.name}`, assignedAgent.id);
       spawnAgentForTask(task.id);
       loadActivity();
+    }
+  };
+
+  const handlePoke = async () => {
+    if (!task) return;
+    setPoking(true);
+    try {
+      const result = await (window as any).clawdbot.tasks.poke(task.id, task.title);
+      if (result.success) {
+        showToast('info', '🫵 Poked!', 'Brain will respond with status update');
+        await logTaskActivity(task.id, 'poked', 'Task poked for status update');
+        loadActivity();
+      } else {
+        showToast('error', 'Poke failed', result.error || 'Could not reach Gateway');
+      }
+    } catch (err: any) {
+      showToast('error', 'Poke failed', err.message);
+    } finally {
+      setPoking(false);
     }
   };
 
@@ -305,7 +325,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Tabs */}
       <div className="flex border-b border-clawd-border">
-        {(['subtasks', 'activity', 'review'] as const).map((tab) => (
+        {(['subtasks', 'planning', 'activity', 'review'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -325,6 +345,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 )}
               </span>
             )}
+            {tab === 'planning' && 'Planning'}
             {tab === 'activity' && (
               <span className="flex items-center justify-center gap-2">
                 Activity
@@ -429,6 +450,40 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Planning Tab */}
+        {activeTab === 'planning' && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <FileText size={16} className="text-clawd-accent" />
+                Planning & Brainstorming
+              </h3>
+            </div>
+            
+            <textarea
+              value={task.planningNotes || ''}
+              onChange={(e) => {
+                updateTask(task.id, { planningNotes: e.target.value });
+                // Auto-save to backend (debounced by typing)
+                clearTimeout((window as any).__planningNotesTimer);
+                (window as any).__planningNotesTimer = setTimeout(() => {
+                  (window as any).clawdbot?.tasks?.update(task.id, { 
+                    planningNotes: e.target.value 
+                  }).catch(() => {});
+                }, 1000);
+              }}
+              placeholder="Planning notes, brainstorming, research..."
+              className="w-full h-64 bg-clawd-bg border border-clawd-border rounded-xl p-4 text-sm resize-none focus:outline-none focus:border-clawd-accent font-mono"
+              style={{ minHeight: '16rem' }}
+            />
+            
+            <p className="text-xs text-clawd-text-dim mt-2">
+              💡 Use this space for planning, brainstorming, research notes, or any thoughts about this task.
+              Changes are auto-saved after 1 second.
+            </p>
           </div>
         )}
 
@@ -579,6 +634,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Quick Actions */}
       <div className="p-6 border-t border-clawd-border bg-clawd-bg">
         <div className="flex gap-2">
+          {/* Poke Button - Ask Brain for status update */}
+          {task.status !== 'done' && (
+            <button
+              onClick={handlePoke}
+              disabled={poking}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-accent/20 hover:text-clawd-accent transition-colors disabled:opacity-50"
+              title="Poke Brain for status update"
+            >
+              {poking ? <Loader2 size={16} className="animate-spin" /> : <span className="text-lg">🫵</span>}
+              Poke
+            </button>
+          )}
           {task.status !== 'done' && (
             <button
               onClick={() => {

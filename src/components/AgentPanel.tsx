@@ -1,14 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle } from 'lucide-react';
-import { useStore, Agent } from '../store/store';
+import { useStore, Agent, GatewaySession } from '../store/store';
 import { gateway } from '../lib/gateway';
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, createWorkerAgent, updateAgentStatus, addActivity } = useStore();
+  const { agents, tasks, spawnAgentForTask, createWorkerAgent, updateAgentStatus, addActivity, gatewaySessions, loadGatewaySessions } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newWorkerName, setNewWorkerName] = useState('');
   const [newWorkerTask, setNewWorkerTask] = useState('');
   const [creating, setCreating] = useState(false);
+
+  // Poll gateway sessions every 5 seconds
+  useEffect(() => {
+    loadGatewaySessions();
+    const interval = setInterval(loadGatewaySessions, 5000);
+    return () => clearInterval(interval);
+  }, [loadGatewaySessions]);
+
+  // Get real sub-agents from gateway (key contains 'subagent')
+  // Note: When labels are set on spawn, they'll show here too
+  const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
+  const activeSubagents = realSubagents.filter(s => s.isActive);
 
   const statusColors: Record<Agent['status'], string> = {
     active: 'bg-green-500',
@@ -75,16 +87,25 @@ export default function AgentPanel() {
               <Bot size={24} /> Agents
             </h1>
             <p className="text-clawd-text-dim">
-              {agents.filter(a => a.status === 'busy').length} working • {agents.filter(a => a.status === 'idle').length} idle
+              {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running • {realSubagents.length} total sessions
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
-          >
-            <Plus size={16} />
-            New Worker
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadGatewaySessions}
+              className="p-2 bg-clawd-surface border border-clawd-border rounded-lg hover:bg-clawd-border transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw size={16} />
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+            >
+              <Plus size={16} />
+              New Worker
+            </button>
+          </div>
         </div>
 
         {/* Main Agents */}
@@ -189,7 +210,54 @@ export default function AgentPanel() {
           </div>
         </div>
 
-        {/* Worker Agents */}
+        {/* Real Sub-Agents from Gateway */}
+        {realSubagents.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-sm font-medium text-clawd-text-dim uppercase tracking-wider mb-3">
+              Sub-Agents ({activeSubagents.length} active / {realSubagents.length} total)
+            </h2>
+            <div className="space-y-2">
+              {realSubagents.map((session) => (
+                <div
+                  key={session.key}
+                  className={`bg-clawd-surface rounded-lg border p-3 flex items-center gap-3 ${
+                    session.isActive ? 'border-green-500/30 bg-green-500/5' : 'border-clawd-border'
+                  }`}
+                >
+                  <span className="text-xl">🤖</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{session.displayName}</span>
+                      {session.label && (
+                        <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                          {session.label}
+                        </span>
+                      )}
+                      <span className={`w-2 h-2 rounded-full ${session.isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+                      {session.isActive && <span className="text-xs text-green-400">Active</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
+                      <span>{session.model?.split('/').pop() || 'unknown'}</span>
+                      <span>{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
+                      <span className="truncate" title={session.key}>{session.key.slice(0, 40)}...</span>
+                    </div>
+                  </div>
+                  {session.isActive ? (
+                    <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded">
+                      Running
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 text-xs bg-gray-500/20 text-gray-400 rounded">
+                      Idle
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Legacy Worker Agents (from store) */}
         {workerAgents.length > 0 && (
           <div>
             <h2 className="text-sm font-medium text-clawd-text-dim uppercase tracking-wider mb-3">
