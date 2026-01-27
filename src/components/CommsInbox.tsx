@@ -534,7 +534,7 @@ export default function CommsInbox() {
     const draft: ReplyDraft = {
       id: `draft-${Date.now()}`,
       platform: message.platform,
-      to: message.from,
+      to: message.from || 'Unknown',
       originalMessage: message.preview,
       suggestedReply: reply,
       status: 'pending',
