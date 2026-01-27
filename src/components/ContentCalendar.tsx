@@ -125,7 +125,7 @@ export default function ContentCalendar() {
             </button>
             <button 
               onClick={() => {
-                showToast('Select a date on the calendar to schedule content', 'info');
+                showToast('info', 'Select a date on the calendar to schedule content');
                 setSelectedDate(new Date());
               }}
               className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90"
@@ -241,7 +241,7 @@ export default function ContentCalendar() {
             <div className="text-center py-4 text-clawd-text-dim">
               <p className="text-sm">No content scheduled</p>
               <button 
-                onClick={() => showToast('Schedule content feature coming soon', 'info')}
+                onClick={() => showToast('info', 'Schedule content feature coming soon')}
                 className="mt-2 text-clawd-accent text-sm hover:underline"
               >
                 + Add content
@@ -268,14 +268,14 @@ export default function ContentCalendar() {
                     </div>
                     <div className="flex gap-1">
                       <button 
-                        onClick={() => showToast(`Preview: ${item.content}`, 'info')}
+                        onClick={() => showToast('info', `Preview: ${item.content}`)}
                         className="p-1 hover:bg-clawd-border rounded"
                         title="Preview"
                       >
                         <Eye size={14} className="text-clawd-text-dim" />
                       </button>
                       <button 
-                        onClick={() => showToast('Edit feature coming soon', 'info')}
+                        onClick={() => showToast('info', 'Edit feature coming soon')}
                         className="p-1 hover:bg-clawd-border rounded"
                         title="Edit"
                       >

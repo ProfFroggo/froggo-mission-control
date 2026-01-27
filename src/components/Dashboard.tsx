@@ -43,12 +43,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
   const handleQuickAction = async (label: string, prompt: string) => {
     if (!connected) {
-      showToast('Not connected to gateway', 'error');
+      showToast('error', 'Not connected to gateway');
       return;
     }
     
     setLoadingAction(label);
-    showToast(`Asking Froggo about ${label.toLowerCase()}...`, 'info');
+    showToast('info', `Asking Froggo about ${label.toLowerCase()}...`);
     
     try {
       await gateway.sendChat(prompt);
@@ -58,7 +58,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       }
     } catch (error) {
       console.error('Quick action error:', error);
-      showToast(`Failed to check ${label.toLowerCase()}`, 'error');
+      showToast('error', `Failed to check ${label.toLowerCase()}`);
     } finally {
       setLoadingAction(null);
     }

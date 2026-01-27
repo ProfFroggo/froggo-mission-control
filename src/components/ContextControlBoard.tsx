@@ -328,7 +328,7 @@ export default function ContextControlBoard() {
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm text-clawd-text-dim">{agents.length} agents configured</div>
               <button 
-                onClick={() => showToast('Create agent feature coming soon', 'info')}
+                onClick={() => showToast('info', 'Create agent feature coming soon')}
                 className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent text-white rounded-lg text-sm"
               >
                 <Plus size={14} />
