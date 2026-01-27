@@ -32,7 +32,9 @@ export default function TopBar({ onCallClick }: TopBarProps) {
     const unsub = gateway.on('stateChange', ({ state }: { state: ConnectionState }) => {
       setConnectionState(state);
     });
-    return () => unsub();
+    return () => {
+      unsub();
+    };
   }, []);
 
   useEffect(() => {
