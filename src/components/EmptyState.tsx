@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { Inbox, MessageSquare, CheckCircle, FolderOpen, Calendar, Bell, Bot, Code, FileText, Search } from 'lucide-react';
 
 type EmptyStateType = 'inbox' | 'chat' | 'tasks' | 'files' | 'calendar' | 'notifications' | 'agents' | 'code' | 'search' | 'generic';
@@ -101,7 +101,7 @@ export default function EmptyState({
         {/* Icon container */}
         <div className={`relative w-24 h-24 rounded-3xl bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
           <div className="w-20 h-20 rounded-2xl bg-clawd-surface/80 flex items-center justify-center">
-            {typeof Icon === 'function' ? <Icon size={40} className="text-clawd-text-dim" /> : Icon}
+            {React.isValidElement(Icon) ? Icon : (typeof Icon === 'function' || (Icon && Icon.$$typeof) ? <Icon size={40} className="text-clawd-text-dim" /> : null)}
           </div>
         </div>
         
