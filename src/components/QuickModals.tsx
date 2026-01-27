@@ -45,6 +45,16 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     if (isOpen) fetchEvents();
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const formatTime = (iso: string, isAllDay?: boolean) => {
@@ -168,6 +178,16 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
     if (isOpen) fetchEmails();
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -259,6 +279,16 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
   useEffect(() => {
     if (isOpen) fetchMentions();
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -355,6 +385,16 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
   useEffect(() => {
     if (isOpen) fetchMessages();
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
+    }
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
