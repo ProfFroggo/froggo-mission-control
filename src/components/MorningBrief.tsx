@@ -24,6 +24,17 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
     loadBrief();
   }, []);
 
+  // ESC key to dismiss
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onDismiss();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onDismiss]);
+
   const loadBrief = async () => {
     try {
       // Get time of day
@@ -153,8 +164,14 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
   const hasItems = brief.pendingApprovals > 0 || brief.upcomingEvents.length > 0 || brief.urgentItems.length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
-      <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
+    <div 
+      className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4"
+      onClick={onDismiss}
+    >
+      <div 
+        className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-8 text-center border-b border-clawd-border bg-gradient-to-br from-clawd-accent/10 to-transparent">
           <div className="mb-4">{getIcon()}</div>
@@ -234,6 +251,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-4 border-t border-clawd-border bg-clawd-bg">
           <button
             onClick={onDismiss}
+            autoFocus
             className="w-full py-3 bg-clawd-accent text-white rounded-xl font-medium hover:bg-clawd-accent/90 transition-colors"
           >
             {hasItems ? "Let's get to work" : "Start your day"}
