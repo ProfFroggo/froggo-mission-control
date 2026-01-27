@@ -510,7 +510,7 @@ export default function CommsInbox() {
   };
 
   const handleSendReply = async (message: Message, reply: string) => {
-    const recipient = message.chatId || message.from || message.name || 'Unknown';
+    const recipient = message.from || message.name || 'Unknown';
     console.log('Sending reply:', { platform: message.platform, to: recipient, reply });
     
     try {

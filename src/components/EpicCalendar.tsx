@@ -61,6 +61,12 @@ export default function EpicCalendar() {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Drag & Drop state
+  const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null);
+  const [draggedOverSlot, setDraggedOverSlot] = useState<{ date: Date; hour?: number } | null>(null);
+  const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
+  const [pendingReschedule, setPendingReschedule] = useState<{ event: CalendarEvent; newStart: Date; newEnd: Date } | null>(null);
+
   const accounts = ['kevin@carbium.io', 'kevin.macarthur@bitso.com'];
 
   // Open create event modal
@@ -197,6 +203,121 @@ export default function EpicCalendar() {
       await fetchEvents();
       return false;
     }
+  };
+
+  // Drag & Drop Handlers
+  const handleDragStart = (e: React.DragEvent, event: CalendarEvent) => {
+    setDraggedEvent(event);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedEvent(null);
+    setDraggedOverSlot(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: Date, hour?: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDraggedOverSlot({ date, hour });
+  };
+
+  const handleDragLeave = () => {
+    setDraggedOverSlot(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, date: Date, hour?: number) => {
+    e.preventDefault();
+    
+    if (!draggedEvent) return;
+
+    const { start, end, isAllDay } = getEventTime(draggedEvent);
+    const eventDuration = end.getTime() - start.getTime();
+
+    // Calculate new start time
+    let newStart: Date;
+    if (isAllDay) {
+      // For all-day events, just change the date
+      newStart = new Date(date);
+      newStart.setHours(0, 0, 0, 0);
+    } else if (hour !== undefined) {
+      // For timed events with hour slot (Week/Day view)
+      newStart = new Date(date);
+      newStart.setHours(hour, start.getMinutes(), 0, 0);
+    } else {
+      // For timed events without hour (Month view) - preserve time
+      newStart = new Date(date);
+      newStart.setHours(start.getHours(), start.getMinutes(), 0, 0);
+    }
+
+    // Calculate new end time (preserve duration)
+    const newEnd = new Date(newStart.getTime() + eventDuration);
+
+    // Show confirmation dialog
+    setPendingReschedule({ event: draggedEvent, newStart, newEnd });
+    setShowRescheduleConfirm(true);
+    
+    // Clear drag state
+    setDraggedEvent(null);
+    setDraggedOverSlot(null);
+  };
+
+  const confirmReschedule = async () => {
+    if (!pendingReschedule) return;
+
+    const { event, newStart, newEnd } = pendingReschedule;
+    const { isAllDay } = getEventTime(event);
+
+    try {
+      const startISO = isAllDay 
+        ? newStart.toISOString().split('T')[0]
+        : newStart.toISOString();
+      const endISO = isAllDay
+        ? newEnd.toISOString().split('T')[0]
+        : newEnd.toISOString();
+
+      const command = `GOG_ACCOUNT=${event.account} gog calendar events update --event-id "${event.id}" --summary "${event.summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      
+      const response = await window.electron.execute(command);
+      
+      if (response.exitCode !== 0) {
+        throw new Error(response.stderr || 'Failed to reschedule event');
+      }
+
+      // Optimistic update
+      setEvents(prevEvents =>
+        prevEvents.map(evt =>
+          evt.id === event.id
+            ? {
+                ...evt,
+                start: isAllDay ? { date: startISO } : { dateTime: startISO },
+                end: isAllDay ? { date: endISO } : { dateTime: endISO }
+              }
+            : evt
+        )
+      );
+
+      // Refresh to get server truth
+      await fetchEvents();
+      
+      setShowRescheduleConfirm(false);
+      setPendingReschedule(null);
+    } catch (err) {
+      console.error('Failed to reschedule event:', err);
+      setError(`Failed to reschedule event: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTimeout(() => setError(null), 5000);
+      
+      // Rollback by refreshing
+      await fetchEvents();
+      
+      setShowRescheduleConfirm(false);
+      setPendingReschedule(null);
+    }
+  };
+
+  const cancelReschedule = () => {
+    setShowRescheduleConfirm(false);
+    setPendingReschedule(null);
   };
 
   const fetchEvents = async () => {
@@ -380,6 +501,17 @@ export default function EpicCalendar() {
         />
       )}
 
+      {/* Reschedule Confirmation Dialog */}
+      {showRescheduleConfirm && pendingReschedule && (
+        <RescheduleConfirmDialog
+          event={pendingReschedule.event}
+          newStart={pendingReschedule.newStart}
+          newEnd={pendingReschedule.newEnd}
+          onConfirm={confirmReschedule}
+          onCancel={cancelReschedule}
+        />
+      )}
+
       {/* Calendar View */}
       <div className="flex-1 overflow-auto">
         {loading && events.length === 0 ? (
@@ -404,9 +536,48 @@ export default function EpicCalendar() {
           </div>
         ) : (
           <>
-            {view === 'month' && <MonthView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
-            {view === 'week' && <WeekView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
-            {view === 'day' && <DayView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
+            {view === 'month' && (
+              <MonthView 
+                currentDate={currentDate} 
+                events={events} 
+                onEventClick={handleEditEvent}
+                draggedEvent={draggedEvent}
+                draggedOverSlot={draggedOverSlot}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            )}
+            {view === 'week' && (
+              <WeekView 
+                currentDate={currentDate} 
+                events={events} 
+                onEventClick={handleEditEvent}
+                draggedEvent={draggedEvent}
+                draggedOverSlot={draggedOverSlot}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            )}
+            {view === 'day' && (
+              <DayView 
+                currentDate={currentDate} 
+                events={events} 
+                onEventClick={handleEditEvent}
+                draggedEvent={draggedEvent}
+                draggedOverSlot={draggedOverSlot}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            )}
             {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
           </>
         )}
@@ -441,7 +612,21 @@ function formatTime(date: Date): string {
 }
 
 // Event Card Component
-function EventCard({ event, compact = false, onClick }: { event: CalendarEvent; compact?: boolean; onClick?: (event: CalendarEvent) => void }) {
+function EventCard({ 
+  event, 
+  compact = false, 
+  onClick,
+  onDragStart,
+  onDragEnd,
+  isDragging = false
+}: { 
+  event: CalendarEvent; 
+  compact?: boolean; 
+  onClick?: (event: CalendarEvent) => void;
+  onDragStart?: (e: React.DragEvent, event: CalendarEvent) => void;
+  onDragEnd?: () => void;
+  isDragging?: boolean;
+}) {
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
   const accountColor = event.account === 'kevin@carbium.io' ? 'bg-blue-500' : 'bg-purple-500';
@@ -449,7 +634,12 @@ function EventCard({ event, compact = false, onClick }: { event: CalendarEvent; 
   if (compact) {
     return (
       <div 
-        className={`text-xs px-2 py-1 ${accountColor} text-white rounded mb-1 truncate cursor-pointer hover:opacity-80 transition-opacity`}
+        draggable
+        onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
+        onDragEnd={onDragEnd}
+        className={`text-xs px-2 py-1 ${accountColor} text-white rounded mb-1 truncate cursor-move hover:opacity-80 transition-all ${
+          isDragging ? 'opacity-50 scale-95' : ''
+        }`}
         title={event.summary}
         onClick={(e) => {
           e.stopPropagation();
@@ -464,7 +654,12 @@ function EventCard({ event, compact = false, onClick }: { event: CalendarEvent; 
 
   return (
     <div 
-      className="bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-colors cursor-pointer"
+      draggable
+      onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
+      onDragEnd={onDragEnd}
+      className={`bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-all cursor-move ${
+        isDragging ? 'opacity-50 scale-95' : ''
+      }`}
       onClick={(e) => {
         e.stopPropagation();
         onClick?.(event);
@@ -516,7 +711,29 @@ function EventCard({ event, compact = false, onClick }: { event: CalendarEvent; 
 }
 
 // Month View
-function MonthView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
+function MonthView({ 
+  currentDate, 
+  events, 
+  onEventClick,
+  draggedEvent,
+  draggedOverSlot,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop
+}: { 
+  currentDate: Date; 
+  events: CalendarEvent[]; 
+  onEventClick: (event: CalendarEvent) => void;
+  draggedEvent: CalendarEvent | null;
+  draggedOverSlot: { date: Date; hour?: number } | null;
+  onDragStart: (e: React.DragEvent, event: CalendarEvent) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+}) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = getWeekStart(firstDay);
@@ -566,13 +783,21 @@ function MonthView({ currentDate, events, onEventClick }: { currentDate: Date; e
                 const dayEvents = getEventsForDay(date);
                 const isToday = isSameDay(date, today);
                 const inCurrentMonth = isCurrentMonth(date);
+                const isDragOver = draggedOverSlot && isSameDay(draggedOverSlot.date, date) && draggedOverSlot.hour === undefined;
 
                 return (
                   <div
                     key={dayIdx}
-                    className={`border-r border-clawd-border last:border-r-0 p-2 ${
+                    className={`border-r border-clawd-border last:border-r-0 p-2 transition-all overflow-hidden ${
                       !inCurrentMonth ? 'bg-clawd-bg opacity-50' : ''
-                    } hover:bg-clawd-border/30 transition-colors cursor-pointer overflow-hidden`}
+                    } ${
+                      isDragOver 
+                        ? 'bg-clawd-accent/10 border-2 border-dashed border-clawd-accent' 
+                        : 'hover:bg-clawd-border/30 cursor-pointer'
+                    }`}
+                    onDragOver={(e) => onDragOver(e, date)}
+                    onDragLeave={onDragLeave}
+                    onDrop={(e) => onDrop(e, date)}
                   >
                     <div className={`text-sm font-medium mb-1 ${
                       isToday ? 'bg-clawd-accent text-white w-6 h-6 rounded-full flex items-center justify-center' : ''
@@ -581,7 +806,15 @@ function MonthView({ currentDate, events, onEventClick }: { currentDate: Date; e
                     </div>
                     <div className="space-y-1">
                       {dayEvents.slice(0, 3).map(event => (
-                        <EventCard key={event.id} event={event} compact onClick={onEventClick} />
+                        <EventCard 
+                          key={event.id} 
+                          event={event} 
+                          compact 
+                          onClick={onEventClick}
+                          onDragStart={onDragStart}
+                          onDragEnd={onDragEnd}
+                          isDragging={draggedEvent?.id === event.id}
+                        />
                       ))}
                       {dayEvents.length > 3 && (
                         <div className="text-xs text-clawd-text-dim pl-2">
@@ -601,7 +834,29 @@ function MonthView({ currentDate, events, onEventClick }: { currentDate: Date; e
 }
 
 // Week View
-function WeekView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
+function WeekView({ 
+  currentDate, 
+  events, 
+  onEventClick,
+  draggedEvent,
+  draggedOverSlot,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop
+}: { 
+  currentDate: Date; 
+  events: CalendarEvent[]; 
+  onEventClick: (event: CalendarEvent) => void;
+  draggedEvent: CalendarEvent | null;
+  draggedOverSlot: { date: Date; hour?: number } | null;
+  onDragStart: (e: React.DragEvent, event: CalendarEvent) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+}) {
   const weekStart = getWeekStart(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -669,16 +924,34 @@ function WeekView({ currentDate, events, onEventClick }: { currentDate: Date; ev
               {weekDays.map(date => {
                 const dayEvents = getEventsForDayAndHour(date, hour);
                 const isToday = isSameDay(date, today);
+                const isDragOver = draggedOverSlot && 
+                                  isSameDay(draggedOverSlot.date, date) && 
+                                  draggedOverSlot.hour === hour;
                 
                 return (
                   <div
                     key={`${date.toISOString()}-${hour}`}
-                    className={`border-r border-clawd-border last:border-r-0 p-1 ${
+                    className={`border-r border-clawd-border last:border-r-0 p-1 transition-all ${
                       isToday ? 'bg-clawd-accent/5' : ''
-                    } hover:bg-clawd-border/30 transition-colors cursor-pointer`}
+                    } ${
+                      isDragOver 
+                        ? 'bg-clawd-accent/10 border-2 border-dashed border-clawd-accent' 
+                        : 'hover:bg-clawd-border/30 cursor-pointer'
+                    }`}
+                    onDragOver={(e) => onDragOver(e, date, hour)}
+                    onDragLeave={onDragLeave}
+                    onDrop={(e) => onDrop(e, date, hour)}
                   >
                     {dayEvents.map(event => (
-                      <EventCard key={event.id} event={event} compact onClick={onEventClick} />
+                      <EventCard 
+                        key={event.id} 
+                        event={event} 
+                        compact 
+                        onClick={onEventClick}
+                        onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
+                        isDragging={draggedEvent?.id === event.id}
+                      />
                     ))}
                   </div>
                 );
@@ -692,7 +965,29 @@ function WeekView({ currentDate, events, onEventClick }: { currentDate: Date; ev
 }
 
 // Day View
-function DayView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
+function DayView({ 
+  currentDate, 
+  events, 
+  onEventClick,
+  draggedEvent,
+  draggedOverSlot,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop
+}: { 
+  currentDate: Date; 
+  events: CalendarEvent[]; 
+  onEventClick: (event: CalendarEvent) => void;
+  draggedEvent: CalendarEvent | null;
+  draggedOverSlot: { date: Date; hour?: number } | null;
+  onDragStart: (e: React.DragEvent, event: CalendarEvent) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+}) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
   const isToday = isSameDay(currentDate, today);
@@ -727,7 +1022,15 @@ function DayView({ currentDate, events, onEventClick }: { currentDate: Date; eve
           <div className="border-b border-clawd-border p-4 space-y-2 flex-shrink-0">
             <div className="text-xs font-semibold text-clawd-text-dim mb-2">ALL DAY</div>
             {allDayEvents.map(event => (
-              <EventCard key={event.id} event={event} compact onClick={onEventClick} />
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                compact 
+                onClick={onEventClick}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                isDragging={draggedEvent?.id === event.id}
+              />
             ))}
           </div>
         )}
@@ -737,6 +1040,9 @@ function DayView({ currentDate, events, onEventClick }: { currentDate: Date; eve
           {hours.map(hour => {
             const hourEvents = getEventsForHour(hour);
             const currentHour = isToday && new Date().getHours() === hour;
+            const isDragOver = draggedOverSlot && 
+                              isSameDay(draggedOverSlot.date, currentDate) && 
+                              draggedOverSlot.hour === hour;
 
             return (
               <div
@@ -748,9 +1054,25 @@ function DayView({ currentDate, events, onEventClick }: { currentDate: Date; eve
                 <div className="w-24 p-3 text-sm text-clawd-text-dim border-r border-clawd-border flex-shrink-0">
                   {hour === 0 ? '12:00 AM' : hour < 12 ? `${hour}:00 AM` : hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`}
                 </div>
-                <div className="flex-1 p-3 space-y-2 hover:bg-clawd-border/30 transition-colors cursor-pointer">
+                <div 
+                  className={`flex-1 p-3 space-y-2 transition-all ${
+                    isDragOver 
+                      ? 'bg-clawd-accent/10 border-2 border-dashed border-clawd-accent' 
+                      : 'hover:bg-clawd-border/30 cursor-pointer'
+                  }`}
+                  onDragOver={(e) => onDragOver(e, currentDate, hour)}
+                  onDragLeave={onDragLeave}
+                  onDrop={(e) => onDrop(e, currentDate, hour)}
+                >
                   {hourEvents.map(event => (
-                    <EventCard key={event.id} event={event} onClick={onEventClick} />
+                    <EventCard 
+                      key={event.id} 
+                      event={event} 
+                      onClick={onEventClick}
+                      onDragStart={onDragStart}
+                      onDragEnd={onDragEnd}
+                      isDragging={draggedEvent?.id === event.id}
+                    />
                   ))}
                 </div>
               </div>
@@ -1163,6 +1485,89 @@ function DeleteConfirmDialog({
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
             Delete Event
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Reschedule Confirmation Dialog
+function RescheduleConfirmDialog({
+  event,
+  newStart,
+  newEnd,
+  onConfirm,
+  onCancel
+}: {
+  event: CalendarEvent;
+  newStart: Date;
+  newEnd: Date;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { start: oldStart, isAllDay } = getEventTime(event);
+  
+  const formatDateTime = (date: Date) => {
+    if (isAllDay) {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    }
+    return date.toLocaleString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+      <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="p-3 bg-clawd-accent/10 rounded-full">
+            <Calendar size={24} className="text-clawd-accent" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Reschedule Event?</h3>
+            <p className="text-sm text-clawd-text-dim mb-3">
+              <strong className="text-clawd-text">{event.summary}</strong>
+            </p>
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-clawd-text-dim">From:</span>
+                <div className="text-clawd-text font-medium">{formatDateTime(oldStart)}</div>
+              </div>
+              <div className="flex items-center gap-2 text-clawd-accent">
+                <ChevronRight size={16} />
+              </div>
+              <div>
+                <span className="text-clawd-text-dim">To:</span>
+                <div className="text-clawd-text font-medium">{formatDateTime(newStart)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 hover:bg-clawd-border rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+          >
+            Reschedule
           </button>
         </div>
       </div>

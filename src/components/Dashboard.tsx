@@ -385,9 +385,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs">
                   {sessions.length}
                 </span>
-                {sessions.filter(s => Date.now() - (s.updatedAt || 0) < 300000).length > 0 && (
+                {sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000).length > 0 && (
                   <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
-                    {sessions.filter(s => Date.now() - (s.updatedAt || 0) < 300000).length} active
+                    {sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000).length} active
                   </span>
                 )}
               </div>

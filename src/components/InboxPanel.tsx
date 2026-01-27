@@ -1089,7 +1089,7 @@ export default function InboxPanel() {
                           });
                           showToast('success', `Scheduled for ${friendlyTime}`, item.title);
                         } else {
-                          showToast('error', 'Failed to schedule', result.error);
+                          showToast('error', 'Failed to schedule', (result as any).error || 'Unknown error');
                         }
                       } catch (e: any) {
                         showToast('error', 'Schedule error', e.message);
