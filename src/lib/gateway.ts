@@ -2,7 +2,7 @@
 
 const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
 const DEFAULT_TOKEN = '14ac9fc2afdd3363df3842a36ab269ca4137b8059ca3b0ba';
-const SESSION_KEY = 'web:dashboard'; // Use webchat-specific session, not shared 'main'
+const SESSION_KEY = 'chat-agent'; // Chat agent session (Sonnet, reports to Brain)
 
 // Load settings from localStorage
 function getSettings(): { gatewayUrl: string; gatewayToken: string } {

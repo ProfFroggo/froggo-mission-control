@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, MoreHorizontal, Bot, Trash2, FolderOpen, GripVertical, Clock, User, Play, Zap } from 'lucide-react';
+import { Plus, MoreHorizontal, Bot, Trash2, FolderOpen, GripVertical, Clock, User, Play, Zap, CheckSquare } from 'lucide-react';
 import { useStore, Task, TaskStatus } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
@@ -226,6 +226,11 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
   const assignedAgent = task.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
   const canStart = assignedAgent && !isAgentWorking && task.status !== 'done' && task.status !== 'in-progress';
+  
+  // Subtask progress
+  const subtaskCount = task.subtasks?.length || 0;
+  const completedSubtasks = task.subtasks?.filter(st => st.completed).length || 0;
+  const subtaskProgress = subtaskCount > 0 ? (completedSubtasks / subtaskCount) * 100 : 0;
 
   return (
     <div
@@ -273,7 +278,25 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
         </div>
         
         {task.description && (
-          <p className="text-xs text-clawd-text-dim mb-3 line-clamp-2">{task.description}</p>
+          <p className="text-xs text-clawd-text-dim mb-2 line-clamp-2">{task.description}</p>
+        )}
+        
+        {/* Subtask Progress */}
+        {subtaskCount > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 text-xs text-clawd-text-dim mb-1">
+              <CheckSquare size={10} />
+              <span>{completedSubtasks}/{subtaskCount} subtasks</span>
+            </div>
+            <div className="h-1.5 bg-clawd-surface rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-300 ${
+                  subtaskProgress === 100 ? 'bg-green-500' : 'bg-clawd-accent'
+                }`}
+                style={{ width: `${subtaskProgress}%` }}
+              />
+            </div>
+          </div>
         )}
         
         <div className="flex items-center justify-between">

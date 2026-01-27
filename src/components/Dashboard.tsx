@@ -3,6 +3,7 @@ import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, Clock, Zap, A
 import ActivityFeed from './ActivityFeed';
 import CalendarWidget from './CalendarWidget';
 import EmailWidget from './EmailWidget';
+import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -15,6 +16,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const { connected, sessions, tasks, agents, activities, approvals, fetchSessions, addActivity, clearActivities, getUnassignedTasks, getTasksNeedingReview } = useStore();
   const [greeting, setGreeting] = useState('');
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<'calendar' | 'email' | 'mentions' | 'messages' | null>(null);
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
   const needsReview = tasks.filter(t => t.status === 'review').length;
@@ -41,34 +43,22 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     }
   }, [connected, fetchSessions]);
 
-  const handleQuickAction = async (label: string, prompt: string) => {
-    if (!connected) {
-      showToast('error', 'Not connected to gateway');
-      return;
-    }
-    
-    setLoadingAction(label);
-    showToast('info', `Asking Froggo about ${label.toLowerCase()}...`);
-    
-    try {
-      await gateway.sendChat(prompt);
-      // Navigate to chat to see the response
-      if (onNavigate) {
-        onNavigate('chat');
-      }
-    } catch (error) {
-      console.error('Quick action error:', error);
-      showToast('error', `Failed to check ${label.toLowerCase()}`);
-    } finally {
-      setLoadingAction(null);
-    }
+  const handleQuickAction = (label: string) => {
+    // Open corresponding modal
+    const modalMap: Record<string, 'calendar' | 'email' | 'mentions' | 'messages'> = {
+      'Calendar': 'calendar',
+      'Email': 'email',
+      'X Mentions': 'mentions',
+      'Messages': 'messages',
+    };
+    setActiveModal(modalMap[label] || null);
   };
 
   const quickActions = [
-    { icon: Calendar, label: 'Calendar', color: 'text-blue-400', prompt: "What's on my calendar today? Give me a quick summary." },
-    { icon: Mail, label: 'Email', color: 'text-green-400', prompt: "Check my unread emails and highlight anything important" },
-    { icon: Twitter, label: 'X Mentions', color: 'text-sky-400', prompt: "Check @Prof_Frogo mentions on X and draft replies for approval" },
-    { icon: MessageSquare, label: 'Messages', color: 'text-purple-400', prompt: "Check WhatsApp and Telegram for any important messages" },
+    { icon: Calendar, label: 'Calendar', color: 'text-blue-400' },
+    { icon: Mail, label: 'Email', color: 'text-green-400' },
+    { icon: Twitter, label: 'X Mentions', color: 'text-sky-400' },
+    { icon: MessageSquare, label: 'Messages', color: 'text-purple-400' },
   ];
 
   const getSessionIcon = (session: any) => {
@@ -139,10 +129,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           {/* Quick Actions */}
           <div className="mt-6 flex gap-3">
-            {quickActions.map(({ icon: Icon, label, color, prompt }, i) => (
+            {quickActions.map(({ icon: Icon, label, color }, i) => (
               <button
                 key={i}
-                onClick={() => handleQuickAction(label, prompt)}
+                onClick={() => handleQuickAction(label)}
                 disabled={loadingAction === label}
                 className="flex items-center gap-2 px-4 py-2 bg-clawd-surface/80 backdrop-blur rounded-xl border border-clawd-border hover:border-clawd-accent transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-wait"
               >
@@ -394,6 +384,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           </div>
         </div>
       </div>
+      
+      {/* Quick Action Modals */}
+      <CalendarModal isOpen={activeModal === 'calendar'} onClose={() => setActiveModal(null)} />
+      <EmailModal isOpen={activeModal === 'email'} onClose={() => setActiveModal(null)} />
+      <MentionsModal isOpen={activeModal === 'mentions'} onClose={() => setActiveModal(null)} />
+      <MessagesModal isOpen={activeModal === 'messages'} onClose={() => setActiveModal(null)} />
     </div>
   );
 }

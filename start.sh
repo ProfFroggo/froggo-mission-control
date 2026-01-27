@@ -15,8 +15,8 @@ while ! curl -s http://localhost:5173 > /dev/null 2>&1; do
 done
 echo "Vite ready!"
 
-# Start Electron
-npx electron .
+# Start Electron with dev flag
+ELECTRON_DEV=1 npx electron .
 
 # Cleanup
 kill $VITE_PID 2>/dev/null

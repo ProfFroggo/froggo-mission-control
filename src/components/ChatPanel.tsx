@@ -42,6 +42,26 @@ export default function ChatPanel() {
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load messages from database on mount
+  useEffect(() => {
+    const loadFromDb = async () => {
+      if (window.clawdbot?.chat?.loadMessages) {
+        const result = await window.clawdbot.chat.loadMessages(50);
+        if (result.success && result.messages?.length > 0) {
+          setMessages(result.messages);
+        }
+      }
+    };
+    loadFromDb();
+  }, []);
+
+  // Save message to database helper
+  const saveMessageToDb = async (role: string, content: string) => {
+    if (window.clawdbot?.chat?.saveMessage) {
+      await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now() });
+    }
+  };
+
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -196,6 +216,15 @@ export default function ChatPanel() {
           speak(finalContent);
         }
         
+        // Check for @Brain: routing - forward to main session
+        const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
+        if (brainMatch) {
+          const brainMessage = brainMatch[1].trim();
+          console.log('[Chat] Routing to Brain:', brainMessage.slice(0, 100));
+          // Send to main session (Brain/Froggo)
+          (window as any).clawdbot?.sessions?.send?.('main', `[From Chat Agent]\n${brainMessage}`);
+        }
+        
         setLoading(false);
         currentMsgIdRef.current = '';
         currentResponseRef.current = '';
@@ -230,6 +259,15 @@ export default function ChatPanel() {
             ? { ...m, streaming: false } 
             : m
         ));
+        
+        // Save assistant message to database
+        if (currentResponseRef.current && window.clawdbot?.chat?.saveMessage) {
+          window.clawdbot.chat.saveMessage({ 
+            role: 'assistant', 
+            content: currentResponseRef.current, 
+            timestamp: Date.now() 
+          });
+        }
         
         if (speakResponses && currentResponseRef.current) {
           speak(currentResponseRef.current);
@@ -399,6 +437,9 @@ export default function ChatPanel() {
     
     // Clear attachments after sending
     setAttachments([]);
+
+    // Save user message to database
+    saveMessageToDb('user', userMsg.content);
 
     const assistantId = `msg-${Date.now()}-a`;
     currentMsgIdRef.current = assistantId;

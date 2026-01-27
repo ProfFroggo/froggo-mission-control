@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
 import EmptyState from './EmptyState';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
+
+interface InjectionWarning {
+  detected: boolean;
+  type: string;
+  pattern: string;
+  risk: 'critical' | 'high' | 'medium' | 'low';
+}
 
 interface InboxItem {
   id: number;
@@ -21,6 +28,25 @@ interface InboxItem {
   reviewed_at?: string;
   feedback?: string;
 }
+
+// Helper to parse metadata and extract injection warning
+const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
+  if (!item.metadata) return null;
+  try {
+    const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+    return meta.injectionWarning || null;
+  } catch {
+    return null;
+  }
+};
+
+// Risk level styling
+const riskStyles: Record<string, { bg: string; text: string; border: string }> = {
+  critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/50' },
+  high: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/50' },
+  medium: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/50' },
+  low: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/50' },
+};
 
 const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string }> = {
   tweet: { icon: Send, color: 'text-sky-400 bg-sky-500/20', label: 'Tweet' },
@@ -130,14 +156,23 @@ export default function InboxPanel() {
       await window.clawdbot.inbox.update(item.id, { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
+      const projectMap: Record<string, string> = {
+        'tweet': 'X/Twitter',
+        'reply': 'X/Twitter',
+        'email': 'Email',
+        'message': 'Message',
+        'whatsapp': 'Message',
+        'telegram': 'Message',
+      };
+      
       const taskData = {
         id: `task-${Date.now()}`,
         title: item.title,
         description: item.content,
         status: 'in-progress',
-        project: item.type === 'tweet' || item.type === 'reply' ? 'X/Twitter' : 
-                 item.type === 'email' ? 'Email' : 'Approved',
+        project: projectMap[item.type] || 'Approved',
         assignedTo: 'main',
+        metadata: item.context ? JSON.parse(item.context) : {},
       };
       
       const result = await window.clawdbot.tasks.sync(taskData);
@@ -198,13 +233,31 @@ export default function InboxPanel() {
   const handleAdjust = async (item: InboxItem) => {
     if (!feedbackText.trim()) return;
     
+    // Update inbox item status
     await window.clawdbot.inbox.update(item.id, { 
-      status: 'adjusted', 
+      status: 'needs-revision', 
       feedback: feedbackText 
     });
     
-    // Send feedback to Froggo in main session for revision
-    gateway.sendToMain(`[FEEDBACK] Revise this ${item.type} "${item.title}":\n\nOriginal:\n${item.content}\n\nFeedback:\n${feedbackText}`);
+    // Create a TASK in Kanban for the revision
+    const taskData = {
+      id: `task-${Date.now()}`,
+      title: `Revise: ${item.title}`,
+      description: `Original:\n${item.content}\n\nFeedback:\n${feedbackText}\n\n[Inbox ID: ${item.id}]`,
+      status: 'in-progress',
+      project: item.type === 'tweet' || item.type === 'reply' ? 'X/Twitter' : 
+               item.type === 'email' ? 'Email' : 'Revisions',
+      assignedTo: 'main',
+    };
+    
+    const result = await window.clawdbot.tasks.sync(taskData);
+    if (result?.success) {
+      showToast('success', 'Revision task created', 'Check Tasks tab');
+    } else {
+      showToast('info', 'Revision requested', 'Task creation may have failed');
+    }
+    
+    console.log('[Inbox] Created revision task:', taskData.id);
     
     setFeedbackId(null);
     setFeedbackText('');
@@ -391,8 +444,35 @@ export default function InboxPanel() {
                     isFocused 
                       ? 'border-clawd-accent ring-2 ring-clawd-accent/30' 
                       : 'hover:border-clawd-accent/30'
-                  }`}
+                  } ${(() => {
+                    const warning = getInjectionWarning(item);
+                    return warning ? riskStyles[warning.risk]?.border || '' : '';
+                  })()}`}
                 >
+                  {/* Injection Warning Banner */}
+                  {(() => {
+                    const warning = getInjectionWarning(item);
+                    if (!warning) return null;
+                    const style = riskStyles[warning.risk] || riskStyles.high;
+                    return (
+                      <div className={`${style.bg} ${style.text} px-4 py-2 flex items-center gap-2 border-b ${style.border}`}>
+                        <ShieldAlert size={18} className="flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm">⚠️ Potential {warning.type.replace('_', ' ')}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${style.bg} font-medium uppercase`}>
+                              {warning.risk} risk
+                            </span>
+                          </div>
+                          <p className="text-xs opacity-80 mt-0.5">
+                            Pattern detected: <code className="bg-black/20 px-1 rounded">{warning.pattern}</code>
+                          </p>
+                        </div>
+                        <AlertTriangle size={20} className="flex-shrink-0 animate-pulse" />
+                      </div>
+                    );
+                  })()}
+                  
                   {/* Header */}
                   <div className="p-4 flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -412,6 +492,15 @@ export default function InboxPanel() {
                           <span className="text-xs font-medium px-2 py-0.5 bg-clawd-border rounded">
                             {config.label}
                           </span>
+                          {/* Warning badge in header too for collapsed view */}
+                          {getInjectionWarning(item) && (
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1 ${
+                              riskStyles[getInjectionWarning(item)!.risk]?.bg
+                            } ${riskStyles[getInjectionWarning(item)!.risk]?.text}`}>
+                              <AlertTriangle size={10} />
+                              {getInjectionWarning(item)!.risk.toUpperCase()}
+                            </span>
+                          )}
                           <span className="text-xs text-clawd-text-dim flex items-center gap-1">
                             <Clock size={12} />
                             {formatTime(item.created)}

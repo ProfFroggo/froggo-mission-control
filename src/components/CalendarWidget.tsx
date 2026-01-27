@@ -52,8 +52,12 @@ export default function CalendarWidget() {
   };
 
   useEffect(() => {
-    // Don't auto-fetch - let user trigger it to avoid token burn
-    // fetchEvents();
+    // Auto-fetch on mount
+    fetchEvents();
+    
+    // Refresh every 15 minutes
+    const interval = setInterval(fetchEvents, 15 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatTime = (iso: string, isAllDay?: boolean) => {

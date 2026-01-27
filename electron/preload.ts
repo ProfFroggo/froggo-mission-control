@@ -38,6 +38,22 @@ contextBridge.exposeInMainWorld('clawdbot', {
     list: (status?: string) => ipcRenderer.invoke('tasks:list', status),
     start: (taskId: string) => ipcRenderer.invoke('tasks:start', taskId),
     complete: (taskId: string, outcome?: string) => ipcRenderer.invoke('tasks:complete', taskId, outcome),
+    // Subtask operations
+    subtasks: {
+      list: (taskId: string) => ipcRenderer.invoke('subtasks:list', taskId),
+      add: (taskId: string, subtask: { id: string; title: string; description?: string; assignedTo?: string }) =>
+        ipcRenderer.invoke('subtasks:add', taskId, subtask),
+      update: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) =>
+        ipcRenderer.invoke('subtasks:update', subtaskId, updates),
+      delete: (subtaskId: string) => ipcRenderer.invoke('subtasks:delete', subtaskId),
+      reorder: (subtaskIds: string[]) => ipcRenderer.invoke('subtasks:reorder', subtaskIds),
+    },
+    // Activity log operations
+    activity: {
+      list: (taskId: string, limit?: number) => ipcRenderer.invoke('activity:list', taskId, limit),
+      add: (taskId: string, entry: { action: string; message: string; agentId?: string; details?: string }) =>
+        ipcRenderer.invoke('activity:add', taskId, entry),
+    },
   },
   // Rejection logging
   rejections: {
@@ -106,10 +122,16 @@ contextBridge.exposeInMainWorld('clawdbot', {
     home: (limit?: number) => ipcRenderer.invoke('twitter:home', limit),
     queuePost: (text: string, context?: string) => ipcRenderer.invoke('twitter:queue-post', text, context),
   },
+  // Messages (wacli)
+  messages: {
+    recent: (limit?: number) => ipcRenderer.invoke('messages:recent', limit),
+    context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
+  },
   // Email (gog CLI)
   email: {
     unread: (account?: string) => ipcRenderer.invoke('email:unread', account),
     search: (query: string, account?: string) => ipcRenderer.invoke('email:search', query, account),
+    body: (emailId: string, account?: string) => ipcRenderer.invoke('email:body', emailId, account),
     queueSend: (to: string, subject: string, body: string, account?: string) => 
       ipcRenderer.invoke('email:queue-send', to, subject, body, account),
   },
@@ -122,9 +144,22 @@ contextBridge.exposeInMainWorld('clawdbot', {
   sessions: {
     list: () => ipcRenderer.invoke('sessions:list'),
     history: (sessionKey: string, limit?: number) => ipcRenderer.invoke('sessions:history', sessionKey, limit),
+    send: (sessionKey: string, message: string) => ipcRenderer.invoke('sessions:send', sessionKey, message),
   },
   // Shell execution (for Code Agent Dashboard, Context Control Board)
   exec: {
     run: (command: string) => ipcRenderer.invoke('exec:run', command),
   },
+  // Chat message persistence (froggo-db backed)
+  chat: {
+    saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) =>
+      ipcRenderer.invoke('chat:saveMessage', msg),
+    loadMessages: (limit?: number, sessionKey?: string) =>
+      ipcRenderer.invoke('chat:loadMessages', limit || 50, sessionKey),
+    clearMessages: (sessionKey?: string) =>
+      ipcRenderer.invoke('chat:clearMessages', sessionKey),
+  },
 });
+
+// Add to clawdbot object - chat message persistence
+// Note: This needs to be merged into the existing contextBridge.exposeInMainWorld call

@@ -14,6 +14,7 @@ import SettingsPanel from './components/SettingsPanel';
 import NotificationsPanel from './components/NotificationsPanel';
 import TwitterPanel from './components/TwitterPanel';
 import InboxPanel from './components/InboxPanel';
+import CommsInbox from './components/CommsInbox';
 import SessionsPanel from './components/SessionsPanel';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
@@ -30,7 +31,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import { useRef } from 'react';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -221,6 +222,7 @@ function App() {
         {currentView === 'notifications' && <NotificationsPanel />}
         {currentView === 'twitter' && <TwitterPanel />}
         {currentView === 'inbox' && <InboxPanel />}
+        {currentView === 'comms' && <CommsInbox />}
         {currentView === 'sessions' && <SessionsPanel />}
         {currentView === 'library' && <LibraryPanel />}
         {currentView === 'schedule' && <SchedulePanel />}

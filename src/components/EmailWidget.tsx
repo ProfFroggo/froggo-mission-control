@@ -51,6 +51,14 @@ export default function EmailWidget() {
     }
   };
 
+  // Auto-fetch on mount + refresh every 15 minutes
+  useEffect(() => {
+    fetchEmail();
+    
+    const interval = setInterval(fetchEmail, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const totalUnread = accounts.reduce((sum, a) => sum + a.unread, 0);
   const totalAction = accounts.reduce((sum, a) => sum + a.action, 0);
 

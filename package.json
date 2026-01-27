@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "electron:compile": "tsc -p tsconfig.electron.json",
     "electron:dev": "npm run electron:compile && ./start.sh",
+    "deploy": "bash deploy.sh",
     "electron:build": "npm run electron:compile && vite build && electron-builder",
     "start": "./start.sh"
   },

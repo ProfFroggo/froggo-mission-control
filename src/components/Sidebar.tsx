@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Twitter, Command, Inbox, Radio, FolderOpen, Calendar, Code, Sparkles, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Twitter, Command, Inbox, Radio, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail } from 'lucide-react';
 import { useStore } from '../store/store';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics';
@@ -10,21 +10,22 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { id: 'inbox' as View, icon: Inbox, label: 'Inbox', shortcut: '⌘1', badge: 'inbox' },
-  { id: 'dashboard' as View, icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘2' },
-  { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘3' },
-  { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘4' },
+  { id: 'dashboard' as View, icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘1' },
+  { id: 'inbox' as View, icon: Inbox, label: 'Approvals', shortcut: '⌘2', badge: 'inbox' },
+  { id: 'comms' as View, icon: Mail, label: 'Inbox', shortcut: '⌘3' },
+  { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘4' },
   { id: 'kanban' as View, icon: Kanban, label: 'Tasks', shortcut: '⌘5' },
-  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘6' },
+  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘5' },
+  { id: 'twitter' as View, icon: Twitter, label: 'X/Twitter', shortcut: '⌘6' },
+  { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘7' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '' },
-  { id: 'twitter' as View, icon: Twitter, label: 'X/Twitter', shortcut: '⌘7' },
-  { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘8' },
-  { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘9' },
-  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '⌘0' },
+  { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '' },
+  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '' },
   { id: 'calendar' as View, icon: Calendar, label: 'Calendar', shortcut: '' },
   { id: 'templates' as View, icon: FolderOpen, label: 'Templates', shortcut: '' },
-  { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '' },
+  { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘8' },
+  { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '⌘0' },
 ];
 
 export default function Sidebar({ currentView, onNavigate }: SidebarProps) {

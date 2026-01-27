@@ -7,6 +7,7 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { voiceService } from '../lib/voiceService';
+import type { Model, KaldiRecognizer } from 'vosk-browser';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -588,17 +589,21 @@ export default function VoicePanel() {
 
   // Toggle conversation mode
   const toggleConversation = useCallback(async () => {
+    console.log('[Voice] toggleConversation called:', { listening, conversationMode });
     if (listening || conversationMode) {
+      console.log('[Voice] Stopping conversation mode');
       conversationModeRef.current = false;
       setConversationMode(false);
       await stopListening();
       window.speechSynthesis.cancel();
       setStatusMessage('Stopped');
     } else {
+      console.log('[Voice] Starting conversation mode');
       conversationModeRef.current = true;
       setConversationMode(true);
       setMeetingActive(false);
       await startListening();
+      console.log('[Voice] startListening returned');
     }
   }, [listening, conversationMode, startListening, stopListening, setMeetingActive]);
 
@@ -622,19 +627,40 @@ export default function VoicePanel() {
   }, [isMeetingActive, meetingActionItems.length, meetingTranscript.length, startListening, stopListening, setMeetingActive]);
   
   // Sync with global meeting state (for TopBar call button)
+  // Only affects meeting mode, NOT conversation mode
+  const prevMeetingActive = useRef(isMeetingActive);
+  // Store stable references to avoid triggering effect when listening state changes
+  const startListeningRef = useRef(startListening);
+  const stopListeningRef = useRef(stopListening);
+  startListeningRef.current = startListening;
+  stopListeningRef.current = stopListening;
+  
   useEffect(() => {
     const startMeetingFromGlobal = async () => {
-      if (isMeetingActive && !listening && modelLoaded) {
+      console.log('[Voice] Meeting sync effect:', { 
+        isMeetingActive, 
+        prevMeetingActive: prevMeetingActive.current, 
+        modelLoaded,
+        conversationMode: conversationModeRef.current 
+      });
+      
+      // Start meeting mode when toggled ON
+      if (isMeetingActive && !prevMeetingActive.current && modelLoaded) {
+        console.log('[Voice] Starting meeting mode from global state');
         setConversationMode(false);
         setMeetingTranscript([]);
         setMeetingActionItems([]);
-        await startListening();
-      } else if (!isMeetingActive && listening) {
-        await stopListening();
+        await startListeningRef.current();
       }
+      // Stop ONLY when meeting mode is toggled OFF (not for conversation mode)
+      else if (!isMeetingActive && prevMeetingActive.current) {
+        console.log('[Voice] Stopping meeting mode from global state');
+        await stopListeningRef.current();
+      }
+      prevMeetingActive.current = isMeetingActive;
     };
     startMeetingFromGlobal();
-  }, [isMeetingActive, listening, modelLoaded, startListening, stopListening]);
+  }, [isMeetingActive, modelLoaded]); // Removed startListening/stopListening from deps - using refs instead
 
   // Send meeting summary to Froggo
   const sendMeetingSummary = useCallback(async () => {

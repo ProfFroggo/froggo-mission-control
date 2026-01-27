@@ -15,6 +15,29 @@ interface VoskAudioResult {
   error?: string;
 }
 
+interface SubtaskData {
+  id: string;
+  taskId?: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  completedAt?: number;
+  completedBy?: string;
+  assignedTo?: string;
+  position?: number;
+  createdAt?: number;
+}
+
+interface ActivityData {
+  id: number;
+  taskId: string;
+  agentId?: string;
+  action: string;
+  message: string;
+  details?: string;
+  timestamp: number;
+}
+
 declare global {
   interface Window {
     clawdbot?: {
@@ -55,6 +78,19 @@ declare global {
         list: (status?: string) => Promise<{ success: boolean; tasks: any[] }>;
         start: (taskId: string) => Promise<{ success: boolean }>;
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;
+        // Subtask operations
+        subtasks: {
+          list: (taskId: string) => Promise<{ success: boolean; subtasks: SubtaskData[] }>;
+          add: (taskId: string, subtask: { id: string; title: string; description?: string; assignedTo?: string }) => Promise<{ success: boolean; id?: string }>;
+          update: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => Promise<{ success: boolean }>;
+          delete: (subtaskId: string) => Promise<{ success: boolean }>;
+          reorder: (subtaskIds: string[]) => Promise<{ success: boolean }>;
+        };
+        // Activity log operations
+        activity: {
+          list: (taskId: string, limit?: number) => Promise<{ success: boolean; activities: ActivityData[] }>;
+          add: (taskId: string, entry: { action: string; message: string; agentId?: string; details?: string }) => Promise<{ success: boolean }>;
+        };
       };
       // Rejection logging
       rejections: {
@@ -65,10 +101,88 @@ declare global {
         list: (status?: string) => Promise<{ success: boolean; items: any[] }>;
         add: (item: { type: string; title: string; content: string; context?: string; channel?: string }) => Promise<{ success: boolean }>;
         update: (id: number, updates: { status?: string; feedback?: string }) => Promise<{ success: boolean }>;
+        approveAll: () => Promise<{ success: boolean; count?: number }>;
       };
       // Execution
       execute: {
         tweet: (content: string, taskId?: string) => Promise<{ success: boolean; output?: string; error?: string }>;
+      };
+      // Chat message persistence
+      chat: {
+        saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => Promise<{ success: boolean }>;
+        loadMessages: (limit?: number, sessionKey?: string) => Promise<{ success: boolean; messages: any[] }>;
+        clearMessages: (sessionKey?: string) => Promise<{ success: boolean }>;
+      };
+      // Filesystem
+      fs: {
+        writeBase64: (path: string, base64: string) => Promise<{ success: boolean; path?: string }>;
+        readFile: (path: string, encoding?: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+      };
+      // Library
+      library: {
+        list: (category?: string) => Promise<{ success: boolean; files: any[] }>;
+        upload: () => Promise<{ success: boolean; file?: any; error?: string }>;
+        delete: (fileId: string) => Promise<{ success: boolean }>;
+        link: (fileId: string, taskId: string) => Promise<{ success: boolean }>;
+      };
+      // Screenshot
+      screenshot: {
+        capture: (outputPath: string) => Promise<{ success: boolean; path?: string; size?: number }>;
+        navigate: (view: string) => Promise<{ success: boolean }>;
+      };
+      // Schedule
+      schedule: {
+        list: () => Promise<{ success: boolean; items: any[] }>;
+        add: (item: { type: string; content: string; scheduledFor: string; metadata?: any }) => Promise<{ success: boolean; id?: string }>;
+        update: (id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => Promise<{ success: boolean }>;
+        cancel: (id: string) => Promise<{ success: boolean }>;
+        sendNow: (id: string) => Promise<{ success: boolean }>;
+      };
+      // Search
+      search: {
+        local: (query: string) => Promise<{ success: boolean; results: any[] }>;
+        discord: (query: string) => Promise<{ success: boolean; messages: any[] }>;
+        telegram: (query: string) => Promise<{ success: boolean; messages: any[] }>;
+        whatsapp: (query: string) => Promise<{ success: boolean; messages: any[] }>;
+      };
+      // System status
+      system: {
+        status: () => Promise<{ success: boolean; status: any }>;
+      };
+      // Settings
+      settings: {
+        get: () => Promise<{ success: boolean; settings: any }>;
+        save: (settings: any) => Promise<{ success: boolean }>;
+      };
+      // Twitter (bird CLI)
+      twitter: {
+        mentions: () => Promise<{ success: boolean; mentions?: any[]; raw?: string }>;
+        home: (limit?: number) => Promise<{ success: boolean; tweets?: any[]; raw?: string }>;
+        queuePost: (text: string, context?: string) => Promise<{ success: boolean; message?: string }>;
+      };
+      // Messages (wacli)
+      messages: {
+        recent: (limit?: number) => Promise<{ success: boolean; chats: any[] }>;
+      };
+      // Email (gog CLI)
+      email: {
+        unread: (account?: string) => Promise<{ success: boolean; emails: any[]; account?: string }>;
+        search: (query: string, account?: string) => Promise<{ success: boolean; emails: any[]; account?: string }>;
+        queueSend: (to: string, subject: string, body: string, account?: string) => Promise<{ success: boolean; message?: string }>;
+      };
+      // Calendar (gog CLI)
+      calendar: {
+        events: (account?: string, days?: number) => Promise<{ success: boolean; events: any[]; account?: string }>;
+        today: () => Promise<{ success: boolean; events: any[]; account?: string }>;
+      };
+      // Sessions management
+      sessions: {
+        list: () => Promise<{ success: boolean; sessions: any[] }>;
+        history: (sessionKey: string, limit?: number) => Promise<{ success: boolean; messages: any[] }>;
+      };
+      // Shell execution
+      exec: {
+        run: (command: string) => Promise<{ success: boolean; stdout: string; stderr: string }>;
       };
     };
   }

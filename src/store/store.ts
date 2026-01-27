@@ -8,11 +8,25 @@ export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'done' 
 
 export interface Subtask {
   id: string;
+  taskId?: string;
   title: string;
+  description?: string;
   completed: boolean;
   assignedTo?: string;
   completedAt?: number;
   completedBy?: string;
+  position?: number;
+  createdAt?: number;
+}
+
+export interface TaskActivity {
+  id: number;
+  taskId: string;
+  agentId?: string;
+  action: string;
+  message: string;
+  details?: string;
+  timestamp: number;
 }
 
 export interface Task {
@@ -108,6 +122,16 @@ interface Store {
   moveTask: (id: string, status: TaskStatus) => void;
   deleteTask: (id: string) => void;
   assignTask: (id: string, agentId: string | undefined) => void;
+  
+  // Subtasks (DB-backed)
+  loadSubtasksForTask: (taskId: string) => Promise<Subtask[]>;
+  addSubtask: (taskId: string, title: string, description?: string, assignedTo?: string) => Promise<Subtask | null>;
+  updateSubtask: (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => Promise<boolean>;
+  deleteSubtask: (taskId: string, subtaskId: string) => Promise<boolean>;
+  
+  // Task Activity (DB-backed)
+  loadTaskActivity: (taskId: string, limit?: number) => Promise<TaskActivity[]>;
+  logTaskActivity: (taskId: string, action: string, message: string, agentId?: string, details?: string) => Promise<boolean>;
 
   // Agents (predefined + dynamic)
   agents: Agent[];
@@ -207,7 +231,7 @@ export const useStore = create<Store>()(
           const result = await (window as any).clawdbot?.tasks?.list();
           if (result?.success && Array.isArray(result.tasks)) {
             // Convert froggo-db tasks to store format
-            const tasks = result.tasks.map((t: any) => ({
+            const tasksWithoutSubtasks = result.tasks.map((t: any) => ({
               id: t.id,
               title: t.title,
               description: t.description || '',
@@ -216,8 +240,23 @@ export const useStore = create<Store>()(
               assignedTo: t.assigned_to,
               createdAt: t.created_at || Date.now(),
               updatedAt: t.updated_at || Date.now(),
+              subtasks: [] as Subtask[],
             }));
-            set({ tasks });
+            
+            // Load subtasks for each task in parallel
+            const tasksWithSubtasks = await Promise.all(
+              tasksWithoutSubtasks.map(async (task: Task) => {
+                try {
+                  const subtaskResult = await (window as any).clawdbot?.tasks?.subtasks?.list(task.id);
+                  if (subtaskResult?.success) {
+                    return { ...task, subtasks: subtaskResult.subtasks || [] };
+                  }
+                } catch {}
+                return task;
+              })
+            );
+            
+            set({ tasks: tasksWithSubtasks });
           }
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
@@ -266,6 +305,138 @@ export const useStore = create<Store>()(
           gateway.sendToSession('main', msg).catch(() => {});
           // Sync to froggo-db
           (window as any).clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch(() => {});
+        }
+      },
+
+      // Subtask operations (DB-backed)
+      loadSubtasksForTask: async (taskId: string) => {
+        try {
+          const result = await (window as any).clawdbot?.tasks?.subtasks?.list(taskId);
+          if (result?.success) {
+            // Update the task in state with loaded subtasks
+            set((s) => ({
+              tasks: s.tasks.map(t => t.id === taskId ? { ...t, subtasks: result.subtasks } : t)
+            }));
+            return result.subtasks || [];
+          }
+        } catch (error) {
+          console.error('Failed to load subtasks:', error);
+        }
+        return [];
+      },
+
+      addSubtask: async (taskId: string, title: string, description?: string, assignedTo?: string) => {
+        console.log('[Store] addSubtask called:', { taskId, title });
+        const subtaskId = `st-${Date.now()}`;
+        const newSubtask: Subtask = {
+          id: subtaskId,
+          taskId,
+          title,
+          description,
+          completed: false,
+          assignedTo,
+          createdAt: Date.now(),
+        };
+        
+        try {
+          console.log('[Store] Calling IPC with subtaskId:', subtaskId);
+          const result = await (window as any).clawdbot?.tasks?.subtasks?.add(taskId, {
+            id: subtaskId,
+            title,
+            description,
+            assignedTo,
+          });
+          console.log('[Store] IPC result:', result);
+          
+          if (result?.success) {
+            // Optimistically update local state
+            set((s) => ({
+              tasks: s.tasks.map(t => t.id === taskId 
+                ? { ...t, subtasks: [...(t.subtasks || []), newSubtask], updatedAt: Date.now() }
+                : t
+              )
+            }));
+            return newSubtask;
+          } else {
+            console.error('[Store] Subtask add failed:', result?.error || 'Unknown error');
+          }
+        } catch (error) {
+          console.error('[Store] Failed to add subtask (exception):', error);
+        }
+        return null;
+      },
+
+      updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
+        try {
+          const result = await (window as any).clawdbot?.tasks?.subtasks?.update(subtaskId, updates);
+          if (result?.success) {
+            // Update local state
+            set((s) => ({
+              tasks: s.tasks.map(t => ({
+                ...t,
+                subtasks: (t.subtasks || []).map(st => 
+                  st.id === subtaskId 
+                    ? { 
+                        ...st, 
+                        ...updates,
+                        completedAt: updates.completed ? Date.now() : undefined,
+                      }
+                    : st
+                ),
+                updatedAt: Date.now(),
+              }))
+            }));
+            return true;
+          }
+        } catch (error) {
+          console.error('Failed to update subtask:', error);
+        }
+        return false;
+      },
+
+      deleteSubtask: async (taskId: string, subtaskId: string) => {
+        try {
+          const result = await (window as any).clawdbot?.tasks?.subtasks?.delete(subtaskId);
+          if (result?.success) {
+            set((s) => ({
+              tasks: s.tasks.map(t => t.id === taskId
+                ? { ...t, subtasks: (t.subtasks || []).filter(st => st.id !== subtaskId), updatedAt: Date.now() }
+                : t
+              )
+            }));
+            return true;
+          }
+        } catch (error) {
+          console.error('Failed to delete subtask:', error);
+        }
+        return false;
+      },
+
+      // Task Activity operations (DB-backed)
+      loadTaskActivity: async (taskId: string, limit?: number) => {
+        try {
+          const result = await (window as any).clawdbot?.tasks?.activity?.list(taskId, limit);
+          if (result?.success) {
+            return result.activities || [];
+          }
+        } catch (error) {
+          console.error('Failed to load task activity:', error);
+        }
+        return [];
+      },
+
+      logTaskActivity: async (taskId: string, action: string, message: string, agentId?: string, details?: string) => {
+        try {
+          const result = await (window as any).clawdbot?.tasks?.activity?.add(taskId, {
+            action,
+            message,
+            agentId,
+            details,
+          });
+          return result?.success || false;
+        } catch (error) {
+          console.error('Failed to log task activity:', error);
+          return false;
         }
       },
 
@@ -635,7 +806,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         // tasks removed - now sourced from froggo-db only
         // approvals removed - now sourced from froggo-db inbox only
         activities: s.activities.slice(0, 50),
-        isMuted: s.isMuted,
+        // Don't persist isMuted - always start unmuted
       }),
     }
   )

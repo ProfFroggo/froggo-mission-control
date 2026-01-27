@@ -395,6 +395,210 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
   });
 });
 
+// ============== SUBTASKS IPC HANDLERS ==============
+const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+
+ipcMain.handle('subtasks:list', async (_, taskId: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM subtasks WHERE task_id='${taskId}' ORDER BY position, created_at" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Subtasks] List error:', error);
+        resolve({ success: false, subtasks: [] });
+        return;
+      }
+      try {
+        const subtasks = JSON.parse(stdout || '[]').map((st: any) => ({
+          id: st.id,
+          taskId: st.task_id,
+          title: st.title,
+          description: st.description,
+          completed: st.completed === 1,
+          completedAt: st.completed_at,
+          completedBy: st.completed_by,
+          assignedTo: st.assigned_to,
+          position: st.position,
+          createdAt: st.created_at,
+        }));
+        resolve({ success: true, subtasks });
+      } catch {
+        resolve({ success: true, subtasks: [] });
+      }
+    });
+  });
+});
+
+ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; title: string; description?: string; assignedTo?: string }) => {
+  console.log('[Subtasks] Add called:', { taskId, subtask });
+  
+  // Validate inputs
+  if (!taskId || !subtask?.id || !subtask?.title) {
+    console.error('[Subtasks] Invalid input:', { taskId, subtask });
+    return { success: false, error: 'Invalid input: taskId, subtask.id, and subtask.title are required' };
+  }
+  
+  const now = Date.now();
+  const escapedTitle = subtask.title.replace(/'/g, "''");
+  const escapedDesc = (subtask.description || '').replace(/'/g, "''");
+  
+  // Get next position
+  return new Promise((resolve) => {
+    exec(`sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(position), -1) + 1 FROM subtasks WHERE task_id='${taskId}'"`, (posError, posOut, posStderr) => {
+      if (posError) {
+        console.error('[Subtasks] Position query error:', posError.message, posStderr);
+        // Continue with position 0 even if query fails
+      }
+      const position = parseInt(posOut?.trim() || '0', 10) || 0;
+      console.log('[Subtasks] Position:', position);
+      
+      const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES ('${subtask.id}', '${taskId}', '${escapedTitle}', '${escapedDesc}', ${subtask.assignedTo ? "'" + subtask.assignedTo + "'" : 'NULL'}, ${position}, ${now}, ${now})"`;
+      console.log('[Subtasks] Insert command:', cmd.slice(0, 200) + '...');
+      
+      exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('[Subtasks] Add error:', error.message);
+          console.error('[Subtasks] stderr:', stderr);
+          resolve({ success: false, error: error.message });
+        } else {
+          console.log('[Subtasks] Insert success:', subtask.id);
+          // Also log activity (fire and forget)
+          exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_added', 'Added subtask: ${escapedTitle}', ${now})"`, () => {});
+          resolve({ success: true, id: subtask.id });
+        }
+      });
+    });
+  });
+});
+
+ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
+  const now = Date.now();
+  const sets: string[] = [`updated_at=${now}`];
+  
+  if (updates.completed !== undefined) {
+    sets.push(`completed=${updates.completed ? 1 : 0}`);
+    if (updates.completed) {
+      sets.push(`completed_at=${now}`);
+      if (updates.completedBy) sets.push(`completed_by='${updates.completedBy}'`);
+    } else {
+      sets.push(`completed_at=NULL`);
+      sets.push(`completed_by=NULL`);
+    }
+  }
+  if (updates.title) sets.push(`title='${updates.title.replace(/'/g, "''")}'`);
+  if (updates.assignedTo !== undefined) {
+    sets.push(updates.assignedTo ? `assigned_to='${updates.assignedTo}'` : `assigned_to=NULL`);
+  }
+  
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE subtasks SET ${sets.join(', ')} WHERE id='${subtaskId}'"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        console.error('[Subtasks] Update error:', error);
+        resolve({ success: false, error: error.message });
+      } else {
+        // Log activity for completion changes
+        if (updates.completed !== undefined) {
+          exec(`sqlite3 "${froggoDbPath}" "SELECT task_id, title FROM subtasks WHERE id='${subtaskId}'"`, (_, stOut) => {
+            try {
+              const [taskId, title] = stOut?.trim().split('|') || [];
+              if (taskId) {
+                const action = updates.completed ? 'subtask_completed' : 'subtask_uncompleted';
+                const message = updates.completed 
+                  ? `Completed: ${title}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
+                  : `Reopened: ${title}`;
+                exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, agent_id, timestamp) VALUES ('${taskId}', '${action}', '${message.replace(/'/g, "''")}', ${updates.completedBy ? "'" + updates.completedBy + "'" : 'NULL'}, ${now})"`, () => {});
+              }
+            } catch {}
+          });
+        }
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+ipcMain.handle('subtasks:delete', async (_, subtaskId: string) => {
+  return new Promise((resolve) => {
+    // Get task_id and title first for activity log
+    exec(`sqlite3 "${froggoDbPath}" "SELECT task_id, title FROM subtasks WHERE id='${subtaskId}'"`, (_, stOut) => {
+      const [taskId, title] = stOut?.trim().split('|') || [];
+      
+      const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM subtasks WHERE id='${subtaskId}'"`;
+      exec(cmd, { timeout: 5000 }, (error) => {
+        if (error) {
+          resolve({ success: false, error: error.message });
+        } else {
+          if (taskId) {
+            exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_deleted', 'Deleted subtask: ${(title || '').replace(/'/g, "''")}', ${Date.now()})"`, () => {});
+          }
+          resolve({ success: true });
+        }
+      });
+    });
+  });
+});
+
+ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
+  const now = Date.now();
+  const updates = subtaskIds.map((id, idx) => 
+    `UPDATE subtasks SET position=${idx}, updated_at=${now} WHERE id='${id}';`
+  ).join(' ');
+  
+  const cmd = `sqlite3 "${froggoDbPath}" "${updates}"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      resolve({ success: !error });
+    });
+  });
+});
+
+// ============== TASK ACTIVITY IPC HANDLERS ==============
+ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
+  const lim = limit || 50;
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM task_activity WHERE task_id='${taskId}' ORDER BY timestamp DESC LIMIT ${lim}" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        console.error('[Activity] List error:', error);
+        resolve({ success: false, activities: [] });
+        return;
+      }
+      try {
+        const activities = JSON.parse(stdout || '[]').map((a: any) => ({
+          id: a.id,
+          taskId: a.task_id,
+          agentId: a.agent_id,
+          action: a.action,
+          message: a.message,
+          details: a.details,
+          timestamp: a.timestamp,
+        }));
+        resolve({ success: true, activities });
+      } catch {
+        resolve({ success: true, activities: [] });
+      }
+    });
+  });
+});
+
+ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string; message: string; agentId?: string; details?: string }) => {
+  const now = Date.now();
+  const escapedMessage = entry.message.replace(/'/g, "''");
+  const escapedDetails = entry.details ? entry.details.replace(/'/g, "''") : null;
+  
+  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, agent_id, action, message, details, timestamp) VALUES ('${taskId}', ${entry.agentId ? "'" + entry.agentId + "'" : 'NULL'}, '${entry.action}', '${escapedMessage}', ${escapedDetails ? "'" + escapedDetails + "'" : 'NULL'}, ${now})"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      resolve({ success: !error });
+    });
+  });
+});
+
 // ============== EXECUTION HANDLERS ==============
 ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
   // Actually post the tweet via bird CLI
@@ -467,11 +671,58 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
   const contextArg = item.context ? `--context "${item.context.replace(/"/g, '\\"')}"` : '';
   const channelArg = item.channel ? `--channel ${item.channel}` : '';
   
-  const cmd = `froggo-db inbox-add --type ${item.type} --title "${escapedTitle}" --content "${escapedContent}" ${contextArg} ${channelArg}`;
+  // Run injection detection on content
+  const injectionScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'injection-detect.sh');
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error) => {
-      resolve({ success: !error });
+    // Escape content for shell - use base64 to avoid shell injection issues
+    const contentBase64 = Buffer.from(item.content).toString('base64');
+    const detectCmd = `echo "${contentBase64}" | base64 -d | ${injectionScriptPath}`;
+    
+    exec(detectCmd, { timeout: 5000 }, (detectError, detectStdout) => {
+      let injectionResult = null;
+      
+      try {
+        if (detectStdout) {
+          injectionResult = JSON.parse(detectStdout.trim());
+          console.log('[Inbox] Injection detection result:', injectionResult);
+        }
+      } catch (e) {
+        console.error('[Inbox] Failed to parse injection detection result:', e);
+      }
+      
+      // Build metadata with injection detection result
+      let metadata: any = {};
+      if (injectionResult && injectionResult.detected) {
+        metadata.injectionWarning = {
+          detected: true,
+          type: injectionResult.type,
+          pattern: injectionResult.pattern,
+          risk: injectionResult.risk,
+        };
+        console.log(`[Inbox] ⚠️ INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
+      }
+      
+      // Add to inbox via direct SQL to include metadata
+      const now = Date.now();
+      const metadataJson = JSON.stringify(metadata).replace(/'/g, "''");
+      const escapedTitleSql = item.title.replace(/'/g, "''");
+      const escapedContentSql = item.content.replace(/'/g, "''");
+      const escapedContextSql = (item.context || '').replace(/'/g, "''");
+      
+      const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitleSql}', '${escapedContentSql}', '${escapedContextSql}', 'pending', '${item.channel || 'unknown'}', '${metadataJson}', datetime('now'))"`;
+      
+      exec(sqlCmd, { timeout: 10000 }, (error) => {
+        if (error) {
+          console.error('[Inbox] Add error:', error);
+          resolve({ success: false, error: error.message });
+        } else {
+          resolve({ 
+            success: true, 
+            injectionWarning: injectionResult?.detected ? injectionResult : null 
+          });
+        }
+      });
     });
   });
 });
@@ -1046,23 +1297,40 @@ ipcMain.handle('settings:save', async (_, settings: any) => {
 });
 
 // ============== TWITTER IPC HANDLERS ==============
+const BIRD_PATH = '/opt/homebrew/bin/bird';
+const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
+
 ipcMain.handle('twitter:mentions', async () => {
+  console.log('[Twitter] Mentions handler called');
+  
   return new Promise((resolve) => {
-    exec('bird mentions --json 2>/dev/null || bird mentions', { timeout: 30000 }, (error, stdout) => {
-      if (error) {
-        console.error('[Twitter] Mentions error:', error);
-        resolve({ success: false, mentions: [], error: error.message });
-        return;
-      }
-      try {
-        // Try to parse as JSON
-        const mentions = JSON.parse(stdout);
-        resolve({ success: true, mentions });
-      } catch {
-        // Return raw text if not JSON
-        resolve({ success: true, mentions: [], raw: stdout });
-      }
-    });
+    try {
+      // Use JSON output from bird with full path and extended PATH
+      exec(`${BIRD_PATH} mentions --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
+        console.log('[Twitter] exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
+        
+        if (error) {
+          console.error('[Twitter] Mentions error:', error.message);
+          console.error('[Twitter] stderr:', stderr);
+          // Return error immediately instead of fallback to avoid double-exec issues
+          resolve({ success: false, mentions: [], error: error.message, stderr });
+          return;
+        }
+        
+        try {
+          const mentions = JSON.parse(stdout || '[]');
+          console.log('[Twitter] Parsed', Array.isArray(mentions) ? mentions.length : 0, 'mentions');
+          resolve({ success: true, mentions: Array.isArray(mentions) ? mentions : [] });
+        } catch (e: any) {
+          console.error('[Twitter] JSON parse error:', e.message);
+          console.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
+          resolve({ success: true, mentions: [], raw: stdout || '', parseError: e.message });
+        }
+      });
+    } catch (e: any) {
+      console.error('[Twitter] Handler exception:', e);
+      resolve({ success: false, mentions: [], error: e.message });
+    }
   });
 });
 
@@ -1102,6 +1370,262 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
   });
 });
 
+// ============== MESSAGES IPC HANDLERS ==============
+ipcMain.handle('messages:recent', async (_, limit?: number) => {
+  console.log('[Messages] Handler called, limit:', limit);
+  const lim = limit || 10;
+  const allMessages: any[] = [];
+  
+  // Full paths for CLIs (Electron GUI apps don't inherit terminal PATH)
+  const WACLI_PATH = '/opt/homebrew/bin/wacli';
+  const TGCLI_PATH = '/Users/worker/.local/bin/tgcli';
+  
+  // Helper to run command and return promise
+  const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
+    return new Promise((resolve) => {
+      const fullPath = `/opt/homebrew/bin:/usr/bin:/bin:/Users/worker/.local/bin:${process.env.PATH || ''}`;
+      exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
+          if (stderr) console.error(`[Messages] stderr: ${stderr}`);
+          resolve('');
+        } else {
+          resolve(stdout);
+        }
+      });
+    });
+  };
+  
+  // Helper to format relative time
+  const relativeTime = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+  
+  try {
+    // ===== WHATSAPP (direct DB query - wacli CLI has bugs) =====
+    console.log('[Messages] Fetching WhatsApp messages from DB...');
+    const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
+    // Get recent INCOMING messages from DM chats (not groups)
+    const waQuery = `
+      SELECT m.chat_jid, m.chat_name, m.text, m.ts, COALESCE(c.push_name, c.full_name, c.business_name) as contact_name
+      FROM messages m
+      LEFT JOIN contacts c ON m.chat_jid = c.jid
+      WHERE m.from_me = 0 
+        AND m.chat_jid LIKE '%@s.whatsapp.net'
+        AND m.text IS NOT NULL AND m.text != ''
+      GROUP BY m.chat_jid
+      ORDER BY m.ts DESC
+      LIMIT 10
+    `;
+    const waRaw = await runCmd(`sqlite3 "${waDbPath}" "${waQuery.replace(/\n/g, ' ')}" -json`, 10000);
+    console.log('[Messages] WhatsApp DB result:', waRaw ? `${waRaw.length} chars` : 'EMPTY');
+    if (waRaw && waRaw.length > 10) {
+      try {
+        const waMessages = JSON.parse(waRaw);
+        for (const msg of waMessages) {
+          let name = msg.contact_name || msg.chat_name || msg.chat_jid || 'Unknown';
+          // Clean up JID-style names
+          if (name.includes('@')) {
+            name = name.split('@')[0];
+          }
+          if (/^\d+$/.test(name)) {
+            name = `+${name}`;
+          }
+          
+          const timestamp = new Date(msg.ts * 1000).toISOString(); // Convert seconds to ms
+          allMessages.push({
+            id: `wa-${msg.chat_jid}`,
+            platform: 'whatsapp',
+            name: name,
+            preview: (msg.text || '').slice(0, 100),
+            timestamp: timestamp,
+            relativeTime: relativeTime(timestamp),
+            fromMe: false,
+          });
+        }
+      } catch (e) {
+        console.error('[Messages] WhatsApp DB parse error:', e);
+      }
+    }
+    
+    // ===== TELEGRAM (disabled - too slow, needs caching) =====
+    // TODO: Add background caching for Telegram messages
+    console.log('[Messages] Telegram disabled (needs caching)...');
+    
+    // ===== DISCORD DMs =====
+    console.log('[Messages] Fetching Discord DMs...');
+    const DISCORDCLI_PATH = '/Users/worker/.local/bin/discordcli';
+    const discordDmsRaw = await runCmd(`${DISCORDCLI_PATH} dms`, 10000);
+    if (discordDmsRaw && !discordDmsRaw.includes('Invalid token')) {
+      const dmLines = discordDmsRaw.split('\n').filter(l => l.trim() && !l.startsWith('ID') && !l.startsWith('---'));
+      const dms = dmLines.slice(0, 5).map(line => {
+        const match = line.match(/^(\d+)\s+(.+)$/);
+        if (match) return { id: match[1], name: match[2].trim() };
+        return null;
+      }).filter(Boolean);
+      
+      for (const dm of dms as any[]) {
+        const msgRaw = await runCmd(`${DISCORDCLI_PATH} messages ${dm.id} --limit 5`, 5000);
+        if (msgRaw) {
+          // Parse: [2026-01-24 09:47] username: message
+          const msgLines = msgRaw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
+          // Find first message NOT from prof_froggo (Kevin's account)
+          for (const line of msgLines) {
+            const msgMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
+            if (msgMatch && msgMatch[2].trim() !== 'prof_froggo') {
+              const timestamp = new Date(msgMatch[1].replace(' ', 'T') + ':00Z');
+              allMessages.push({
+                id: `discord-${dm.id}`,
+                platform: 'discord',
+                name: dm.name.split(',')[0].trim(), // First username in the DM
+                preview: msgMatch[3].trim().slice(0, 100),
+                timestamp: timestamp.toISOString(),
+                relativeTime: relativeTime(timestamp.toISOString()),
+                fromMe: false,
+              });
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // ===== EMAIL (via gog gmail) =====
+    console.log('[Messages] Fetching emails...');
+    const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+    for (const acct of emailAccounts) {
+      const emailRaw = await runCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 5`, 15000);
+      if (emailRaw) {
+        try {
+          const emailData = JSON.parse(emailRaw);
+          const emails = emailData.threads || emailData || [];
+          console.log(`[Messages] Email account ${acct}: ${emails.length} threads`);
+          for (const email of emails.slice(0, 3)) {
+            allMessages.push({
+              id: `email-${email.id || email.ID}`,
+              platform: 'email',
+              name: email.from?.split('<')[0]?.trim() || email.From?.split('<')[0]?.trim() || 'Unknown',
+              preview: email.subject || email.Subject || email.snippet || '',
+              timestamp: email.date || email.Date || new Date().toISOString(),
+              relativeTime: relativeTime(email.date || email.Date || new Date().toISOString()),
+              fromMe: false,
+            });
+          }
+        } catch (e) {
+          console.error('[Messages] Email parse error:', e);
+        }
+      }
+    }
+    
+    // ===== X/Twitter DMs (via bird) =====
+    // bird doesn't have DM support yet - skip for now
+    
+    // Sort by timestamp (most recent first)
+    allMessages.sort((a, b) => {
+      const ta = new Date(a.timestamp || 0).getTime();
+      const tb = new Date(b.timestamp || 0).getTime();
+      return tb - ta;
+    });
+    
+    return { success: true, chats: allMessages.slice(0, lim) };
+  } catch (e: any) {
+    console.error('[Messages] Error:', e);
+    return { success: false, chats: [], error: e.message };
+  }
+});
+
+// ============== MESSAGE CONTEXT HANDLER ==============
+ipcMain.handle('messages:context', async (_, messageId: string, platform: string, limit?: number) => {
+  const lim = limit || 5;
+  const messages: any[] = [];
+  
+  const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
+    return new Promise((resolve) => {
+      exec(cmd, { timeout, env: { ...process.env, PATH: `/opt/homebrew/bin:/Users/worker/.local/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+        if (error) resolve('');
+        else resolve(stdout);
+      });
+    });
+  };
+  
+  try {
+    if (platform === 'whatsapp') {
+      // Extract JID from messageId (wa-JID format)
+      const jid = messageId.replace('wa-', '');
+      const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
+      // Get contact name first
+      const nameQuery = `SELECT COALESCE(c.push_name, c.full_name, m.chat_name, 'Unknown') as name FROM messages m LEFT JOIN contacts c ON m.chat_jid = c.jid WHERE m.chat_jid='${jid}' LIMIT 1`;
+      const nameRaw = await runCmd(`sqlite3 "${waDbPath}" "${nameQuery}"`, 3000);
+      const contactName = nameRaw?.trim() || 'Unknown';
+      
+      const query = `SELECT text, from_me, datetime(ts, 'unixepoch', 'localtime') as time FROM messages WHERE chat_jid='${jid}' ORDER BY ts DESC LIMIT ${lim}`;
+      const raw = await runCmd(`sqlite3 "${waDbPath}" "${query}" -json`, 5000);
+      if (raw) {
+        const rows = JSON.parse(raw);
+        for (const row of rows.reverse()) {
+          messages.push({
+            sender: row.from_me ? 'You' : contactName,
+            text: row.text || '',
+            timestamp: row.time || '',
+            fromMe: !!row.from_me,
+          });
+        }
+      }
+    } else if (platform === 'telegram') {
+      const chatId = messageId.replace('tg-', '');
+      const raw = await runCmd(`/opt/homebrew/bin/tgcli messages ${chatId} --limit ${lim}`, 5000);
+      if (raw) {
+        const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
+        for (const line of lines.reverse()) {
+          const match = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
+          if (match) {
+            messages.push({
+              sender: match[2].trim(),
+              text: match[3].trim(),
+              timestamp: match[1],
+              fromMe: match[2].trim() === 'You',
+            });
+          }
+        }
+      }
+    } else if (platform === 'discord') {
+      const channelId = messageId.replace('discord-', '');
+      const raw = await runCmd(`/Users/worker/.local/bin/discordcli messages ${channelId} --limit ${lim}`, 5000);
+      if (raw) {
+        const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
+        for (const line of lines.reverse()) {
+          const match = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
+          if (match) {
+            messages.push({
+              sender: match[2].trim(),
+              text: match[3].trim(),
+              timestamp: match[1],
+              fromMe: match[2].trim() === 'prof_froggo',
+            });
+          }
+        }
+      }
+    }
+    
+    return { success: true, messages };
+  } catch (e: any) {
+    console.error('[Messages:Context] Error:', e);
+    return { success: false, messages: [], error: e.message };
+  }
+});
+
 // ============== EMAIL IPC HANDLERS ==============
 ipcMain.handle('email:unread', async (_, account?: string) => {
   const acct = account || 'kevin@carbium.io';
@@ -1120,6 +1644,22 @@ ipcMain.handle('email:unread', async (_, account?: string) => {
       } catch {
         resolve({ success: true, emails: [], raw: stdout, account: acct });
       }
+    });
+  });
+});
+
+ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
+  const acct = account || 'kevin@carbium.io';
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail read ${emailId}`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout) => {
+      if (error) {
+        console.error('[Email] Body error:', error);
+        resolve({ success: false, body: '', error: error.message });
+        return;
+      }
+      resolve({ success: true, body: stdout, emailId });
     });
   });
 });
@@ -1211,6 +1751,26 @@ ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number)
   }
 });
 
+ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) => {
+  try {
+    console.log(`[Sessions] Sending to ${sessionKey}:`, message.slice(0, 100));
+    const response = await fetch('http://localhost:18789/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        message, 
+        sessionKey,
+        source: 'dashboard-chat-agent'
+      }),
+    });
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error('[Sessions] Send error:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
 // Shell execution for Code Agent Dashboard, Context Control Board
 ipcMain.handle('exec:run', async (_, command: string) => {
   const { exec } = require('child_process');
@@ -1281,4 +1841,56 @@ function startQueueWatcher() {
 // Start watcher after window is created
 app.whenReady().then(() => {
   setTimeout(startQueueWatcher, 1000);
+});
+
+// ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
+ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => {
+  const session = msg.sessionKey || 'dashboard';
+  const escapedContent = msg.content.replace(/'/g, "''");
+  const ts = new Date(msg.timestamp).toISOString();
+  
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('${ts}', '${session}', 'dashboard', '${msg.role}', '${escapedContent}')"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      resolve({ success: !error, error: error?.message });
+    });
+  });
+});
+
+ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: string) => {
+  const session = sessionKey || 'dashboard';
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id, timestamp, role, content FROM messages WHERE session_key='${session}' AND channel='dashboard' ORDER BY timestamp DESC LIMIT ${limit}" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, messages: [] });
+        return;
+      }
+      try {
+        const rows = JSON.parse(stdout || '[]');
+        const messages = rows.reverse().map((r: any) => ({
+          id: `db-${r.id}`,
+          role: r.role,
+          content: r.content,
+          timestamp: new Date(r.timestamp).getTime(),
+        }));
+        resolve({ success: true, messages });
+      } catch {
+        resolve({ success: true, messages: [] });
+      }
+    });
+  });
+});
+
+ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {
+  const session = sessionKey || 'dashboard';
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "DELETE FROM messages WHERE session_key='${session}' AND channel='dashboard'"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      resolve({ success: !error });
+    });
+  });
 });
