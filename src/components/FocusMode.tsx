@@ -87,6 +87,18 @@ interface FocusModeSelectorProps {
 export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }: FocusModeSelectorProps) {
   const [duration, setDuration] = useState<number | null>(null);
   
+  // ESC key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+  
   if (!isOpen) return null;
 
   const handleSelect = (mode: FocusModeType) => {
