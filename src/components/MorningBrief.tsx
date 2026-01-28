@@ -69,12 +69,14 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
             console.log('[MorningBrief] Inbox result attempt', attempt + 1, ':', JSON.stringify(inboxResult));
             setDebugInfo(`Attempt ${attempt + 1}: ${inboxResult?.success ? 'Success' : 'Failed'}, Items: ${inboxResult?.items?.length || 0}`);
             if (inboxResult?.success && Array.isArray(inboxResult?.items)) {
-              const allItems = inboxResult.items;
-              const pendingItems = allItems.filter((i: any) => i.status === 'pending');
-              pendingApprovals = pendingItems.length;
-              console.log('[MorningBrief] Total items:', allItems.length, 'Pending:', pendingApprovals);
-              setDebugInfo(`IPC OK: ${allItems.length} total, ${pendingApprovals} pending`);
-              break; // Got result, stop retrying (even if 0)
+              // Backend already filters to status='pending', no need to filter again
+              pendingApprovals = inboxResult.items.length;
+              console.log('[MorningBrief] Inbox returned', pendingApprovals, 'pending items');
+              if (pendingApprovals > 0) {
+                console.log('[MorningBrief] First item:', inboxResult.items[0]);
+              }
+              setDebugInfo(`IPC OK: ${pendingApprovals} pending items`);
+              break; // Got result, stop retrying
             } else {
               setDebugInfo(`IPC returned: success=${inboxResult?.success}, items is array=${Array.isArray(inboxResult?.items)}`);
             }
