@@ -261,10 +261,10 @@ export const useStore = create<Store>()(
       // Voice controls
       isMuted: false,
       setMuted: (isMuted) => set({ isMuted }),
-      toggleMuted: () => set((s) => ({ isMuted: !s.isMuted })),
+      toggleMuted: () => set((s: Store) => ({ isMuted: !s.isMuted })),
       isMeetingActive: false,
       setMeetingActive: (isMeetingActive) => set({ isMeetingActive }),
-      toggleMeeting: () => set((s) => ({ isMeetingActive: !s.isMeetingActive })),
+      toggleMeeting: () => set((s: Store) => ({ isMeetingActive: !s.isMeetingActive })),
 
       sessions: [],
       setSessions: (sessions) => set({ sessions }),
@@ -398,13 +398,13 @@ export const useStore = create<Store>()(
           createdAt: Date.now(),
           updatedAt: Date.now(),
         };
-        set((s) => ({
+        set((s: Store) => ({
           tasks: [...s.tasks, newTask]
         }));
         // Sync to froggo-db
         (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
       },
-      updateTask: (id, updates) => set((s) => ({
+      updateTask: (id, updates) => set((s: Store) => ({
         tasks: s.tasks.map(t => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
       })),
       moveTask: (id, status) => {
@@ -430,7 +430,7 @@ export const useStore = create<Store>()(
         }
         
         const previousStatus = task.status;
-        set((s) => ({
+        set((s: Store) => ({
           tasks: s.tasks.map(t => t.id === id ? { ...t, status, updatedAt: Date.now() } : t)
         }));
         // Broadcast status change to main session
@@ -448,11 +448,11 @@ export const useStore = create<Store>()(
           timestamp: Date.now(),
         });
       },
-      deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter(t => t.id !== id) })),
+      deleteTask: (id) => set((s: Store) => ({ tasks: s.tasks.filter(t => t.id !== id) })),
       assignTask: (id, agentId) => {
         const task = get().tasks.find(t => t.id === id);
         const agent = agentId ? get().agents.find(a => a.id === agentId) : null;
-        set((s) => ({
+        set((s: Store) => ({
           tasks: s.tasks.map(t => t.id === id ? { ...t, assignedTo: agentId, updatedAt: Date.now() } : t)
         }));
         // Broadcast assignment to main session
@@ -488,7 +488,7 @@ export const useStore = create<Store>()(
           const result = await (window as any).clawdbot?.tasks?.subtasks?.list(taskId);
           if (result?.success) {
             // Update the task in state with loaded subtasks
-            set((s) => ({
+            set((s: Store) => ({
               tasks: s.tasks.map(t => t.id === taskId ? { ...t, subtasks: result.subtasks } : t)
             }));
             return result.subtasks || [];
@@ -524,7 +524,7 @@ export const useStore = create<Store>()(
           
           if (result?.success) {
             // Optimistically update local state
-            set((s) => ({
+            set((s: Store) => ({
               tasks: s.tasks.map(t => t.id === taskId 
                 ? { ...t, subtasks: [...(t.subtasks || []), newSubtask], updatedAt: Date.now() }
                 : t
@@ -545,7 +545,7 @@ export const useStore = create<Store>()(
           const result = await (window as any).clawdbot?.tasks?.subtasks?.update(subtaskId, updates);
           if (result?.success) {
             // Update local state
-            set((s) => ({
+            set((s: Store) => ({
               tasks: s.tasks.map(t => ({
                 ...t,
                 subtasks: (t.subtasks || []).map(st => 
@@ -572,7 +572,7 @@ export const useStore = create<Store>()(
         try {
           const result = await (window as any).clawdbot?.tasks?.subtasks?.delete(subtaskId);
           if (result?.success) {
-            set((s) => ({
+            set((s: Store) => ({
               tasks: s.tasks.map(t => t.id === taskId
                 ? { ...t, subtasks: (t.subtasks || []).filter(st => st.id !== subtaskId), updatedAt: Date.now() }
                 : t
@@ -636,7 +636,7 @@ export const useStore = create<Store>()(
           });
 
           // Update task and agent status locally
-          set((s) => ({
+          set((s: Store) => ({
             agents: s.agents.map(a => 
               a.id === agentId ? { ...a, status: 'busy' as const, currentTaskId: taskId } : a
             ),
@@ -660,7 +660,7 @@ export const useStore = create<Store>()(
 
         } catch (e) {
           console.error('Failed to start task:', e);
-          set((s) => ({
+          set((s: Store) => ({
             agents: s.agents.map(a => 
               a.id === agentId ? { ...a, status: 'idle' as const, currentTaskId: undefined } : a
             ),
@@ -677,7 +677,7 @@ export const useStore = create<Store>()(
         
         try {
           // Add to agents list first
-          set((s) => ({
+          set((s: Store) => ({
             agents: [...s.agents, {
               id: workerId,
               name,
@@ -714,7 +714,7 @@ Start now.`;
         } catch (e) {
           console.error('Failed to create worker:', e);
           // Remove the worker on failure
-          set((s) => ({
+          set((s: Store) => ({
             agents: s.agents.filter(a => a.id !== workerId),
           }));
           throw e;
@@ -723,7 +723,7 @@ Start now.`;
 
       // Update agent status
       updateAgentStatus: (agentId: string, status: Agent['status'], sessionKey?: string) => {
-        set((s) => ({
+        set((s: Store) => ({
           agents: s.agents.map(a => 
             a.id === agentId ? { 
               ...a, 
@@ -737,7 +737,7 @@ Start now.`;
       },
 
       activities: [],
-      addActivity: (a) => set((s) => ({
+      addActivity: (a) => set((s: Store) => ({
         activities: [{ ...a, id: `act-${Date.now()}` }, ...s.activities].slice(0, 100)
       })),
       clearActivities: () => set({ activities: [] }),
@@ -804,7 +804,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         // Notify user
         notifyNewApproval(a.title);
         
-        return set((s) => ({
+        return set((s: Store) => ({
           approvals: [{
             ...a,
             id: `appr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -830,7 +830,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
-          set((s) => ({
+          set((s: Store) => ({
             approvals: s.approvals.filter(a => a.id !== id), // Remove from inbox
             tasks: [completionTask, ...s.tasks],
           }));
@@ -852,7 +852,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           // Notify main session
           gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch(() => {});
         }
-        set((s) => ({
+        set((s: Store) => ({
           approvals: s.approvals.filter(a => a.id !== id), // Delete from inbox
         }));
       },
@@ -871,7 +871,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
-          set((s) => ({
+          set((s: Store) => ({
             approvals: s.approvals.filter(a => a.id !== id), // Delete from inbox
             tasks: [revisionTask, ...s.tasks],
           }));
@@ -879,7 +879,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch(() => {});
         }
       },
-      clearCompletedApprovals: () => set((s) => ({
+      clearCompletedApprovals: () => set((s: Store) => ({
         approvals: s.approvals.filter(a => a.status === 'pending')
       })),
 
@@ -893,18 +893,18 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           status: 'draft',
           createdAt: Date.now(),
         };
-        set((s) => ({
+        set((s: Store) => ({
           xDrafts: [newDraft, ...s.xDrafts]
         }));
         return newDraft;
       },
-      updateXDraft: (id: string, updates: Partial<XDraft>) => set((s) => ({
+      updateXDraft: (id: string, updates: Partial<XDraft>) => set((s: Store) => ({
         xDrafts: s.xDrafts.map(d => d.id === id ? { ...d, ...updates } : d)
       })),
-      deleteXDraft: (id: string) => set((s) => ({
+      deleteXDraft: (id: string) => set((s: Store) => ({
         xDrafts: s.xDrafts.filter(d => d.id !== id)
       })),
-      markXDraftPosted: (id: string) => set((s) => ({
+      markXDraftPosted: (id: string) => set((s: Store) => ({
         // Remove posted drafts entirely instead of keeping them
         xDrafts: s.xDrafts.filter(d => d.id !== id)
       })),
@@ -919,7 +919,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
 
         const agentId = matchTaskToAgent(task.title, task.description || '');
         
-        set((s) => ({
+        set((s: Store) => ({
           tasks: s.tasks.map(t => 
             t.id === taskId ? { ...t, assignedTo: agentId, updatedAt: Date.now() } : t
           ),
@@ -961,14 +961,14 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           });
 
           // Move to review
-          set((s) => ({
+          set((s: Store) => ({
             tasks: s.tasks.map(t => 
               t.id === taskId ? { ...t, status: 'review' as TaskStatus, updatedAt: Date.now() } : t
             ),
           }));
         } else {
           // Froggo can approve internal work
-          set((s) => ({
+          set((s: Store) => ({
             tasks: s.tasks.map(t => 
               t.id === taskId ? { ...t, status: 'done' as TaskStatus, updatedAt: Date.now() } : t
             ),
@@ -982,7 +982,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         }
 
         // Reset agent status
-        set((s) => ({
+        set((s: Store) => ({
           agents: s.agents.map(a => 
             a.id === agentId ? { ...a, status: 'idle' as const, currentTaskId: undefined } : a
           ),
