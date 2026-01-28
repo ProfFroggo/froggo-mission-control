@@ -9,7 +9,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'templates' | 'analytics' | 'comms';
 
 interface SidebarProps {
   currentView: View;
@@ -29,7 +29,6 @@ const navItems = [
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
   { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '⌘⇧S' },
-  { id: 'calendar' as View, icon: Calendar, label: 'Calendar', shortcut: '⌘⇧A' },
   { id: 'templates' as View, icon: FolderOpen, label: 'Templates', shortcut: '' },
   { id: 'sessions' as View, icon: Radio, label: 'Sessions', shortcut: '⌘9' },
   { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '⌘0' },

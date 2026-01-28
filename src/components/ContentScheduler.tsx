@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, Pause, RefreshCw, X, Check } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, Pause, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -48,6 +48,13 @@ export default function ContentScheduler() {
   const [formTime, setFormTime] = useState('');
   const [formRecipient, setFormRecipient] = useState('');
   const [formSubject, setFormSubject] = useState('');
+  
+  // Media upload state
+  const [mediaFile, setMediaFile] = useState<{ path: string; fileName: string; size: number; type: string } | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadSchedule = useCallback(async () => {
     setLoading(true);
@@ -69,6 +76,109 @@ export default function ContentScheduler() {
     const interval = setInterval(loadSchedule, 30000);
     return () => clearInterval(interval);
   }, [loadSchedule]);
+  
+  // Clean up old uploads on mount (7 days)
+  useEffect(() => {
+    const cleanup = async () => {
+      const result = await (window as any).clawdbot?.media?.cleanup();
+      if (result?.success && result.deletedCount > 0) {
+        console.log(`[MediaCleanup] Removed ${result.deletedCount} old file(s)`);
+      }
+    };
+    cleanup();
+  }, []);
+
+  const handleFileSelect = async (file: File) => {
+    setUploadError(null);
+    
+    // Validate file type
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const validVideoTypes = ['video/mp4', 'video/quicktime'];
+    const isImage = validImageTypes.includes(file.type);
+    const isVideo = validVideoTypes.includes(file.type);
+    
+    if (!isImage && !isVideo) {
+      setUploadError('Invalid file type. Accepted: JPG, PNG, GIF, WEBP, MP4, MOV');
+      return;
+    }
+    
+    // Validate file size
+    const maxImageSize = 5 * 1024 * 1024; // 5MB
+    const maxVideoSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = isImage ? maxImageSize : maxVideoSize;
+    
+    if (file.size > maxSize) {
+      const maxSizeMB = maxSize / (1024 * 1024);
+      setUploadError(`File too large. Max size: ${maxSizeMB}MB`);
+      return;
+    }
+    
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Data = (e.target?.result as string)?.split(',')[1];
+        
+        if (!base64Data) {
+          setUploadError('Failed to read file');
+          return;
+        }
+        
+        // Upload to backend
+        const result = await (window as any).clawdbot?.media?.upload(file.name, base64Data);
+        
+        if (result?.success) {
+          setMediaFile({
+            path: result.path,
+            fileName: result.fileName,
+            size: result.size,
+            type: isImage ? 'image' : 'video',
+          });
+          
+          // Create preview for images
+          if (isImage) {
+            setMediaPreview(e.target?.result as string);
+          }
+          
+          showToast('success', 'Uploaded', `${file.name} uploaded successfully`);
+        } else {
+          setUploadError(result?.error || 'Upload failed');
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setUploadError(String(error));
+    }
+  };
+  
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+  
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
+  
+  const handleRemoveMedia = async () => {
+    if (mediaFile) {
+      // Delete from backend
+      await (window as any).clawdbot?.media?.delete(mediaFile.path);
+    }
+    setMediaFile(null);
+    setMediaPreview(null);
+    setUploadError(null);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async () => {
     if (!formContent.trim() || !formDate || !formTime) {
@@ -83,10 +193,18 @@ export default function ContentScheduler() {
         type: formType,
         content: formContent,
         scheduledFor,
-        metadata: formType === 'email' ? {
-          recipient: formRecipient,
-          subject: formSubject,
-        } : undefined,
+        metadata: {
+          ...(formType === 'email' ? {
+            recipient: formRecipient,
+            subject: formSubject,
+          } : {}),
+          ...(mediaFile ? {
+            mediaPath: mediaFile.path,
+            mediaFileName: mediaFile.fileName,
+            mediaType: mediaFile.type,
+            mediaSize: mediaFile.size,
+          } : {}),
+        },
       };
 
       const result = editingId
@@ -152,6 +270,10 @@ export default function ContentScheduler() {
     setFormTime('');
     setFormRecipient('');
     setFormSubject('');
+    
+    // Clear media
+    handleRemoveMedia();
+    setUploadError(null);
   };
 
   const formatScheduledTime = (isoDate: string) => {
@@ -298,6 +420,108 @@ export default function ContentScheduler() {
               </div>
             )}
 
+            {/* Media Upload */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Media (optional)</label>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1 px-2 py-1 text-xs bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
+                >
+                  <Paperclip size={12} />
+                  {mediaFile ? 'Change' : 'Attach'}
+                </button>
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
+                onChange={handleFileInput}
+                className="hidden"
+              />
+              
+              {/* Drag & Drop Zone */}
+              {!mediaFile && (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    isDragging 
+                      ? 'border-clawd-accent bg-clawd-accent/10' 
+                      : 'border-clawd-border hover:border-clawd-border/60'
+                  }`}
+                >
+                  <p className="text-sm text-clawd-text-dim">
+                    Drag & drop image or video, or click Attach button
+                  </p>
+                  <p className="text-xs text-clawd-text-dim mt-1">
+                    Images: JPG, PNG, GIF, WEBP (max 5MB) • Videos: MP4, MOV (max 50MB)
+                  </p>
+                </div>
+              )}
+              
+              {/* Media Preview */}
+              {mediaFile && (
+                <div className="border border-clawd-border rounded-lg p-3 bg-clawd-surface">
+                  <div className="flex items-start gap-3">
+                    {/* Preview/Icon */}
+                    <div className="flex-shrink-0">
+                      {mediaFile.type === 'image' && mediaPreview ? (
+                        <img 
+                          src={mediaPreview} 
+                          alt="Preview" 
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-clawd-border rounded-lg flex items-center justify-center">
+                          {mediaFile.type === 'image' ? (
+                            <ImageIcon size={24} className="text-clawd-text-dim" />
+                          ) : (
+                            <Video size={24} className="text-clawd-text-dim" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* File Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {mediaFile.type === 'image' ? (
+                          <ImageIcon size={14} className="text-green-400" />
+                        ) : (
+                          <Video size={14} className="text-blue-400" />
+                        )}
+                        <span className="text-sm font-medium truncate">{mediaFile.fileName}</span>
+                      </div>
+                      <p className="text-xs text-clawd-text-dim mt-1">
+                        {(mediaFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={handleRemoveMedia}
+                      className="p-1 hover:bg-red-500/20 rounded transition-colors"
+                      title="Remove media"
+                    >
+                      <X size={16} className="text-red-400" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Upload Error */}
+              {uploadError && (
+                <div className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                  {uploadError}
+                </div>
+              )}
+            </div>
+
             {/* Date/Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -399,6 +623,18 @@ export default function ContentScheduler() {
                           To: {item.metadata.recipient}
                           {item.metadata.subject && ` • ${item.metadata.subject}`}
                         </p>
+                      )}
+                      
+                      {/* Media indicator */}
+                      {item.metadata?.mediaPath && (
+                        <div className="flex items-center gap-1 text-xs text-clawd-accent mt-1">
+                          {item.metadata.mediaType === 'image' ? (
+                            <ImageIcon size={12} />
+                          ) : (
+                            <Video size={12} />
+                          )}
+                          <span>{item.metadata.mediaFileName}</span>
+                        </div>
                       )}
                     </div>
 

@@ -109,7 +109,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
             Object.entries(grouped).map(([date, dateEvents]) => (
               <div key={date}>
                 <div className="px-4 py-2 text-xs font-medium text-clawd-text-dim bg-clawd-bg/50">{date}</div>
-                {dateEvents.map((event: any) => (
+                {(dateEvents as any[]).map((event: any) => (
                   <div key={event.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30">
                     <div className="font-medium">{event.title}</div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-clawd-text-dim">

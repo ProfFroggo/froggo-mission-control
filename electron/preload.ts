@@ -102,6 +102,17 @@ contextBridge.exposeInMainWorld('clawdbot', {
   fs: {
     writeBase64: (path: string, base64: string) => ipcRenderer.invoke('fs:writeBase64', path, base64),
     readFile: (path: string, encoding?: string) => ipcRenderer.invoke('fs:readFile', path, encoding),
+    append: (path: string, content: string) => ipcRenderer.invoke('fs:append', path, content),
+  },
+  // Database
+  db: {
+    exec: (query: string, params?: any[]) => ipcRenderer.invoke('db:exec', query, params),
+  },
+  // Media uploads
+  media: {
+    upload: (fileName: string, base64Data: string) => ipcRenderer.invoke('media:upload', fileName, base64Data),
+    delete: (filePath: string) => ipcRenderer.invoke('media:delete', filePath),
+    cleanup: () => ipcRenderer.invoke('media:cleanup'),
   },
   // Library
   library: {
@@ -181,6 +192,22 @@ contextBridge.exposeInMainWorld('clawdbot', {
     createEvent: (params: any) => ipcRenderer.invoke('calendar:createEvent', params),
     updateEvent: (params: any) => ipcRenderer.invoke('calendar:updateEvent', params),
     deleteEvent: (params: any) => ipcRenderer.invoke('calendar:deleteEvent', params),
+    // Account management
+    listAccounts: () => ipcRenderer.invoke('calendar:listAccounts'),
+    listCalendars: (account: string) => ipcRenderer.invoke('calendar:listCalendars', account),
+    addAccount: () => ipcRenderer.invoke('calendar:addAccount'),
+    removeAccount: (account: string) => ipcRenderer.invoke('calendar:removeAccount', account),
+    testConnection: (account: string) => ipcRenderer.invoke('calendar:testConnection', account),
+    // Calendar aggregation service
+    aggregate: (options?: {
+      days?: number;
+      includeGoogle?: boolean;
+      includeMissionControl?: boolean;
+      accounts?: string[];
+    }) => ipcRenderer.invoke('calendar:aggregate', options),
+    clearCache: (source?: 'google' | 'mission-control' | 'all') => 
+      ipcRenderer.invoke('calendar:clearCache', source),
+    cacheStats: () => ipcRenderer.invoke('calendar:cacheStats'),
   },
   // Sessions management
   sessions: {

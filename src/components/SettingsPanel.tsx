@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check } from 'lucide-react';
+import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Calendar, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useStore } from '../store/store';
 import { reconnectGateway } from '../lib/gateway';
+import { showToast } from './Toast';
 
 interface Settings {
   gatewayUrl: string;
@@ -79,6 +80,13 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string) {
   root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
 }
 
+interface CalendarAccount {
+  email: string;
+  authenticated: boolean;
+  calendarsCount?: number;
+  status?: 'connected' | 'error' | 'checking';
+}
+
 export default function SettingsPanel() {
   const { connected } = useStore();
   const [settings, setSettings] = useState<Settings>(() => {
@@ -86,6 +94,16 @@ export default function SettingsPanel() {
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
   const [saved, setSaved] = useState(false);
+  
+  // Calendar accounts state
+  const [calendarAccounts, setCalendarAccounts] = useState<CalendarAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [addingAccount, setAddingAccount] = useState(false);
+
+  // Load calendar accounts on mount
+  useEffect(() => {
+    loadCalendarAccounts();
+  }, []);
 
   // Apply theme on mount and when settings change
   useEffect(() => {
@@ -130,6 +148,121 @@ export default function SettingsPanel() {
   const handleReset = () => {
     setSettings(defaultSettings);
     localStorage.removeItem('froggo-settings');
+  };
+
+  // Load calendar accounts from gog CLI
+  const loadCalendarAccounts = async () => {
+    setLoadingAccounts(true);
+    try {
+      const result = await (window as any).clawdbot?.calendar?.listAccounts();
+      if (result?.success && result.accounts) {
+        setCalendarAccounts(result.accounts);
+      } else {
+        // Fallback: check known accounts
+        const knownAccounts = [
+          'kevin.macarthur@bitso.com',
+          'kevin@carbium.io',
+          'kmacarthur.gpt@gmail.com'
+        ];
+        
+        const accountsStatus = await Promise.all(
+          knownAccounts.map(async (email) => {
+            try {
+              const testResult = await (window as any).clawdbot?.calendar?.testConnection(email);
+              return {
+                email,
+                authenticated: testResult?.success || false,
+                calendarsCount: testResult?.calendarsCount,
+                status: (testResult?.success ? 'connected' : 'error') as 'connected' | 'error',
+              };
+            } catch {
+              return {
+                email,
+                authenticated: false,
+                status: 'error' as const,
+              };
+            }
+          })
+        );
+        
+        setCalendarAccounts(accountsStatus);
+      }
+    } catch (e) {
+      console.error('Failed to load calendar accounts:', e);
+      showToast('error', 'Failed to load accounts', 'Could not fetch calendar accounts');
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
+
+  // Add new calendar account
+  const handleAddAccount = async () => {
+    setAddingAccount(true);
+    try {
+      const result = await (window as any).clawdbot?.calendar?.addAccount();
+      if (result?.success) {
+        showToast('success', 'Account added', 'Calendar account authenticated successfully');
+        loadCalendarAccounts();
+      } else {
+        showToast('error', 'Authentication failed', result?.error || 'Could not authenticate account');
+      }
+    } catch (e: any) {
+      showToast('error', 'Authentication failed', e.message || 'Could not authenticate account');
+    } finally {
+      setAddingAccount(false);
+    }
+  };
+
+  // Remove calendar account
+  const handleRemoveAccount = async (email: string) => {
+    if (!confirm(`Remove calendar account ${email}?\n\nThis will revoke access and delete stored credentials.`)) {
+      return;
+    }
+
+    try {
+      const result = await (window as any).clawdbot?.calendar?.removeAccount(email);
+      if (result?.success) {
+        showToast('success', 'Account removed', `${email} has been removed`);
+        loadCalendarAccounts();
+      } else {
+        showToast('error', 'Failed to remove', result?.error || 'Could not remove account');
+      }
+    } catch (e: any) {
+      showToast('error', 'Failed to remove', e.message || 'Could not remove account');
+    }
+  };
+
+  // Test account connection
+  const handleTestConnection = async (email: string) => {
+    setCalendarAccounts(prev =>
+      prev.map(acc => acc.email === email ? { ...acc, status: 'checking' as const } : acc)
+    );
+
+    try {
+      const result = await (window as any).clawdbot?.calendar?.testConnection(email);
+      setCalendarAccounts(prev =>
+        prev.map(acc =>
+          acc.email === email
+            ? {
+                ...acc,
+                status: (result?.success ? 'connected' : 'error') as 'connected' | 'error',
+                calendarsCount: result?.calendarsCount,
+              }
+            : acc
+        )
+      );
+
+      if (result?.success) {
+        showToast('success', 'Connection OK', `${email} is connected (${result.calendarsCount} calendars)`);
+      } else {
+        showToast('error', 'Connection failed', result?.error || 'Could not connect to account');
+      }
+    } catch (e: any) {
+      setCalendarAccounts(prev =>
+        prev.map(acc => acc.email === email ? { ...acc, status: 'error' as const } : acc)
+      );
+      showToast('error', 'Connection failed', e.message || 'Could not test connection');
+    }
   };
 
   return (
@@ -319,6 +452,97 @@ export default function SettingsPanel() {
                   onChange={(e) => setSettings(s => ({ ...s, refreshInterval: parseInt(e.target.value) }))}
                   className="w-full"
                 />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Calendar Accounts */}
+        <section className="mb-8">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+            <Calendar size={18} /> Calendar Accounts
+          </h2>
+          <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-clawd-text-dim">
+                Manage Google Calendar account access
+              </p>
+              <button
+                onClick={handleAddAccount}
+                disabled={addingAccount}
+                className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+              >
+                <Plus size={14} />
+                Add Account
+              </button>
+            </div>
+
+            {loadingAccounts ? (
+              <div className="text-center py-8 text-clawd-text-dim">
+                <RefreshCw size={24} className="mx-auto mb-2 animate-spin" />
+                <p className="text-sm">Loading accounts...</p>
+              </div>
+            ) : calendarAccounts.length === 0 ? (
+              <div className="text-center py-8 text-clawd-text-dim">
+                <Calendar size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No calendar accounts configured</p>
+                <button
+                  onClick={handleAddAccount}
+                  className="mt-3 text-sm text-clawd-accent hover:underline"
+                >
+                  Add your first account
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {calendarAccounts.map((account) => (
+                  <div
+                    key={account.email}
+                    className="flex items-center justify-between p-3 bg-clawd-bg rounded-lg border border-clawd-border"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {/* Status Indicator */}
+                      {account.status === 'checking' ? (
+                        <RefreshCw size={18} className="text-clawd-text-dim animate-spin" />
+                      ) : account.status === 'connected' ? (
+                        <CheckCircle size={18} className="text-green-400" />
+                      ) : (
+                        <XCircle size={18} className="text-red-400" />
+                      )}
+
+                      {/* Account Info */}
+                      <div className="flex-1">
+                        <div className="font-medium">{account.email}</div>
+                        <div className="text-xs text-clawd-text-dim">
+                          {account.status === 'checking'
+                            ? 'Testing connection...'
+                            : account.status === 'connected'
+                            ? `Connected • ${account.calendarsCount || 0} calendars`
+                            : 'Not authenticated'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleTestConnection(account.email)}
+                        disabled={account.status === 'checking'}
+                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+                        title="Test connection"
+                      >
+                        <RefreshCw size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveAccount(account.email)}
+                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                        title="Remove account"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

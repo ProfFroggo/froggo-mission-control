@@ -129,6 +129,11 @@ declare global {
       fs: {
         writeBase64: (path: string, base64: string) => Promise<{ success: boolean; path?: string }>;
         readFile: (path: string, encoding?: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+        append: (path: string, content: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+      };
+      // Database
+      db: {
+        exec: (query: string, params?: any[]) => Promise<{ success: boolean; result?: any[]; error?: string }>;
       };
       // Library
       library: {
@@ -184,10 +189,42 @@ declare global {
         // Direct send (Stage 2 email workflow)
         send: (options: { to: string; subject: string; body: string; account?: string }) => Promise<{ success: boolean; output?: string; error?: string }>;
       };
-      // Calendar (gog CLI)
+      // Calendar (gog CLI + aggregation service)
       calendar: {
         events: (account?: string, days?: number) => Promise<{ success: boolean; events: any[]; account?: string }>;
         today: () => Promise<{ success: boolean; events: any[]; account?: string }>;
+        // Calendar aggregation service
+        aggregate: (options?: {
+          days?: number;
+          includeGoogle?: boolean;
+          includeMissionControl?: boolean;
+          accounts?: string[];
+        }) => Promise<{
+          success: boolean;
+          events: any[];
+          sources: {
+            google: { [account: string]: number };
+            missionControl: number;
+          };
+          errors: string[];
+          error?: string;
+        }>;
+        clearCache: (source?: 'google' | 'mission-control' | 'all') => Promise<{ success: boolean; error?: string }>;
+        cacheStats: () => Promise<{
+          success: boolean;
+          stats?: {
+            totalEntries: number;
+            validEntries: number;
+            expiredEntries: number;
+            entries: Array<{
+              key: string;
+              age: number;
+              valid: boolean;
+              eventCount: number;
+            }>;
+          };
+          error?: string;
+        }>;
       };
       // Sessions management
       sessions: {

@@ -19,9 +19,13 @@ import {
   CheckCircle,
   Mail,
   Filter,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
+import CalendarFilterModal from './CalendarFilterModal';
+import TaskModal from './TaskModal';
+import { TaskPriority } from '../store/store';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -102,11 +106,23 @@ export default function CalendarPanel() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<UnifiedEvent | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<UnifiedEvent | null>(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showEventDetailModal, setShowEventDetailModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskInitialData, setTaskInitialData] = useState<{
+    title?: string;
+    description?: string;
+    project?: string;
+    priority?: TaskPriority;
+    dueDate?: string;
+    assignedTo?: string;
+  } | undefined>(undefined);
   
   // Filter toggles
   const [showCalendarEvents, setShowCalendarEvents] = useState(true);
   const [showScheduledPosts, setShowScheduledPosts] = useState(true);
   const [showTaskDeadlines, setShowTaskDeadlines] = useState(true);
+  const [enabledCalendarSources, setEnabledCalendarSources] = useState<string[]>([]);
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
@@ -121,6 +137,20 @@ export default function CalendarPanel() {
   const [formRecurrence, setFormRecurrence] = useState('none');
   const [formTimeZone, setFormTimeZone] = useState('Europe/Gibraltar');
 
+  // Load enabled calendar sources on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('calendar-filter-preferences');
+    if (saved) {
+      setEnabledCalendarSources(JSON.parse(saved));
+    }
+  }, []);
+
+  // Check if a calendar source is enabled
+  const isSourceEnabled = useCallback((sourceId: string) => {
+    if (enabledCalendarSources.length === 0) return true; // If no filters saved, show all
+    return enabledCalendarSources.includes(sourceId);
+  }, [enabledCalendarSources]);
+
   // Fetch events from all sources
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -130,34 +160,39 @@ export default function CalendarPanel() {
       const daysToFetch = viewMode === 'day' ? 1 : viewMode === 'week' ? 7 : 30;
       const allEvents: UnifiedEvent[] = [];
 
-      // 1. Fetch Google Calendar events
+      // 1. Fetch Google Calendar events from all accounts
       if (showCalendarEvents) {
-        try {
-          const calResult = await (window as any).clawdbot?.calendar?.events(selectedAccount, daysToFetch);
-          if (calResult?.success && calResult.events?.events) {
-            const calEvents: UnifiedEvent[] = calResult.events.events.map((e: any) => ({
-              id: `cal_${e.id}`,
-              type: 'calendar' as UnifiedEventType,
-              title: e.summary || 'Untitled',
-              start: e.start?.dateTime || e.start?.date || '',
-              end: e.end?.dateTime || e.end?.date || '',
-              location: e.location || '',
-              attendees: e.attendees || [],
-              description: e.description || '',
-              isAllDay: !!e.start?.date && !e.start?.dateTime,
-              recurring: !!e.recurrence,
-              account: selectedAccount,
-              timeZone: e.start?.timeZone || 'Europe/Gibraltar',
-            }));
-            allEvents.push(...calEvents);
+        for (const account of ACCOUNTS) {
+          const sourceId = `google:${account.email}`;
+          if (!isSourceEnabled(sourceId)) continue;
+
+          try {
+            const calResult = await (window as any).clawdbot?.calendar?.events(account.email, daysToFetch);
+            if (calResult?.success && calResult.events?.events) {
+              const calEvents: UnifiedEvent[] = calResult.events.events.map((e: any) => ({
+                id: `cal_${account.email}_${e.id}`,
+                type: 'calendar' as UnifiedEventType,
+                title: e.summary || 'Untitled',
+                start: e.start?.dateTime || e.start?.date || '',
+                end: e.end?.dateTime || e.end?.date || '',
+                location: e.location || '',
+                attendees: e.attendees || [],
+                description: e.description || '',
+                isAllDay: !!e.start?.date && !e.start?.dateTime,
+                recurring: !!e.recurrence,
+                account: account.email,
+                timeZone: e.start?.timeZone || 'Europe/Gibraltar',
+              }));
+              allEvents.push(...calEvents);
+            }
+          } catch (e) {
+            console.error(`Failed to fetch calendar events for ${account.email}:`, e);
           }
-        } catch (e) {
-          console.error('Failed to fetch calendar events:', e);
         }
       }
 
       // 2. Fetch scheduled posts
-      if (showScheduledPosts) {
+      if (showScheduledPosts && isSourceEnabled('social:twitter')) {
         try {
           const scheduleResult = await (window as any).clawdbot?.schedule?.list();
           if (scheduleResult?.success && scheduleResult.items) {
@@ -183,7 +218,7 @@ export default function CalendarPanel() {
       }
 
       // 3. Fetch tasks with due dates
-      if (showTaskDeadlines) {
+      if (showTaskDeadlines && isSourceEnabled('mission-control:tasks')) {
         try {
           const tasksResult = await (window as any).clawdbot?.tasks?.list();
           if (tasksResult?.success && tasksResult.tasks) {
@@ -218,7 +253,7 @@ export default function CalendarPanel() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAccount, viewMode, showCalendarEvents, showScheduledPosts, showTaskDeadlines]);
+  }, [viewMode, showCalendarEvents, showScheduledPosts, showTaskDeadlines, isSourceEnabled]);
 
   useEffect(() => {
     fetchEvents();
@@ -384,17 +419,8 @@ export default function CalendarPanel() {
   };
 
   const handleEventClick = (event: UnifiedEvent) => {
-    if (event.type === 'calendar') {
-      openEditModal(event);
-    } else if (event.type === 'post') {
-      // Show post details - for now just select it
-      setSelectedEvent(event);
-      showToast('info', 'Scheduled Post', 'Post details - edit via Schedule panel');
-    } else if (event.type === 'task') {
-      // Navigate to task detail - for now just show info
-      setSelectedEvent(event);
-      showToast('info', 'Task Deadline', `Task: ${event.title} - View in Tasks panel`);
-    }
+    setSelectedEvent(event);
+    setShowEventDetailModal(true);
   };
 
   const openEditModal = (event: UnifiedEvent) => {
@@ -436,6 +462,115 @@ export default function CalendarPanel() {
     setFormIsAllDay(false);
     setFormRecurrence('none');
     setFormTimeZone('Europe/Gibraltar');
+  };
+
+  // Export meeting as Markdown
+  const exportMeetingAsMarkdown = (event: UnifiedEvent) => {
+    if (event.type !== 'calendar') {
+      showToast('info', 'Not supported', 'Only calendar events can be exported');
+      return;
+    }
+
+    const startDate = new Date(event.start);
+    const endDate = event.end ? new Date(event.end) : null;
+    
+    let markdown = `# ${event.title}\n\n`;
+    markdown += `## Meeting Details\n\n`;
+    markdown += `**Date:** ${startDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+    markdown += `**Time:** ${formatTime(event.start, event.isAllDay)}`;
+    if (endDate && !event.isAllDay) {
+      markdown += ` - ${formatTime(event.end)}`;
+    }
+    markdown += `\n`;
+    
+    if (event.timeZone) {
+      markdown += `**Time Zone:** ${event.timeZone}\n`;
+    }
+    
+    if (event.location) {
+      markdown += `**Location:** ${event.location}\n`;
+    }
+    
+    if (event.recurring) {
+      markdown += `**Recurring:** Yes\n`;
+    }
+    
+    markdown += `\n`;
+    
+    if (event.attendees && event.attendees.length > 0) {
+      markdown += `## Attendees\n\n`;
+      event.attendees.forEach(attendee => {
+        const name = attendee.displayName || attendee.email;
+        markdown += `- ${name}${attendee.displayName ? ` (${attendee.email})` : ''}\n`;
+      });
+      markdown += `\n`;
+    }
+    
+    if (event.description) {
+      markdown += `## Description\n\n${event.description}\n\n`;
+    }
+    
+    markdown += `## Notes\n\n_Add your meeting notes here_\n\n`;
+    markdown += `## Action Items\n\n- [ ] \n\n`;
+    markdown += `## Links\n\n`;
+    
+    // Create and download the file
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const filename = `${event.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${startDate.toISOString().split('T')[0]}.md`;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('success', 'Exported', `Downloaded ${filename}`);
+  };
+
+  // Create task from meeting
+  const createTaskFromMeeting = (event: UnifiedEvent) => {
+    if (event.type !== 'calendar') {
+      showToast('info', 'Not supported', 'Only calendar events can be converted to tasks');
+      return;
+    }
+
+    const startDate = new Date(event.start);
+    const taskTitle = `Follow up: ${event.title}`;
+    let taskDescription = `Meeting: ${event.title}\n`;
+    taskDescription += `Date: ${startDate.toLocaleDateString('en-GB')}\n`;
+    taskDescription += `Time: ${formatTime(event.start, event.isAllDay)}`;
+    
+    if (event.location) {
+      taskDescription += `\nLocation: ${event.location}`;
+    }
+    
+    if (event.attendees && event.attendees.length > 0) {
+      taskDescription += `\n\nAttendees:\n`;
+      event.attendees.forEach(a => {
+        taskDescription += `- ${a.displayName || a.email}\n`;
+      });
+    }
+    
+    if (event.description) {
+      taskDescription += `\n\nMeeting Description:\n${event.description}`;
+    }
+    
+    taskDescription += `\n\n---\n\nAction items and follow-up notes:`;
+
+    // Set initial data and open task modal
+    setTaskInitialData({
+      title: taskTitle,
+      description: taskDescription,
+      project: 'Default',
+    });
+    
+    // Close detail modal and open task modal
+    setShowEventDetailModal(false);
+    setShowTaskModal(true);
+    
+    showToast('success', 'Task Modal Opened', 'Meeting context has been pre-filled');
   };
 
   // Date navigation
@@ -547,6 +682,14 @@ export default function CalendarPanel() {
 
           <div className="flex gap-2">
             <button
+              onClick={() => setShowFilterModal(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-clawd-border rounded-xl hover:bg-clawd-border/80 transition-colors"
+              title="Filter calendar sources"
+            >
+              <SlidersHorizontal size={14} />
+              Calendars
+            </button>
+            <button
               onClick={fetchEvents}
               disabled={loading}
               className="flex items-center gap-2 px-3 py-2 bg-clawd-border rounded-xl hover:bg-clawd-border/80 transition-colors"
@@ -612,23 +755,8 @@ export default function CalendarPanel() {
           </button>
         </div>
 
-        {/* Account selector & View controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            {ACCOUNTS.map((account) => (
-              <button
-                key={account.email}
-                onClick={() => setSelectedAccount(account.email)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  selectedAccount === account.email
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
-                }`}
-              >
-                {account.label}
-              </button>
-            ))}
-          </div>
+        {/* View controls */}
+        <div className="flex items-center justify-end">
 
           <div className="flex items-center gap-2">
             <button
@@ -668,6 +796,17 @@ export default function CalendarPanel() {
           </div>
         </div>
       </div>
+
+      {/* Calendar Filter Modal */}
+      {showFilterModal && (
+        <CalendarFilterModal
+          onClose={() => setShowFilterModal(false)}
+          onFilterChange={(enabledIds) => {
+            setEnabledCalendarSources(enabledIds);
+            fetchEvents();
+          }}
+        />
+      )}
 
       {/* Event List */}
       <div className="flex-1 overflow-y-auto">
@@ -1020,6 +1159,205 @@ export default function CalendarPanel() {
           </div>
         </div>
       )}
+
+      {/* Event Detail Modal (View/Export/Create Task) */}
+      {showEventDetailModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-clawd-border flex items-center justify-between sticky top-0 bg-clawd-surface">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const style = getEventStyle(selectedEvent);
+                  const EventIcon = style.icon;
+                  return (
+                    <div className={`p-2 rounded-lg ${style.bgColor}`}>
+                      <EventIcon size={20} className={style.iconColor} />
+                    </div>
+                  );
+                })()}
+                <h3 className="font-semibold text-lg">{selectedEvent.title}</h3>
+              </div>
+              <button
+                onClick={() => setShowEventDetailModal(false)}
+                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Time & Date */}
+              <div className="flex items-start gap-3">
+                <Clock size={20} className="text-clawd-text-dim mt-0.5" />
+                <div>
+                  <div className="font-medium mb-1">{formatDate(selectedEvent.start)}</div>
+                  <div className="text-sm text-clawd-text-dim">
+                    {formatTime(selectedEvent.start, selectedEvent.isAllDay)}
+                    {selectedEvent.end && !selectedEvent.isAllDay && ` - ${formatTime(selectedEvent.end)}`}
+                    {selectedEvent.isAllDay && ' (All day)'}
+                  </div>
+                  {selectedEvent.timeZone && (
+                    <div className="text-xs text-clawd-text-dim mt-1 flex items-center gap-1">
+                      <Globe size={12} />
+                      {selectedEvent.timeZone}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Location */}
+              {selectedEvent.location && (
+                <div className="flex items-start gap-3">
+                  <MapPin size={20} className="text-clawd-text-dim mt-0.5" />
+                  <div>
+                    <div className="font-medium mb-1">Location</div>
+                    <div className="text-sm text-clawd-text-dim">{selectedEvent.location}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Attendees */}
+              {selectedEvent.attendees && selectedEvent.attendees.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Users size={20} className="text-clawd-text-dim mt-0.5" />
+                  <div className="flex-1">
+                    <div className="font-medium mb-2">Attendees ({selectedEvent.attendees.length})</div>
+                    <div className="space-y-1">
+                      {selectedEvent.attendees.map((attendee, idx) => (
+                        <div key={idx} className="text-sm text-clawd-text-dim">
+                          {attendee.displayName || attendee.email}
+                          {attendee.displayName && (
+                            <span className="text-xs ml-2 opacity-70">({attendee.email})</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedEvent.description && (
+                <div className="flex items-start gap-3">
+                  <Edit2 size={20} className="text-clawd-text-dim mt-0.5" />
+                  <div className="flex-1">
+                    <div className="font-medium mb-2">Description</div>
+                    <div className="text-sm text-clawd-text-dim whitespace-pre-wrap">
+                      {selectedEvent.description}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Recurring */}
+              {selectedEvent.recurring && (
+                <div className="flex items-center gap-3 text-sm text-clawd-text-dim">
+                  <Repeat size={20} />
+                  <span>Recurring event</span>
+                </div>
+              )}
+
+              {/* Task-specific info */}
+              {selectedEvent.type === 'task' && (
+                <>
+                  {selectedEvent.project && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm">
+                        <span className="text-clawd-text-dim">Project:</span>{' '}
+                        <span className="px-2 py-1 bg-clawd-border rounded text-clawd-text">
+                          {selectedEvent.project}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {selectedEvent.assignee && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm">
+                        <span className="text-clawd-text-dim">Assigned to:</span>{' '}
+                        <span className="text-clawd-text">{selectedEvent.assignee}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Post-specific info */}
+              {selectedEvent.type === 'post' && selectedEvent.content && (
+                <div className="flex items-start gap-3">
+                  <Edit2 size={20} className="text-clawd-text-dim mt-0.5" />
+                  <div className="flex-1">
+                    <div className="font-medium mb-2">Content</div>
+                    <div className="text-sm text-clawd-text-dim bg-clawd-bg p-3 rounded-lg whitespace-pre-wrap">
+                      {selectedEvent.content}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="p-6 border-t border-clawd-border flex items-center justify-between gap-2">
+              <div className="flex gap-2">
+                {selectedEvent.type === 'calendar' && (
+                  <>
+                    <button
+                      onClick={() => exportMeetingAsMarkdown(selectedEvent)}
+                      className="flex items-center gap-2 px-4 py-2 bg-clawd-border rounded-lg hover:bg-clawd-border/80 transition-colors"
+                      title="Export as Markdown"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Export MD
+                    </button>
+                    <button
+                      onClick={() => createTaskFromMeeting(selectedEvent)}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded-lg hover:bg-green-500/30 transition-colors"
+                      title="Create task from meeting"
+                    >
+                      <Plus size={16} />
+                      Create Task
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                {selectedEvent.type === 'calendar' && (
+                  <button
+                    onClick={() => {
+                      setShowEventDetailModal(false);
+                      openEditModal(selectedEvent);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    <Edit2 size={16} />
+                    Edit
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowEventDetailModal(false)}
+                  className="px-4 py-2 bg-clawd-border rounded-lg hover:bg-clawd-border/80 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Task Modal */}
+      <TaskModal
+        isOpen={showTaskModal}
+        onClose={() => {
+          setShowTaskModal(false);
+          setTaskInitialData(undefined);
+        }}
+        initialData={taskInitialData}
+      />
     </div>
   );
 }

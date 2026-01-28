@@ -9,6 +9,8 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
 );
 // CalendarWidget removed - replaced by EpicCalendar in Schedule panel
 import EmailWidget from './EmailWidget';
+import QuickStatsWidget from './QuickStatsWidget';
+import WeatherWidget from './WeatherWidget';
 import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
@@ -322,6 +324,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
               <EmailWidget />
             </div>
+
+            {/* Quick Stats Widget */}
+            <QuickStatsWidget />
+
+            {/* Weather Widget */}
+            <WeatherWidget />
 
             {/* Recent Actions / Notifications */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">

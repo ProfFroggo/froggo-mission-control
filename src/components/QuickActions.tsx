@@ -1,18 +1,20 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Plus, MessageSquare, CheckCircle, Search, Zap, Send, X } from 'lucide-react';
+import { Plus, MessageSquare, CheckCircle, Search, Zap, Send, X, UserPlus, Brain } from 'lucide-react';
 import { showToast } from './Toast';
 
 interface QuickActionsProps {
   onNewTask: () => void;
   onSearch: () => void;
   onApproveAll: () => void;
+  onAddContact?: () => void;
+  onAddSkill?: () => void;
 }
 
 export interface QuickActionsRef {
   openQuickMessage: () => void;
 }
 
-const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll }, ref) => {
+const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll, onAddContact, onAddSkill }, ref) => {
   const [quickMessageOpen, setQuickMessageOpen] = useState(false);
   const [quickMessage, setQuickMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -115,6 +117,26 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask
         >
           <Plus size={18} className="text-clawd-text-dim" />
         </button>
+
+        {onAddContact && (
+          <button
+            onClick={onAddContact}
+            className="p-2.5 rounded-full hover:bg-clawd-border transition-colors"
+            title="Add Contact (⌘⇧N)"
+          >
+            <UserPlus size={18} className="text-clawd-text-dim" />
+          </button>
+        )}
+
+        {onAddSkill && (
+          <button
+            onClick={onAddSkill}
+            className="p-2.5 rounded-full hover:bg-clawd-border transition-colors"
+            title="Add Skill (⌘⇧K)"
+          >
+            <Brain size={18} className="text-clawd-text-dim" />
+          </button>
+        )}
         
         <button
           onClick={() => setQuickMessageOpen(!quickMessageOpen)}

@@ -90,12 +90,12 @@ export default function InboxPanel() {
       }
       
       // Load inbox items
-      const result = await window.clawdbot!.inbox.list();
+      const result = await window.clawdbot.inbox.list();
       let allItems = result.success ? (result.items || []) : [];
       
       // Also load tasks in "review" status
       try {
-        const tasksResult = await window.clawdbot!.tasks.list('review');
+        const tasksResult = await window.clawdbot.tasks.list('review');
         if (tasksResult?.success && tasksResult.tasks?.length > 0) {
           // Convert tasks to inbox item format
           const taskItems = tasksResult.tasks.map((t: any) => ({
@@ -248,12 +248,12 @@ export default function InboxPanel() {
       
       try {
         // Add Stage 2 item to inbox
-        const result = await window.clawdbot!.inbox.addWithMetadata(stage2Item);
+        const result = await window.clawdbot.inbox.addWithMetadata(stage2Item);
         
         if (result.success) {
           // Mark original as approved (Stage 1 complete)
           setItems(prev => prev.filter(i => i.id !== item.id));
-          await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+          await window.clawdbot.inbox.update(item.id, { status: 'approved' });
           showToast('success', 'Email content approved', `Ready to send to ${recipient}`);
         } else {
           showToast('error', 'Failed to create send task', result.error);
@@ -281,14 +281,14 @@ export default function InboxPanel() {
         // This is a task in review status - mark it as done
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'done' });
+          await window.clawdbot.tasks.update(meta.taskId, { status: 'done' });
           console.log('[Inbox] Task approved and marked done:', meta.taskId);
           return;
         }
       }
       
       // Regular inbox item - update and create execution task
-      await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+      await window.clawdbot.inbox.update(item.id, { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
       const projectMap: Record<string, string> = {
@@ -320,14 +320,14 @@ export default function InboxPanel() {
         metadata,
       };
       
-      const result = await window.clawdbot!.tasks.sync(taskData);
+      const result = await window.clawdbot.tasks.sync(taskData);
       if (!result.success) {
         console.error('[Inbox] Task creation failed:', result.error);
       } else {
         // SAFEGUARD: Verify the status is correct after a brief delay
         setTimeout(async () => {
           try {
-            await window.clawdbot!.tasks.update(taskData.id, { status: 'in-progress' });
+            await window.clawdbot.tasks.update(taskData.id, { status: 'in-progress' });
             console.log('[Inbox] Status verified for task:', taskData.id);
           } catch (e) {
             console.warn('[Inbox] Status verify failed:', e);
@@ -361,12 +361,12 @@ export default function InboxPanel() {
     
     // Sync in background
     try {
-      await window.clawdbot!.inbox.update(item.id, { 
+      await window.clawdbot.inbox.update(item.id, { 
         status: 'rejected',
         feedback: reason 
       });
       
-      await window.clawdbot!.rejections.log({
+      await window.clawdbot.rejections.log({
         type: item.type,
         title: item.title,
         content: item.content,
@@ -398,19 +398,19 @@ export default function InboxPanel() {
         // For task items, update the task status back to in-progress with feedback
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          await window.clawdbot.tasks.update(meta.taskId, { status: 'in-progress' });
           // Log activity with rejection reason
           gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
         }
       } else {
         // Regular inbox item
-        await window.clawdbot!.inbox.update(item.id, { 
+        await window.clawdbot.inbox.update(item.id, { 
           status: 'rejected',
           feedback: reason 
         });
       }
       
-      await window.clawdbot!.rejections.log({
+      await window.clawdbot.rejections.log({
         type: item.type,
         title: item.title,
         content: item.content,
@@ -443,14 +443,14 @@ export default function InboxPanel() {
       // For task items, update the task status back to in-progress with feedback
       const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
       if (meta.taskId) {
-        await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+        await window.clawdbot.tasks.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
         gateway.sendToMain(`[TASK_FEEDBACK] Task "${item.title}" needs revision.\nFeedback: ${feedbackText}`);
         showToast('success', 'Feedback sent', 'Task moved back to In Progress');
       }
     } else {
       // Regular inbox item - update status and create revision task
-      await window.clawdbot!.inbox.update(item.id, { 
+      await window.clawdbot.inbox.update(item.id, { 
         status: 'needs-revision', 
         feedback: feedbackText 
       });
@@ -466,10 +466,10 @@ export default function InboxPanel() {
         assignedTo: 'main',
       };
       
-      const result = await window.clawdbot!.tasks.sync(taskData);
+      const result = await window.clawdbot.tasks.sync(taskData);
       if (result?.success) {
         showToast('success', 'Revision task created', 'Check Tasks tab');
-        await window.clawdbot!.tasks.update?.(taskData.id, { status: 'in-progress' });
+        await window.clawdbot.tasks.update?.(taskData.id, { status: 'in-progress' });
       } else {
         console.error('[Inbox] Task creation failed:', result);
         showToast('error', 'Revision task failed', result?.error || 'Unknown error');
@@ -998,7 +998,7 @@ export default function InboxPanel() {
                         showToast('info', 'Sending email...', `To: ${recipient}`);
                         
                         try {
-                          const result = await window.clawdbot!.email.send({
+                          const result = await window.clawdbot.email.send({
                             to: recipient,
                             subject,
                             body: item.content,
@@ -1006,7 +1006,7 @@ export default function InboxPanel() {
                           });
                           
                           if (result.success) {
-                            await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+                            await window.clawdbot.inbox.update(item.id, { status: 'approved' });
                             showToast('success', 'Email sent ✓', `To: ${recipient}`);
                           } else {
                             showToast('error', 'Email failed', result.error);
@@ -1064,7 +1064,7 @@ export default function InboxPanel() {
                       
                       // Add to schedule
                       try {
-                        const result = await window.clawdbot!.schedule.add({
+                        const result = await window.clawdbot.schedule.add({
                           type: item.type,
                           content: item.content,
                           scheduledFor,
@@ -1078,7 +1078,7 @@ export default function InboxPanel() {
                         if (result.success) {
                           // Remove from inbox
                           setItems(prev => prev.filter(i => i.id !== item.id));
-                          await window.clawdbot!.inbox.update(item.id, { status: 'scheduled' });
+                          await window.clawdbot.inbox.update(item.id, { status: 'scheduled' });
                           
                           const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
                             weekday: 'short',

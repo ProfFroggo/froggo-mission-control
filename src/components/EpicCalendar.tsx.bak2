@@ -67,7 +67,7 @@ export default function EpicCalendar() {
   const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
   const [pendingReschedule, setPendingReschedule] = useState<{ event: CalendarEvent; newStart: Date; newEnd: Date } | null>(null);
 
-  const accounts = ['kevin@carbium.io', 'kevin.macarthur@bitso.com', 'kmacarthur.gpt@gmail.com'];
+  const accounts = ['kevin@carbium.io', 'kevin.macarthur@bitso.com'];
 
   // Open create event modal
   const handleCreateEvent = () => {
@@ -107,7 +107,7 @@ export default function EpicCalendar() {
 
       const response = await window.electron!.execute(command);
       
-      if (response.error) {
+      if (response.exitCode !== 0) {
         throw new Error(response.stderr || 'Failed to create event');
       }
 
@@ -146,7 +146,7 @@ export default function EpicCalendar() {
 
       const response = await window.electron!.execute(command);
       
-      if (response.error) {
+      if (response.exitCode !== 0) {
         throw new Error(response.stderr || 'Failed to update event');
       }
 
@@ -185,7 +185,7 @@ export default function EpicCalendar() {
       const command = `GOG_ACCOUNT=${account} gog calendar events delete --event-id "${eventId}"`;
       const response = await window.electron!.execute(command);
       
-      if (response.error) {
+      if (response.exitCode !== 0) {
         throw new Error(response.stderr || 'Failed to delete event');
       }
 
@@ -280,7 +280,7 @@ export default function EpicCalendar() {
       
       const response = await window.electron!.execute(command);
       
-      if (response.error) {
+      if (response.exitCode !== 0) {
         throw new Error(response.stderr || 'Failed to reschedule event');
       }
 
@@ -324,32 +324,31 @@ export default function EpicCalendar() {
     setLoading(true);
     setError(null);
     try {
-      console.log('[EpicCalendar] Fetching aggregated events...');
+      const allEvents: CalendarEvent[] = [];
       
-      // Use the new calendar aggregation service
-      const response = await window.clawdbot.calendar.aggregate({
-        days: 30,
-        includeGoogle: true,
-        includeMissionControl: true,
-        accounts
-      });
-
-      if (response.success) {
-        console.log(`[EpicCalendar] Loaded ${response.events.length} events`);
-        console.log('[EpicCalendar] Sources:', response.sources);
-        
-        if (response.errors && response.errors.length > 0) {
-          console.warn('[EpicCalendar] Some sources had errors:', response.errors);
+      for (const account of accounts) {
+        try {
+          const response = await window.electron!.execute(
+            `GOG_ACCOUNT=${account} gog calendar events --days 30 --json`
+          );
+          
+          if (response.stdout) {
+            const data: EventsData = JSON.parse(response.stdout);
+            const accountEvents = data.events.map(event => ({
+              ...event,
+              account
+            }));
+            allEvents.push(...accountEvents);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch events for ${account}:`, err);
         }
-        
-        setEvents(response.events);
-      } else {
-        throw new Error(response.error || 'Failed to aggregate events');
       }
-    } catch (err: any) {
-      const errorMsg = err?.message || 'Failed to fetch calendar events';
-      setError(errorMsg);
-      console.error('[EpicCalendar] Error:', err);
+
+      setEvents(allEvents);
+    } catch (err) {
+      setError('Failed to fetch calendar events');
+      console.error(err);
     } finally {
       setLoading(false);
     }

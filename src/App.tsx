@@ -30,15 +30,19 @@ import SchedulePanel from './components/SchedulePanel';
 import TemplatesPanel from './components/TemplatesPanel';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
+import ContactModal from './components/ContactModal';
+import SkillModal from './components/SkillModal';
 import { useRef } from 'react';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'templates' | 'analytics' | 'comms' | 'contacts';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [skillModalOpen, setSkillModalOpen] = useState(false);
   const quickActionsRef = useRef<QuickActionsRef>(null);
   const [showMorningBrief, setShowMorningBrief] = useState(() => {
     // Show brief once per day
@@ -139,6 +143,20 @@ function App() {
         return;
       }
 
+      // Add contact - ⌘⇧N
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setContactModalOpen(true);
+        return;
+      }
+
+      // Add skill - ⌘⇧K
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSkillModalOpen(true);
+        return;
+      }
+
       // Mute toggle - ⌘M
       if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
         e.preventDefault();
@@ -214,10 +232,6 @@ function App() {
               e.preventDefault();
               setCurrentView('schedule');
               break;
-            case 'A':
-              e.preventDefault();
-              setCurrentView('calendar');
-              break;
           }
         }
       }
@@ -257,7 +271,6 @@ function App() {
         {currentView === 'schedule' && <SchedulePanel />}
         {currentView === 'codeagent' && <CodeAgentDashboard />}
         {currentView === 'context' && <ContextControlBoard />}
-        {currentView === 'calendar' && <ContentCalendar />}
         {currentView === 'templates' && <TemplatesPanel />}
         {currentView === 'analytics' && <AnalyticsDashboard />}
       </main>
@@ -294,6 +307,8 @@ function App() {
         ref={quickActionsRef} 
         onSearch={() => setSearchOpen(true)}
         onNewTask={() => setCurrentView('kanban')}
+        onAddContact={() => setContactModalOpen(true)}
+        onAddSkill={() => setSkillModalOpen(true)}
         onApproveAll={async () => {
           try {
             const result = await (window as any).clawdbot?.inbox?.approveAll();
@@ -306,6 +321,15 @@ function App() {
           }
         }}
       />
+
+      {/* Contact Modal */}
+      <ContactModal 
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+      />
+
+      {/* Skill Modal */}
+      <SkillModal isOpen={skillModalOpen} onClose={() => setSkillModalOpen(false)} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { exec, execSync } from 'child_process';
 import * as os from 'os';
 import * as http from 'http';
+import { calendarService } from './calendar-service';
 
 // Local server for serving model files in prod
 let modelServer: http.Server | null = null;
@@ -1631,6 +1632,156 @@ ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => 
   }
 });
 
+// Append to file
+ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
+  try {
+    // Resolve ~ to home directory if present
+    const resolvedPath = filePath.startsWith('~') 
+      ? path.join(os.homedir(), filePath.slice(1))
+      : filePath;
+    
+    // Ensure directory exists
+    const dir = path.dirname(resolvedPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    fs.appendFileSync(resolvedPath, content);
+    return { success: true, path: resolvedPath };
+  } catch (error: any) {
+    console.error('[FS] Append error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Execute SQL against froggo.db
+ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
+  return new Promise((resolve) => {
+    const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+    
+    // For safety, only allow SELECT and INSERT statements from the renderer
+    const queryLower = query.trim().toLowerCase();
+    if (!queryLower.startsWith('select') && !queryLower.startsWith('insert')) {
+      resolve({ success: false, error: 'Only SELECT and INSERT queries are allowed from renderer' });
+      return;
+    }
+    
+    // Escape params and build command
+    let finalQuery = query;
+    if (params && params.length > 0) {
+      // Simple param substitution (replace ? with escaped values)
+      params.forEach(param => {
+        const escaped = String(param).replace(/'/g, "''");
+        finalQuery = finalQuery.replace('?', `'${escaped}'`);
+      });
+    }
+    
+    const cmd = `sqlite3 "${dbPath}" "${finalQuery.replace(/"/g, '\\"')}" -json`;
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[DB] Exec error:', error, stderr);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      try {
+        // For INSERT, stdout might be empty
+        if (queryLower.startsWith('insert')) {
+          resolve({ success: true, result: [] });
+        } else {
+          const result = JSON.parse(stdout || '[]');
+          resolve({ success: true, result });
+        }
+      } catch (parseError: any) {
+        console.error('[DB] Parse error:', parseError);
+        resolve({ success: false, error: 'Failed to parse database result' });
+      }
+    });
+  });
+});
+
+// ============== MEDIA UPLOAD IPC HANDLERS ==============
+const uploadsDir = path.join(os.homedir(), 'clawd', 'uploads');
+
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Upload media file (returns file path for scheduling)
+ipcMain.handle('media:upload', async (_, fileName: string, base64Data: string) => {
+  try {
+    const buffer = Buffer.from(base64Data, 'base64');
+    const timestamp = Date.now();
+    const ext = path.extname(fileName);
+    const baseName = path.basename(fileName, ext);
+    const uniqueFileName = `${timestamp}-${baseName}${ext}`;
+    const filePath = path.join(uploadsDir, uniqueFileName);
+    
+    fs.writeFileSync(filePath, buffer);
+    const stats = fs.statSync(filePath);
+    
+    console.log('[Media] Uploaded:', uniqueFileName, 'size:', stats.size);
+    
+    return { 
+      success: true, 
+      path: filePath,
+      fileName: uniqueFileName,
+      size: stats.size 
+    };
+  } catch (error: any) {
+    console.error('[Media] Upload error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Delete media file
+ipcMain.handle('media:delete', async (_, filePath: string) => {
+  try {
+    // Verify file is in uploads directory (security check)
+    if (!filePath.startsWith(uploadsDir)) {
+      return { success: false, error: 'Invalid file path' };
+    }
+    
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log('[Media] Deleted:', filePath);
+    }
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Media] Delete error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Clean up old uploads (7 days)
+ipcMain.handle('media:cleanup', async () => {
+  try {
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const files = fs.readdirSync(uploadsDir);
+    let deletedCount = 0;
+    
+    for (const file of files) {
+      const filePath = path.join(uploadsDir, file);
+      const stats = fs.statSync(filePath);
+      
+      if (stats.mtimeMs < sevenDaysAgo) {
+        fs.unlinkSync(filePath);
+        deletedCount++;
+        console.log('[Media] Cleaned up old file:', file);
+      }
+    }
+    
+    console.log('[Media] Cleanup complete:', deletedCount, 'files deleted');
+    return { success: true, deletedCount };
+  } catch (error: any) {
+    console.error('[Media] Cleanup error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ============== LIBRARY IPC HANDLERS ==============
 const libraryDir = path.join(os.homedir(), 'clawd', 'library');
 
@@ -2958,6 +3109,173 @@ ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
       resolve({ success: true, result: stdout });
     });
   });
+});
+
+// List available calendars for an account
+ipcMain.handle('calendar:listCalendars', async (_, account: string) => {
+  const cmd = `GOG_ACCOUNT=${account} /opt/homebrew/bin/gog calendar calendars --json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Calendar] List calendars error:', error, stderr);
+        resolve({ success: false, calendars: [], error: error.message || stderr });
+        return;
+      }
+      try {
+        const data = JSON.parse(stdout);
+        const calendars = data.calendars || data || [];
+        resolve({ success: true, calendars, account });
+      } catch (parseError) {
+        console.error('[Calendar] Parse calendars error:', parseError);
+        resolve({ success: false, calendars: [], error: 'Failed to parse calendar list' });
+      }
+    });
+  });
+});
+
+// List authenticated accounts (check which accounts have valid credentials)
+ipcMain.handle('calendar:listAccounts', async () => {
+  const knownAccounts = [
+    'kevin.macarthur@bitso.com',
+    'kevin@carbium.io',
+    'kmacarthur.gpt@gmail.com'
+  ];
+  
+  // Test each account to see if it's authenticated
+  const accountPromises = knownAccounts.map(async (email) => {
+    const cmd = `GOG_ACCOUNT=${email} /opt/homebrew/bin/gog calendar calendars --json`;
+    
+    return new Promise<{ email: string; authenticated: boolean; calendarsCount?: number }>((resolve) => {
+      exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+        if (error) {
+          resolve({ email, authenticated: false });
+          return;
+        }
+        try {
+          const data = JSON.parse(stdout);
+          const calendars = data.calendars || data || [];
+          resolve({ email, authenticated: true, calendarsCount: calendars.length });
+        } catch {
+          resolve({ email, authenticated: false });
+        }
+      });
+    });
+  });
+  
+  try {
+    const accounts = await Promise.all(accountPromises);
+    return { success: true, accounts };
+  } catch (error) {
+    console.error('[Calendar] List accounts error:', error);
+    return { success: false, accounts: [], error: String(error) };
+  }
+});
+
+// Add/authenticate new account
+ipcMain.handle('calendar:addAccount', async () => {
+  // Launch gog auth flow in terminal
+  // This will prompt the user in the terminal to authenticate
+  const cmd = `/opt/homebrew/bin/gog auth`;
+  
+  return new Promise((resolve) => {
+    // Run in a new terminal window so user can see the auth flow
+    const terminalCmd = `osascript -e 'tell application "Terminal" to do script "${cmd}"'`;
+    
+    exec(terminalCmd, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Calendar] Add account error:', error, stderr);
+        resolve({ success: false, error: 'Failed to launch authentication. Please run "gog auth" manually in Terminal.' });
+        return;
+      }
+      
+      // Return success - the actual auth happens in the terminal
+      resolve({ 
+        success: true, 
+        message: 'Authentication started in Terminal. Please follow the prompts to complete authentication.' 
+      });
+    });
+  });
+});
+
+// Remove account credentials
+ipcMain.handle('calendar:removeAccount', async (_, account: string) => {
+  // gog stores credentials in ~/Library/Application Support/gogcli/
+  const credPath = path.join(process.env.HOME || '', 'Library', 'Application Support', 'gogcli', `${account}.json`);
+  
+  return new Promise((resolve) => {
+    fs.unlink(credPath, (error) => {
+      if (error) {
+        console.error('[Calendar] Remove account error:', error);
+        resolve({ success: false, error: `Failed to remove credentials: ${error.message}` });
+        return;
+      }
+      console.log('[Calendar] Removed credentials for:', account);
+      resolve({ success: true });
+    });
+  });
+});
+
+// Test account connection
+ipcMain.handle('calendar:testConnection', async (_, account: string) => {
+  const cmd = `GOG_ACCOUNT=${account} /opt/homebrew/bin/gog calendar calendars --json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[Calendar] Test connection error:', error, stderr);
+        resolve({ success: false, error: error.message || stderr });
+        return;
+      }
+      try {
+        const data = JSON.parse(stdout);
+        const calendars = data.calendars || data || [];
+        resolve({ success: true, calendarsCount: calendars.length, account });
+      } catch (parseError) {
+        resolve({ success: false, error: 'Failed to parse response' });
+      }
+    });
+  });
+});
+
+// ============== CALENDAR AGGREGATION IPC HANDLERS ==============
+ipcMain.handle('calendar:aggregate', async (_, options?: {
+  days?: number;
+  includeGoogle?: boolean;
+  includeMissionControl?: boolean;
+  accounts?: string[];
+}) => {
+  try {
+    console.log('[Calendar:aggregate] Aggregating events with options:', options);
+    const result = await calendarService.aggregateEvents(options || {});
+    console.log(`[Calendar:aggregate] Success: ${result.events.length} events from ${Object.keys(result.sources.google).length} sources`);
+    return { success: true, ...result };
+  } catch (error: any) {
+    console.error('[Calendar:aggregate] Error:', error);
+    return { success: false, error: error.message, events: [], sources: { google: {}, missionControl: 0 }, errors: [] };
+  }
+});
+
+ipcMain.handle('calendar:clearCache', async (_, source?: 'google' | 'mission-control' | 'all') => {
+  try {
+    calendarService.clearCache(source);
+    console.log(`[Calendar:clearCache] Cleared cache for: ${source || 'all'}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Calendar:clearCache] Error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('calendar:cacheStats', async () => {
+  try {
+    const stats = calendarService.getCacheStats();
+    console.log('[Calendar:cacheStats] Stats:', stats);
+    return { success: true, stats };
+  } catch (error: any) {
+    console.error('[Calendar:cacheStats] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== SESSIONS IPC HANDLERS ==============

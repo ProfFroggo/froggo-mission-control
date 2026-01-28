@@ -88,7 +88,7 @@ export default function ContextControlBoard() {
       );
       if (result?.stdout) {
         const skillNames = result.stdout.trim().split('\n').filter(Boolean);
-        const loadedSkills: Skill[] = skillNames.map(name => ({
+        const loadedSkills: Skill[] = skillNames.map((name: string) => ({
           name,
           description: '',
           location: `/opt/homebrew/lib/node_modules/clawdbot/skills/${name}/SKILL.md`,
@@ -112,7 +112,7 @@ export default function ContextControlBoard() {
       );
       if (result?.stdout) {
         const agentDirs = result.stdout.trim().split('\n').filter(Boolean);
-        const loadedAgents: Agent[] = agentDirs.map(dir => ({
+        const loadedAgents: Agent[] = agentDirs.map((dir: string) => ({
           id: dir,
           name: dir.charAt(0).toUpperCase() + dir.slice(1).replace(/-/g, ' '),
           role: 'Custom Agent',
