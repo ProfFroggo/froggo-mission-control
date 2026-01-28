@@ -40,6 +40,9 @@ interface ActivityData {
 
 declare global {
   interface Window {
+    electron?: {
+      execute: (command: string) => Promise<{ stdout?: string; stderr?: string; error?: string }>;
+    };
     clawdbot?: {
       gateway: {
         status: () => Promise<unknown>;
