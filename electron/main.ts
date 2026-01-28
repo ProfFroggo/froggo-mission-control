@@ -68,7 +68,7 @@ function createWindow() {
   mainWindow.on('close', (e) => {
     if (mainWindow) {
       console.log('[Main] Window closing - sending cleanup signal...');
-      mainWindow.webContents.send('app-closing');
+      safeSend('app-closing');
       // Give renderer time to cleanup (mic/camera release)
       // The actual close happens after renderer cleanup
     }
@@ -77,6 +77,20 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
+
+// Safe wrapper for webContents.send to prevent EPIPE crashes
+function safeSend(channel: string, ...args: any[]) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send(channel, ...args);
+    } catch (e) {
+      // Ignore EPIPE errors (window closing), log others
+      if ((e as any).code !== EPIPE) {
+        console.error(`[SafeSend] Error sending to ${channel}:`, e);
+      }
+    }
+  }
 }
 
 // Task notification file watcher
@@ -181,26 +195,22 @@ async function processScheduledItems() {
           exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${errorMsg}' WHERE id='${item.id}'"`, () => {});
           
           // Notify renderer of failure
-          if (mainWindow) {
-            mainWindow.webContents.send('schedule-processed', { 
-              id: item.id, 
-              type: item.type, 
-              success: false, 
-              error: execError.message 
-            });
-          }
+          safeSend('schedule-processed', { 
+            id: item.id, 
+            type: item.type, 
+            success: false, 
+            error: execError.message 
+          });
         } else {
           console.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
           exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='sent', sent_at=datetime('now') WHERE id='${item.id}'"`, () => {});
           
           // Notify renderer of success
-          if (mainWindow) {
-            mainWindow.webContents.send('schedule-processed', { 
-              id: item.id, 
-              type: item.type, 
-              success: true 
-            });
-          }
+          safeSend('schedule-processed', { 
+            id: item.id, 
+            type: item.type, 
+            success: true 
+          });
         }
       });
     }
@@ -1182,9 +1192,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
             console.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
             
             // Notify frontend of inbox update
-            if (mainWindow) {
-              mainWindow.webContents.send('inbox-updated', { revision: true, originalId });
-            }
+            safeSend('inbox-updated', { revision: true, originalId });
             
             resolve({ success: true, message: 'Revision submitted for approval' });
           });
@@ -1255,8 +1263,8 @@ ipcMain.handle('screenshot:capture', async (_, outputPath: string) => {
 });
 
 ipcMain.handle('screenshot:navigate', async (_, view: string) => {
-  if (mainWindow) {
-    mainWindow.webContents.send('navigate-to', view);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    safeSend('navigate-to', view);
     return { success: true };
   }
   return { success: false, error: 'No main window' };
@@ -2778,8 +2786,8 @@ async function runImportantEmailCheck() {
   saveProcessedEmails();
   
   // Notify frontend if new items were added
-  if (newInboxItems.length > 0 && mainWindow) {
-    mainWindow.webContents.send('inbox-updated', { newItems: newInboxItems.length });
+  if (newInboxItems.length > 0) {
+    safeSend('inbox-updated', { newItems: newInboxItems.length });
   }
   
   console.log(`[Email] Found ${results.length} important emails, created ${newInboxItems.length} inbox items`);
@@ -3044,8 +3052,8 @@ function startQueueWatcher() {
         const data = newContent ? JSON.parse(newContent) : { items: [] };
         
         // Notify renderer of new items
-        if (mainWindow && data.items?.length > 0) {
-          mainWindow.webContents.send('approvals:updated', data.items);
+        if (data.items?.length > 0) {
+          safeSend('approvals:updated', data.items);
         }
       }
     } catch (error) {
