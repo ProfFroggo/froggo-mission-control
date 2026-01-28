@@ -86,7 +86,7 @@ function safeSend(channel: string, ...args: any[]) {
       mainWindow.webContents.send(channel, ...args);
     } catch (e) {
       // Ignore EPIPE errors (window closing), log others
-      if ((e as any).code !== EPIPE) {
+      if ((e as any).code !== 'EPIPE') {
         console.error(`[SafeSend] Error sending to ${channel}:`, e);
       }
     }
