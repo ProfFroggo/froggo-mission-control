@@ -196,6 +196,7 @@ interface Store {
   rejectItem: (id: string) => void;
   adjustItem: (id: string, feedback: string) => void;
   clearCompletedApprovals: () => void;
+  loadApprovals: () => Promise<void>;
 
   // X drafts
   xDrafts: XDraft[];
@@ -407,7 +408,7 @@ export const useStore = create<Store>()(
       updateTask: (id: string, updates: Partial<Task>) => set((s: Store) => ({
         tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
       })),
-      moveTask: (id, status) => {
+      moveTask: (id: string, status: TaskStatus) => {
         const task = get().tasks.find((t: Task) => t.id === id);
         if (!task) return;
         
@@ -813,9 +814,9 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           }, ...s.approvals]
         }));
       },
-      approveItem: (id: number) => {
+      approveItem: (id: string) => {
         const state = get();
-        const item = state.approvals.find(a => a.id === id);
+        const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
           // Execute the action
           executeApproval(item);
@@ -831,16 +832,16 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             updatedAt: Date.now(),
           };
           set((s: Store) => ({
-            approvals: s.approvals.filter(a => a.id !== id), // Remove from inbox
+            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Remove from inbox
             tasks: [completionTask, ...s.tasks],
           }));
           // Notify main session
           gateway.sendToSession('main', `[APPROVED] Execute ${item.type}: "${item.title}"\n\nContent:\n${item.content}`).catch(() => {});
         }
       },
-      rejectItem: (id: number) => {
+      rejectItem: (id: string) => {
         const state = get();
-        const item = state.approvals.find(a => a.id === id);
+        const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
           // Log rejection to froggo-db
           (window as any).clawdbot?.rejections?.log({
@@ -853,12 +854,12 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch(() => {});
         }
         set((s: Store) => ({
-          approvals: s.approvals.filter(a => a.id !== id), // Delete from inbox
+          approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
         }));
       },
-      adjustItem: (id: number, feedback: string) => {
+      adjustItem: (id: string, feedback: string) => {
         const state = get();
-        const item = state.approvals.find(a => a.id === id);
+        const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
           // Create revision task
           const revisionTask: Task = {
@@ -872,7 +873,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             updatedAt: Date.now(),
           };
           set((s: Store) => ({
-            approvals: s.approvals.filter(a => a.id !== id), // Delete from inbox
+            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
             tasks: [revisionTask, ...s.tasks],
           }));
           // Notify for revision
@@ -882,6 +883,29 @@ The pattern I've seen: founders who deeply understand one specific user segment 
       clearCompletedApprovals: () => set((s: Store) => ({
         approvals: s.approvals.filter(a => a.status === 'pending')
       })),
+
+      loadApprovals: async () => {
+        try {
+          if (window.clawdbot?.inbox?.list) {
+            const result = await window.clawdbot.inbox.list();
+            if (result?.success && Array.isArray(result.items)) {
+              const approvalItems: ApprovalItem[] = result.items.map((item: any) => ({
+                id: String(item.id),
+                type: item.type as ApprovalType,
+                title: item.title,
+                content: item.content,
+                status: item.status as 'pending' | 'approved' | 'rejected',
+                timestamp: new Date(item.created).getTime(),
+                context: item.context,
+              }));
+              set({ approvals: approvalItems });
+              console.log('[Store] Loaded', approvalItems.length, 'approvals from inbox');
+            }
+          }
+        } catch (e) {
+          console.error('[Store] Failed to load approvals:', e);
+        }
+      },
 
       // X drafts - persisted to localStorage via Zustand persist
       xDrafts: [],

@@ -46,13 +46,15 @@ function App() {
     const today = new Date().toDateString();
     return lastShown !== today;
   });
-  const { toggleMuted, setMeetingActive } = useStore();
+  const { toggleMuted, setMeetingActive, loadApprovals } = useStore();
 
-  // Initialize approval queue file watcher
+  // Initialize approval queue file watcher and load approvals from DB
   useEffect(() => {
     const cleanup = initApprovalQueue();
+    // Load real approvals from inbox database
+    loadApprovals();
     return cleanup;
-  }, []);
+  }, [loadApprovals]);
 
   // Apply saved theme and accent color on startup
   useEffect(() => {
