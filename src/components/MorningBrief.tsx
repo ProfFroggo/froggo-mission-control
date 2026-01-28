@@ -19,6 +19,7 @@ interface MorningBriefProps {
 export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProps) {
   const [brief, setBrief] = useState<BriefData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
     loadBrief();
@@ -66,16 +67,24 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           if (window.clawdbot?.inbox?.list) {
             const inboxResult = await window.clawdbot.inbox.list();
             console.log('[MorningBrief] Inbox result attempt', attempt + 1, ':', JSON.stringify(inboxResult));
+            setDebugInfo(`Attempt ${attempt + 1}: ${inboxResult?.success ? 'Success' : 'Failed'}, Items: ${inboxResult?.items?.length || 0}`);
             if (inboxResult?.success && Array.isArray(inboxResult?.items)) {
-              pendingApprovals = inboxResult.items.filter((i: any) => i.status === 'pending').length;
-              console.log('[MorningBrief] Pending count:', pendingApprovals);
+              const allItems = inboxResult.items;
+              const pendingItems = allItems.filter((i: any) => i.status === 'pending');
+              pendingApprovals = pendingItems.length;
+              console.log('[MorningBrief] Total items:', allItems.length, 'Pending:', pendingApprovals);
+              setDebugInfo(`IPC OK: ${allItems.length} total, ${pendingApprovals} pending`);
               break; // Got result, stop retrying (even if 0)
+            } else {
+              setDebugInfo(`IPC returned: success=${inboxResult?.success}, items is array=${Array.isArray(inboxResult?.items)}`);
             }
           } else {
             console.log('[MorningBrief] clawdbot.inbox.list not available, waiting...');
+            setDebugInfo(`Attempt ${attempt + 1}: window.clawdbot.inbox.list not available`);
           }
         } catch (e) {
           console.error('[MorningBrief] Inbox error attempt', attempt + 1, ':', e);
+          setDebugInfo(`Error attempt ${attempt + 1}: ${(e as Error).message}`);
         }
         // Wait before next attempt
         await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
@@ -243,6 +252,12 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               <CheckCircle size={48} className="text-green-400 mx-auto mb-3" />
               <p className="text-lg font-medium text-green-400">You're all caught up!</p>
               <p className="text-sm text-clawd-text-dim">No pending items or upcoming events</p>
+              {debugInfo && (
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-xs text-yellow-400 font-mono">DEBUG: {debugInfo}</p>
+                  <p className="text-xs text-yellow-400 font-mono mt-1">Pending: {brief.pendingApprovals}</p>
+                </div>
+              )}
             </div>
           )}
         </div>
