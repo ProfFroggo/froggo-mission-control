@@ -994,18 +994,25 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
     // Query directly via sqlite3
     const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
     
-    exec(sqlCmd, (err, jsonOut) => {
+    console.log('[Inbox:list] Executing query for status:', effectiveStatus);
+    console.log('[Inbox:list] Command:', sqlCmd);
+    
+    exec(sqlCmd, { timeout: 5000 }, (err, jsonOut, stderr) => {
       if (err) {
-        console.error('[Inbox:list] Error:', err);
-        resolve({ success: false, items: [] });
+        console.error('[Inbox:list] Exec error:', err);
+        console.error('[Inbox:list] Stderr:', stderr);
+        resolve({ success: false, items: [], error: err.message });
       } else {
         try {
+          console.log('[Inbox:list] Raw output length:', jsonOut?.length || 0);
           const items = JSON.parse(jsonOut || '[]');
-          console.log('[Inbox:list] Returning', items.length, 'items with status:', effectiveStatus);
+          console.log('[Inbox:list] SUCCESS - Parsed', items.length, 'items with status:', effectiveStatus);
+          console.log('[Inbox:list] First item:', items[0] ? JSON.stringify(items[0]).substring(0, 100) : 'none');
           resolve({ success: true, items });
         } catch (e) {
-          console.error('[Inbox:list] Parse error:', e);
-          resolve({ success: false, items: [] });
+          console.error('[Inbox:list] JSON Parse error:', e);
+          console.error('[Inbox:list] Raw output:', jsonOut);
+          resolve({ success: false, items: [], error: (e as Error).message });
         }
       }
     });

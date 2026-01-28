@@ -59,10 +59,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       let upcomingEventsData: any[] = [];
       
       // Initial delay to ensure IPC is ready
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Retry up to 5 times with increasing delay
-      for (let attempt = 0; attempt < 5; attempt++) {
+      // Retry up to 8 times with increasing delay
+      for (let attempt = 0; attempt < 8; attempt++) {
         try {
           if (window.clawdbot?.inbox?.list) {
             const inboxResult = await window.clawdbot.inbox.list();
@@ -86,8 +86,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           console.error('[MorningBrief] Inbox error attempt', attempt + 1, ':', e);
           setDebugInfo(`Error attempt ${attempt + 1}: ${(e as Error).message}`);
         }
-        // Wait before next attempt
-        await new Promise(resolve => setTimeout(resolve, 300 * (attempt + 1)));
+        // Wait before next attempt (longer delays)
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
       }
       
       try {
