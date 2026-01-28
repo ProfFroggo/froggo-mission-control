@@ -412,18 +412,41 @@ export const useStore = create<Store>()(
         const task = get().tasks.find((t: Task) => t.id === id);
         if (!task) return;
         
-        // SAFEGUARD: Check for incomplete subtasks before marking done
+        // B+C ENFORCEMENT: Both requirements must be met before marking done
         if (status === 'done') {
+          const errors: string[] = [];
+          
+          // REQUIREMENT B: All subtasks must be complete
           const subtasks = task.subtasks || [];
           const hasSubtasks = subtasks.length > 0;
           const incompleteCount = subtasks.filter((st: Subtask) => !st.completed).length;
           
           if (hasSubtasks && incompleteCount > 0) {
-            console.warn(`[Store] Cannot mark task as done: ${incompleteCount}/${subtasks.length} subtasks incomplete`);
-            // Show user notification via activity
+            errors.push(`${incompleteCount}/${subtasks.length} subtasks incomplete`);
+          }
+          
+          // REQUIREMENT C: Reviewer approval required
+          // Task must have gone through 'review' status first
+          if (task.status !== 'review') {
+            errors.push('Task must be reviewed before marking done (move to review first)');
+          }
+          
+          // Reviewer must be assigned
+          if (!task.reviewerId) {
+            errors.push('No reviewer assigned');
+          }
+          
+          // Review status must be 'approved'
+          if (task.reviewStatus !== 'approved') {
+            errors.push('Review not approved (reviewer must approve first)');
+          }
+          
+          // If any validation fails, block the move
+          if (errors.length > 0) {
+            console.warn(`[Store] Cannot mark task as done:`, errors);
             get().addActivity({
               type: 'system',
-              message: `⚠️ Cannot mark "${task.title}" as done: ${incompleteCount}/${subtasks.length} subtasks incomplete`,
+              message: `⚠️ Cannot mark "${task.title}" as done:\n${errors.map(e => `• ${e}`).join('\n')}`,
               timestamp: Date.now(),
             });
             return; // Block the move
@@ -827,7 +850,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             description: `Approved ${item.type}: ${item.content?.slice(0, 200)}...`,
             status: 'in-progress',
             project: 'Approvals',
-            assignedTo: 'main',
+            assignedTo: 'coder', // Never assign to main/froggo - use coder for execution
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
@@ -868,7 +891,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             description: `Original ${item.type}:\n${item.content}\n\n---\nFeedback:\n${feedback}`,
             status: 'todo',
             project: 'Revisions',
-            assignedTo: 'main',
+            assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
@@ -1152,6 +1175,22 @@ gateway.on('*', (msg: any) => {
     }, 500);
   }
 });
+
+// Listen for direct gateway broadcasts from main process (real-time task updates)
+if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
+  (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: any }) => {
+    console.log('[Store] Gateway broadcast received:', data.event, data.payload?.id);
+    
+    // Handle task events
+    if (data.event === 'task.created' || data.event === 'task.updated') {
+      // Debounce to avoid multiple rapid refreshes
+      clearTimeout((window as any).__taskRefreshTimer);
+      (window as any).__taskRefreshTimer = setTimeout(() => {
+        useStore.getState().loadTasksFromDB();
+      }, 300); // Faster than 500ms for more responsive UI
+    }
+  });
+}
 
 // Also check for approval patterns in chat messages
 gateway.on('chat.message', (payload: any) => {

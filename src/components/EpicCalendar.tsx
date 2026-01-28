@@ -1259,7 +1259,7 @@ function EventModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-clawd-border sticky top-0 bg-clawd-surface z-10">
@@ -1460,7 +1460,7 @@ function DeleteConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-start gap-4 mb-4">
           <div className="p-3 bg-red-500/10 rounded-full">
@@ -1530,7 +1530,7 @@ function RescheduleConfirmDialog({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-start gap-4 mb-4">
           <div className="p-3 bg-clawd-accent/10 rounded-full">

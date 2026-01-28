@@ -15,7 +15,6 @@ import NotificationsPanel from './components/NotificationsPanel';
 import XPanel from './components/XPanel';
 import InboxPanel from './components/InboxPanel';
 import CommsInbox from './components/CommsInbox';
-import SessionsPanel from './components/SessionsPanel';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
@@ -27,14 +26,13 @@ import CodeAgentDashboard from './components/CodeAgentDashboard';
 import ContextControlBoard from './components/ContextControlBoard';
 import ContentCalendar from './components/ContentCalendar';
 import SchedulePanel from './components/SchedulePanel';
-import TemplatesPanel from './components/TemplatesPanel';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
 import { useRef } from 'react';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'templates' | 'analytics' | 'comms' | 'contacts';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -181,7 +179,7 @@ function App() {
             break;
           case '4':
             e.preventDefault();
-            setCurrentView('chat');
+            setCurrentView('analytics');
             break;
           case '5':
             e.preventDefault();
@@ -201,11 +199,7 @@ function App() {
             break;
           case '9':
             e.preventDefault();
-            setCurrentView('sessions');
-            break;
-          case '0':
-            e.preventDefault();
-            setCurrentView('analytics');
+            setCurrentView('chat');
             break;
           case ',':
             e.preventDefault();
@@ -249,7 +243,7 @@ function App() {
   return (
     <div className="flex h-screen bg-clawd-bg">
       {/* Top bar with call button */}
-      <TopBar onCallClick={handleCallClick} />
+      <TopBar onCallClick={handleCallClick} onNavigate={setCurrentView} />
       
       {/* Sidebar */}
       <Sidebar currentView={currentView} onNavigate={setCurrentView} />
@@ -266,12 +260,10 @@ function App() {
         {currentView === 'twitter' && <XPanel />}
         {currentView === 'inbox' && <InboxPanel />}
         {currentView === 'comms' && <CommsInbox />}
-        {currentView === 'sessions' && <SessionsPanel />}
         {currentView === 'library' && <LibraryPanel />}
         {currentView === 'schedule' && <SchedulePanel />}
         {currentView === 'codeagent' && <CodeAgentDashboard />}
         {currentView === 'context' && <ContextControlBoard />}
-        {currentView === 'templates' && <TemplatesPanel />}
         {currentView === 'analytics' && <AnalyticsDashboard />}
       </main>
 

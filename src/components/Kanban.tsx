@@ -242,12 +242,62 @@ export default function Kanban() {
     setDragOverColumn(null);
   };
 
-  const handleDrop = (e: React.DragEvent, status: TaskStatus) => {
+  const handleDrop = async (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
-    if (draggedTask) {
-      moveTask(draggedTask, status);
-      setDraggedTask(null);
+    if (!draggedTask) {
+      setDragOverColumn(null);
+      return;
     }
+
+    const task = tasks.find(t => t.id === draggedTask);
+    if (!task) {
+      setDragOverColumn(null);
+      return;
+    }
+
+    // PLANNING PHASE VALIDATION: backlog → todo requires planning
+    if (task.status === 'backlog' && status === 'todo') {
+      const errors: string[] = [];
+      
+      // Check 1: Subtasks
+      const subtaskCount = (task.subtasks || []).length;
+      if (subtaskCount === 0) {
+        errors.push('❌ No subtasks - break down the work first');
+      }
+      
+      // Check 2: Worker assigned
+      if (!task.assignedTo || task.assignedTo === '') {
+        errors.push('❌ No worker assigned');
+      } else if (['main', 'froggo'].includes(task.assignedTo)) {
+        errors.push('❌ Assigned to main/froggo - use coder/researcher/writer/chief');
+      }
+      
+      // Check 3: Planning notes (detailed)
+      if (!task.planningNotes || task.planningNotes.trim().length < 50) {
+        errors.push('❌ No planning notes (min 50 chars)');
+      }
+      
+      // Check 4: Effort estimate in planning notes
+      if (task.planningNotes) {
+        const hasEffort = /effort|estimate|complexity|hours|days|easy|medium|hard|simple|complex/i.test(task.planningNotes);
+        if (!hasEffort) {
+          errors.push('❌ No effort estimate in planning notes');
+        }
+      } else {
+        errors.push('❌ Document effort/complexity');
+      }
+      
+      if (errors.length > 0) {
+        showToast('error', 'Planning incomplete', errors.join('\n'));
+        setDraggedTask(null);
+        setDragOverColumn(null);
+        return;
+      }
+    }
+
+    // All validations passed - move the task
+    moveTask(draggedTask, status);
+    setDraggedTask(null);
     setDragOverColumn(null);
   };
 
@@ -397,9 +447,11 @@ export default function Kanban() {
               >
                 <option value="all">All Assignees</option>
                 <option value="unassigned">Unassigned</option>
-                {agents.map(a => (
-                  <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
-                ))}
+                {agents
+                  .filter(a => !['main', 'froggo'].includes(a.id))
+                  .map(a => (
+                    <option key={a.id} value={a.id}>{a.avatar} {a.name}</option>
+                  ))}
               </select>
             </div>
 
@@ -500,7 +552,7 @@ export default function Kanban() {
 
       {/* Keyboard Shortcuts Modal */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
           <div className="bg-clawd-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-clawd-border" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">

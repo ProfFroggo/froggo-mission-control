@@ -13,9 +13,10 @@ interface SystemStatus {
 
 interface TopBarProps {
   onCallClick?: () => void;
+  onNavigate?: (view: string) => void;
 }
 
-export default function TopBar({ onCallClick }: TopBarProps) {
+export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
   const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
   const [status, setStatus] = useState<SystemStatus>({
     watcherRunning: false,
@@ -173,6 +174,15 @@ export default function TopBar({ onCallClick }: TopBarProps) {
         ) : (
           <Phone size={18} />
         )}
+      </button>
+
+      {/* Frog emoji button - far right */}
+      <button
+        onClick={() => onNavigate?.('dashboard')}
+        className="no-drag text-2xl cursor-pointer hover:scale-110 transition-transform p-1"
+        title="Dashboard"
+      >
+        🐸
       </button>
       </div>
 

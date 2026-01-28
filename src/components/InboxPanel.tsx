@@ -316,7 +316,7 @@ export default function InboxPanel() {
         description: item.content,
         status: 'in-progress',
         project: projectMap[item.type] || 'Approved',
-        assignedTo: 'main',
+        assignedTo: 'coder', // Never assign to main/froggo - use coder for execution
         metadata,
       };
       
@@ -463,7 +463,7 @@ export default function InboxPanel() {
         status: 'in-progress',
         project: item.type === 'tweet' || item.type === 'reply' ? 'X' : 
                  item.type === 'email' ? 'Email' : 'Revisions',
-        assignedTo: 'main',
+        assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
       };
       
       const result = await window.clawdbot!.tasks.sync(taskData);
@@ -684,7 +684,7 @@ export default function InboxPanel() {
                             </span>
                           </div>
                           <p className="text-xs opacity-80 mt-0.5">
-                            Pattern detected: <code className="bg-black/20 px-1 rounded">{warning.pattern}</code>
+                            Pattern detected: <code className="bg-clawd-bg/20 px-1 rounded">{warning.pattern}</code>
                           </p>
                         </div>
                         <AlertTriangle size={20} className="flex-shrink-0 animate-pulse" />
@@ -866,8 +866,8 @@ export default function InboxPanel() {
 
       {/* Rejection Dialog */}
       {rejectDialogItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)}>
-          <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)}>
+          <div className="bg-zinc-800 border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
             <p className="text-sm text-zinc-400 mb-4">This helps me learn what you don't want.</p>
             <input
@@ -880,7 +880,7 @@ export default function InboxPanel() {
                 if (e.key === 'Escape') setRejectDialogItem(null);
               }}
               placeholder="e.g., Too promotional, wrong tone, not relevant..."
-              className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded text-sm mb-4"
+              className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded text-sm mb-4"
             />
             <div className="flex gap-2 justify-end">
               <button
@@ -902,8 +902,8 @@ export default function InboxPanel() {
 
       {/* Schedule Modal */}
       {scheduleModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setScheduleModal(null)}>
-          <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setScheduleModal(null)}>
+          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded-lg ${typeConfig[scheduleModal.item.type].color}`}>
@@ -916,7 +916,7 @@ export default function InboxPanel() {
             </div>
 
             {/* Content Preview */}
-            <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
+            <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
               <pre className="text-sm whitespace-pre-wrap font-mono text-zinc-300">
                 {scheduleModal.item.content}
               </pre>
@@ -924,7 +924,7 @@ export default function InboxPanel() {
 
             {/* Date/Time Picker (shown when Schedule is clicked) */}
             {scheduleModal.showDatePicker && (
-              <div className="mb-6 p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
+              <div className="mb-6 p-4 bg-clawd-surface border border-clawd-border rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarClock size={18} className="text-clawd-accent" />
                   <span className="text-sm font-medium">Schedule for:</span>

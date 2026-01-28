@@ -871,7 +871,7 @@ export default function XPanel() {
 
             {/* Schedule Modal */}
             {showScheduleModal && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
                 <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 w-full max-w-md mx-4">
                   <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <Calendar size={20} />

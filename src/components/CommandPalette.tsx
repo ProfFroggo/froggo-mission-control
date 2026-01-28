@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Radio, Inbox, Brain, Database, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
+import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Inbox, Brain, Database, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -34,14 +34,15 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
 
   const commands: Command[] = [
     // Navigation
-    { id: 'nav-inbox', icon: <Inbox size={16} />, label: 'Go to Inbox', shortcut: '⌘1', category: 'Navigation', action: () => { onNavigate('inbox'); onClose(); } },
-    { id: 'nav-dashboard', icon: <Zap size={16} />, label: 'Go to Dashboard', shortcut: '⌘2', category: 'Navigation', action: () => { onNavigate('dashboard'); onClose(); } },
-    { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '⌘3', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
-    { id: 'nav-sessions', icon: <Radio size={16} />, label: 'Go to Sessions', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('sessions'); onClose(); } },
+    { id: 'nav-dashboard', icon: <Home size={16} />, label: 'Go to Dashboard', shortcut: '⌘1', category: 'Navigation', action: () => { onNavigate('dashboard'); onClose(); } },
+    { id: 'nav-inbox', icon: <Inbox size={16} />, label: 'Go to Approvals', shortcut: '⌘2', category: 'Navigation', action: () => { onNavigate('inbox'); onClose(); } },
+    { id: 'nav-comms', icon: <Mail size={16} />, label: 'Go to Inbox', shortcut: '⌘3', category: 'Navigation', action: () => { onNavigate('comms'); onClose(); } },
+    { id: 'nav-analytics', icon: <Zap size={16} />, label: 'Go to Analytics', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('analytics'); onClose(); } },
     { id: 'nav-tasks', icon: <ListTodo size={16} />, label: 'Go to Tasks', shortcut: '⌘5', category: 'Navigation', action: () => { onNavigate('kanban'); onClose(); } },
     { id: 'nav-agents', icon: <Bot size={16} />, label: 'Go to Agents', shortcut: '⌘6', category: 'Navigation', action: () => { onNavigate('agents'); onClose(); } },
     { id: 'nav-twitter', icon: <XIcon size={16} />, label: 'Go to X', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
     { id: 'nav-voice', icon: <Mic size={16} />, label: 'Go to Voice', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('voice'); onClose(); } },
+    { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '⌘9', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
     
     // Quick Actions
     { id: 'action-calendar', icon: <Calendar size={16} />, label: 'Check Calendar Today', category: 'Actions', action: async () => {
@@ -222,7 +223,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 modal-backdrop backdrop-blur-sm" onClick={onClose} />
       
       <div className="relative w-full max-w-lg glass-modal rounded-2xl shadow-2xl overflow-hidden">
         {/* Search Input */}

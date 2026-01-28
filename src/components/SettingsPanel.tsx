@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Calendar, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Calendar, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Shield } from 'lucide-react';
 import { useStore } from '../store/store';
 import { reconnectGateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import SecuritySettings from './SecuritySettings';
 
 interface Settings {
   gatewayUrl: string;
@@ -87,8 +88,11 @@ interface CalendarAccount {
   status?: 'connected' | 'error' | 'checking';
 }
 
+type Tab = 'general' | 'security' | 'automation';
+
 export default function SettingsPanel() {
   const { connected } = useStore();
+  const [activeTab, setActiveTab] = useState<Tab>('general');
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem('froggo-settings');
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
@@ -267,7 +271,7 @@ export default function SettingsPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
@@ -276,8 +280,49 @@ export default function SettingsPanel() {
           <p className="text-clawd-text-dim">Configure Froggo dashboard preferences</p>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-clawd-border">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`px-4 py-2 border-b-2 transition-colors ${
+              activeTab === 'general'
+                ? 'border-clawd-accent text-clawd-accent'
+                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+            }`}
+          >
+            General
+          </button>
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`px-4 py-2 border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === 'security'
+                ? 'border-clawd-accent text-clawd-accent'
+                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+            }`}
+          >
+            <Shield size={16} />
+            Security
+          </button>
+          <button
+            onClick={() => setActiveTab('automation')}
+            className={`px-4 py-2 border-b-2 transition-colors ${
+              activeTab === 'automation'
+                ? 'border-clawd-accent text-clawd-accent'
+                : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+            }`}
+          >
+            Automation
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'security' && <SecuritySettings />}
+        
+        {activeTab === 'general' && (
+          <div className="space-y-8">{/* Existing general settings content */}
+
         {/* Connection */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Wifi size={18} /> Connection
           </h2>
@@ -309,7 +354,7 @@ export default function SettingsPanel() {
         </section>
 
         {/* Voice */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Volume2 size={18} /> Voice
           </h2>
@@ -348,7 +393,7 @@ export default function SettingsPanel() {
         </section>
 
         {/* Notifications */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Bell size={18} /> Notifications
           </h2>
@@ -373,7 +418,7 @@ export default function SettingsPanel() {
         </section>
 
         {/* Appearance */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Palette size={18} /> Appearance
           </h2>
@@ -417,7 +462,7 @@ export default function SettingsPanel() {
         </section>
 
         {/* Data */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <RotateCcw size={18} /> Data
           </h2>
@@ -458,7 +503,7 @@ export default function SettingsPanel() {
         </section>
 
         {/* Calendar Accounts */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Calendar size={18} /> Calendar Accounts
           </h2>
@@ -548,8 +593,13 @@ export default function SettingsPanel() {
           </div>
         </section>
 
+          </div>
+        )}
+
+        {activeTab === 'automation' && (
+          <div className="space-y-8">
         {/* Automation */}
-        <section className="mb-8">
+        <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
             ⚡ Automation
           </h2>
@@ -640,22 +690,27 @@ export default function SettingsPanel() {
           </div>
         </section>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            onClick={handleSave}
-            className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
-          >
-            {saved ? <Check size={18} /> : <Save size={18} />}
-            {saved ? 'Saved!' : 'Save Settings'}
-          </button>
-          <button
-            onClick={handleReset}
-            className="px-6 py-3 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
-          >
-            Reset
-          </button>
-        </div>
+          </div>
+        )}
+
+        {/* Actions (shown for general and automation tabs) */}
+        {activeTab !== 'security' && (
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={handleSave}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+            >
+              {saved ? <Check size={18} /> : <Save size={18} />}
+              {saved ? 'Saved!' : 'Save Settings'}
+            </button>
+            <button
+              onClick={handleReset}
+              className="px-6 py-3 bg-clawd-border text-clawd-text-dim rounded-xl hover:bg-clawd-border/80 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

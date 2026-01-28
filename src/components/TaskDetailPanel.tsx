@@ -1,7 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight, HandMetal } from 'lucide-react';
+import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight, HandMetal, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import { showToast } from './Toast';
+
+interface TaskAttachment {
+  id: number;
+  task_id: string;
+  file_path: string;
+  filename: string;
+  file_size: number;
+  mime_type: string;
+  category: string;
+  uploaded_by: string;
+  uploaded_at: number;
+}
 
 interface TaskDetailPanelProps {
   task: Task | null;
@@ -12,14 +24,19 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
   const [loading, setLoading] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
-  const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'review'>('subtasks');
+  const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [poking, setPoking] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
+  // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
+  const isRemoteAgent = task?.assignedTo && !assignedAgent && !['', 'none', 'unassigned'].includes(task.assignedTo);
   const isWorking = assignedAgent?.currentTaskId === task?.id;
 
   // Load subtasks from DB
@@ -46,27 +63,46 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     }
   }, [task, loadTaskActivity]);
 
+  // Load attachments from DB
+  const loadAttachments = useCallback(async () => {
+    if (!task) return;
+    setLoadingAttachments(true);
+    try {
+      const result = await (window as any).clawdbot.tasks.attachments.list(task.id);
+      if (result.success) {
+        setAttachments(result.attachments);
+      }
+    } catch (err) {
+      console.error('Failed to load attachments:', err);
+    } finally {
+      setLoadingAttachments(false);
+    }
+  }, [task]);
+
   useEffect(() => {
     if (!task) {
       setSubtasks([]);
       setActivities([]);
+      setAttachments([]);
       return;
     }
 
-    // Load both on mount
+    // Load all on mount
     loadSubtasks();
     loadActivity();
+    loadAttachments();
 
     // Poll for updates while task is in progress
     const interval = setInterval(() => {
       if (task.status === 'in-progress') {
         loadSubtasks();
         loadActivity();
+        loadAttachments();
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [task, loadSubtasks, loadActivity]);
+  }, [task, loadSubtasks, loadActivity, loadAttachments]);
 
   if (!task) return null;
 
@@ -80,6 +116,63 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
     return date.toLocaleDateString();
   };
+
+  // B+C ENFORCEMENT: Both requirements must be met
+  const canMarkDone = () => {
+    if (!task) return { allowed: false, reasons: [] };
+    
+    const reasons: string[] = [];
+    
+    // REQUIREMENT B: All subtasks must be complete (100%)
+    const hasSubtasks = subtasks.length > 0;
+    const incompleteCount = subtasks.filter((st: Subtask) => !st.completed).length;
+    
+    if (hasSubtasks && incompleteCount > 0) {
+      reasons.push(`${incompleteCount}/${subtasks.length} subtasks incomplete`);
+    }
+    
+    // REQUIREMENT C: Reviewer approval required
+    // Task must be in 'review' status
+    if (task.status !== 'review') {
+      reasons.push('Task must be reviewed first (move to review status)');
+    }
+    
+    // Reviewer must be assigned
+    if (!task.reviewerId) {
+      reasons.push('No reviewer assigned');
+    }
+    
+    // Review status must be 'approved'
+    if (task.reviewStatus !== 'approved') {
+      reasons.push('Review not approved (reviewer must approve first)');
+    }
+    
+    // RULE 2: Check activity count (minimum 2)
+    if (activities.length < 2) {
+      reasons.push(`Need at least 2 activity entries (currently ${activities.length})`);
+    }
+    
+    // RULE 3: Check deliverables for certain task types
+    const needsDeliverables = (
+      /build|create|implement|document|write|design|code/i.test(task.title) ||
+      ['Dashboard', 'Dev', 'Gateway', 'X/Twitter'].includes(task.project || '')
+    );
+    
+    if (needsDeliverables) {
+      const hasAttachments = attachments.length > 0;
+      const hasDocumentedFiles = task.planningNotes && (
+        /deliverable|file|\.md|\.js|\.ts|\.sql|\.sh/i.test(task.planningNotes)
+      );
+      
+      if (!hasAttachments && !hasDocumentedFiles) {
+        reasons.push('No deliverables found - attach files or document them');
+      }
+    }
+    
+    return { allowed: reasons.length === 0, reasons };
+  };
+
+  const validation = canMarkDone();
 
   const handleStart = async () => {
     if (task.id && assignedAgent) {
@@ -147,6 +240,106 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     if (success) {
       setSubtasks(subtasks.filter(s => s.id !== subtaskId));
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!task || !e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    setUploadingFile(true);
+    
+    try {
+      // For now, we'll copy file to deliverables directory
+      const deliverablePath = `${(window as any).require('os').homedir()}/clawd/deliverables/${task.id}`;
+      const filePath = `${deliverablePath}/${file.name}`;
+      
+      // Create directory if needed via electron
+      await (window as any).clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
+      
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = (event.target?.result as string).split(',')[1];
+        
+        // Write file
+        await (window as any).clawdbot.fs.writeBase64(filePath, base64);
+        
+        // Add attachment record
+        const result = await (window as any).clawdbot.tasks.attachments.add(
+          task.id,
+          filePath,
+          'deliverable',
+          'user'
+        );
+        
+        if (result.success) {
+          setAttachments([result.attachment, ...attachments]);
+          showToast('success', 'File attached', file.name);
+        } else {
+          showToast('error', 'Failed to attach file', result.error);
+        }
+        setUploadingFile(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      showToast('error', 'Upload failed', err.message);
+      setUploadingFile(false);
+    }
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleDeleteAttachment = async (attachmentId: number) => {
+    if (!task) return;
+    
+    const result = await (window as any).clawdbot.tasks.attachments.delete(attachmentId);
+    if (result.success) {
+      setAttachments(attachments.filter(a => a.id !== attachmentId));
+      showToast('success', 'Attachment deleted');
+      loadActivity(); // Refresh to show deletion
+    } else {
+      showToast('error', 'Failed to delete', result.error);
+    }
+  };
+
+  const handleOpenFile = async (filePath: string) => {
+    const result = await (window as any).clawdbot.tasks.attachments.open(filePath);
+    if (!result.success) {
+      showToast('error', 'Failed to open file', result.error);
+    }
+  };
+
+  const handleAutoDetect = async () => {
+    if (!task) return;
+    setLoadingAttachments(true);
+    
+    const result = await (window as any).clawdbot.tasks.attachments.autoDetect(task.id);
+    if (result.success) {
+      showToast('success', 'Auto-detection complete');
+      loadAttachments();
+      loadActivity();
+    } else {
+      showToast('error', 'Auto-detection failed', result.error);
+    }
+    setLoadingAttachments(false);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith('image/')) return '🖼️';
+    if (mimeType.startsWith('text/')) return '📄';
+    if (mimeType.includes('pdf')) return '📕';
+    if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('gz')) return '📦';
+    if (mimeType.includes('json')) return '{}';
+    if (mimeType.includes('javascript') || mimeType.includes('typescript')) return '📜';
+    if (mimeType.includes('shellscript')) return '⚙️';
+    return '📎';
   };
 
   const assignReviewer = (reviewerId: string) => {
@@ -281,6 +474,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   </div>
                 )}
               </div>
+            ) : isRemoteAgent ? (
+              <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded-lg border border-purple-500/30">
+                <div className="text-lg">🌐</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate capitalize">{task.assignedTo}</div>
+                  <div className="text-xs text-purple-400">Remote Agent</div>
+                </div>
+              </div>
             ) : (
               <div className="p-2 bg-clawd-bg rounded-lg border border-dashed border-clawd-border text-center text-clawd-text-dim text-xs">
                 Not assigned
@@ -314,9 +515,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 className="w-full p-2 bg-clawd-bg rounded-lg border border-dashed border-clawd-border text-xs"
               >
                 <option value="">Assign reviewer...</option>
-                {agents.filter(a => a.id !== task.assignedTo).map(a => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
+                {agents
+                  .filter(a => a.id !== task.assignedTo && !['main', 'froggo'].includes(a.id))
+                  .map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
               </select>
             )}
           </div>
@@ -325,7 +528,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Tabs */}
       <div className="flex border-b border-clawd-border">
-        {(['subtasks', 'planning', 'activity', 'review'] as const).map((tab) => (
+        {(['subtasks', 'planning', 'activity', 'files', 'review'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -352,6 +555,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 {activities.length > 0 && (
                   <span className="bg-clawd-border px-1.5 py-0.5 rounded text-xs">
                     {activities.length}
+                  </span>
+                )}
+              </span>
+            )}
+            {tab === 'files' && (
+              <span className="flex items-center justify-center gap-2">
+                Files
+                {attachments.length > 0 && (
+                  <span className="bg-clawd-border px-1.5 py-0.5 rounded text-xs">
+                    {attachments.length}
                   </span>
                 )}
               </span>
@@ -549,9 +762,184 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           </div>
         )}
 
+        {/* Files Tab */}
+        {activeTab === 'files' && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <Paperclip size={16} className="text-clawd-accent" />
+                Task Attachments
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAutoDetect}
+                  disabled={loadingAttachments}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs bg-clawd-border hover:bg-clawd-accent/20 rounded-lg transition-colors"
+                  title="Auto-detect agent output files"
+                >
+                  {loadingAttachments ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Search size={14} />
+                  )}
+                  Auto-detect
+                </button>
+                <label className="flex items-center gap-2 px-3 py-1.5 text-xs bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim cursor-pointer transition-colors">
+                  {uploadingFile ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Upload size={14} />
+                  )}
+                  Upload
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={uploadingFile}
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Upload Instructions */}
+            {attachments.length === 0 && !loadingAttachments && (
+              <div className="mb-4 p-4 bg-clawd-bg/50 rounded-xl border border-dashed border-clawd-border text-center">
+                <Paperclip size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm text-clawd-text-dim">
+                  No attachments yet. Upload deliverables, screenshots, or reference files.
+                </p>
+                <p className="text-xs text-clawd-text-dim mt-1">
+                  Click Upload or use Auto-detect to find agent output files
+                </p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {loadingAttachments && attachments.length === 0 && (
+              <div className="flex items-center justify-center py-8 text-clawd-text-dim">
+                <Loader2 size={24} className="animate-spin mr-2" />
+                Loading attachments...
+              </div>
+            )}
+
+            {/* Attachments List */}
+            <div className="space-y-2">
+              {attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="group flex items-center gap-3 p-3 bg-clawd-bg rounded-xl border border-clawd-border hover:border-clawd-accent/50 transition-all"
+                >
+                  <div className="text-2xl flex-shrink-0">
+                    {getFileIcon(attachment.mime_type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{attachment.filename}</div>
+                    <div className="flex items-center gap-2 text-xs text-clawd-text-dim mt-0.5">
+                      <span>{formatFileSize(attachment.file_size)}</span>
+                      <span>•</span>
+                      <span className="px-1.5 py-0.5 bg-clawd-border rounded text-xs">
+                        {attachment.category}
+                      </span>
+                      <span>•</span>
+                      <span>{formatTime(attachment.uploaded_at)}</span>
+                      {attachment.uploaded_by && attachment.uploaded_by !== 'user' && (
+                        <>
+                          <span>•</span>
+                          <span className="text-clawd-accent">
+                            {agents.find(a => a.id === attachment.uploaded_by)?.name || attachment.uploaded_by}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="text-xs text-clawd-text-dim/50 mt-0.5 truncate" title={attachment.file_path}>
+                      {attachment.file_path}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleOpenFile(attachment.file_path)}
+                      className="p-2 hover:bg-clawd-accent/20 rounded-lg transition-colors"
+                      title="Open file"
+                    >
+                      <Download size={16} className="text-clawd-accent" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAttachment(attachment.id)}
+                      className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                      title="Delete attachment"
+                    >
+                      <Trash2 size={16} className="text-red-400" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Stats Summary */}
+            {attachments.length > 0 && (
+              <div className="mt-4 p-3 bg-clawd-bg/50 rounded-xl border border-clawd-border">
+                <div className="flex items-center justify-between text-xs text-clawd-text-dim">
+                  <span>
+                    {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
+                  </span>
+                  <span>
+                    Total: {formatFileSize(attachments.reduce((sum, a) => sum + (a.file_size || 0), 0))}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Review Tab */}
         {activeTab === 'review' && (
           <div className="p-4">
+            {/* Quick Approve/Reject Actions (when in review status) */}
+            {task.status === 'review' && task.reviewStatus !== 'approved' && (
+              <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle size={16} className="text-yellow-400" />
+                  <span className="font-medium text-yellow-400">Awaiting Review</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setReviewStatus('approved');
+                      showToast('success', 'Task approved! You can now mark it as done.');
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    <CheckCircle size={16} />
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => {
+                      setReviewStatus('needs-changes');
+                      updateTask(task.id, { status: 'in-progress' });
+                      showToast('info', 'Task sent back for changes');
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    <XCircle size={16} />
+                    Request Changes
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Approved Notice */}
+            {task.reviewStatus === 'approved' && (
+              <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-green-400" />
+                  <span className="font-medium text-green-400">Review Approved</span>
+                </div>
+                <p className="mt-2 text-sm text-clawd-text-dim">
+                  This task has been approved and can now be marked as done.
+                </p>
+              </div>
+            )}
+
             {reviewer ? (
               <div className="space-y-4">
                 {/* Review Status */}
@@ -647,16 +1035,34 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </button>
           )}
           {task.status !== 'done' && (
-            <button
-              onClick={() => {
-                updateTask(task.id, { status: 'done' });
-                logTaskActivity(task.id, 'task_completed', 'Task marked as done');
-              }}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
-            >
-              <CheckCircle size={16} />
-              Mark Done
-            </button>
+            <div className="flex-1 flex flex-col gap-1">
+              <button
+                onClick={() => {
+                  if (validation.allowed) {
+                    updateTask(task.id, { status: 'done' });
+                    logTaskActivity(task.id, 'task_completed', 'Task marked as done');
+                  } else {
+                    showToast('error', 'Cannot mark as done', validation.reasons.join('; '));
+                  }
+                }}
+                disabled={!validation.allowed}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-colors ${
+                  validation.allowed
+                    ? 'bg-green-500 text-white hover:bg-green-600'
+                    : 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+                }`}
+                title={validation.allowed ? 'Mark task as done' : validation.reasons.join('\n')}
+              >
+                {!validation.allowed && <AlertCircle size={16} />}
+                <CheckCircle size={16} />
+                Mark Done
+              </button>
+              {!validation.allowed && (
+                <div className="text-xs text-red-400 px-2">
+                  {validation.reasons[0]}
+                </div>
+              )}
+            </div>
           )}
           {task.status === 'done' && (
             <button

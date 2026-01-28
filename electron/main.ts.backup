@@ -12,7 +12,7 @@ const safeLog = {
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
-        safeLog.log(...args);
+        console.log(...args);
       }
     } catch (e: any) {
       // Silently ignore EPIPE and other stream errors
@@ -20,7 +20,7 @@ const safeLog = {
         // Only report unexpected errors to stderr (if writable)
         try {
           if (process.stderr.writable) {
-            safeLog.error('[SafeLog] Unexpected error:', e);
+            console.error('[SafeLog] Unexpected error:', e);
           }
         } catch {}
       }
@@ -29,7 +29,7 @@ const safeLog = {
   error: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        safeLog.error(...args);
+        console.error(...args);
       }
     } catch (e: any) {
       // Silently ignore stream errors
@@ -38,7 +38,7 @@ const safeLog = {
   warn: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        safeLog.warn(...args);
+        console.warn(...args);
       }
     } catch (e: any) {
       // Silently ignore stream errors
@@ -56,7 +56,7 @@ process.on('uncaughtException', (error: any) => {
   // Log other uncaught exceptions (safely)
   try {
     if (process.stderr.writable) {
-      safeLog.error('[UNCAUGHT EXCEPTION]', error);
+      console.error('[UNCAUGHT EXCEPTION]', error);
     }
   } catch {}
   
@@ -113,11 +113,11 @@ function createWindow() {
   });
 
   if (isDev) {
-    safeLog.log('Running in dev mode, loading from localhost:5173');
+    console.log('Running in dev mode, loading from localhost:5173');
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    safeLog.log('Running in production mode, loading from dist');
+    console.log('Running in production mode, loading from dist');
     mainWindow.loadFile(distPath);
   }
 
@@ -125,10 +125,10 @@ function createWindow() {
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
     const allowedPermissions = ['media', 'microphone', 'audioCapture'];
     if (allowedPermissions.includes(permission)) {
-      safeLog.log('Permission granted:', permission);
+      console.log('Permission granted:', permission);
       callback(true);
     } else {
-      safeLog.log('Permission denied:', permission);
+      console.log('Permission denied:', permission);
       callback(false);
     }
   });
@@ -136,7 +136,7 @@ function createWindow() {
   // SAFEGUARD: Send cleanup signal before window closes
   mainWindow.on('close', (e) => {
     if (mainWindow) {
-      safeLog.log('[Main] Window closing - sending cleanup signal...');
+      console.log('[Main] Window closing - sending cleanup signal...');
       safeSend('app-closing');
       // Give renderer time to cleanup (mic/camera release)
       // The actual close happens after renderer cleanup
@@ -156,7 +156,7 @@ function safeSend(channel: string, ...args: any[]) {
     } catch (e) {
       // Ignore EPIPE errors (window closing), log others
       if ((e as any).code !== 'EPIPE') {
-        safeLog.error(`[SafeSend] Error sending to ${channel}:`, e);
+        console.error(`[SafeSend] Error sending to ${channel}:`, e);
       }
     }
   }
@@ -175,14 +175,14 @@ function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
   
   exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 1000 }, (error, stdout) => {
     if (error) {
-      safeLog.error('[TaskEvents] Failed to get task data:', error.message);
+      console.error('[TaskEvents] Failed to get task data:', error.message);
       return;
     }
     
     try {
       const tasks = JSON.parse(stdout);
       if (tasks.length === 0) {
-        safeLog.error('[TaskEvents] Task not found:', taskId);
+        console.error('[TaskEvents] Task not found:', taskId);
         return;
       }
       
@@ -201,7 +201,7 @@ function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
         fs.mkdirSync(path.dirname(notifyFile), { recursive: true });
         fs.writeFileSync(notifyFile, JSON.stringify(notification));
       } catch (writeError) {
-        safeLog.error('[TaskEvents] Failed to write notification file:', writeError);
+        console.error('[TaskEvents] Failed to write notification file:', writeError);
       }
       
       // DIRECT WebSocket broadcast via renderer
@@ -212,9 +212,9 @@ function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
         payload: fullPayload
       });
       
-      safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
+      console.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
     } catch (parseError) {
-      safeLog.error('[TaskEvents] Failed to parse task data:', parseError);
+      console.error('[TaskEvents] Failed to parse task data:', parseError);
     }
   });
 }
@@ -233,7 +233,7 @@ async function processScheduledItems() {
   
   exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, async (error, stdout) => {
     if (error) {
-      safeLog.error('[ScheduleProcessor] Query error:', error.message);
+      console.error('[ScheduleProcessor] Query error:', error.message);
       return;
     }
     
@@ -260,10 +260,10 @@ async function processScheduledItems() {
     
     if (items.length === 0) return;
     
-    safeLog.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
+    console.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
     
     for (const item of items) {
-      safeLog.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
+      console.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
       
       let execCmd = '';
       let metadata: any = {};
@@ -273,7 +273,7 @@ async function processScheduledItems() {
           metadata = JSON.parse(item.metadata);
         }
       } catch (e) {
-        safeLog.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
+        console.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
       }
       
       // Build command based on type
@@ -286,12 +286,12 @@ async function processScheduledItems() {
         
         // GUARD: Skip emails with missing recipient or account (prevents gog auth loops)
         if (!recipient || !recipient.trim()) {
-          safeLog.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
+          console.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
           exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing recipient' WHERE id='${item.id}'"`, () => {});
           continue;
         }
         if (!account || !account.trim()) {
-          safeLog.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
+          console.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
           exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing GOG account' WHERE id='${item.id}'"`, () => {});
           continue;
         }
@@ -300,18 +300,18 @@ async function processScheduledItems() {
         const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
         execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
       } else {
-        safeLog.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
+        console.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
         // Mark as failed with unknown type error
         exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Unknown type: ${item.type}' WHERE id='${item.id}'"`, () => {});
         continue;
       }
       
-      safeLog.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
+      console.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
       
       // Execute the command
       exec(execCmd, { timeout: 60000 }, (execError, execStdout, execStderr) => {
         if (execError) {
-          safeLog.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
+          console.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
           const errorMsg = (execError.message || '').replace(/'/g, "''").slice(0, 500);
           exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${errorMsg}' WHERE id='${item.id}'"`, () => {});
           
@@ -323,7 +323,7 @@ async function processScheduledItems() {
             error: execError.message 
           });
         } else {
-          safeLog.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
+          console.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
           exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='sent', sent_at=datetime('now') WHERE id='${item.id}'"`, () => {});
           
           // Notify renderer of success
@@ -339,7 +339,7 @@ async function processScheduledItems() {
 }
 
 function startScheduleProcessor() {
-  safeLog.log('[ScheduleProcessor] Starting schedule processor (every 30s)');
+  console.log('[ScheduleProcessor] Starting schedule processor (every 30s)');
   // Run immediately on start
   processScheduledItems();
   // Then run every 30 seconds
@@ -350,7 +350,7 @@ function stopScheduleProcessor() {
   if (scheduleProcessorInterval) {
     clearInterval(scheduleProcessorInterval);
     scheduleProcessorInterval = null;
-    safeLog.log('[ScheduleProcessor] Stopped');
+    console.log('[ScheduleProcessor] Stopped');
   }
 }
 
@@ -372,14 +372,14 @@ function startTaskNotifyWatcher() {
             lastTaskNotifyMtime = stat.mtimeMs;
             const content = fs.readFileSync(taskNotifyPath, 'utf-8');
             const notification = JSON.parse(content);
-            safeLog.log('[TaskNotify] New task notification:', notification);
+            console.log('[TaskNotify] New task notification:', notification);
             // Send to renderer with error handling
             try {
               mainWindow.webContents.send('task-notification', notification);
             } catch (sendError) {
               // Window might be closing, ignore EPIPE errors
               if ((sendError as any).code !== 'EPIPE') {
-                safeLog.error('[TaskNotify] Send error:', sendError);
+                console.error('[TaskNotify] Send error:', sendError);
               }
             }
           }
@@ -388,9 +388,9 @@ function startTaskNotifyWatcher() {
         }
       }
     });
-    safeLog.log('[TaskNotify] Watching for task notifications at:', taskNotifyPath);
+    console.log('[TaskNotify] Watching for task notifications at:', taskNotifyPath);
   } catch (e) {
-    safeLog.error('[TaskNotify] Failed to start watcher:', e);
+    console.error('[TaskNotify] Failed to start watcher:', e);
   }
 }
 
@@ -399,7 +399,7 @@ app.whenReady().then(() => {
   if (!isDev) {
     modelServer = http.createServer((req, res) => {
       const filePath = path.join(process.resourcesPath, 'models', path.basename(req.url || ''));
-      safeLog.log('[ModelServer] Request:', req.url, '-> serving:', filePath);
+      console.log('[ModelServer] Request:', req.url, '-> serving:', filePath);
       
       if (fs.existsSync(filePath)) {
         const stat = fs.statSync(filePath);
@@ -410,14 +410,14 @@ app.whenReady().then(() => {
         });
         fs.createReadStream(filePath).pipe(res);
       } else {
-        safeLog.log('[ModelServer] File not found:', filePath);
+        console.log('[ModelServer] File not found:', filePath);
         res.writeHead(404);
         res.end('Not found');
       }
     });
     
     modelServer.listen(modelServerPort, '127.0.0.1', () => {
-      safeLog.log(`[ModelServer] Serving models on http://127.0.0.1:${modelServerPort}`);
+      console.log(`[ModelServer] Serving models on http://127.0.0.1:${modelServerPort}`);
     });
   }
   
@@ -481,7 +481,7 @@ ipcMain.handle('gateway:sessions:list', async () => {
   return new Promise((resolve) => {
     exec('clawdbot sessions list --json', { timeout: 10000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Gateway] Sessions list error:', error);
+        console.error('[Gateway] Sessions list error:', error);
         resolve({ success: false, sessions: [], error: error.message });
         return;
       }
@@ -489,7 +489,7 @@ ipcMain.handle('gateway:sessions:list', async () => {
         const data = JSON.parse(stdout);
         resolve({ success: true, sessions: data.sessions || [], count: data.count || 0 });
       } catch (e) {
-        safeLog.error('[Gateway] Sessions parse error:', e);
+        console.error('[Gateway] Sessions parse error:', e);
         resolve({ success: false, sessions: [], error: 'Parse error' });
       }
     });
@@ -507,12 +507,12 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
   try {
     // Write audio data to temp file
     fs.writeFileSync(tempFile, Buffer.from(audioData));
-    safeLog.log('Whisper: Saved audio to', tempFile);
+    console.log('Whisper: Saved audio to', tempFile);
     
     // Run whisper (use "tiny" model - fastest, good enough for voice commands)
     return new Promise((resolve) => {
       const cmd = `${WHISPER_PATH} "${tempFile}" --model tiny --language en --output_format txt --output_dir "${outputDir}" 2>&1`;
-      safeLog.log('Whisper: Running', cmd);
+      console.log('Whisper: Running', cmd);
       
       exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
         // Read the output file
@@ -529,16 +529,16 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
         try { fs.unlinkSync(tempFile); } catch {}
         
         if (error) {
-          safeLog.error('Whisper error:', error.message);
+          console.error('Whisper error:', error.message);
           resolve({ error: error.message, stdout, stderr });
         } else {
-          safeLog.log('Whisper transcript:', transcript);
+          console.log('Whisper transcript:', transcript);
           resolve({ transcript, stdout });
         }
       });
     });
   } catch (error: any) {
-    safeLog.error('Whisper failed:', error);
+    console.error('Whisper failed:', error);
     try { fs.unlinkSync(tempFile); } catch {}
     return { error: error.message };
   }
@@ -547,7 +547,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
 ipcMain.handle('whisper:check', async () => {
   // Just check if the file exists - running --help is too slow
   const available = fs.existsSync(WHISPER_PATH);
-  safeLog.log('Whisper check:', WHISPER_PATH, 'exists:', available);
+  console.log('Whisper check:', WHISPER_PATH, 'exists:', available);
   return { available, path: WHISPER_PATH };
 });
 
@@ -562,7 +562,7 @@ ipcMain.handle('approvals:read', async () => {
     const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
     return data;
   } catch (error) {
-    safeLog.error('Failed to read approval queue:', error);
+    console.error('Failed to read approval queue:', error);
     return { items: [] };
   }
 });
@@ -573,7 +573,7 @@ ipcMain.handle('approvals:clear', async () => {
     fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(data, null, 2));
     return { success: true };
   } catch (error) {
-    safeLog.error('Failed to clear approval queue:', error);
+    console.error('Failed to clear approval queue:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -586,7 +586,7 @@ ipcMain.handle('approvals:remove', async (_, itemId: string) => {
     fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(data, null, 2));
     return { success: true };
   } catch (error) {
-    safeLog.error('Failed to remove approval item:', error);
+    console.error('Failed to remove approval item:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -596,7 +596,7 @@ ipcMain.handle('voice:getModelUrl', async () => {
   const url = isDev 
     ? '/models/model.tar.gz'
     : `http://127.0.0.1:${modelServerPort}/model.tar.gz`;
-  safeLog.log('[Voice] getModelUrl called, isDev:', isDev, 'returning:', url);
+  console.log('[Voice] getModelUrl called, isDev:', isDev, 'returning:', url);
   return url;
 });
 
@@ -619,7 +619,7 @@ ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
   const escapedText = text.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
   const cmd = `sag ${voiceArg} --model-id eleven_flash_v2_5 -o "${outputPath}" "${escapedText}"`;
   
-  safeLog.log('[Voice] TTS command:', cmd.slice(0, 120) + '...');
+  console.log('[Voice] TTS command:', cmd.slice(0, 120) + '...');
   
   return new Promise((resolve) => {
     // Pass environment variables including ELEVENLABS_API_KEY
@@ -628,11 +628,11 @@ ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
     
     exec(cmd, { timeout: 30000, env }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Voice] TTS error:', error.message);
-        safeLog.error('[Voice] TTS stderr:', stderr);
+        console.error('[Voice] TTS error:', error.message);
+        console.error('[Voice] TTS stderr:', stderr);
         resolve({ success: false, error: error.message });
       } else {
-        safeLog.log('[Voice] TTS generated:', outputPath);
+        console.log('[Voice] TTS generated:', outputPath);
         resolve({ success: true, path: outputPath });
       }
     });
@@ -650,15 +650,15 @@ ipcMain.handle('tasks:sync', async (_, task: {
   priority?: string;
   dueDate?: number;
 }) => {
-  safeLog.log('[Tasks] Sync called with:', JSON.stringify(task));
-  safeLog.log('[Tasks] Status being set:', task.status);
+  console.log('[Tasks] Sync called with:', JSON.stringify(task));
+  console.log('[Tasks] Status being set:', task.status);
   
   // Check if task exists
   return new Promise((resolve) => {
     exec(`froggo-db task-get "${task.id}"`, { timeout: 5000 }, (getError, getStdout) => {
       // If task exists (stdout has JSON), just return success
       if (!getError && getStdout && getStdout.includes('"id"')) {
-        safeLog.log('[Tasks] Task already exists:', task.id);
+        console.log('[Tasks] Task already exists:', task.id);
         resolve({ success: true });
         return;
       }
@@ -672,15 +672,15 @@ ipcMain.handle('tasks:sync', async (_, task: {
       
       const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES ('${task.id}', '${title}', '${desc}', '${task.status || 'todo'}', '${project}', '${task.assignedTo || ''}', '${task.priority || ''}', ${dueStr ? `'${dueStr}'` : 'NULL'}, ${nowMs}, ${nowMs})"`;
       
-      safeLog.log('[Tasks] Creating task via SQL');
+      console.log('[Tasks] Creating task via SQL');
       
       exec(insertCmd, { timeout: 10000 }, (addError, addStdout, addStderr) => {
         if (addError) {
-          safeLog.error('[Tasks] Create error:', addError.message);
-          safeLog.error('[Tasks] stderr:', addStderr);
+          console.error('[Tasks] Create error:', addError.message);
+          console.error('[Tasks] stderr:', addStderr);
           resolve({ success: false, error: addError.message });
         } else {
-          safeLog.log('[Tasks] Created:', task.id);
+          console.log('[Tasks] Created:', task.id);
           resolve({ success: true });
         }
       });
@@ -781,7 +781,7 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
 
 // Poke a task - send message to Gateway main session asking for status update
 ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
-  safeLog.log(`[Tasks] Poke: ${taskId} - ${title}`);
+  console.log(`[Tasks] Poke: ${taskId} - ${title}`);
   
   const pokeMessage = `🫵 Poke: What's the status of "${title}"? (${taskId})`;
   
@@ -794,12 +794,12 @@ ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
     
     exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Tasks] Poke error:', error.message, stderr);
+        console.error('[Tasks] Poke error:', error.message, stderr);
         resolve({ success: false, error: error.message });
         return;
       }
       
-      safeLog.log('[Tasks] Poke sent to Discord:', stdout.trim());
+      console.log('[Tasks] Poke sent to Discord:', stdout.trim());
       resolve({ success: true, message: pokeMessage });
     });
   });
@@ -814,7 +814,7 @@ ipcMain.handle('subtasks:list', async (_, taskId: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Subtasks] List error:', error);
+        console.error('[Subtasks] List error:', error);
         resolve({ success: false, subtasks: [] });
         return;
       }
@@ -840,11 +840,11 @@ ipcMain.handle('subtasks:list', async (_, taskId: string) => {
 });
 
 ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; title: string; description?: string; assignedTo?: string }) => {
-  safeLog.log('[Subtasks] Add called:', { taskId, subtask });
+  console.log('[Subtasks] Add called:', { taskId, subtask });
   
   // Validate inputs
   if (!taskId || !subtask?.id || !subtask?.title) {
-    safeLog.error('[Subtasks] Invalid input:', { taskId, subtask });
+    console.error('[Subtasks] Invalid input:', { taskId, subtask });
     return { success: false, error: 'Invalid input: taskId, subtask.id, and subtask.title are required' };
   }
   
@@ -856,22 +856,22 @@ ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; 
   return new Promise((resolve) => {
     exec(`sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(position), -1) + 1 FROM subtasks WHERE task_id='${taskId}'"`, (posError, posOut, posStderr) => {
       if (posError) {
-        safeLog.error('[Subtasks] Position query error:', posError.message, posStderr);
+        console.error('[Subtasks] Position query error:', posError.message, posStderr);
         // Continue with position 0 even if query fails
       }
       const position = parseInt(posOut?.trim() || '0', 10) || 0;
-      safeLog.log('[Subtasks] Position:', position);
+      console.log('[Subtasks] Position:', position);
       
       const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES ('${subtask.id}', '${taskId}', '${escapedTitle}', '${escapedDesc}', ${subtask.assignedTo ? "'" + subtask.assignedTo + "'" : 'NULL'}, ${position}, ${now}, ${now})"`;
-      safeLog.log('[Subtasks] Insert command:', cmd.slice(0, 200) + '...');
+      console.log('[Subtasks] Insert command:', cmd.slice(0, 200) + '...');
       
       exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
         if (error) {
-          safeLog.error('[Subtasks] Add error:', error.message);
-          safeLog.error('[Subtasks] stderr:', stderr);
+          console.error('[Subtasks] Add error:', error.message);
+          console.error('[Subtasks] stderr:', stderr);
           resolve({ success: false, error: error.message });
         } else {
-          safeLog.log('[Subtasks] Insert success:', subtask.id);
+          console.log('[Subtasks] Insert success:', subtask.id);
           // Also log activity (fire and forget)
           exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_added', 'Added subtask: ${escapedTitle}', ${now})"`, () => {});
           // Emit task update event for real-time Dashboard refresh
@@ -907,7 +907,7 @@ ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { comple
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
       if (error) {
-        safeLog.error('[Subtasks] Update error:', error);
+        console.error('[Subtasks] Update error:', error);
         resolve({ success: false, error: error.message });
       } else {
         // Log activity for completion changes
@@ -979,7 +979,7 @@ ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Activity] List error:', error);
+        console.error('[Activity] List error:', error);
         resolve({ success: false, activities: [] });
         return;
       }
@@ -1026,7 +1026,7 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Attachments] List error:', error);
+        console.error('[Attachments] List error:', error);
         resolve({ success: false, attachments: [] });
         return;
       }
@@ -1034,7 +1034,7 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
         const attachments = JSON.parse(stdout || '[]');
         resolve({ success: true, attachments });
       } catch (e) {
-        safeLog.error('[Attachments] Parse error:', e);
+        console.error('[Attachments] Parse error:', e);
         resolve({ success: false, attachments: [] });
       }
     });
@@ -1073,7 +1073,7 @@ ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, ca
     };
     mimeType = mimeTypes[ext] || mimeType;
   } catch (e) {
-    safeLog.error('[Attachments] File stat error:', e);
+    console.error('[Attachments] File stat error:', e);
     return { success: false, error: 'File not accessible' };
   }
   
@@ -1086,7 +1086,7 @@ ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, ca
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Attachments] Add error:', error);
+        console.error('[Attachments] Add error:', error);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -1176,7 +1176,7 @@ ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Attachments] Auto-detect error:', error, stderr);
+        console.error('[Attachments] Auto-detect error:', error, stderr);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -1196,7 +1196,7 @@ ipcMain.handle('calendar:events:list', async () => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Calendar] List error:', error);
+        console.error('[Calendar] List error:', error);
         resolve({ success: false, events: [] });
         return;
       }
@@ -1204,7 +1204,7 @@ ipcMain.handle('calendar:events:list', async () => {
         const events = JSON.parse(stdout || '[]');
         resolve({ success: true, events });
       } catch (e) {
-        safeLog.error('[Calendar] Parse error:', e);
+        console.error('[Calendar] Parse error:', e);
         resolve({ success: false, events: [] });
       }
     });
@@ -1217,7 +1217,7 @@ ipcMain.handle('calendar:events:get', async (_, eventId: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Calendar] Get error:', error);
+        console.error('[Calendar] Get error:', error);
         resolve({ success: false, event: null });
         return;
       }
@@ -1229,7 +1229,7 @@ ipcMain.handle('calendar:events:get', async (_, eventId: string) => {
           resolve({ success: true, event: events[0] });
         }
       } catch (e) {
-        safeLog.error('[Calendar] Parse error:', e);
+        console.error('[Calendar] Parse error:', e);
         resolve({ success: false, event: null });
       }
     });
@@ -1301,7 +1301,7 @@ ipcMain.handle('calendar:events:create', async (_, event: {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
       if (error) {
-        safeLog.error('[Calendar] Create error:', error);
+        console.error('[Calendar] Create error:', error);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -1427,7 +1427,7 @@ ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
       if (error) {
-        safeLog.error('[Calendar] Update error:', error);
+        console.error('[Calendar] Update error:', error);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -1458,7 +1458,7 @@ ipcMain.handle('calendar:events:delete', async (_, eventId: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
       if (error) {
-        safeLog.error('[Calendar] Delete error:', error);
+        console.error('[Calendar] Delete error:', error);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -1481,14 +1481,14 @@ ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Execute] Tweet error:', error.message, stderr);
+        console.error('[Execute] Tweet error:', error.message, stderr);
         if (taskId) {
           exec(`froggo-db task-progress "${taskId}" "Failed: ${error.message}" --step "Error"`, () => {});
           exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
         }
         resolve({ success: false, error: error.message });
       } else {
-        safeLog.log('[Execute] Tweet posted:', stdout);
+        console.log('[Execute] Tweet posted:', stdout);
         if (taskId) {
           exec(`froggo-db task-progress "${taskId}" "Tweet posted successfully" --step "Complete"`, () => {});
           exec(`froggo-db task-complete "${taskId}" --outcome success`, () => {});
@@ -1501,15 +1501,15 @@ ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
 
 // ============== EMAIL IPC HANDLERS ==============
 ipcMain.handle('email:send', async (_, options: { to: string; subject: string; body: string; account?: string }) => {
-  safeLog.log('[Email:send] Sending email to:', options.to);
+  console.log('[Email:send] Sending email to:', options.to);
   
   // GUARD: Require recipient and account to prevent auth loops
   if (!options.to || !options.to.trim()) {
-    safeLog.error('[Email:send] Missing recipient');
+    console.error('[Email:send] Missing recipient');
     return { success: false, error: 'Missing email recipient' };
   }
   if (!options.account || !options.account.trim()) {
-    safeLog.error('[Email:send] Missing account - cannot send without GOG_ACCOUNT');
+    console.error('[Email:send] Missing account - cannot send without GOG_ACCOUNT');
     return { success: false, error: 'Missing account - please specify which email account to send from' };
   }
   
@@ -1520,14 +1520,14 @@ ipcMain.handle('email:send', async (_, options: { to: string; subject: string; b
     const escapedBody = options.body.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
     
     const cmd = `GOG_ACCOUNT="${options.account}" gog gmail send --to "${escapedTo}" --subject "${escapedSubject}" --body "${escapedBody}"`;
-    safeLog.log('[Email:send] Command:', cmd.slice(0, 100) + '...');
+    console.log('[Email:send] Command:', cmd.slice(0, 100) + '...');
     
     exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Email:send] Error:', error.message, stderr);
+        console.error('[Email:send] Error:', error.message, stderr);
         resolve({ success: false, error: error.message });
       } else {
-        safeLog.log('[Email:send] Sent successfully:', stdout);
+        console.log('[Email:send] Sent successfully:', stdout);
         resolve({ success: true, output: stdout });
       }
     });
@@ -1544,7 +1544,7 @@ ipcMain.handle('inbox:addWithMetadata', async (_, item: {
   channel?: string;
   metadata?: string;
 }) => {
-  safeLog.log('[Inbox:addWithMetadata] Adding item:', item.title);
+  console.log('[Inbox:addWithMetadata] Adding item:', item.title);
   
   return new Promise((resolve) => {
     const now = Date.now();
@@ -1557,10 +1557,10 @@ ipcMain.handle('inbox:addWithMetadata', async (_, item: {
     
     exec(sqlCmd, { timeout: 10000 }, (error) => {
       if (error) {
-        safeLog.error('[Inbox:addWithMetadata] Error:', error);
+        console.error('[Inbox:addWithMetadata] Error:', error);
         resolve({ success: false, error: error.message });
       } else {
-        safeLog.log('[Inbox:addWithMetadata] Added successfully');
+        console.log('[Inbox:addWithMetadata] Added successfully');
         resolve({ success: true });
       }
     });
@@ -1575,24 +1575,24 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
     // Query directly via sqlite3
     const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
     
-    safeLog.log('[Inbox:list] Executing query for status:', effectiveStatus);
-    safeLog.log('[Inbox:list] Command:', sqlCmd);
+    console.log('[Inbox:list] Executing query for status:', effectiveStatus);
+    console.log('[Inbox:list] Command:', sqlCmd);
     
     exec(sqlCmd, { timeout: 5000 }, (err, jsonOut, stderr) => {
       if (err) {
-        safeLog.error('[Inbox:list] Exec error:', err);
-        safeLog.error('[Inbox:list] Stderr:', stderr);
+        console.error('[Inbox:list] Exec error:', err);
+        console.error('[Inbox:list] Stderr:', stderr);
         resolve({ success: false, items: [], error: err.message });
       } else {
         try {
-          safeLog.log('[Inbox:list] Raw output length:', jsonOut?.length || 0);
+          console.log('[Inbox:list] Raw output length:', jsonOut?.length || 0);
           const items = JSON.parse(jsonOut || '[]');
-          safeLog.log('[Inbox:list] SUCCESS - Parsed', items.length, 'items with status:', effectiveStatus);
-          safeLog.log('[Inbox:list] First item:', items[0] ? JSON.stringify(items[0]).substring(0, 100) : 'none');
+          console.log('[Inbox:list] SUCCESS - Parsed', items.length, 'items with status:', effectiveStatus);
+          console.log('[Inbox:list] First item:', items[0] ? JSON.stringify(items[0]).substring(0, 100) : 'none');
           resolve({ success: true, items });
         } catch (e) {
-          safeLog.error('[Inbox:list] JSON Parse error:', e);
-          safeLog.error('[Inbox:list] Raw output:', jsonOut);
+          console.error('[Inbox:list] JSON Parse error:', e);
+          console.error('[Inbox:list] Raw output:', jsonOut);
           resolve({ success: false, items: [], error: (e as Error).message });
         }
       }
@@ -1620,10 +1620,10 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       try {
         if (detectStdout) {
           injectionResult = JSON.parse(detectStdout.trim());
-          safeLog.log('[Inbox] Injection detection result:', injectionResult);
+          console.log('[Inbox] Injection detection result:', injectionResult);
         }
       } catch (e) {
-        safeLog.error('[Inbox] Failed to parse injection detection result:', e);
+        console.error('[Inbox] Failed to parse injection detection result:', e);
       }
       
       // Build metadata with injection detection result
@@ -1635,7 +1635,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
           pattern: injectionResult.pattern,
           risk: injectionResult.risk,
         };
-        safeLog.log(`[Inbox] ⚠️ INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
+        console.log(`[Inbox] ⚠️ INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
       }
       
       // Add to inbox via direct SQL to include metadata
@@ -1649,7 +1649,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       
       exec(sqlCmd, { timeout: 10000 }, (error) => {
         if (error) {
-          safeLog.error('[Inbox] Add error:', error);
+          console.error('[Inbox] Add error:', error);
           resolve({ success: false, error: error.message });
         } else {
           resolve({ 
@@ -1663,11 +1663,11 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
 });
 
 ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?: string; feedback?: string }) => {
-  safeLog.log('[Inbox:update] Called with id:', id, 'type:', typeof id, 'updates:', updates);
+  console.log('[Inbox:update] Called with id:', id, 'type:', typeof id, 'updates:', updates);
   
   // Skip if it's a task-review item (those should go through tasks:update)
   if (typeof id === 'string' && id.startsWith('task-review-')) {
-    safeLog.log('[Inbox:update] Skipping task-review item');
+    console.log('[Inbox:update] Skipping task-review item');
     return { success: true, skipped: true };
   }
   
@@ -1679,11 +1679,11 @@ ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?
   if (sets.length === 0) return { success: false };
   
   const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET ${sets.join(', ')} WHERE id=${id}"`;
-  safeLog.log('[Inbox:update] Running:', cmd);
+  console.log('[Inbox:update] Running:', cmd);
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-      safeLog.log('[Inbox:update] Result - error:', error, 'stdout:', stdout, 'stderr:', stderr);
+      console.log('[Inbox:update] Result - error:', error, 'stdout:', stdout, 'stderr:', stderr);
       resolve({ success: !error });
     });
   });
@@ -1717,7 +1717,7 @@ ipcMain.handle('inbox:listRevisions', async () => {
     
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Inbox] List revisions error:', error);
+        console.error('[Inbox] List revisions error:', error);
         resolve({ success: false, items: [] });
         return;
       }
@@ -1734,13 +1734,13 @@ ipcMain.handle('inbox:listRevisions', async () => {
 // Submit revised content for an inbox item
 // This creates a new pending item with the revised content and marks the original as 'revised'
 ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedContent: string, revisedTitle?: string) => {
-  safeLog.log(`[Inbox] Submit revision for item ${originalId}`);
+  console.log(`[Inbox] Submit revision for item ${originalId}`);
   
   return new Promise((resolve) => {
     // First, get the original item
     exec(`sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${originalId}" -json`, (getErr, getOut) => {
       if (getErr) {
-        safeLog.error('[Inbox] Get original error:', getErr);
+        console.error('[Inbox] Get original error:', getErr);
         resolve({ success: false, error: 'Failed to get original item' });
         return;
       }
@@ -1763,7 +1763,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
         
         exec(insertCmd, { timeout: 5000 }, (insertErr) => {
           if (insertErr) {
-            safeLog.error('[Inbox] Insert revision error:', insertErr);
+            console.error('[Inbox] Insert revision error:', insertErr);
             resolve({ success: false, error: insertErr.message });
             return;
           }
@@ -1773,11 +1773,11 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
           
           exec(updateCmd, { timeout: 5000 }, (updateErr) => {
             if (updateErr) {
-              safeLog.error('[Inbox] Update original error:', updateErr);
+              console.error('[Inbox] Update original error:', updateErr);
               // Still return success since the revision was created
             }
             
-            safeLog.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
+            console.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
             
             // Notify frontend of inbox update
             safeSend('inbox-updated', { revision: true, originalId });
@@ -1786,7 +1786,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
           });
         });
       } catch (e: any) {
-        safeLog.error('[Inbox] Parse error:', e);
+        console.error('[Inbox] Parse error:', e);
         resolve({ success: false, error: e.message });
       }
     });
@@ -1862,7 +1862,7 @@ ipcMain.handle('screenshot:navigate', async (_, view: string) => {
 const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('schedule:list', async () => {
-  safeLog.log('[Schedule:list] Called');
+  console.log('[Schedule:list] Called');
   return new Promise((resolve) => {
     const cmd = `sqlite3 ${scheduleDbPath} "
       CREATE TABLE IF NOT EXISTS schedule (
@@ -1880,13 +1880,13 @@ ipcMain.handle('schedule:list', async () => {
     " -json 2>/dev/null || echo '[]'`;
     
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      safeLog.log('[Schedule:list] Raw output:', stdout?.slice(0, 200));
+      console.log('[Schedule:list] Raw output:', stdout?.slice(0, 200));
       try {
         // JSON output may span multiple lines - find [ and take everything from there
         const trimmed = stdout.trim();
         const jsonStart = trimmed.indexOf('[');
         const jsonStr = jsonStart >= 0 ? trimmed.slice(jsonStart) : '[]';
-        safeLog.log('[Schedule:list] JSON extracted, length:', jsonStr.length);
+        console.log('[Schedule:list] JSON extracted, length:', jsonStr.length);
         const items = JSON.parse(jsonStr).map((row: any) => ({
           id: row.id,
           type: row.type,
@@ -1898,10 +1898,10 @@ ipcMain.handle('schedule:list', async () => {
           error: row.error,
           metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
         }));
-        safeLog.log('[Schedule:list] Parsed', items.length, 'items');
+        console.log('[Schedule:list] Parsed', items.length, 'items');
         resolve({ success: true, items });
       } catch (e) {
-        safeLog.error('[Schedule:list] Error:', e);
+        console.error('[Schedule:list] Error:', e);
         resolve({ success: true, items: [] });
       }
     });
@@ -1909,7 +1909,7 @@ ipcMain.handle('schedule:list', async () => {
 });
 
 ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: any }) => {
-  safeLog.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
+  console.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
   
   const id = `sched-${Date.now()}`;
   // Escape for SQL single-quoted strings: double the single quotes
@@ -1918,7 +1918,7 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
     ? JSON.stringify(item.metadata).replace(/'/g, "''")
     : null;
   
-  safeLog.log('[Schedule:add] Escaped metadata:', escapedMetadata);
+  console.log('[Schedule:add] Escaped metadata:', escapedMetadata);
   
   return new Promise((resolve) => {
     // First ensure the schedule table exists
@@ -1938,7 +1938,7 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
     
     exec(`sqlite3 "${scheduleDbPath}" "${createTableSql}"`, { timeout: 5000 }, (createError) => {
       if (createError) {
-        safeLog.error('[Schedule:add] Failed to create table:', createError.message);
+        console.error('[Schedule:add] Failed to create table:', createError.message);
         resolve({ success: false, error: 'Failed to initialize schedule table: ' + createError.message });
         return;
       }
@@ -1948,8 +1948,8 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
       const sql = `INSERT INTO schedule (id, type, content, scheduled_for, metadata) VALUES ('${id}', '${item.type}', '${escapedContent}', '${item.scheduledFor}', ${metadataVal});`;
       const tmpFile = `/tmp/schedule-${id}.sql`;
       
-      safeLog.log('[Schedule:add] SQL:', sql);
-      safeLog.log('[Schedule:add] Writing to:', tmpFile);
+      console.log('[Schedule:add] SQL:', sql);
+      console.log('[Schedule:add] Writing to:', tmpFile);
       
       fs.writeFileSync(tmpFile, sql);
       const insertCmd = `sqlite3 "${scheduleDbPath}" < "${tmpFile}"`;
@@ -1987,9 +1987,9 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
         
         queueData.items.push(approvalEntry);
         fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(queueData, null, 2));
-        safeLog.log('[Schedule:add] Added to approval queue:', approvalEntry.id);
+        console.log('[Schedule:add] Added to approval queue:', approvalEntry.id);
       } catch (queueError) {
-        safeLog.error('[Schedule:add] Failed to add to approval queue:', queueError);
+        console.error('[Schedule:add] Failed to add to approval queue:', queueError);
         // Non-fatal, continue with scheduling
       }
       
@@ -2197,7 +2197,7 @@ ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string)
     fs.writeFileSync(filePath, buffer);
     return { success: true, path: filePath };
   } catch (error: any) {
-    safeLog.error('[FS] Write error:', error);
+    console.error('[FS] Write error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2207,7 +2207,7 @@ ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => 
     const content = fs.readFileSync(filePath, encoding as BufferEncoding || 'utf8');
     return { success: true, content };
   } catch (error: any) {
-    safeLog.error('[FS] Read error:', error);
+    console.error('[FS] Read error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2229,7 +2229,7 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
     fs.appendFileSync(resolvedPath, content);
     return { success: true, path: resolvedPath };
   } catch (error: any) {
-    safeLog.error('[FS] Append error:', error);
+    console.error('[FS] Append error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2260,7 +2260,7 @@ ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
     
     exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[DB] Exec error:', error, stderr);
+        console.error('[DB] Exec error:', error, stderr);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -2274,7 +2274,7 @@ ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
           resolve({ success: true, result });
         }
       } catch (parseError: any) {
-        safeLog.error('[DB] Parse error:', parseError);
+        console.error('[DB] Parse error:', parseError);
         resolve({ success: false, error: 'Failed to parse database result' });
       }
     });
@@ -2302,7 +2302,7 @@ ipcMain.handle('media:upload', async (_, fileName: string, base64Data: string) =
     fs.writeFileSync(filePath, buffer);
     const stats = fs.statSync(filePath);
     
-    safeLog.log('[Media] Uploaded:', uniqueFileName, 'size:', stats.size);
+    console.log('[Media] Uploaded:', uniqueFileName, 'size:', stats.size);
     
     return { 
       success: true, 
@@ -2311,7 +2311,7 @@ ipcMain.handle('media:upload', async (_, fileName: string, base64Data: string) =
       size: stats.size 
     };
   } catch (error: any) {
-    safeLog.error('[Media] Upload error:', error);
+    console.error('[Media] Upload error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2326,12 +2326,12 @@ ipcMain.handle('media:delete', async (_, filePath: string) => {
     
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      safeLog.log('[Media] Deleted:', filePath);
+      console.log('[Media] Deleted:', filePath);
     }
     
     return { success: true };
   } catch (error: any) {
-    safeLog.error('[Media] Delete error:', error);
+    console.error('[Media] Delete error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2350,14 +2350,14 @@ ipcMain.handle('media:cleanup', async () => {
       if (stats.mtimeMs < sevenDaysAgo) {
         fs.unlinkSync(filePath);
         deletedCount++;
-        safeLog.log('[Media] Cleaned up old file:', file);
+        console.log('[Media] Cleaned up old file:', file);
       }
     }
     
-    safeLog.log('[Media] Cleanup complete:', deletedCount, 'files deleted');
+    console.log('[Media] Cleanup complete:', deletedCount, 'files deleted');
     return { success: true, deletedCount };
   } catch (error: any) {
-    safeLog.error('[Media] Cleanup error:', error);
+    console.error('[Media] Cleanup error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2509,7 +2509,7 @@ ipcMain.handle('search:local', async (_, query: string) => {
     
     exec(cmd, { timeout: 15000 }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Search] Local search error:', error);
+        console.error('[Search] Local search error:', error);
         resolve({ success: false, results: [] });
         return;
       }
@@ -2598,7 +2598,7 @@ ipcMain.handle('settings:save', async (_, settings: any) => {
     
     return { success: true };
   } catch (error: any) {
-    safeLog.error('[Settings] Save error:', error);
+    console.error('[Settings] Save error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -2614,10 +2614,10 @@ try {
 } catch {}
 
 ipcMain.handle('ai:generate-content', async (_, prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => {
-  safeLog.log('[AI] Generate content called:', { type, promptLength: prompt.length, hasKey: !!anthropicApiKey });
+  console.log('[AI] Generate content called:', { type, promptLength: prompt.length, hasKey: !!anthropicApiKey });
   
   if (!anthropicApiKey) {
-    safeLog.error('[AI] No Anthropic API key configured!');
+    console.error('[AI] No Anthropic API key configured!');
     return { success: false, error: 'No API key' };
   }
   
@@ -2673,14 +2673,14 @@ Return just the tweet text, nothing else.`;
 
     if (!response.ok) {
       const errText = await response.text();
-      safeLog.error('[AI] API error:', response.status, errText);
+      console.error('[AI] API error:', response.status, errText);
       return { success: false, error: `API error: ${response.status}` };
     }
 
     const data = await response.json();
     const content = data.content?.[0]?.text || '';
     
-    safeLog.log('[AI] Response length:', content.length);
+    console.log('[AI] Response length:', content.length);
 
     if (type === 'cleanup') {
       // Return cleaned text directly
@@ -2704,14 +2704,14 @@ Return just the tweet text, nothing else.`;
           return { success: true, ideas };
         }
       } catch (e) {
-        safeLog.error('[AI] Parse error:', e);
+        console.error('[AI] Parse error:', e);
         return { success: true, ideas: [{ idea: content.trim(), hook: '' }] };
       }
     } else {
       return { success: true, draft: content.trim() };
     }
   } catch (e: any) {
-    safeLog.error('[AI] Error:', e.message);
+    console.error('[AI] Error:', e.message);
     return { success: false, error: e.message };
   }
 });
@@ -2723,25 +2723,25 @@ const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH ||
 // Startup test: verify bird CLI is available
 exec(`${BIRD_PATH} --version`, { timeout: 5000, env: execEnv }, (error, stdout, stderr) => {
   if (error) {
-    safeLog.error('[Twitter] STARTUP TEST FAILED: bird CLI not available!', error.message);
-    safeLog.error('[Twitter] stderr:', stderr);
+    console.error('[Twitter] STARTUP TEST FAILED: bird CLI not available!', error.message);
+    console.error('[Twitter] stderr:', stderr);
   } else {
-    safeLog.log('[Twitter] STARTUP TEST OK: bird version:', stdout.trim());
+    console.log('[Twitter] STARTUP TEST OK: bird version:', stdout.trim());
   }
 });
 
 ipcMain.handle('twitter:mentions', async () => {
-  safeLog.log('[Twitter] Mentions handler called');
+  console.log('[Twitter] Mentions handler called');
   
   return new Promise((resolve) => {
     try {
       // Use JSON output from bird with full path and extended PATH
       exec(`${BIRD_PATH} mentions --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
-        safeLog.log('[Twitter] exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
+        console.log('[Twitter] exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
         
         if (error) {
-          safeLog.error('[Twitter] Mentions error:', error.message);
-          safeLog.error('[Twitter] stderr:', stderr);
+          console.error('[Twitter] Mentions error:', error.message);
+          console.error('[Twitter] stderr:', stderr);
           // Return error immediately instead of fallback to avoid double-exec issues
           resolve({ success: false, mentions: [], error: error.message, stderr });
           return;
@@ -2749,49 +2749,49 @@ ipcMain.handle('twitter:mentions', async () => {
         
         try {
           const mentions = JSON.parse(stdout || '[]');
-          safeLog.log('[Twitter] Parsed', Array.isArray(mentions) ? mentions.length : 0, 'mentions');
+          console.log('[Twitter] Parsed', Array.isArray(mentions) ? mentions.length : 0, 'mentions');
           resolve({ success: true, mentions: Array.isArray(mentions) ? mentions : [] });
         } catch (e: any) {
-          safeLog.error('[Twitter] JSON parse error:', e.message);
-          safeLog.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
+          console.error('[Twitter] JSON parse error:', e.message);
+          console.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
           resolve({ success: true, mentions: [], raw: stdout || '', parseError: e.message });
         }
       });
     } catch (e: any) {
-      safeLog.error('[Twitter] Handler exception:', e);
+      console.error('[Twitter] Handler exception:', e);
       resolve({ success: false, mentions: [], error: e.message });
     }
   });
 });
 
 ipcMain.handle('twitter:home', async (_, limit?: number) => {
-  safeLog.log('[Twitter] Home handler called, limit:', limit);
+  console.log('[Twitter] Home handler called, limit:', limit);
   const countArg = limit ? `--count ${limit}` : '--count 20';
   
   return new Promise((resolve) => {
     try {
       exec(`${BIRD_PATH} home ${countArg} --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
-        safeLog.log('[Twitter] Home exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
+        console.log('[Twitter] Home exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
         
         if (error) {
-          safeLog.error('[Twitter] Home error:', error.message);
-          safeLog.error('[Twitter] stderr:', stderr);
+          console.error('[Twitter] Home error:', error.message);
+          console.error('[Twitter] stderr:', stderr);
           resolve({ success: false, tweets: [], error: error.message, stderr });
           return;
         }
         
         try {
           const tweets = JSON.parse(stdout || '[]');
-          safeLog.log('[Twitter] Parsed', Array.isArray(tweets) ? tweets.length : 0, 'home tweets');
+          console.log('[Twitter] Parsed', Array.isArray(tweets) ? tweets.length : 0, 'home tweets');
           resolve({ success: true, tweets: Array.isArray(tweets) ? tweets : [] });
         } catch (e: any) {
-          safeLog.error('[Twitter] Home JSON parse error:', e.message);
-          safeLog.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
+          console.error('[Twitter] Home JSON parse error:', e.message);
+          console.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
           resolve({ success: true, tweets: [], raw: stdout || '', parseError: e.message });
         }
       });
     } catch (e: any) {
-      safeLog.error('[Twitter] Home handler exception:', e);
+      console.error('[Twitter] Home handler exception:', e);
       resolve({ success: false, tweets: [], error: e.message });
     }
   });
@@ -2805,7 +2805,7 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
       if (error) {
-        safeLog.error('[Twitter] Queue error:', error);
+        console.error('[Twitter] Queue error:', error);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -2826,8 +2826,8 @@ const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
     const fullPath = `/opt/homebrew/bin:/usr/bin:/bin:/Users/worker/.local/bin:${process.env.PATH || ''}`;
     exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
-        if (stderr) safeLog.error(`[Messages] stderr: ${stderr}`);
+        console.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
+        if (stderr) console.error(`[Messages] stderr: ${stderr}`);
         resolve('');
       } else {
         resolve(stdout);
@@ -2845,7 +2845,7 @@ const getCommsCacheAge = async (): Promise<number> => {
       return Date.now() - lastFetch;
     }
   } catch (e) {
-    safeLog.error('[Messages] Cache age check error:', e);
+    console.error('[Messages] Cache age check error:', e);
   }
   return Infinity;
 };
@@ -2870,7 +2870,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
       }));
     }
   } catch (e) {
-    safeLog.error('[Messages] Cache read error:', e);
+    console.error('[Messages] Cache read error:', e);
   }
   return null;
 };
@@ -2894,25 +2894,25 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
     fs.writeFileSync(tmpFile, JSON.stringify(cacheData));
     await runMsgCmd(`${FROGGO_DB_PATH} comms-bulk --file "${tmpFile}"`, 5000);
     fs.unlinkSync(tmpFile);
-    safeLog.log(`[Messages] Cached ${messages.length} messages to froggo-db`);
+    console.log(`[Messages] Cached ${messages.length} messages to froggo-db`);
   } catch (e) {
-    safeLog.error('[Messages] Cache write error:', e);
+    console.error('[Messages] Cache write error:', e);
   }
 };
 
 ipcMain.handle('messages:recent', async (_, limit?: number) => {
-  safeLog.log('[Messages] Handler called, limit:', limit);
+  console.log('[Messages] Handler called, limit:', limit);
   const lim = limit || 10;
   
   // Check cache freshness
   const cacheAge = await getCommsCacheAge();
-  safeLog.log(`[Messages] Cache age: ${Math.round(cacheAge / 1000)}s`);
+  console.log(`[Messages] Cache age: ${Math.round(cacheAge / 1000)}s`);
   
   // If cache is fresh (< TTL), return cached data
   if (cacheAge < COMMS_CACHE_TTL_MS) {
     const cached = await getCommsFromCache(lim);
     if (cached && cached.length > 0) {
-      safeLog.log(`[Messages] Returning ${cached.length} messages from cache`);
+      console.log(`[Messages] Returning ${cached.length} messages from cache`);
       return { success: true, chats: cached, fromCache: true, cacheAge: Math.round(cacheAge / 1000) };
     }
   }
@@ -2948,7 +2948,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
   
   try {
     // ===== WHATSAPP (direct DB query - wacli CLI has bugs) =====
-    safeLog.log('[Messages] Fetching WhatsApp messages from DB...');
+    console.log('[Messages] Fetching WhatsApp messages from DB...');
     const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
     // Get recent INCOMING messages from DM chats (not groups)
     const waQuery = `
@@ -2963,7 +2963,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
       LIMIT 10
     `;
     const waRaw = await runCmd(`sqlite3 "${waDbPath}" "${waQuery.replace(/\n/g, ' ')}" -json`, 10000);
-    safeLog.log('[Messages] WhatsApp DB result:', waRaw ? `${waRaw.length} chars` : 'EMPTY');
+    console.log('[Messages] WhatsApp DB result:', waRaw ? `${waRaw.length} chars` : 'EMPTY');
     if (waRaw && waRaw.length > 10) {
       try {
         const waMessages = JSON.parse(waRaw);
@@ -2989,12 +2989,12 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
           });
         }
       } catch (e) {
-        safeLog.error('[Messages] WhatsApp DB parse error:', e);
+        console.error('[Messages] WhatsApp DB parse error:', e);
       }
     }
     
     // ===== TELEGRAM (from cache - tgcli is slow) =====
-    safeLog.log('[Messages] Fetching Telegram from cache...');
+    console.log('[Messages] Fetching Telegram from cache...');
     const tgCachePath = path.join(os.homedir(), 'clawd', 'data', 'telegram-cache.json');
     try {
       if (fs.existsSync(tgCachePath)) {
@@ -3005,7 +3005,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
         const cacheAge = Date.now() - new Date(tgCache.lastUpdated).getTime();
         const isStale = cacheAge > 15 * 60 * 1000;
         
-        safeLog.log(`[Messages] Telegram cache: ${tgCache.chats?.length || 0} chats, age: ${Math.round(cacheAge / 60000)}min${isStale ? ' (STALE)' : ''}`);
+        console.log(`[Messages] Telegram cache: ${tgCache.chats?.length || 0} chats, age: ${Math.round(cacheAge / 60000)}min${isStale ? ' (STALE)' : ''}`);
         
         for (const chat of (tgCache.chats || [])) {
           if (!chat.lastMessage?.text || chat.lastMessage.text === '(no recent messages)') continue;
@@ -3029,14 +3029,14 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
           });
         }
       } else {
-        safeLog.log('[Messages] Telegram cache not found, run telegram-cache.js to populate');
+        console.log('[Messages] Telegram cache not found, run telegram-cache.js to populate');
       }
     } catch (e) {
-      safeLog.error('[Messages] Telegram cache read error:', e);
+      console.error('[Messages] Telegram cache read error:', e);
     }
     
     // ===== DISCORD DMs =====
-    safeLog.log('[Messages] Fetching Discord DMs...');
+    console.log('[Messages] Fetching Discord DMs...');
     const DISCORDCLI_PATH = '/Users/worker/.local/bin/discordcli';
     const discordDmsRaw = await runCmd(`${DISCORDCLI_PATH} dms`, 10000);
     if (discordDmsRaw && !discordDmsRaw.includes('Invalid token')) {
@@ -3074,7 +3074,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
     }
     
     // ===== EMAIL (via gog gmail) =====
-    safeLog.log('[Messages] Fetching emails...');
+    console.log('[Messages] Fetching emails...');
     const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
     for (const acct of emailAccounts) {
       const emailRaw = await runCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 5`, 15000);
@@ -3082,7 +3082,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
         try {
           const emailData = JSON.parse(emailRaw);
           const emails = emailData.threads || emailData || [];
-          safeLog.log(`[Messages] Email account ${acct}: ${emails.length} threads`);
+          console.log(`[Messages] Email account ${acct}: ${emails.length} threads`);
           for (const email of emails.slice(0, 3)) {
             allMessages.push({
               id: `email-${email.id || email.ID}`,
@@ -3095,7 +3095,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
             });
           }
         } catch (e) {
-          safeLog.error('[Messages] Email parse error:', e);
+          console.error('[Messages] Email parse error:', e);
         }
       }
     }
@@ -3113,16 +3113,16 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
     const result = allMessages.slice(0, lim);
     
     // Write to froggo-db cache (async, don't wait)
-    writeCommsToCache(result).catch(e => safeLog.error('[Messages] Cache write failed:', e));
+    writeCommsToCache(result).catch(e => console.error('[Messages] Cache write failed:', e));
     
     return { success: true, chats: result, fromCache: false };
   } catch (e: any) {
-    safeLog.error('[Messages] Error:', e);
+    console.error('[Messages] Error:', e);
     
     // On error, try to return stale cache if available
     const staleCache = await getCommsFromCache(lim);
     if (staleCache && staleCache.length > 0) {
-      safeLog.log('[Messages] Returning stale cache due to fetch error');
+      console.log('[Messages] Returning stale cache due to fetch error');
       return { success: true, chats: staleCache, fromCache: true, stale: true, error: e.message };
     }
     
@@ -3205,7 +3205,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
     
     return { success: true, messages };
   } catch (e: any) {
-    safeLog.error('[Messages:Context] Error:', e);
+    console.error('[Messages:Context] Error:', e);
     return { success: false, messages: [], error: e.message };
   }
 });
@@ -3242,10 +3242,10 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
         return { success: false, error: `Unknown platform: ${platform}` };
     }
     
-    safeLog.log(`[Messages:Send] Sent to ${platform}:${to}:`, result);
+    console.log(`[Messages:Send] Sent to ${platform}:${to}:`, result);
     return { success: true, result };
   } catch (e: any) {
-    safeLog.error('[Messages:Send] Error:', e);
+    console.error('[Messages:Send] Error:', e);
     return { success: false, error: e.message };
   }
 });
@@ -3258,7 +3258,7 @@ ipcMain.handle('email:unread', async (_, account?: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Email] Unread error:', error);
+        console.error('[Email] Unread error:', error);
         resolve({ success: false, emails: [], error: error.message });
         return;
       }
@@ -3279,7 +3279,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Email] Body error:', error);
+        console.error('[Email] Body error:', error);
         resolve({ success: false, body: '', error: error.message });
         return;
       }
@@ -3296,7 +3296,7 @@ ipcMain.handle('email:search', async (_, query: string, account?: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Email] Search error:', error);
+        console.error('[Email] Search error:', error);
         resolve({ success: false, emails: [], error: error.message });
         return;
       }
@@ -3319,7 +3319,7 @@ ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: 
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error) => {
       if (error) {
-        safeLog.error('[Email] Queue error:', error);
+        console.error('[Email] Queue error:', error);
         resolve({ success: false, error: error.message });
         return;
       }
@@ -3339,10 +3339,10 @@ try {
   if (fs.existsSync(processedEmailsFile)) {
     const data = JSON.parse(fs.readFileSync(processedEmailsFile, 'utf-8'));
     data.forEach((id: string) => processedEmailIds.add(id));
-    safeLog.log(`[Email] Loaded ${processedEmailIds.size} processed email IDs`);
+    console.log(`[Email] Loaded ${processedEmailIds.size} processed email IDs`);
   }
 } catch (e) {
-  safeLog.error('[Email] Failed to load processed emails:', e);
+  console.error('[Email] Failed to load processed emails:', e);
 }
 
 function saveProcessedEmails() {
@@ -3350,7 +3350,7 @@ function saveProcessedEmails() {
     const data = Array.from(processedEmailIds).slice(-500); // Keep last 500
     fs.writeFileSync(processedEmailsFile, JSON.stringify(data, null, 2));
   } catch (e) {
-    safeLog.error('[Email] Failed to save processed emails:', e);
+    console.error('[Email] Failed to save processed emails:', e);
   }
 }
 
@@ -3466,7 +3466,7 @@ ipcMain.handle('email:checkImportant', async () => {
 let emailCheckInterval: NodeJS.Timeout | null = null;
 
 async function runImportantEmailCheck() {
-  safeLog.log('[Email] Checking for important emails...');
+  console.log('[Email] Checking for important emails...');
   const results: ImportantEmailResult[] = [];
   const newInboxItems: string[] = [];
   
@@ -3486,7 +3486,7 @@ async function runImportantEmailCheck() {
       });
       
       const emails = JSON.parse(output) || [];
-      safeLog.log(`[Email] Checking ${emails.length} emails from ${acct}`);
+      console.log(`[Email] Checking ${emails.length} emails from ${acct}`);
       
       for (const email of emails) {
         const id = email.id || email.ID || email.threadId;
@@ -3508,15 +3508,15 @@ async function runImportantEmailCheck() {
           const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('email', '${escapedTitle}', '${escapedContent}', '${important.priority} priority', 'pending', 'email', datetime('now'))"`;
           
           exec(insertCmd, { timeout: 5000 }, (err) => {
-            if (err) safeLog.error('[Email] Failed to create inbox item:', err);
-            else safeLog.log(`[Email] Created inbox item: ${title}`);
+            if (err) console.error('[Email] Failed to create inbox item:', err);
+            else console.log(`[Email] Created inbox item: ${title}`);
           });
           
           newInboxItems.push(title);
         }
       }
     } catch (e) {
-      safeLog.error(`[Email] Error checking ${acct}:`, e);
+      console.error(`[Email] Error checking ${acct}:`, e);
     }
   }
   
@@ -3528,7 +3528,7 @@ async function runImportantEmailCheck() {
     safeSend('inbox-updated', { newItems: newInboxItems.length });
   }
   
-  safeLog.log(`[Email] Found ${results.length} important emails, created ${newInboxItems.length} inbox items`);
+  console.log(`[Email] Found ${results.length} important emails, created ${newInboxItems.length} inbox items`);
   return { success: true, found: results.length, created: newInboxItems.length, items: results };
 }
 
@@ -3537,13 +3537,13 @@ function startEmailAutoCheck() {
   
   // Initial check after 30 seconds (let app settle)
   setTimeout(() => {
-    safeLog.log('[Email] Running initial important email check...');
+    console.log('[Email] Running initial important email check...');
     runImportantEmailCheck();
   }, 30000);
   
   // Then every 10 minutes
   emailCheckInterval = setInterval(() => {
-    safeLog.log('[Email] Running periodic important email check...');
+    console.log('[Email] Running periodic important email check...');
     runImportantEmailCheck();
   }, 10 * 60 * 1000);
 }
@@ -3562,7 +3562,7 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error) {
-        safeLog.error('[Calendar] Events error:', error);
+        console.error('[Calendar] Events error:', error);
         resolve({ success: false, events: [], error: error.message });
         return;
       }
@@ -3610,16 +3610,16 @@ ipcMain.handle('calendar:createEvent', async (_, params: any) => {
     if (rrule) cmd += ` --rrule "${rrule}"`;
   }
   
-  safeLog.log('[Calendar] Create event command:', cmd);
+  console.log('[Calendar] Create event command:', cmd);
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Calendar] Create event error:', error, stderr);
+        console.error('[Calendar] Create event error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
         return;
       }
-      safeLog.log('[Calendar] Create event result:', stdout);
+      console.log('[Calendar] Create event result:', stdout);
       resolve({ success: true, result: stdout });
     });
   });
@@ -3654,16 +3654,16 @@ ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
     cmd += ` --attendees "${attendeeEmails}"`;
   }
   
-  safeLog.log('[Calendar] Update event command:', cmd);
+  console.log('[Calendar] Update event command:', cmd);
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Calendar] Update event error:', error, stderr);
+        console.error('[Calendar] Update event error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
         return;
       }
-      safeLog.log('[Calendar] Update event result:', stdout);
+      console.log('[Calendar] Update event result:', stdout);
       resolve({ success: true, result: stdout });
     });
   });
@@ -3676,16 +3676,16 @@ ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
   
   const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar delete ${calendarId} "${eventId}"`;
   
-  safeLog.log('[Calendar] Delete event command:', cmd);
+  console.log('[Calendar] Delete event command:', cmd);
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Calendar] Delete event error:', error, stderr);
+        console.error('[Calendar] Delete event error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
         return;
       }
-      safeLog.log('[Calendar] Delete event result:', stdout);
+      console.log('[Calendar] Delete event result:', stdout);
       resolve({ success: true, result: stdout });
     });
   });
@@ -3698,7 +3698,7 @@ ipcMain.handle('calendar:listCalendars', async (_, account: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Calendar] List calendars error:', error, stderr);
+        console.error('[Calendar] List calendars error:', error, stderr);
         resolve({ success: false, calendars: [], error: error.message || stderr });
         return;
       }
@@ -3707,7 +3707,7 @@ ipcMain.handle('calendar:listCalendars', async (_, account: string) => {
         const calendars = data.calendars || data || [];
         resolve({ success: true, calendars, account });
       } catch (parseError) {
-        safeLog.error('[Calendar] Parse calendars error:', parseError);
+        console.error('[Calendar] Parse calendars error:', parseError);
         resolve({ success: false, calendars: [], error: 'Failed to parse calendar list' });
       }
     });
@@ -3747,7 +3747,7 @@ ipcMain.handle('calendar:listAccounts', async () => {
     const accounts = await Promise.all(accountPromises);
     return { success: true, accounts };
   } catch (error) {
-    safeLog.error('[Calendar] List accounts error:', error);
+    console.error('[Calendar] List accounts error:', error);
     return { success: false, accounts: [], error: String(error) };
   }
 });
@@ -3764,7 +3764,7 @@ ipcMain.handle('calendar:addAccount', async () => {
     
     exec(terminalCmd, { timeout: 5000 }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Calendar] Add account error:', error, stderr);
+        console.error('[Calendar] Add account error:', error, stderr);
         resolve({ success: false, error: 'Failed to launch authentication. Please run "gog auth" manually in Terminal.' });
         return;
       }
@@ -3786,11 +3786,11 @@ ipcMain.handle('calendar:removeAccount', async (_, account: string) => {
   return new Promise((resolve) => {
     fs.unlink(credPath, (error) => {
       if (error) {
-        safeLog.error('[Calendar] Remove account error:', error);
+        console.error('[Calendar] Remove account error:', error);
         resolve({ success: false, error: `Failed to remove credentials: ${error.message}` });
         return;
       }
-      safeLog.log('[Calendar] Removed credentials for:', account);
+      console.log('[Calendar] Removed credentials for:', account);
       resolve({ success: true });
     });
   });
@@ -3803,7 +3803,7 @@ ipcMain.handle('calendar:testConnection', async (_, account: string) => {
   return new Promise((resolve) => {
     exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Calendar] Test connection error:', error, stderr);
+        console.error('[Calendar] Test connection error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
         return;
       }
@@ -3826,12 +3826,12 @@ ipcMain.handle('calendar:aggregate', async (_, options?: {
   accounts?: string[];
 }) => {
   try {
-    safeLog.log('[Calendar:aggregate] Aggregating events with options:', options);
+    console.log('[Calendar:aggregate] Aggregating events with options:', options);
     const result = await calendarService.aggregateEvents(options || {});
-    safeLog.log(`[Calendar:aggregate] Success: ${result.events.length} events from ${Object.keys(result.sources.google).length} sources`);
+    console.log(`[Calendar:aggregate] Success: ${result.events.length} events from ${Object.keys(result.sources.google).length} sources`);
     return { success: true, ...result };
   } catch (error: any) {
-    safeLog.error('[Calendar:aggregate] Error:', error);
+    console.error('[Calendar:aggregate] Error:', error);
     return { success: false, error: error.message, events: [], sources: { google: {}, missionControl: 0 }, errors: [] };
   }
 });
@@ -3839,10 +3839,10 @@ ipcMain.handle('calendar:aggregate', async (_, options?: {
 ipcMain.handle('calendar:clearCache', async (_, source?: 'google' | 'mission-control' | 'all') => {
   try {
     calendarService.clearCache(source);
-    safeLog.log(`[Calendar:clearCache] Cleared cache for: ${source || 'all'}`);
+    console.log(`[Calendar:clearCache] Cleared cache for: ${source || 'all'}`);
     return { success: true };
   } catch (error: any) {
-    safeLog.error('[Calendar:clearCache] Error:', error);
+    console.error('[Calendar:clearCache] Error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -3850,10 +3850,10 @@ ipcMain.handle('calendar:clearCache', async (_, source?: 'google' | 'mission-con
 ipcMain.handle('calendar:cacheStats', async () => {
   try {
     const stats = calendarService.getCacheStats();
-    safeLog.log('[Calendar:cacheStats] Stats:', stats);
+    console.log('[Calendar:cacheStats] Stats:', stats);
     return { success: true, stats };
   } catch (error: any) {
-    safeLog.error('[Calendar:cacheStats] Error:', error);
+    console.error('[Calendar:cacheStats] Error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -3865,7 +3865,7 @@ ipcMain.handle('sessions:list', async () => {
     const data = await response.json();
     return { success: true, sessions: data.sessions || [] };
   } catch (error) {
-    safeLog.error('[Sessions] List error:', error);
+    console.error('[Sessions] List error:', error);
     return { success: false, sessions: [] };
   }
 });
@@ -3877,14 +3877,14 @@ ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number)
     const data = await response.json();
     return { success: true, messages: data.messages || [] };
   } catch (error) {
-    safeLog.error('[Sessions] History error:', error);
+    console.error('[Sessions] History error:', error);
     return { success: false, messages: [] };
   }
 });
 
 ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) => {
   try {
-    safeLog.log(`[Sessions] Sending to ${sessionKey}:`, message.slice(0, 100));
+    console.log(`[Sessions] Sending to ${sessionKey}:`, message.slice(0, 100));
     const response = await fetch('http://localhost:18789/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3897,7 +3897,7 @@ ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) =
     const data = await response.json();
     return { success: true, data };
   } catch (error) {
-    safeLog.error('[Sessions] Send error:', error);
+    console.error('[Sessions] Send error:', error);
     return { success: false, error: String(error) };
   }
 });
@@ -3919,7 +3919,7 @@ ipcMain.handle('exec:run', async (_, command: string) => {
     });
     return { success: true, stdout: stdout || '', stderr: stderr || '' };
   } catch (error: any) {
-    safeLog.error('[Exec] Run error:', error.message);
+    console.error('[Exec] Run error:', error.message);
     return { success: false, stdout: error.stdout || '', stderr: error.stderr || error.message };
   }
 });
@@ -3962,11 +3962,11 @@ function startQueueWatcher() {
         }
       }
     } catch (error) {
-      safeLog.error('Error watching queue:', error);
+      console.error('Error watching queue:', error);
     }
   });
   
-  safeLog.log('Approval queue watcher started:', APPROVAL_QUEUE_PATH);
+  console.log('Approval queue watcher started:', APPROVAL_QUEUE_PATH);
 }
 
 // Start watcher after window is created
@@ -3995,7 +3995,7 @@ ipcMain.handle('agents:getMetrics', async () => {
         inProgressTasks: stats.total - stats.completed,
       };
     } catch (e) {
-      safeLog.error(`Failed to get metrics for ${agentId}:`, e);
+      console.error(`Failed to get metrics for ${agentId}:`, e);
       metrics[agentId] = { successRate: 0, avgTime: 'N/A', totalTasks: 0, completedTasks: 0, inProgressTasks: 0 };
     }
   }
@@ -4080,7 +4080,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       agentRules,
     };
   } catch (error: any) {
-    safeLog.error(`Failed to get details for ${agentId}:`, error);
+    console.error(`Failed to get details for ${agentId}:`, error);
     return {
       successRate: 0,
       avgTime: 'N/A',
@@ -4249,7 +4249,7 @@ ipcMain.handle('security:listKeys', async () => {
     const keys = JSON.parse(result || '[]');
     return { success: true, keys };
   } catch (error: any) {
-    safeLog.error('[Security] List keys error:', error);
+    console.error('[Security] List keys error:', error);
     return { success: false, keys: [], error: error.message };
   }
 });
@@ -4263,7 +4263,7 @@ ipcMain.handle('security:addKey', async (_, key: { name: string; service: string
     execSync(cmd, { stdio: 'pipe' });
     return { success: true, id };
   } catch (error: any) {
-    safeLog.error('[Security] Add key error:', error);
+    console.error('[Security] Add key error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -4275,7 +4275,7 @@ ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
     execSync(cmd, { stdio: 'pipe' });
     return { success: true };
   } catch (error: any) {
-    safeLog.error('[Security] Delete key error:', error);
+    console.error('[Security] Delete key error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -4288,7 +4288,7 @@ ipcMain.handle('security:listAuditLogs', async () => {
     const logs = JSON.parse(result || '[]');
     return { success: true, logs };
   } catch (error: any) {
-    safeLog.error('[Security] List audit logs error:', error);
+    console.error('[Security] List audit logs error:', error);
     return { success: false, logs: [], error: error.message };
   }
 });
@@ -4302,7 +4302,7 @@ ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { st
     execSync(cmd, { stdio: 'pipe' });
     return { success: true };
   } catch (error: any) {
-    safeLog.error('[Security] Update audit log error:', error);
+    console.error('[Security] Update audit log error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -4315,7 +4315,7 @@ ipcMain.handle('security:listAlerts', async () => {
     const alerts = JSON.parse(result || '[]');
     return { success: true, alerts };
   } catch (error: any) {
-    safeLog.error('[Security] List alerts error:', error);
+    console.error('[Security] List alerts error:', error);
     return { success: false, alerts: [], error: error.message };
   }
 });
@@ -4327,7 +4327,7 @@ ipcMain.handle('security:dismissAlert', async (_, alertId: string) => {
     execSync(cmd, { stdio: 'pipe' });
     return { success: true };
   } catch (error: any) {
-    safeLog.error('[Security] Dismiss alert error:', error);
+    console.error('[Security] Dismiss alert error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -4335,7 +4335,7 @@ ipcMain.handle('security:dismissAlert', async (_, alertId: string) => {
 // Run AI security audit
 ipcMain.handle('security:runAudit', async () => {
   try {
-    safeLog.log('[Security] Running AI security audit...');
+    console.log('[Security] Running AI security audit...');
     
     // Call security audit script
     const scriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'security-audit.sh');
@@ -4369,7 +4369,7 @@ ipcMain.handle('security:runAudit', async () => {
       summary: output.summary || 'Audit complete'
     };
   } catch (error: any) {
-    safeLog.error('[Security] Run audit error:', error);
+    console.error('[Security] Run audit error:', error);
     return { 
       success: false, 
       error: error.message,

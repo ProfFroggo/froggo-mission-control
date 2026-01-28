@@ -77,7 +77,7 @@ const defaultTemplates: Template[] = [
   },
 ];
 
-export default function TemplatesPanel() {
+export default function LibraryTemplatesTab() {
   const [templates, setTemplates] = useState<Template[]>(defaultTemplates);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -157,20 +157,12 @@ export default function TemplatesPanel() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
+      {/* Toolbar */}
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-500/20 rounded-xl">
-              <FileText size={24} className="text-orange-400" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold">Templates</h1>
-              <p className="text-sm text-clawd-text-dim">
-                Reusable content templates
-              </p>
-            </div>
-          </div>
+          <p className="text-sm text-clawd-text-dim">
+            Reusable content templates
+          </p>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90"
@@ -336,7 +328,7 @@ export default function TemplatesPanel() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 modal-backdrop backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="glass-modal rounded-2xl w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-4">New Template</h2>
             <div className="space-y-4">

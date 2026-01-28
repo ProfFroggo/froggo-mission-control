@@ -81,7 +81,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
   }, {} as Record<string, any[]>);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2">
@@ -191,7 +191,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2">
@@ -293,7 +293,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2">
@@ -399,7 +399,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2">

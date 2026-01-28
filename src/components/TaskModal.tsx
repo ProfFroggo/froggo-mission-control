@@ -329,7 +329,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
       <div
         className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
@@ -637,21 +637,23 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     <span className="text-base">👤</span>
                     <span className="truncate">None</span>
                   </button>
-                  {agents.map(agent => (
-                    <button
-                      key={agent.id}
-                      type="button"
-                      onClick={() => setAssignedTo(agent.id)}
-                      className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
-                        assignedTo === agent.id
-                          ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
-                          : 'border-clawd-border hover:border-clawd-accent/50'
-                      }`}
-                    >
-                      <span className="text-base">{agent.avatar || '🤖'}</span>
-                      <span className="truncate">{agent.name}</span>
-                    </button>
-                  ))}
+                  {agents
+                    .filter(agent => !['main', 'froggo'].includes(agent.id))
+                    .map(agent => (
+                      <button
+                        key={agent.id}
+                        type="button"
+                        onClick={() => setAssignedTo(agent.id)}
+                        className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
+                          assignedTo === agent.id
+                            ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
+                            : 'border-clawd-border hover:border-clawd-accent/50'
+                        }`}
+                      >
+                        <span className="text-base">{agent.avatar || '🤖'}</span>
+                        <span className="truncate">{agent.name}</span>
+                      </button>
+                    ))}
                 </div>
               </div>
 

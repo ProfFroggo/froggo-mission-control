@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, TrendingUp, Award, FileText, Target, GitCompare, BarChart3 } from 'lucide-react';
 import { useStore, Agent, GatewaySession } from '../store/store';
 import { gateway } from '../lib/gateway';
+import WorkerModal from './WorkerModal';
+import AgentDetailModal from './AgentDetailModal';
+import AgentCompareModal from './AgentCompareModal';
+import AgentChatModal from './AgentChatModal';
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, createWorkerAgent, updateAgentStatus, addActivity, gatewaySessions, loadGatewaySessions } = useStore();
+  const { agents, tasks, spawnAgentForTask, updateAgentStatus, addActivity, gatewaySessions, loadGatewaySessions } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newWorkerName, setNewWorkerName] = useState('');
-  const [newWorkerTask, setNewWorkerTask] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  const [compareAgents, setCompareAgents] = useState<string[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const [chatAgent, setChatAgent] = useState<string | null>(null);
+  const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
+  const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Poll gateway sessions every 5 seconds
   useEffect(() => {
@@ -17,8 +25,21 @@ export default function AgentPanel() {
     return () => clearInterval(interval);
   }, [loadGatewaySessions]);
 
+  // Load agent metrics
+  useEffect(() => {
+    loadAgentMetrics();
+  }, []);
+
+  const loadAgentMetrics = async () => {
+    try {
+      const data = await (window as any).clawdbot.agents.getMetrics();
+      setAgentMetrics(data);
+    } catch (e) {
+      console.error('Failed to load agent metrics:', e);
+    }
+  };
+
   // Get real sub-agents from gateway (key contains 'subagent')
-  // Note: When labels are set on spawn, they'll show here too
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
@@ -41,6 +62,11 @@ export default function AgentPanel() {
     return tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
   };
 
+  // Get completed tasks count
+  const getCompletedTasksCount = (agentId: string) => {
+    return tasks.filter(t => t.assignedTo === agentId && t.status === 'done').length;
+  };
+
   // Send message to agent
   const messageAgent = async (agent: Agent, message: string) => {
     if (!agent.sessionKey) return;
@@ -56,20 +82,23 @@ export default function AgentPanel() {
     }
   };
 
-  // Create new worker
-  const handleCreateWorker = async () => {
-    if (!newWorkerName.trim() || !newWorkerTask.trim()) return;
-    
-    setCreating(true);
-    try {
-      await createWorkerAgent(newWorkerName, newWorkerTask);
-      setShowCreateModal(false);
-      setNewWorkerName('');
-      setNewWorkerTask('');
-    } catch (e) {
-      console.error('Failed to create worker:', e);
-    } finally {
-      setCreating(false);
+  // Toggle agent expansion
+  const toggleExpanded = (agentId: string) => {
+    const newExpanded = new Set(expandedAgents);
+    if (newExpanded.has(agentId)) {
+      newExpanded.delete(agentId);
+    } else {
+      newExpanded.add(agentId);
+    }
+    setExpandedAgents(newExpanded);
+  };
+
+  // Toggle compare selection
+  const toggleCompare = (agentId: string) => {
+    if (compareAgents.includes(agentId)) {
+      setCompareAgents(compareAgents.filter(id => id !== agentId));
+    } else if (compareAgents.length < 3) {
+      setCompareAgents([...compareAgents, agentId]);
     }
   };
 
@@ -79,18 +108,39 @@ export default function AgentPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold mb-1 flex items-center gap-2">
-              <Bot size={24} /> Agents
+              <Bot size={24} /> Agent Management
             </h1>
             <p className="text-clawd-text-dim">
               {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running • {realSubagents.length} total sessions
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {compareAgents.length >= 2 && (
+              <button
+                onClick={() => setShowCompare(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl hover:bg-purple-500/30 transition-colors"
+              >
+                <GitCompare size={16} />
+                Compare ({compareAgents.length})
+              </button>
+            )}
+            <button
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-xl transition-colors ${
+                showAnalytics 
+                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' 
+                  : 'bg-clawd-surface border-clawd-border hover:bg-clawd-border'
+              }`}
+              title="Analytics"
+            >
+              <BarChart3 size={16} />
+              Analytics
+            </button>
             <button
               onClick={loadGatewaySessions}
               className="p-2 bg-clawd-surface border border-clawd-border rounded-lg hover:bg-clawd-border transition-colors"
@@ -108,19 +158,57 @@ export default function AgentPanel() {
           </div>
         </div>
 
+        {/* Analytics Panel */}
+        {showAnalytics && (
+          <div className="mb-6 bg-clawd-surface rounded-xl border border-clawd-border p-6 shadow-card">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <BarChart3 size={20} />
+              Performance Analytics
+            </h2>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-clawd-bg rounded-lg p-4">
+                <div className="text-2xl font-bold text-green-400">{tasks.filter(t => t.status === 'done').length}</div>
+                <div className="text-sm text-clawd-text-dim">Tasks Completed</div>
+              </div>
+              <div className="bg-clawd-bg rounded-lg p-4">
+                <div className="text-2xl font-bold text-blue-400">{tasks.filter(t => t.status === 'in-progress').length}</div>
+                <div className="text-sm text-clawd-text-dim">In Progress</div>
+              </div>
+              <div className="bg-clawd-bg rounded-lg p-4">
+                <div className="text-2xl font-bold text-yellow-400">{activeSubagents.length}</div>
+                <div className="text-sm text-clawd-text-dim">Active Sub-Agents</div>
+              </div>
+              <div className="bg-clawd-bg rounded-lg p-4">
+                <div className="text-2xl font-bold text-purple-400">{Object.keys(agentMetrics).length}</div>
+                <div className="text-sm text-clawd-text-dim">Tracked Skills</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Agents */}
         <div className="mb-8">
-          <h2 className="text-sm font-medium text-clawd-text-dim uppercase tracking-wider mb-3">
-            Core Agents
+          <h2 className="text-sm font-medium text-clawd-text-dim uppercase tracking-wider mb-3 flex items-center justify-between">
+            <span>Core Agents</span>
+            {compareAgents.length > 0 && (
+              <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full">
+                {compareAgents.length} selected for comparison
+              </span>
+            )}
           </h2>
           <div className="grid gap-4">
             {mainAgents.map((agent) => {
               const agentTasks = getAgentTasks(agent.id);
+              const completedTasks = getCompletedTasksCount(agent.id);
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
+              const isExpanded = expandedAgents.has(agent.id);
+              const metrics = agentMetrics[agent.id] || {};
+              const isCompareSelected = compareAgents.includes(agent.id);
               
               // Gradient accent colors per agent type
               const gradientColors: Record<string, string> = {
                 'froggo': 'from-green-500/10 via-transparent to-transparent',
+                'main': 'from-green-500/10 via-transparent to-transparent',
                 'coder': 'from-blue-500/10 via-transparent to-transparent',
                 'researcher': 'from-purple-500/10 via-transparent to-transparent',
                 'writer': 'from-pink-500/10 via-transparent to-transparent',
@@ -131,7 +219,9 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  className={`bg-clawd-surface rounded-xl border border-clawd-border p-4 shadow-card hover:shadow-card-hover transition-all bg-gradient-to-br ${gradient}`}
+                  className={`bg-clawd-surface rounded-xl border p-4 shadow-card hover:shadow-card-hover transition-all bg-gradient-to-br ${gradient} ${
+                    isCompareSelected ? 'border-purple-500/50 shadow-purple-500/20' : 'border-clawd-border'
+                  }`}
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
@@ -140,9 +230,29 @@ export default function AgentPanel() {
                     {/* Info */}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
+                        <button
+                          onClick={() => toggleExpanded(agent.id)}
+                          className="hover:bg-clawd-border rounded p-1 transition-colors"
+                        >
+                          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </button>
                         <h3 className="font-semibold text-lg">{agent.name}</h3>
                         <span className={`w-2 h-2 rounded-full ${statusColors[agent.status]}`} />
                         <span className="text-sm text-clawd-text-dim">{statusLabels[agent.status]}</span>
+                        
+                        {/* Quick Stats */}
+                        <div className="ml-auto flex items-center gap-3 text-sm">
+                          <div className="flex items-center gap-1 text-green-400">
+                            <CheckCircle size={14} />
+                            {completedTasks}
+                          </div>
+                          {metrics.successRate && (
+                            <div className="flex items-center gap-1 text-blue-400">
+                              <TrendingUp size={14} />
+                              {Math.round(metrics.successRate * 100)}%
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-clawd-text-dim mb-2">{agent.description}</p>
                       
@@ -157,7 +267,7 @@ export default function AgentPanel() {
 
                       {/* Current Task */}
                       {currentTask && (
-                        <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm">
+                        <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm mb-2">
                           <Zap size={14} className="text-yellow-500" />
                           <span className="font-medium">Working on:</span>
                           <span className="truncate">{currentTask.title}</span>
@@ -169,6 +279,93 @@ export default function AgentPanel() {
                         <div className="text-sm text-clawd-text-dim">
                           <Clock size={12} className="inline mr-1" />
                           {agentTasks.length} task{agentTasks.length > 1 ? 's' : ''} queued
+                        </div>
+                      )}
+
+                      {/* Expanded Details */}
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-clawd-border space-y-3">
+                          {/* Performance Metrics */}
+                          <div>
+                            <h4 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2 flex items-center gap-1">
+                              <Target size={12} />
+                              Performance
+                            </h4>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-clawd-bg rounded p-2">
+                                <div className="text-xs text-clawd-text-dim">Success Rate</div>
+                                <div className="text-lg font-semibold text-green-400">
+                                  {metrics.successRate ? Math.round(metrics.successRate * 100) : 'N/A'}%
+                                </div>
+                              </div>
+                              <div className="bg-clawd-bg rounded p-2">
+                                <div className="text-xs text-clawd-text-dim">Avg Time</div>
+                                <div className="text-lg font-semibold text-blue-400">
+                                  {metrics.avgTime || 'N/A'}
+                                </div>
+                              </div>
+                              <div className="bg-clawd-bg rounded p-2">
+                                <div className="text-xs text-clawd-text-dim">Tasks Done</div>
+                                <div className="text-lg font-semibold text-purple-400">
+                                  {completedTasks}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Skills */}
+                          <div>
+                            <h4 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2 flex items-center gap-1">
+                              <Award size={12} />
+                              Skills ({agent.capabilities?.length || 0})
+                            </h4>
+                            <div className="flex flex-wrap gap-1">
+                              {agent.capabilities?.map((skill, i) => (
+                                <button
+                                  key={i}
+                                  onClick={() => setSelectedAgent(agent.id)}
+                                  className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded hover:bg-blue-500/30 transition-colors"
+                                >
+                                  {skill}
+                                </button>
+                              ))}
+                              <button
+                                onClick={() => setSelectedAgent(agent.id)}
+                                className="px-2 py-1 text-xs bg-clawd-border text-clawd-text-dim rounded hover:bg-clawd-border/80 transition-colors"
+                              >
+                                + Add Skill
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Quick Actions */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setSelectedAgent(agent.id)}
+                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-clawd-border text-sm rounded-lg hover:bg-clawd-border/80 transition-colors"
+                            >
+                              <FileText size={14} />
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => setChatAgent(agent.id)}
+                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-sm rounded-lg hover:bg-blue-500/30 transition-colors"
+                            >
+                              <MessageSquare size={14} />
+                              Chat to Improve
+                            </button>
+                            <button
+                              onClick={() => toggleCompare(agent.id)}
+                              className={`flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                                isCompareSelected
+                                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                  : 'bg-clawd-border hover:bg-clawd-border/80'
+                              }`}
+                            >
+                              <GitCompare size={14} />
+                              Compare
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -191,15 +388,12 @@ export default function AgentPanel() {
                           <Square size={14} /> Stop
                         </button>
                       )}
-                      {agent.sessionKey && (
+                      {!isExpanded && (
                         <button
-                          onClick={() => {
-                            const msg = prompt('Message to agent:');
-                            if (msg) messageAgent(agent, msg);
-                          }}
+                          onClick={() => toggleExpanded(agent.id)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-clawd-border text-sm rounded-lg hover:bg-clawd-border/80"
                         >
-                          <MessageSquare size={14} /> Chat
+                          Details
                         </button>
                       )}
                     </div>
@@ -296,53 +490,31 @@ export default function AgentPanel() {
           </div>
         )}
 
-        {/* Create Worker Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/60" onClick={() => setShowCreateModal(false)} />
-            <div className="relative bg-clawd-surface rounded-2xl border border-clawd-border p-6 w-full max-w-md">
-              <h2 className="text-xl font-semibold mb-4">Create Worker Agent</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Worker Name</label>
-                  <input
-                    type="text"
-                    value={newWorkerName}
-                    onChange={(e) => setNewWorkerName(e.target.value)}
-                    placeholder="e.g., Data Processor"
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Task Description</label>
-                  <textarea
-                    value={newWorkerTask}
-                    onChange={(e) => setNewWorkerTask(e.target.value)}
-                    placeholder="Describe what this worker should do..."
-                    rows={4}
-                    className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
-                  />
-                </div>
-              </div>
+        {/* Modals */}
+        <WorkerModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+        
+        {selectedAgent && (
+          <AgentDetailModal
+            agentId={selectedAgent}
+            onClose={() => setSelectedAgent(null)}
+          />
+        )}
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={handleCreateWorker}
-                  disabled={!newWorkerName.trim() || !newWorkerTask.trim() || creating}
-                  className="flex-1 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim disabled:opacity-50"
-                >
-                  {creating ? 'Creating...' : 'Create & Start'}
-                </button>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-6 py-2 bg-clawd-border rounded-lg hover:bg-clawd-border/80"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+        {showCompare && compareAgents.length >= 2 && (
+          <AgentCompareModal
+            agentIds={compareAgents}
+            onClose={() => {
+              setShowCompare(false);
+              setCompareAgents([]);
+            }}
+          />
+        )}
+
+        {chatAgent && (
+          <AgentChatModal
+            agentId={chatAgent}
+            onClose={() => setChatAgent(null)}
+          />
         )}
       </div>
     </div>

@@ -403,7 +403,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="fixed inset-0 modal-backdrop backdrop-blur-sm z-50 flex items-center justify-center">
         <div className="animate-pulse text-clawd-accent text-xl">Loading your brief...</div>
       </div>
     );
@@ -412,7 +412,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
   if (!brief) {
     // Fallback if brief failed to load - show dismiss button
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4">
         <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Good morning, Kevin 👋</h1>
           <p className="text-clawd-text-dim mb-6">Couldn't load your brief data.</p>
@@ -431,7 +431,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4"
       onClick={onDismiss}
     >
       <div 
@@ -648,7 +648,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               </div>
               <div className="space-y-3">
                 {brief.mentions.map((mention) => (
-                  <div key={mention.id} className="p-3 bg-black/30 rounded-lg border border-clawd-border hover:border-blue-400/50 transition-colors">
+                  <div key={mention.id} className="p-3 bg-clawd-bg/30 rounded-lg border border-clawd-border hover:border-blue-400/50 transition-colors">
                     <div className="flex items-start gap-2 mb-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

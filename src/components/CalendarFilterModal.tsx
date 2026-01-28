@@ -171,7 +171,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
         className="bg-clawd-surface border border-clawd-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}

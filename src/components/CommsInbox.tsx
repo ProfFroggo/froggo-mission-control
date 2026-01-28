@@ -200,7 +200,7 @@ function MessageModal({ message, isOpen, onClose, onSendReply, onScheduleReply }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">

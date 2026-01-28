@@ -8,16 +8,15 @@ interface KeyboardShortcutsProps {
 
 const shortcuts = [
   { category: 'Navigation', items: [
-    { keys: ['⌘', '1'], action: 'Inbox' },
-    { keys: ['⌘', '2'], action: 'Dashboard' },
-    { keys: ['⌘', '3'], action: 'Chat' },
-    { keys: ['⌘', '4'], action: 'Sessions' },
+    { keys: ['⌘', '1'], action: 'Dashboard' },
+    { keys: ['⌘', '2'], action: 'Approvals' },
+    { keys: ['⌘', '3'], action: 'Inbox' },
+    { keys: ['⌘', '4'], action: 'Analytics' },
     { keys: ['⌘', '5'], action: 'Tasks (Kanban)' },
     { keys: ['⌘', '6'], action: 'Agents' },
     { keys: ['⌘', '7'], action: 'X' },
     { keys: ['⌘', '8'], action: 'Voice' },
-    { keys: ['⌘', '9'], action: 'Library' },
-    { keys: ['⌘', '0'], action: 'Schedule' },
+    { keys: ['⌘', '9'], action: 'Chat' },
   ]},
   { category: 'Actions', items: [
     { keys: ['⌘', 'K'], action: 'Command Palette' },
