@@ -527,6 +527,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       </div>
 
       {/* Tabs */}
+      {/* IMPORTANT: Planning tab must ALWAYS be visible, regardless of task status.
+          It serves as a historical record and should never be hidden when task is complete. */}
       <div className="flex border-b border-clawd-border">
         {(['subtasks', 'planning', 'activity', 'files', 'review'] as const).map((tab) => (
           <button
@@ -666,7 +668,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           </div>
         )}
 
-        {/* Planning Tab */}
+        {/* Planning Tab - ALWAYS VISIBLE regardless of task status (historical record) */}
         {activeTab === 'planning' && (
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud } from 'lucide-react';
 import { useStore } from '../store/store';
 
 // X logo as SVG component
@@ -9,7 +9,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts';
 
 interface SidebarProps {
   currentView: View;
@@ -26,6 +26,7 @@ const navItems = [
   { id: 'twitter' as View, icon: XIcon, label: 'X', shortcut: '⌘7' },
   { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘8' },
   { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘9' },
+  { id: 'accounts' as View, icon: Cloud, label: 'Accounts', shortcut: '⌘0' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },

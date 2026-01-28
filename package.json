@@ -19,6 +19,7 @@
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "sqlite3": "^5.1.7",
     "vosk-browser": "^0.0.8",
     "zustand": "^4.4.7"
   },
@@ -53,7 +54,9 @@
       {
         "from": "public/models",
         "to": "models",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {

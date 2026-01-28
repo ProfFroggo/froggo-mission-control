@@ -253,6 +253,19 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.invoke('calendar:clearCache', source),
     cacheStats: () => ipcRenderer.invoke('calendar:cacheStats'),
   },
+  // Connected Accounts (comprehensive account management)
+  accounts: {
+    list: () => ipcRenderer.invoke('accounts:list'),
+    add: (request: {
+      provider: string;
+      email: string;
+      dataTypes: string[];
+      authType: 'oauth' | 'app-password';
+      appPassword?: string;
+    }) => ipcRenderer.invoke('accounts:add', request),
+    test: (accountId: string) => ipcRenderer.invoke('accounts:test', accountId),
+    remove: (accountId: string) => ipcRenderer.invoke('accounts:remove', accountId),
+  },
   // Sessions management
   sessions: {
     list: () => ipcRenderer.invoke('sessions:list'),

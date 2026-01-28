@@ -30,9 +30,10 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
+import ConnectedAccountsPanel from './components/ConnectedAccountsPanel';
 import { useRef } from 'react';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -201,6 +202,10 @@ function App() {
             e.preventDefault();
             setCurrentView('chat');
             break;
+          case '0':
+            e.preventDefault();
+            setCurrentView('accounts');
+            break;
           case ',':
             e.preventDefault();
             setCurrentView('settings');
@@ -265,6 +270,7 @@ function App() {
         {currentView === 'codeagent' && <CodeAgentDashboard />}
         {currentView === 'context' && <ContextControlBoard />}
         {currentView === 'analytics' && <AnalyticsDashboard />}
+        {currentView === 'accounts' && <ConnectedAccountsPanel />}
       </main>
 
       {/* Command Palette */}

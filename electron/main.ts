@@ -5,6 +5,7 @@ import { exec, execSync } from 'child_process';
 import * as os from 'os';
 import * as http from 'http';
 import { calendarService } from './calendar-service';
+import { accountsService } from './accounts-service';
 
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
@@ -3818,6 +3819,60 @@ ipcMain.handle('calendar:testConnection', async (_, account: string) => {
   });
 });
 
+// ============== CONNECTED ACCOUNTS IPC HANDLERS ==============
+
+// List all connected accounts
+ipcMain.handle('accounts:list', async () => {
+  try {
+    const result = await accountsService.listAccounts();
+    return result;
+  } catch (error: any) {
+    safeLog.error('[Accounts] List error:', error);
+    return { success: false, accounts: [], error: error.message };
+  }
+});
+
+// Add new account
+ipcMain.handle('accounts:add', async (_, request: {
+  provider: string;
+  email: string;
+  dataTypes: string[];
+  authType: 'oauth' | 'app-password';
+  appPassword?: string;
+}) => {
+  try {
+    safeLog.log('[Accounts] Adding account:', request.email);
+    const result = await accountsService.addAccount(request as any);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[Accounts] Add error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Test account connection
+ipcMain.handle('accounts:test', async (_, accountId: string) => {
+  try {
+    const result = await accountsService.testAccount(accountId);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[Accounts] Test error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Remove account
+ipcMain.handle('accounts:remove', async (_, accountId: string) => {
+  try {
+    safeLog.log('[Accounts] Removing account:', accountId);
+    const result = await accountsService.removeAccount(accountId);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[Accounts] Remove error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ============== CALENDAR AGGREGATION IPC HANDLERS ==============
 ipcMain.handle('calendar:aggregate', async (_, options?: {
   days?: number;
@@ -3855,6 +3910,99 @@ ipcMain.handle('calendar:cacheStats', async () => {
   } catch (error: any) {
     safeLog.error('[Calendar:cacheStats] Error:', error);
     return { success: false, error: error.message };
+  }
+});
+
+// ============== CONNECTED ACCOUNTS IPC HANDLERS ==============
+import { connectedAccountsService } from './connected-accounts-service';
+
+ipcMain.handle('connectedAccounts:list', async () => {
+  try {
+    const accounts = await connectedAccountsService.listAccounts();
+    return { success: true, accounts };
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] List error:', error);
+    return { success: false, accounts: [], error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:get', async (_, accountId: string) => {
+  try {
+    const account = await connectedAccountsService.getAccount(accountId);
+    return { success: true, account };
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Get error:', error);
+    return { success: false, account: null, error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:getPermissions', async (_, accountId: string) => {
+  try {
+    const permissions = await connectedAccountsService.getAccountPermissions(accountId);
+    return { success: true, permissions };
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Get permissions error:', error);
+    return { success: false, permissions: [], error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:getAvailableTypes', async () => {
+  try {
+    const types = await connectedAccountsService.getAvailableAccountTypes();
+    return { success: true, types };
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Get available types error:', error);
+    return { success: false, types: [], error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:add', async (_, accountType: string, options?: any) => {
+  try {
+    const result = await connectedAccountsService.addAccount(accountType, options);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Add error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:remove', async (_, accountId: string) => {
+  try {
+    const result = await connectedAccountsService.removeAccount(accountId);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Remove error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:refresh', async (_, accountId: string) => {
+  try {
+    const result = await connectedAccountsService.refreshAccount(accountId);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Refresh error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:getSyncHistory', async (_, accountId: string, limit?: number) => {
+  try {
+    const history = await connectedAccountsService.getSyncHistory(accountId, limit);
+    return { success: true, history };
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Get sync history error:', error);
+    return { success: false, history: [], error: error.message };
+  }
+});
+
+ipcMain.handle('connectedAccounts:importGoogle', async () => {
+  try {
+    const result = await connectedAccountsService.importGoogleAccounts();
+    return { success: true, ...result };
+  } catch (error: any) {
+    safeLog.error('[ConnectedAccounts] Import Google error:', error);
+    return { success: false, imported: 0, errors: [error.message] };
   }
 });
 

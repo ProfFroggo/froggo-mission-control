@@ -1,0 +1,713 @@
+import { useState, useEffect } from 'react';
+import { 
+  Mail, Calendar, HardDrive, Users, Plus, RefreshCw, 
+  CheckCircle, XCircle, AlertTriangle, Trash2, X, ChevronRight,
+  Key, Clock, Shield, Database, Link as LinkIcon
+} from 'lucide-react';
+import { showToast } from './Toast';
+
+interface ConnectedAccount {
+  id: string;
+  accountType: 'google' | 'icloud' | 'microsoft' | 'outlook';
+  email: string;
+  displayName?: string;
+  authStatus: 'connected' | 'expired' | 'error' | 'revoked';
+  grantedScopes?: string[];
+  dataTypes: Array<'email' | 'calendar' | 'drive' | 'contacts' | 'tasks'>;
+  lastSyncTime?: number;
+  lastSyncStatus?: 'success' | 'error' | 'partial';
+  profilePictureUrl?: string;
+  skillName?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface AccountPermission {
+  id: number;
+  accountId: string;
+  permissionType: string;
+  permissionScope: string;
+  grantedAt: number;
+  lastUsedAt?: number;
+}
+
+interface AccountTypeInfo {
+  type: string;
+  name: string;
+  icon: string;
+  supportedDataTypes: string[];
+  requiresSkill: boolean;
+  skillName?: string;
+  available: boolean;
+}
+
+// Data type icon mapping
+const DATA_TYPE_ICONS: Record<string, any> = {
+  email: Mail,
+  calendar: Calendar,
+  drive: HardDrive,
+  contacts: Users,
+  tasks: CheckCircle,
+};
+
+// Data type color mapping
+const DATA_TYPE_COLORS: Record<string, string> = {
+  email: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  calendar: 'bg-green-500/20 text-green-400 border-green-500/30',
+  drive: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  contacts: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  tasks: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+};
+
+// Account type icon mapping
+const ACCOUNT_TYPE_ICONS: Record<string, string> = {
+  google: '📧',
+  icloud: '🍎',
+  microsoft: '📨',
+  outlook: '📨',
+};
+
+export default function ConnectedAccountsPanel() {
+  const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<AccountTypeInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<ConnectedAccount | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedAccountPermissions, setSelectedAccountPermissions] = useState<AccountPermission[]>([]);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [importingGoogle, setImportingGoogle] = useState(false);
+
+  useEffect(() => {
+    loadAccounts();
+    loadAvailableTypes();
+  }, []);
+
+  const loadAccounts = async () => {
+    setLoading(true);
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.list();
+      if (result?.success) {
+        setAccounts(result.accounts || []);
+      } else {
+        showToast('error', 'Failed to load accounts', result?.error || 'Unknown error');
+      }
+    } catch (err: any) {
+      showToast('error', 'Failed to load accounts', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadAvailableTypes = async () => {
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.getAvailableTypes();
+      if (result?.success) {
+        setAvailableTypes(result.types || []);
+      }
+    } catch (err: any) {
+      console.error('Failed to load available types:', err);
+    }
+  };
+
+  const handleAccountClick = async (account: ConnectedAccount) => {
+    setSelectedAccount(account);
+    
+    // Load permissions
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.getPermissions(account.id);
+      if (result?.success) {
+        setSelectedAccountPermissions(result.permissions || []);
+      }
+    } catch (err: any) {
+      console.error('Failed to load permissions:', err);
+    }
+    
+    setShowDetailModal(true);
+  };
+
+  const handleRefresh = async (accountId: string) => {
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.refresh(accountId);
+      if (result?.success) {
+        showToast('success', 'Account refreshed', 'Connection verified successfully');
+        loadAccounts();
+      } else {
+        showToast('error', 'Refresh failed', result?.error || 'Unknown error');
+      }
+    } catch (err: any) {
+      showToast('error', 'Refresh failed', err.message);
+    }
+  };
+
+  const handleRemove = async (accountId: string) => {
+    const account = accounts.find(a => a.id === accountId);
+    if (!account) return;
+
+    if (!confirm(`Remove account ${account.email}?\n\nThis will revoke access and delete stored credentials.`)) {
+      return;
+    }
+
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.remove(accountId);
+      if (result?.success) {
+        showToast('success', 'Account removed', `${account.email} has been removed`);
+        loadAccounts();
+        if (selectedAccount?.id === accountId) {
+          setShowDetailModal(false);
+        }
+      } else {
+        showToast('error', 'Failed to remove', result?.error || 'Unknown error');
+      }
+    } catch (err: any) {
+      showToast('error', 'Failed to remove', err.message);
+    }
+  };
+
+  const handleImportGoogle = async () => {
+    setImportingGoogle(true);
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.importGoogle();
+      if (result?.success) {
+        showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
+        if (result.errors && result.errors.length > 0) {
+          console.warn('Import errors:', result.errors);
+        }
+        loadAccounts();
+      } else {
+        showToast('error', 'Import failed', result?.error || 'Unknown error');
+      }
+    } catch (err: any) {
+      showToast('error', 'Import failed', err.message);
+    } finally {
+      setImportingGoogle(false);
+    }
+  };
+
+  const handleAddAccount = async () => {
+    if (!selectedType) {
+      showToast('warning', 'Select account type', 'Please select an account type to add');
+      return;
+    }
+
+    setAddingAccount(true);
+    try {
+      const result = await (window as any).clawdbot?.connectedAccounts?.add(selectedType, {
+        conversational: true
+      });
+      
+      if (result?.success) {
+        showToast('success', 'Account added', 'Account authenticated successfully');
+        if (result.steps && result.steps.length > 0) {
+          console.log('Setup steps:', result.steps);
+        }
+        loadAccounts();
+        setShowAddModal(false);
+        setSelectedType('');
+      } else {
+        showToast('error', 'Authentication failed', result?.error || 'Could not authenticate account');
+      }
+    } catch (err: any) {
+      showToast('error', 'Authentication failed', err.message);
+    } finally {
+      setAddingAccount(false);
+    }
+  };
+
+  const formatDate = (timestamp?: number) => {
+    if (!timestamp) return 'Never';
+    return new Date(timestamp).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const formatRelativeTime = (timestamp?: number) => {
+    if (!timestamp) return 'Never';
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
+
+  return (
+    <div className="h-full overflow-auto p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+            <LinkIcon size={24} /> Connected Accounts
+          </h1>
+          <p className="text-clawd-text-dim">
+            Manage your Google, iCloud, Microsoft, and other connected accounts
+          </p>
+        </div>
+
+        {/* Smart Selection Rules */}
+        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-2xl">🤖</span>
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-400 mb-1">Smart Account Selection</h3>
+              <p className="text-sm text-blue-300">
+                <strong>No default accounts!</strong> Froggo intelligently chooses which account to use based on context.
+                Every account is equal - selection is context-aware and intelligent.
+              </p>
+            </div>
+          </div>
+          
+          <details className="mt-3">
+            <summary className="text-sm font-medium text-blue-400 cursor-pointer hover:text-blue-300">
+              📋 View Selection Rules (7 Priority Levels)
+            </summary>
+            <div className="mt-3 space-y-2">
+              {[
+                { priority: 1, rule: 'Exact Address Match', description: 'Email received at kevin@carbium.io → Reply from kevin@carbium.io', example: 'Highest priority - ensures replies come from the right address' },
+                { priority: 2, rule: 'Reply-To Header', description: 'Uses reply-to address from original message', example: 'Respects email threading and conversation flow' },
+                { priority: 3, rule: 'Conversation Continuity', description: 'Continues thread with same account used previously', example: 'Keeps multi-message conversations consistent' },
+                { priority: 4, rule: 'Calendar Source', description: 'Invite on iCloud calendar → Uses iCloud account', example: 'Matches calendar events to their source' },
+                { priority: 5, rule: 'Domain Match', description: '@bitso.com email → kevin.macarthur@bitso.com', example: 'Uses company email for company communications' },
+                { priority: 6, rule: 'Capability Match', description: 'Uses accounts with required data type (email, calendar, etc)', example: 'Ensures account can handle the action' },
+                { priority: 7, rule: 'Context-Free', description: 'No context available - suggests adding more info', example: 'Last resort - indicates missing context' },
+              ].map((rule) => (
+                <div key={rule.priority} className="flex gap-3 p-2 bg-clawd-bg rounded">
+                  <div className="text-blue-400 font-bold text-sm w-6">{rule.priority}</div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{rule.rule}</div>
+                    <div className="text-xs text-clawd-text-dim">{rule.description}</div>
+                    <div className="text-xs text-blue-300 mt-1">Example: {rule.example}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </details>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-6 flex gap-3">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+          >
+            <Plus size={18} />
+            Add Account
+          </button>
+          
+          <button
+            onClick={handleImportGoogle}
+            disabled={importingGoogle}
+            className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors disabled:opacity-50"
+          >
+            {importingGoogle ? <RefreshCw size={18} className="animate-spin" /> : <Database size={18} />}
+            Import Google Accounts
+          </button>
+
+          <button
+            onClick={loadAccounts}
+            className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
+          >
+            <RefreshCw size={18} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Accounts List */}
+        {loading ? (
+          <div className="text-center py-12 text-clawd-text-dim">
+            <RefreshCw size={32} className="mx-auto mb-3 animate-spin" />
+            <p>Loading accounts...</p>
+          </div>
+        ) : accounts.length === 0 ? (
+          <div className="text-center py-12 bg-clawd-surface rounded-xl border border-clawd-border">
+            <LinkIcon size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-50" />
+            <h3 className="text-lg font-medium mb-2">No accounts connected</h3>
+            <p className="text-clawd-text-dim mb-4">
+              Add your first account to get started
+            </p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+            >
+              <Plus size={18} />
+              Add Account
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {accounts.map((account) => (
+              <div
+                key={account.id}
+                className="bg-clawd-surface rounded-xl border border-clawd-border p-4 hover:border-clawd-accent transition-colors cursor-pointer group"
+                onClick={() => handleAccountClick(account)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4 flex-1">
+                    {/* Account Icon */}
+                    <div className="text-3xl">
+                      {ACCOUNT_TYPE_ICONS[account.accountType] || '📧'}
+                    </div>
+
+                    {/* Account Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium">{account.email}</h3>
+                        {account.authStatus === 'connected' ? (
+                          <CheckCircle size={16} className="text-green-400" />
+                        ) : account.authStatus === 'expired' ? (
+                          <AlertTriangle size={16} className="text-yellow-400" />
+                        ) : (
+                          <XCircle size={16} className="text-red-400" />
+                        )}
+                      </div>
+
+                      {/* Data Types */}
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {account.dataTypes.map((type) => {
+                          const Icon = DATA_TYPE_ICONS[type];
+                          return (
+                            <span
+                              key={type}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type]}`}
+                            >
+                              <Icon size={12} />
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </span>
+                          );
+                        })}
+                      </div>
+
+                      {/* Meta Info */}
+                      <div className="text-xs text-clawd-text-dim">
+                        <span>Last sync: {formatRelativeTime(account.lastSyncTime)}</span>
+                        {account.skillName && (
+                          <span className="ml-3">
+                            Skill: <code className="text-clawd-accent">{account.skillName}</code>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRefresh(account.id);
+                        }}
+                        className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                        title="Refresh connection"
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemove(account.id);
+                        }}
+                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                        title="Remove account"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <ChevronRight size={20} className="text-clawd-text-dim" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Account Detail Modal */}
+      {showDetailModal && selectedAccount && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowDetailModal(false)}
+        >
+          <div 
+            className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="text-4xl">
+                  {ACCOUNT_TYPE_ICONS[selectedAccount.accountType] || '📧'}
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">{selectedAccount.email}</h2>
+                  <p className="text-sm text-clawd-text-dim">
+                    {selectedAccount.accountType.charAt(0).toUpperCase() + selectedAccount.accountType.slice(1)} Account
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Connection Status */}
+            <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield size={18} />
+                <h3 className="font-medium">Connection Status</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedAccount.authStatus === 'connected' ? (
+                  <>
+                    <CheckCircle size={16} className="text-green-400" />
+                    <span className="text-green-400">Connected</span>
+                  </>
+                ) : selectedAccount.authStatus === 'expired' ? (
+                  <>
+                    <AlertTriangle size={16} className="text-yellow-400" />
+                    <span className="text-yellow-400">Token Expired</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={16} className="text-red-400" />
+                    <span className="text-red-400">Connection Error</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Data Types Accessed */}
+            <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Database size={18} />
+                <h3 className="font-medium">Data Types Accessed</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedAccount.dataTypes.map((type) => {
+                  const Icon = DATA_TYPE_ICONS[type];
+                  return (
+                    <div
+                      key={type}
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type]}`}
+                    >
+                      <Icon size={16} />
+                      <span className="capitalize">{type}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Permissions Granted */}
+            {selectedAccount.grantedScopes && selectedAccount.grantedScopes.length > 0 && (
+              <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Key size={18} />
+                  <h3 className="font-medium">Permissions Granted</h3>
+                </div>
+                <div className="space-y-1">
+                  {selectedAccount.grantedScopes.map((scope, idx) => (
+                    <div key={idx} className="text-sm text-clawd-text-dim flex items-center gap-2">
+                      <CheckCircle size={12} className="text-green-400" />
+                      <code className="text-xs">{scope}</code>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Permissions */}
+            {selectedAccountPermissions.length > 0 && (
+              <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Key size={18} />
+                  <h3 className="font-medium">Detailed Permissions</h3>
+                </div>
+                <div className="space-y-2">
+                  {selectedAccountPermissions.map((perm) => (
+                    <div key={perm.id} className="text-sm">
+                      <div className="font-medium">{perm.permissionType}</div>
+                      <div className="text-xs text-clawd-text-dim">
+                        <code>{perm.permissionScope}</code>
+                      </div>
+                      {perm.lastUsedAt && (
+                        <div className="text-xs text-clawd-text-dim">
+                          Last used: {formatRelativeTime(perm.lastUsedAt)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sync Information */}
+            <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={18} />
+                <h3 className="font-medium">Sync Information</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-clawd-text-dim">Last Sync:</span>
+                  <span>{formatDate(selectedAccount.lastSyncTime)}</span>
+                </div>
+                {selectedAccount.lastSyncStatus && (
+                  <div className="flex justify-between">
+                    <span className="text-clawd-text-dim">Status:</span>
+                    <span className={
+                      selectedAccount.lastSyncStatus === 'success' ? 'text-green-400' :
+                      selectedAccount.lastSyncStatus === 'partial' ? 'text-yellow-400' :
+                      'text-red-400'
+                    }>
+                      {selectedAccount.lastSyncStatus.charAt(0).toUpperCase() + selectedAccount.lastSyncStatus.slice(1)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-clawd-text-dim">Account Created:</span>
+                  <span>{formatDate(selectedAccount.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  handleRefresh(selectedAccount.id);
+                  setShowDetailModal(false);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
+              >
+                <RefreshCw size={18} />
+                Refresh Connection
+              </button>
+              <button
+                onClick={() => {
+                  handleRemove(selectedAccount.id);
+                  setShowDetailModal(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors"
+              >
+                <Trash2 size={18} />
+                Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Account Modal */}
+      {showAddModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => !addingAccount && setShowAddModal(false)}
+        >
+          <div 
+            className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-2xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Add Connected Account</h2>
+              <button
+                onClick={() => !addingAccount && setShowAddModal(false)}
+                disabled={addingAccount}
+                className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Account Type Selection */}
+            <div className="mb-6">
+              <h3 className="font-medium mb-3">Select Account Type</h3>
+              <div className="space-y-2">
+                {availableTypes.map((type) => (
+                  <button
+                    key={type.type}
+                    onClick={() => setSelectedType(type.type)}
+                    disabled={!type.available}
+                    className={`w-full p-4 rounded-lg border transition-colors text-left ${
+                      selectedType === type.type
+                        ? 'border-clawd-accent bg-clawd-accent/10'
+                        : 'border-clawd-border hover:border-clawd-accent/50'
+                    } ${!type.available ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{type.icon}</span>
+                      <div className="flex-1">
+                        <div className="font-medium">{type.name}</div>
+                        <div className="text-sm text-clawd-text-dim">
+                          {type.supportedDataTypes.join(', ')}
+                        </div>
+                        {!type.available && type.requiresSkill && (
+                          <div className="text-xs text-red-400 mt-1">
+                            Requires '{type.skillName}' skill (not installed)
+                          </div>
+                        )}
+                      </div>
+                      {selectedType === type.type && (
+                        <CheckCircle size={20} className="text-clawd-accent" />
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Setup Instructions */}
+            {selectedType && (
+              <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
+                <h3 className="font-medium mb-2">Setup Instructions</h3>
+                <div className="text-sm text-clawd-text-dim space-y-2">
+                  <p>1. Click "Continue" to start the authentication process</p>
+                  <p>2. A browser window will open for OAuth authentication</p>
+                  <p>3. Sign in and grant the requested permissions</p>
+                  <p>4. Your account will be automatically configured</p>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAddModal(false)}
+                disabled={addingAccount}
+                className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text-dim rounded-lg hover:bg-clawd-border/80 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddAccount}
+                disabled={!selectedType || addingAccount}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+              >
+                {addingAccount ? (
+                  <>
+                    <RefreshCw size={18} className="animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} />
+                    Continue
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
