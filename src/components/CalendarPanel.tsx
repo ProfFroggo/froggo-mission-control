@@ -21,6 +21,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { showToast } from './Toast';
+import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -268,7 +269,11 @@ export default function CalendarPanel() {
         showToast('error', 'Failed', result?.error || 'Could not create event');
       }
     } catch (e: any) {
-      showToast('error', 'Error', e.message || 'Failed to create event');
+      const friendlyMessage = getUserFriendlyError(e, {
+        action: 'create the event',
+        resource: 'calendar event'
+      });
+      showToast('error', getErrorTitle(e), friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -315,7 +320,11 @@ export default function CalendarPanel() {
         showToast('error', 'Failed', result?.error || 'Could not update event');
       }
     } catch (e: any) {
-      showToast('error', 'Error', e.message || 'Failed to update event');
+      const friendlyMessage = getUserFriendlyError(e, {
+        action: 'update the event',
+        resource: 'calendar event'
+      });
+      showToast('error', getErrorTitle(e), friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -346,7 +355,11 @@ export default function CalendarPanel() {
         showToast('error', 'Failed', result?.error || 'Could not delete event');
       }
     } catch (e: any) {
-      showToast('error', 'Error', e.message || 'Failed to delete event');
+      const friendlyMessage = getUserFriendlyError(e, {
+        action: 'delete the event',
+        resource: 'calendar event'
+      });
+      showToast('error', getErrorTitle(e), friendlyMessage);
     } finally {
       setLoading(false);
     }

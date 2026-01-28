@@ -4,6 +4,7 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
+import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
 
 interface AttachedFile {
   id: string;
@@ -318,9 +319,13 @@ export default function ChatPanel() {
     const handleError = (data: any) => {
       console.error('[Chat] Error:', data);
       if (currentMsgIdRef.current) {
+        const friendlyError = getUserFriendlyError(data, {
+          action: 'send your message',
+          technical: data.message || data.error
+        });
         setMessages(prev => prev.map(m => 
           m.id === currentMsgIdRef.current 
-            ? { ...m, content: `Error: ${data.message || data.error || 'Something went wrong'}`, streaming: false } 
+            ? { ...m, content: friendlyError, streaming: false } 
             : m
         ));
         setLoading(false);
@@ -521,9 +526,13 @@ export default function ChatPanel() {
       }, 120000);
       
     } catch (e: any) {
+      const friendlyError = getUserFriendlyError(e, {
+        action: 'send your message',
+        resource: 'chat'
+      });
       setMessages(prev => prev.map(m => 
         m.id === assistantId 
-          ? { ...m, content: `Error: ${e.message}`, streaming: false } 
+          ? { ...m, content: friendlyError, streaming: false } 
           : m
       ));
       setLoading(false);

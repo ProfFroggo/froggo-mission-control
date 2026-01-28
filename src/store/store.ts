@@ -895,7 +895,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
                 title: item.title,
                 content: item.content,
                 status: item.status as 'pending' | 'approved' | 'rejected',
-                timestamp: new Date(item.created).getTime(),
+                createdAt: new Date(item.created).getTime(),
                 context: item.context,
               }));
               set({ approvals: approvalItems });
