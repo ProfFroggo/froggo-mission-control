@@ -7,7 +7,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
-import CalendarWidget from './CalendarWidget';
+// CalendarWidget removed - replaced by EpicCalendar in Schedule panel
 import EmailWidget from './EmailWidget';
 import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
 import { useStore } from '../store/store';
@@ -249,8 +249,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="grid grid-cols-3 gap-6 mb-6">
           {/* Left Column - Calendar (Wider) */}
           <div className="col-span-2 space-y-6">
-            {/* Calendar Widget - Expanded */}
-            <CalendarWidget expanded onOpenFullCalendar={() => onNavigate?.('schedule')} />
+            {/* Calendar moved to Schedule panel (Cmd+Shift+S) → Epic Calendar */}
 
             {/* Active Tasks - What's Being Worked On */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">

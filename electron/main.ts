@@ -1367,6 +1367,36 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
         return;
       }
       
+      // ADD TO APPROVAL QUEUE
+      try {
+        let queueData: { description: string; items: any[] } = { 
+          description: "Approval queue - Froggo adds items here, dashboard picks them up", 
+          items: [] 
+        };
+        if (fs.existsSync(APPROVAL_QUEUE_PATH)) {
+          queueData = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
+        }
+        
+        const approvalEntry = {
+          id: `approval-${id}`,
+          type: 'scheduled-post',
+          platform: item.type,
+          content: item.content,
+          scheduledFor: item.scheduledFor,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          scheduleId: id,
+          metadata: item.metadata || {}
+        };
+        
+        queueData.items.push(approvalEntry);
+        fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(queueData, null, 2));
+        console.log('[Schedule:add] Added to approval queue:', approvalEntry.id);
+      } catch (queueError) {
+        console.error('[Schedule:add] Failed to add to approval queue:', queueError);
+        // Non-fatal, continue with scheduling
+      }
+      
       // Create cron job to execute at scheduled time
       const cronTime = new Date(item.scheduledFor);
       const cronText = item.type === 'tweet' 
@@ -1465,7 +1495,8 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
             return;
           }
           
-          execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
+          // Create draft instead of sending directly (requires approval)
+          execCmd = `GOG_ACCOUNT="${account}" gog gmail drafts create --to "${recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
         }
         
         if (!execCmd) {

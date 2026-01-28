@@ -1,3 +1,10 @@
+/**
+ * @deprecated CalendarWidget has been replaced by EpicCalendar in Schedule panel.
+ * This file is kept for reference but is no longer used in Dashboard.
+ * See: src/components/EpicCalendar.tsx (full calendar implementation)
+ * Access via: Cmd+Shift+S → Schedule panel → Calendar tab
+ */
+
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, RefreshCw, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react';
 import { gateway } from '../lib/gateway';
