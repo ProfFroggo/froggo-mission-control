@@ -4,7 +4,6 @@ import { initApprovalQueue } from './lib/approvalQueue';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
-import FloatingToolbar from './components/FloatingToolbar';
 import LoadingPanel from './components/LoadingPanel';
 import PerformanceProfiler from './components/PerformanceProfiler';
 // Import protected panels with error boundaries
@@ -315,9 +314,6 @@ function App() {
           />
         </ErrorBoundary>
 
-        {/* Floating voice/phone toolbar */}
-        <FloatingToolbar onCallClick={handleCallClick} />
-        
         {/* Sidebar */}
         <ErrorBoundary panelName="Sidebar">
           <Sidebar 
@@ -431,6 +427,7 @@ function App() {
             onNewTask={() => setCurrentView('kanban')}
             onAddContact={() => setContactModalOpen(true)}
             onAddSkill={() => setSkillModalOpen(true)}
+            onCallClick={handleCallClick}
             onApproveAll={async () => {
               try {
                 const result = await (window as any).clawdbot?.inbox?.approveAll();

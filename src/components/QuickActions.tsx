@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { Plus, MessageSquare, CheckCircle, Search, Zap, Send, X, UserPlus, Brain, ChevronLeft, ChevronRight, GripVertical, RotateCcw } from 'lucide-react';
+import { Plus, MessageSquare, CheckCircle, Search, Zap, Send, X, UserPlus, Brain, ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
 import { showToast } from './Toast';
+import { useStore } from '../store/store';
 
 interface QuickActionsProps {
   onNewTask: () => void;
@@ -8,6 +9,7 @@ interface QuickActionsProps {
   onApproveAll: () => void;
   onAddContact?: () => void;
   onAddSkill?: () => void;
+  onCallClick?: () => void;
 }
 
 export interface QuickActionsRef {
@@ -58,7 +60,13 @@ function nearestSnapEdge(x: number, y: number): SnapEdge {
   return 'top-left';
 }
 
-const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll, onAddContact, onAddSkill }, ref) => {
+const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll, onAddContact, onAddSkill, onCallClick }, ref) => {
+  const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
+
+  const handleCallClick = () => {
+    toggleMeeting();
+    onCallClick?.();
+  };
   const [quickMessageOpen, setQuickMessageOpen] = useState(false);
   const [quickMessage, setQuickMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -272,6 +280,32 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask
             </button>
             <button onClick={onApproveAll} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Approve All Pending">
               <CheckCircle size={16} className="text-clawd-text-dim" />
+            </button>
+            <div className="w-px h-6 bg-clawd-border mx-0.5" />
+            {/* Voice controls */}
+            {isMeetingActive && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-400 animate-pulse">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                Live
+              </span>
+            )}
+            <button
+              onClick={toggleMuted}
+              className={`p-2.5 rounded-full transition-colors ${
+                isMuted ? 'text-red-400 hover:bg-red-500/10' : 'hover:bg-clawd-border'
+              }`}
+              title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
+            >
+              {isMuted ? <MicOff size={16} /> : <Mic size={16} className="text-clawd-text-dim" />}
+            </button>
+            <button
+              onClick={handleCallClick}
+              className={`p-2.5 rounded-full transition-colors ${
+                isMeetingActive ? 'bg-red-500 text-white hover:bg-red-600' : 'hover:bg-clawd-border'
+              }`}
+              title={isMeetingActive ? 'End meeting' : 'Start meeting'}
+            >
+              {isMeetingActive ? <PhoneOff size={16} /> : <Phone size={16} className="text-clawd-text-dim" />}
             </button>
             <div className="w-px h-6 bg-clawd-border mx-0.5" />
             <button className="p-2.5 rounded-full bg-clawd-accent text-white hover:bg-clawd-accent/90 transition-colors" title="Froggo">
