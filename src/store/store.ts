@@ -404,7 +404,7 @@ export const useStore = create<Store>()(
             }));
             
             // Filter: keep all active tasks + last 50 completed
-            const activeTasks = tasksWithoutSubtasks.filter((t: Task) => t.status !== 'done');
+            const activeTasks = tasksWithoutSubtasks.filter((t: Task) => t.status !== 'done' && t.status !== 'cancelled');
             const completedTasks = tasksWithoutSubtasks
               .filter((t: Task) => t.status === 'done')
               .sort((a: Task, b: Task) => (b.updatedAt || 0) - (a.updatedAt || 0))

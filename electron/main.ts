@@ -1119,9 +1119,10 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
 });
 
 ipcMain.handle('tasks:delete', async (_, taskId: string) => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'tools', 'froggo-db', 'bin', 'froggo-db');
+  // froggo-db has no task-delete; mark as cancelled + force (in case subtasks exist)
+  const cmd = `froggo-db task-update "${taskId}" --status cancelled --force`;
   return new Promise((resolve) => {
-    exec(`"${froggoDbPath}" task-delete "${taskId}"`, { timeout: 10000 }, (error) => {
+    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error) => {
       if (error) {
         safeLog.error('[Tasks] Delete error:', error.message);
       }
