@@ -103,15 +103,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       aria-expanded={expanded}
     >
       {/* Drag region — traffic light safe zone */}
-      <div className="drag-region h-12 flex items-center pl-[76px] border-b border-clawd-border">
-        <button
-          className="no-drag text-sm font-semibold text-clawd-text cursor-pointer hover:text-clawd-accent transition-colors duration-200"
-          onClick={() => onNavigate('dashboard')}
-          aria-label="Go to dashboard home"
-          title="Dashboard home"
-        >
-          Clawd
-        </button>
+      <div className="drag-region h-12 pl-[76px] border-b border-clawd-border">
       </div>
       
       {/* Navigation */}
