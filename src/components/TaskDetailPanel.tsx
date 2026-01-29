@@ -798,7 +798,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Subtask List */}
             <div className="space-y-2">
-              {subtasks.map((st, idx) => (
+              {subtasks.map((st, _idx) => (
                 <div
                   key={st.id}
                   className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
@@ -919,7 +919,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             )}
 
             <div className="space-y-1">
-              {activities.map((act, idx) => (
+              {activities.map((act, _idx) => (
                 <div
                   key={act.id}
                   className="flex items-start gap-3 p-2 rounded-lg hover:bg-clawd-bg/50 transition-colors"
@@ -1102,9 +1102,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   <button
                     onClick={() => {
                       setReviewStatus('approved');
-                      // Also try to move to done
-                      moveTask(task.id, 'done');
-                      logTaskActivity(task.id, 'approved', 'Task approved and moved to done');
+                      // Move back to in-progress so assignee can work on it
+                      moveTask(task.id, 'in-progress');
+                      logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
+                      showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
                     }}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                   >
