@@ -36,8 +36,8 @@ export default function AgentPanel() {
   const loadAgentMetrics = async () => {
     setLoadingMetrics(true);
     try {
-      const data = await (window as any).clawdbot.agents.getMetrics();
-      setAgentMetrics(data);
+      const data = await (window as any).clawdbot?.agents?.getMetrics();
+      if (data) setAgentMetrics(data);
     } catch (e) {
       console.error('Failed to load agent metrics:', e);
     } finally {

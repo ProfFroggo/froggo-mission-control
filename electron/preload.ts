@@ -419,16 +419,15 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // Connected Accounts (comprehensive account management)
   accounts: {
-    list: () => ipcRenderer.invoke('accounts:list'),
-    add: (request: {
-      provider: string;
-      email: string;
-      dataTypes: string[];
-      authType: 'oauth' | 'app-password';
-      appPassword?: string;
-    }) => ipcRenderer.invoke('accounts:add', request),
+    list: () => ipcRenderer.invoke('connectedAccounts:list'),
+    add: (accountType: string, options?: any) => ipcRenderer.invoke('connectedAccounts:add', accountType, options),
+    remove: (accountId: string) => ipcRenderer.invoke('connectedAccounts:remove', accountId),
+    getAvailableTypes: () => ipcRenderer.invoke('connectedAccounts:getAvailableTypes'),
+    getPermissions: (accountId: string) => ipcRenderer.invoke('connectedAccounts:getPermissions', accountId),
+    refresh: (accountId: string) => ipcRenderer.invoke('connectedAccounts:refresh', accountId),
+    importGoogle: () => ipcRenderer.invoke('connectedAccounts:importGoogle'),
+    // Legacy methods (old service)
     test: (accountId: string) => ipcRenderer.invoke('accounts:test', accountId),
-    remove: (accountId: string) => ipcRenderer.invoke('accounts:remove', accountId),
   },
   // Sessions management
   sessions: {

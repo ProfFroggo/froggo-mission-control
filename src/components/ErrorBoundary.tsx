@@ -208,7 +208,7 @@ Timestamp: ${new Date().toISOString()}
       const isDevelopment = process.env.NODE_ENV === 'development';
 
       return (
-        <div className="min-h-screen bg-clawd-bg flex items-center justify-center p-8">
+        <div className="min-h-[300px] bg-clawd-bg flex items-center justify-center p-8">
           <div className="max-w-2xl w-full">
             {/* Icon */}
             <div className="flex justify-center mb-6">
@@ -350,6 +350,8 @@ export function useErrorHandler() {
 
 /**
  * Higher-order component to wrap any component with an error boundary
+ * Uses ErrorBoundary without a static fallback so the built-in error UI
+ * with "Try Again" (reset) button is shown, allowing in-place recovery.
  */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
@@ -357,31 +359,7 @@ export function withErrorBoundary<P extends object>(
 ) {
   return function WithErrorBoundaryWrapper(props: P) {
     return (
-      <ErrorBoundary
-        panelName={componentName}
-        fallback={
-          <div className="flex items-center justify-center min-h-[400px] p-8">
-            <div className="max-w-md w-full text-center">
-              <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle size={32} className="text-red-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-clawd-text mb-2">
-                {componentName || 'Component'} Error
-              </h3>
-              <p className="text-sm text-clawd-text-dim mb-4">
-                This panel encountered an error. Try refreshing the page.
-              </p>
-              <LoadingButton
-                onClick={() => window.location.reload()}
-                variant="primary"
-                icon={<RefreshCw size={16} />}
-              >
-                Reload Page
-              </LoadingButton>
-            </div>
-          </div>
-        }
-      >
+      <ErrorBoundary panelName={componentName}>
         <Component {...props} />
       </ErrorBoundary>
     );
