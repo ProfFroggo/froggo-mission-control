@@ -14,7 +14,7 @@ import { ReadStateBadge, UnreadDot, UnrepliedIndicator } from './ReadStateBadge'
 export default function BadgeTest() {
   return (
     <div className="p-8 bg-clawd-bg min-h-screen space-y-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Badge Component Tests</h1>
         <p className="text-clawd-text-dim mb-8">
           Visual verification of badge overlap and alignment fixes

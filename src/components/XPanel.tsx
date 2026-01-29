@@ -623,7 +623,7 @@ export default function XPanel() {
         )}
 
         {activeTab === 'plan' && (
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-8xl mx-auto space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column: Chat with Plan Agent */}
               <div className="bg-clawd-surface rounded-xl border border-clawd-border flex flex-col h-[500px]">

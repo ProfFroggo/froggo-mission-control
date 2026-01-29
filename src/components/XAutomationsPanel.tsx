@@ -182,7 +182,7 @@ export default function XAutomationsPanel() {
             </button>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-4">
+          <div className="max-w-8xl mx-auto space-y-4">
             {automations.map((automation) => {
               const trigger = parseJSON(automation.trigger_config);
               const actions = parseJSON(automation.actions);

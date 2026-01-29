@@ -88,7 +88,7 @@ export default function AgentPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>

@@ -1121,7 +1121,7 @@ function AgendaView({ currentDate, events, onEventClick }: { currentDate: Date; 
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-8xl mx-auto space-y-6">
         {Object.entries(eventsByDate).map(([dateStr, dateEvents]) => {
           const eventDate = getEventTime(dateEvents[0]).start;
           const isToday = isSameDay(eventDate, today);

@@ -278,7 +278,7 @@ export default function ConnectedAccountsPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">

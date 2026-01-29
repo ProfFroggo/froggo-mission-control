@@ -20,7 +20,7 @@ export default function OverflowTestPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-8xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-clawd-surface rounded-xl border border-clawd-border p-6">
           <h1 className="text-2xl font-bold mb-2">Overflow & Truncation Test Panel</h1>
