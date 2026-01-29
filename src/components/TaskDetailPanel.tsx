@@ -1101,9 +1101,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      setReviewStatus('approved');
-                      // Move back to in-progress so assignee can work on it
-                      moveTask(task.id, 'in-progress');
+                      // ATOMIC UPDATE: Change both reviewStatus AND status in one call
+                      updateTask(task.id, { 
+                        reviewStatus: 'approved',
+                        status: 'in-progress' as TaskStatus
+                      });
                       logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
                       showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
                     }}

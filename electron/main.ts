@@ -1025,7 +1025,7 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
 });
 
 ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string; reviewStatus?: string; reviewerId?: string }) => {
-  // Handle fields that need direct SQL (froggo-db CLI doesn't support them yet)
+  // Split updates into SQL fields (not supported by CLI) and CLI fields
   const sqlFields: string[] = [];
   
   if (updates.planningNotes !== undefined) {
@@ -1043,14 +1043,28 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
     sqlFields.push(`reviewerId='${escapedReviewer}'`);
   }
   
+  // Add status to SQL if provided (more reliable than CLI for atomic updates)
+  if (updates.status !== undefined) {
+    const escapedStatus = updates.status.replace(/'/g, "''");
+    sqlFields.push(`status='${escapedStatus}'`);
+  }
+  
+  if (updates.assignedTo !== undefined) {
+    const escapedAssignee = updates.assignedTo.replace(/'/g, "''");
+    sqlFields.push(`assigned_to='${escapedAssignee}'`);
+  }
+  
+  // Execute SQL update if we have any fields
   if (sqlFields.length > 0) {
     const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE tasks SET ${sqlFields.join(', ')}, updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
     
     return new Promise((resolve) => {
-      exec(sqlCmd, { timeout: 10000 }, (error) => {
+      exec(sqlCmd, { timeout: 10000 }, (error, stdout, stderr) => {
         if (error) {
+          safeLog.error('[Tasks] Update error:', error.message, stderr);
           resolve({ success: false, error: error.message });
         } else {
+          safeLog.log('[Tasks] Updated via SQL:', taskId, updates);
           // Emit task update event for real-time Dashboard refresh
           emitTaskEvent('task.updated', taskId);
           resolve({ success: true });
@@ -1059,27 +1073,8 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
     });
   }
   
-  // For other fields, use froggo-db CLI
-  const args = [
-    updates.status ? `--status ${updates.status}` : '',
-    updates.assignedTo ? `--assign ${updates.assignedTo}` : ''
-  ].filter(Boolean).join(' ');
-  
-  if (args.length === 0) {
-    return { success: true }; // Nothing to update
-  }
-  
-  const cmd = `froggo-db task-update "${taskId}" ${args}`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-      } else {
-        resolve({ success: true });
-      }
-    });
-  });
+  // If no updates provided, return success
+  return { success: true };
 });
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
