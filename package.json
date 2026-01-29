@@ -69,8 +69,8 @@
     "ws": "^8.19.0"
   },
   "build": {
-    "appId": "com.ox.lite-dashboard",
-    "productName": "Ox Lite Dashboard",
+    "appId": "com.froggo.dashboard",
+    "productName": "Froggo",
     "directories": {
       "output": "release"
     },

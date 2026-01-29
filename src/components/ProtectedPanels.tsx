@@ -12,7 +12,7 @@ const DashboardRaw = lazy(() => import('./Dashboard'));
 const KanbanRaw = lazy(() => import('./Kanban'));
 const AgentPanelRaw = lazy(() => import('./AgentPanel'));
 const ChatPanelRaw = lazy(() => import('./ChatPanel'));
-const VoicePanelRaw = lazy(() => import('./VoicePanel'));
+// const VoicePanelRaw = lazy(() => import('./VoicePanel')); // TEMP DISABLED - missing voiceService
 const SettingsPanelRaw = lazy(() => import('./EnhancedSettingsPanel'));
 const NotificationsPanelRaw = lazy(() => import('./NotificationsPanelV2'));
 const XPanelRaw = lazy(() => import('./XPanel'));
@@ -36,7 +36,7 @@ export const Dashboard = withErrorBoundary(DashboardRaw, 'Dashboard');
 export const Kanban = withErrorBoundary(KanbanRaw, 'Kanban Board');
 export const AgentPanel = withErrorBoundary(AgentPanelRaw, 'Agent Panel');
 export const ChatPanel = withErrorBoundary(ChatPanelRaw, 'Chat Panel');
-export const VoicePanel = withErrorBoundary(VoicePanelRaw, 'Voice Assistant');
+// export const VoicePanel = withErrorBoundary(VoicePanelRaw, 'Voice Assistant'); // TEMP DISABLED - missing voiceService
 export const SettingsPanel = withErrorBoundary(SettingsPanelRaw, 'Settings');
 export const NotificationsPanel = withErrorBoundary(NotificationsPanelRaw, 'Notifications');
 export const XPanel = withErrorBoundary(XPanelRaw, 'X/Twitter');

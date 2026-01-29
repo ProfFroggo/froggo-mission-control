@@ -12,7 +12,7 @@ import {
   Kanban,
   AgentPanel,
   ChatPanel,
-  VoicePanel,
+  // VoicePanel, // TEMP DISABLED - missing voiceService
   SettingsPanel,
   NotificationsPanel,
   XPanel,
@@ -350,7 +350,7 @@ function App() {
               {currentView === 'kanban' && <Kanban />}
               {currentView === 'agents' && <AgentPanel />}
               {currentView === 'chat' && <ChatPanel />}
-              {currentView === 'voice' && <VoicePanel />}
+              {/* {currentView === 'voice' && <VoicePanel />} */} {/* TEMP DISABLED - missing voiceService */}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}
