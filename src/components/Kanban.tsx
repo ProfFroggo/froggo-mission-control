@@ -728,7 +728,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`bg-clawd-bg rounded-xl p-3 border transition-all cursor-pointer group relative overflow-hidden ${
+      className={`bg-clawd-bg rounded-xl p-3 border transition-all cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
