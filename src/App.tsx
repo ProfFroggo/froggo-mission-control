@@ -289,20 +289,6 @@ function App() {
     <ErrorBoundary panelName="Application Root">
       {/* Network Status Indicator */}
       <NetworkStatus />
-      
-      {/* Skip Navigation Link for keyboard users */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
-      {/* ARIA live region for announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        id="aria-announcements"
-      />
 
       <div className="flex h-screen bg-clawd-bg">
         {/* Top bar with call button */}
