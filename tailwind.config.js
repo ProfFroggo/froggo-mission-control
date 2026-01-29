@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      maxWidth: {
+        '8xl': '90rem',
+      },
       colors: {
         'clawd': {
           bg: 'var(--clawd-bg, #0f0f0f)',

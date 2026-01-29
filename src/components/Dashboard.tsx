@@ -34,7 +34,6 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
   const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
   const needsReview = tasks.filter(t => t.status === 'review');
   const pendingApprovals = approvals.filter(a => a.status === 'pending');
-  const busyAgents = agents.filter(a => a.status === 'busy').length;
   const unassignedTasks = tasks.filter(t => !t.assignedTo && t.status !== 'done');
   const urgentTasks = tasks.filter(t => t.priority === 'p0' && t.status !== 'done');
   const completedToday = tasks.filter(t => 
@@ -120,7 +119,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
     <div className="h-full overflow-auto">
       {/* Compact Header */}
       <div className="bg-gradient-to-r from-clawd-surface to-clawd-bg px-6 py-4 border-b border-clawd-border">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-8xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold">{greeting}, Kevin</h1>
             <div className={`icon-text-tight px-3 py-1 rounded-full text-xs font-medium ${
@@ -129,6 +128,13 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
               {connected ? <Wifi size={14} className="flex-shrink-0" /> : <WifiOff size={14} className="flex-shrink-0" />}
               {connected ? 'Online' : 'Connecting...'}
             </div>
+            {/* Attention summary inline */}
+            {attentionItems.length > 0 && (
+              <div className="hidden md:flex items-center gap-1.5 text-xs text-yellow-400">
+                <AlertTriangle size={12} className="flex-shrink-0" />
+                {attentionItems.join(' · ')}
+              </div>
+            )}
           </div>
           
           {/* Quick Actions - Compact */}
@@ -154,21 +160,21 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-8xl mx-auto p-6">
         
         {/* Priority Cards Row - What Needs Attention */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {/* Pending Approvals - PRIMARY */}
           <button 
             onClick={() => onNavigate?.('inbox')}
-            className={`col-span-1 bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
+            className={`bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
               pendingApprovals.length > 0 
                 ? 'border-orange-500/50 bg-gradient-to-br from-orange-500/10 to-clawd-surface hover:border-orange-400' 
                 : 'border-clawd-border hover:border-clawd-accent/50'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <Inbox size={20} className={`${pendingApprovals.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
+              <Inbox size={18} className={`${pendingApprovals.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {pendingApprovals.length > 0 && (
                 <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">
                   {pendingApprovals.length}
@@ -176,25 +182,20 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
               )}
             </div>
             <div className="text-2xl font-bold mb-0.5">{pendingApprovals.length}</div>
-            <div className="text-xs text-clawd-text-dim">Pending Approvals</div>
-            {pendingApprovals.length > 0 && (
-              <div className="mt-2 text-xs text-orange-400 truncate">
-                {pendingApprovals[0].title || pendingApprovals[0].type}
-              </div>
-            )}
+            <div className="text-xs text-clawd-text-dim">Approvals</div>
           </button>
 
           {/* Active Tasks */}
           <button 
             onClick={() => onNavigate?.('kanban')}
-            className={`col-span-1 bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
+            className={`bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
               inProgressTasks.length > 0 
                 ? 'border-blue-500/50 hover:border-blue-400' 
                 : 'border-clawd-border hover:border-clawd-accent/50'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <ListTodo size={20} className={`${inProgressTasks.length > 0 ? 'text-blue-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
+              <ListTodo size={18} className={`${inProgressTasks.length > 0 ? 'text-blue-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {needsReview.length > 0 && (
                 <span className="px-2 py-0.5 bg-purple-500/80 text-white text-xs font-medium rounded-full">
                   {needsReview.length} review
@@ -203,68 +204,68 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
             </div>
             <div className="text-2xl font-bold mb-0.5">{inProgressTasks.length}</div>
             <div className="text-xs text-clawd-text-dim">In Progress</div>
-            {inProgressTasks.length > 0 && (
-              <div className="mt-2 text-xs text-blue-400 truncate">
-                {inProgressTasks[0].title}
-              </div>
-            )}
           </button>
 
           {/* Urgent / Alerts */}
           <button 
             onClick={() => onNavigate?.('kanban')}
-            className={`col-span-1 bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
+            className={`bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
               urgentTasks.length > 0 || unassignedTasks.length > 0
                 ? 'border-yellow-500/50 hover:border-yellow-400' 
                 : 'border-clawd-border hover:border-clawd-accent/50'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <AlertTriangle size={20} className={`${urgentTasks.length > 0 ? 'text-yellow-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
+              <AlertTriangle size={18} className={`${urgentTasks.length > 0 ? 'text-yellow-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {urgentTasks.length > 0 && (
                 <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                  {urgentTasks.length}
+                  P0
                 </span>
               )}
             </div>
             <div className="text-2xl font-bold mb-0.5">{urgentTasks.length + unassignedTasks.length}</div>
             <div className="text-xs text-clawd-text-dim">Needs Attention</div>
-            {unassignedTasks.length > 0 && (
-              <div className="mt-2 text-xs text-yellow-400">
-                {unassignedTasks.length} unassigned
-              </div>
-            )}
+          </button>
+
+          {/* Active Agents */}
+          <button 
+            onClick={() => onNavigate?.('agents')}
+            className={`bg-clawd-surface rounded-xl border p-4 text-left transition-all hover:scale-[1.02] overflow-hidden min-w-0 ${
+              activeSubagents.length > 0
+                ? 'border-green-500/50 hover:border-green-400' 
+                : 'border-clawd-border hover:border-clawd-accent/50'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Bot size={18} className={`${activeSubagents.length > 0 ? 'text-green-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
+              {activeSubagents.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              )}
+            </div>
+            <div className="text-2xl font-bold mb-0.5">{totalAgentCount}</div>
+            <div className="text-xs text-clawd-text-dim">Agents{activeSubagents.length > 0 ? ` (${activeSubagents.length} sub)` : ''}</div>
           </button>
 
           {/* Completed Today */}
-          <div className="col-span-1 bg-clawd-surface rounded-xl border border-clawd-border p-4 overflow-hidden min-w-0">
+          <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 overflow-hidden min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <CheckCircle size={20} className={`${completedToday > 0 ? 'text-green-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
-              {activeSubagents.length > 0 && (
-                <span className="icon-text-tight px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">
-                  <Bot size={14} className="flex-shrink-0" /> {activeSubagents.length}
-                </span>
-              )}
+              <CheckCircle size={18} className={`${completedToday > 0 ? 'text-green-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
             </div>
             <div className="text-2xl font-bold mb-0.5">{completedToday}</div>
             <div className="text-xs text-clawd-text-dim">Done Today</div>
-            {busyAgents > 0 && (
-              <div className="mt-2 text-xs text-green-400">
-                {busyAgents} agent{busyAgents > 1 ? 's' : ''} working
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Main Grid - Calendar & Tasks Primary */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-          {/* Left Column - Calendar (Wider) */}
-          <div className="col-span-2 space-y-6">
-            {/* Today's Calendar Widget */}
+        {/* Main Grid - 3 columns on wider layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Left Column - Calendar */}
+          <div className="lg:col-span-1">
             <TodayCalendarWidget onNavigate={onNavigate} />
+          </div>
 
-            {/* Active Tasks - What's Being Worked On */}
-            <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
+          {/* Center Column - Active Work (primary focus) */}
+          <div className="lg:col-span-1">
+            <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden h-full flex flex-col">
               <div className="p-4 border-b border-clawd-border flex items-center justify-between">
                 <h2 className="font-semibold icon-text">
                   <Activity size={16} className="text-blue-400" /> Active Work
@@ -273,11 +274,11 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
                   onClick={() => onNavigate?.('kanban')}
                   className="flex items-center gap-1.5 text-sm text-clawd-accent hover:underline"
                 >
-                  View All  <ArrowRight size={14} className="flex-shrink-0" />
+                  View All <ArrowRight size={14} className="flex-shrink-0" />
                 </button>
               </div>
               
-              <div className="divide-y divide-clawd-border">
+              <div className="divide-y divide-clawd-border flex-1 overflow-y-auto">
                 {loading.tasks ? (
                   <div className="p-3 space-y-3">
                     <TaskCardSkeleton />
@@ -296,7 +297,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
                     </button>
                   </div>
                 ) : (
-                  [...inProgressTasks, ...needsReview].slice(0, 5).map((task) => {
+                  [...inProgressTasks, ...needsReview].slice(0, 6).map((task) => {
                     const agent = agents.find(a => a.id === task.assignedTo);
                     return (
                       <div 
@@ -312,7 +313,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
                           }`} />
                           <span className="task-title flex-fill">{task.title}</span>
                           {agent && (
-                            <span className="text-sm text-clawd-text-dim flex items-center gap-1.5 no-shrink">
+                            <span className="text-sm text-clawd-text-dim no-shrink">
                               {agent.avatar}
                             </span>
                           )}
@@ -334,97 +335,99 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
             </div>
           </div>
 
-          {/* Right Column - Email & Notifications */}
-          <div className="col-span-1 space-y-6">
+          {/* Right Column - Email & Weather stacked */}
+          <div className="lg:col-span-1 space-y-6">
             {/* Email Widget */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
               <EmailWidget />
             </div>
 
-            {/* Quick Stats Widget */}
-            <QuickStatsWidget />
-
-            {/* Weather Widget */}
-            <WeatherWidget />
-
-            {/* Recent Actions / Notifications */}
-            <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
-              <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-                <h2 className="font-semibold icon-text">
-                   <Bell size={16} className="flex-shrink-0" /> Notifications
-                </h2>
-                {activities.length > 0 && (
-                  <button 
-                    onClick={clearActivities}
-                    className="text-xs text-clawd-text-dim hover:text-clawd-accent"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              
-              <div className="max-h-64 overflow-y-auto">
-                {activities.length === 0 ? (
-                  <div className="p-6 text-center text-clawd-text-dim">
-                    <Bell size={24} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No new notifications</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-clawd-border">
-                    {activities.slice(0, 8).map((a) => (
-                      <div key={a.id} className="p-3 text-sm hover:bg-clawd-bg/30 overflow-hidden">
-                        <div className="flex items-start gap-2 min-w-0">
-                          <span className="text-base no-shrink">
-                            {a.type === 'chat' ? '💬' : 
-                             a.type === 'task' ? '✅' : 
-                             a.type === 'agent' ? '🤖' : '⚙️'}
-                          </span>
-                          <div className="flex-fill">
-                            <p className="text-clawd-text text-xs message-preview">{a.message}</p>
-                            <p className="text-xs text-clawd-text-dim no-wrap">{formatTimeAgo(a.timestamp)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            {/* Weather + Quick Stats side by side on wider, stacked on narrow */}
+            <div className="grid grid-cols-2 gap-4">
+              <WeatherWidget />
+              <QuickStatsWidget />
             </div>
           </div>
         </div>
 
-        {/* Secondary Section - Collapsible */}
-        <div className="space-y-3">
-          {/* Sessions - Collapsible */}
+        {/* Bottom row - Notifications + Sessions + Agents side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Notifications */}
+          <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
+            <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+              <h2 className="font-semibold icon-text">
+                <Bell size={16} className="flex-shrink-0" /> Notifications
+              </h2>
+              {activities.length > 0 && (
+                <button 
+                  onClick={clearActivities}
+                  className="text-xs text-clawd-text-dim hover:text-clawd-accent"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            
+            <div className="max-h-56 overflow-y-auto">
+              {activities.length === 0 ? (
+                <div className="p-6 text-center text-clawd-text-dim">
+                  <Bell size={24} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No new notifications</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-clawd-border">
+                  {activities.slice(0, 8).map((a) => (
+                    <div key={a.id} className="p-3 text-sm hover:bg-clawd-bg/30 overflow-hidden">
+                      <div className="flex items-start gap-2 min-w-0">
+                        <span className="text-base no-shrink">
+                          {a.type === 'chat' ? '💬' : 
+                           a.type === 'task' ? '✅' : 
+                           a.type === 'agent' ? '🤖' : '⚙️'}
+                        </span>
+                        <div className="flex-fill">
+                          <p className="text-clawd-text text-xs message-preview">{a.message}</p>
+                          <p className="text-xs text-clawd-text-dim no-wrap">{formatTimeAgo(a.timestamp)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sessions */}
           <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
             <button 
               onClick={() => setShowSessions(!showSessions)}
-              className="w-full p-3 flex items-center justify-between hover:bg-clawd-bg/30 transition-colors"
+              className="w-full p-4 flex items-center justify-between hover:bg-clawd-bg/30 transition-colors border-b border-clawd-border"
             >
-              <div className="icon-text text-sm font-medium text-clawd-text-dim">
-                {showSessions ?  <ChevronDown size={16} className="flex-shrink-0" /> :  <ChevronRight size={16} className="flex-shrink-0" />}
-                 <MessageSquare size={16} className="flex-shrink-0" />
+              <div className="icon-text text-sm font-semibold">
+                <MessageSquare size={16} className="flex-shrink-0" />
                 Sessions
-                <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs">
+                <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs font-normal">
                   {sessions.length}
                 </span>
                 {sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000).length > 0 && (
-                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs font-normal">
                     {sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000).length} active
                   </span>
                 )}
               </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); fetchSessions(); }}
-                className="p-1 hover:bg-clawd-border rounded transition-colors"
-                title="Refresh"
-              >
-                 <RefreshCw size={14} className="flex-shrink-0" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); fetchSessions(); }}
+                  className="p-1 hover:bg-clawd-border rounded transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw size={14} className="flex-shrink-0" />
+                </button>
+                {showSessions ? <ChevronDown size={16} className="flex-shrink-0" /> : <ChevronRight size={16} className="flex-shrink-0" />}
+              </div>
             </button>
             
             {showSessions && (
-              <div className="border-t border-clawd-border divide-y divide-clawd-border max-h-64 overflow-y-auto">
+              <div className="divide-y divide-clawd-border max-h-56 overflow-y-auto">
                 {loading.sessions ? (
                   <div className="p-3 space-y-2">
                     <SessionCardSkeleton />
@@ -470,36 +473,38 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
             )}
           </div>
 
-          {/* Agents - Collapsible */}
+          {/* Agents */}
           <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
             <button 
               onClick={() => setShowAgents(!showAgents)}
-              className="w-full p-3 flex items-center justify-between hover:bg-clawd-bg/30 transition-colors"
+              className="w-full p-4 flex items-center justify-between hover:bg-clawd-bg/30 transition-colors border-b border-clawd-border"
             >
-              <div className="icon-text text-sm font-medium text-clawd-text-dim">
-                {showAgents ?  <ChevronDown size={16} className="flex-shrink-0" /> :  <ChevronRight size={16} className="flex-shrink-0" />}
-                 <Bot size={16} className="flex-shrink-0" />
+              <div className="icon-text text-sm font-semibold">
+                <Bot size={16} className="flex-shrink-0" />
                 Agents
-                <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs">
+                <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs font-normal">
                   {totalAgentCount}
                 </span>
                 {activeSubagents.length > 0 && (
-                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
+                  <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs font-normal">
                     {activeSubagents.length} sub-agent{activeSubagents.length > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onNavigate?.('agents'); }}
-                className="text-xs text-clawd-accent hover:underline"
-              >
-                Manage
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onNavigate?.('agents'); }}
+                  className="text-xs text-clawd-accent hover:underline"
+                >
+                  Manage
+                </button>
+                {showAgents ? <ChevronDown size={16} className="flex-shrink-0" /> : <ChevronRight size={16} className="flex-shrink-0" />}
+              </div>
             </button>
             
             {showAgents && (
-              <div className="border-t border-clawd-border p-3">
-                <div className="grid grid-cols-4 gap-2">
+              <div className="p-3">
+                <div className="grid grid-cols-2 gap-2">
                   {agents.slice(0, 4).map((agent) => (
                     <div key={agent.id} className="icon-text p-2 rounded-lg bg-clawd-bg/50 text-sm overflow-hidden">
                       <span className="text-lg no-shrink">{agent.avatar}</span>
