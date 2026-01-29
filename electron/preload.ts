@@ -439,6 +439,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Shell execution (for Code Agent Dashboard, Context Control Board)
   exec: {
     run: (command: string) => ipcRenderer.invoke('exec:run', command),
+    audit: (limit?: number) => ipcRenderer.invoke('exec:audit', limit),
+    validate: (command: string) => ipcRenderer.invoke('exec:validate', command),
   },
   // Chat message persistence (froggo-db backed)
   agents: {

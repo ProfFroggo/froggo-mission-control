@@ -8,6 +8,7 @@ import { calendarService } from './calendar-service';
 import { accountsService } from './accounts-service';
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
+import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
 import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 // const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
@@ -5763,17 +5764,33 @@ ipcMain.handle('exec:run', async (_, command: string) => {
   // Use the clawd workspace as default cwd for git commands
   const workDir = path.join(process.env.HOME || '', 'clawd');
   
-  try {
-    const { stdout, stderr } = await execAsync(command, {
-      maxBuffer: 1024 * 1024, // 1MB buffer
-      timeout: 30000, // 30s timeout
-      cwd: workDir,
-    });
-    return { success: true, stdout: stdout || '', stderr: stderr || '' };
-  } catch (error: any) {
-    safeLog.error('[Exec] Run error:', error.message);
-    return { success: false, stdout: error.stdout || '', stderr: error.stderr || error.message };
+  const result = await secureExec(
+    command,
+    async (cmd: string) => {
+      return await execAsync(cmd, {
+        maxBuffer: 1024 * 1024,
+        timeout: 30000,
+        cwd: workDir,
+      });
+    },
+    'exec',
+  );
+  
+  if (!result.success && result.blocked) {
+    safeLog.warn(`[Exec] Blocked: ${result.reason}`);
   }
+  
+  return result;
+});
+
+// Shell security audit log endpoint
+ipcMain.handle('exec:audit', async (_, limit?: number) => {
+  return getAuditLog(limit || 100);
+});
+
+// Shell security validate endpoint (for UI preview)
+ipcMain.handle('exec:validate', async (_, command: string) => {
+  return validateCommand(command);
 });
 
 // Watch for changes to the approval queue
