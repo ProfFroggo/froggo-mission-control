@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
-import { showToast } from './Toast';
 
 interface Props {
   onClose: () => void;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Calendar, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
+import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
 import { useStore } from '../store/store';
 import { reconnectGateway } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -164,7 +164,7 @@ export default function SettingsPanel() {
   const [saved, setSaved] = useState(false);
   
   // Notification preferences state
-  const [notifPrefs, setNotifPrefs] = useState({
+  const [_notifPrefs, setNotifPrefs] = useState({
     enabled: true,
     taskCompletions: true,
     agentFailures: true,

@@ -5,7 +5,7 @@ import FilePreviewModal from './FilePreviewModal';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
-import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
+import { getUserFriendlyError } from '../utils/errorMessages';
 
 interface AttachedFile {
   id: string;

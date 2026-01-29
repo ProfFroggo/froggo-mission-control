@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, Plus, Edit3, Trash2, Copy, Search, Tag, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (

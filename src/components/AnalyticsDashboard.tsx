@@ -10,7 +10,6 @@ import {
   MessageSquare,
   GitCompare,
   Target,
-  Calendar,
   Download,
   RefreshCw,
 } from 'lucide-react';
@@ -25,7 +24,7 @@ import UsageStatsPanel from './UsageStatsPanel';
 import AdvancedAgentComparison from './AdvancedAgentComparison';
 import PerformanceBenchmarks from './PerformanceBenchmarks';
 import RealTimeAnalytics from './RealTimeAnalytics';
-import DateRangePicker, { DateRange } from './DateRangePicker';
+import { DateRange } from './DateRangePicker';
 
 type Tab =
   | 'overview'
@@ -105,7 +104,7 @@ const TABS: { id: Tab; label: string; icon: any; description: string }[] = [
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showAgentComparison, setShowAgentComparison] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({
+  const [dateRange, _setDateRange] = useState<DateRange>({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     end: new Date(),
   });

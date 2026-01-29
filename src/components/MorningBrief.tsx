@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Inbox, Calendar, MessageSquare, AlertCircle, CheckCircle, X, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
+import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
 
 interface TwitterMention {
   id: string;

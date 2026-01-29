@@ -1,15 +1,14 @@
 import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { 
-  Plus, MoreHorizontal, Bot, Trash2, FolderOpen, GripVertical, Clock, User, Play, Zap, 
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, Tag, ArrowUp, ArrowDown,
-  ChevronDown, RefreshCw, Keyboard, X, Flag, Circle, Timer
+  Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import { showToast } from './Toast';
-import { Spinner, TaskCardSkeleton, LoadingButton, InlineLoader } from './LoadingStates';
+import { Spinner, TaskCardSkeleton } from './LoadingStates';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
@@ -19,24 +18,22 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
   { id: 'p3', label: 'Low', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
-// Format relative time
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  
-  if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
-  return `${Math.floor(diff / 604800000)}w`;
-}
+// function formatRelativeTime(timestamp: number): string {
+//   const now = Date.now();
+//   const diff = now - timestamp;
+//   if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
+//   if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+//   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+//   if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
+//   return `${Math.floor(diff / 604800000)}w`;
+// }
 
 // Format due date
 function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean } {
   const now = Date.now();
   const diff = timestamp - now;
   const isOverdue = diff < 0;
-  const isDueSoon = diff > 0 && diff < 86400000; // Due within 24h
+  // const isDueSoon = diff > 0 && diff < 86400000; // Due within 24h
   
   if (isOverdue) {
     const overdueDiff = Math.abs(diff);
@@ -164,10 +161,10 @@ export default function Kanban() {
     return ['all', ...Array.from(projectSet)];
   }, [tasks]);
 
-  const assignees = useMemo(() => {
-    const ids = new Set(tasks.map(t => t.assignedTo).filter(Boolean));
-    return ['all', 'unassigned', ...Array.from(ids)];
-  }, [tasks]);
+  // const assignees = useMemo(() => {
+  //   const ids = new Set(tasks.map(t => t.assignedTo).filter(Boolean));
+  //   return ['all', 'unassigned', ...Array.from(ids)];
+  // }, [tasks]);
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {

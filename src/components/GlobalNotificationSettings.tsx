@@ -7,7 +7,7 @@ import {
 export default function GlobalNotificationSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [defaults, setDefaults] = useState<any>(null);
+  const [_defaults, setDefaults] = useState<any>(null);
 
   // Form state
   const [defaultNotificationLevel, setDefaultNotificationLevel] = useState('all');

@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Inbox, Check, X, ChevronDown, ChevronUp, 
-  Filter, Clock, MessageSquare, Mail, Send, 
+  Inbox, Check, X, Clock, MessageSquare, Mail, Send, 
   Calendar, Bot, AlertTriangle, ShieldAlert, 
-  TrendingUp, Folder, Plus, Edit3, Search,
-  MoreVertical, CheckCircle, XCircle
+  TrendingUp, Edit3, Search
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { LoadingButton } from './LoadingStates';
@@ -442,7 +440,7 @@ export default function ThreePaneInbox() {
               const Icon = config.icon;
               const isSelected = selectedItemId === item.id;
               const warning = getInjectionWarning(item);
-              const { level, label, color } = getPriorityLevel(item.priority_score || 0);
+              const { label, color } = getPriorityLevel(item.priority_score || 0);
 
               return (
                 <div

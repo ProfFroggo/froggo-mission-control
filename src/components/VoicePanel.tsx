@@ -34,12 +34,12 @@ interface PastMeeting {
 }
 
 // Action item detection patterns - expanded for better detection
-const ACTION_PATTERNS = {
-  schedule: /\b(schedule|meeting|calendar|appointment|at \d|tomorrow|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
-  message: /\b(message|text|send|tell|notify|ping|slack|whatsapp|telegram|discord)\b/i,
-  email: /\b(email|mail|send.*to|write.*to)\b/i,
-  task: /\b(action item|todo|task|remind|reminder|don't forget|remember to|need to|needs to|have to|has to|should|will|going to|gotta|must|follow up|follow-up|followup)\b/i,
-};
+// const ACTION_PATTERNS = {
+//   schedule: /\b(schedule|meeting|calendar|appointment|at \d|tomorrow|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
+//   message: /\b(message|text|send|tell|notify|ping|slack|whatsapp|telegram|discord)\b/i,
+//   email: /\b(email|mail|send.*to|write.*to)\b/i,
+//   task: /\b(action item|todo|task|remind|reminder|don't forget|remember to|need to|needs to|have to|has to|should|will|going to|gotta|must|follow up|follow-up|followup)\b/i,
+// };
 
 // More specific action item extraction patterns
 const TASK_EXTRACTION_PATTERNS = [
@@ -194,7 +194,7 @@ export default function VoicePanel() {
   // Strategy: Keep last 1s of each chunk, prepend to next chunk
   // Then de-duplicate overlapping words after transcription
   const previousChunkBufferRef = useRef<Blob[]>([]); // Buffer for 1s overlap
-  const OVERLAP_MS = 1000; // 1 second overlap
+  // const __OVERLAP_MS = 1000; // 1 second overlap
   
   // Speech accumulation buffer (to avoid cutting off mid-sentence)
   const speechBufferRef = useRef<string[]>([]);

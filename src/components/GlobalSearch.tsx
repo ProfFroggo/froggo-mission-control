@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, FileText, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap } from 'lucide-react';
+import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { SkeletonList } from './Skeleton';
 

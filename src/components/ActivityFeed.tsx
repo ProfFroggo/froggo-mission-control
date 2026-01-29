@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Phone, Send, Bot, Clock, RefreshCw, Filter } from 'lucide-react';
+import { MessageSquare, RefreshCw } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 
 // Channel icons and colors

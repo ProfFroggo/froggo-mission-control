@@ -5,7 +5,7 @@
 
 // We test the pure validation functions directly (no Electron deps needed)
 // Mock electron before importing
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 
 vi.mock('electron', () => ({
   BrowserWindow: { getFocusedWindow: () => null, getAllWindows: () => [] },

@@ -10,7 +10,6 @@ import {
   Zap,
   RefreshCw,
   Download,
-  Filter,
 } from 'lucide-react';
 import TaskTrendsChart from './TaskTrendsChart';
 import AgentUtilizationChart from './AgentUtilizationChart';
@@ -41,7 +40,7 @@ export default function AnalyticsPanel() {
   // Analytics data
   const [completionTrends, setCompletionTrends] = useState<TaskCompletionTrend[]>([]);
   const [agentUtilization, setAgentUtilization] = useState<AgentUtilization[]>([]);
-  const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
+  const [_heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
   const [velocity, setVelocity] = useState<any[]>([]);
   const [subtaskStats, setSubtaskStats] = useState<any[]>([]);

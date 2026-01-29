@@ -32,7 +32,7 @@ interface AgentMetrics {
 }
 
 export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalProps) {
-  const { agents, tasks } = useStore();
+  const { agents } = useStore();
   const [isClosing, setIsClosing] = useState(false);
   const [activeTab, setActiveTab] = useState<'performance' | 'skills' | 'tasks' | 'brain' | 'rules'>('performance');
   const [metrics, setMetrics] = useState<AgentMetrics | null>(null);

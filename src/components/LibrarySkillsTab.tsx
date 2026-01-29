@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Lightbulb, Plus, Search, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Plus, Search, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import EmptyState from './EmptyState';
-import { showToast } from './Toast';
 
 interface Skill {
   id: string;

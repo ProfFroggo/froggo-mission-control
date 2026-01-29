@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Code, GitCommit, GitBranch, Terminal, Zap, Clock, DollarSign, RefreshCw, Play, Pause, ChevronRight, FileCode, CheckCircle, XCircle, Loader2, Timer, Bug } from 'lucide-react';
-import { showToast } from './Toast';
+import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle } from 'lucide-react';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 
@@ -39,7 +38,7 @@ export default function CodeAgentDashboard() {
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [tasks, setTasks] = useState<DevTask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [totalCost, setTotalCost] = useState(0);
+  const [_totalCost, _setTotalCost] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
 
   const loadData = useCallback(async () => {
@@ -139,12 +138,12 @@ export default function CodeAgentDashboard() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const formatDuration = (ms: number) => {
-    const hours = Math.floor(ms / 3600000);
-    const minutes = Math.floor((ms % 3600000) / 60000);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  };
+  // const formatDuration = (ms: number) => {
+  //   const hours = Math.floor(ms / 3600000);
+  //   const minutes = Math.floor((ms % 3600000) / 60000);
+  //   if (hours > 0) return `${hours}h ${minutes}m`;
+  //   return `${minutes}m`;
+  // };
 
   const formatTimeAgo = (timestamp: number) => {
     const diff = Date.now() - timestamp;

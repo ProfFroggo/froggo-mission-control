@@ -5,7 +5,6 @@ import {
   Clock,
   Target,
   Award,
-  X,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
@@ -47,9 +46,9 @@ export default function AdvancedAgentComparison({
   isOpen,
   onClose,
 }: AdvancedAgentComparisonProps) {
-  const [agents, setAgents] = useState<AgentUtilization[]>([]);
+  const [_agents, setAgents] = useState<AgentUtilization[]>([]);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<AgentMetrics[]>([]);
 
   useEffect(() => {

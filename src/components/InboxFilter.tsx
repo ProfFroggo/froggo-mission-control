@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Star, Mail, Tag, Calendar, Paperclip, X, Save, ChevronDown, Reply } from 'lucide-react';
+import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply } from 'lucide-react';
 
 export interface FilterCriteria {
   search?: string;

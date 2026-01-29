@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, RefreshCw, Key, Download, Check, X, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Search, RefreshCw, Key, Download, X, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 

@@ -7,7 +7,6 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, RefreshCw, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react';
-import { gateway } from '../lib/gateway';
 
 interface CalendarEvent {
   id: string;

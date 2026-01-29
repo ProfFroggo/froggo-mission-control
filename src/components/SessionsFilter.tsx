@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Search, Filter, RefreshCw, Clock, ArrowRight, ChevronDown, X, Folder, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
+import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
 import FolderSelector from './FolderSelector';
 import FolderManager from './FolderManager';
@@ -59,7 +59,7 @@ export default function SessionsFilter() {
   const { sessions, fetchSessions, connected } = useStore();
   const [filter, setFilter] = useState<ChannelFilter>('all');
   const [search, setSearch] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [_showDropdown, _setShowDropdown] = useState(false);
   const [folders, setFolders] = useState<MessageFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [folderAssignments, setFolderAssignments] = useState<Record<string, number[]>>({});

@@ -18,8 +18,8 @@ export default function NotificationSettingsModal({
 }: NotificationSettingsModalProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState<any>(null);
-  const [globalDefaults, setGlobalDefaults] = useState<any>(null);
+  const [_settings, setSettings] = useState<any>(null);
+  const [_globalDefaults, setGlobalDefaults] = useState<any>(null);
   const [hasCustomSettings, setHasCustomSettings] = useState(false);
 
   // Form state

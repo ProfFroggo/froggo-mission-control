@@ -5,7 +5,7 @@ export default function QuickStatsWidget() {
   const { sessions, agents, tasks, activities, gatewaySessions } = useStore();
 
   // Active Sessions - breakdown by channel
-  const activeSessions = sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000); // Active in last 5 min
+  // const __activeSessions = sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000); // Active in last 5 min
   const sessionsByChannel = sessions.reduce((acc, s: any) => {
     const channel = s.channel || 'web';
     acc[channel] = (acc[channel] || 0) + 1;

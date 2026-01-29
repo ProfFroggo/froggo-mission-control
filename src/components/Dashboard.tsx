@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, Clock, Zap, ArrowRight, Calendar, Mail, Search, Mic, Plus, RefreshCw, Bell, AlertCircle, Loader2, ChevronDown, ChevronRight, Inbox, ListTodo, CalendarDays, AlertTriangle, Sparkles } from 'lucide-react';
-import { Spinner, TaskCardSkeleton, SessionCardSkeleton, InlineLoader } from './LoadingStates';
+import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, ChevronRight, Inbox, ListTodo, AlertTriangle, Sparkles } from 'lucide-react';
+import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
 
 // X logo component  
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -14,8 +14,6 @@ import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
 import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
 import { useStore } from '../store/store';
-import { gateway } from '../lib/gateway';
-import { showToast } from './Toast';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms';
 
@@ -25,14 +23,14 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
-  const { connected, sessions, tasks, agents, activities, approvals, fetchSessions, addActivity, clearActivities, getUnassignedTasks, getTasksNeedingReview, gatewaySessions, loadGatewaySessions, loading } = useStore();
+  const { connected, sessions, tasks, agents, activities, approvals, fetchSessions, clearActivities, gatewaySessions, loadGatewaySessions, loading } = useStore();
   const [greeting, setGreeting] = useState('');
-  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [loadingAction, _setLoadingAction] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<'calendar' | 'email' | 'mentions' | 'messages' | null>(null);
   const [showSessions, setShowSessions] = useState(false);
   const [showAgents, setShowAgents] = useState(false);
   
-  const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
+  // const __activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
   const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
   const needsReview = tasks.filter(t => t.status === 'review');
   const pendingApprovals = approvals.filter(a => a.status === 'pending');

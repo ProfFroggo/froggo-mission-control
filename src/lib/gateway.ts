@@ -40,7 +40,7 @@ class Gateway {
   // Heartbeat
   private heartbeatInterval: number | null = null;
   private heartbeatTimeout: number | null = null;
-  private lastPong = 0;
+  // private lastPong = 0;
   private readonly HEARTBEAT_INTERVAL = 30000;
   private readonly HEARTBEAT_TIMEOUT = 10000;
   private readonly CONNECT_TIMEOUT = 15000;
@@ -108,7 +108,7 @@ class Gateway {
     this.ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
-        this.lastPong = Date.now();
+        // this.lastPong = Date.now();
         
         if (msg.type !== 'event' || !msg.event?.startsWith('chat.')) {
           console.log('[Gateway] Received:', msg.type, msg.event || msg.method || '');
@@ -230,7 +230,7 @@ class Gateway {
     }
     this.stopHeartbeat();
     
-    for (const [id, p] of this.pending) {
+    for (const [_id, p] of this.pending) {
       clearTimeout(p.timer);
       p.reject(new Error('Connection closed'));
     }
@@ -249,7 +249,7 @@ class Gateway {
 
   private startHeartbeat() {
     this.stopHeartbeat();
-    this.lastPong = Date.now();
+    // this.lastPong = Date.now();
     
     this.heartbeatInterval = window.setInterval(() => {
       this.sendHeartbeat();

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Folder, Check, Plus, X } from 'lucide-react';
+import { Folder, Check, X } from 'lucide-react';
 import { showToast } from './Toast';
 
 interface MessageFolder {

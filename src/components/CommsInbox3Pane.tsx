@@ -8,11 +8,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Mail, MessageCircle, Send, Gamepad2, MessageSquare,
-  Inbox, Star, Archive, Trash2, Clock, AlertTriangle,
+  Mail, MessageCircle, Send, Gamepad2,
+  Inbox, Star, Archive, AlertTriangle,
   RefreshCw, ChevronRight, ChevronDown, Search,
   Reply, ReplyAll, Forward, MoreHorizontal,
-  Sparkles, X, Paperclip, Check, Eye
+  Sparkles, X, Paperclip, Eye
 } from 'lucide-react';
 
 // X logo
@@ -97,16 +97,16 @@ const FOLDERS: Folder[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(ts: number): string {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return 'now';
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  return `${d}d`;
-}
+// function formatRelativeTime(ts: number): string {
+//   const s = Math.floor((Date.now() - ts) / 1000);
+//   if (s < 60) return 'now';
+//   const m = Math.floor(s / 60);
+//   if (m < 60) return `${m}m`;
+//   const h = Math.floor(m / 60);
+//   if (h < 24) return `${h}h`;
+//   const d = Math.floor(h / 24);
+//   return `${d}d`;
+// }
 
 function platformColor(p: string): string {
   const map: Record<string, string> = {
@@ -733,10 +733,10 @@ export default function CommsInbox3Pane() {
     return account?.platform || null;
   };
 
-  const getAccountAddress = (accountId: string | null): string | undefined => {
-    if (!accountId) return undefined;
-    return ACCOUNTS.find(a => a.id === accountId)?.address;
-  };
+  // const getAccountAddress = (accountId: string | null): string | undefined => {
+  //   if (!accountId) return undefined;
+  //   return ACCOUNTS.find(a => a.id === accountId)?.address;
+  // };
 
   // Filter and sort messages for display
   const filterMessages = useCallback((
@@ -750,7 +750,7 @@ export default function CommsInbox3Pane() {
     // Account filter
     if (accountId) {
       const platform = getAccountPlatform(accountId);
-      const address = getAccountAddress(accountId);
+  //     const __address = getAccountAddress(accountId);
       filtered = filtered.filter(m => {
         if (m.platform !== platform) return false;
         // For email, further filter by account address if possible

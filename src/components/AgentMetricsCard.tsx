@@ -25,7 +25,7 @@ interface AgentMetricsCardProps {
   compact?: boolean;
 }
 
-export default function AgentMetricsCard({ agentId, agentName, metrics, compact = false }: AgentMetricsCardProps) {
+export default function AgentMetricsCard({ metrics, compact = false }: AgentMetricsCardProps) {
   // Rating badges based on completion rate
   const getRatingBadge = (rate: number) => {
     if (rate >= 95) return { label: 'Excellent', color: 'text-green-400 bg-green-500/20 border-green-500/30' };

@@ -19,8 +19,8 @@ export default function NotificationTester() {
   } = useNotifications();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [customTitle, setCustomTitle] = useState('');
-  const [customBody, setCustomBody] = useState('');
+  const [_customTitle, _setCustomTitle] = useState('');
+  const [_customBody, _setCustomBody] = useState('');
 
   const handleTestBasic = async () => {
     await testNotification();

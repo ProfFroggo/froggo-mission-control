@@ -1,10 +1,8 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
-  Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, 
-  Calendar, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Shield, 
-  Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database, Search,
-  ChevronDown, ChevronRight, Info, Zap, Code, Eye, EyeOff, HardDrive, Cpu, 
-  Activity, BarChart3, Play, Pause, Archive, Clock
+  Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield, 
+  Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Search,
+  ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { reconnectGateway } from '../lib/gateway';
@@ -13,7 +11,6 @@ import SecuritySettings from './SecuritySettings';
 import ConnectedAccountsPanel from './ConnectedAccountsPanel';
 import ConfigTab from './ConfigTab';
 import LogsTab from './LogsTab';
-import ExportBackupTab from './ExportBackupTab';
 import GlobalNotificationSettings from './GlobalNotificationSettings';
 
 interface NotificationPreferences {

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, Sparkles } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
 import EmptyState from './EmptyState';
 import { LoadingButton } from './LoadingStates';
-import { calculatePriorityScore, getPriorityLevel, groupByPriority } from '../lib/priorityScoring';
+import { calculatePriorityScore, getPriorityLevel } from '../lib/priorityScoring';
 import AIAssistancePanel from './AIAssistancePanel';
 import IconBadge from './IconBadge';
 
@@ -105,7 +105,7 @@ export default function InboxPanel() {
   // View mode state (list or priority lanes)
   type ViewMode = 'list' | 'lanes';
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [collapsedLanes, setCollapsedLanes] = useState<Set<string>>(new Set());
+  const [_collapsedLanes, _setCollapsedLanes] = useState<Set<string>>(new Set());
   
   // Keyboard shortcuts state
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
@@ -1160,7 +1160,7 @@ export default function InboxPanel() {
                           {/* Priority Badge */}
                           {item.priority_score !== undefined && item.priority_score !== null && (
                             (() => {
-                              const { level, label, color } = getPriorityLevel(item.priority_score);
+                              const { label, color } = getPriorityLevel(item.priority_score);
                               return (
                                 <span
                                   className={`text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap ${color}`}

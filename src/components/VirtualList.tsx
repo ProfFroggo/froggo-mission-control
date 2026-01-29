@@ -13,7 +13,7 @@
  *   />
  */
 
-import { useState, useEffect, useRef, useCallback, memo, CSSProperties } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 
 interface VirtualListProps<T> {
   items: T[];
@@ -52,7 +52,7 @@ function VirtualListInner<T>({
   );
 
   // Calculate total height
-  const totalHeight = items.reduce((acc, item, index) => {
+  const totalHeight = items.reduce((acc, index) => {
     return acc + getItemHeight(index);
   }, 0);
 
@@ -271,7 +271,7 @@ export function VirtualGrid<T>({
       style={{ height: '100%', position: 'relative' }}
     >
       <div style={{ height: totalHeight, position: 'relative' }}>
-        {visibleItems.map(({ item, index, row, col }) => (
+        {visibleItems.map(({ index, row, col }) => (
           <div
             key={index}
             style={{

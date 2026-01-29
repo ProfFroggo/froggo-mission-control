@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, Check, X, Pause, AlertCircle } from 'lucide-react';
+import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 

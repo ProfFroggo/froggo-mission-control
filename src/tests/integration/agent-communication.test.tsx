@@ -169,7 +169,7 @@ describe('Agent Communication Integration', () => {
         suggestions: ['Start with unit tests', 'Add integration tests', 'Set up CI pipeline'],
       })
       .mockResolvedValueOnce({
-        reply: 'Sure! I'll create subtasks for each step.',
+        reply: "Sure! I'll create subtasks for each step.",
       });
     
     (window as any).clawdbot.gateway.send = sendMock;

@@ -14,15 +14,14 @@
  */
 
 import { useState } from 'react';
-import { AlertTriangle, Trash2, Upload, Plus } from 'lucide-react';
+import { Trash2, Upload, Plus } from 'lucide-react';
 import { ValidatedInput, ValidatedTextarea, ValidatedSelect } from './ValidatedInput';
 import ErrorDisplay from './ErrorDisplay';
-import ConfirmDialog, { useConfirmDialog, confirmPresets } from './ConfirmDialog';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { LoadingButton, LoadingOverlay, InlineLoader } from './LoadingStates';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { commonRules, validateFile, formatFileSize } from '../utils/validation';
-import { getErrorInfo } from '../utils/errorMessages';
 
 interface DemoItem {
   id: string;

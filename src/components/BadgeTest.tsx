@@ -5,7 +5,7 @@
  */
 
 import { 
-  AlertTriangle, CheckCircle, Clock, Mail, MessageCircle, 
+  AlertTriangle, CheckCircle, Clock, 
   Target, TrendingUp, Wifi, Activity, Lock, Inbox, Loader 
 } from 'lucide-react';
 import IconBadge, { BadgePresets } from './IconBadge';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, FileText, Bot, Sparkles, Settings, Edit3, Save, X, Plus, MessageSquare, ChevronRight, Folder, RefreshCw, Trash2, Book, User, Wrench, Monitor } from 'lucide-react';
+import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench } from 'lucide-react';
 import { showToast } from './Toast';
 import SkillsTab from './SkillsTab';
 import NodesTab from './NodesTab';
@@ -42,7 +42,7 @@ export default function ContextControlBoard() {
   const [originalContent, setOriginalContent] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [_skills, setSkills] = useState<Skill[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
@@ -74,7 +74,7 @@ export default function ContextControlBoard() {
     setSaving(true);
     try {
       // Escape content for shell
-      const escaped = fileContent.replace(/'/g, "'\\''");
+  //     const __escaped = fileContent.replace(/'/g, "'\\''");
       await (window as any).clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
       setOriginalContent(fileContent);
       setEditing(false);

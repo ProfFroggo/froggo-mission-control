@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare, Square } from 'lucide-react';
+import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
 
 interface CalendarSource {
   id: string;
@@ -23,7 +23,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
 );
 
 export default function CalendarFilterModal({ onClose, onFilterChange }: CalendarFilterModalProps) {
-  const [isClosing, setIsClosing] = useState(false);
+  const [_isClosing, setIsClosing] = useState(false);
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

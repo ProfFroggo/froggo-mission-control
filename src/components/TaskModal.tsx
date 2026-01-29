@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { gateway } from '../lib/gateway';
-import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
+import BaseModal, { BaseModalBody } from './BaseModal';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} /> },

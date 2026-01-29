@@ -26,7 +26,7 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
     inProgressTasks: 0,
   });
   const [connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
-  const { focusMode, setFocusMode, config } = useFocusMode();
+  const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
 
   // Track gateway connection

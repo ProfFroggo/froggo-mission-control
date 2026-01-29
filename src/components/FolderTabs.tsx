@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Folder, Plus, Settings, X, Inbox } from 'lucide-react';
+import { Plus, Settings, Inbox } from 'lucide-react';
 import FolderManager from './FolderManager';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';

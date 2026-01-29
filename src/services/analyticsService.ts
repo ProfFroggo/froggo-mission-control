@@ -524,7 +524,7 @@ export async function getTaskVelocity(days: number = 30): Promise<{
   const db = await (window as any).clawdbot?.db?.connect();
   if (!db) throw new Error('Database not available');
 
-  const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
+  // const __cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
 
   const query = `
     WITH RECURSIVE

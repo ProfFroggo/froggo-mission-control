@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Video, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Video, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
 
 interface CalendarEvent {
   id: string;

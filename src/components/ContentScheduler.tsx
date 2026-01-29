@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, Pause, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video } from 'lucide-react';
+import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (

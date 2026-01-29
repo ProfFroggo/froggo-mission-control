@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, MessageSquare, Send, Check, X, Edit, RefreshCw, Clock, Sparkles, FileText, Phone, MessageCircle, Gamepad2, AlertTriangle, Star, Archive, ArchiveRestore, CheckSquare, Square, Trash2, MailOpen, MailCheck, TrendingUp } from 'lucide-react';
+import { Mail, MessageSquare, Send, Check, X, Edit, RefreshCw, Clock, Sparkles, FileText, MessageCircle, Gamepad2, AlertTriangle, Star, Archive, ArchiveRestore, CheckSquare, Trash2, MailOpen, TrendingUp } from 'lucide-react';
 import InboxFilter, { FilterCriteria } from './InboxFilter';
-import { PriorityIndicator, PriorityExplanation, PriorityStats, PrioritySettings, usePriorityData } from './PriorityInbox';
+import { PriorityIndicator, PriorityExplanation, usePriorityData } from './PriorityInbox';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (

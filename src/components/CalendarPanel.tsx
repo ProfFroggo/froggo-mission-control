@@ -13,7 +13,6 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   Repeat,
   Globe,
   CheckCircle,
@@ -100,7 +99,7 @@ export default function CalendarPanel() {
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState(ACCOUNTS[0].email);
+  const [selectedAccount, _setSelectedAccount] = useState(ACCOUNTS[0].email);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showEventModal, setShowEventModal] = useState(false);

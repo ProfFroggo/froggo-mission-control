@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
@@ -33,10 +33,10 @@ interface CalendarEvent {
   account?: string;
 }
 
-interface EventsData {
-  events: CalendarEvent[];
-  account: string;
-}
+// interface EventsData {
+//   events: CalendarEvent[];
+//   account: string;
+// }
 
 interface EventFormData {
   summary: string;
@@ -86,7 +86,7 @@ export default function EpicCalendar() {
   // Create new event via gog CLI
   const createEvent = async (formData: EventFormData): Promise<boolean> => {
     try {
-      const { summary, start, end, description, location, account, isAllDay } = formData;
+      const { summary, start, end, description, location, isAllDay } = formData;
       
       // Convert datetime-local format to ISO format for gog CLI
       const startISO = isAllDay 
@@ -125,7 +125,7 @@ export default function EpicCalendar() {
   // Update existing event via gog CLI
   const updateEvent = async (eventId: string, formData: EventFormData): Promise<boolean> => {
     try {
-      const { summary, start, end, description, location, account, isAllDay } = formData;
+      const { summary, start, end, description, location, isAllDay } = formData;
       
       // Convert datetime-local format to ISO format
       const startISO = isAllDay 
@@ -231,8 +231,7 @@ export default function EpicCalendar() {
     
     if (!draggedEvent) return;
 
-    const { start, end, isAllDay } = getEventTime(draggedEvent);
-    const eventDuration = end.getTime() - start.getTime();
+    const { start, isAllDay } = getEventTime(draggedEvent);
 
     // Calculate new start time
     let newStart: Date;
@@ -250,11 +249,10 @@ export default function EpicCalendar() {
       newStart.setHours(start.getHours(), start.getMinutes(), 0, 0);
     }
 
-    // Calculate new end time (preserve duration)
-    const newEnd = new Date(newStart.getTime() + eventDuration);
+        // const newEnd = new Date(newStart.getTime() + eventDuration);
 
     // Show confirmation dialog
-    setPendingReschedule({ event: draggedEvent, newStart, newEnd });
+    setPendingReschedule({ event: draggedEvent, newStart });
     setShowRescheduleConfirm(true);
     
     // Clear drag state
@@ -265,7 +263,7 @@ export default function EpicCalendar() {
   const confirmReschedule = async () => {
     if (!pendingReschedule) return;
 
-    const { event, newStart, newEnd } = pendingReschedule;
+    const { event, newStart } = pendingReschedule;
     const { isAllDay } = getEventTime(event);
 
     try {
@@ -480,7 +478,7 @@ export default function EpicCalendar() {
           onClose={() => setShowEventModal(false)}
           onCreate={createEvent}
           onUpdate={updateEvent}
-          onDelete={(eventId, account) => {
+          onDelete={(_eventId, _account) => {
             setShowDeleteConfirm(true);
           }}
         />
@@ -736,7 +734,7 @@ function MonthView({
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
 }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  // const __lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = getWeekStart(firstDay);
   
   const weeks: Date[][] = [];
@@ -1497,7 +1495,6 @@ function DeleteConfirmDialog({
 function RescheduleConfirmDialog({
   event,
   newStart,
-  newEnd,
   onConfirm,
   onCancel
 }: {

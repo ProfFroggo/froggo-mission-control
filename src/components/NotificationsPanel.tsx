@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, AlertCircle, CheckCircle, RefreshCw, Filter, Inbox } from 'lucide-react';
+import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, RefreshCw, Inbox } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';

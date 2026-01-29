@@ -176,7 +176,7 @@ export class SmartAccountSelector {
    * Get all accounts that match the context (for manual override)
    */
   getMatchingAccounts(context: AccountSelectionContext): ConnectedAccount[] {
-    const matches: ConnectedAccount[] = [];
+    // const matches: ConnectedAccount[] = [];
     
     // All accounts that can handle this context
     const requiredDataType = context.receivedAt ? 'email' : context.calendarAccount ? 'calendar' : null;

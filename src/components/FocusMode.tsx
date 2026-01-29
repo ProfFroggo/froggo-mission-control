@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Coffee, Home, Briefcase, X, Clock, Bell, BellOff } from 'lucide-react';
+import { Moon, Coffee, Home, Briefcase, X, Clock, BellOff } from 'lucide-react';
 import { showToast } from './Toast';
 
 type FocusModeType = 'work' | 'personal' | 'family' | 'dnd' | null;

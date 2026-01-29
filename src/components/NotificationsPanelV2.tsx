@@ -5,9 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  Bell, Check, X, Clock, MessageSquare, Calendar, Mail, AlertCircle, 
-  CheckCircle, RefreshCw, Filter, Inbox, Settings, CheckCheck, 
-  Clock3, AlertTriangle, Bot, Star, XCircle, Activity 
+  Bell, Check, X, Clock, MessageSquare, Calendar, AlertCircle, 
+  CheckCircle, RefreshCw, Settings, CheckCheck, 
+  Clock3, AlertTriangle, Bot, Star, XCircle 
 } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, Plus, Edit, Trash2, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Star, Plus, Edit, Trash2, Save, X, CheckCircle } from 'lucide-react';
 import { showToast } from './Toast';
 
 interface VipSender {

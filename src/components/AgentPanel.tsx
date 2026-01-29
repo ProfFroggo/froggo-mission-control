@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, TrendingUp, Award, FileText, Target, GitCompare, BarChart3 } from 'lucide-react';
-import { useStore, Agent, GatewaySession } from '../store/store';
-import { gateway } from '../lib/gateway';
+import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3 } from 'lucide-react';
+import { useStore, Agent } from '../store/store';
 import WorkerModal from './WorkerModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
 import AgentChatModal from './AgentChatModal';
 import AgentMetricsCard from './AgentMetricsCard';
-import { Spinner, AgentCardSkeleton, InlineLoader } from './LoadingStates';
+import { InlineLoader } from './LoadingStates';
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, updateAgentStatus, addActivity, gatewaySessions, loadGatewaySessions, loading } = useStore();
+  const { agents, tasks, spawnAgentForTask, updateAgentStatus, gatewaySessions, loadGatewaySessions } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [compareAgents, setCompareAgents] = useState<string[]>([]);
@@ -78,25 +77,23 @@ export default function AgentPanel() {
     return tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
   };
 
-  // Get completed tasks count
-  const getCompletedTasksCount = (agentId: string) => {
-    return tasks.filter(t => t.assignedTo === agentId && t.status === 'done').length;
-  };
+    // const getCompletedTasksCount = (agentId: string) => {
+  //   return tasks.filter(t => t.assignedTo === agentId && t.status === 'done').length;
+  // };
 
-  // Send message to agent
-  const messageAgent = async (agent: Agent, message: string) => {
-    if (!agent.sessionKey) return;
-    
-    try {
-      await gateway.request('sessions.send', {
-        sessionKey: agent.sessionKey,
-        message,
-      });
-      addActivity({ type: 'agent', message: `Messaged ${agent.name}: ${message.slice(0, 50)}...`, timestamp: Date.now() });
-    } catch (e) {
-      console.error('Failed to message agent:', e);
-    }
-  };
+  // Send message to agent (currently unused)
+  // const messageAgent = async (agent: Agent, message: string) => {
+  //   if (!agent.sessionKey) return;
+  //   try {
+  //     await gateway.request('sessions.send', {
+  //       sessionKey: agent.sessionKey,
+  //       message,
+  //     });
+  //     addActivity({ type: 'agent', message: `Messaged ${agent.name}: ${message.slice(0, 50)}...`, timestamp: Date.now() });
+  //   } catch (e) {
+  //     console.error('Failed to message agent:', e);
+  //   }
+  // };
 
   // Toggle agent expansion
   const toggleExpanded = (agentId: string) => {
@@ -217,7 +214,7 @@ export default function AgentPanel() {
           <div className="grid gap-4">
             {mainAgents.map((agent) => {
               const agentTasks = getAgentTasks(agent.id);
-              const completedTasks = getCompletedTasksCount(agent.id);
+  //             const __completedTasks = getCompletedTasksCount(agent.id);
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
               const isExpanded = expandedAgents.has(agent.id);
               const metrics = agentMetrics[agent.id] || {};

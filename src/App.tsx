@@ -17,12 +17,8 @@ import {
   NotificationsPanel,
   XPanel,
   InboxPanel,
-  ThreePaneInbox,
-  CommsInbox,
-  UnifiedCommsInbox,
   CommsInbox3Pane,
   LibraryPanel,
-  CalendarPanel,
   SchedulePanel,
   CodeAgentDashboard,
   ContextControlBoard,
@@ -31,13 +27,11 @@ import {
   StarredMessagesPanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
-import VoskBrowserTest from './components/VoskBrowserTest';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
 import MorningBrief from './components/MorningBrief';
-import ContentCalendar from './components/ContentCalendar';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
@@ -45,7 +39,6 @@ import ErrorBoundaryTest from './components/ErrorBoundaryTest';
 import HelpPanel from './components/HelpPanel';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
-import { AccessibilityProvider } from './contexts/AccessibilityContext';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test';
 
@@ -71,11 +64,11 @@ function App() {
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(208); // Track sidebar width for TopBar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
-  const { activeTour, completeTour, skipTour, hasCompletedTour } = useTour();
+  const { activeTour, completeTour, skipTour } = useTour();
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
-  const { toggleMuted, setMeetingActive, loadApprovals } = useStore();
+  const { toggleMuted, loadApprovals } = useStore();
 
   // Initialize approval queue file watcher and load approvals from DB
   useEffect(() => {

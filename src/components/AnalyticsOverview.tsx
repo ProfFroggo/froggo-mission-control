@@ -21,7 +21,7 @@ export default function AnalyticsOverview() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
   const [stats, setStats] = useState<Stat[]>([]);
   const [dailyData, setDailyData] = useState<DailyActivity[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
