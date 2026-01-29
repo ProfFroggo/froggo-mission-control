@@ -125,6 +125,24 @@
   --color-info-bg: rgba(59, 130, 246, 0.1);
   --color-info-border: rgba(59, 130, 246, 0.3);
   --color-info-hover: #2563eb;
+  --color-info-text: #3b82f6;
+  
+  /* Review (purple) */
+  --color-review: #a855f7;
+  --color-review-bg: rgba(168, 85, 247, 0.1);
+  --color-review-border: rgba(168, 85, 247, 0.3);
+  --color-review-hover: #9333ea;
+  --color-review-text: #a855f7;
+  
+  /* Muted / Neutral */
+  --color-muted: #6b7280;
+  --color-muted-bg: rgba(107, 114, 128, 0.1);
+  --color-muted-border: rgba(107, 114, 128, 0.3);
+  --color-muted-text: #9ca3af;
+  
+  /* Danger (orange, destructive actions) */
+  --color-danger: #f97316;
+  --color-danger-hover: #ea580c;
   
   /* ============================================
      COLOR TOKENS - CHANNEL BRANDS
