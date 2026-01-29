@@ -176,7 +176,7 @@ interface Store {
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   moveTask: (id: string, status: TaskStatus) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string) => Promise<void>;
   assignTask: (id: string, agentId: string | undefined) => void;
   
   // Subtasks (DB-backed)
@@ -549,7 +549,14 @@ export const useStore = create<Store>()(
           timestamp: Date.now(),
         });
       },
-      deleteTask: (id: string) => set((s: Store) => ({ tasks: s.tasks.filter((t: Task) => t.id !== id) })),
+      deleteTask: async (id: string) => {
+        try {
+          await (window as any).clawdbot?.tasks?.delete(id);
+        } catch (e) {
+          console.error('Failed to delete task from DB:', e);
+        }
+        set((s: Store) => ({ tasks: s.tasks.filter((t: Task) => t.id !== id) }));
+      },
       assignTask: (id: string, agentId?: string) => {
         const task = get().tasks.find((t: Task) => t.id === id);
         const agent = agentId ? get().agents.find((a: Agent) => a.id === agentId) : null;

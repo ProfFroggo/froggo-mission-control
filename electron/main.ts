@@ -1118,6 +1118,18 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
   });
 });
 
+ipcMain.handle('tasks:delete', async (_, taskId: string) => {
+  const froggoDbPath = path.join(os.homedir(), 'clawd', 'tools', 'froggo-db', 'bin', 'froggo-db');
+  return new Promise((resolve) => {
+    exec(`"${froggoDbPath}" task-delete "${taskId}"`, { timeout: 10000 }, (error) => {
+      if (error) {
+        safeLog.error('[Tasks] Delete error:', error.message);
+      }
+      resolve({ success: !error });
+    });
+  });
+});
+
 // Poke a task - send message to Gateway main session asking for status update
 ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
   safeLog.log(`[Tasks] Poke: ${taskId} - ${title}`);
