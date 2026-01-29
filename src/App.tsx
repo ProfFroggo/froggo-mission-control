@@ -31,7 +31,13 @@ import {
   StarredMessagesPanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
-import VoskBrowserTest from './components/VoskBrowserTest';
+// Ox Lite Dashboard - Ox-specific panels
+import OxDashboard from './components/OxDashboard';
+import OxAnalytics from './components/OxAnalytics';
+import OxGuardrails from './components/OxGuardrails';
+import OxSubAgentPanel from './components/OxSubAgentPanel';
+import OxTaskInbox from './components/OxTaskInbox';
+import OxWorkload from './components/OxWorkload';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
@@ -47,7 +53,7 @@ import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test' | 'ox-dashboard' | 'ox-analytics' | 'ox-guardrails' | 'ox-subagents' | 'ox-tasks' | 'ox-workload';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -359,6 +365,13 @@ function App() {
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
               {currentView === 'starred' && <StarredMessagesPanel />}
               {currentView === 'error-test' && import.meta.env.DEV && <ErrorBoundaryTest />}
+              {/* Ox Lite Dashboard Panels */}
+              {currentView === 'ox-dashboard' && <OxDashboard />}
+              {currentView === 'ox-analytics' && <OxAnalytics />}
+              {currentView === 'ox-guardrails' && <OxGuardrails />}
+              {currentView === 'ox-subagents' && <OxSubAgentPanel />}
+              {currentView === 'ox-tasks' && <OxTaskInbox />}
+              {currentView === 'ox-workload' && <OxWorkload />}
             </Suspense>
           </PerformanceProfiler>
         </main>

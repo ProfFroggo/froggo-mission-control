@@ -124,7 +124,7 @@ export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
       <div className="bg-gradient-to-r from-clawd-surface to-clawd-bg px-6 py-4 border-b border-clawd-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">{greeting}, Kevin</h1>
+            <h1 className="text-xl font-semibold">{greeting}, Ox 🐂</h1>
             <div className={`icon-text-tight px-3 py-1 rounded-full text-xs font-medium ${
               connected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
             }`}>

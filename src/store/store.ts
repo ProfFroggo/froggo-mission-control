@@ -369,7 +369,11 @@ export const useStore = create<Store>()(
               };
             });
             
-            set({ gatewaySessions: processed });
+            // OX LITE: Filter to only show Ox's spawned sessions (label starts with 'ox-')
+            const oxSessions = processed.filter((s: GatewaySession) => 
+              s.type === 'subagent' && s.label && s.label.startsWith('ox-')
+            );
+            set({ gatewaySessions: oxSessions });
           }
         } catch (error) {
           console.error('Failed to load gateway sessions:', error);
