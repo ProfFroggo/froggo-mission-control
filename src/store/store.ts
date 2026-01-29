@@ -453,11 +453,13 @@ export const useStore = create<Store>()(
         (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
       },
       updateTask: (id: string, updates: Partial<Task>) => {
+        console.log('[Store] updateTask called:', id, updates);
         // Optimistically update UI
         set((s: Store) => ({
           tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
         }));
         
+        console.log('[Store] Calling clawdbot.tasks.update via IPC');
         // Persist to database via IPC
         (window as any).clawdbot?.tasks?.update(id, updates)
           .then((result: any) => {

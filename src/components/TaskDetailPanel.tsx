@@ -1101,11 +1101,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
+                      console.log('[TaskDetailPanel] APPROVE CLICKED', task.id, task.status, task.reviewStatus);
                       // ATOMIC UPDATE: Change both reviewStatus AND status in one call
-                      updateTask(task.id, { 
+                      const updates = { 
                         reviewStatus: 'approved',
                         status: 'in-progress' as TaskStatus
-                      });
+                      };
+                      console.log('[TaskDetailPanel] Calling updateTask with:', updates);
+                      updateTask(task.id, updates);
                       logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
                       showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
                     }}
