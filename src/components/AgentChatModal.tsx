@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { useStore } from '../store/store';
+import { gateway } from '../lib/gateway';
 
 interface AgentChatModalProps {
   agentId: string;
@@ -13,6 +14,15 @@ interface Message {
   timestamp: number;
 }
 
+// Map agent IDs to descriptive task prompts for spawning
+const agentSystemPrompts: Record<string, string> = {
+  main: 'You are Froggo, the main orchestrator agent. Help the user with any task.',
+  coder: 'You are Coder, a software engineering agent. Help with code, debugging, architecture, and technical problems.',
+  researcher: 'You are Researcher, a research and analysis agent. Help with research, data gathering, and analysis.',
+  writer: 'You are Writer, a content creation agent. Help with writing, editing, and content strategy.',
+  chief: 'You are Chief, the executive oversight agent. Help with planning, prioritization, and strategic decisions.',
+};
+
 export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps) {
   const { agents } = useStore();
   const [isClosing, setIsClosing] = useState(false);
@@ -20,11 +30,16 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [spawning, setSpawning] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamCleanupRef = useRef<(() => void) | null>(null);
 
   const agent = agents.find(a => a.id === agentId);
 
   const handleClose = () => {
+    // Clean up stream listener
+    streamCleanupRef.current?.();
     setIsClosing(true);
     setTimeout(() => {
       onClose();
@@ -34,11 +49,14 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
   useEffect(() => {
     initChat();
+    return () => {
+      streamCleanupRef.current?.();
+    };
   }, [agentId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   // ESC key to close
   useEffect(() => {
@@ -53,55 +71,162 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   }, []);
 
   const initChat = async () => {
-    // Add system message
+    setSpawning(true);
     setMessages([{
       role: 'system',
-      content: `You're now chatting with ${agent?.name}. This is a collaborative session to improve the agent's performance, skills, and understanding.`,
+      content: `Connecting to ${agent?.name || agentId}...`,
       timestamp: Date.now(),
     }]);
 
-    // Spawn agent session for chat
     try {
-      const data = await (window as any).clawdbot.agents.spawnChat(agentId);
-      setSessionKey(data.sessionKey);
-    } catch (e) {
+      // Check if gateway is connected
+      if (!gateway.connected) {
+        setMessages([{
+          role: 'system',
+          content: `⚠️ Gateway not connected. Please check your connection and try again.`,
+          timestamp: Date.now(),
+        }]);
+        setSpawning(false);
+        return;
+      }
+
+      // Spawn a real agent session via gateway
+      const label = `dashboard-chat-${agentId}`;
+      const systemPrompt = agentSystemPrompts[agentId] || `You are ${agent?.name || agentId}. Help the user.`;
+      const task = `${systemPrompt}\n\nYou are now in a collaborative chat session started from the dashboard. Be helpful, concise, and conversational.`;
+
+      const result = await gateway.spawnAgent(task, label, 'anthropic/claude-sonnet-4');
+
+      if (result && (result as any).sessionKey) {
+        const key = (result as any).sessionKey;
+        setSessionKey(key);
+        setMessages([{
+          role: 'system',
+          content: `✅ Connected to ${agent?.name || agentId}. Session active — you're chatting with a real LLM.`,
+          timestamp: Date.now(),
+        }]);
+      } else {
+        throw new Error('No session key returned');
+      }
+    } catch (e: any) {
       console.error('Failed to spawn chat session:', e);
+      setMessages([{
+        role: 'system',
+        content: `❌ Failed to connect: ${e.message || 'Unknown error'}. The gateway may not support agent spawning, or the session limit was reached.`,
+        timestamp: Date.now(),
+      }]);
     }
+    setSpawning(false);
   };
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionKey || sending) return;
 
+    const userText = input.trim();
     const userMessage: Message = {
       role: 'user',
-      content: input,
+      content: userText,
       timestamp: Date.now(),
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setSending(true);
+    setStreamingContent('');
 
     try {
-      const data = await (window as any).clawdbot.agents.chat(sessionKey, input);
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.response,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (e) {
-      console.error('Failed to send message:', e);
-      const errorMessage: Message = {
-        role: 'system',
-        content: 'Failed to send message. Please try again.',
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    }
+      // Listen for streaming chunks
+      let fullResponse = '';
+      streamCleanupRef.current?.();
 
-    setSending(false);
-  };
+      const unsub = gateway.on('chat', (data: any) => {
+        // Match events to our session
+        if (data.sessionKey && data.sessionKey !== sessionKey) return;
+
+        if (data.state === 'streaming' && data.chunk) {
+          fullResponse += data.chunk;
+          setStreamingContent(fullResponse);
+        }
+        if (data.state === 'done' || data.state === 'complete') {
+          const finalContent = data.content || data.response || fullResponse;
+          if (finalContent) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: finalContent,
+              timestamp: Date.now(),
+            }]);
+          }
+          setStreamingContent('');
+          setSending(false);
+          unsub();
+          streamCleanupRef.current = null;
+        }
+        if (data.state === 'error') {
+          setMessages(prev => [...prev, {
+            role: 'system',
+            content: `⚠️ Error: ${data.error || 'Unknown error'}`,
+            timestamp: Date.now(),
+          }]);
+          setStreamingContent('');
+          setSending(false);
+          unsub();
+          streamCleanupRef.current = null;
+        }
+      });
+      streamCleanupRef.current = unsub;
+
+      // Send the message to the real session
+      const result = await gateway.sendToSession(sessionKey, userText);
+
+      // If we get a direct response (non-streaming), use it
+      if (result && (result as any).response) {
+        // Clean up stream listener since we got a direct response
+        unsub();
+        streamCleanupRef.current = null;
+        setStreamingContent('');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: (result as any).response,
+          timestamp: Date.now(),
+        }]);
+        setSending(false);
+      }
+
+      // Set a timeout in case streaming never completes
+      setTimeout(() => {
+        if (sending) {
+          // If still sending after 2 minutes, finalize what we have
+          if (fullResponse) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: fullResponse,
+              timestamp: Date.now(),
+            }]);
+          } else {
+            setMessages(prev => [...prev, {
+              role: 'system',
+              content: '⏱️ Response timed out. The agent may still be processing.',
+              timestamp: Date.now(),
+            }]);
+          }
+          setStreamingContent('');
+          setSending(false);
+          unsub();
+          streamCleanupRef.current = null;
+        }
+      }, 120000);
+
+    } catch (e: any) {
+      console.error('Failed to send message:', e);
+      setStreamingContent('');
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: `❌ Failed to send: ${e.message || 'Unknown error'}`,
+        timestamp: Date.now(),
+      }]);
+      setSending(false);
+    }
+  }, [input, sessionKey, sending]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -139,12 +264,22 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
             <div>
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 Chat with {agent.name}
-                <span className="text-sm px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">
-                  Collaborative Mode
-                </span>
+                {sessionKey ? (
+                  <span className="text-sm px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                    🟢 Live LLM
+                  </span>
+                ) : spawning ? (
+                  <span className="text-sm px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" /> Connecting...
+                  </span>
+                ) : (
+                  <span className="text-sm px-2 py-0.5 bg-red-500/20 text-red-400 rounded">
+                    Disconnected
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-clawd-text-dim">
-                Improve performance through conversation
+                {sessionKey ? 'Real-time conversation with agent LLM' : 'Establishing connection...'}
               </p>
             </div>
           </div>
@@ -158,7 +293,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         </div>
 
         {/* Quick Prompts */}
-        {messages.length <= 1 && (
+        {messages.length <= 1 && !spawning && sessionKey && (
           <div className="p-4 border-b border-clawd-border">
             <h3 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2">
               Quick Prompts
@@ -267,7 +402,27 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
             );
           })}
 
-          {sending && (
+          {/* Streaming content */}
+          {streamingContent && (
+            <div className="flex gap-3 mt-6">
+              <div className="flex-shrink-0 w-10">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/20">
+                  <Bot size={16} />
+                </div>
+              </div>
+              <div className="flex flex-col items-start max-w-[70%] min-w-[120px]">
+                <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
+                  {agent?.name}
+                </div>
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                  <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Thinking indicator (when sending but no streaming content yet) */}
+          {sending && !streamingContent && (
             <div className="flex gap-3 mt-6">
               <div className="flex-shrink-0 w-10">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/20">
@@ -302,21 +457,31 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message... (Shift+Enter for new line)"
+              placeholder={sessionKey ? "Type your message... (Shift+Enter for new line)" : "Waiting for connection..."}
               className="flex-1 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent resize-none"
               rows={2}
-              disabled={sending}
+              disabled={sending || !sessionKey}
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || sending}
+              disabled={!input.trim() || sending || !sessionKey}
               className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={16} />
             </button>
           </div>
-          <div className="mt-2 text-xs text-clawd-text-dim">
-            💡 Ask about performance, suggest improvements, add skills, or discuss task strategies
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-clawd-text-dim">
+              💡 You're talking to a real LLM — ask anything relevant to this agent's role
+            </span>
+            {!sessionKey && !spawning && (
+              <button
+                onClick={initChat}
+                className="text-xs text-clawd-accent hover:underline"
+              >
+                Retry connection
+              </button>
+            )}
           </div>
         </div>
       </div>
