@@ -45,6 +45,11 @@ export default function CodeAgentDashboard() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // Safety check - bail if clawdbot APIs not available
+      if (!(window as any).clawdbot) {
+        console.warn('[CodeAgentDashboard] Clawdbot APIs not available yet');
+        return;
+      }
       // Load recent git commits
       const gitResult = await (window as any).clawdbot?.exec?.run(
         'git log --oneline -20 --pretty=format:"%h|%s|%an|%at" 2>/dev/null || echo ""'

@@ -89,7 +89,7 @@ export default function ConnectedAccountsPanel() {
   const loadAccounts = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.list();
+      const result = await (window as any).clawdbot?.accounts?.list();
       if (result?.success) {
         setAccounts(result.accounts || []);
       } else {
@@ -104,7 +104,7 @@ export default function ConnectedAccountsPanel() {
 
   const loadAvailableTypes = async () => {
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.getAvailableTypes();
+      const result = await (window as any).clawdbot?.accounts?.getAvailableTypes();
       if (result?.success) {
         setAvailableTypes(result.types || []);
       }
@@ -118,7 +118,7 @@ export default function ConnectedAccountsPanel() {
     
     // Load permissions
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.getPermissions(account.id);
+      const result = await (window as any).clawdbot?.accounts?.getPermissions(account.id);
       if (result?.success) {
         setSelectedAccountPermissions(result.permissions || []);
       }
@@ -131,7 +131,7 @@ export default function ConnectedAccountsPanel() {
 
   const handleRefresh = async (accountId: string) => {
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.refresh(accountId);
+      const result = await (window as any).clawdbot?.accounts?.refresh(accountId);
       if (result?.success) {
         showToast('success', 'Account refreshed', 'Connection verified successfully');
         loadAccounts();
@@ -152,7 +152,7 @@ export default function ConnectedAccountsPanel() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.remove(accountId);
+      const result = await (window as any).clawdbot?.accounts?.remove(accountId);
       if (result?.success) {
         showToast('success', 'Account removed', `${account.email} has been removed`);
         loadAccounts();
@@ -170,7 +170,7 @@ export default function ConnectedAccountsPanel() {
   const handleImportGoogle = async () => {
     setImportingGoogle(true);
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.importGoogle();
+      const result = await (window as any).clawdbot?.accounts?.importGoogle();
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
@@ -195,7 +195,7 @@ export default function ConnectedAccountsPanel() {
 
     setAddingAccount(true);
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.add(selectedType, {
+      const result = await (window as any).clawdbot?.accounts?.add(selectedType, {
         conversational: true
       });
       

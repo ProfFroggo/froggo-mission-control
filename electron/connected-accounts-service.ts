@@ -24,7 +24,7 @@ import * as os from 'os';
 const execAsync = promisify(exec);
 
 // Database path
-const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+const DB_PATH = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
 
 // Encryption key (should be stored securely, using env var or keychain)
 const ENCRYPTION_KEY = process.env.FROGGO_ENCRYPTION_KEY || 'default-key-change-me-in-production';

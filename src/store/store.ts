@@ -452,9 +452,19 @@ export const useStore = create<Store>()(
         // Sync to froggo-db
         (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
       },
-      updateTask: (id: string, updates: Partial<Task>) => set((s: Store) => ({
-        tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
-      })),
+      updateTask: (id: string, updates: Partial<Task>) => {
+        set((s: Store) => ({
+          tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
+        }));
+        // Persist to database
+        const task = get().tasks.find((t: Task) => t.id === id);
+        if (task) {
+          const updatedTask = { ...task, ...updates, updatedAt: Date.now() };
+          (window as any).clawdbot?.tasks?.sync(updatedTask).catch((err: any) => {
+            console.error('[Store] Failed to sync task update:', err);
+          });
+        }
+      },
       moveTask: (id: string, status: TaskStatus) => {
         const task = get().tasks.find((t: Task) => t.id === id);
         if (!task) return;

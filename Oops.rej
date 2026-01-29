@@ -1,0 +1,11 @@
+@@ -88,6 +93,10 @@
+   const loadSkills = useCallback(async () => {
+     setLoading(true);
+     try {
++      if (!(window as any).clawdbot) {
++        setLoading(false);
++        return;
++      }
+       // List skills from skill directory
+       const result = await (window as any).clawdbot?.exec?.run(
+         'ls -1 /opt/homebrew/lib/node_modules/clawdbot/skills 2>/dev/null || echo ""'

@@ -27,7 +27,7 @@ const safeLog = {
   },
 };
 
-const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+const DB_PATH = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
 const SESSION_DIR = path.join(os.homedir(), '.clawdbot', 'sessions');
 const APPROVAL_QUEUE_PATH = path.join(os.homedir(), 'clawd', 'approvals', 'queue.json');
 

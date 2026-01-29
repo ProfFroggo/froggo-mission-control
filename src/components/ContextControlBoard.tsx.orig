@@ -52,11 +52,6 @@ export default function ContextControlBoard() {
     setSelectedFile(file);
     setLoading(true);
     try {
-      if (!(window as any).clawdbot) {
-        showToast('error', 'API not ready', 'Clawdbot APIs not available');
-        setLoading(false);
-        return;
-      }
       const result = await (window as any).clawdbot?.exec?.run(`cat "${file.path}" 2>/dev/null || echo "File not found"`);
       const content = result?.stdout || '';
       setFileContent(content);

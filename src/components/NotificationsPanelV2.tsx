@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
+import IconBadge from './IconBadge';
 import { 
   notificationService, 
   Notification, 
@@ -180,9 +181,7 @@ export default function NotificationsPanelV2() {
                   className="p-4 bg-clawd-surface border border-clawd-border rounded-xl"
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config?.color || 'bg-gray-500/10'} flex items-center justify-center`}>
-                      <Icon size={20} />
-                    </div>
+                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-gray-500/10 text-gray-400'} />
                     
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
@@ -352,9 +351,7 @@ export default function NotificationsPanelV2() {
                   onClick={() => handleNavigate(notif)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config?.color || 'bg-gray-500/10'} flex-shrink-0 flex items-center justify-center`}>
-                      <Icon size={16} />
-                    </div>
+                    <IconBadge icon={Icon} size={16} color={config?.color || 'bg-gray-500/10 text-gray-400'} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">

@@ -7,6 +7,7 @@ import EmptyState from './EmptyState';
 import { LoadingButton } from './LoadingStates';
 import { calculatePriorityScore, getPriorityLevel, groupByPriority } from '../lib/priorityScoring';
 import AIAssistancePanel from './AIAssistancePanel';
+import IconBadge from './IconBadge';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -1140,9 +1141,7 @@ export default function InboxPanel() {
                         onClick={(e) => e.stopPropagation()}
                         className="w-4 h-4 mt-1 rounded border-clawd-border text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 bg-clawd-bg cursor-pointer"
                       />
-                      <div className={`p-2 rounded-lg ${config.color} flex-shrink-0 flex items-center justify-center`}>
-                        <Icon size={20} className="flex-shrink-0" />
-                      </div>
+                      <IconBadge icon={Icon} size={18} color={config.color} />
                       <div className="flex-1 min-w-0 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
                           <span className="text-xs font-medium px-2 py-0.5 bg-clawd-border rounded">

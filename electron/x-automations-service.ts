@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 import path from 'path';
 import os from 'os';
 
-const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+const DB_PATH = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
 
 // Helper to execute SQL queries
 function query(sql: string, params: any[] = []): any {

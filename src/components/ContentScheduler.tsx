@@ -8,6 +8,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 import { showToast } from './Toast';
+import IconBadge from './IconBadge';
 
 type ScheduledItemType = 'tweet' | 'email' | 'message';
 type ScheduledItemStatus = 'pending' | 'sent' | 'cancelled' | 'failed';
@@ -596,9 +597,7 @@ export default function ContentScheduler() {
                   } transition-colors`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2 rounded-lg ${config.color} flex items-center justify-center`}>
-                      <Icon size={16} />
-                    </div>
+                    <IconBadge icon={Icon} size={16} color={config.color} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
