@@ -3,7 +3,8 @@
 **Froggo Dashboard Design System**  
 **Version:** 1.0.0  
 **Last Updated:** 2025-07-12  
-**Status:** Audit Complete — Adoption Phase
+**Status:** Audit Complete — Adoption Phase  
+**Audit Report:** See [DESIGN_SYSTEM_AUDIT.md](./DESIGN_SYSTEM_AUDIT.md) for full findings
 
 ---
 
