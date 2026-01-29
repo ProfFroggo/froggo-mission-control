@@ -80,26 +80,7 @@ export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
           </span>
         </div>
 
-        {/* Watcher Status */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
-          status.watcherRunning 
-            ? 'bg-green-500/10 text-green-400' 
-            : 'bg-red-500/10 text-red-400'
-        }`}>
-          <Activity size={12} />
-          <span>Watcher</span>
-          <span className={`w-1.5 h-1.5 rounded-full ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} />
-        </div>
-
-        {/* Kill Switch Status */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
-          status.killSwitchOn 
-            ? 'bg-red-500/10 text-red-400' 
-            : 'bg-green-500/10 text-green-400'
-        }`}>
-          {status.killSwitchOn ? <Lock size={12} /> : <Unlock size={12} />}
-          <span>{status.killSwitchOn ? 'Blocked' : 'Live'}</span>
-        </div>
+        {/* OX LITE: Removed Watcher and Kill Switch status - not relevant for Ox */}
 
         {/* Focus Mode */}
         {focusMode && (
@@ -182,7 +163,7 @@ export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
         className="no-drag text-2xl cursor-pointer hover:scale-110 transition-transform p-1"
         title="Dashboard"
       >
-        🐸
+        🐂
       </button>
       </div>
 

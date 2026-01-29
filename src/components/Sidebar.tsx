@@ -16,21 +16,13 @@ interface SidebarProps {
   onNavigate: (view: View) => void;
 }
 
+// Ox Lite - Reduced navigation (same Froggo design, fewer items)
 const navItems = [
   { id: 'dashboard' as View, icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘1' },
   { id: 'inbox' as View, icon: Inbox, label: 'Approvals', shortcut: '⌘2', badge: 'inbox' },
-  { id: 'comms' as View, icon: Mail, label: 'Inbox', shortcut: '⌘3' },
-  { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '⌘4' },
-  { id: 'kanban' as View, icon: Kanban, label: 'Tasks', shortcut: '⌘5' },
-  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘6' },
-  { id: 'twitter' as View, icon: XIcon, label: 'X', shortcut: '⌘7' },
-  { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘8' },
-  { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘9' },
-  { id: 'accounts' as View, icon: Cloud, label: 'Accounts', shortcut: '⌘0' },
-  { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
-  { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
-  { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
-  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '⌘⇧S' },
+  { id: 'kanban' as View, icon: Kanban, label: 'Tasks', shortcut: '⌘3' },
+  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘4' },
+  { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '⌘5' },
 ];
 
 export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
@@ -74,7 +66,7 @@ export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
       {/* Drag region */}
       <div className="drag-region h-12 flex items-center justify-center border-b border-clawd-border">
         <div className="no-drag text-2xl cursor-pointer hover:scale-110 transition-transform" onClick={() => onNavigate('dashboard')}>
-          🐸
+          🐂
         </div>
       </div>
       

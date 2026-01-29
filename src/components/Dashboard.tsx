@@ -8,10 +8,11 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 // CalendarWidget removed - replaced by EpicCalendar in Schedule panel
+// OX LITE: Keeping EmailWidget and CalendarWidget but filtered to Bitso account only
 import EmailWidget from './EmailWidget';
+import CalendarWidget from './CalendarWidget';
 import QuickStatsWidget from './QuickStatsWidget';
-import WeatherWidget from './WeatherWidget';
-import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
+// OX LITE: Removed WeatherWidget, Mentions modals - not needed for Ox
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -78,12 +79,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     setActiveModal(modalMap[label] || null);
   };
 
-  const quickActions = [
-    { icon: Calendar, label: 'Calendar', color: 'text-blue-400' },
-    { icon: Mail, label: 'Email', color: 'text-green-400' },
-    { icon: XIcon, label: 'X Mentions', color: 'text-white' },
-    { icon: MessageSquare, label: 'Messages', color: 'text-purple-400' },
-  ];
+  // OX LITE: Removed Calendar, Email, X Mentions quick actions - not needed for Ox
+  const quickActions: { icon: any; label: string; color: string }[] = [];
 
   const getSessionIcon = (session: any) => {
     if (session.channel === 'whatsapp') return '💬';
@@ -117,7 +114,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       <div className="bg-gradient-to-r from-clawd-surface to-clawd-bg px-6 py-4 border-b border-clawd-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">{greeting}, Kevin</h1>
+            <h1 className="text-xl font-semibold">{greeting}, Ox 🐂</h1>
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
               connected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
             }`}>
@@ -320,16 +317,18 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
           {/* Right Column - Email & Notifications */}
           <div className="col-span-1 space-y-6">
-            {/* Email Widget */}
+            {/* OX LITE: Calendar filtered to Bitso only */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
-              <EmailWidget />
+              <CalendarWidget />
+            </div>
+
+            {/* OX LITE: Email filtered to Bitso only */}
+            <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
+              <EmailWidget filterAccount="kevin.macarthur@bitso.com" />
             </div>
 
             {/* Quick Stats Widget */}
             <QuickStatsWidget />
-
-            {/* Weather Widget */}
-            <WeatherWidget />
 
             {/* Recent Actions / Notifications */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
@@ -512,11 +511,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </div>
       </div>
       
-      {/* Quick Action Modals */}
-      <CalendarModal isOpen={activeModal === 'calendar'} onClose={() => setActiveModal(null)} />
-      <EmailModal isOpen={activeModal === 'email'} onClose={() => setActiveModal(null)} />
-      <MentionsModal isOpen={activeModal === 'mentions'} onClose={() => setActiveModal(null)} />
-      <MessagesModal isOpen={activeModal === 'messages'} onClose={() => setActiveModal(null)} />
+      {/* OX LITE: Removed Calendar/Email/Mentions/Messages modals - not needed */}
     </div>
   );
 }

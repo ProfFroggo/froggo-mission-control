@@ -13,7 +13,7 @@ const safeLog = {
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
-        safeLog.log(...args);
+        console.log(...args);
       }
     } catch (e: any) {
       // Silently ignore EPIPE and other stream errors
@@ -21,7 +21,7 @@ const safeLog = {
         // Only report unexpected errors to stderr (if writable)
         try {
           if (process.stderr.writable) {
-            safeLog.error('[SafeLog] Unexpected error:', e);
+            console.error('[SafeLog] Unexpected error:', e);
           }
         } catch {}
       }
@@ -30,7 +30,7 @@ const safeLog = {
   error: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        safeLog.error(...args);
+        console.error(...args);
       }
     } catch (e: any) {
       // Silently ignore stream errors
@@ -39,7 +39,7 @@ const safeLog = {
   warn: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        safeLog.warn(...args);
+        console.warn(...args);
       }
     } catch (e: any) {
       // Silently ignore stream errors
@@ -115,7 +115,7 @@ function createWindow() {
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5174');
     mainWindow.webContents.openDevTools();
   } else {
     safeLog.log('Running in production mode, loading from dist');
@@ -740,8 +740,11 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
 });
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
-  const statusArg = status ? `--status ${status}` : '';
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks ${status ? `WHERE status='${status}'` : ''} ORDER BY created_at DESC" -json`;
+  // OX LITE: Filter to only tasks assigned to Ox (worker/onchain_worker)
+  const oxFilter = "assigned_to IN ('worker', 'onchain_worker', 'ox')";
+  const statusFilter = status ? `status='${status}'` : '';
+  const whereClause = statusFilter ? `WHERE ${oxFilter} AND ${statusFilter}` : `WHERE ${oxFilter}`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks ${whereClause} ORDER BY created_at DESC" -json`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 10000 }, (error, stdout) => {

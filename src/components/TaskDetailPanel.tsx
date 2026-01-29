@@ -33,6 +33,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [poking, setPoking] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -1068,15 +1070,54 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
           {task.status === 'done' && (
             <button
-              onClick={() => {
-                updateTask(task.id, { status: 'todo' });
-                logTaskActivity(task.id, 'task_reopened', 'Task reopened');
-              }}
+              onClick={() => setShowReopenModal(true)}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
             >
               <XCircle size={16} />
               Reopen
             </button>
+          )}
+          
+          {/* Reopen Reason Modal */}
+          {showReopenModal && (
+            <>
+              <div className="fixed inset-0 bg-black/50 z-[200]" onClick={() => setShowReopenModal(false)} />
+              <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-clawd-surface border border-clawd-border rounded-xl p-6 shadow-2xl z-[210] w-96">
+                <h3 className="text-lg font-semibold mb-4">Reopen Task</h3>
+                <p className="text-sm text-clawd-text-dim mb-4">Why are you reopening this task?</p>
+                <textarea
+                  value={reopenReason}
+                  onChange={(e) => setReopenReason(e.target.value)}
+                  placeholder="e.g., Found a bug, Requirements changed, Needs more work..."
+                  className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm mb-4 resize-none h-24"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowReopenModal(false);
+                      setReopenReason('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text rounded-lg hover:bg-clawd-border/70"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const reason = reopenReason.trim() || 'No reason provided';
+                      updateTask(task.id, { status: 'todo' });
+                      logTaskActivity(task.id, 'task_reopened', `Task reopened: ${reason}`);
+                      showToast('info', 'Task reopened');
+                      setShowReopenModal(false);
+                      setReopenReason('');
+                    }}
+                    className="flex-1 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim"
+                  >
+                    Reopen Task
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
