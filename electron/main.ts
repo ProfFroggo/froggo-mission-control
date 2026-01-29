@@ -700,7 +700,7 @@ ipcMain.handle('tasks:sync', async (_, task: {
       const dueStr = task.dueDate ? new Date(task.dueDate).toISOString() : null;
       const nowMs = Date.now();
       
-      const insertCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES ('${task.id}', '${title}', '${desc}', '${task.status || 'todo'}', '${project}', '${task.assignedTo || ''}', '${task.priority || ''}', ${dueStr ? `'${dueStr}'` : 'NULL'}, ${nowMs}, ${nowMs})"`;
+      const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES ('${task.id}', '${title}', '${desc}', '${task.status || 'todo'}', '${project}', '${task.assignedTo || ''}', '${task.priority || ''}', ${dueStr ? `'${dueStr}'` : 'NULL'}, ${nowMs}, ${nowMs})"`;
       
       safeLog.log('[Tasks] Creating task via SQL');
       
@@ -1015,7 +1015,7 @@ ipcMain.handle('notification-settings:unmute', async (_, sessionKey: string) => 
 ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: string; content?: string; reason?: string }) => {
   const escapedTitle = rejection.title.replace(/"/g, '\\"');
   const escapedReason = (rejection.reason || '').replace(/"/g, '\\"');
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT INTO rejected_decisions (type, title, content, reason) VALUES ('${rejection.type}', '${escapedTitle}', '', '${escapedReason}')"`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO rejected_decisions (type, title, content, reason) VALUES ('${rejection.type}', '${escapedTitle}', '', '${escapedReason}')"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
@@ -1056,7 +1056,7 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
   
   // Execute SQL update if we have any fields
   if (sqlFields.length > 0) {
-    const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE tasks SET ${sqlFields.join(', ')}, updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
+    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET ${sqlFields.join(', ')}, updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
     
     return new Promise((resolve) => {
       exec(sqlCmd, { timeout: 10000 }, (error, stdout, stderr) => {
@@ -1079,7 +1079,7 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
   const statusArg = status ? `--status ${status}` : '';
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT * FROM tasks ${status ? `WHERE status='${status}'` : ''} ORDER BY created_at DESC" -json`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks ${status ? `WHERE status='${status}'` : ''} ORDER BY created_at DESC" -json`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
@@ -2777,7 +2777,7 @@ ipcMain.handle('inbox:addWithMetadata', async (_, item: {
     const escapedContext = (item.context || '').replace(/'/g, "''");
     const escapedMetadata = (item.metadata || '{}').replace(/'/g, "''");
     
-    const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitle}', '${escapedContent}', '${escapedContext}', 'pending', '${item.channel || 'system'}', '${escapedMetadata}', datetime('now'))"`;
+    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitle}', '${escapedContent}', '${escapedContext}', 'pending', '${item.channel || 'system'}', '${escapedMetadata}', datetime('now'))"`;
     
     exec(sqlCmd, { timeout: 10000 }, (error) => {
       if (error) {
@@ -2797,7 +2797,7 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
   
   return new Promise((resolve) => {
     // Query directly via sqlite3
-    const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
+    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
     
     safeLog.log('[Inbox:list] Executing query for status:', effectiveStatus);
     safeLog.log('[Inbox:list] Command:', sqlCmd);
@@ -2869,7 +2869,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       const escapedContentSql = item.content.replace(/'/g, "''");
       const escapedContextSql = (item.context || '').replace(/'/g, "''");
       
-      const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitleSql}', '${escapedContentSql}', '${escapedContextSql}', 'pending', '${item.channel || 'unknown'}', '${metadataJson}', datetime('now'))"`;
+      const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitleSql}', '${escapedContentSql}', '${escapedContextSql}', 'pending', '${item.channel || 'unknown'}', '${metadataJson}', datetime('now'))"`;
       
       exec(sqlCmd, { timeout: 10000 }, (error) => {
         if (error) {
@@ -2902,7 +2902,7 @@ ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?
   
   if (sets.length === 0) return { success: false };
   
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE inbox SET ${sets.join(', ')} WHERE id=${id}"`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET ${sets.join(', ')} WHERE id=${id}"`;
   safeLog.log('[Inbox:update] Running:', cmd);
   
   return new Promise((resolve) => {
@@ -2916,11 +2916,11 @@ ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?
 ipcMain.handle('inbox:approveAll', async () => {
   return new Promise((resolve) => {
     // Count pending items first
-    exec(`sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT COUNT(*) FROM inbox WHERE status='pending'"`, (_, countOut) => {
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) FROM inbox WHERE status='pending'"`, (_, countOut) => {
       const count = parseInt(countOut?.trim() || '0', 10);
       
       // Approve all pending
-      const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE inbox SET status='approved', reviewed_at=datetime('now') WHERE status='pending'"`;
+      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='approved', reviewed_at=datetime('now') WHERE status='pending'"`;
       
       exec(cmd, { timeout: 5000 }, (error) => {
         if (error) {
@@ -2937,7 +2937,7 @@ ipcMain.handle('inbox:approveAll', async () => {
 // List items that need revision (for agents to process)
 ipcMain.handle('inbox:listRevisions', async () => {
   return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='needs-revision' ORDER BY created DESC" -json`;
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='needs-revision' ORDER BY created DESC" -json`;
     
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
       if (error) {
@@ -2962,7 +2962,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
   
   return new Promise((resolve) => {
     // First, get the original item
-    exec(`sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${originalId}" -json`, (getErr, getOut) => {
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${originalId}" -json`, (getErr, getOut) => {
       if (getErr) {
         safeLog.error('[Inbox] Get original error:', getErr);
         resolve({ success: false, error: 'Failed to get original item' });
@@ -2983,7 +2983,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
         const context = `Revision of inbox item #${originalId}. Original feedback: ${(original.feedback || 'none').replace(/'/g, "''")}`;
         
         // Create new pending item with revised content
-        const insertCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('${original.type}', '${escapedTitle}', '${escapedContent}', '${context}', 'pending', '${original.source_channel || 'revision'}', datetime('now'))"`;
+        const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('${original.type}', '${escapedTitle}', '${escapedContent}', '${context}', 'pending', '${original.source_channel || 'revision'}', datetime('now'))"`;
         
         exec(insertCmd, { timeout: 5000 }, (insertErr) => {
           if (insertErr) {
@@ -2993,7 +2993,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
           }
           
           // Mark original as 'revised' (completed state)
-          const updateCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE inbox SET status='revised', reviewed_at=datetime('now') WHERE id=${originalId}"`;
+          const updateCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='revised', reviewed_at=datetime('now') WHERE id=${originalId}"`;
           
           exec(updateCmd, { timeout: 5000 }, (updateErr) => {
             if (updateErr) {
@@ -3020,7 +3020,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
 // Get revision details for a specific item (includes original content and feedback)
 ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
   return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${itemId} AND status='needs-revision'" -json`;
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${itemId} AND status='needs-revision'" -json`;
     
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
@@ -3881,7 +3881,7 @@ ipcMain.handle('library:list', async (_, category?: string) => {
   
   return new Promise((resolve) => {
     const categoryFilter = category ? `WHERE category='${category}'` : '';
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT * FROM library ${categoryFilter} ORDER BY updated_at DESC" -json 2>/dev/null || echo '[]'`;
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM library ${categoryFilter} ORDER BY updated_at DESC" -json 2>/dev/null || echo '[]'`;
     
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
       if (error) {
@@ -3937,7 +3937,7 @@ ipcMain.handle('library:upload', async () => {
   
   // Insert into database
   return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "
+    const cmd = `sqlite3 ~/clawd/data/froggo.db "
       CREATE TABLE IF NOT EXISTS library (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -3966,7 +3966,7 @@ ipcMain.handle('library:upload', async () => {
 ipcMain.handle('library:delete', async (_, fileId: string) => {
   return new Promise((resolve) => {
     // Get file path first
-    exec(`sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path FROM library WHERE id='${fileId}'" -json`, (_, stdout) => {
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT path FROM library WHERE id='${fileId}'" -json`, (_, stdout) => {
       try {
         const rows = JSON.parse(stdout || '[]');
         if (rows.length > 0 && rows[0].path) {
@@ -3978,7 +3978,7 @@ ipcMain.handle('library:delete', async (_, fileId: string) => {
       } catch {}
       
       // Delete from database
-      exec(`sqlite3 ~/Froggo/clawd/data/froggo.db "DELETE FROM library WHERE id='${fileId}'"`, (error) => {
+      exec(`sqlite3 ~/clawd/data/froggo.db "DELETE FROM library WHERE id='${fileId}'"`, (error) => {
         resolve({ success: !error });
       });
     });
@@ -3988,7 +3988,7 @@ ipcMain.handle('library:delete', async (_, fileId: string) => {
 ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
   return new Promise((resolve) => {
     // Get current linked tasks
-    exec(`sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT linked_tasks FROM library WHERE id='${fileId}'"`, (_, stdout) => {
+    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT linked_tasks FROM library WHERE id='${fileId}'"`, (_, stdout) => {
       let linkedTasks: string[] = [];
       try {
         const current = stdout?.trim();
@@ -3999,7 +3999,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
         linkedTasks.push(taskId);
       }
       
-      const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE library SET linked_tasks='${JSON.stringify(linkedTasks)}', updated_at=datetime('now') WHERE id='${fileId}'"`;
+      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE library SET linked_tasks='${JSON.stringify(linkedTasks)}', updated_at=datetime('now') WHERE id='${fileId}'"`;
       exec(cmd, (error) => {
         resolve({ success: !error });
       });
@@ -4380,7 +4380,7 @@ const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
 // Check comms cache freshness
 const getCommsCacheAge = async (): Promise<number> => {
   try {
-    const raw = await runMsgCmd(`sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT MAX(fetched_at) FROM comms_cache"`, 2000);
+    const raw = await runMsgCmd(`sqlite3 ~/clawd/data/froggo.db "SELECT MAX(fetched_at) FROM comms_cache"`, 2000);
     if (raw && raw.trim()) {
       const lastFetch = new Date(raw.trim()).getTime();
       return Date.now() - lastFetch;
@@ -4457,7 +4457,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
   let archivedKeys: Set<string> = new Set();
   if (!includeArchived) {
     try {
-      const archivedRaw = await runMsgCmd(`sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT session_key FROM conversation_folders WHERE folder_id = 4"`, 3000);
+      const archivedRaw = await runMsgCmd(`sqlite3 ~/clawd/data/froggo.db "SELECT session_key FROM conversation_folders WHERE folder_id = 4"`, 3000);
       if (archivedRaw) {
         const keys = archivedRaw.trim().split('\n').filter((k: string) => k.length > 0);
         archivedKeys = new Set<string>(keys);
@@ -5226,7 +5226,7 @@ async function runImportantEmailCheck() {
           const escapedTitle = title.replace(/"/g, '\\"').replace(/'/g, "''");
           const escapedContent = content.replace(/"/g, '\\"').replace(/'/g, "''");
           
-          const insertCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('email', '${escapedTitle}', '${escapedContent}', '${important.priority} priority', 'pending', 'email', datetime('now'))"`;
+          const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('email', '${escapedTitle}', '${escapedContent}', '${important.priority} priority', 'pending', 'email', datetime('now'))"`;
           
           exec(insertCmd, { timeout: 5000 }, (err) => {
             if (err) safeLog.error('[Email] Failed to create inbox item:', err);
@@ -6079,7 +6079,7 @@ ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: strin
   const escapedContent = msg.content.replace(/'/g, "''");
   const ts = new Date(msg.timestamp).toISOString();
   
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('${ts}', '${session}', 'dashboard', '${msg.role}', '${escapedContent}')"`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('${ts}', '${session}', 'dashboard', '${msg.role}', '${escapedContent}')"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
@@ -6090,7 +6090,7 @@ ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: strin
 
 ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: string) => {
   const session = sessionKey || 'dashboard';
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT id, timestamp, role, content FROM messages WHERE session_key='${session}' AND channel='dashboard' ORDER BY timestamp DESC LIMIT ${limit}" -json`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id, timestamp, role, content FROM messages WHERE session_key='${session}' AND channel='dashboard' ORDER BY timestamp DESC LIMIT ${limit}" -json`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
@@ -6116,7 +6116,7 @@ ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: s
 
 ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {
   const session = sessionKey || 'dashboard';
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "DELETE FROM messages WHERE session_key='${session}' AND channel='dashboard'"`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "DELETE FROM messages WHERE session_key='${session}' AND channel='dashboard'"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
@@ -6284,7 +6284,7 @@ ipcMain.handle('starred:search', async (_, query: string, limit?: number) => {
 
 // Get starred stats
 ipcMain.handle('starred:stats', async () => {
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT COUNT(*) as total FROM starred_messages; SELECT category, COUNT(*) as count FROM starred_messages GROUP BY category;"`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) as total FROM starred_messages; SELECT category, COUNT(*) as count FROM starred_messages GROUP BY category;"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
@@ -6301,7 +6301,7 @@ ipcMain.handle('starred:stats', async () => {
 
 // Check if a message is starred
 ipcMain.handle('starred:check', async (_, messageId: number) => {
-  const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT id FROM starred_messages WHERE message_id=${messageId}"`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id FROM starred_messages WHERE message_id=${messageId}"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 2000 }, (error, stdout) => {
