@@ -21,12 +21,33 @@ interface ComparisonData {
 
 export default function AgentCompareModal({ agentIds, onClose }: AgentCompareModalProps) {
   const { agents } = useStore();
+  const [isClosing, setIsClosing] = useState(false);
   const [data, setData] = useState<ComparisonData>({});
   const [loading, setLoading] = useState(true);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200);
+  };
 
   useEffect(() => {
     loadComparisonData();
   }, [agentIds]);
+
+  // ESC key to close
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
 
   const loadComparisonData = async () => {
     setLoading(true);
@@ -69,8 +90,18 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div 
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
+      }`} 
+      onClick={handleClose}
+    >
+      <div 
+        className={`glass-modal rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+          isClosing ? 'modal-content-exit' : 'modal-content-enter'
+        }`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-6 border-b border-clawd-border flex items-center justify-between">
           <div>
@@ -83,10 +114,11 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
@@ -278,7 +310,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         {/* Footer */}
         <div className="p-4 border-t border-clawd-border flex justify-end">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
           >
             Close

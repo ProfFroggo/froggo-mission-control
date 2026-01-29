@@ -429,7 +429,7 @@ export default function ContentScheduler() {
                   onClick={() => fileInputRef.current?.click()}
                   className="flex items-center gap-1 px-2 py-1 text-xs bg-clawd-border hover:bg-clawd-border/80 rounded-lg transition-colors"
                 >
-                  <Paperclip size={12} />
+                  <Paperclip size={14} />
                   {mediaFile ? 'Change' : 'Attach'}
                 </button>
               </div>
@@ -596,8 +596,8 @@ export default function ContentScheduler() {
                   } transition-colors`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2 rounded-lg ${config.color}`}>
-                      <Icon size={18} />
+                    <div className={`p-2 rounded-lg ${config.color} flex items-center justify-center`}>
+                      <Icon size={16} />
                     </div>
                     
                     <div className="flex-1 min-w-0">
@@ -611,7 +611,7 @@ export default function ContentScheduler() {
                           {item.status}
                         </span>
                         <span className="text-xs text-clawd-text-dim flex items-center gap-1">
-                          <Clock size={12} />
+                          <Clock size={14} />
                           {formatScheduledTime(item.scheduledFor)}
                         </span>
                       </div>
@@ -629,9 +629,9 @@ export default function ContentScheduler() {
                       {item.metadata?.mediaPath && (
                         <div className="flex items-center gap-1 text-xs text-clawd-accent mt-1">
                           {item.metadata.mediaType === 'image' ? (
-                            <ImageIcon size={12} />
+                            <ImageIcon size={14} />
                           ) : (
-                            <Video size={12} />
+                            <Video size={14} />
                           )}
                           <span>{item.metadata.mediaFileName}</span>
                         </div>

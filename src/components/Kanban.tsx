@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { 
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, GripVertical, Clock, User, Play, Zap, 
   CheckSquare, Filter, Search, AlertTriangle, Calendar, Tag, ArrowUp, ArrowDown,
@@ -7,14 +7,16 @@ import {
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
+import ActiveAgentIndicator from './ActiveAgentIndicator';
 import { showToast } from './Toast';
+import { Spinner, TaskCardSkeleton, LoadingButton, InlineLoader } from './LoadingStates';
 
-// Priority config
+// Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={12} /> },
-  { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={12} /> },
-  { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={12} /> },
-  { id: 'p3', label: 'Low', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: <ArrowDown size={12} /> },
+  { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
+  { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
+  { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={14} className="flex-shrink-0" /> },
+  { id: 'p3', label: 'Low', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
 // Format relative time
@@ -68,13 +70,46 @@ interface Filters {
 }
 
 export default function Kanban() {
-  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask } = useStore();
+  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading } = useStore();
   
-  // Load tasks from froggo-db on mount and poll
+  // Local loading states for operations
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deletingTasks, setDeletingTasks] = useState<Set<string>>(new Set());
+  const [spawningTasks, setSpawningTasks] = useState<Set<string>>(new Set());
+  const [movingTasks, setMovingTasks] = useState<Set<string>>(new Set());
+  
+  // Load tasks from froggo-db on mount and poll (only when visible)
   useEffect(() => {
     loadTasksFromDB();
-    const interval = setInterval(loadTasksFromDB, 5000);
-    return () => clearInterval(interval);
+    
+    // Polling with visibility detection - stop polling when tab hidden
+    // Increased to 30s for better performance
+    let interval: NodeJS.Timeout;
+    
+    const startPolling = () => {
+      interval = setInterval(loadTasksFromDB, 30000); // 30s (was 10s)
+    };
+    
+    const stopPolling = () => {
+      if (interval) clearInterval(interval);
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        loadTasksFromDB(); // Refresh on return
+        startPolling();
+      }
+    };
+    
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [loadTasksFromDB]);
   
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
@@ -296,7 +331,7 @@ export default function Kanban() {
     }
 
     // All validations passed - move the task
-    moveTask(draggedTask, status);
+    handleMoveTask(draggedTask, status);
     setDraggedTask(null);
     setDragOverColumn(null);
   };
@@ -311,9 +346,64 @@ export default function Kanban() {
     setModalOpen(true);
   };
 
-  const handleQuickPriority = (taskId: string, priority: TaskPriority) => {
+  const handleQuickPriority = useCallback((taskId: string, priority: TaskPriority) => {
     updateTask(taskId, { priority });
     showToast('success', `Priority set to ${priority.toUpperCase()}`);
+  }, [updateTask]);
+
+  // Async operation wrappers with loading states
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadTasksFromDB();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    setDeletingTasks(prev => new Set(prev).add(taskId));
+    try {
+      await deleteTask(taskId);
+      showToast('success', 'Task deleted');
+    } catch (error) {
+      showToast('error', 'Failed to delete task');
+    } finally {
+      setDeletingTasks(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+    }
+  };
+
+  const handleSpawnAgent = async (taskId: string) => {
+    setSpawningTasks(prev => new Set(prev).add(taskId));
+    try {
+      await spawnAgentForTask(taskId);
+      showToast('success', 'Agent spawned successfully');
+    } catch (error) {
+      showToast('error', 'Failed to spawn agent');
+    } finally {
+      setSpawningTasks(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+    }
+  };
+
+  const handleMoveTask = async (taskId: string, status: TaskStatus) => {
+    setMovingTasks(prev => new Set(prev).add(taskId));
+    try {
+      await moveTask(taskId, status);
+    } finally {
+      setMovingTasks(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+    }
   };
 
   return (
@@ -322,7 +412,7 @@ export default function Kanban() {
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold icon-text">
               Task Board
               <span className="text-sm font-normal text-clawd-text-dim">
                 Press <kbd className="px-1.5 py-0.5 bg-clawd-bg rounded text-xs">?</kbd> for shortcuts
@@ -331,23 +421,23 @@ export default function Kanban() {
             <div className="flex items-center gap-4 text-sm text-clawd-text-dim mt-1">
               <span>{tasks.length} tasks</span>
               {stats.inProgress > 0 && (
-                <span className="flex items-center gap-1 text-yellow-400">
-                  <Zap size={12} /> {stats.inProgress} in progress
+                <span className="icon-text-tight text-yellow-400">
+                  <Zap size={14} className="flex-shrink-0" /> {stats.inProgress} in progress
                 </span>
               )}
               {stats.urgent > 0 && (
-                <span className="flex items-center gap-1 text-red-400">
-                  <AlertTriangle size={12} /> {stats.urgent} urgent
+                <span className="icon-text-tight text-red-400">
+                  <AlertTriangle size={14} className="flex-shrink-0" /> {stats.urgent} urgent
                 </span>
               )}
               {stats.overdue > 0 && (
-                <span className="flex items-center gap-1 text-red-400">
-                  <Clock size={12} /> {stats.overdue} overdue
+                <span className="icon-text-tight text-red-400">
+                  <Clock size={14} className="flex-shrink-0" /> {stats.overdue} overdue
                 </span>
               )}
               {stats.unassigned > 0 && (
-                <span className="flex items-center gap-1 text-gray-400">
-                  <User size={12} /> {stats.unassigned} unassigned
+                <span className="icon-text-tight text-gray-400">
+                  <User size={14} className="flex-shrink-0" /> {stats.unassigned} unassigned
                 </span>
               )}
             </div>
@@ -356,7 +446,7 @@ export default function Kanban() {
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Search tasks..."
@@ -369,16 +459,16 @@ export default function Kanban() {
             {/* Filter button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
+              className={`icon-text px-3 py-2 rounded-xl border transition-all ${
                 activeFiltersCount > 0
                   ? 'bg-clawd-accent/20 border-clawd-accent text-clawd-accent'
                   : 'bg-clawd-bg border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Filter size={16} />
+              <Filter size={16} className="flex-shrink-0" />
               Filters
               {activeFiltersCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-clawd-accent text-white text-xs rounded-full">
+                <span className="px-1.5 py-0.5 bg-clawd-accent text-white text-xs rounded-full flex-shrink-0 whitespace-nowrap">
                   {activeFiltersCount}
                 </span>
               )}
@@ -386,19 +476,20 @@ export default function Kanban() {
 
             {/* Refresh */}
             <button
-              onClick={() => loadTasksFromDB()}
-              className="p-2 rounded-xl border border-clawd-border hover:border-clawd-accent/50 transition-all"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="icon-btn border border-clawd-border hover:border-clawd-accent/50 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Refresh tasks"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             
             {/* New Task */}
             <button 
               onClick={() => handleAddTask('todo')}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-all hover:scale-105"
+              className="icon-text px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-all hover:scale-105"
             >
-              <Plus size={18} />
+              <Plus size={16} className="flex-shrink-0" />
               New Task
               <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">N</kbd>
             </button>
@@ -409,8 +500,8 @@ export default function Kanban() {
         {showFilters && (
           <div className="flex items-center gap-4 p-4 bg-clawd-bg rounded-xl border border-clawd-border animate-in slide-in-from-top-2">
             {/* Project */}
-            <div className="flex items-center gap-2">
-              <FolderOpen size={14} className="text-clawd-text-dim" />
+            <div className="icon-text-tight">
+              <FolderOpen size={16} className="text-clawd-text-dim flex-shrink-0" />
               <select
                 value={filters.project}
                 onChange={(e) => setFilters(f => ({ ...f, project: e.target.value }))}
@@ -423,8 +514,8 @@ export default function Kanban() {
             </div>
 
             {/* Priority */}
-            <div className="flex items-center gap-2">
-              <Flag size={14} className="text-clawd-text-dim" />
+            <div className="icon-text-tight">
+              <Flag size={16} className="text-clawd-text-dim flex-shrink-0" />
               <select
                 value={filters.priority}
                 onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value as TaskPriority | 'all' }))}
@@ -438,8 +529,8 @@ export default function Kanban() {
             </div>
 
             {/* Assignee */}
-            <div className="flex items-center gap-2">
-              <Bot size={14} className="text-clawd-text-dim" />
+            <div className="icon-text-tight">
+              <Bot size={16} className="text-clawd-text-dim flex-shrink-0" />
               <select
                 value={filters.assignee}
                 onChange={(e) => setFilters(f => ({ ...f, assignee: e.target.value }))}
@@ -456,7 +547,7 @@ export default function Kanban() {
             </div>
 
             {/* Show completed */}
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <label className="icon-text-tight text-sm cursor-pointer">
               <input
                 type="checkbox"
                 checked={filters.showCompleted}
@@ -470,9 +561,9 @@ export default function Kanban() {
             {activeFiltersCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="text-sm text-clawd-accent hover:underline flex items-center gap-1"
+                className="icon-text-tight text-sm text-clawd-accent hover:underline"
               >
-                <X size={14} /> Clear all
+                <X size={16} className="flex-shrink-0" /> Clear all
               </button>
             )}
           </div>
@@ -480,7 +571,7 @@ export default function Kanban() {
       </div>
 
       {/* Kanban Board */}
-      <div className="flex-1 flex gap-4 p-4 overflow-x-auto">
+      <div className="flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto">
         {columns.map((column) => {
           const columnTasks = filteredTasks.filter(t => t.status === column.id);
           const isDragOver = dragOverColumn === column.id;
@@ -502,7 +593,7 @@ export default function Kanban() {
               {/* Column Header */}
               <div className={`p-3 border-b border-clawd-border border-l-4 ${column.color} rounded-t-2xl`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="icon-text">
                     <span>{column.emoji}</span>
                     <h3 className="font-semibold text-sm">{column.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`}>
@@ -511,35 +602,47 @@ export default function Kanban() {
                   </div>
                   <button
                     onClick={() => handleAddTask(column.id)}
-                    className="p-1 rounded-lg hover:bg-clawd-border transition-colors text-clawd-text-dim hover:text-clawd-text"
+                    className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} className="flex-shrink-0" />
                   </button>
                 </div>
               </div>
 
               {/* Tasks */}
-              <div className="flex-1 p-2 space-y-2 overflow-y-auto min-h-0">
-                {columnTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    agents={agents}
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    onDragEnd={handleDragEnd}
-                    onDelete={() => deleteTask(task.id)}
-                    onAssign={(agentId) => assignTask(task.id, agentId)}
-                    onStartAgent={(taskId) => spawnAgentForTask(taskId)}
-                    onClick={() => setSelectedTask(task)}
-                    onSetPriority={(priority) => handleQuickPriority(task.id, priority)}
-                    isDragging={draggedTask === task.id}
-                  />
-                ))}
+              <div className="flex-1 min-w-0 p-2 space-y-2 overflow-y-auto min-h-0">
+                {loading.tasks && columnTasks.length === 0 ? (
+                  // Show skeleton while loading
+                  <>
+                    <TaskCardSkeleton />
+                    <TaskCardSkeleton />
+                    <TaskCardSkeleton />
+                  </>
+                ) : (
+                  columnTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      agents={agents}
+                      onDragStart={(e) => handleDragStart(e, task.id)}
+                      onDragEnd={handleDragEnd}
+                      onDelete={() => handleDeleteTask(task.id)}
+                      onAssign={(agentId) => assignTask(task.id, agentId)}
+                      onStartAgent={() => handleSpawnAgent(task.id)}
+                      onClick={() => setSelectedTask(task)}
+                      onSetPriority={(priority) => handleQuickPriority(task.id, priority)}
+                      isDragging={draggedTask === task.id}
+                      isDeleting={deletingTasks.has(task.id)}
+                      isSpawning={spawningTasks.has(task.id)}
+                      isMoving={movingTasks.has(task.id)}
+                    />
+                  ))
+                )}
                 
                 {columnTasks.length === 0 && (
                   <div className="text-center py-8 text-clawd-text-dim">
-                    <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-clawd-border/50 flex items-center justify-center">
-                      <Plus size={18} />
+                    <div className="icon-badge-lg mx-auto mb-2 bg-clawd-border/50">
+                      <Plus size={16} className="flex-shrink-0" />
                     </div>
                     <p className="text-xs">Drop here or click +</p>
                   </div>
@@ -555,11 +658,11 @@ export default function Kanban() {
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
           <div className="bg-clawd-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-clawd-border" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Keyboard size={20} /> Keyboard Shortcuts
+              <h2 className="icon-text text-lg font-semibold">
+                <Keyboard size={20} className="flex-shrink-0" /> Keyboard Shortcuts
               </h2>
-              <button onClick={() => setShowKeyboardHelp(false)} className="p-1 hover:bg-clawd-border rounded-lg">
-                <X size={18} />
+              <button onClick={() => setShowKeyboardHelp(false)} className="icon-btn-sm">
+                <X size={16} className="flex-shrink-0" />
               </button>
             </div>
             <div className="space-y-3 text-sm">
@@ -593,13 +696,16 @@ interface TaskCardProps {
   onDragEnd: () => void;
   onDelete: () => void;
   onAssign: (agentId: string) => void;
-  onStartAgent: (taskId: string) => void;
+  onStartAgent: () => void;
   onClick: () => void;
   onSetPriority: (priority: TaskPriority) => void;
   isDragging: boolean;
+  isDeleting?: boolean;
+  isSpawning?: boolean;
+  isMoving?: boolean;
 }
 
-function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, isDragging }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
@@ -625,8 +731,10 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`bg-clawd-bg rounded-xl p-3 border transition-all cursor-pointer group relative ${
+      className={`bg-clawd-bg rounded-xl p-3 border transition-all cursor-pointer group relative overflow-hidden ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
+      } ${
+        isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
         dueInfo?.isOverdue ? 'border-red-500/50 bg-red-500/5' :
         task.priority === 'p0' ? 'border-red-500/30' :
@@ -646,14 +754,18 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
           </button>
         )}
         
-        <h4 className="font-medium text-sm leading-tight flex-1 line-clamp-2">{task.title}</h4>
+        {/* Active agent indicator + Title */}
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          <ActiveAgentIndicator taskId={task.id} size="sm" />
+          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
+        </div>
         
         <div className="relative flex-shrink-0">
           <button 
-            className="p-1 rounded-lg text-clawd-text-dim hover:bg-clawd-border opacity-0 group-hover:opacity-100 transition-all"
+            className="icon-btn-sm text-clawd-text-dim opacity-0 group-hover:opacity-100"
             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
           >
-            <MoreHorizontal size={14} />
+            <MoreHorizontal size={16} className="flex-shrink-0" />
           </button>
           
           {showMenu && (
@@ -662,22 +774,24 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
               <div className="absolute right-0 top-8 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-40 min-w-40">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowPriority(true); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-clawd-border flex items-center gap-2"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
-                  <Flag size={14} /> Set Priority
+                  <Flag size={16} className="flex-shrink-0" /> Set Priority
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowAssign(true); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-clawd-border flex items-center gap-2"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
-                  <Bot size={14} /> Assign Agent
+                  <Bot size={16} className="flex-shrink-0" /> Assign Agent
                 </button>
                 <hr className="my-1 border-clawd-border" />
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-clawd-border text-red-400 flex items-center gap-2"
+                  disabled={isDeleting}
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border text-red-400 disabled:opacity-50"
                 >
-                  <Trash2 size={14} /> Delete
+                  {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={16} className="flex-shrink-0" />} 
+                  {isDeleting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </>
@@ -695,8 +809,8 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
       {/* Subtask Progress */}
       {subtaskCount > 0 && (
         <div className="mb-2">
-          <div className="flex items-center gap-2 text-xs text-clawd-text-dim mb-1">
-            <CheckSquare size={10} />
+          <div className="icon-text-tight text-xs text-clawd-text-dim mb-1">
+            <CheckSquare size={14} className="flex-shrink-0" />
             <span>{completedSubtasks}/{subtaskCount}</span>
           </div>
           <div className="h-1 bg-clawd-surface rounded-full overflow-hidden">
@@ -711,41 +825,42 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
       )}
       
       {/* Bottom row: Project, Due date, Agent */}
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="px-2 py-0.5 bg-clawd-surface rounded text-clawd-text-dim flex items-center gap-1">
-            <FolderOpen size={10} />
+      <div className="flex items-center justify-between gap-2 text-xs min-w-0">
+        <div className="icon-text flex-1 min-w-0 min-w-0 overflow-hidden">
+          <span className="icon-text-tight px-2 py-0.5 bg-clawd-surface rounded text-clawd-text-dim no-shrink no-wrap">
+            <FolderOpen size={14} className="no-shrink" />
             {task.project}
           </span>
           
           {dueInfo && (
-            <span className={`px-2 py-0.5 rounded flex items-center gap-1 ${
+            <span className={`icon-text-tight px-2 py-0.5 rounded no-shrink no-wrap ${
               dueInfo.isOverdue ? 'bg-red-500/20 text-red-400' :
               dueInfo.isDueSoon ? 'bg-yellow-500/20 text-yellow-400' :
               'bg-clawd-surface text-clawd-text-dim'
             }`}>
-              <Calendar size={10} />
+              <Calendar size={14} className="no-shrink" />
               {dueInfo.text}
             </span>
           )}
         </div>
         
         {assignedAgent ? (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 no-shrink">
             {isAgentWorking ? (
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded animate-pulse">
-                <Zap size={10} />
+              <span className="icon-badge-sm bg-yellow-500/20 text-yellow-400 animate-pulse">
+                <Zap size={14} className="no-shrink" />
               </span>
             ) : canStart ? (
               <button
-                onClick={(e) => { e.stopPropagation(); onStartAgent(task.id); }}
-                className="flex items-center gap-1 px-2 py-0.5 bg-green-500 text-white rounded hover:bg-green-600"
+                onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
+                disabled={isSpawning}
+                className="icon-badge-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Play size={10} />
+                {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
               </button>
             ) : null}
             <button 
-              className="flex items-center gap-1 px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20"
+              className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
               onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
             >
               <span>{assignedAgent.avatar || '🤖'}</span>
@@ -753,10 +868,10 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
           </div>
         ) : (
           <button 
-            className="text-clawd-text-dim hover:text-clawd-accent flex items-center gap-1"
+            className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
             onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
           >
-            <User size={12} />
+            <User size={14} className="no-shrink" />
           </button>
         )}
       </div>
@@ -825,4 +940,18 @@ function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, on
       )}
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for better memoization
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.priority === nextProps.task.priority &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.assignedTo === nextProps.task.assignedTo &&
+    prevProps.task.lastAgentUpdate === nextProps.task.lastAgentUpdate &&
+    prevProps.task.updatedAt === nextProps.task.updatedAt &&
+    prevProps.task.dueDate === nextProps.task.dueDate &&
+    (prevProps.task.subtasks?.length || 0) === (nextProps.task.subtasks?.length || 0) &&
+    prevProps.isDragging === nextProps.isDragging
+  );
+});

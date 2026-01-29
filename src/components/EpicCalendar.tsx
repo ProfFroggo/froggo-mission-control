@@ -417,7 +417,7 @@ export default function EpicCalendar() {
               className="p-2 hover:bg-clawd-border rounded-lg transition-colors disabled:opacity-50"
               title="Refresh events"
             >
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
 
             {/* Navigation */}
@@ -426,7 +426,7 @@ export default function EpicCalendar() {
                 onClick={() => navigateDate('prev')}
                 className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => navigateDate('today')}
@@ -438,7 +438,7 @@ export default function EpicCalendar() {
                 onClick={() => navigateDate('next')}
                 className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={16} />
               </button>
             </div>
 
@@ -464,7 +464,7 @@ export default function EpicCalendar() {
               onClick={handleCreateEvent}
               className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               New Event
             </button>
           </div>

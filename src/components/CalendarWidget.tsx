@@ -114,7 +114,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
     <div className={`bg-clawd-surface ${expanded ? 'rounded-xl' : 'rounded-2xl'} border border-clawd-border overflow-hidden`}>
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <h2 className="font-semibold flex items-center gap-2">
-          <Calendar size={18} className="text-blue-400" />
+          <Calendar size={16} className="text-blue-400" />
           Calendar
         </h2>
         <div className="flex gap-2">
@@ -185,26 +185,26 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium truncate">{event.title}</span>
                           {isUrgent(event.start) && (
-                            <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded">
+                            <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded flex-shrink-0 whitespace-nowrap">
                               {getTimeUntil(event.start)}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
                           <span className="flex items-center gap-1">
-                            <Clock size={12} />
+                            <Clock size={14} />
                             {formatTime(event.start, event.isAllDay)}
                             {event.end && !event.isAllDay && ` - ${formatTime(event.end)}`}
                           </span>
                           {event.location && (
                             <span className="flex items-center gap-1 truncate">
-                              <MapPin size={12} />
+                              <MapPin size={14} />
                               {event.location}
                             </span>
                           )}
                           {event.attendees && event.attendees > 1 && (
                             <span className="flex items-center gap-1">
-                              <Users size={12} />
+                              <Users size={14} />
                               {event.attendees}
                             </span>
                           )}

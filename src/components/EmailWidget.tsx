@@ -70,15 +70,15 @@ export default function EmailWidget() {
     <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Mail size={18} className="text-green-400" />
+          <Mail size={16} className="text-green-400" />
           <h2 className="font-semibold">Email</h2>
           {totalUnread > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full">
+            <span className="text-xs px-1.5 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full flex-shrink-0 whitespace-nowrap">
               {totalUnread} unread
             </span>
           )}
           {totalAction > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded-full">
+            <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded-full flex-shrink-0 whitespace-nowrap">
               {totalAction} action
             </span>
           )}

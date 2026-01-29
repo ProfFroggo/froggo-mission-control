@@ -14,9 +14,10 @@ interface SystemStatus {
 interface TopBarProps {
   onCallClick?: () => void;
   onNavigate?: (view: string) => void;
+  sidebarWidth?: number; // Dynamic sidebar width
 }
 
-export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
+export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: TopBarProps) {
   const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
   const [status, setStatus] = useState<SystemStatus>({
     watcherRunning: false,
@@ -61,19 +62,28 @@ export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
   };
 
   return (
-    <div className="drag-region fixed top-0 right-0 h-12 z-50 flex items-center justify-between px-4" style={{ left: '208px' }}>
+    <header 
+      className="drag-region fixed top-0 right-0 h-12 z-50 flex items-center justify-between px-4 transition-all duration-200" 
+      style={{ left: `${sidebarWidth}px` }}
+      role="banner"
+      aria-label="Top navigation bar"
+    >
       {/* System Status Indicators */}
-      <div className="no-drag flex items-center gap-3">
+      <div className="no-drag flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-[calc(100%-200px)]" role="status" aria-label="System status indicators">
         {/* Gateway Connection */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
-          connectionState === 'connected'
-            ? 'bg-green-500/10 text-green-400'
-            : connectionState === 'connecting' || connectionState === 'authenticating'
-            ? 'bg-yellow-500/10 text-yellow-400'
-            : 'bg-red-500/10 text-red-400'
-        }`}>
-          {connectionState === 'connected' ? <Wifi size={12} /> : <WifiOff size={12} />}
-          <span>
+        <div 
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+            connectionState === 'connected'
+              ? 'bg-green-500/10 text-green-400'
+              : connectionState === 'connecting' || connectionState === 'authenticating'
+              ? 'bg-yellow-500/10 text-yellow-400'
+              : 'bg-red-500/10 text-red-400'
+          }`}
+          role="status"
+          aria-label={`Gateway connection: ${connectionState}`}
+        >
+          {connectionState === 'connected' ? <Wifi size={14} aria-hidden="true" className="flex-shrink-0" /> : <WifiOff size={14} aria-hidden="true" className="flex-shrink-0" />}
+          <span className="flex-shrink-0">
             {connectionState === 'connected' ? 'Online' : 
              connectionState === 'connecting' ? 'Connecting...' :
              connectionState === 'authenticating' ? 'Auth...' : 'Offline'}
@@ -81,24 +91,24 @@ export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
         </div>
 
         {/* Watcher Status */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
           status.watcherRunning 
             ? 'bg-green-500/10 text-green-400' 
             : 'bg-red-500/10 text-red-400'
         }`}>
-          <Activity size={12} />
-          <span>Watcher</span>
-          <span className={`w-1.5 h-1.5 rounded-full ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} />
+          <Activity size={14} aria-hidden="true" className="flex-shrink-0" />
+          <span className="flex-shrink-0">Watcher</span>
+          <span className={`w-2 h-2 rounded-full transition-colors flex-shrink-0 ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} aria-hidden="true" />
         </div>
 
         {/* Kill Switch Status */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs ${
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
           status.killSwitchOn 
             ? 'bg-red-500/10 text-red-400' 
             : 'bg-green-500/10 text-green-400'
         }`}>
-          {status.killSwitchOn ? <Lock size={12} /> : <Unlock size={12} />}
-          <span>{status.killSwitchOn ? 'Blocked' : 'Live'}</span>
+          {status.killSwitchOn ? <Lock size={14} aria-hidden="true" className="flex-shrink-0" /> : <Unlock size={14} aria-hidden="true" className="flex-shrink-0" />}
+          <span className="flex-shrink-0">{status.killSwitchOn ? 'Blocked' : 'Live'}</span>
         </div>
 
         {/* Focus Mode */}
@@ -108,82 +118,87 @@ export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
 
         {/* Pending Inbox */}
         {status.pendingInbox > 0 && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-yellow-500/10 text-yellow-400">
-            <Inbox size={12} />
-            <span>{status.pendingInbox} pending</span>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-yellow-500/10 text-yellow-400 transition-colors flex-shrink-0 whitespace-nowrap">
+            <Inbox size={14} aria-hidden="true" className="flex-shrink-0" />
+            <span className="flex-shrink-0 tabular-nums">{status.pendingInbox} pending</span>
           </div>
         )}
 
         {/* In-Progress Tasks */}
         {status.inProgressTasks > 0 && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs bg-blue-500/10 text-blue-400">
-            <Loader size={12} className="animate-spin" />
-            <span>{status.inProgressTasks} running</span>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-400 transition-colors flex-shrink-0 whitespace-nowrap">
+            <Loader size={14} className="animate-spin flex-shrink-0" aria-hidden="true" />
+            <span className="flex-shrink-0 tabular-nums">{status.inProgressTasks} running</span>
           </div>
         )}
       </div>
 
       {/* Right side controls */}
-      <div className="no-drag flex items-center gap-2">
-      {/* Mute status indicator */}
-      {isMuted && (
-        <div className="no-drag flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full">
-          <MicOff size={14} className="text-red-400" />
-          <span className="text-xs text-red-400 font-medium">Muted</span>
-          <span className="text-xs text-red-400/60">⌘M</span>
-        </div>
-      )}
-      
-      {/* Meeting active indicator */}
-      {isMeetingActive && !isMuted && (
-        <div className="no-drag flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full animate-pulse">
-          <span className="w-2 h-2 bg-red-500 rounded-full" />
-          <span className="text-xs text-red-400 font-medium">Meeting Active</span>
-        </div>
-      )}
-
-      {/* Mute button - always visible */}
-      <button
-        onClick={toggleMuted}
-        className={`no-drag p-2 rounded-lg transition-all duration-200 ${
-          isMuted 
-            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-            : 'bg-clawd-surface/80 text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-surface'
-        }`}
-        title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
-      >
-        {isMuted ? (
-          <MicOff size={18} />
-        ) : (
-          <Mic size={18} />
+      <div className="no-drag flex items-center gap-2 flex-shrink-0">
+        {/* Mute status indicator */}
+        {isMuted && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full transition-all flex-shrink-0 whitespace-nowrap">
+            <MicOff size={14} className="text-red-400 flex-shrink-0" aria-hidden="true" />
+            <span className="text-xs text-red-400 font-medium flex-shrink-0">Muted</span>
+            <span className="text-xs text-red-400/60 flex-shrink-0">⌘M</span>
+          </div>
         )}
-      </button>
-
-      {/* Call button - triggers meeting mode */}
-      <button
-        onClick={handleCallClick}
-        className={`no-drag p-2 rounded-lg transition-all duration-200 ${
-          isMeetingActive 
-            ? 'bg-red-500 text-white animate-pulse hover:bg-red-600' 
-            : 'bg-clawd-accent text-white hover:bg-clawd-accent/80'
-        }`}
-        title={isMeetingActive ? 'End meeting' : 'Start meeting mode'}
-      >
-        {isMeetingActive ? (
-          <PhoneOff size={18} />
-        ) : (
-          <Phone size={18} />
+        
+        {/* Meeting active indicator */}
+        {isMeetingActive && !isMuted && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full animate-pulse flex-shrink-0 whitespace-nowrap">
+            <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" aria-hidden="true" />
+            <span className="text-xs text-red-400 font-medium flex-shrink-0">Meeting Active</span>
+          </div>
         )}
-      </button>
 
-      {/* Frog emoji button - far right */}
-      <button
-        onClick={() => onNavigate?.('dashboard')}
-        className="no-drag text-2xl cursor-pointer hover:scale-110 transition-transform p-1"
-        title="Dashboard"
-      >
-        🐸
-      </button>
+        {/* Mute button - always visible */}
+        <button
+          onClick={toggleMuted}
+          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+            isMuted 
+              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+              : 'bg-clawd-surface/80 text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-surface'
+          }`}
+          title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
+          aria-label={isMuted ? 'Unmute microphone (Command M)' : 'Mute microphone (Command M)'}
+          aria-pressed={isMuted}
+        >
+          {isMuted ? (
+            <MicOff size={16} aria-hidden="true" />
+          ) : (
+            <Mic size={16} aria-hidden="true" />
+          )}
+        </button>
+
+        {/* Call button - triggers meeting mode */}
+        <button
+          onClick={handleCallClick}
+          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+            isMeetingActive 
+              ? 'bg-red-500 text-white animate-pulse hover:bg-red-600' 
+              : 'bg-clawd-accent text-white hover:bg-clawd-accent/80'
+          }`}
+          title={isMeetingActive ? 'End meeting' : 'Start meeting mode'}
+          aria-label={isMeetingActive ? 'End meeting mode' : 'Start meeting mode'}
+          aria-pressed={isMeetingActive}
+        >
+          {isMeetingActive ? (
+            <PhoneOff size={16} aria-hidden="true" />
+          ) : (
+            <Phone size={16} aria-hidden="true" />
+          )}
+        </button>
+
+        {/* Frog emoji button - far right */}
+        <button
+          onClick={() => onNavigate?.('dashboard')}
+          className="text-2xl cursor-pointer hover:scale-110 transition-transform p-1"
+          title="Go to dashboard"
+          aria-label="Go to dashboard home"
+        >
+          🐸
+        </button>
       </div>
 
       {/* Focus Mode Selector */}
@@ -193,6 +208,6 @@ export default function TopBar({ onCallClick, onNavigate }: TopBarProps) {
         currentMode={focusMode}
         onSelectMode={setFocusMode}
       />
-    </div>
+    </header>
   );
 }

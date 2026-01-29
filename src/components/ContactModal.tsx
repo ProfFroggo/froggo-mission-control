@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, MessageSquare, Upload, Edit3, User, Briefcase, Phone, Mail, MapPin, FileText, Sparkles, Loader2, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { MessageSquare, Upload, Edit3, User, Briefcase, Phone, Mail, MapPin, FileText, Sparkles, Loader2, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
+import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter, BaseModalButton } from './BaseModal';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -105,20 +106,6 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen, mode]);
-
-  // ESC key to close
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && saveStatus === 'idle') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose, saveStatus]);
-
-  if (!isOpen) return null;
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -460,28 +447,24 @@ Be thorough but only include real people, not generic references.`;
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 border-b border-clawd-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <User size={24} className="text-clawd-accent" />
-              Add Contact / Person
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      maxHeight="90vh"
+      ariaLabel="Add Contact / Person"
+      closeButtonPosition="header"
+      preventBackdropClose={saveStatus === 'saving'}
+    >
+      <BaseModalHeader
+        title="Add Contact / Person"
+        icon={<User size={24} className="text-clawd-accent" />}
+        onClose={onClose}
+      />
 
-          {/* Mode Selector */}
-          <div className="flex gap-2">
+      {/* Mode Selector - Still in a custom section */}
+      <div className="px-6 pt-6">
+        <div className="flex gap-2">
             <button
               onClick={() => setMode('dialogue')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
@@ -490,7 +473,7 @@ Be thorough but only include real people, not generic references.`;
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <MessageSquare size={18} />
+              <MessageSquare size={16} />
               <span className="font-medium">Dialogue</span>
               <Sparkles size={14} className={mode === 'dialogue' ? 'animate-pulse' : 'opacity-50'} />
             </button>
@@ -502,7 +485,7 @@ Be thorough but only include real people, not generic references.`;
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Upload size={18} />
+              <Upload size={16} />
               <span className="font-medium">Upload</span>
             </button>
             <button
@@ -513,14 +496,14 @@ Be thorough but only include real people, not generic references.`;
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Edit3 size={18} />
+              <Edit3 size={16} />
               <span className="font-medium">Manual</span>
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-hidden">
+      {/* Content */}
+      <BaseModalBody noPadding className="flex-1 min-h-0">
           {mode === 'dialogue' ? (
             // Dialogue Mode
             <div className="flex flex-col h-full">
@@ -550,7 +533,7 @@ Be thorough but only include real people, not generic references.`;
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={12} className="animate-spin text-clawd-accent" />
+                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
                         <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
                       </div>
                     </div>
@@ -632,7 +615,7 @@ Be thorough but only include real people, not generic references.`;
                     disabled={!chatInput.trim() || isStreaming || conversationComplete || saveStatus === 'saving'}
                     className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
               </div>
@@ -682,7 +665,7 @@ Be thorough but only include real people, not generic references.`;
               {parsedEntities.length > 0 && (
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <User size={18} className="text-clawd-accent" />
+                    <User size={16} className="text-clawd-accent" />
                     Found {parsedEntities.length} {parsedEntities.length === 1 ? 'Contact' : 'Contacts'}
                   </h3>
                   <div className="space-y-2">
@@ -892,52 +875,38 @@ Be thorough but only include real people, not generic references.`;
                 />
               </div>
 
-              {/* Submit */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={saveStatus === 'saving'}
-                  className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors disabled:opacity-50"
-                >
+              {/* Submit Footer - inside form */}
+              <BaseModalFooter>
+                <BaseModalButton onClick={onClose} disabled={saveStatus === 'saving'}>
                   Cancel
-                </button>
-                <button
+                </BaseModalButton>
+                <BaseModalButton
+                  variant="primary"
                   type="submit"
                   disabled={!name.trim() || saveStatus === 'saving'}
-                  className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  loading={saveStatus === 'saving'}
+                  icon={saveStatus !== 'saving' ? <CheckCircle size={16} /> : undefined}
                 >
-                  {saveStatus === 'saving' ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={16} />
-                      Save Contact
-                    </>
-                  )}
-                </button>
-              </div>
+                  {saveStatus === 'saving' ? 'Saving...' : 'Save Contact'}
+                </BaseModalButton>
+              </BaseModalFooter>
             </form>
           )}
-        </div>
+        </BaseModalBody>
 
-        {/* Status Message */}
+        {/* Status Message - Positioned absolutely over modal */}
         {saveStatus !== 'idle' && (
-          <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 ${
+          <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 z-10 ${
             saveStatus === 'success' ? 'bg-green-500/20 border border-green-500/50 text-green-400' :
             saveStatus === 'error' ? 'bg-red-500/20 border border-red-500/50 text-red-400' :
             'bg-clawd-surface border border-clawd-border'
           }`}>
-            {saveStatus === 'success' ? <CheckCircle size={18} /> :
-             saveStatus === 'error' ? <AlertCircle size={18} /> :
-             <Loader2 size={18} className="animate-spin" />}
+            {saveStatus === 'success' ? <CheckCircle size={16} /> :
+             saveStatus === 'error' ? <AlertCircle size={16} /> :
+             <Loader2 size={16} className="animate-spin" />}
             <span className="text-sm font-medium">{saveMessage}</span>
           </div>
         )}
-      </div>
-    </div>
+      </BaseModal>
   );
 }

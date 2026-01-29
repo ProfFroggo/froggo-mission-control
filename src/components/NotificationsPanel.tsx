@@ -204,8 +204,8 @@ export default function NotificationsPanel() {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config.color} flex-shrink-0`}>
-                      <Icon size={18} />
+                    <div className={`p-2 rounded-lg ${config.color} flex-shrink-0 flex items-center justify-center`}>
+                      <Icon size={16} />
                     </div>
                     
                     <div className="flex-1 min-w-0">

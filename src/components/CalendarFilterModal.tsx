@@ -23,9 +23,18 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
 );
 
 export default function CalendarFilterModal({ onClose, onFilterChange }: CalendarFilterModalProps) {
+  const [isClosing, setIsClosing] = useState(false);
   const [sources, setSources] = useState<CalendarSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200);
+  };
 
   // Load calendar sources
   const loadSources = async () => {
@@ -128,6 +137,18 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
     loadSources();
   }, []);
 
+  // ESC key to close
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
+
   const toggleSource = (sourceId: string) => {
     setSources(prev => 
       prev.map(s => s.id === sourceId ? { ...s, enabled: !s.enabled } : s)
@@ -171,9 +192,9 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop backdrop-blur-md modal-backdrop-enter flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-clawd-surface border border-clawd-border rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -196,13 +217,13 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
               className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
               title="Refresh sources"
             >
-              <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
             <button
               onClick={onClose}
               className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -274,9 +295,9 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
                         {/* Status Icon */}
                         {source.enabled ? (
-                          <Eye size={18} className="text-clawd-accent flex-shrink-0" />
+                          <Eye size={16} className="text-clawd-accent flex-shrink-0" />
                         ) : (
-                          <EyeOff size={18} className="text-clawd-text-dim flex-shrink-0" />
+                          <EyeOff size={16} className="text-clawd-text-dim flex-shrink-0" />
                         )}
                       </button>
                     ))}

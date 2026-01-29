@@ -304,7 +304,7 @@ export default function LibraryFilesTab() {
                           <>
                             <span>•</span>
                             <span className="flex items-center gap-1">
-                              <Link size={12} />
+                              <Link size={14} />
                               {file.linkedTasks.length} tasks
                             </span>
                           </>

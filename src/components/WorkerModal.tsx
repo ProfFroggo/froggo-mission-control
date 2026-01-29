@@ -34,6 +34,9 @@ const MODEL_OPTIONS = [
 export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
   const { createWorkerAgent, addActivity } = useStore();
 
+  // Animation state
+  const [isClosing, setIsClosing] = useState(false);
+  
   // Mode selection
   const [mode, setMode] = useState<ModalMode>('chat');
 
@@ -54,6 +57,14 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200);
+  };
 
   // Reset when modal opens
   useEffect(() => {
@@ -92,12 +103,13 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
     if (!isOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        e.preventDefault();
+        handleClose();
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -117,7 +129,7 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
     });
 
     resetForm();
-    onClose();
+    handleClose();
   };
 
   const handleChatSubmit = async () => {
@@ -250,7 +262,7 @@ Be conversational, friendly, and help design an effective agent.`;
     });
 
     resetForm();
-    onClose();
+    handleClose();
   };
 
   const createWorker = async (workerData: ExtractedWorkerData) => {
@@ -294,8 +306,18 @@ Be conversational, friendly, and help design an effective agent.`;
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
-      <div className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+    <div 
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 ${
+        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
+      }`} 
+      onClick={handleClose}
+    >
+      <div 
+        className={`glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col ${
+          isClosing ? 'modal-content-exit' : 'modal-content-enter'
+        }`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-6 border-b border-clawd-border">
           <div className="flex items-center justify-between mb-4">
@@ -303,8 +325,12 @@ Be conversational, friendly, and help design an effective agent.`;
               <Bot className="text-clawd-accent" size={24} />
               <h2 className="text-xl font-semibold">Create Worker Agent</h2>
             </div>
-            <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded-lg transition-colors">
-              <X size={20} />
+            <button 
+              onClick={handleClose} 
+              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              aria-label="Close modal"
+            >
+              <X size={16} />
             </button>
           </div>
 
@@ -318,7 +344,7 @@ Be conversational, friendly, and help design an effective agent.`;
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <MessageSquare size={18} />
+              <MessageSquare size={16} />
               <span className="font-medium">Chat with Froggo</span>
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
             </button>
@@ -330,7 +356,7 @@ Be conversational, friendly, and help design an effective agent.`;
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Edit3 size={18} />
+              <Edit3 size={16} />
               <span className="font-medium">Manual Entry</span>
             </button>
           </div>
@@ -366,7 +392,7 @@ Be conversational, friendly, and help design an effective agent.`;
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={12} className="animate-spin text-clawd-accent" />
+                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
                         <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
                       </div>
                     </div>
@@ -434,7 +460,7 @@ Be conversational, friendly, and help design an effective agent.`;
                       onClick={handleCreateFromChat}
                       className="w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium flex items-center justify-center gap-2"
                     >
-                      <Zap size={18} />
+                      <Zap size={16} />
                       Create & Start Worker
                     </button>
                   </div>
@@ -464,7 +490,7 @@ Be conversational, friendly, and help design an effective agent.`;
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
                     className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
                 <div className="text-xs text-clawd-text-dim mt-2">
@@ -555,7 +581,7 @@ Be conversational, friendly, and help design an effective agent.`;
               <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
                 >
                   Cancel
@@ -565,7 +591,7 @@ Be conversational, friendly, and help design an effective agent.`;
                   disabled={!name.trim() || !taskDescription.trim()}
                   className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  <Zap size={18} />
+                  <Zap size={16} />
                   Create & Start
                 </button>
               </div>

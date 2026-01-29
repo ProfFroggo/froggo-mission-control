@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import FilePreviewModal from './FilePreviewModal';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
@@ -33,6 +34,12 @@ export default function ChatPanel() {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [previewFile, setPreviewFile] = useState<AttachedFile | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -43,16 +50,77 @@ export default function ChatPanel() {
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Load starred message IDs
+  useEffect(() => {
+    const loadStarredIds = async () => {
+      if (window.clawdbot?.starred?.list) {
+        const result = await window.clawdbot.starred.list({ sessionKey: 'chat:main', limit: 1000 });
+        if (result?.success && result.starred) {
+          const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
+          setStarredMessageIds(ids);
+        }
+      }
+    };
+    loadStarredIds();
+  }, [messages.length]);
+
+  // Toggle star on a message
+  const handleToggleStar = async (msg: Message, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!window.clawdbot?.starred) {
+      showToast('Starred messages not available', 'error');
+      return;
+    }
+
+    const messageId = parseInt(msg.id);
+    const isStarred = starredMessageIds.has(msg.id);
+
+    try {
+      if (isStarred) {
+        // Unstar
+        const result = await window.clawdbot.starred.unstar(messageId);
+        if (result?.success) {
+          setStarredMessageIds(prev => {
+            const next = new Set(prev);
+            next.delete(msg.id);
+            return next;
+          });
+          showToast('Message unstarred', 'success');
+        } else {
+          showToast('Failed to unstar message', 'error');
+        }
+      } else {
+        // Star
+        const result = await window.clawdbot.starred.star(messageId);
+        if (result?.success) {
+          setStarredMessageIds(prev => new Set(prev).add(msg.id));
+          showToast('Message starred', 'success');
+        } else {
+          showToast('Failed to star message', 'error');
+        }
+      }
+    } catch (error: any) {
+      console.error('Toggle star error:', error);
+      showToast('Error toggling star', 'error');
+    }
+  };
+
   // Load messages from database on mount - this is the source of truth
   useEffect(() => {
     const loadFromDb = async () => {
       console.log('[Chat] Loading from froggo.db...');
+      // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
+      setHistoryLoaded(true);
+      
       if (window.clawdbot?.chat?.loadMessages) {
         const result = await window.clawdbot.chat.loadMessages(50);
         console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
         if (result.success && result.messages?.length > 0) {
           setMessages(result.messages);
-          setHistoryLoaded(true); // Mark as loaded so we don't overwrite with gateway history
+          console.log('[Chat] Loaded', result.messages.length, 'messages from DB');
+        } else {
+          console.log('[Chat] No messages in DB');
         }
       }
     };
@@ -62,7 +130,16 @@ export default function ChatPanel() {
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
     if (window.clawdbot?.chat?.saveMessage) {
-      await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now() });
+      try {
+        const result = await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now() });
+        if (result?.success) {
+          console.log(`[Chat] ${role} message saved to DB`);
+        } else {
+          console.error(`[Chat] Failed to save ${role} message:`, result?.error);
+        }
+      } catch (err) {
+        console.error(`[Chat] Error saving ${role} message:`, err);
+      }
     }
   };
 
@@ -112,6 +189,16 @@ export default function ChatPanel() {
     if (type.includes('pdf') || type.includes('document')) return FileText;
     return File;
   };
+
+  // Filter messages based on search query
+  const filteredMessages = useMemo(() => {
+    if (!searchQuery.trim()) return messages;
+    const query = searchQuery.toLowerCase();
+    return messages.filter(msg => 
+      msg.content.toLowerCase().includes(query) ||
+      msg.role.toLowerCase().includes(query)
+    );
+  }, [messages, searchQuery]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -224,6 +311,21 @@ export default function ChatPanel() {
             : m
         ));
         
+        // Save assistant message to database
+        if (finalContent && window.clawdbot?.chat?.saveMessage) {
+          window.clawdbot.chat.saveMessage({ 
+            role: 'assistant', 
+            content: finalContent, 
+            timestamp: Date.now() 
+          }).then((result: any) => {
+            if (result?.success) {
+              console.log('[Chat] Assistant message saved to DB (handleEnd)');
+            }
+          }).catch((err: any) => {
+            console.error('[Chat] Error saving assistant message (handleEnd):', err);
+          });
+        }
+        
         if (speakResponses && finalContent) {
           speak(finalContent);
         }
@@ -286,6 +388,14 @@ export default function ChatPanel() {
             role: 'assistant', 
             content: finalContent, 
             timestamp: Date.now() 
+          }).then((result: any) => {
+            if (result?.success) {
+              console.log('[Chat] Assistant message saved to DB');
+            } else {
+              console.error('[Chat] Failed to save assistant message:', result?.error);
+            }
+          }).catch((err: any) => {
+            console.error('[Chat] Error saving assistant message:', err);
           });
         }
         
@@ -404,9 +514,51 @@ export default function ChatPanel() {
     }
   };
 
+  const generateSuggestions = async () => {
+    if (messages.length === 0 || loadingSuggestions) return;
+    
+    setLoadingSuggestions(true);
+    setSuggestedReplies([]);
+    
+    try {
+      // Extract last 10 messages for context
+      const context = messages.slice(-10).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      if (window.clawdbot?.chat?.suggestReplies) {
+        const result = await window.clawdbot.chat.suggestReplies(context);
+        
+        if (result.success && result.suggestions?.length > 0) {
+          setSuggestedReplies(result.suggestions);
+          showToast('success', 'Suggestions ready', `${result.suggestions.length} options generated`);
+        } else {
+          showToast('error', 'No suggestions', result.error || 'Could not generate suggestions');
+        }
+      } else {
+        showToast('error', 'Not available', 'Suggestion feature not available');
+      }
+    } catch (error: any) {
+      console.error('[Chat] Suggestion error:', error);
+      showToast('error', 'Failed to generate', error.message || 'Unknown error');
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const useSuggestion = (suggestion: string) => {
+    setInput(suggestion);
+    setSuggestedReplies([]);
+    inputRef.current?.focus();
+  };
+
   const sendMessage = async () => {
     const text = input.trim();
     if ((!text && attachments.length === 0) || !connected || loading) return;
+    
+    // Clear suggestions when sending
+    setSuggestedReplies([]);
 
     // Build message content with actual file contents
     let content = text;
@@ -623,23 +775,62 @@ export default function ChatPanel() {
         
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowSearch(!showSearch)}
+            className={`p-2 rounded-lg transition-colors ${
+              showSearch ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+            }`}
+            title={showSearch ? 'Hide search' : 'Search messages'}
+          >
+            <Search size={16} />
+          </button>
+          <button
             onClick={() => setSpeakResponses(!speakResponses)}
             className={`p-2 rounded-lg transition-colors ${
               speakResponses ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim'
             }`}
             title={speakResponses ? 'Voice on' : 'Voice off'}
           >
-            {speakResponses ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            {speakResponses ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
           <button
             onClick={clearChat}
             className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors"
             title="Clear chat"
           >
-            <Trash2 size={18} />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <div className="px-4 py-3 border-b border-clawd-border bg-clawd-bg/50">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search messages..."
+              className="w-full bg-clawd-surface border border-clawd-border rounded-lg pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-clawd-accent"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-clawd-text-dim hover:text-clawd-text"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <div className="mt-2 text-xs text-clawd-text-dim">
+              {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} found
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -660,72 +851,145 @@ export default function ChatPanel() {
               ))}
             </div>
           </div>
+        ) : searchQuery && filteredMessages.length === 0 ? (
+          <div className="text-center py-16 text-clawd-text-dim">
+            <Search size={48} className="mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-medium mb-2">No results found</p>
+            <p className="text-sm">Try a different search term</p>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Clear search
+            </button>
+          </div>
         ) : (
-          messages.map((msg, idx) => {
+          filteredMessages.map((msg, idx) => {
             const isUser = msg.role === 'user';
-            const showAvatar = idx === 0 || messages[idx - 1]?.role !== msg.role;
-            const isLastInGroup = idx === messages.length - 1 || messages[idx + 1]?.role !== msg.role;
+            const showAvatar = idx === 0 || filteredMessages[idx - 1]?.role !== msg.role;
+            const isLastInGroup = idx === filteredMessages.length - 1 || filteredMessages[idx + 1]?.role !== msg.role;
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const isStarred = starredMessageIds.has(msg.id);
             
             return (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${!showAvatar ? 'mt-1' : 'mt-4'}`}
+                className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${
+                  showAvatar ? 'mt-6' : 'mt-2'
+                }`}
               >
-                {/* Avatar */}
-                <div className={`flex-shrink-0 w-8 ${!showAvatar ? 'invisible' : ''}`}>
+                {/* Avatar column - consistent width */}
+                <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-sm font-semibold shadow-md ring-2 ring-white/20">
                       K
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-lg">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-xl shadow-md ring-2 ring-white/20">
                       🐸
                     </div>
                   )}
                 </div>
 
-                {/* Message bubble */}
-                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
-                  <div
-                    className={`relative px-4 py-2.5 ${
-                      isUser
-                        ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white'
-                        : 'bg-clawd-surface/80 backdrop-blur-sm border border-clawd-border/50'
-                    } ${
-                      isUser
-                        ? showAvatar ? 'rounded-2xl rounded-tr-md' : isLastInGroup ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl'
-                        : showAvatar ? 'rounded-2xl rounded-tl-md' : isLastInGroup ? 'rounded-2xl rounded-tl-md' : 'rounded-2xl'
-                    } shadow-sm`}
-                  >
-                    {msg.streaming && !msg.content ? (
-                      <div className="flex items-center gap-2 py-1">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                {/* Message content column */}
+                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] sm:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
+                  {/* Sender name (only on first message in group) */}
+                  {showAvatar && (
+                    <div className={`text-xs font-medium mb-1 px-1 ${
+                      isUser ? 'text-clawd-accent' : 'text-emerald-600'
+                    }`}>
+                      {isUser ? 'You' : 'Froggo'}
+                    </div>
+                  )}
+
+                  {/* Message bubble with actions */}
+                  <div className="relative group w-full">
+                    {/* Message actions bar (appears on hover) */}
+                    {!msg.streaming && (
+                      <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+                        <button
+                          onClick={(e) => handleToggleStar(msg, e)}
+                          className={`p-1.5 rounded-lg transition-all duration-100 ${
+                            isStarred
+                              ? 'bg-yellow-100 text-yellow-600 shadow-sm'
+                              : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-yellow-600 hover:bg-yellow-50 border border-clawd-border'
+                          }`}
+                          title={isStarred ? 'Unstar message' : 'Star message'}
+                        >
+                          <Star 
+                            size={14} 
+                            className={isStarred ? 'fill-yellow-500' : ''}
+                          />
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(msg.content);
+                            showToast('Copied to clipboard', 'success');
+                          }}
+                          className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
+                          title="Copy message"
+                        >
+                          <Copy size={14} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Message bubble */}
+                    <div
+                      className={`px-4 py-3 transition-all duration-150 ${
+                        isUser
+                          ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white shadow-md'
+                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md'
+                      } ${
+                        isUser
+                          ? showAvatar 
+                            ? 'rounded-2xl rounded-tr-md' 
+                            : isLastInGroup 
+                              ? 'rounded-2xl rounded-tr-md' 
+                              : 'rounded-2xl rounded-tr-lg'
+                          : showAvatar 
+                            ? 'rounded-2xl rounded-tl-md' 
+                            : isLastInGroup 
+                              ? 'rounded-2xl rounded-tl-md' 
+                              : 'rounded-2xl rounded-tl-lg'
+                      }`}
+                    >
+                      {msg.streaming && !msg.content ? (
+                        <div className="flex items-center gap-2 py-1">
+                          <div className="flex gap-1">
+                            <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
+                            <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
+                            <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
+                          </div>
+                          <span className={`text-sm ${isUser ? 'text-white/80' : 'text-clawd-text-dim'}`}>
+                            Thinking...
+                          </span>
                         </div>
-                        <span className="text-sm text-clawd-text-dim">Thinking...</span>
-                      </div>
-                    ) : msg.role === 'assistant' ? (
-                      <MarkdownMessage content={msg.content} />
-                    ) : (
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
-                    )}
-                    {msg.streaming && msg.content && (
-                      <div className="flex items-center gap-1 mt-2 opacity-60">
-                        <div className="w-1.5 h-1.5 bg-clawd-accent rounded-full animate-pulse" />
-                        <span className="text-xs">typing...</span>
-                      </div>
-                    )}
+                      ) : msg.role === 'assistant' ? (
+                        <MarkdownMessage content={msg.content} />
+                      ) : (
+                        <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                      )}
+                      {msg.streaming && msg.content && (
+                        <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
+                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-white' : 'bg-clawd-accent'}`} />
+                          <span className={`text-xs ${isUser ? 'text-white/90' : 'text-clawd-text-dim'}`}>
+                            typing...
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
-                  {/* Timestamp */}
-                  {isLastInGroup && (
-                    <span className={`text-[10px] text-clawd-text-dim mt-1 ${isUser ? 'mr-1' : 'ml-1'}`}>
+                  {/* Timestamp and status */}
+                  <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''} ${isLastInGroup ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-100`}>
+                    <span className="text-xs text-clawd-text-dim font-medium">
                       {time}
                     </span>
-                  )}
+                    {isStarred && (
+                      <Star size={10} className="text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -755,7 +1019,9 @@ export default function ChatPanel() {
               return (
                 <div
                   key={att.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg"
+                  className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors cursor-pointer"
+                  onClick={() => setPreviewFile(att)}
+                  title="Click to preview"
                 >
                   <Icon size={16} className="text-clawd-accent" />
                   <span className="text-sm truncate max-w-32">{att.name}</span>
@@ -771,6 +1037,34 @@ export default function ChatPanel() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Suggested Replies */}
+        {suggestedReplies.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={14} className="text-clawd-accent" />
+              <span className="text-xs text-clawd-text-dim">Suggested replies</span>
+              <button
+                onClick={() => setSuggestedReplies([])}
+                className="ml-auto text-xs text-clawd-text-dim hover:text-clawd-text"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggestedReplies.map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => useSuggestion(suggestion)}
+                  className="px-3 py-2 bg-gradient-to-r from-clawd-accent/10 to-purple-500/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
+                  title="Click to use this reply"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -805,6 +1099,20 @@ export default function ChatPanel() {
           >
             {listening ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
+
+          {/* Suggest Replies button */}
+          <button
+            onClick={generateSuggestions}
+            disabled={!connected || messages.length === 0 || loadingSuggestions}
+            className={`p-3 rounded-xl transition-all ${
+              loadingSuggestions
+                ? 'bg-clawd-accent text-white animate-pulse'
+                : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-accent hover:bg-clawd-accent/10'
+            }`}
+            title="AI suggested replies"
+          >
+            {loadingSuggestions ? <Loader2 size={20} className="animate-spin" /> : <Sparkles size={20} />}
+          </button>
           
           <div className="flex-1 relative">
             <textarea
@@ -828,6 +1136,13 @@ export default function ChatPanel() {
           </button>
         </div>
       </div>
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        file={previewFile}
+      />
     </div>
   );
 }

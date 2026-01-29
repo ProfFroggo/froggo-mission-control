@@ -453,7 +453,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.urgentItems.length > 0 && (
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
               <div className="flex items-center gap-2 text-red-400 mb-2">
-                <AlertCircle size={18} />
+                <AlertCircle size={16} />
                 <span className="font-medium">Needs attention</span>
               </div>
               <ul className="space-y-1 text-sm">
@@ -489,7 +489,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.weather && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Cloud size={18} className="text-blue-400" />
+                <Cloud size={16} className="text-blue-400" />
                 <span className="font-medium">Gibraltar Weather</span>
               </div>
               <div className="space-y-1">
@@ -506,7 +506,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.overnightActivity && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Activity size={18} className="text-purple-400" />
+                <Activity size={16} className="text-purple-400" />
                 <span className="font-medium">While You Slept</span>
               </div>
               <div className="space-y-2">
@@ -528,7 +528,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.sessionStats && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Users size={18} className="text-cyan-400" />
+                <Users size={16} className="text-cyan-400" />
                 <span className="font-medium">Session Activity</span>
               </div>
               <div className="space-y-3">
@@ -582,7 +582,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.agentStats && (brief.agentStats.activeAgents > 0 || brief.agentStats.busyAgents.length > 0) && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Bot size={18} className="text-green-400" />
+                <Bot size={16} className="text-green-400" />
                 <span className="font-medium">Agent Activity</span>
               </div>
               <div className="space-y-3">
@@ -624,7 +624,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.upcomingEvents.length > 0 && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Calendar size={18} className="text-clawd-accent" />
+                <Calendar size={16} className="text-clawd-accent" />
                 <span className="font-medium">Today's Schedule</span>
               </div>
               <div className="space-y-2">
@@ -642,7 +642,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.mentions && brief.mentions.length > 0 && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <AtSign size={18} className="text-blue-400" />
+                <AtSign size={16} className="text-blue-400" />
                 <span className="font-medium">Recent Mentions</span>
                 <span className="text-xs text-clawd-text-dim ml-auto">(last 24h)</span>
               </div>

@@ -210,7 +210,7 @@ export default function ContentCalendar() {
                     return (
                       <div
                         key={item.id}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${config.bg} truncate`}
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${config.bg} flex-shrink-0 whitespace-nowrap`}
                       >
                         <Icon size={10} className={config.color} />
                         <span className="truncate">{item.title}</span>

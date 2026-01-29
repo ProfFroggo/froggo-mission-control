@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ChannelsTab from './ChannelsTab';
 import { 
   Mail, Calendar, HardDrive, Users, Plus, RefreshCw, 
   CheckCircle, XCircle, AlertTriangle, Trash2, X, ChevronRight,
@@ -78,6 +79,7 @@ export default function ConnectedAccountsPanel() {
   const [addingAccount, setAddingAccount] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('');
   const [importingGoogle, setImportingGoogle] = useState(false);
+  const [panelTab, setPanelTab] = useState<'accounts' | 'channels'>('accounts');
 
   useEffect(() => {
     loadAccounts();
@@ -249,7 +251,26 @@ export default function ConnectedAccountsPanel() {
           <p className="text-clawd-text-dim">
             Manage your Google, iCloud, Microsoft, and other connected accounts
           </p>
+          <div className="flex gap-2 mt-4">
+            {(['accounts', 'channels'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setPanelTab(tab)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  panelTab === tab
+                    ? 'bg-clawd-accent text-white'
+                    : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                }`}
+              >
+                {tab === 'accounts' ? '🔗 Accounts' : '📡 Channels'}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {panelTab === 'channels' && <ChannelsTab />}
+
+        {panelTab === 'accounts' && <>
 
         {/* Smart Selection Rules */}
         <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
@@ -297,7 +318,7 @@ export default function ConnectedAccountsPanel() {
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             Add Account
           </button>
           
@@ -306,7 +327,7 @@ export default function ConnectedAccountsPanel() {
             disabled={importingGoogle}
             className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors disabled:opacity-50"
           >
-            {importingGoogle ? <RefreshCw size={18} className="animate-spin" /> : <Database size={18} />}
+            {importingGoogle ? <RefreshCw size={16} className="animate-spin" /> : <Database size={16} />}
             Import Google Accounts
           </button>
 
@@ -314,7 +335,7 @@ export default function ConnectedAccountsPanel() {
             onClick={loadAccounts}
             className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={16} />
             Refresh
           </button>
         </div>
@@ -336,7 +357,7 @@ export default function ConnectedAccountsPanel() {
               onClick={() => setShowAddModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
             >
-              <Plus size={18} />
+              <Plus size={16} />
               Add Account
             </button>
           </div>
@@ -377,7 +398,7 @@ export default function ConnectedAccountsPanel() {
                               key={type}
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type]}`}
                             >
-                              <Icon size={12} />
+                              <Icon size={14} />
                               {type.charAt(0).toUpperCase() + type.slice(1)}
                             </span>
                           );
@@ -425,8 +446,10 @@ export default function ConnectedAccountsPanel() {
             ))}
           </div>
         )}
+      </>}
       </div>
 
+      {panelTab === 'accounts' && <>
       {/* Account Detail Modal */}
       {showDetailModal && selectedAccount && (
         <div 
@@ -461,7 +484,7 @@ export default function ConnectedAccountsPanel() {
             {/* Connection Status */}
             <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <Shield size={18} />
+                <Shield size={16} />
                 <h3 className="font-medium">Connection Status</h3>
               </div>
               <div className="flex items-center gap-2">
@@ -487,7 +510,7 @@ export default function ConnectedAccountsPanel() {
             {/* Data Types Accessed */}
             <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
-                <Database size={18} />
+                <Database size={16} />
                 <h3 className="font-medium">Data Types Accessed</h3>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -510,13 +533,13 @@ export default function ConnectedAccountsPanel() {
             {selectedAccount.grantedScopes && selectedAccount.grantedScopes.length > 0 && (
               <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
-                  <Key size={18} />
+                  <Key size={16} />
                   <h3 className="font-medium">Permissions Granted</h3>
                 </div>
                 <div className="space-y-1">
                   {selectedAccount.grantedScopes.map((scope, idx) => (
                     <div key={idx} className="text-sm text-clawd-text-dim flex items-center gap-2">
-                      <CheckCircle size={12} className="text-green-400" />
+                      <CheckCircle size={14} className="text-green-400" />
                       <code className="text-xs">{scope}</code>
                     </div>
                   ))}
@@ -528,7 +551,7 @@ export default function ConnectedAccountsPanel() {
             {selectedAccountPermissions.length > 0 && (
               <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
-                  <Key size={18} />
+                  <Key size={16} />
                   <h3 className="font-medium">Detailed Permissions</h3>
                 </div>
                 <div className="space-y-2">
@@ -552,7 +575,7 @@ export default function ConnectedAccountsPanel() {
             {/* Sync Information */}
             <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
               <div className="flex items-center gap-2 mb-3">
-                <Clock size={18} />
+                <Clock size={16} />
                 <h3 className="font-medium">Sync Information</h3>
               </div>
               <div className="space-y-2 text-sm">
@@ -588,7 +611,7 @@ export default function ConnectedAccountsPanel() {
                 }}
                 className="flex-1 flex items-center justify-center gap-2 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
               >
-                <RefreshCw size={18} />
+                <RefreshCw size={16} />
                 Refresh Connection
               </button>
               <button
@@ -598,7 +621,7 @@ export default function ConnectedAccountsPanel() {
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors"
               >
-                <Trash2 size={18} />
+                <Trash2 size={16} />
                 Disconnect
               </button>
             </div>
@@ -694,12 +717,12 @@ export default function ConnectedAccountsPanel() {
               >
                 {addingAccount ? (
                   <>
-                    <RefreshCw size={18} className="animate-spin" />
+                    <RefreshCw size={16} className="animate-spin" />
                     Authenticating...
                   </>
                 ) : (
                   <>
-                    <Plus size={18} />
+                    <Plus size={16} />
                     Continue
                   </>
                 )}
@@ -708,6 +731,7 @@ export default function ConnectedAccountsPanel() {
           </div>
         </div>
       )}
+    </>}
     </div>
   );
 }

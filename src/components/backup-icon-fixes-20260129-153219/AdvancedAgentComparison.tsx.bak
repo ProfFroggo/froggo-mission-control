@@ -1,0 +1,435 @@
+import { useState, useEffect } from 'react';
+import {
+  Users,
+  TrendingUp,
+  Clock,
+  Target,
+  Award,
+  X,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+} from 'lucide-react';
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
+import { getAgentUtilization, AgentUtilization } from '../services/analyticsService';
+import BaseModal from './BaseModal';
+
+interface AdvancedAgentComparisonProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface AgentMetrics {
+  agent: string;
+  completionRate: number;
+  avgCompletionTime: number;
+  tasksCompleted: number;
+  tasksInProgress: number;
+  efficiency: number; // tasks per hour
+  consistency: number; // based on variance in completion times
+}
+
+export default function AdvancedAgentComparison({
+  isOpen,
+  onClose,
+}: AdvancedAgentComparisonProps) {
+  const [agents, setAgents] = useState<AgentUtilization[]>([]);
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState<AgentMetrics[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadData();
+    }
+  }, [isOpen]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const agentData = await getAgentUtilization();
+      setAgents(agentData);
+
+      // Calculate advanced metrics
+      const calculatedMetrics: AgentMetrics[] = agentData.map((agent) => ({
+        agent: agent.agentName,
+        completionRate: agent.completionRate,
+        avgCompletionTime: agent.avgCompletionTime,
+        tasksCompleted: agent.tasksCompleted,
+        tasksInProgress: agent.tasksInProgress,
+        efficiency:
+          agent.totalTimeSpent > 0
+            ? Math.round((agent.tasksCompleted / agent.totalTimeSpent) * 100) / 100
+            : 0,
+        consistency: Math.max(0, 100 - agent.avgCompletionTime * 2), // Simplified consistency score
+      }));
+
+      setMetrics(calculatedMetrics);
+
+      // Auto-select top 3 agents
+      if (selectedAgents.length === 0) {
+        const topAgents = calculatedMetrics
+          .sort((a, b) => b.tasksCompleted - a.tasksCompleted)
+          .slice(0, 3)
+          .map((m) => m.agent);
+        setSelectedAgents(topAgents);
+      }
+    } catch (error) {
+      console.error('Failed to load agent data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleAgent = (agent: string) => {
+    if (selectedAgents.includes(agent)) {
+      setSelectedAgents(selectedAgents.filter((a) => a !== agent));
+    } else if (selectedAgents.length < 5) {
+      setSelectedAgents([...selectedAgents, agent]);
+    }
+  };
+
+  const getRadarData = () => {
+    const categories = [
+      'Completion Rate',
+      'Efficiency',
+      'Consistency',
+      'Active Tasks',
+      'Total Output',
+    ];
+
+    return categories.map((category) => {
+      const dataPoint: any = { category };
+
+      selectedAgents.forEach((agentName) => {
+        const agent = metrics.find((m) => m.agent === agentName);
+        if (!agent) return;
+
+        let value = 0;
+        switch (category) {
+          case 'Completion Rate':
+            value = agent.completionRate;
+            break;
+          case 'Efficiency':
+            value = Math.min(100, agent.efficiency * 10);
+            break;
+          case 'Consistency':
+            value = agent.consistency;
+            break;
+          case 'Active Tasks':
+            value = Math.min(100, agent.tasksInProgress * 10);
+            break;
+          case 'Total Output':
+            value = Math.min(100, (agent.tasksCompleted / 10) * 10);
+            break;
+        }
+
+        dataPoint[agentName] = value;
+      });
+
+      return dataPoint;
+    });
+  };
+
+  const getComparisonData = () => {
+    return selectedAgents.map((agentName) => {
+      const agent = metrics.find((m) => m.agent === agentName);
+      return {
+        name: agentName,
+        completed: agent?.tasksCompleted || 0,
+        inProgress: agent?.tasksInProgress || 0,
+        completionRate: agent?.completionRate || 0,
+      };
+    });
+  };
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+
+  const getTrendIcon = (value: number, threshold: number) => {
+    if (value > threshold) return <ArrowUpRight size={16} className="text-green-400" />;
+    if (value < threshold) return <ArrowDownRight size={16} className="text-red-400" />;
+    return <Minus size={16} className="text-gray-400" />;
+  };
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Advanced Agent Comparison"
+      subtitle="Compare agent performance metrics side-by-side"
+      icon={Users}
+      maxWidth="max-w-6xl"
+    >
+      <div className="space-y-6">
+        {/* Agent Selection */}
+        <div>
+          <div className="text-sm font-medium mb-2">
+            Select Agents to Compare (up to 5)
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {metrics.map((metric) => (
+              <button
+                key={metric.agent}
+                onClick={() => toggleAgent(metric.agent)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  selectedAgents.includes(metric.agent)
+                    ? 'bg-clawd-accent text-white'
+                    : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent'
+                }`}
+                disabled={
+                  !selectedAgents.includes(metric.agent) && selectedAgents.length >= 5
+                }
+              >
+                {metric.agent}
+                {selectedAgents.includes(metric.agent) && (
+                  <span className="ml-2">✓</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {selectedAgents.length > 0 ? (
+          <>
+            {/* Radar Chart */}
+            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+              <h3 className="font-semibold mb-4">Performance Radar</h3>
+              <ResponsiveContainer width="100%" height={400}>
+                <RadarChart data={getRadarData()}>
+                  <PolarGrid stroke="#374151" />
+                  <PolarAngleAxis dataKey="category" stroke="#9CA3AF" />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#9CA3AF" />
+                  {selectedAgents.map((agent, index) => (
+                    <Radar
+                      key={agent}
+                      name={agent}
+                      dataKey={agent}
+                      stroke={COLORS[index]}
+                      fill={COLORS[index]}
+                      fillOpacity={0.3}
+                    />
+                  ))}
+                  <Legend />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Bar Comparison */}
+            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+              <h3 className="font-semibold mb-4">Task Completion Comparison</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={getComparisonData()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="name" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1f2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="completed" fill="#10B981" name="Completed" />
+                  <Bar dataKey="inProgress" fill="#F59E0B" name="In Progress" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Detailed Metrics Table */}
+            <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-clawd-bg border-b border-clawd-border">
+                    <tr>
+                      <th className="text-left p-4 text-sm font-medium">Agent</th>
+                      <th className="text-right p-4 text-sm font-medium">
+                        <div className="flex items-center justify-end gap-1">
+                          <Target size={14} />
+                          Completed
+                        </div>
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium">
+                        <div className="flex items-center justify-end gap-1">
+                          <TrendingUp size={14} />
+                          Rate
+                        </div>
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium">
+                        <div className="flex items-center justify-end gap-1">
+                          <Clock size={14} />
+                          Avg Time
+                        </div>
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium">
+                        <div className="flex items-center justify-end gap-1">
+                          <Award size={14} />
+                          Efficiency
+                        </div>
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium">Consistency</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedAgents.map((agentName, index) => {
+                      const agent = metrics.find((m) => m.agent === agentName);
+                      if (!agent) return null;
+
+                      return (
+                        <tr
+                          key={agentName}
+                          className="border-b border-clawd-border last:border-b-0"
+                        >
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: COLORS[index] }}
+                              />
+                              <span className="font-medium">{agentName}</span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-green-400 font-medium">
+                                {agent.tasksCompleted}
+                              </span>
+                              {getTrendIcon(
+                                agent.tasksCompleted,
+                                metrics.reduce((sum, m) => sum + m.tasksCompleted, 0) /
+                                  metrics.length
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <span
+                              className={`font-medium ${
+                                agent.completionRate >= 80
+                                  ? 'text-green-400'
+                                  : agent.completionRate >= 50
+                                  ? 'text-yellow-400'
+                                  : 'text-red-400'
+                              }`}
+                            >
+                              {agent.completionRate}%
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <span className="text-orange-400 font-medium">
+                              {agent.avgCompletionTime.toFixed(1)}h
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-blue-400 font-medium">
+                                {agent.efficiency.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-clawd-text-dim">
+                                tasks/h
+                              </span>
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-24 bg-clawd-bg rounded-full h-2">
+                                <div
+                                  className="bg-purple-400 rounded-full h-2 transition-all"
+                                  style={{ width: `${agent.consistency}%` }}
+                                />
+                              </div>
+                              <span className="text-purple-400 font-medium w-12">
+                                {Math.round(agent.consistency)}%
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Insights */}
+            <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Award size={18} className="text-clawd-accent" />
+                Key Insights
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-clawd-bg rounded-xl">
+                  <div className="text-sm text-clawd-text-dim mb-1">Top Performer</div>
+                  <div className="font-medium text-lg">
+                    {metrics.length > 0
+                      ? metrics.reduce((a, b) =>
+                          a.tasksCompleted > b.tasksCompleted ? a : b
+                        ).agent
+                      : 'N/A'}
+                  </div>
+                  <div className="text-sm text-clawd-text-dim mt-1">
+                    Most tasks completed
+                  </div>
+                </div>
+                <div className="p-4 bg-clawd-bg rounded-xl">
+                  <div className="text-sm text-clawd-text-dim mb-1">Most Efficient</div>
+                  <div className="font-medium text-lg">
+                    {metrics.length > 0
+                      ? metrics.reduce((a, b) => (a.efficiency > b.efficiency ? a : b))
+                          .agent
+                      : 'N/A'}
+                  </div>
+                  <div className="text-sm text-clawd-text-dim mt-1">
+                    Best tasks per hour ratio
+                  </div>
+                </div>
+                <div className="p-4 bg-clawd-bg rounded-xl">
+                  <div className="text-sm text-clawd-text-dim mb-1">Highest Rate</div>
+                  <div className="font-medium text-lg">
+                    {metrics.length > 0
+                      ? metrics.reduce((a, b) =>
+                          a.completionRate > b.completionRate ? a : b
+                        ).agent
+                      : 'N/A'}
+                  </div>
+                  <div className="text-sm text-clawd-text-dim mt-1">
+                    Best completion percentage
+                  </div>
+                </div>
+                <div className="p-4 bg-clawd-bg rounded-xl">
+                  <div className="text-sm text-clawd-text-dim mb-1">Most Consistent</div>
+                  <div className="font-medium text-lg">
+                    {metrics.length > 0
+                      ? metrics.reduce((a, b) => (a.consistency > b.consistency ? a : b))
+                          .agent
+                      : 'N/A'}
+                  </div>
+                  <div className="text-sm text-clawd-text-dim mt-1">
+                    Most reliable timing
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="py-12 text-center text-clawd-text-dim">
+            Select at least one agent to view comparison
+          </div>
+        )}
+      </div>
+    </BaseModal>
+  );
+}

@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react';
 import { X, RefreshCw, Trash2, CheckCircle, XCircle, AlertTriangle, Shield, Key, Clock, ExternalLink } from 'lucide-react';
 import { ConnectedAccount, DataType, AccountScope } from '../types/accounts';
-import { useState } from 'react';
 
 interface Props {
   account: ConnectedAccount;
@@ -31,7 +31,28 @@ const PROVIDER_DOCS = {
 };
 
 export default function AccountDetailModal({ account, onClose, onRefresh, onRemove }: Props) {
+  const [isClosing, setIsClosing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'permissions' | 'security'>('overview');
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200);
+  };
+
+  // ESC key to close
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
 
   const getStatusColor = () => {
     switch (account.status) {
@@ -57,8 +78,18 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-clawd-surface rounded-xl border border-clawd-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div 
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
+      }`} 
+      onClick={handleClose}
+    >
+      <div 
+        className={`glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+          isClosing ? 'modal-content-exit' : 'modal-content-enter'
+        }`} 
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-clawd-border">
           <div>
@@ -74,10 +105,11 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
             </div>
           </div>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-clawd-bg rounded-lg transition-colors"
+            onClick={handleClose}
+            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+            aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
@@ -211,7 +243,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               {account.status === 'error' && account.errorMessage && (
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle size={18} className="text-red-400 mt-0.5" />
+                    <AlertTriangle size={16} className="text-red-400 mt-0.5" />
                     <div>
                       <div className="font-medium text-red-400 mb-1">Connection Error</div>
                       <div className="text-sm text-red-300">{account.errorMessage}</div>
@@ -244,7 +276,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
             <div className="space-y-6">
               <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Shield size={18} className="text-blue-400 mt-0.5" />
+                  <Shield size={16} className="text-blue-400 mt-0.5" />
                   <div className="flex-1">
                     <div className="font-medium text-blue-400 mb-1">Permissions Explained</div>
                     <div className="text-sm text-blue-300">
@@ -274,7 +306,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                           </div>
                           <p className="text-sm text-clawd-text-dim">{scope.description}</p>
                         </div>
-                        <CheckCircle size={18} className="text-green-400 mt-0.5" />
+                        <CheckCircle size={16} className="text-green-400 mt-0.5" />
                       </div>
                     </div>
                   ))}
@@ -428,7 +460,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
             Test Connection
           </button>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
           >
             Done

@@ -124,6 +124,7 @@ declare global {
         saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => Promise<{ success: boolean }>;
         loadMessages: (limit?: number, sessionKey?: string) => Promise<{ success: boolean; messages: any[] }>;
         clearMessages: (sessionKey?: string) => Promise<{ success: boolean }>;
+        suggestReplies: (context: { role: string; content: string }[]) => Promise<{ success: boolean; suggestions: string[]; error?: string }>;
       };
       // Filesystem
       fs: {
@@ -231,9 +232,46 @@ declare global {
         list: () => Promise<{ success: boolean; sessions: any[] }>;
         history: (sessionKey: string, limit?: number) => Promise<{ success: boolean; messages: any[] }>;
       };
+      // Pinned Conversations
+      pins: {
+        list: () => Promise<{ success: boolean; pins: Array<{ id: number; session_key: string; pinned_at: number; pinned_by: string; notes?: string }> }>;
+        isPinned: (sessionKey: string) => Promise<{ success: boolean; pinned: boolean }>;
+        pin: (sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
+        unpin: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        toggle: (sessionKey: string) => Promise<{ success: boolean; pinned: boolean; error?: string }>;
+      };
+      // Message Folders
+      folders: {
+        list: () => Promise<{ success: boolean; folders: any[]; error?: string }>;
+        create: (folder: { name: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; folder?: any; error?: string }>;
+        update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
+        delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
+        assign: (folderId: number, sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
+        unassign: (folderId: number, sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: any[]; error?: string }>;
+        conversations: (folderId: number) => Promise<{ success: boolean; conversations: any[]; error?: string }>;
+      };
+      // Conversations
+      conversations: {
+        archive: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        unarchive: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        archived: () => Promise<{ success: boolean; conversations: any[]; error?: string }>;
+        isArchived: (sessionKey: string) => Promise<{ success: boolean; archived: boolean; error?: string }>;
+        markRead: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        delete: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+      };
       // Shell execution
       exec: {
         run: (command: string) => Promise<{ success: boolean; stdout: string; stderr: string }>;
+      };
+      // Starred messages
+      starred: {
+        star: (messageId: number, note?: string, category?: string) => Promise<{ success: boolean; error?: string }>;
+        unstar: (identifier: number) => Promise<{ success: boolean; error?: string }>;
+        list: (options?: { category?: string; sessionKey?: string; limit?: number }) => Promise<{ success: boolean; starred: any[]; error?: string }>;
+        search: (query: string, limit?: number) => Promise<{ success: boolean; results: any[]; error?: string }>;
+        stats: () => Promise<{ success: boolean; stats: { total: number; byCategory?: any[] } }>;
+        check: (messageId: number) => Promise<{ success: boolean; isStarred: boolean }>;
       };
     };
   }

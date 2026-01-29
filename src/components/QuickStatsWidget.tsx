@@ -49,7 +49,7 @@ export default function QuickStatsWidget() {
     <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
       <div className="p-4 border-b border-clawd-border">
         <h2 className="font-semibold flex items-center gap-2">
-          <Activity size={18} className="text-clawd-accent" /> Quick Stats
+          <Activity size={16} className="text-clawd-accent" /> Quick Stats
         </h2>
       </div>
 
@@ -90,12 +90,12 @@ export default function QuickStatsWidget() {
           <div className="space-y-1 ml-6">
             {busyAgents.length > 0 ? (
               busyAgents.map(agent => (
-                <div key={agent.id} className="flex items-center gap-2 text-xs">
-                  <span>{agent.avatar}</span>
-                  <span className="text-clawd-text">{agent.name}</span>
+                <div key={agent.id} className="flex items-center gap-2 text-xs overflow-hidden">
+                  <span className="no-shrink">{agent.avatar}</span>
+                  <span className="text-clawd-text agent-name flex-shrink">{agent.name}</span>
                   {agent.currentTaskId && (
-                    <span className="ml-auto text-clawd-text-dim">
-                      {tasks.find(t => t.id === agent.currentTaskId)?.title?.slice(0, 20)}...
+                    <span className="ml-auto text-clawd-text-dim text-truncate flex-1">
+                      {tasks.find(t => t.id === agent.currentTaskId)?.title}
                     </span>
                   )}
                 </div>
@@ -111,9 +111,9 @@ export default function QuickStatsWidget() {
                   + {subagentSessions.length} sub-agent{subagentSessions.length !== 1 ? 's' : ''}
                 </div>
                 {subagentSessions.slice(0, 2).map(session => (
-                  <div key={session.key} className="flex items-center gap-2 text-xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-clawd-text truncate">{session.displayName}</span>
+                  <div key={session.key} className="flex items-center gap-2 text-xs overflow-hidden">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse no-shrink" />
+                    <span className="text-clawd-text session-name flex-fill">{session.displayName}</span>
                   </div>
                 ))}
               </div>
@@ -159,16 +159,16 @@ export default function QuickStatsWidget() {
           <div className="ml-6 space-y-2">
             {recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
-                <div key={activity.id} className="text-xs">
-                  <div className="flex items-start gap-2">
-                    <span className="flex-shrink-0">
+                <div key={activity.id} className="text-xs overflow-hidden">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <span className="no-shrink">
                       {activity.type === 'chat' ? '💬' : 
                        activity.type === 'task' ? '✅' : 
                        activity.type === 'agent' ? '🤖' : '⚙️'}
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-clawd-text truncate">{activity.message}</p>
-                      <p className="text-clawd-text-dim">{formatTimeAgo(activity.timestamp)}</p>
+                    <div className="flex-fill">
+                      <p className="text-clawd-text message-preview">{activity.message}</p>
+                      <p className="text-clawd-text-dim no-wrap">{formatTimeAgo(activity.timestamp)}</p>
                     </div>
                   </div>
                 </div>

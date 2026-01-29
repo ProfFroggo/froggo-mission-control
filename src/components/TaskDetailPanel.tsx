@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight, HandMetal, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
+import ActiveAgentIndicator from './ActiveAgentIndicator';
+import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
 
 interface TaskAttachment {
@@ -33,6 +35,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [poking, setPoking] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
+  const [showAgentActiveModal, setShowAgentActiveModal] = useState(false);
+  const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
+  const [checkingAgent, setCheckingAgent] = useState(false);
+  const [abortingAgent, setAbortingAgent] = useState(false);
+  const [showAgentWarning, setShowAgentWarning] = useState(false);
+  const [activeAgentSession, setActiveAgentSession] = useState<any>(null);
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -104,6 +114,128 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     return () => clearInterval(interval);
   }, [task, loadSubtasks, loadActivity, loadAttachments]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!task) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        // Allow Esc to close even when focused on input
+        if (e.key !== 'Escape') return;
+      }
+
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      // Escape - Close panel
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      // Cmd+S - Save/Update (currently auto-saves, but we can trigger a manual update)
+      if (isCmdOrCtrl && e.key === 's') {
+        e.preventDefault();
+        // Trigger a reload to ensure fresh data
+        loadSubtasks();
+        loadActivity();
+        showToast('info', 'Refreshed', 'Task data updated');
+        return;
+      }
+
+      // Cmd+Enter - Complete task
+      if (isCmdOrCtrl && e.key === 'Enter') {
+        e.preventDefault();
+        const validation = canMarkDone();
+        if (validation.allowed && task.status === 'review') {
+          updateTask(task.id, { status: 'done' });
+          showToast('success', 'Task completed', `Marked "${task.title}" as done`);
+        } else {
+          showToast('warning', 'Cannot complete', validation.reasons[0] || 'Requirements not met');
+        }
+        return;
+      }
+
+      // Cmd+Shift+P - Poke agent
+      if (isCmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        if (task.status === 'in-progress') {
+          handlePoke();
+        }
+        return;
+      }
+
+      // Cmd+Shift+R - Reopen task
+      if (isCmdOrCtrl && e.shiftKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        if (task.status === 'done') {
+          setShowReopenModal(true);
+        }
+        return;
+      }
+
+      // Cmd+N - New subtask (focus input)
+      if (isCmdOrCtrl && e.key === 'n') {
+        e.preventDefault();
+        setActiveTab('subtasks');
+        // Focus the subtask input if it exists
+        setTimeout(() => {
+          const input = document.querySelector('[placeholder="Add a new subtask..."]') as HTMLInputElement;
+          input?.focus();
+        }, 100);
+        return;
+      }
+
+      // Cmd+1-5 - Switch tabs
+      if (isCmdOrCtrl && /^[1-5]$/.test(e.key)) {
+        e.preventDefault();
+        const tabMap: Record<string, typeof activeTab> = {
+          '1': 'subtasks',
+          '2': 'planning',
+          '3': 'activity',
+          '4': 'files',
+          '5': 'review',
+        };
+        if (e.key in tabMap) {
+          setActiveTab(tabMap[e.key]);
+        }
+        return;
+      }
+
+      // Cmd+E - Edit task (focus planning notes)
+      if (isCmdOrCtrl && e.key === 'e') {
+        e.preventDefault();
+        setActiveTab('planning');
+        // Focus the planning textarea if it exists
+        setTimeout(() => {
+          const textarea = document.querySelector('textarea[placeholder*="Planning"]') as HTMLTextAreaElement;
+          textarea?.focus();
+        }, 100);
+        return;
+      }
+
+      // Cmd+Backspace - Delete task
+      if (isCmdOrCtrl && e.key === 'Backspace') {
+        e.preventDefault();
+        if (confirm(`Delete task "${task.title}"? This cannot be undone.`)) {
+          // Delete task
+          (window as any).clawdbot?.tasks?.delete(task.id).then(() => {
+            showToast('success', 'Task deleted', `Deleted "${task.title}"`);
+            onClose();
+          }).catch((err: any) => {
+            showToast('error', 'Delete failed', err.message);
+          });
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [task, activeTab, onClose, updateTask]);
+
   if (!task) return null;
 
   const formatTime = (timestamp: number) => {
@@ -174,6 +306,30 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const validation = canMarkDone();
 
+  // Check if agent is still active on this task
+  const checkForActiveAgent = async () => {
+    if (!task) return null;
+    
+    try {
+      const result = await (window as any).clawdbot.sessions.list();
+      if (result.success && result.sessions) {
+        // Find session with label matching task ID
+        const activeSession = result.sessions.find((s: any) => {
+          // Session is active if updated within last 5 minutes
+          const isActive = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
+          // Label contains task ID (e.g., "coder-task-123")
+          const matchesTask = s.label && s.label.includes(task.id);
+          return isActive && matchesTask;
+        });
+        
+        return activeSession || null;
+      }
+    } catch (err) {
+      console.error('Failed to check for active agent:', err);
+    }
+    return null;
+  };
+
   const handleStart = async () => {
     if (task.id && assignedAgent) {
       await logTaskActivity(task.id, 'task_started', `Task started by ${assignedAgent.name}`, assignedAgent.id);
@@ -198,6 +354,35 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       showToast('error', 'Poke failed', err.message);
     } finally {
       setPoking(false);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!task || !reopenReason.trim()) {
+      showToast('error', 'Reason required', 'Please enter a reason for reopening this task');
+      return;
+    }
+
+    try {
+      // Update task: status to 'todo' and clear completed_at
+      await updateTask(task.id, { 
+        status: 'todo',
+        completedAt: null
+      });
+      
+      // Log activity with reason
+      await logTaskActivity(task.id, 'task_reopened', `Reopened: ${reopenReason.trim()}`);
+      
+      showToast('success', 'Task reopened', reopenReason.trim());
+      
+      // Reset modal state
+      setShowReopenModal(false);
+      setReopenReason('');
+      
+      // Refresh activity to show the reopen entry
+      loadActivity();
+    } catch (err: any) {
+      showToast('error', 'Failed to reopen', err.message);
     }
   };
 
@@ -367,17 +552,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Activity icon based on action type
   const getActivityIcon = (action: string) => {
     switch (action) {
-      case 'task_started': return <Play size={12} className="text-green-400" />;
-      case 'task_completed': return <CheckCircle size={12} className="text-green-400" />;
-      case 'subtask_added': return <Plus size={12} className="text-blue-400" />;
-      case 'subtask_completed': return <Check size={12} className="text-green-400" />;
-      case 'subtask_uncompleted': return <XCircle size={12} className="text-yellow-400" />;
-      case 'subtask_deleted': return <X size={12} className="text-red-400" />;
-      case 'reviewer_assigned': return <Eye size={12} className="text-purple-400" />;
-      case 'review_status': return <Eye size={12} className="text-purple-400" />;
-      case 'agent_message': return <Bot size={12} className="text-clawd-accent" />;
-      case 'progress': return <Activity size={12} className="text-yellow-400" />;
-      default: return <MessageSquare size={12} className="text-clawd-text-dim" />;
+      case 'task_started': return <Play size={14} className="text-green-400" />;
+      case 'task_completed': return <CheckCircle size={14} className="text-green-400" />;
+      case 'subtask_added': return <Plus size={14} className="text-blue-400" />;
+      case 'subtask_completed': return <Check size={14} className="text-green-400" />;
+      case 'subtask_uncompleted': return <XCircle size={14} className="text-yellow-400" />;
+      case 'subtask_deleted': return <X size={14} className="text-red-400" />;
+      case 'reviewer_assigned': return <Eye size={14} className="text-purple-400" />;
+      case 'review_status': return <Eye size={14} className="text-purple-400" />;
+      case 'agent_message': return <Bot size={14} className="text-clawd-accent" />;
+      case 'progress': return <Activity size={14} className="text-yellow-400" />;
+      default: return <MessageSquare size={14} className="text-clawd-text-dim" />;
     }
   };
 
@@ -388,6 +573,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
+              <ActiveAgentIndicator taskId={task.id} showLabel size="md" />
               <span className={`px-2 py-1 text-xs rounded-lg ${
                 task.status === 'done' ? 'bg-green-500/20 text-green-400' :
                 task.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
@@ -465,7 +651,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600"
                     title="Start Work"
                   >
-                    <Play size={12} />
+                    <Play size={14} />
                   </button>
                 )}
                 {isWorking && (
@@ -516,9 +702,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               >
                 <option value="">Assign reviewer...</option>
                 {agents
-                  .filter(a => a.id !== task.assignedTo && !['main', 'froggo'].includes(a.id))
+                  .filter(a => a.id !== task.assignedTo)
                   .map(a => (
-                    <option key={a.id} value={a.id}>{a.name}</option>
+                    <option key={a.id} value={a.id} selected={a.id === 'froggo'}>
+                      {a.name}{a.id === 'froggo' ? ' (default)' : ''}
+                    </option>
                   ))}
               </select>
             )}
@@ -627,7 +815,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         : 'border-2 border-clawd-border hover:border-clawd-accent'
                     }`}
                   >
-                    {st.completed && <Check size={12} />}
+                    {st.completed && <Check size={14} />}
                   </button>
                   <div className="flex-1 min-w-0">
                     <span className={`text-sm ${st.completed ? 'line-through text-clawd-text-dim' : ''}`}>
@@ -705,6 +893,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Activity Tab */}
         {activeTab === 'activity' && (
           <div className="p-4">
+            {/* Agent Progress Query - only shows when agent is active */}
+            <AgentProgressQuery 
+              taskId={task.id} 
+              taskTitle={task.title}
+              className="mb-4"
+            />
+            
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium">Activity Log</h3>
               <button
@@ -1039,25 +1234,50 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {task.status !== 'done' && (
             <div className="flex-1 flex flex-col gap-1">
               <button
-                onClick={() => {
-                  if (validation.allowed) {
+                onClick={async () => {
+                  if (!validation.allowed) {
+                    showToast('error', 'Cannot mark as done', validation.reasons.join('; '));
+                    return;
+                  }
+                  
+                  // Check for active agent before approving
+                  setCheckingAgent(true);
+                  const activeAgent = await checkForActiveAgent();
+                  setCheckingAgent(false);
+                  
+                  if (activeAgent) {
+                    setActiveAgentInfo({
+                      sessionKey: activeAgent.key,
+                      displayName: activeAgent.label || activeAgent.key
+                    });
+                    setShowAgentActiveModal(true);
+                  } else {
+                    // No active agent - proceed with approval
                     updateTask(task.id, { status: 'done' });
                     logTaskActivity(task.id, 'task_completed', 'Task marked as done');
-                  } else {
-                    showToast('error', 'Cannot mark as done', validation.reasons.join('; '));
+                    showToast('success', 'Task completed ✓');
                   }
                 }}
-                disabled={!validation.allowed}
+                disabled={!validation.allowed || checkingAgent}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-colors ${
-                  validation.allowed
+                  validation.allowed && !checkingAgent
                     ? 'bg-green-500 text-white hover:bg-green-600'
                     : 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
                 }`}
                 title={validation.allowed ? 'Mark task as done' : validation.reasons.join('\n')}
               >
-                {!validation.allowed && <AlertCircle size={16} />}
-                <CheckCircle size={16} />
-                Mark Done
+                {checkingAgent ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  <>
+                    {!validation.allowed && <AlertCircle size={16} />}
+                    <CheckCircle size={16} />
+                    Mark Done
+                  </>
+                )}
               </button>
               {!validation.allowed && (
                 <div className="text-xs text-red-400 px-2">
@@ -1068,10 +1288,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
           {task.status === 'done' && (
             <button
-              onClick={() => {
-                updateTask(task.id, { status: 'todo' });
-                logTaskActivity(task.id, 'task_reopened', 'Task reopened');
-              }}
+              onClick={() => setShowReopenModal(true)}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
             >
               <XCircle size={16} />
@@ -1080,6 +1297,177 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
         </div>
       </div>
+
+      {/* Reopen Task Modal */}
+      {showReopenModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-2xl w-[500px] max-w-[90vw]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+              <h3 className="text-lg font-semibold">Reopen Task</h3>
+              <button
+                onClick={() => {
+                  setShowReopenModal(false);
+                  setReopenReason('');
+                }}
+                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-sm text-clawd-text-dim mb-4">
+                Why are you reopening this task?
+              </p>
+              <textarea
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+                placeholder="Enter reason for reopening (required)..."
+                className="w-full h-32 bg-clawd-bg border border-clawd-border rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
+                autoFocus
+              />
+              {reopenReason.trim().length === 0 && (
+                <p className="text-xs text-red-400 mt-2">
+                  Reason is required and cannot be empty
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 p-6 border-t border-clawd-border">
+              <button
+                onClick={() => {
+                  setShowReopenModal(false);
+                  setReopenReason('');
+                }}
+                className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReopen}
+                disabled={!reopenReason.trim()}
+                className="flex-1 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Reopen Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Still Active Warning Modal */}
+      {showAgentActiveModal && activeAgentInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-2xl w-[500px] max-w-[90vw]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-500/20 rounded-lg">
+                  <AlertCircle size={24} className="text-yellow-400" />
+                </div>
+                <h3 className="text-lg font-semibold">Agent Still Active</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAgentActiveModal(false);
+                  setActiveAgentInfo(null);
+                }}
+                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+                <p className="text-sm text-yellow-200 mb-2">
+                  ⚠️ An agent is currently working on this task
+                </p>
+                <div className="text-xs text-clawd-text-dim space-y-1">
+                  <div>
+                    <span className="font-medium">Session:</span> {activeAgentInfo.displayName}
+                  </div>
+                  <div>
+                    <span className="font-medium">Task:</span> {task.title}
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-sm text-clawd-text-dim mb-3">
+                If you approve now, the agent might reset the task status when it finishes, creating an approval loop.
+              </p>
+              
+              <p className="text-sm text-clawd-text font-medium">
+                You should abort the agent session before approving.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 p-6 border-t border-clawd-border">
+              <button
+                onClick={() => {
+                  setShowAgentActiveModal(false);
+                  setActiveAgentInfo(null);
+                }}
+                className="flex-1 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setAbortingAgent(true);
+                  try {
+                    // Abort the agent session via clawdbot CLI
+                    const result = await (window as any).clawdbot.exec.run(
+                      `clawdbot sessions abort ${activeAgentInfo.sessionKey}`
+                    );
+                    
+                    if (result.success) {
+                      showToast('success', 'Agent aborted', 'Proceeding with approval...');
+                      await logTaskActivity(task.id, 'agent_aborted', `Agent session ${activeAgentInfo.displayName} aborted before approval`);
+                      
+                      // Wait a moment for session to fully terminate
+                      await new Promise(resolve => setTimeout(resolve, 1000));
+                      
+                      // Now approve the task
+                      await updateTask(task.id, { status: 'done' });
+                      await logTaskActivity(task.id, 'task_completed', 'Task marked as done (agent aborted first)');
+                      
+                      setShowAgentActiveModal(false);
+                      setActiveAgentInfo(null);
+                      showToast('success', 'Task completed ✓');
+                    } else {
+                      showToast('error', 'Failed to abort agent', result.stderr || result.error || 'Unknown error');
+                    }
+                  } catch (err: any) {
+                    showToast('error', 'Abort failed', err.message);
+                  } finally {
+                    setAbortingAgent(false);
+                  }
+                }}
+                disabled={abortingAgent}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50"
+              >
+                {abortingAgent ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Aborting...
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={16} />
+                    Abort & Approve
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

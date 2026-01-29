@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Inbox, Brain, Database, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
+import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Inbox, Brain, Database, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw, Star } from 'lucide-react';
+import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -31,18 +32,22 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addActivity, connected } = useStore();
+  const dialogRef = useFocusTrap(isOpen);
+  const announce = useAnnounce();
 
   const commands: Command[] = [
     // Navigation
-    { id: 'nav-dashboard', icon: <Home size={16} />, label: 'Go to Dashboard', shortcut: '⌘1', category: 'Navigation', action: () => { onNavigate('dashboard'); onClose(); } },
-    { id: 'nav-inbox', icon: <Inbox size={16} />, label: 'Go to Approvals', shortcut: '⌘2', category: 'Navigation', action: () => { onNavigate('inbox'); onClose(); } },
-    { id: 'nav-comms', icon: <Mail size={16} />, label: 'Go to Inbox', shortcut: '⌘3', category: 'Navigation', action: () => { onNavigate('comms'); onClose(); } },
-    { id: 'nav-analytics', icon: <Zap size={16} />, label: 'Go to Analytics', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('analytics'); onClose(); } },
-    { id: 'nav-tasks', icon: <ListTodo size={16} />, label: 'Go to Tasks', shortcut: '⌘5', category: 'Navigation', action: () => { onNavigate('kanban'); onClose(); } },
-    { id: 'nav-agents', icon: <Bot size={16} />, label: 'Go to Agents', shortcut: '⌘6', category: 'Navigation', action: () => { onNavigate('agents'); onClose(); } },
-    { id: 'nav-twitter', icon: <XIcon size={16} />, label: 'Go to X', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
-    { id: 'nav-voice', icon: <Mic size={16} />, label: 'Go to Voice', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('voice'); onClose(); } },
-    { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '⌘9', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
+    { id: 'nav-inbox', icon: <Mail size={16} />, label: 'Go to Inbox', shortcut: '⌘1', category: 'Navigation', action: () => { onNavigate('inbox'); onClose(); } },
+    { id: 'nav-dashboard', icon: <Home size={16} />, label: 'Go to Dashboard', shortcut: '⌘2', category: 'Navigation', action: () => { onNavigate('dashboard'); onClose(); } },
+    { id: 'nav-analytics', icon: <Zap size={16} />, label: 'Go to Analytics', shortcut: '⌘3', category: 'Navigation', action: () => { onNavigate('analytics'); onClose(); } },
+    { id: 'nav-tasks', icon: <ListTodo size={16} />, label: 'Go to Tasks', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('kanban'); onClose(); } },
+    { id: 'nav-agents', icon: <Bot size={16} />, label: 'Go to Agents', shortcut: '⌘5', category: 'Navigation', action: () => { onNavigate('agents'); onClose(); } },
+    { id: 'nav-twitter', icon: <XIcon size={16} />, label: 'Go to X', shortcut: '⌘6', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
+    { id: 'nav-voice', icon: <Mic size={16} />, label: 'Go to Voice', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('voice'); onClose(); } },
+    { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
+    { id: 'nav-accounts', icon: <Settings size={16} />, label: 'Go to Accounts', shortcut: '⌘9', category: 'Navigation', action: () => { onNavigate('accounts'); onClose(); } },
+    { id: 'nav-approvals', icon: <Inbox size={16} />, label: 'Go to Approvals', shortcut: '⌘0', category: 'Navigation', action: () => { onNavigate('approvals'); onClose(); } },
+    { id: 'nav-starred', icon: <Star size={16} />, label: 'Go to Starred Messages', shortcut: '⌘⇧S', category: 'Navigation', action: () => { onNavigate('starred'); onClose(); } },
     
     // Quick Actions
     { id: 'action-calendar', icon: <Calendar size={16} />, label: 'Check Calendar Today', category: 'Actions', action: async () => {
@@ -189,12 +194,16 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       setQuery('');
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
+      announce('Command palette opened');
     }
-  }, [isOpen]);
+  }, [isOpen, announce]);
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [query]);
+    if (query) {
+      announce(`${filteredCommands.length} commands found`);
+    }
+  }, [query, announce]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -222,13 +231,26 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   let flatIndex = 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]">
-      <div className="absolute inset-0 modal-backdrop backdrop-blur-sm" onClick={onClose} />
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="command-palette-title"
+    >
+      <div 
+        className="absolute inset-0 modal-backdrop backdrop-blur-sm" 
+        onClick={onClose}
+        aria-hidden="true"
+      />
       
-      <div className="relative w-full max-w-lg glass-modal rounded-2xl shadow-2xl overflow-hidden">
+      <div 
+        ref={dialogRef as React.RefObject<HTMLDivElement>}
+        className="relative w-full max-w-lg glass-modal rounded-2xl shadow-2xl overflow-hidden"
+      >
+        <h2 id="command-palette-title" className="sr-only">Command Palette</h2>
         {/* Search Input */}
         <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
-          <Search size={20} className="text-clawd-text-dim" />
+          <Search size={20} className="text-clawd-text-dim" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -237,15 +259,27 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             onKeyDown={handleKeyDown}
             placeholder="Search commands..."
             className="flex-1 bg-transparent outline-none text-lg"
+            aria-label="Search commands"
+            aria-autocomplete="list"
+            aria-controls="command-list"
+            aria-activedescendant={filteredCommands[selectedIndex]?.id}
           />
-          <kbd className="px-2 py-1 text-xs bg-clawd-border rounded">ESC</kbd>
+          <kbd className="px-2 py-1 text-xs bg-clawd-border rounded" aria-label="Press Escape to close">ESC</kbd>
         </div>
 
         {/* Commands List */}
-        <div className="max-h-80 overflow-y-auto p-2">
+        <div 
+          id="command-list"
+          className="max-h-80 overflow-y-auto p-2"
+          role="listbox"
+          aria-label="Available commands"
+        >
           {Object.entries(groupedCommands).map(([category, cmds]) => (
-            <div key={category} className="mb-2">
-              <div className="px-3 py-1 text-xs font-medium text-clawd-text-dim uppercase tracking-wider">
+            <div key={category} className="mb-2" role="group" aria-labelledby={`category-${category}`}>
+              <div 
+                id={`category-${category}`}
+                className="px-3 py-1 text-xs font-medium text-clawd-text-dim uppercase tracking-wider"
+              >
                 {category}
               </div>
               {cmds.map((cmd) => {
@@ -255,18 +289,22 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                 return (
                   <button
                     key={cmd.id}
+                    id={cmd.id}
                     onClick={cmd.action}
                     onMouseEnter={() => setSelectedIndex(currentIndex)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                       isSelected ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
                     }`}
+                    role="option"
+                    aria-selected={isSelected}
+                    aria-label={`${cmd.label}${cmd.shortcut ? ` (${cmd.shortcut})` : ''}`}
                   >
-                    <span className={isSelected ? 'text-white' : 'text-clawd-text-dim'}>{cmd.icon}</span>
+                    <span className={isSelected ? 'text-white' : 'text-clawd-text-dim'} aria-hidden="true">{cmd.icon}</span>
                     <span className="flex-1 text-left">{cmd.label}</span>
                     {cmd.shortcut && (
                       <kbd className={`px-2 py-0.5 text-xs rounded ${
                         isSelected ? 'bg-white/20' : 'bg-clawd-border'
-                      }`}>
+                      }`} aria-hidden="true">
                         {cmd.shortcut}
                       </kbd>
                     )}

@@ -53,11 +53,23 @@ const TASK_EXTRACTION_PATTERNS = [
   /remember to\s+(.+?)(?:\.|$)/gi,
 ];
 
-// OpenAI Whisper API for high-quality transcription
-const OPENAI_API_KEY = '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';
-
 // Transcribe audio blob via Whisper API
 async function transcribeWithWhisper(audioBlob: Blob, mimeType?: string): Promise<string> {
+  // Get API key from main process (secure storage)
+  let apiKey = '';
+  try {
+    if ((window as any).clawdbot?.getOpenAIKey) {
+      apiKey = await (window as any).clawdbot.getOpenAIKey();
+    }
+  } catch (err) {
+    console.error('[Whisper] Failed to get API key:', err);
+  }
+  
+  if (!apiKey) {
+    console.warn('[Whisper] No OpenAI API key configured. Set OPENAI_API_KEY env var or create ~/.clawdbot/openai.key');
+    return '';
+  }
+  
   // Determine file extension from mimeType
   let ext = 'webm';
   if (mimeType?.includes('mp4')) ext = 'mp4';
@@ -73,7 +85,7 @@ async function transcribeWithWhisper(audioBlob: Blob, mimeType?: string): Promis
   try {
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+      headers: { 'Authorization': `Bearer ${apiKey}` },
       body: formData
     });
     
@@ -178,6 +190,12 @@ export default function VoicePanel() {
   const audioChunksRef = useRef<Blob[]>([]);
   const whisperIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Chunk overlap to prevent word cutoff at boundaries
+  // Strategy: Keep last 1s of each chunk, prepend to next chunk
+  // Then de-duplicate overlapping words after transcription
+  const previousChunkBufferRef = useRef<Blob[]>([]); // Buffer for 1s overlap
+  const OVERLAP_MS = 1000; // 1 second overlap
+  
   // Speech accumulation buffer (to avoid cutting off mid-sentence)
   const speechBufferRef = useRef<string[]>([]);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -194,7 +212,7 @@ export default function VoicePanel() {
 
   const connected = connectionState === 'connected';
 
-  // Load Vosk model via voiceService
+  // Load Vosk model via voiceService (ON-DEMAND)
   useEffect(() => {
     const unsubscribe = voiceService.subscribe((state, message) => {
       console.log('[VoicePanel] voiceService state:', state, message);
@@ -212,7 +230,11 @@ export default function VoicePanel() {
       }
     });
     
-    if (voiceService.isReady()) {
+    // PERFORMANCE: Load vosk only when Voice panel opens (5.7MB saved on startup)
+    if (!voiceService.isReady()) {
+      console.log('[VoicePanel] Starting on-demand voiceService load');
+      voiceService.preload().catch(console.error);
+    } else {
       setModelLoaded(true);
       setModelLoading(false);
     }
@@ -1055,6 +1077,7 @@ OUTPUT:`;
     setMeetingTranscript([]);
     setMeetingActionItems([]);
     setMeetingEndSummary(null);
+    previousChunkBufferRef.current = []; // Clear overlap buffer
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -1072,21 +1095,61 @@ OUTPUT:`;
       console.log('[Meeting] Using mimeType:', mimeType);
       
       let processingCount = 0;
+      let lastTranscript = ''; // Track last transcript for de-duplication
+      
+      // Helper to de-duplicate overlapping words at the start of a transcript
+      const deduplicateOverlap = (newTranscript: string, previousTranscript: string): string => {
+        if (!previousTranscript || !newTranscript) return newTranscript;
+        
+        const prevWords = previousTranscript.toLowerCase().split(/\s+/).filter(w => w);
+        const newWords = newTranscript.split(/\s+/).filter(w => w);
+        
+        // Find the longest overlap at the end of previous and start of new
+        let overlapLength = 0;
+        const maxOverlap = Math.min(10, prevWords.length, newWords.length); // Check up to 10 words
+        
+        for (let i = 1; i <= maxOverlap; i++) {
+          const prevSlice = prevWords.slice(-i).join(' ').toLowerCase();
+          const newSlice = newWords.slice(0, i).map(w => w.toLowerCase()).join(' ');
+          
+          if (prevSlice === newSlice) {
+            overlapLength = i;
+          }
+        }
+        
+        // Remove overlapping words from start of new transcript
+        if (overlapLength > 0) {
+          const deduplicated = newWords.slice(overlapLength).join(' ');
+          console.log('[Overlap] Removed', overlapLength, 'duplicate words:', newWords.slice(0, overlapLength).join(' '));
+          return deduplicated;
+        }
+        
+        return newTranscript;
+      };
       
       // Helper to process transcript with Gemini cleanup
       const processTranscript = (transcript: string, batchNum: number) => {
         if (!transcript?.trim()) return;
         
-        console.log('[Whisper] Batch', batchNum, 'result:', transcript.substring(0, 50));
-        setMeetingTranscript(prev => [...prev, transcript]);
+        // De-duplicate overlapping words from previous chunk
+        const deduplicated = deduplicateOverlap(transcript, lastTranscript);
+        lastTranscript = transcript; // Update for next iteration
         
-        // Gemini cleanup
+        if (!deduplicated.trim()) {
+          console.log('[Whisper] Batch', batchNum, 'fully duplicated, skipping');
+          return;
+        }
+        
+        console.log('[Whisper] Batch', batchNum, 'result:', deduplicated.substring(0, 50));
+        setMeetingTranscript(prev => [...prev, deduplicated]);
+        
+        // Gemini cleanup (use deduplicated transcript)
         const GEMINI_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
         fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Froggo", "Clawdbot", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${transcript}` }] }],
+            contents: [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Froggo", "Clawdbot", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${deduplicated}` }] }],
             generationConfig: { 
               maxOutputTokens: 512,
               temperature: 0.1
@@ -1096,23 +1159,23 @@ OUTPUT:`;
         .then(res => res.json())
         .then(data => {
           const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (cleaned && cleaned !== transcript) {
+          if (cleaned && cleaned !== deduplicated) {
             console.log('[Gemini] Cleaned:', cleaned.substring(0, 50));
             setMeetingTranscript(prev => {
               const updated = [...prev];
-              const idx = updated.indexOf(transcript);
+              const idx = updated.indexOf(deduplicated);
               if (idx !== -1) updated[idx] = cleaned;
               return updated;
             });
             const actions = detectActionItems(cleaned);
             if (actions.length > 0) setMeetingActionItems(prev => [...prev, ...actions]);
           } else {
-            const actions = detectActionItems(transcript);
+            const actions = detectActionItems(deduplicated);
             if (actions.length > 0) setMeetingActionItems(prev => [...prev, ...actions]);
           }
         })
         .catch(() => {
-          const actions = detectActionItems(transcript);
+          const actions = detectActionItems(deduplicated);
           if (actions.length > 0) setMeetingActionItems(prev => [...prev, ...actions]);
         });
       };
@@ -1129,11 +1192,11 @@ OUTPUT:`;
           if (e.data.size > 0) audioChunksRef.current.push(e.data);
         };
         
-        recorder.start(1000);
+        recorder.start(1000); // Collect in 1s chunks for granular overlap control
         console.log('[Meeting] New recorder started');
       };
       
-      // Stop recorder and process audio
+      // Stop recorder and process audio with overlap
       const stopAndProcess = async () => {
         if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
         
@@ -1141,15 +1204,26 @@ OUTPUT:`;
           const recorder = mediaRecorderRef.current!;
           
           recorder.onstop = async () => {
-            const chunks = [...audioChunksRef.current];
+            const currentChunks = [...audioChunksRef.current];
             audioChunksRef.current = [];
             
-            if (chunks.length > 0) {
-              const audioBlob = new Blob(chunks, { type: mimeType });
+            if (currentChunks.length > 0) {
+              // Calculate overlap buffer (last 1 second = last ~1 chunk)
+              const overlapChunkCount = 1; // 1 second overlap
+              const newOverlapBuffer = currentChunks.slice(-overlapChunkCount);
+              
+              // Combine overlap buffer from previous chunk + current chunks
+              const chunksToProcess = [...previousChunkBufferRef.current, ...currentChunks];
+              
+              // Update overlap buffer for next iteration
+              previousChunkBufferRef.current = newOverlapBuffer;
+              
+              const audioBlob = new Blob(chunksToProcess, { type: mimeType });
               processingCount++;
               const batchNum = processingCount;
               
-              console.log('[Whisper] Processing batch', batchNum, 'size:', audioBlob.size);
+              console.log('[Whisper] Processing batch', batchNum, 'size:', audioBlob.size, 
+                         'overlap:', previousChunkBufferRef.current.length > 0 ? '1s' : 'none');
               
               if (audioBlob.size > 1000) {
                 setStatusMessage(`Transcribing ${batchNum}...`);
@@ -1197,6 +1271,9 @@ OUTPUT:`;
       clearInterval(whisperIntervalRef.current);
       whisperIntervalRef.current = null;
     }
+    
+    // Clear overlap buffer
+    previousChunkBufferRef.current = [];
     
     // Process any remaining audio
     if (mediaRecorderRef.current && audioChunksRef.current.length > 0) {
@@ -1328,8 +1405,18 @@ OUTPUT:`;
 
   // Export meeting to clipboard
   const exportMeeting = useCallback((meeting: PastMeeting) => {
-    navigator.clipboard.writeText(meeting.rawContent);
-    setStatusMessage('Meeting exported to clipboard');
+    // Create blob and download link
+    const blob = new Blob([meeting.rawContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = meeting.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    setStatusMessage('Meeting exported');
     setTimeout(() => setStatusMessage(''), 2000);
   }, []);
 
@@ -1498,7 +1585,7 @@ Give a helpful, concise answer based on the meeting content.`;
               }`}
               title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
             >
-              {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+              {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
             <button
               onClick={() => setVoiceEnabled(!voiceEnabled)}
@@ -1507,7 +1594,7 @@ Give a helpful, concise answer based on the meeting content.`;
               }`}
               title={voiceEnabled ? 'Voice responses on' : 'Voice responses off'}
             >
-              {voiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+              {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
           </div>
         </div>
@@ -1569,7 +1656,7 @@ Give a helpful, concise answer based on the meeting content.`;
               )}
               {conversationMode && !processing && (
                 <div className="text-xs text-clawd-accent mt-2 flex items-center justify-center gap-1">
-                  <Zap size={12} />
+                  <Zap size={14} />
                   Conversation mode — tap to stop
                 </div>
               )}
@@ -1715,7 +1802,7 @@ Give a helpful, concise answer based on the meeting content.`;
                 /* Active Meeting: Live Transcript */
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <Brain size={18} className="text-orange-400" />
+                    <Brain size={16} className="text-orange-400" />
                     <span className="font-medium">Live Transcript</span>
                   </div>
                   
@@ -1744,7 +1831,7 @@ Give a helpful, concise answer based on the meeting content.`;
                 /* Meeting Ended: Summary */
                 <div>
                   <div className="flex items-center gap-2 mb-4">
-                    <FileText size={18} className="text-green-400" />
+                    <FileText size={16} className="text-green-400" />
                     <span className="font-medium">Meeting Summary</span>
                   </div>
                   
@@ -1834,7 +1921,7 @@ Give a helpful, concise answer based on the meeting content.`;
                       }}
                       className="p-2 hover:bg-clawd-surface rounded-lg"
                     >
-                      <X size={18} />
+                      <X size={16} />
                     </button>
                     <div>
                       <h3 className="font-medium">
@@ -1953,7 +2040,7 @@ Give a helpful, concise answer based on the meeting content.`;
               <div className="flex-1 flex flex-col">
                 <div className="p-4 border-b border-clawd-border">
                   <h3 className="font-medium flex items-center gap-2">
-                    <Clock size={18} />
+                    <Clock size={16} />
                     Past Meetings
                   </h3>
                 </div>
@@ -1984,7 +2071,7 @@ Give a helpful, concise answer based on the meeting content.`;
                               </p>
                               <p className="text-sm text-clawd-text-dim">{meeting.time}</p>
                             </div>
-                            <ChevronRight size={18} className="text-clawd-text-dim" />
+                            <ChevronRight size={16} className="text-clawd-text-dim" />
                           </div>
                           {meeting.transcript.length > 0 && (
                             <p className="text-sm text-clawd-text-dim mt-2 line-clamp-2">

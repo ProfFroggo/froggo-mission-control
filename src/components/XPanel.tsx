@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Heart, MessageCircle, Repeat, BarChart2, RefreshCw, Edit, Trash2, Eye, Users, Sparkles, Image, Calendar, X, Lightbulb, ArrowRight, Search, FileText } from 'lucide-react';
+import { Send, Heart, MessageCircle, Repeat, BarChart2, RefreshCw, Edit, Trash2, Eye, Users, Sparkles, Image, Calendar, X, Lightbulb, ArrowRight, Search, FileText, Zap } from 'lucide-react';
 import { useStore, XDraft } from '../store/store';
+import { LoadingButton, Spinner } from './LoadingStates';
+import ContentCalendar from './ContentCalendar';
+import XAutomationsTab from './XAutomationsTab';
 
 // Chat message type
 interface ChatMessage {
@@ -50,7 +53,7 @@ export default function XPanel() {
   const xDrafts = rawXDrafts || [];
   
   // ALL useState hooks FIRST (React hooks rule)
-  const [activeTab, setActiveTab] = useState<'research' | 'plan' | 'drafts' | 'mentions' | 'timeline' | 'analytics'>('research');
+  const [activeTab, setActiveTab] = useState<'research' | 'plan' | 'drafts' | 'calendar' | 'automations' | 'mentions' | 'timeline' | 'analytics'>('research');
   const [mentions, setMentions] = useState<Tweet[]>([]);
   const [timeline, setTimeline] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,6 +106,64 @@ export default function XPanel() {
     } else if (activeTab === 'analytics') {
       calculateStats();
     }
+  }, [activeTab]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      // ⌘N - New tweet (go to Plan tab and focus compose area)
+      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setActiveTab('plan');
+        // Focus will be on the textarea when tab renders
+      }
+      
+      // ⌘R - Refresh current view
+      if (e.key === 'r' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleRefresh();
+      }
+      
+      // ⌘1-7 - Switch tabs
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        switch (e.key) {
+          case '1':
+            e.preventDefault();
+            setActiveTab('research');
+            break;
+          case '2':
+            e.preventDefault();
+            setActiveTab('plan');
+            break;
+          case '3':
+            e.preventDefault();
+            setActiveTab('drafts');
+            break;
+          case '4':
+            e.preventDefault();
+            setActiveTab('calendar');
+            break;
+          case '5':
+            e.preventDefault();
+            setActiveTab('mentions');
+            break;
+          case '6':
+            e.preventDefault();
+            setActiveTab('timeline');
+            break;
+          case '7':
+            e.preventDefault();
+            setActiveTab('analytics');
+            break;
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab]);
 
   // Map bird CLI output to our Tweet format
@@ -379,17 +440,17 @@ export default function XPanel() {
       </div>
       <div className="flex items-center gap-4 text-xs text-clawd-text-dim pt-2 border-t border-clawd-border">
         <span className="flex items-center gap-1" title="Replies">
-          <MessageCircle size={12} /> {tweet.replies || 0}
+          <MessageCircle size={14} /> {tweet.replies || 0}
         </span>
         <span className="flex items-center gap-1" title="Reposts">
-          <Repeat size={12} /> {tweet.retweets || 0}
+          <Repeat size={14} /> {tweet.retweets || 0}
         </span>
         <span className="flex items-center gap-1" title="Likes">
-          <Heart size={12} /> {tweet.likes || 0}
+          <Heart size={14} /> {tweet.likes || 0}
         </span>
         {tweet.views !== undefined && tweet.views > 0 && (
           <span className="flex items-center gap-1" title="Views">
-            <Eye size={12} /> {tweet.views.toLocaleString()}
+            <Eye size={14} /> {tweet.views.toLocaleString()}
           </span>
         )}
         {tweet.url && (
@@ -432,7 +493,7 @@ export default function XPanel() {
 
         {/* Tabs */}
         <div className="flex gap-2 flex-wrap">
-          {(['research', 'plan', 'drafts', 'mentions', 'timeline', 'analytics'] as const).map((tab) => (
+          {(['research', 'plan', 'drafts', 'calendar', 'automations', 'mentions', 'timeline', 'analytics'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -444,6 +505,8 @@ export default function XPanel() {
             >
               {tab === 'research' && <Search size={14} />}
               {tab === 'plan' && <FileText size={14} />}
+              {tab === 'calendar' && <Calendar size={14} />}
+              {tab === 'automations' && <Zap size={14} />}
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
               {tab === 'drafts' && xDrafts.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 text-xs bg-white/20 rounded-full">
@@ -551,7 +614,7 @@ export default function XPanel() {
                     disabled={!researchInput.trim() || researchLoading}
                     className="px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/80 disabled:opacity-50 transition-colors"
                   >
-                    <Send size={18} />
+                    <Send size={16} />
                   </button>
                 </div>
               </div>
@@ -618,7 +681,7 @@ export default function XPanel() {
                               onClick={() => setPlanComposeText(msg.content)}
                               className="mt-2 text-xs text-clawd-accent hover:underline flex items-center gap-1"
                             >
-                              Use in Compose <ArrowRight size={12} />
+                              Use in Compose <ArrowRight size={14} />
                             </button>
                           )}
                         </div>
@@ -656,7 +719,7 @@ export default function XPanel() {
                       disabled={!planInput.trim() || planChatLoading}
                       className="px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/80 disabled:opacity-50 transition-colors"
                     >
-                      <Send size={18} />
+                      <Send size={16} />
                     </button>
                   </div>
                 </div>
@@ -792,7 +855,7 @@ export default function XPanel() {
                         onClick={() => fileInputRef.current?.click()}
                         className="flex items-center gap-1 px-2 py-1 text-xs bg-clawd-border rounded-lg hover:bg-clawd-border/80 transition-colors"
                       >
-                        <Image size={12} />
+                        <Image size={14} />
                         {planImage ? 'Change' : 'Image'}
                       </button>
                     </div>
@@ -840,7 +903,8 @@ export default function XPanel() {
                     Schedule
                   </button>
                   
-                  <button
+                  <LoadingButton
+                    loading={posting}
                     onClick={async () => {
                       if (!planComposeText.trim() || posting) return;
                       setPosting(true);
@@ -859,12 +923,12 @@ export default function XPanel() {
                         setPosting(false);
                       }
                     }}
-                    disabled={!planComposeText.trim() || posting}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors font-medium text-sm"
+                    disabled={!planComposeText.trim()}
+                    className="flex-1 bg-white text-black hover:bg-gray-200 font-medium text-sm"
+                    icon={<Send size={14} />}
                   >
-                    <Send size={14} />
-                    {posting ? 'Posting...' : 'Post Now'}
-                  </button>
+                    Post Now
+                  </LoadingButton>
                 </div>
               </div>
             </div>
@@ -1005,6 +1069,14 @@ export default function XPanel() {
               ))
             )}
           </div>
+        )}
+
+        {activeTab === 'calendar' && (
+          <ContentCalendar />
+        )}
+
+        {activeTab === 'automations' && (
+          <XAutomationsTab />
         )}
 
         {activeTab === 'mentions' && (

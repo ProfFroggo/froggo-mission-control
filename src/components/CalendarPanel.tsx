@@ -719,7 +719,7 @@ export default function CalendarPanel() {
                 : 'bg-clawd-border text-clawd-text-dim'
             }`}
           >
-            <Calendar size={12} />
+            <Calendar size={14} />
             Calendar
             <span className="text-xs opacity-70">
               ({events.filter((e) => e.type === 'calendar').length})
@@ -733,7 +733,7 @@ export default function CalendarPanel() {
                 : 'bg-clawd-border text-clawd-text-dim'
             }`}
           >
-            <XIcon size={12} />
+            <XIcon size={14} />
             Posts
             <span className="text-xs opacity-70">
               ({events.filter((e) => e.type === 'post').length})
@@ -747,7 +747,7 @@ export default function CalendarPanel() {
                 : 'bg-clawd-border text-clawd-text-dim'
             }`}
           >
-            <CheckCircle size={12} />
+            <CheckCircle size={14} />
             Tasks
             <span className="text-xs opacity-70">
               ({events.filter((e) => e.type === 'task').length})
@@ -861,7 +861,7 @@ export default function CalendarPanel() {
                       <div className="flex items-start gap-4">
                         {/* Event Type Icon */}
                         <div className={`p-2 rounded-lg ${style.bgColor}`}>
-                          <EventIcon size={18} className={style.iconColor} />
+                          <EventIcon size={16} className={style.iconColor} />
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -871,7 +871,7 @@ export default function CalendarPanel() {
                               <Repeat size={14} className="text-clawd-text-dim" />
                             )}
                             {event.type === 'task' && event.priority && (
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                                 event.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                                 event.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                                 'bg-gray-500/20 text-gray-400'
@@ -880,7 +880,7 @@ export default function CalendarPanel() {
                               </span>
                             )}
                             {event.type === 'post' && event.status && (
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                                 event.status === 'pending' ? 'bg-purple-500/20 text-purple-400' :
                                 event.status === 'sent' ? 'bg-green-500/20 text-green-400' :
                                 'bg-gray-500/20 text-gray-400'
@@ -914,7 +914,7 @@ export default function CalendarPanel() {
                               </span>
                             )}
                             {event.type === 'task' && event.project && (
-                              <span className="text-xs px-1.5 py-0.5 bg-clawd-border rounded">
+                              <span className="text-xs px-1.5 py-0.5 bg-clawd-border rounded flex-shrink-0 whitespace-nowrap">
                                 {event.project}
                               </span>
                             )}
@@ -974,7 +974,7 @@ export default function CalendarPanel() {
                 onClick={resetForm}
                 className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
@@ -1181,7 +1181,7 @@ export default function CalendarPanel() {
                 onClick={() => setShowEventDetailModal(false)}
                 className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
@@ -1198,7 +1198,7 @@ export default function CalendarPanel() {
                   </div>
                   {selectedEvent.timeZone && (
                     <div className="text-xs text-clawd-text-dim mt-1 flex items-center gap-1">
-                      <Globe size={12} />
+                      <Globe size={14} />
                       {selectedEvent.timeZone}
                     </div>
                   )}

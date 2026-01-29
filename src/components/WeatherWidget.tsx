@@ -86,7 +86,7 @@ export default function WeatherWidget() {
     <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Thermometer size={18} className={weatherColor} />
+          <Thermometer size={16} className={weatherColor} />
           <h2 className="font-semibold">Weather</h2>
           <span className="text-xs text-clawd-text-dim">Gibraltar</span>
         </div>

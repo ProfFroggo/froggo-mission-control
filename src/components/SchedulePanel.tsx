@@ -21,7 +21,7 @@ export default function SchedulePanel() {
                 : 'text-clawd-text-dim border-transparent hover:text-clawd-text hover:bg-clawd-border/30'
             }`}
           >
-            <Calendar size={18} />
+            <Calendar size={16} />
             Calendar
           </button>
           <button
@@ -32,7 +32,7 @@ export default function SchedulePanel() {
                 : 'text-clawd-text-dim border-transparent hover:text-clawd-text hover:bg-clawd-border/30'
             }`}
           >
-            <Clock size={18} />
+            <Clock size={16} />
             Content Scheduler
           </button>
         </div>

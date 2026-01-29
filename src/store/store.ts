@@ -142,6 +142,17 @@ interface Store {
   connected: boolean;
   setConnected: (v: boolean) => void;
 
+  // Loading states
+  loading: {
+    tasks: boolean;
+    sessions: boolean;
+    agents: boolean;
+    approvals: boolean;
+    activities: boolean;
+    [key: string]: boolean;
+  };
+  setLoading: (key: string, value: boolean) => void;
+
   // Voice controls
   isMuted: boolean;
   setMuted: (v: boolean) => void;
@@ -247,6 +258,7 @@ async function executeApproval(item: ApprovalItem) {
 
 const defaultAgents: Agent[] = [
   { id: 'main', name: 'Froggo', avatar: '🐸', description: 'Main assistant - orchestrates everything', status: 'active', capabilities: ['chat', 'code', 'web', 'email', 'orchestrate'] },
+  { id: 'froggo', name: 'Froggo', avatar: '🐸', description: 'Agent reviewer - reviews all completed work', status: 'active', capabilities: ['review', 'orchestrate', 'approve'] },
   { id: 'coder', name: 'Coder', avatar: '💻', description: 'Software engineering tasks', status: 'idle', capabilities: ['code', 'git', 'debug', 'test'] },
   { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
   { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
@@ -258,6 +270,18 @@ export const useStore = create<Store>()(
     (set, get) => ({
       connected: false,
       setConnected: (connected: boolean) => set({ connected }),
+
+      // Loading states
+      loading: {
+        tasks: false,
+        sessions: false,
+        agents: false,
+        approvals: false,
+        activities: false,
+      },
+      setLoading: (key: string, value: boolean) => set((s: Store) => ({
+        loading: { ...s.loading, [key]: value }
+      })),
 
       // Voice controls
       isMuted: false,
@@ -271,10 +295,13 @@ export const useStore = create<Store>()(
       setSessions: (sessions: Session[]) => set({ sessions }),
       fetchSessions: async () => {
         try {
+          get().setLoading('sessions', true);
           const res = await gateway.getSessions();
           set({ sessions: res.sessions || [] });
         } catch (e) {
           console.error('Failed to fetch sessions:', e);
+        } finally {
+          get().setLoading('sessions', false);
         }
       },
 
@@ -352,6 +379,9 @@ export const useStore = create<Store>()(
       tasks: [], // Empty - loaded from froggo-db only
       loadTasksFromDB: async () => {
         try {
+          get().setLoading('tasks', true);
+          // Load tasks with limit for better performance
+          // Get all non-done tasks + last 50 completed tasks
           const result = await (window as any).clawdbot?.tasks?.list();
           if (result?.success && Array.isArray(result.tasks)) {
             // Convert froggo-db tasks to store format
@@ -373,23 +403,40 @@ export const useStore = create<Store>()(
               subtasks: [] as Subtask[],
             }));
             
-            // Load subtasks for each task in parallel
-            const tasksWithSubtasks = await Promise.all(
-              tasksWithoutSubtasks.map(async (task: Task) => {
-                try {
-                  const subtaskResult = await (window as any).clawdbot?.tasks?.subtasks?.list(task.id);
-                  if (subtaskResult?.success) {
-                    return { ...task, subtasks: subtaskResult.subtasks || [] };
-                  }
-                } catch {}
-                return task;
-              })
-            );
+            // Filter: keep all active tasks + last 50 completed
+            const activeTasks = tasksWithoutSubtasks.filter((t: Task) => t.status !== 'done');
+            const completedTasks = tasksWithoutSubtasks
+              .filter((t: Task) => t.status === 'done')
+              .sort((a: Task, b: Task) => (b.updatedAt || 0) - (a.updatedAt || 0))
+              .slice(0, 50);
+            const filteredTasks = [...activeTasks, ...completedTasks];
+            
+            // Load subtasks in parallel with batching (10 at a time)
+            const BATCH_SIZE = 10;
+            const tasksWithSubtasks: Task[] = [];
+            
+            for (let i = 0; i < filteredTasks.length; i += BATCH_SIZE) {
+              const batch = filteredTasks.slice(i, i + BATCH_SIZE);
+              const batchResults = await Promise.all(
+                batch.map(async (task: Task) => {
+                  try {
+                    const subtaskResult = await (window as any).clawdbot?.tasks?.subtasks?.list(task.id);
+                    if (subtaskResult?.success) {
+                      return { ...task, subtasks: subtaskResult.subtasks || [] };
+                    }
+                  } catch {}
+                  return task;
+                })
+              );
+              tasksWithSubtasks.push(...batchResults);
+            }
             
             set({ tasks: tasksWithSubtasks });
           }
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
+        } finally {
+          get().setLoading('tasks', false);
         }
       },
       addTask: (task: Task) => {
@@ -909,6 +956,7 @@ The pattern I've seen: founders who deeply understand one specific user segment 
 
       loadApprovals: async () => {
         try {
+          get().setLoading('approvals', true);
           if (window.clawdbot?.inbox?.list) {
             const result = await window.clawdbot.inbox.list();
             if (result?.success && Array.isArray(result.items)) {
@@ -927,6 +975,8 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           }
         } catch (e) {
           console.error('[Store] Failed to load approvals:', e);
+        } finally {
+          get().setLoading('approvals', false);
         }
       },
 

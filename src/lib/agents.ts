@@ -51,6 +51,15 @@ export const AGENTS: Record<string, AgentConfig> = {
     capabilities: ['code', 'architecture', 'planning'],
     model: 'anthropic/claude-sonnet-4',
   },
+  froggo: {
+    id: 'froggo',
+    name: 'Froggo',
+    emoji: '🐸',
+    description: 'Main orchestrator and agent reviewer',
+    systemPromptPath: '/Users/worker/clawd/AGENTS.md',
+    capabilities: ['orchestrate', 'review', 'approve', 'delegate'],
+    model: 'anthropic/claude-sonnet-4-5',
+  },
 };
 
 // Spawn an agent with a specific task

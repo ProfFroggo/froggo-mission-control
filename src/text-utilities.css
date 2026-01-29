@@ -1,0 +1,285 @@
+/* Text Truncation and Overflow Utilities */
+
+/* Single-line truncation with ellipsis */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* Critical for flexbox truncation */
+}
+
+/* Multi-line truncation (2 lines) */
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Multi-line truncation (3 lines) */
+.text-truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Multi-line truncation (4 lines) */
+.text-truncate-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Flex container that enables child truncation */
+.flex-truncate-container {
+  display: flex;
+  min-width: 0; /* Critical: allows flex items to shrink below content size */
+  overflow: hidden;
+}
+
+/* Flex item that can truncate */
+.flex-truncate-item {
+  flex: 1;
+  min-width: 0; /* Critical for truncation to work */
+  overflow: hidden;
+}
+
+/* Card/Panel Spacing Utilities */
+
+/* Standard card spacing */
+.card-spacing {
+  padding: 1rem; /* 16px */
+}
+
+.card-spacing-sm {
+  padding: 0.75rem; /* 12px */
+}
+
+.card-spacing-lg {
+  padding: 1.5rem; /* 24px */
+}
+
+/* Standard gap between card elements */
+.card-gap {
+  gap: 0.75rem; /* 12px */
+}
+
+.card-gap-sm {
+  gap: 0.5rem; /* 8px */
+}
+
+.card-gap-lg {
+  gap: 1rem; /* 16px */
+}
+
+/* Panel spacing */
+.panel-spacing {
+  padding: 1.5rem; /* 24px */
+}
+
+.panel-spacing-sm {
+  padding: 1rem; /* 16px */
+}
+
+/* Overflow Containers */
+
+/* Container with vertical scroll */
+.overflow-y-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Container with horizontal scroll */
+.overflow-x-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Hidden overflow (for truncation parents) */
+.overflow-container {
+  overflow: hidden;
+}
+
+/* Task/Message Card Specific */
+
+/* Task card title - single line truncate */
+.task-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-weight: 500;
+}
+
+/* Task card description - multi-line truncate */
+.task-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  color: var(--clawd-text-dim);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Message preview - multi-line truncate */
+.message-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* Agent name truncate */
+.agent-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Session name truncate */
+.session-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Badge text (no wrap, truncate) */
+.badge-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0; /* Badges don't shrink */
+}
+
+/* Utility: Force element to not shrink (for icons, badges) */
+.no-shrink {
+  flex-shrink: 0;
+}
+
+/* Utility: Allow element to grow and fill space */
+.flex-fill {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Responsive truncation helpers */
+
+/* Hide overflow on mobile, show on desktop */
+@media (max-width: 768px) {
+  .truncate-mobile {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+}
+
+/* Word break utilities */
+.break-word {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.break-all {
+  word-break: break-all;
+}
+
+/* Prevent text wrapping */
+.no-wrap {
+  white-space: nowrap;
+}
+
+/* Allow text wrapping */
+.wrap {
+  white-space: normal;
+}
+
+/* Scroll behavior */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+/* Consistent card layout */
+.card-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  overflow: hidden; /* Critical for child truncation */
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0; /* Allow truncation */
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  flex-shrink: 0; /* Footer never shrinks */
+}
+
+/* Panel layout */
+.panel-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--clawd-border);
+  flex-shrink: 0;
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Critical for flex overflow */
+}
+
+.panel-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--clawd-border);
+  flex-shrink: 0;
+}

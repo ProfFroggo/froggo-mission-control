@@ -116,7 +116,7 @@ export default function ActivityFeed() {
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <MessageSquare size={18} />
+          <MessageSquare size={16} />
           <span className="font-medium">Activity Feed</span>
           <span className="text-xs text-clawd-text-dim">
             {activities.length} sessions
@@ -197,7 +197,7 @@ export default function ActivityFeed() {
                         <span className="font-medium text-sm truncate">
                           {activity.participant || info.label}
                         </span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${info.color}`}>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${info.color}`}>
                           {info.label}
                         </span>
                         {activity.unread && (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, Clock, Zap, ArrowRight, Calendar, Mail, Search, Mic, Plus, RefreshCw, Bell, AlertCircle, Loader2, ChevronDown, ChevronRight, Inbox, ListTodo, CalendarDays, AlertTriangle } from 'lucide-react';
+import { Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, Clock, Zap, ArrowRight, Calendar, Mail, Search, Mic, Plus, RefreshCw, Bell, AlertCircle, Loader2, ChevronDown, ChevronRight, Inbox, ListTodo, CalendarDays, AlertTriangle, Sparkles } from 'lucide-react';
+import { Spinner, TaskCardSkeleton, SessionCardSkeleton, InlineLoader } from './LoadingStates';
 
 // X logo component  
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -7,7 +8,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
-// CalendarWidget removed - replaced by EpicCalendar in Schedule panel
+import TodayCalendarWidget from './TodayCalendarWidget';
 import EmailWidget from './EmailWidget';
 import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
@@ -20,10 +21,11 @@ type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 
 
 interface DashboardProps {
   onNavigate?: (view: View) => void;
+  onShowBrief?: () => void;
 }
 
-export default function Dashboard({ onNavigate }: DashboardProps) {
-  const { connected, sessions, tasks, agents, activities, approvals, fetchSessions, addActivity, clearActivities, getUnassignedTasks, getTasksNeedingReview, gatewaySessions, loadGatewaySessions } = useStore();
+export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
+  const { connected, sessions, tasks, agents, activities, approvals, fetchSessions, addActivity, clearActivities, getUnassignedTasks, getTasksNeedingReview, gatewaySessions, loadGatewaySessions, loading } = useStore();
   const [greeting, setGreeting] = useState('');
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<'calendar' | 'email' | 'mentions' | 'messages' | null>(null);
@@ -69,6 +71,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   }, [loadGatewaySessions]);
 
   const handleQuickAction = (label: string) => {
+    if (label === 'Daily Brief') {
+      onShowBrief?.();
+      return;
+    }
     const modalMap: Record<string, 'calendar' | 'email' | 'mentions' | 'messages'> = {
       'Calendar': 'calendar',
       'Email': 'email',
@@ -83,6 +89,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     { icon: Mail, label: 'Email', color: 'text-green-400' },
     { icon: XIcon, label: 'X Mentions', color: 'text-white' },
     { icon: MessageSquare, label: 'Messages', color: 'text-purple-400' },
+    { icon: Sparkles, label: 'Daily Brief', color: 'text-yellow-400' },
   ];
 
   const getSessionIcon = (session: any) => {
@@ -118,10 +125,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold">{greeting}, Kevin</h1>
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+            <div className={`icon-text-tight px-3 py-1 rounded-full text-xs font-medium ${
               connected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
             }`}>
-              {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              {connected ? <Wifi size={14} className="flex-shrink-0" /> : <WifiOff size={14} className="flex-shrink-0" />}
               {connected ? 'Online' : 'Connecting...'}
             </div>
           </div>
@@ -133,10 +140,14 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 key={i}
                 onClick={() => handleQuickAction(label)}
                 disabled={loadingAction === label}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-clawd-bg/50 rounded-lg border border-clawd-border hover:border-clawd-accent transition-all text-sm"
+                className="icon-text-tight px-3 py-1.5 bg-clawd-bg/50 rounded-lg border border-clawd-border hover:border-clawd-accent transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 title={label}
               >
-                <Icon size={14} className={color} />
+                {loadingAction === label ? (
+                  <Spinner size={14} className="flex-shrink-0" />
+                ) : (
+                  <Icon size={14} className={`${color} flex-shrink-0`} />
+                )}
                 <span className="hidden lg:inline">{label}</span>
               </button>
             ))}
@@ -159,7 +170,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <Inbox size={20} className={pendingApprovals.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'} />
+              <Inbox size={20} className={`${pendingApprovals.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {pendingApprovals.length > 0 && (
                 <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">
                   {pendingApprovals.length}
@@ -185,7 +196,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <ListTodo size={20} className={inProgressTasks.length > 0 ? 'text-blue-400' : 'text-clawd-text-dim'} />
+              <ListTodo size={20} className={`${inProgressTasks.length > 0 ? 'text-blue-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {needsReview.length > 0 && (
                 <span className="px-2 py-0.5 bg-purple-500/80 text-white text-xs font-medium rounded-full">
                   {needsReview.length} review
@@ -211,7 +222,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <AlertTriangle size={20} className={urgentTasks.length > 0 ? 'text-yellow-400' : 'text-clawd-text-dim'} />
+              <AlertTriangle size={20} className={`${urgentTasks.length > 0 ? 'text-yellow-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {urgentTasks.length > 0 && (
                 <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
                   {urgentTasks.length}
@@ -230,10 +241,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           {/* Completed Today */}
           <div className="col-span-1 bg-clawd-surface rounded-xl border border-clawd-border p-4">
             <div className="flex items-center justify-between mb-2">
-              <CheckCircle size={20} className={completedToday > 0 ? 'text-green-400' : 'text-clawd-text-dim'} />
+              <CheckCircle size={20} className={`${completedToday > 0 ? 'text-green-400' : 'text-clawd-text-dim'} flex-shrink-0`} />
               {activeSubagents.length > 0 && (
-                <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full flex items-center gap-1">
-                  <Bot size={10} /> {activeSubagents.length}
+                <span className="icon-text-tight px-2 py-0.5 bg-green-500/20 text-green-400 text-xs font-medium rounded-full">
+                  <Bot size={14} className="flex-shrink-0" /> {activeSubagents.length}
                 </span>
               )}
             </div>
@@ -251,24 +262,31 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         <div className="grid grid-cols-3 gap-6 mb-6">
           {/* Left Column - Calendar (Wider) */}
           <div className="col-span-2 space-y-6">
-            {/* Calendar moved to Schedule panel (Cmd+Shift+S) → Epic Calendar */}
+            {/* Today's Calendar Widget */}
+            <TodayCalendarWidget onNavigate={onNavigate} />
 
             {/* Active Tasks - What's Being Worked On */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
               <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-                <h2 className="font-semibold flex items-center gap-2">
-                  <Activity size={18} className="text-blue-400" /> Active Work
+                <h2 className="font-semibold icon-text">
+                  <Activity size={16} className="text-blue-400" /> Active Work
                 </h2>
                 <button 
                   onClick={() => onNavigate?.('kanban')}
-                  className="flex items-center gap-1 text-sm text-clawd-accent hover:underline"
+                  className="flex items-center gap-1.5 text-sm text-clawd-accent hover:underline"
                 >
-                  View All <ArrowRight size={14} />
+                  View All  <ArrowRight size={14} className="flex-shrink-0" />
                 </button>
               </div>
               
               <div className="divide-y divide-clawd-border">
-                {[...inProgressTasks, ...needsReview].length === 0 ? (
+                {loading.tasks ? (
+                  <div className="p-3 space-y-3">
+                    <TaskCardSkeleton />
+                    <TaskCardSkeleton />
+                    <TaskCardSkeleton />
+                  </div>
+                ) : [...inProgressTasks, ...needsReview].length === 0 ? (
                   <div className="p-6 text-center text-clawd-text-dim">
                     <CheckCircle size={28} className="mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No active tasks</p>
@@ -285,22 +303,22 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     return (
                       <div 
                         key={task.id} 
-                        className="p-3 hover:bg-clawd-bg/50 transition-colors cursor-pointer"
+                        className="p-3 hover:bg-clawd-bg/50 transition-colors cursor-pointer overflow-hidden"
                         onClick={() => onNavigate?.('kanban')}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-2 h-2 rounded-full no-shrink ${
                             task.status === 'review' ? 'bg-purple-400' :
                             task.status === 'in-progress' ? 'bg-blue-400 animate-pulse' :
                             'bg-gray-400'
                           }`} />
-                          <span className="font-medium flex-1 truncate">{task.title}</span>
+                          <span className="task-title flex-fill">{task.title}</span>
                           {agent && (
-                            <span className="text-sm text-clawd-text-dim flex items-center gap-1 flex-shrink-0">
+                            <span className="text-sm text-clawd-text-dim flex items-center gap-1.5 no-shrink">
                               {agent.avatar}
                             </span>
                           )}
-                          <span className={`text-xs px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${
+                          <span className={`text-xs px-2 py-0.5 rounded-full capitalize no-shrink ${
                             task.status === 'review' ? 'bg-purple-500/20 text-purple-400' :
                             'bg-blue-500/20 text-blue-400'
                           }`}>
@@ -308,7 +326,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                           </span>
                         </div>
                         {task.project && (
-                          <div className="mt-1 ml-5 text-xs text-clawd-text-dim">{task.project}</div>
+                          <div className="mt-1 ml-5 text-xs text-clawd-text-dim truncate">{task.project}</div>
                         )}
                       </div>
                     );
@@ -334,8 +352,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             {/* Recent Actions / Notifications */}
             <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
               <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-                <h2 className="font-semibold flex items-center gap-2">
-                  <Bell size={16} /> Notifications
+                <h2 className="font-semibold icon-text">
+                   <Bell size={16} className="flex-shrink-0" /> Notifications
                 </h2>
                 {activities.length > 0 && (
                   <button 
@@ -356,16 +374,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 ) : (
                   <div className="divide-y divide-clawd-border">
                     {activities.slice(0, 8).map((a) => (
-                      <div key={a.id} className="p-3 text-sm hover:bg-clawd-bg/30">
-                        <div className="flex items-start gap-2">
-                          <span className="text-base flex-shrink-0">
+                      <div key={a.id} className="p-3 text-sm hover:bg-clawd-bg/30 overflow-hidden">
+                        <div className="flex items-start gap-2 min-w-0">
+                          <span className="text-base no-shrink">
                             {a.type === 'chat' ? '💬' : 
                              a.type === 'task' ? '✅' : 
                              a.type === 'agent' ? '🤖' : '⚙️'}
                           </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-clawd-text truncate text-xs">{a.message}</p>
-                            <p className="text-xs text-clawd-text-dim">{formatTimeAgo(a.timestamp)}</p>
+                          <div className="flex-fill">
+                            <p className="text-clawd-text text-xs message-preview">{a.message}</p>
+                            <p className="text-xs text-clawd-text-dim no-wrap">{formatTimeAgo(a.timestamp)}</p>
                           </div>
                         </div>
                       </div>
@@ -385,9 +403,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               onClick={() => setShowSessions(!showSessions)}
               className="w-full p-3 flex items-center justify-between hover:bg-clawd-bg/30 transition-colors"
             >
-              <div className="flex items-center gap-2 text-sm font-medium text-clawd-text-dim">
-                {showSessions ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <MessageSquare size={16} />
+              <div className="icon-text text-sm font-medium text-clawd-text-dim">
+                {showSessions ?  <ChevronDown size={16} className="flex-shrink-0" /> :  <ChevronRight size={16} className="flex-shrink-0" />}
+                 <MessageSquare size={16} className="flex-shrink-0" />
                 Sessions
                 <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs">
                   {sessions.length}
@@ -403,13 +421,19 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 className="p-1 hover:bg-clawd-border rounded transition-colors"
                 title="Refresh"
               >
-                <RefreshCw size={12} />
+                 <RefreshCw size={14} className="flex-shrink-0" />
               </button>
             </button>
             
             {showSessions && (
               <div className="border-t border-clawd-border divide-y divide-clawd-border max-h-64 overflow-y-auto">
-                {sessions.length === 0 ? (
+                {loading.sessions ? (
+                  <div className="p-3 space-y-2">
+                    <SessionCardSkeleton />
+                    <SessionCardSkeleton />
+                    <SessionCardSkeleton />
+                  </div>
+                ) : sessions.length === 0 ? (
                   <div className="p-4 text-center text-clawd-text-dim text-sm">
                     {connected ? 'No active sessions' : 'Connecting...'}
                   </div>
@@ -417,18 +441,18 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   sessions.slice(0, 8).map((s: any) => {
                     const isActive = Date.now() - (s.updatedAt || 0) < 300000;
                     return (
-                      <div key={s.key} className="p-3 hover:bg-clawd-bg/30 transition-colors text-sm">
-                        <div className="flex items-center gap-2">
-                          <span>{getSessionIcon(s)}</span>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
-                          <span className="font-medium truncate flex-1">{getSessionName(s)}</span>
-                          <span className={`px-1.5 py-0.5 rounded text-xs ${
+                      <div key={s.key} className="p-3 hover:bg-clawd-bg/30 transition-colors text-sm overflow-hidden">
+                        <div className="icon-text min-w-0">
+                          <span className="no-shrink">{getSessionIcon(s)}</span>
+                          <span className={`w-1.5 h-1.5 rounded-full no-shrink ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
+                          <span className="session-name flex-fill">{getSessionName(s)}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-xs no-shrink ${
                             s.channel === 'discord' ? 'badge-discord' :
                             s.channel === 'telegram' ? 'badge-telegram' :
                             s.channel === 'whatsapp' ? 'badge-whatsapp' :
                             'badge-webchat'
                           }`}>{s.channel || 'web'}</span>
-                          <span className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt)}</span>
+                          <span className="text-xs text-clawd-text-dim no-shrink no-wrap">{formatTimeAgo(s.updatedAt)}</span>
                         </div>
                       </div>
                     );
@@ -454,9 +478,9 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               onClick={() => setShowAgents(!showAgents)}
               className="w-full p-3 flex items-center justify-between hover:bg-clawd-bg/30 transition-colors"
             >
-              <div className="flex items-center gap-2 text-sm font-medium text-clawd-text-dim">
-                {showAgents ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <Bot size={16} />
+              <div className="icon-text text-sm font-medium text-clawd-text-dim">
+                {showAgents ?  <ChevronDown size={16} className="flex-shrink-0" /> :  <ChevronRight size={16} className="flex-shrink-0" />}
+                 <Bot size={16} className="flex-shrink-0" />
                 Agents
                 <span className="px-2 py-0.5 bg-clawd-border rounded-full text-xs">
                   {totalAgentCount}
@@ -479,11 +503,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               <div className="border-t border-clawd-border p-3">
                 <div className="grid grid-cols-4 gap-2">
                   {agents.slice(0, 4).map((agent) => (
-                    <div key={agent.id} className="flex items-center gap-2 p-2 rounded-lg bg-clawd-bg/50 text-sm">
-                      <span className="text-lg">{agent.avatar}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-xs truncate">{agent.name}</div>
-                        <div className={`text-xs ${
+                    <div key={agent.id} className="icon-text p-2 rounded-lg bg-clawd-bg/50 text-sm overflow-hidden">
+                      <span className="text-lg no-shrink">{agent.avatar}</span>
+                      <div className="flex-fill">
+                        <div className="agent-name text-xs">{agent.name}</div>
+                        <div className={`text-xs no-wrap ${
                           agent.status === 'busy' ? 'text-yellow-400' :
                           agent.status === 'active' ? 'text-green-400' : 'text-clawd-text-dim'
                         }`}>{agent.status}</div>
@@ -497,10 +521,10 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     <div className="text-xs text-clawd-text-dim uppercase tracking-wider mb-2">Running Sub-agents</div>
                     <div className="space-y-1">
                       {activeSubagents.slice(0, 3).map((session) => (
-                        <div key={session.key} className="flex items-center gap-2 p-2 rounded bg-clawd-bg/30 text-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                          <span className="font-medium text-xs truncate flex-1">{session.displayName}</span>
-                          <span className="text-xs text-clawd-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k</span>
+                        <div key={session.key} className="icon-text p-2 rounded bg-clawd-bg/30 text-sm overflow-hidden">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse no-shrink" />
+                          <span className="session-name flex-fill text-xs">{session.displayName}</span>
+                          <span className="text-xs text-clawd-text-dim no-shrink no-wrap">{((session.totalTokens || 0) / 1000).toFixed(1)}k</span>
                         </div>
                       ))}
                     </div>

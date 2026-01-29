@@ -1,54 +1,80 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { initApprovalQueue } from './lib/approvalQueue';
-import './lib/voiceService'; // Preload voice model in background
+// PERFORMANCE: voiceService no longer preloads - loads on-demand when Voice panel opens
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
-import Dashboard from './components/Dashboard';
-import Kanban from './components/Kanban';
-import AgentPanel from './components/AgentPanel';
-import ChatPanel from './components/ChatPanel';
-import VoicePanel from './components/VoicePanel';
+import LoadingPanel from './components/LoadingPanel';
+import PerformanceProfiler from './components/PerformanceProfiler';
+// Import protected panels with error boundaries
+import {
+  Dashboard,
+  Kanban,
+  AgentPanel,
+  ChatPanel,
+  VoicePanel,
+  SettingsPanel,
+  NotificationsPanel,
+  XPanel,
+  InboxPanel,
+  ThreePaneInbox,
+  CommsInbox,
+  UnifiedCommsInbox,
+  CommsInbox3Pane,
+  LibraryPanel,
+  CalendarPanel,
+  SchedulePanel,
+  CodeAgentDashboard,
+  ContextControlBoard,
+  AnalyticsDashboard,
+  ConnectedAccountsPanel,
+  StarredMessagesPanel,
+  ErrorBoundary
+} from './components/ProtectedPanels';
 import VoskBrowserTest from './components/VoskBrowserTest';
-import SettingsPanel from './components/SettingsPanel';
-import NotificationsPanel from './components/NotificationsPanel';
-import XPanel from './components/XPanel';
-import InboxPanel from './components/InboxPanel';
-import CommsInbox from './components/CommsInbox';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
-import LibraryPanel from './components/LibraryPanel';
-import CalendarPanel from './components/CalendarPanel';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
 import MorningBrief from './components/MorningBrief';
-import CodeAgentDashboard from './components/CodeAgentDashboard';
-import ContextControlBoard from './components/ContextControlBoard';
 import ContentCalendar from './components/ContentCalendar';
-import SchedulePanel from './components/SchedulePanel';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
-import ConnectedAccountsPanel from './components/ConnectedAccountsPanel';
-import { useRef } from 'react';
+import ErrorBoundaryTest from './components/ErrorBoundaryTest';
+import HelpPanel from './components/HelpPanel';
+import TourGuide, { useTour } from './components/TourGuide';
+import NetworkStatus from './components/NetworkStatus';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test';
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('dashboard');
+  const [currentView, setCurrentView] = useState<View>(() => {
+    // Load default panel from settings
+    const saved = localStorage.getItem('froggo-settings');
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved);
+        return (settings.defaultPanel as View) || 'dashboard';
+      } catch (e) {
+        return 'dashboard';
+      }
+    }
+    return 'dashboard';
+  });
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [skillModalOpen, setSkillModalOpen] = useState(false);
+  const [helpPanelOpen, setHelpPanelOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(208); // Track sidebar width for TopBar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
-  const [showMorningBrief, setShowMorningBrief] = useState(() => {
-    // Show brief once per day
-    const lastShown = localStorage.getItem('morningBriefLastShown');
-    const today = new Date().toDateString();
-    return lastShown !== today;
-  });
+  const { activeTour, completeTour, skipTour, hasCompletedTour } = useTour();
+  // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
+  // Can be manually triggered from Dashboard if needed
+  const [showMorningBrief, setShowMorningBrief] = useState(false);
   const { toggleMuted, setMeetingActive, loadApprovals } = useStore();
 
   // Initialize approval queue file watcher and load approvals from DB
@@ -114,14 +140,21 @@ function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Command palette
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      // Global search - ⌘K or ⌘F (primary shortcuts)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'f')) {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+        return;
+      }
+
+      // Command palette - ⌘P (alternative to ⌘K)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
         e.preventDefault();
         setCommandPaletteOpen(prev => !prev);
         return;
       }
 
-      // Global search - ⌘/
+      // Global search - ⌘/ (alternative)
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
         e.preventDefault();
         setSearchOpen(prev => !prev);
@@ -132,6 +165,13 @@ function App() {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '/') {
         e.preventDefault();
         setShortcutsOpen(prev => !prev);
+        return;
+      }
+
+      // Help panel - ⌘H
+      if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+        e.preventDefault();
+        setHelpPanelOpen(prev => !prev);
         return;
       }
 
@@ -156,6 +196,13 @@ function App() {
         return;
       }
 
+      // Starred messages - ⌘⇧S
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setCurrentView('starred');
+        return;
+      }
+
       // Mute toggle - ⌘M
       if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
         e.preventDefault();
@@ -168,43 +215,43 @@ function App() {
         switch (e.key) {
           case '1':
             e.preventDefault();
-            setCurrentView('dashboard');
+            setCurrentView('inbox');
             break;
           case '2':
             e.preventDefault();
-            setCurrentView('inbox');
+            setCurrentView('dashboard');
             break;
           case '3':
             e.preventDefault();
-            setCurrentView('comms');
+            setCurrentView('analytics');
             break;
           case '4':
             e.preventDefault();
-            setCurrentView('analytics');
+            setCurrentView('kanban');
             break;
           case '5':
             e.preventDefault();
-            setCurrentView('kanban');
+            setCurrentView('agents');
             break;
           case '6':
             e.preventDefault();
-            setCurrentView('agents');
+            setCurrentView('twitter');
             break;
           case '7':
             e.preventDefault();
-            setCurrentView('twitter');
+            setCurrentView('voice');
             break;
           case '8':
             e.preventDefault();
-            setCurrentView('voice');
+            setCurrentView('chat');
             break;
           case '9':
             e.preventDefault();
-            setCurrentView('chat');
+            setCurrentView('accounts');
             break;
           case '0':
             e.preventDefault();
-            setCurrentView('accounts');
+            setCurrentView('approvals');
             break;
           case ',':
             e.preventDefault();
@@ -246,89 +293,175 @@ function App() {
   }, [commandPaletteOpen, toggleMuted]);
 
   return (
-    <div className="flex h-screen bg-clawd-bg">
-      {/* Top bar with call button */}
-      <TopBar onCallClick={handleCallClick} onNavigate={setCurrentView} />
+    <ErrorBoundary panelName="Application Root">
+      {/* Network Status Indicator */}
+      <NetworkStatus />
       
-      {/* Sidebar */}
-      <Sidebar currentView={currentView} onNavigate={setCurrentView} />
-      
-      {/* Main content */}
-      <main className="flex-1 overflow-hidden pt-12">
-        {currentView === 'dashboard' && <Dashboard onNavigate={setCurrentView} />}
-        {currentView === 'kanban' && <Kanban />}
-        {currentView === 'agents' && <AgentPanel />}
-        {currentView === 'chat' && <ChatPanel />}
-        {currentView === 'voice' && <VoicePanel />}
-        {currentView === 'settings' && <SettingsPanel />}
-        {currentView === 'notifications' && <NotificationsPanel />}
-        {currentView === 'twitter' && <XPanel />}
-        {currentView === 'inbox' && <InboxPanel />}
-        {currentView === 'comms' && <CommsInbox />}
-        {currentView === 'library' && <LibraryPanel />}
-        {currentView === 'schedule' && <SchedulePanel />}
-        {currentView === 'codeagent' && <CodeAgentDashboard />}
-        {currentView === 'context' && <ContextControlBoard />}
-        {currentView === 'analytics' && <AnalyticsDashboard />}
-        {currentView === 'accounts' && <ConnectedAccountsPanel />}
-      </main>
+      {/* Skip Navigation Link for keyboard users */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
 
-      {/* Command Palette */}
-      <CommandPalette 
-        isOpen={commandPaletteOpen} 
-        onClose={() => setCommandPaletteOpen(false)}
-        onNavigate={(view) => setCurrentView(view as View)}
+      {/* ARIA live region for announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        id="aria-announcements"
       />
 
-      {/* Toast notifications */}
-      <ToastContainer />
+      <div className="flex h-screen bg-clawd-bg">
+        {/* Top bar with call button */}
+        <ErrorBoundary panelName="Top Bar">
+          <TopBar 
+            onCallClick={handleCallClick} 
+            onNavigate={setCurrentView} 
+            sidebarWidth={sidebarWidth}
+          />
+        </ErrorBoundary>
+        
+        {/* Sidebar */}
+        <ErrorBoundary panelName="Sidebar">
+          <Sidebar 
+            currentView={currentView} 
+            onNavigate={setCurrentView}
+            onOpenHelp={() => setHelpPanelOpen(true)}
+            onWidthChange={setSidebarWidth}
+          />
+        </ErrorBoundary>
+        
+        {/* Main content - each panel already wrapped via ProtectedPanels */}
+        <main 
+          id="main-content"
+          className="flex-1 overflow-hidden pt-12"
+          role="main"
+          aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
+        >
+          <PerformanceProfiler id={`${currentView}-panel`}>
+            <Suspense fallback={<LoadingPanel />}>
+              {currentView === 'dashboard' && <Dashboard onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />}
+              {currentView === 'kanban' && <Kanban />}
+              {currentView === 'agents' && <AgentPanel />}
+              {currentView === 'chat' && <ChatPanel />}
+              {currentView === 'voice' && <VoicePanel />}
+              {currentView === 'settings' && <SettingsPanel />}
+              {currentView === 'notifications' && <NotificationsPanel />}
+              {currentView === 'twitter' && <XPanel />}
+              {currentView === 'inbox' && <CommsInbox3Pane />}
+              {currentView === 'approvals' && <InboxPanel />}
+              {currentView === 'comms' && <CommsInbox3Pane />}
+              {currentView === 'library' && <LibraryPanel />}
+              {currentView === 'schedule' && <SchedulePanel />}
+              {currentView === 'codeagent' && <CodeAgentDashboard />}
+              {currentView === 'context' && <ContextControlBoard />}
+              {currentView === 'analytics' && <AnalyticsDashboard />}
+              {currentView === 'accounts' && <ConnectedAccountsPanel />}
+              {currentView === 'starred' && <StarredMessagesPanel />}
+              {currentView === 'error-test' && import.meta.env.DEV && <ErrorBoundaryTest />}
+            </Suspense>
+          </PerformanceProfiler>
+        </main>
 
-      {/* Global Search */}
-      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+        {/* Command Palette */}
+        <ErrorBoundary panelName="Command Palette">
+          <CommandPalette 
+            isOpen={commandPaletteOpen} 
+            onClose={() => setCommandPaletteOpen(false)}
+            onNavigate={(view) => setCurrentView(view as View)}
+          />
+        </ErrorBoundary>
 
-      {/* Keyboard Shortcuts Help */}
-      <KeyboardShortcuts isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+        {/* Toast notifications */}
+        <ErrorBoundary panelName="Toast System">
+          <ToastContainer />
+        </ErrorBoundary>
 
-      {/* Morning Brief */}
-      {showMorningBrief && (
-        <MorningBrief
-          onDismiss={() => {
-            setShowMorningBrief(false);
-            localStorage.setItem('morningBriefLastShown', new Date().toDateString());
-          }}
-          onNavigate={(view) => setCurrentView(view as any)}
-        />
-      )}
+        {/* Global Search */}
+        <ErrorBoundary panelName="Global Search">
+          <GlobalSearch 
+            isOpen={searchOpen} 
+            onClose={() => setSearchOpen(false)}
+            onNavigate={(view, id) => {
+              console.log('[App] Navigate to:', view, id);
+              setCurrentView(view as View);
+              // TODO: Pass id to panel for deep linking
+            }}
+          />
+        </ErrorBoundary>
 
-      {/* Quick Actions */}
-      <QuickActions
-        ref={quickActionsRef} 
-        onSearch={() => setSearchOpen(true)}
-        onNewTask={() => setCurrentView('kanban')}
-        onAddContact={() => setContactModalOpen(true)}
-        onAddSkill={() => setSkillModalOpen(true)}
-        onApproveAll={async () => {
-          try {
-            const result = await (window as any).clawdbot?.inbox?.approveAll();
-            if (result?.success) {
-              const { showToast } = await import('./components/Toast');
-              showToast('success', 'Approved all', `${result.count} items approved`);
-            }
-          } catch (e) {
-            console.error('Approve all failed:', e);
-          }
-        }}
-      />
+        {/* Keyboard Shortcuts Help */}
+        <ErrorBoundary panelName="Keyboard Shortcuts">
+          <KeyboardShortcuts isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+        </ErrorBoundary>
 
-      {/* Contact Modal */}
-      <ContactModal 
-        isOpen={contactModalOpen}
-        onClose={() => setContactModalOpen(false)}
-      />
+        {/* Help Panel */}
+        <ErrorBoundary panelName="Help Panel">
+          <HelpPanel 
+            isOpen={helpPanelOpen} 
+            onClose={() => setHelpPanelOpen(false)}
+            currentPanel={currentView}
+          />
+        </ErrorBoundary>
 
-      {/* Skill Modal */}
-      <SkillModal isOpen={skillModalOpen} onClose={() => setSkillModalOpen(false)} />
-    </div>
+        {/* Tour Guide */}
+        <ErrorBoundary panelName="Tour Guide">
+          <TourGuide 
+            tour={activeTour}
+            onComplete={completeTour}
+            onSkip={skipTour}
+          />
+        </ErrorBoundary>
+
+        {/* Morning Brief */}
+        {showMorningBrief && (
+          <ErrorBoundary panelName="Morning Brief">
+            <MorningBrief
+              onDismiss={() => {
+                setShowMorningBrief(false);
+                localStorage.setItem('morningBriefLastShown', new Date().toDateString());
+              }}
+              onNavigate={(view) => setCurrentView(view as any)}
+            />
+          </ErrorBoundary>
+        )}
+
+        {/* Quick Actions */}
+        <ErrorBoundary panelName="Quick Actions">
+          <QuickActions
+            ref={quickActionsRef} 
+            onSearch={() => setSearchOpen(true)}
+            onNewTask={() => setCurrentView('kanban')}
+            onAddContact={() => setContactModalOpen(true)}
+            onAddSkill={() => setSkillModalOpen(true)}
+            onApproveAll={async () => {
+              try {
+                const result = await (window as any).clawdbot?.inbox?.approveAll();
+                if (result?.success) {
+                  const { showToast } = await import('./components/Toast');
+                  showToast('success', 'Approved all', `${result.count} items approved`);
+                }
+              } catch (e) {
+                console.error('Approve all failed:', e);
+              }
+            }}
+          />
+        </ErrorBoundary>
+
+        {/* Contact Modal */}
+        <ErrorBoundary panelName="Contact Modal">
+          <ContactModal 
+            isOpen={contactModalOpen}
+            onClose={() => setContactModalOpen(false)}
+          />
+        </ErrorBoundary>
+
+        {/* Skill Modal */}
+        <ErrorBoundary panelName="Skill Modal">
+          <SkillModal isOpen={skillModalOpen} onClose={() => setSkillModalOpen(false)} />
+        </ErrorBoundary>
+      </div>
+    </ErrorBoundary>
   );
 }
 

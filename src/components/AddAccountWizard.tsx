@@ -402,7 +402,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 <div className="space-y-4">
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle size={18} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <AlertTriangle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                       <div className="text-sm text-yellow-300">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
@@ -471,7 +471,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {error && step !== 'connecting' && step !== 'success' && (
             <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertTriangle size={18} className="text-red-400 mt-0.5" />
+                <AlertTriangle size={16} className="text-red-400 mt-0.5" />
                 <div className="text-sm text-red-300">{error}</div>
               </div>
             </div>

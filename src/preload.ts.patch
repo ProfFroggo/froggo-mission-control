@@ -1,0 +1,131 @@
+// Add to preload.ts - Inbox filter/search handlers
+
+// In the window.clawdbot object, add:
+
+inbox: {
+  // Toggle star on message
+  toggleStar: async (messageId: string) => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh toggle-star "${messageId}"`,
+      });
+      if (result.stdout) {
+        return JSON.parse(result.stdout);
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Mark message as read/unread
+  markRead: async (messageId: string, isRead: boolean = true) => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`,
+      });
+      if (result.stdout) {
+        return JSON.parse(result.stdout);
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Add tag to message
+  addTag: async (messageId: string, tag: string) => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh add-tag "${messageId}" "${tag}"`,
+      });
+      if (result.stdout) {
+        return JSON.parse(result.stdout);
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Remove tag from message
+  removeTag: async (messageId: string, tag: string) => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh remove-tag "${messageId}" "${tag}"`,
+      });
+      if (result.stdout) {
+        return JSON.parse(result.stdout);
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Set project for message
+  setProject: async (messageId: string, project: string) => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh set-project "${messageId}" "${project}"`,
+      });
+      if (result.stdout) {
+        return JSON.parse(result.stdout);
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Semantic search
+  search: async (query: string, limit: number = 50) => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh search "${query}" ${limit}`,
+      });
+      if (result.stdout) {
+        // Parse sqlite output and return as JSON array
+        const lines = result.stdout.trim().split('\n');
+        return { success: true, results: lines };
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Get filter suggestions (autocomplete)
+  getSuggestions: async (type: 'senders' | 'projects' | 'tags' | 'platforms') => {
+    try {
+      const result = await ipcRenderer.invoke('exec', {
+        command: `~/clawd/scripts/inbox-filter.sh suggestions ${type}`,
+      });
+      if (result.stdout) {
+        const suggestions = result.stdout.trim().split('\n').filter(Boolean);
+        return { success: true, suggestions };
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  // Apply complex filter
+  filter: async (criteria: any) => {
+    try {
+      const criteriaJson = JSON.stringify(criteria);
+      const result = await ipcRenderer.invoke('exec', {
+        command: `echo '${criteriaJson}' | ~/clawd/scripts/inbox-filter.sh filter`,
+      });
+      if (result.stdout) {
+        // Parse sqlite output
+        const lines = result.stdout.trim().split('\n');
+        return { success: true, results: lines };
+      }
+      return { success: false, error: result.stderr };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  },
+},

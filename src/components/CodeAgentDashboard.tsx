@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Code, GitCommit, GitBranch, Terminal, Zap, Clock, DollarSign, RefreshCw, Play, Pause, ChevronRight, FileCode, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Code, GitCommit, GitBranch, Terminal, Zap, Clock, DollarSign, RefreshCw, Play, Pause, ChevronRight, FileCode, CheckCircle, XCircle, Loader2, Timer, Bug } from 'lucide-react';
 import { showToast } from './Toast';
+import CronTab from './CronTab';
+import DebugTab from './DebugTab';
 
 interface DevSession {
   id: string;
@@ -32,6 +34,7 @@ interface DevTask {
 }
 
 export default function CodeAgentDashboard() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'cron' | 'debug'>('dashboard');
   const [sessions, setSessions] = useState<DevSession[]>([]);
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [tasks, setTasks] = useState<DevTask[]>([]);
@@ -186,7 +189,32 @@ export default function CodeAgentDashboard() {
           </button>
         </div>
 
-        {/* Stats */}
+        {/* Tabs */}
+        <div className="flex gap-2 mt-2">
+          {(['dashboard', 'cron', 'debug'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                activeTab === tab
+                  ? 'bg-clawd-accent text-white'
+                  : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+              }`}
+            >
+              {tab === 'dashboard' && '💻 Dashboard'}
+              {tab === 'cron' && '⏰ Cron Jobs'}
+              {tab === 'debug' && '🐛 Debug'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === 'cron' && <CronTab />}
+      {activeTab === 'debug' && <DebugTab />}
+
+      {activeTab === 'dashboard' && <>
+      {/* Stats Bar */}
+      <div className="px-6 pt-4 pb-2 bg-clawd-surface border-b border-clawd-border">
         <div className="grid grid-cols-4 gap-4">
           <div className="bg-clawd-bg rounded-xl p-4">
             <div className="flex items-center gap-2 text-clawd-text-dim mb-1">
@@ -227,7 +255,7 @@ export default function CodeAgentDashboard() {
           {/* Recent Commits */}
           <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
             <div className="p-4 border-b border-clawd-border flex items-center gap-2">
-              <GitCommit size={18} className="text-clawd-accent" />
+              <GitCommit size={16} className="text-clawd-accent" />
               <h2 className="font-semibold">Recent Commits</h2>
             </div>
             <div className="divide-y divide-clawd-border max-h-80 overflow-y-auto">
@@ -256,7 +284,7 @@ export default function CodeAgentDashboard() {
           {/* Dev Tasks */}
           <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
             <div className="p-4 border-b border-clawd-border flex items-center gap-2">
-              <FileCode size={18} className="text-clawd-accent" />
+              <FileCode size={16} className="text-clawd-accent" />
               <h2 className="font-semibold">Dev Tasks</h2>
             </div>
             <div className="divide-y divide-clawd-border max-h-80 overflow-y-auto">
@@ -285,7 +313,7 @@ export default function CodeAgentDashboard() {
         {/* Active Sessions */}
         <div className="mt-6 bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
           <div className="p-4 border-b border-clawd-border flex items-center gap-2">
-            <Terminal size={18} className="text-clawd-accent" />
+            <Terminal size={16} className="text-clawd-accent" />
             <h2 className="font-semibold">Agent Sessions</h2>
           </div>
           <div className="divide-y divide-clawd-border">
@@ -311,6 +339,7 @@ export default function CodeAgentDashboard() {
           </div>
         </div>
       </div>
+      </>}
     </div>
   );
 }

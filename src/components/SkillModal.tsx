@@ -32,6 +32,9 @@ interface SkillSuggestion {
 }
 
 export default function SkillModal({ isOpen, onClose }: SkillModalProps) {
+  // Animation state
+  const [isClosing, setIsClosing] = useState(false);
+  
   // Mode selection
   const [mode, setMode] = useState<ModalMode>('suggest');
   
@@ -56,6 +59,15 @@ export default function SkillModal({ isOpen, onClose }: SkillModalProps) {
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle close with animation
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false); // Reset for next open
+    }, 200); // Match animation duration
+  };
 
   // Reset when modal opens
   useEffect(() => {
@@ -92,16 +104,69 @@ export default function SkillModal({ isOpen, onClose }: SkillModalProps) {
   }, [isOpen, mode]);
 
   // ESC key to close
+  // Keyboard shortcuts
   useEffect(() => {
     if (!isOpen) return;
-    const handleEsc = (e: KeyboardEvent) => {
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea (except Esc and Cmd+S/Enter)
+      const target = e.target as HTMLElement;
+      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      // Escape - Close modal (works even when typing)
       if (e.key === 'Escape') {
-        onClose();
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+
+      // Don't trigger other shortcuts while typing (except Cmd combinations)
+      if (isTyping && !isCmdOrCtrl) return;
+
+      // Cmd+S - Save skill
+      if (isCmdOrCtrl && e.key === 's') {
+        e.preventDefault();
+        if (mode === 'manual' && name.trim() && instructions.trim()) {
+          handleManualSubmit(e as any);
+        } else if (mode === 'dialogue' && conversationComplete && extractedData.name) {
+          handleCreateFromChat();
+        }
+        return;
+      }
+
+      // Cmd+Enter - Save and close
+      if (isCmdOrCtrl && e.key === 'Enter') {
+        e.preventDefault();
+        if (mode === 'manual' && name.trim() && instructions.trim()) {
+          handleManualSubmit(e as any);
+        } else if (mode === 'dialogue' && conversationComplete && extractedData.name) {
+          handleCreateFromChat();
+        } else if (mode === 'suggest' && selectedSuggestion) {
+          handleSelectSuggestion(selectedSuggestion);
+        }
+        return;
+      }
+
+      // Cmd+1-3 - Mode switching (when not typing)
+      if (isCmdOrCtrl && /^[1-3]$/.test(e.key)) {
+        e.preventDefault();
+        const modeMap: Record<string, ModalMode> = {
+          '1': 'suggest',
+          '2': 'dialogue',
+          '3': 'manual',
+        };
+        if (e.key in modeMap) {
+          setMode(modeMap[e.key]);
+        }
+        return;
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, mode, name, instructions, conversationComplete, extractedData, selectedSuggestion]);
 
   if (!isOpen) return null;
 
@@ -171,7 +236,7 @@ Return ONLY a JSON array of suggestions:
     });
 
     resetForm();
-    onClose();
+    handleClose();
   };
 
   const handleChatSubmit = async () => {
@@ -284,7 +349,7 @@ Be conversational, friendly, and help structure the skill properly.`;
     });
 
     resetForm();
-    onClose();
+    handleClose();
   };
 
   const handleSelectSuggestion = async (suggestion: SkillSuggestion) => {
@@ -445,9 +510,16 @@ ${skillData.instructions}
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
+    <div 
+      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 ${
+        isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
+      }`} 
+      onClick={handleClose}
+    >
       <div
-        className="glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
+        className={`glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col ${
+          isClosing ? 'modal-content-exit' : 'modal-content-enter'
+        }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -458,10 +530,11 @@ ${skillData.instructions}
               <h2 className="text-xl font-semibold">Add New Skill</h2>
             </div>
             <button
-              onClick={onClose}
-              className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
+              onClick={handleClose}
+              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              aria-label="Close modal"
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </div>
 
@@ -475,7 +548,7 @@ ${skillData.instructions}
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Lightbulb size={18} />
+              <Lightbulb size={16} />
               <span className="font-medium">Suggest</span>
               <Sparkles size={14} className={mode === 'suggest' ? 'animate-pulse' : 'opacity-50'} />
             </button>
@@ -487,7 +560,7 @@ ${skillData.instructions}
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <MessageSquare size={18} />
+              <MessageSquare size={16} />
               <span className="font-medium">Dialogue</span>
             </button>
             <button
@@ -498,7 +571,7 @@ ${skillData.instructions}
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Edit3 size={18} />
+              <Edit3 size={16} />
               <span className="font-medium">Manual</span>
             </button>
           </div>
@@ -564,7 +637,7 @@ ${skillData.instructions}
 
               <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
                 >
                   Cancel
@@ -610,7 +683,7 @@ ${skillData.instructions}
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={12} className="animate-spin text-clawd-accent" />
+                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
                         <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
                       </div>
                     </div>
@@ -679,7 +752,7 @@ ${skillData.instructions}
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
                     className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
                 <div className="text-xs text-clawd-text-dim mt-2">
@@ -743,7 +816,7 @@ ${skillData.instructions}
               <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
                 >
                   Cancel
@@ -753,7 +826,7 @@ ${skillData.instructions}
                   disabled={!name.trim() || !instructions.trim()}
                   className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  <CheckCircle size={18} />
+                  <CheckCircle size={16} />
                   Create Skill & Task
                 </button>
               </div>

@@ -213,7 +213,7 @@ export default function SecuritySettings() {
       {alerts.length > 0 && (
         <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <AlertTriangle size={18} className="text-orange-400" />
+            <AlertTriangle size={16} className="text-orange-400" />
             Active Security Alerts
           </h2>
           <div className="space-y-2">
@@ -222,7 +222,7 @@ export default function SecuritySettings() {
                 key={alert.id}
                 className={`p-4 rounded-lg border flex items-start gap-3 ${getSeverityColor(alert.severity)}`}
               >
-                <AlertTriangle size={18} className="mt-0.5 flex-shrink-0" />
+                <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium">{alert.message}</div>
                   <div className="text-xs opacity-75 mt-1">
@@ -245,7 +245,7 @@ export default function SecuritySettings() {
       {/* AI Security Audit */}
       <section>
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <Shield size={18} />
+          <Shield size={16} />
           AI Security Audit
         </h2>
         <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4">
@@ -286,7 +286,7 @@ export default function SecuritySettings() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
-            <Key size={18} />
+            <Key size={16} />
             API Keys
           </h2>
           <button
@@ -347,7 +347,7 @@ export default function SecuritySettings() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium flex items-center gap-2">
-            <Lock size={18} />
+            <Lock size={16} />
             Audit Log
           </h2>
           <div className="flex items-center gap-2">
@@ -437,7 +437,7 @@ export default function SecuritySettings() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-md w-full">
             <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-              <Plus size={18} />
+              <Plus size={16} />
               Add API Key
             </h3>
             <div className="space-y-4">

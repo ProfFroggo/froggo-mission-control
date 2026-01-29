@@ -142,9 +142,9 @@ export default function AnalyticsOverview() {
                     stat.trend === 'down' ? 'text-red-400' :
                     'text-clawd-text-dim'
                   }`}>
-                    {stat.trend === 'up' && <ArrowUp size={12} />}
-                    {stat.trend === 'down' && <ArrowDown size={12} />}
-                    {stat.trend === 'neutral' && <Minus size={12} />}
+                    {stat.trend === 'up' && <ArrowUp size={14} />}
+                    {stat.trend === 'down' && <ArrowDown size={14} />}
+                    {stat.trend === 'neutral' && <Minus size={14} />}
                     {stat.change !== undefined && `${stat.change}%`}
                   </div>
                 )}
@@ -206,7 +206,7 @@ export default function AnalyticsOverview() {
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp size={18} className="text-clawd-accent" />
+            <TrendingUp size={16} className="text-clawd-accent" />
             Top Insights
           </h3>
           <div className="space-y-3">
@@ -233,7 +233,7 @@ export default function AnalyticsOverview() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
-            <Calendar size={18} className="text-clawd-accent" />
+            <Calendar size={16} className="text-clawd-accent" />
             Usage Patterns
           </h3>
           <div className="space-y-3">

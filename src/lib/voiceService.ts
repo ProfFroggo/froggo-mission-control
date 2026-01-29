@@ -117,11 +117,14 @@ class VoiceService {
 // Singleton instance
 export const voiceService = new VoiceService();
 
-// Auto-preload when this module is imported (app start)
-if (typeof window !== 'undefined') {
-  // Small delay to let app render first, then start loading
-  setTimeout(() => {
-    console.log('[VoiceService] Starting background preload...');
-    voiceService.preload().catch(console.error);
-  }, 1000);
-}
+// PERFORMANCE OPTIMIZATION: Don't auto-preload vosk (5.7MB)
+// It will load on-demand when VoicePanel opens
+// This saves ~6MB on initial load
+
+// Old behavior (removed for performance):
+// if (typeof window !== 'undefined') {
+//   setTimeout(() => {
+//     console.log('[VoiceService] Starting background preload...');
+//     voiceService.preload().catch(console.error);
+//   }, 1000);
+// }

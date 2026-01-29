@@ -6,9 +6,11 @@ import WorkerModal from './WorkerModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
 import AgentChatModal from './AgentChatModal';
+import AgentMetricsCard from './AgentMetricsCard';
+import { Spinner, AgentCardSkeleton, InlineLoader } from './LoadingStates';
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, updateAgentStatus, addActivity, gatewaySessions, loadGatewaySessions } = useStore();
+  const { agents, tasks, spawnAgentForTask, updateAgentStatus, addActivity, gatewaySessions, loadGatewaySessions, loading } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [compareAgents, setCompareAgents] = useState<string[]>([]);
@@ -17,6 +19,8 @@ export default function AgentPanel() {
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
   const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Poll gateway sessions every 5 seconds
   useEffect(() => {
@@ -31,11 +35,23 @@ export default function AgentPanel() {
   }, []);
 
   const loadAgentMetrics = async () => {
+    setLoadingMetrics(true);
     try {
       const data = await (window as any).clawdbot.agents.getMetrics();
       setAgentMetrics(data);
     } catch (e) {
       console.error('Failed to load agent metrics:', e);
+    } finally {
+      setLoadingMetrics(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([loadGatewaySessions(), loadAgentMetrics()]);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -112,47 +128,48 @@ export default function AgentPanel() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold mb-1 flex items-center gap-2">
-              <Bot size={24} /> Agent Management
+            <h1 className="icon-text text-2xl font-semibold mb-1">
+              <Bot size={24} className="flex-shrink-0" /> Agent Management
             </h1>
             <p className="text-clawd-text-dim">
               {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running • {realSubagents.length} total sessions
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="icon-text">
             {compareAgents.length >= 2 && (
               <button
                 onClick={() => setShowCompare(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl hover:bg-purple-500/30 transition-colors"
+                className="icon-text px-4 py-2 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl hover:bg-purple-500/30 transition-colors"
               >
-                <GitCompare size={16} />
+                <GitCompare size={16} className="flex-shrink-0" />
                 Compare ({compareAgents.length})
               </button>
             )}
             <button
               onClick={() => setShowAnalytics(!showAnalytics)}
-              className={`flex items-center gap-2 px-4 py-2 border rounded-xl transition-colors ${
+              className={`icon-text px-4 py-2 border rounded-xl transition-colors ${
                 showAnalytics 
                   ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' 
                   : 'bg-clawd-surface border-clawd-border hover:bg-clawd-border'
               }`}
               title="Analytics"
             >
-              <BarChart3 size={16} />
+              <BarChart3 size={16} className="flex-shrink-0" />
               Analytics
             </button>
             <button
-              onClick={loadGatewaySessions}
-              className="p-2 bg-clawd-surface border border-clawd-border rounded-lg hover:bg-clawd-border transition-colors"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="icon-btn border border-clawd-border bg-clawd-surface disabled:opacity-50"
               title="Refresh"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+              className="icon-text px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
             >
-              <Plus size={16} />
+              <Plus size={16} className="flex-shrink-0" />
               New Worker
             </button>
           </div>
@@ -161,9 +178,10 @@ export default function AgentPanel() {
         {/* Analytics Panel */}
         {showAnalytics && (
           <div className="mb-6 bg-clawd-surface rounded-xl border border-clawd-border p-6 shadow-card">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <BarChart3 size={20} />
+            <h2 className="icon-text text-lg font-semibold mb-4">
+              <BarChart3 size={20} className="flex-shrink-0" />
               Performance Analytics
+              {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
             <div className="grid grid-cols-4 gap-4">
               <div className="bg-clawd-bg rounded-lg p-4">
@@ -228,36 +246,32 @@ export default function AgentPanel() {
                     <div className="text-4xl">{agent.avatar}</div>
                     
                     {/* Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="icon-text mb-1">
                         <button
                           onClick={() => toggleExpanded(agent.id)}
                           className="hover:bg-clawd-border rounded p-1 transition-colors"
                         >
-                          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          {isExpanded ?  <ChevronDown size={16} className="flex-shrink-0" /> :  <ChevronRight size={16} className="flex-shrink-0" />}
                         </button>
                         <h3 className="font-semibold text-lg">{agent.name}</h3>
                         <span className={`w-2 h-2 rounded-full ${statusColors[agent.status]}`} />
                         <span className="text-sm text-clawd-text-dim">{statusLabels[agent.status]}</span>
                         
-                        {/* Quick Stats */}
-                        <div className="ml-auto flex items-center gap-3 text-sm">
-                          <div className="flex items-center gap-1 text-green-400">
-                            <CheckCircle size={14} />
-                            {completedTasks}
-                          </div>
-                          {metrics.successRate && (
-                            <div className="flex items-center gap-1 text-blue-400">
-                              <TrendingUp size={14} />
-                              {Math.round(metrics.successRate * 100)}%
-                            </div>
-                          )}
+                        {/* Quick Stats - Compact Metrics */}
+                        <div className="ml-auto">
+                          <AgentMetricsCard
+                            agentId={agent.id}
+                            agentName={agent.name}
+                            metrics={metrics}
+                            compact={true}
+                          />
                         </div>
                       </div>
                       <p className="text-sm text-clawd-text-dim mb-2">{agent.description}</p>
                       
                       {/* Capabilities */}
-                      <div className="flex flex-wrap gap-1 mb-3">
+                      <div className="flex flex-wrap gap-1.5 mb-3">
                         {agent.capabilities?.map((cap, i) => (
                           <span key={i} className="px-2 py-0.5 text-xs bg-clawd-border rounded-full">
                             {cap}
@@ -267,8 +281,8 @@ export default function AgentPanel() {
 
                       {/* Current Task */}
                       {currentTask && (
-                        <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm mb-2">
-                          <Zap size={14} className="text-yellow-500" />
+                        <div className="icon-text p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm mb-2">
+                          <Zap size={16} className="text-yellow-500" />
                           <span className="font-medium">Working on:</span>
                           <span className="truncate">{currentTask.title}</span>
                         </div>
@@ -277,7 +291,7 @@ export default function AgentPanel() {
                       {/* Queued Tasks */}
                       {agentTasks.length > 0 && !currentTask && (
                         <div className="text-sm text-clawd-text-dim">
-                          <Clock size={12} className="inline mr-1" />
+                          <Clock size={14} className="inline mr-1" />
                           {agentTasks.length} task{agentTasks.length > 1 ? 's' : ''} queued
                         </div>
                       )}
@@ -285,38 +299,17 @@ export default function AgentPanel() {
                       {/* Expanded Details */}
                       {isExpanded && (
                         <div className="mt-4 pt-4 border-t border-clawd-border space-y-3">
-                          {/* Performance Metrics */}
-                          <div>
-                            <h4 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2 flex items-center gap-1">
-                              <Target size={12} />
-                              Performance
-                            </h4>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="bg-clawd-bg rounded p-2">
-                                <div className="text-xs text-clawd-text-dim">Success Rate</div>
-                                <div className="text-lg font-semibold text-green-400">
-                                  {metrics.successRate ? Math.round(metrics.successRate * 100) : 'N/A'}%
-                                </div>
-                              </div>
-                              <div className="bg-clawd-bg rounded p-2">
-                                <div className="text-xs text-clawd-text-dim">Avg Time</div>
-                                <div className="text-lg font-semibold text-blue-400">
-                                  {metrics.avgTime || 'N/A'}
-                                </div>
-                              </div>
-                              <div className="bg-clawd-bg rounded p-2">
-                                <div className="text-xs text-clawd-text-dim">Tasks Done</div>
-                                <div className="text-lg font-semibold text-purple-400">
-                                  {completedTasks}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          {/* Performance Metrics Card */}
+                          <AgentMetricsCard
+                            agentId={agent.id}
+                            agentName={agent.name}
+                            metrics={metrics}
+                          />
 
                           {/* Skills */}
                           <div>
                             <h4 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2 flex items-center gap-1">
-                              <Award size={12} />
+                               <Award size={14} className="flex-shrink-0" />
                               Skills ({agent.capabilities?.length || 0})
                             </h4>
                             <div className="flex flex-wrap gap-1">
@@ -342,27 +335,27 @@ export default function AgentPanel() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => setSelectedAgent(agent.id)}
-                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-clawd-border text-sm rounded-lg hover:bg-clawd-border/80 transition-colors"
+                              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-clawd-border text-sm rounded-lg hover:bg-clawd-border/80 transition-colors"
                             >
-                              <FileText size={14} />
+                               <FileText size={16} className="flex-shrink-0" />
                               View Details
                             </button>
                             <button
                               onClick={() => setChatAgent(agent.id)}
-                              className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-sm rounded-lg hover:bg-blue-500/30 transition-colors"
+                              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 text-sm rounded-lg hover:bg-blue-500/30 transition-colors"
                             >
-                              <MessageSquare size={14} />
+                               <MessageSquare size={16} className="flex-shrink-0" />
                               Chat to Improve
                             </button>
                             <button
                               onClick={() => toggleCompare(agent.id)}
-                              className={`flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg transition-colors ${
+                              className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-lg transition-colors ${
                                 isCompareSelected
                                   ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                                   : 'bg-clawd-border hover:bg-clawd-border/80'
                               }`}
                             >
-                              <GitCompare size={14} />
+                               <GitCompare size={16} className="flex-shrink-0" />
                               Compare
                             </button>
                           </div>
@@ -375,23 +368,23 @@ export default function AgentPanel() {
                       {agent.status === 'idle' && agentTasks.length > 0 && (
                         <button
                           onClick={() => spawnAgentForTask(agentTasks[0].id)}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600"
                         >
-                          <Play size={14} /> Start
+                           <Play size={16} className="flex-shrink-0" /> Start
                         </button>
                       )}
                       {agent.status === 'busy' && agent.sessionKey && (
                         <button
                           onClick={() => updateAgentStatus(agent.id, 'idle')}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 text-sm rounded-lg hover:bg-red-500/30"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 text-red-400 text-sm rounded-lg hover:bg-red-500/30"
                         >
-                          <Square size={14} /> Stop
+                           <Square size={16} className="flex-shrink-0" /> Stop
                         </button>
                       )}
                       {!isExpanded && (
                         <button
                           onClick={() => toggleExpanded(agent.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-clawd-border text-sm rounded-lg hover:bg-clawd-border/80"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-clawd-border text-sm rounded-lg hover:bg-clawd-border/80"
                         >
                           Details
                         </button>
@@ -414,26 +407,26 @@ export default function AgentPanel() {
               {realSubagents.map((session) => (
                 <div
                   key={session.key}
-                  className={`bg-clawd-surface rounded-lg border p-3 flex items-center gap-3 ${
+                  className={`bg-clawd-surface rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
                     session.isActive ? 'border-green-500/30 bg-green-500/5' : 'border-clawd-border'
                   }`}
                 >
-                  <span className="text-xl">🤖</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{session.displayName}</span>
+                  <span className="text-xl no-shrink">🤖</span>
+                  <div className="flex-fill">
+                    <div className="icon-text min-w-0">
+                      <span className="font-medium session-name flex-shrink">{session.displayName}</span>
                       {session.label && (
-                        <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                        <span className="text-xs px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded no-shrink no-wrap">
                           {session.label}
                         </span>
                       )}
-                      <span className={`w-2 h-2 rounded-full ${session.isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
-                      {session.isActive && <span className="text-xs text-green-400">Active</span>}
+                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+                      {session.isActive && <span className="text-xs text-green-400 no-shrink no-wrap">Active</span>}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
-                      <span>{session.model?.split('/').pop() || 'unknown'}</span>
-                      <span>{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
-                      <span className="truncate" title={session.key}>{session.key.slice(0, 40)}...</span>
+                    <div className="flex items-center gap-3 text-xs text-clawd-text-dim overflow-hidden">
+                      <span className="no-shrink">{session.model?.split('/').pop() || 'unknown'}</span>
+                      <span className="no-shrink no-wrap">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
+                      <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
                     </div>
                   </div>
                   {session.isActive ? (
@@ -461,13 +454,13 @@ export default function AgentPanel() {
               {workerAgents.map((agent) => (
                 <div
                   key={agent.id}
-                  className="bg-clawd-surface rounded-lg border border-clawd-border p-3 flex items-center gap-3"
+                  className="bg-clawd-surface rounded-lg border border-clawd-border p-3 flex items-center gap-3 overflow-hidden"
                 >
-                  <span className="text-xl">{agent.avatar}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{agent.name}</span>
-                      <span className={`w-2 h-2 rounded-full ${statusColors[agent.status]}`} />
+                  <span className="text-xl no-shrink">{agent.avatar}</span>
+                  <div className="flex-fill">
+                    <div className="icon-text min-w-0">
+                      <span className="font-medium agent-name flex-1 min-w-0">{agent.name}</span>
+                      <span className={`w-2 h-2 rounded-full no-shrink ${statusColors[agent.status]}`} />
                     </div>
                     <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
                   </div>
@@ -480,7 +473,7 @@ export default function AgentPanel() {
                     </button>
                   ) : (
                     <span className="text-xs text-green-400">
-                      <CheckCircle size={14} className="inline mr-1" />
+                      <CheckCircle size={16} className="inline mr-1" />
                       Done
                     </span>
                   )}

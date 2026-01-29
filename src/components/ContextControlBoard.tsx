@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, FileText, Bot, Sparkles, Settings, Edit3, Save, X, Plus, MessageSquare, ChevronRight, Folder, RefreshCw, Trash2, Book, User, Wrench } from 'lucide-react';
+import { Brain, FileText, Bot, Sparkles, Settings, Edit3, Save, X, Plus, MessageSquare, ChevronRight, Folder, RefreshCw, Trash2, Book, User, Wrench, Monitor } from 'lucide-react';
 import { showToast } from './Toast';
+import SkillsTab from './SkillsTab';
+import NodesTab from './NodesTab';
 
 interface ContextFile {
   name: string;
@@ -34,7 +36,7 @@ const contextFiles: ContextFile[] = [
 ];
 
 export default function ContextControlBoard() {
-  const [activeTab, setActiveTab] = useState<'context' | 'skills' | 'agents' | 'chat'>('context');
+  const [activeTab, setActiveTab] = useState<'context' | 'skills' | 'agents' | 'chat' | 'nodes'>('context');
   const [selectedFile, setSelectedFile] = useState<ContextFile | null>(null);
   const [fileContent, setFileContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
@@ -179,7 +181,7 @@ export default function ContextControlBoard() {
 
         {/* Tabs */}
         <div className="flex gap-2">
-          {(['context', 'skills', 'agents', 'chat'] as const).map((tab) => (
+          {(['context', 'skills', 'agents', 'nodes', 'chat'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -192,6 +194,7 @@ export default function ContextControlBoard() {
               {tab === 'context' && '📁 Context Files'}
               {tab === 'skills' && '🛠️ Skills'}
               {tab === 'agents' && '🤖 Agents'}
+              {tab === 'nodes' && '📡 Nodes'}
               {tab === 'chat' && '💬 Chat'}
             </button>
           ))}
@@ -218,7 +221,7 @@ export default function ContextControlBoard() {
                         isSelected ? 'bg-clawd-accent/10 border border-clawd-accent/30' : 'hover:bg-clawd-border'
                       }`}
                     >
-                      <Icon size={18} className={isSelected ? 'text-clawd-accent' : 'text-clawd-text-dim'} />
+                      <Icon size={16} className={isSelected ? 'text-clawd-accent' : 'text-clawd-text-dim'} />
                       <div>
                         <div className="text-sm font-medium">{file.name}</div>
                         <div className="text-xs text-clawd-text-dim">{file.description}</div>
@@ -235,7 +238,7 @@ export default function ContextControlBoard() {
                 <>
                   <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
                     <div className="flex items-center gap-2">
-                      <FileText size={18} className="text-clawd-accent" />
+                      <FileText size={16} className="text-clawd-accent" />
                       <span className="font-medium">{selectedFile.name}</span>
                       {hasChanges && <span className="text-xs text-yellow-400">• Unsaved</span>}
                     </div>
@@ -293,34 +296,10 @@ export default function ContextControlBoard() {
         )}
 
         {/* Skills Tab */}
-        {activeTab === 'skills' && (
-          <div className="flex-1 overflow-auto p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm text-clawd-text-dim">{skills.length} skills available</div>
-              <button
-                onClick={loadSkills}
-                className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm"
-              >
-                <RefreshCw size={14} />
-                Refresh
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {skills.map((skill) => (
-                <div
-                  key={skill.name}
-                  className="p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">{skill.name}</span>
-                    <div className={`w-2 h-2 rounded-full ${skill.enabled ? 'bg-green-400' : 'bg-gray-400'}`} />
-                  </div>
-                  <p className="text-sm text-clawd-text-dim truncate">{skill.description || skill.location}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {activeTab === 'skills' && <SkillsTab />}
+
+        {/* Nodes Tab */}
+        {activeTab === 'nodes' && <NodesTab />}
 
         {/* Agents Tab */}
         {activeTab === 'agents' && (

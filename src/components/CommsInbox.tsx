@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, MessageSquare, Send, Check, X, Edit, RefreshCw, Clock, Sparkles, FileText, Phone, MessageCircle, Gamepad2, AlertTriangle } from 'lucide-react';
+import { Mail, MessageSquare, Send, Check, X, Edit, RefreshCw, Clock, Sparkles, FileText, Phone, MessageCircle, Gamepad2, AlertTriangle, Star, Archive, ArchiveRestore, CheckSquare, Square, Trash2, MailOpen, MailCheck, TrendingUp } from 'lucide-react';
+import InboxFilter, { FilterCriteria } from './InboxFilter';
+import { PriorityIndicator, PriorityExplanation, PriorityStats, PrioritySettings, usePriorityData } from './PriorityInbox';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -7,6 +9,87 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
+
+// Bulk Actions Toolbar
+function BulkActionsToolbar({ 
+  selectedCount, 
+  onMarkRead, 
+  onMarkUnread, 
+  onArchive, 
+  onDelete, 
+  onSelectAll,
+  onClearSelection 
+}: {
+  selectedCount: number;
+  onMarkRead: () => void;
+  onMarkUnread: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
+}) {
+  return (
+    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-clawd-surface border-2 border-clawd-accent rounded-xl shadow-2xl px-6 py-3 flex items-center gap-4 z-50 animate-slide-up">
+      <div className="flex items-center gap-2 border-r border-clawd-border pr-4">
+        <CheckSquare size={16} className="text-clawd-accent" />
+        <span className="font-semibold">{selectedCount} selected</span>
+      </div>
+      
+      <button
+        onClick={onSelectAll}
+        className="text-sm text-clawd-text-dim hover:text-clawd-accent transition-colors"
+      >
+        Select All
+      </button>
+      
+      <div className="flex gap-2">
+        <button
+          onClick={onMarkRead}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
+          title="Mark as read"
+        >
+          <MailOpen size={16} />
+          <span className="text-sm font-medium">Read</span>
+        </button>
+        
+        <button
+          onClick={onMarkUnread}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors"
+          title="Mark as unread"
+        >
+          <Mail size={16} />
+          <span className="text-sm font-medium">Unread</span>
+        </button>
+        
+        <button
+          onClick={onArchive}
+          className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-lg transition-colors"
+          title="Archive"
+        >
+          <Archive size={16} />
+          <span className="text-sm font-medium">Archive</span>
+        </button>
+        
+        <button
+          onClick={onDelete}
+          className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+          title="Delete"
+        >
+          <Trash2 size={16} />
+          <span className="text-sm font-medium">Delete</span>
+        </button>
+      </div>
+      
+      <button
+        onClick={onClearSelection}
+        className="ml-2 p-2 hover:bg-clawd-border rounded-lg transition-colors"
+        title="Clear selection (Esc)"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+}
 
 // Cache configuration
 const CACHE_KEY = 'comms-inbox-cache';
@@ -61,6 +144,11 @@ interface Message {
   relativeTime: string;
   hasReply?: boolean;
   suggestedReply?: string;
+  priorityScore?: number;
+  priorityLevel?: 'critical' | 'high' | 'normal' | 'low';
+  priorityExplanation?: any[];
+  senderImportance?: number;
+  senderReplyRate?: number;
 }
 
 interface ReplyDraft {
@@ -206,7 +294,7 @@ function MessageModal({ message, isOpen, onClose, onSendReply, onScheduleReply }
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${platformColors[message.platform]}`}>
-              <PlatformIcon platform={message.platform} size={12} />
+              <PlatformIcon platform={message.platform} size={14} />
               {platformLabels[message.platform]}
             </span>
             <span className="font-semibold">{message.name || message.from || 'Unknown'}</span>
@@ -256,7 +344,7 @@ function MessageModal({ message, isOpen, onClose, onSendReply, onScheduleReply }
               disabled={generating}
               className="flex items-center gap-1 text-xs text-clawd-accent hover:text-clawd-accent/80 disabled:opacity-50"
             >
-              <Sparkles size={12} className={generating ? 'animate-spin' : ''} />
+              <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
               {generating ? 'Generating...' : 'Generate with AI'}
             </button>
           </div>
@@ -311,16 +399,127 @@ function MessageModal({ message, isOpen, onClose, onSendReply, onScheduleReply }
   );
 }
 
-function MessageCard({ message, onClick }: { message: Message; onClick: (m: Message) => void }) {
+function MessageCard({ 
+  message, 
+  onClick, 
+  onToggleStar, 
+  onMarkRead,
+  onArchive,
+  isArchived = false,
+  selectionMode = false,
+  isSelected = false,
+  onToggleSelect
+}: { 
+  message: Message; 
+  onClick: (m: Message) => void;
+  onToggleStar?: (id: string) => void;
+  onMarkRead?: (id: string, isRead: boolean) => void;
+  onArchive?: (id: string, archive: boolean) => void;
+  isArchived?: boolean;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+}) {
   const senderName = message.name || message.from || 'Unknown';
+  const isUnread = !(message as any).is_read;
+  const isStarred = (message as any).is_starred;
+  const priorityLevel = message.priorityLevel || 'normal';
+  const priorityScore = message.priorityScore;
+
+  const handleStarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleStar?.(message.id);
+  };
+
+  const handleReadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onMarkRead?.(message.id, !isUnread);
+  };
+
+  const handleArchiveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onArchive?.(message.id, !isArchived);
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleSelect?.(message.id);
+  };
+
+  const handleCardClick = () => {
+    if (selectionMode) {
+      onToggleSelect?.(message.id);
+    } else {
+      onClick(message);
+    }
+  };
+
   return (
     <div 
-      onClick={() => onClick(message)}
-      className="bg-clawd-bg border border-clawd-border rounded-lg p-3 mb-2 hover:border-clawd-accent/50 transition-colors cursor-pointer"
+      onClick={handleCardClick}
+      className={`bg-clawd-bg border rounded-lg p-3 mb-2 hover:border-clawd-accent/50 transition-colors cursor-pointer ${
+        isUnread ? 'border-clawd-accent/30 bg-clawd-accent/5' : 'border-clawd-border'
+      } ${isArchived ? 'opacity-70' : ''} ${isSelected ? 'ring-2 ring-clawd-accent bg-clawd-accent/10' : ''}`}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="font-semibold text-sm text-clawd-accent">{senderName}</span>
-        <span className="text-xs text-clawd-text-dim">{message.relativeTime}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {selectionMode && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={handleCheckboxClick}
+              onClick={handleCheckboxClick}
+              className="flex-shrink-0 w-4 h-4 rounded border-clawd-border bg-clawd-bg checked:bg-clawd-accent cursor-pointer"
+            />
+          )}
+          {isUnread && !selectionMode && <div className="w-2 h-2 bg-clawd-accent rounded-full flex-shrink-0" />}
+          <span className="font-semibold text-sm text-clawd-accent truncate">{senderName}</span>
+          {isArchived && <span className="text-xs text-clawd-text-dim">📦</span>}
+          {priorityLevel && (
+            <PriorityIndicator 
+              level={priorityLevel} 
+              score={priorityScore}
+              size="xs"
+              showLabel={false}
+            />
+          )}
+        </div>
+        {!selectionMode && (
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {message.priorityExplanation && (
+              <PriorityExplanation 
+                explanation={message.priorityExplanation}
+                senderStats={message.senderImportance ? {
+                  importance: message.senderImportance,
+                  replyRate: message.senderReplyRate || 0,
+                  avgResponseTime: 0
+                } : undefined}
+              />
+            )}
+            <button
+              onClick={handleStarClick}
+              className={`p-1 rounded hover:bg-clawd-border ${isStarred ? 'text-yellow-400' : 'text-clawd-text-dim'}`}
+              title={isStarred ? 'Unstar' : 'Star'}
+            >
+              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              onClick={handleReadClick}
+              className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim"
+              title={isUnread ? 'Mark as read' : 'Mark as unread'}
+            >
+              <Mail size={14} />
+            </button>
+            <button
+              onClick={handleArchiveClick}
+              className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim"
+              title={isArchived ? 'Unarchive' : 'Archive'}
+            >
+              {isArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+            </button>
+            <span className="text-xs text-clawd-text-dim ml-1">{message.relativeTime}</span>
+          </div>
+        )}
       </div>
       <p className="text-sm text-clawd-text-dim line-clamp-2">{message.preview}</p>
     </div>
@@ -337,7 +536,7 @@ function ReplyCard({ draft, onApprove, onEdit, onReject }: {
     <div className="bg-clawd-bg border border-clawd-border rounded-lg p-3 mb-2">
       <div className="flex items-center justify-between mb-2">
         <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${platformColors[draft.platform]}`}>
-          <PlatformIcon platform={draft.platform} size={12} />
+          <PlatformIcon platform={draft.platform} size={14} />
           {platformLabels[draft.platform]}
         </span>
         <span className="text-xs text-clawd-text-dim">To: {draft.to}</span>
@@ -351,19 +550,19 @@ function ReplyCard({ draft, onApprove, onEdit, onReject }: {
           onClick={onApprove}
           className="flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded px-2 py-1 text-xs flex items-center justify-center gap-1"
         >
-          <Check size={12} /> Send
+          <Check size={14} /> Send
         </button>
         <button
           onClick={onEdit}
           className="flex-1 bg-clawd-border hover:bg-clawd-border/80 rounded px-2 py-1 text-xs flex items-center justify-center gap-1"
         >
-          <Edit size={12} /> Edit
+          <Edit size={14} /> Edit
         </button>
         <button
           onClick={onReject}
           className="bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded px-2 py-1 text-xs"
         >
-          <X size={12} />
+          <X size={14} />
         </button>
       </div>
     </div>
@@ -377,7 +576,7 @@ function ColumnHeader({ title, icon, count, onRefresh }: { title: string; icon?:
         {icon && <span className="text-clawd-text-dim">{icon}</span>}
         <h3 className="font-semibold text-sm">{title}</h3>
         {count > 0 && (
-          <span className="bg-clawd-accent/20 text-clawd-accent text-xs px-1.5 py-0.5 rounded-full">
+          <span className="bg-clawd-accent/20 text-clawd-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
             {count}
           </span>
         )}
@@ -391,6 +590,7 @@ function ColumnHeader({ title, icon, count, onRefresh }: { title: string; icon?:
 
 export default function CommsInbox() {
   const [replyDrafts, setReplyDrafts] = useState<ReplyDraft[]>([]);
+  const [allMessages, setAllMessages] = useState<Message[]>([]); // Store all messages
   const [emails, setEmails] = useState<Message[]>([]);
   const [whatsapp, setWhatsapp] = useState<Message[]>([]);
   const [telegram, setTelegram] = useState<Message[]>([]);
@@ -401,27 +601,155 @@ export default function CommsInbox() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({});
+  const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
+  const [showArchived, setShowArchived] = useState(false); // Toggle for showing archived conversations
+  const [archivedSet, setArchivedSet] = useState<Set<string>>(new Set()); // Track which messages are archived
   const isMounted = useRef(true);
+  
+  // Bulk action state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  
+  // Priority system
+  const [sortByPriority, setSortByPriority] = useState(true); // Default to priority sorting
+  const priorityData = usePriorityData();
+
+  // Filter messages based on criteria
+  const applyFilters = useCallback((msgs: Message[], criteria: FilterCriteria): Message[] => {
+    let filtered = [...msgs];
+
+    // Platform filter
+    if (criteria.platforms && criteria.platforms.length > 0) {
+      filtered = filtered.filter(m => criteria.platforms!.includes(m.platform));
+    }
+
+    // Sender filter
+    if (criteria.senders && criteria.senders.length > 0) {
+      filtered = filtered.filter(m => 
+        criteria.senders!.some(sender => 
+          (m.from && m.from.toLowerCase().includes(sender.toLowerCase())) ||
+          (m.name && m.name.toLowerCase().includes(sender.toLowerCase()))
+        )
+      );
+    }
+
+    // Flag filters
+    if (criteria.flags) {
+      if (criteria.flags.unread) {
+        filtered = filtered.filter(m => !(m as any).is_read);
+      }
+      if (criteria.flags.starred) {
+        filtered = filtered.filter(m => (m as any).is_starred);
+      }
+      if (criteria.flags.hasAttachment) {
+        filtered = filtered.filter(m => (m as any).has_attachment);
+      }
+      if (criteria.flags.urgent) {
+        const urgentKeywords = ['urgent', 'asap', 'important', 'emergency', 'critical', 'help', 'now'];
+        filtered = filtered.filter(m => 
+          urgentKeywords.some(kw => m.preview.toLowerCase().includes(kw))
+        );
+      }
+    }
+
+    // Text search (simple client-side for now)
+    if (criteria.search) {
+      const searchLower = criteria.search.toLowerCase();
+      filtered = filtered.filter(m => 
+        m.preview.toLowerCase().includes(searchLower) ||
+        (m.name && m.name.toLowerCase().includes(searchLower)) ||
+        (m.from && m.from.toLowerCase().includes(searchLower))
+      );
+    }
+
+    return filtered;
+  }, []);
 
   // Apply messages to state (shared between cache and fresh load)
   const applyMessages = useCallback((msgs: Message[]) => {
-    setEmails(msgs.filter(m => m.platform === 'email'));
-    setWhatsapp(msgs.filter(m => m.platform === 'whatsapp'));
-    setTelegram(msgs.filter(m => m.platform === 'telegram'));
-    setDiscord(msgs.filter(m => m.platform === 'discord'));
+    setAllMessages(msgs);
+    
+    // Apply current filters
+    let filtered = applyFilters(msgs, filterCriteria);
+    
+    // Sort by priority if enabled
+    if (sortByPriority) {
+      filtered = [...filtered].sort((a, b) => {
+        const scoreA = a.priorityScore || 50;
+        const scoreB = b.priorityScore || 50;
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA; // Higher priority first
+        }
+        // Tie-breaker: use timestamp
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      });
+    }
+    
+    setFilteredMessages(filtered);
+
+    setEmails(filtered.filter(m => m.platform === 'email'));
+    setWhatsapp(filtered.filter(m => m.platform === 'whatsapp'));
+    setTelegram(filtered.filter(m => m.platform === 'telegram'));
+    setDiscord(filtered.filter(m => m.platform === 'discord'));
+    
     // Mark messages as urgent based on keywords or flags
     const urgentKeywords = ['urgent', 'asap', 'important', 'emergency', 'critical', 'help', 'now'];
-    const urgentMsgs = msgs.filter(m => 
+    const urgentMsgs = filtered.filter(m => 
       urgentKeywords.some(kw => m.preview.toLowerCase().includes(kw))
     );
     setUrgent(urgentMsgs);
+  }, [filterCriteria, applyFilters, sortByPriority]);
+
+  // Helper to create session key from message
+  const getSessionKey = useCallback((message: Message): string => {
+    return `${message.platform}:${message.from || message.name}`;
   }, []);
+
+  // Archive/unarchive handler
+  const handleArchive = useCallback(async (messageId: string, shouldArchive: boolean) => {
+    console.log('[CommsInbox] Archive:', messageId, shouldArchive);
+    
+    // Find the message to get session key
+    const message = allMessages.find(m => m.id === messageId);
+    if (!message) {
+      console.error('[CommsInbox] Message not found:', messageId);
+      return;
+    }
+    
+    const sessionKey = getSessionKey(message);
+    
+    try {
+      if (shouldArchive) {
+        const result = await (window as any).clawdbot?.conversations?.archive(sessionKey);
+        if (result?.success) {
+          setArchivedSet(prev => new Set(prev).add(sessionKey));
+          console.log('[CommsInbox] Archived:', sessionKey);
+        }
+      } else {
+        const result = await (window as any).clawdbot?.conversations?.unarchive(sessionKey);
+        if (result?.success) {
+          setArchivedSet(prev => {
+            const next = new Set(prev);
+            next.delete(sessionKey);
+            return next;
+          });
+          console.log('[CommsInbox] Unarchived:', sessionKey);
+        }
+      }
+      
+      // Refresh messages to reflect changes
+      loadMessages(true);
+    } catch (e) {
+      console.error('[CommsInbox] Archive error:', e);
+    }
+  }, [allMessages, getSessionKey]);
 
   // Fetch fresh data from backend (now uses froggo-db cache on backend)
   const fetchMessages = useCallback(async (): Promise<{ messages: Message[] | null; fromCache: boolean }> => {
-    console.log('[CommsInbox] Fetching messages...');
+    console.log('[CommsInbox] Fetching messages...', 'showArchived:', showArchived);
     try {
-      const result = await (window as any).clawdbot?.messages?.recent(30);
+      const result = await (window as any).clawdbot?.messages?.recent(30, showArchived);
       if (result?.success && result.chats) {
         const msgs = result.chats as Message[];
         console.log('[CommsInbox] Got messages:', {
@@ -436,7 +764,7 @@ export default function CommsInbox() {
       console.error('[CommsInbox] Failed to fetch messages:', e);
     }
     return { messages: null, fromCache: false };
-  }, []);
+  }, [showArchived]);
 
   // Load messages - backend now handles froggo-db caching
   const loadMessages = useCallback(async (forceRefresh = false) => {
@@ -505,6 +833,27 @@ export default function CommsInbox() {
     return () => { isMounted.current = false; };
   }, [loadMessages]);
 
+  // Reload messages when showArchived toggle changes
+  useEffect(() => {
+    if (isMounted.current) {
+      loadMessages(true);
+    }
+  }, [showArchived]);
+
+  // Auto-refresh polling (every 30 seconds)
+  useEffect(() => {
+    const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+    
+    const intervalId = setInterval(() => {
+      if (isMounted.current && !loading && !refreshing) {
+        console.log('[CommsInbox] Auto-refreshing messages...');
+        loadMessages(true);
+      }
+    }, AUTO_REFRESH_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [loadMessages, loading, refreshing]);
+
   const handleMessageClick = (message: Message) => {
     setSelectedMessage(message);
   };
@@ -568,27 +917,195 @@ export default function CommsInbox() {
     setReplyDrafts(replyDrafts.filter(d => d.id !== id));
   };
 
+  const handleFilterChange = useCallback((criteria: FilterCriteria) => {
+    setFilterCriteria(criteria);
+    
+    // Reapply filters to all messages
+    const filtered = applyFilters(allMessages, criteria);
+    setFilteredMessages(filtered);
+
+    setEmails(filtered.filter(m => m.platform === 'email'));
+    setWhatsapp(filtered.filter(m => m.platform === 'whatsapp'));
+    setTelegram(filtered.filter(m => m.platform === 'telegram'));
+    setDiscord(filtered.filter(m => m.platform === 'discord'));
+    
+    const urgentKeywords = ['urgent', 'asap', 'important', 'emergency', 'critical', 'help', 'now'];
+    const urgentMsgs = filtered.filter(m => 
+      urgentKeywords.some(kw => m.preview.toLowerCase().includes(kw))
+    );
+    setUrgent(urgentMsgs);
+  }, [allMessages, applyFilters]);
+
+  const toggleStar = async (messageId: string) => {
+    try {
+      const result = await (window as any).clawdbot?.inbox?.toggleStar?.(messageId);
+      if (result?.success) {
+        // Update local state
+        const updated = allMessages.map(m => 
+          m.id === messageId ? { ...m, is_starred: result.is_starred } : m
+        );
+        applyMessages(updated);
+      }
+    } catch (e) {
+      console.error('Failed to toggle star:', e);
+    }
+  };
+
+  const markRead = async (messageId: string, isRead: boolean = true) => {
+    try {
+      const result = await (window as any).clawdbot?.inbox?.markRead?.(messageId, isRead);
+      if (result?.success) {
+        // Update local state
+        const updated = allMessages.map(m => 
+          m.id === messageId ? { ...m, is_read: isRead } : m
+        );
+        applyMessages(updated);
+      }
+    } catch (e) {
+      console.error('Failed to mark read:', e);
+    }
+  };
+
+  // Bulk action handlers
+  const toggleSelection = (messageId: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(messageId)) {
+      newSelected.delete(messageId);
+    } else {
+      newSelected.add(messageId);
+    }
+    setSelectedIds(newSelected);
+    setSelectionMode(newSelected.size > 0);
+  };
+
+  const selectAll = () => {
+    const allIds = new Set(filteredMessages.map(m => m.id));
+    setSelectedIds(allIds);
+    setSelectionMode(true);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setSelectionMode(false);
+  };
+
+  const bulkMarkRead = async (isRead: boolean) => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await markRead(id, isRead);
+    }
+    clearSelection();
+  };
+
+  const bulkArchive = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      const message = allMessages.find(m => m.id === id);
+      if (message) {
+        await handleArchive(id, true);
+      }
+    }
+    clearSelection();
+  };
+
+  const bulkDelete = async () => {
+    if (!confirm(`Delete ${selectedIds.size} conversation(s)? This cannot be undone.`)) {
+      return;
+    }
+    
+    const ids = Array.from(selectedIds);
+    try {
+      for (const id of ids) {
+        await (window as any).clawdbot?.inbox?.delete?.(id);
+      }
+      // Remove from local state
+      const updated = allMessages.filter(m => !ids.includes(m.id));
+      applyMessages(updated);
+      clearSelection();
+    } catch (e) {
+      console.error('Failed to delete messages:', e);
+    }
+  };
+
+  // Keyboard shortcuts for bulk actions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + A to select all
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !e.shiftKey) {
+        e.preventDefault();
+        selectAll();
+      }
+      // Escape to clear selection
+      if (e.key === 'Escape' && selectionMode) {
+        e.preventDefault();
+        clearSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredMessages, selectionMode]);
+
   return (
-    <div className="h-full p-4 overflow-hidden">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold flex items-center gap-2"><Mail size={24} /> Communications Inbox</h1>
-          {lastUpdated && (
-            <span className="text-xs text-clawd-text-dim flex items-center gap-1">
-              {refreshing ? 'Updating...' : `Updated ${formatRelativeTime(lastUpdated)}`}
-              {fromCache && !refreshing && <span className="text-clawd-accent/60">(cached)</span>}
-            </span>
-          )}
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Filter Bar */}
+      <InboxFilter
+        onFilterChange={handleFilterChange}
+        totalMessages={allMessages.length}
+        filteredCount={filteredMessages.length}
+      />
+
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold flex items-center gap-2"><Mail size={24} /> Communications Inbox</h1>
+            {lastUpdated && (
+              <span className="text-xs text-clawd-text-dim flex items-center gap-1">
+                {refreshing ? 'Updating...' : `Updated ${formatRelativeTime(lastUpdated)}`}
+                {fromCache && !refreshing && <span className="text-clawd-accent/60">(cached)</span>}
+              </span>
+            )}
+            {priorityData.stats && (
+              <span className="text-xs text-clawd-accent flex items-center gap-1">
+                <TrendingUp size={14} />
+                {priorityData.stats.critical + priorityData.stats.high} priority
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSortByPriority(!sortByPriority)}
+              className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+                sortByPriority 
+                  ? 'bg-clawd-accent/20 border-clawd-accent text-clawd-accent' 
+                  : 'bg-clawd-surface border-clawd-border hover:bg-clawd-border'
+              }`}
+              title="Toggle priority sorting"
+            >
+              <TrendingUp size={14} />
+              {sortByPriority ? 'Priority' : 'Time'}
+            </button>
+            <button
+              onClick={() => setShowArchived(!showArchived)}
+              className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+                showArchived 
+                  ? 'bg-clawd-accent/20 border-clawd-accent text-clawd-accent' 
+                  : 'bg-clawd-surface border-clawd-border hover:bg-clawd-border'
+              }`}
+            >
+              {showArchived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+              {showArchived ? 'Hide Archived' : 'Show Archived'}
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={loading || refreshing}
+              className="flex items-center gap-2 px-3 py-1.5 bg-clawd-surface border border-clawd-border rounded-lg text-sm hover:bg-clawd-border disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={loading || refreshing ? 'animate-spin' : ''} />
+              Refresh All
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading || refreshing}
-          className="flex items-center gap-2 px-3 py-1.5 bg-clawd-surface border border-clawd-border rounded-lg text-sm hover:bg-clawd-border disabled:opacity-50"
-        >
-          <RefreshCw size={14} className={loading || refreshing ? 'animate-spin' : ''} />
-          Refresh All
-        </button>
-      </div>
 
       <div className="grid grid-cols-4 grid-rows-2 gap-4 h-[calc(100%-60px)] overflow-hidden">
         {/* Left side: 2 tall columns */}
@@ -617,7 +1134,18 @@ export default function CommsInbox() {
             <p className="text-sm text-clawd-text-dim text-center py-4">No emails</p>
           ) : (
             emails.map(msg => (
-              <MessageCard key={msg.id} message={msg} onClick={handleMessageClick} />
+              <MessageCard 
+                key={msg.id} 
+                message={msg} 
+                onClick={handleMessageClick}
+                onToggleStar={toggleStar}
+                onMarkRead={markRead}
+                onArchive={handleArchive}
+                isArchived={archivedSet.has(getSessionKey(msg))}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelection}
+              />
             ))
           )}
         </div>
@@ -630,7 +1158,18 @@ export default function CommsInbox() {
             <p className="text-sm text-clawd-text-dim text-center py-4">No messages</p>
           ) : (
             whatsapp.map(msg => (
-              <MessageCard key={msg.id} message={msg} onClick={handleMessageClick} />
+              <MessageCard 
+                key={msg.id} 
+                message={msg} 
+                onClick={handleMessageClick}
+                onToggleStar={toggleStar}
+                onMarkRead={markRead}
+                onArchive={handleArchive}
+                isArchived={archivedSet.has(getSessionKey(msg))}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelection}
+              />
             ))
           )}
         </div>
@@ -642,7 +1181,18 @@ export default function CommsInbox() {
             <p className="text-sm text-clawd-text-dim text-center py-4">No messages</p>
           ) : (
             telegram.map(msg => (
-              <MessageCard key={msg.id} message={msg} onClick={handleMessageClick} />
+              <MessageCard 
+                key={msg.id} 
+                message={msg} 
+                onClick={handleMessageClick}
+                onToggleStar={toggleStar}
+                onMarkRead={markRead}
+                onArchive={handleArchive}
+                isArchived={archivedSet.has(getSessionKey(msg))}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelection}
+              />
             ))
           )}
         </div>
@@ -654,7 +1204,18 @@ export default function CommsInbox() {
             <p className="text-sm text-clawd-text-dim text-center py-4">No messages</p>
           ) : (
             discord.map(msg => (
-              <MessageCard key={msg.id} message={msg} onClick={handleMessageClick} />
+              <MessageCard 
+                key={msg.id} 
+                message={msg} 
+                onClick={handleMessageClick}
+                onToggleStar={toggleStar}
+                onMarkRead={markRead}
+                onArchive={handleArchive}
+                isArchived={archivedSet.has(getSessionKey(msg))}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelection}
+              />
             ))
           )}
         </div>
@@ -666,20 +1227,45 @@ export default function CommsInbox() {
             <p className="text-sm text-clawd-text-dim text-center py-4">No urgent messages</p>
           ) : (
             urgent.map(msg => (
-              <MessageCard key={msg.id} message={msg} onClick={handleMessageClick} />
+              <MessageCard 
+                key={msg.id} 
+                message={msg} 
+                onClick={handleMessageClick}
+                onToggleStar={toggleStar}
+                onMarkRead={markRead}
+                onArchive={handleArchive}
+                isArchived={archivedSet.has(getSessionKey(msg))}
+                selectionMode={selectionMode}
+                isSelected={selectedIds.has(msg.id)}
+                onToggleSelect={toggleSelection}
+              />
             ))
           )}
         </div>
       </div>
 
-      {/* Message Modal */}
-      <MessageModal
-        message={selectedMessage}
-        isOpen={!!selectedMessage}
-        onClose={() => setSelectedMessage(null)}
-        onSendReply={handleSendReply}
-        onScheduleReply={handleScheduleReply}
-      />
+        {/* Message Modal */}
+        <MessageModal
+          message={selectedMessage}
+          isOpen={!!selectedMessage}
+          onClose={() => setSelectedMessage(null)}
+          onSendReply={handleSendReply}
+          onScheduleReply={handleScheduleReply}
+        />
+        
+        {/* Bulk Actions Toolbar */}
+        {selectionMode && (
+          <BulkActionsToolbar
+            selectedCount={selectedIds.size}
+            onMarkRead={() => bulkMarkRead(true)}
+            onMarkUnread={() => bulkMarkRead(false)}
+            onArchive={bulkArchive}
+            onDelete={bulkDelete}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+          />
+        )}
+      </div>
     </div>
   );
 }

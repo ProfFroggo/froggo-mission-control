@@ -6,6 +6,11 @@ import * as os from 'os';
 import * as http from 'http';
 import { calendarService } from './calendar-service';
 import { accountsService } from './accounts-service';
+import { notificationService, setupNotificationHandlers } from './notification-service';
+import { setupNotificationEvents } from './notification-events';
+import * as exportBackupService from './export-backup-service';
+import { registerXAutomationsHandlers } from './x-automations-service';
+// const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
 
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
@@ -112,6 +117,15 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  // Setup notification handlers
+  setupNotificationHandlers(mainWindow);
+
+  // Setup threading handlers
+  // registerThreadingHandlers(ipcMain); // DISABLED - incomplete implementation
+  
+  // Register X Automations handlers
+  registerXAutomationsHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
@@ -395,6 +409,9 @@ function startTaskNotifyWatcher() {
   }
 }
 
+// Notification event cleanup function (set in app.whenReady)
+let stopNotificationEvents: (() => void) | null = null;
+
 app.whenReady().then(() => {
   // Start local HTTP server to serve model files in prod
   if (!isDev) {
@@ -428,7 +445,13 @@ app.whenReady().then(() => {
   // Start schedule processor (auto-send overdue items)
   startScheduleProcessor();
   
+  // Create window first (needed for notifications)
   createWindow();
+  
+  // Start notification event listeners (requires mainWindow)
+  if (mainWindow) {
+    stopNotificationEvents = setupNotificationEvents(mainWindow);
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -450,6 +473,11 @@ app.on('will-quit', () => {
   }
   // Clean up schedule processor
   stopScheduleProcessor();
+  // Clean up notification event listeners
+  if (stopNotificationEvents) {
+    stopNotificationEvents();
+    stopNotificationEvents = null;
+  }
 });
 
 app.on('activate', () => {
@@ -685,6 +713,300 @@ ipcMain.handle('tasks:sync', async (_, task: {
           resolve({ success: true });
         }
       });
+    });
+  });
+});
+
+// ============================================================
+// NOTIFICATION SETTINGS HANDLERS
+// ============================================================
+
+// Get notification settings for a specific conversation
+ipcMain.handle('notification-settings:get', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Get error:', error);
+        resolve({ success: false, settings: null });
+        return;
+      }
+      
+      try {
+        const settings = JSON.parse(stdout || '[]');
+        resolve({ success: true, settings: settings[0] || null });
+      } catch (e) {
+        safeLog.error('[NotificationSettings] Parse error:', e);
+        resolve({ success: false, settings: null });
+      }
+    });
+  });
+});
+
+// Set/update notification settings for a conversation
+ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settings: any) => {
+  // First check if settings exist
+  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
+  
+  return new Promise((resolve) => {
+    exec(checkCmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Check error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      const existing = JSON.parse(stdout || '[]');
+      const isUpdate = existing.length > 0;
+      
+      // Build SQL based on update or insert
+      let cmd: string;
+      
+      if (isUpdate) {
+        // UPDATE existing settings
+        const setParts: string[] = [];
+        
+        if (settings.notification_level !== undefined) 
+          setParts.push(`notification_level = '${settings.notification_level}'`);
+        if (settings.sound_enabled !== undefined) 
+          setParts.push(`sound_enabled = ${settings.sound_enabled ? 1 : 0}`);
+        if (settings.sound_type !== undefined) 
+          setParts.push(`sound_type = '${settings.sound_type}'`);
+        if (settings.desktop_notifications !== undefined) 
+          setParts.push(`desktop_notifications = ${settings.desktop_notifications ? 1 : 0}`);
+        if (settings.quiet_hours_enabled !== undefined) 
+          setParts.push(`quiet_hours_enabled = ${settings.quiet_hours_enabled ? 1 : 0}`);
+        if (settings.quiet_start !== undefined) 
+          setParts.push(`quiet_start = '${settings.quiet_start}'`);
+        if (settings.quiet_end !== undefined) 
+          setParts.push(`quiet_end = '${settings.quiet_end}'`);
+        if (settings.keyword_alerts !== undefined) 
+          setParts.push(`keyword_alerts = '${JSON.stringify(settings.keyword_alerts).replace(/'/g, "''")}'`);
+        if (settings.priority_level !== undefined) 
+          setParts.push(`priority_level = '${settings.priority_level}'`);
+        if (settings.mute_until !== undefined) 
+          setParts.push(`mute_until = ${settings.mute_until ? `'${settings.mute_until}'` : 'NULL'}`);
+        if (settings.notification_frequency !== undefined) 
+          setParts.push(`notification_frequency = '${settings.notification_frequency}'`);
+        if (settings.show_message_preview !== undefined) 
+          setParts.push(`show_message_preview = ${settings.show_message_preview ? 1 : 0}`);
+        if (settings.badge_count_enabled !== undefined) 
+          setParts.push(`badge_count_enabled = ${settings.badge_count_enabled ? 1 : 0}`);
+        if (settings.notes !== undefined) 
+          setParts.push(`notes = '${(settings.notes || '').replace(/'/g, "''")}'`);
+        
+        if (setParts.length === 0) {
+          resolve({ success: false, error: 'No updates provided' });
+          return;
+        }
+        
+        cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET ${setParts.join(', ')} WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
+      } else {
+        // INSERT new settings
+        const notificationLevel = settings.notification_level || 'all';
+        const soundEnabled = settings.sound_enabled !== undefined ? (settings.sound_enabled ? 1 : 0) : 1;
+        const soundType = settings.sound_type || 'default';
+        const desktopNotifications = settings.desktop_notifications !== undefined ? (settings.desktop_notifications ? 1 : 0) : 1;
+        const quietHoursEnabled = settings.quiet_hours_enabled ? 1 : 0;
+        const quietStart = settings.quiet_start || 'NULL';
+        const quietEnd = settings.quiet_end || 'NULL';
+        const keywordAlerts = settings.keyword_alerts ? `'${JSON.stringify(settings.keyword_alerts).replace(/'/g, "''")}'` : 'NULL';
+        const priorityLevel = settings.priority_level || 'normal';
+        const muteUntil = settings.mute_until ? `'${settings.mute_until}'` : 'NULL';
+        const notificationFrequency = settings.notification_frequency || 'instant';
+        const showMessagePreview = settings.show_message_preview !== undefined ? (settings.show_message_preview ? 1 : 0) : 1;
+        const badgeCountEnabled = settings.badge_count_enabled !== undefined ? (settings.badge_count_enabled ? 1 : 0) : 1;
+        const notes = settings.notes ? `'${settings.notes.replace(/'/g, "''")}'` : 'NULL';
+        
+        cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_notification_settings (session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, notes) VALUES ('${sessionKey.replace(/'/g, "''")}', '${notificationLevel}', ${soundEnabled}, '${soundType}', ${desktopNotifications}, ${quietHoursEnabled}, ${quietStart}, ${quietEnd}, ${keywordAlerts}, '${priorityLevel}', ${muteUntil}, '${notificationFrequency}', ${showMessagePreview}, ${badgeCountEnabled}, ${notes})"`;
+      }
+      
+      exec(cmd, { timeout: 5000 }, (error) => {
+        if (error) {
+          safeLog.error('[NotificationSettings] Set error:', error);
+          resolve({ success: false, error: error.message });
+          return;
+        }
+        
+        resolve({ success: true });
+      });
+    });
+  });
+});
+
+// Delete conversation-specific settings
+ipcMain.handle('notification-settings:delete', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Delete error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Get global notification defaults
+ipcMain.handle('notification-settings:global-defaults', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM global_notification_defaults WHERE id = 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Get global defaults error:', error);
+        resolve({ success: false, defaults: null });
+        return;
+      }
+      
+      try {
+        const defaults = JSON.parse(stdout || '[]');
+        resolve({ success: true, defaults: defaults[0] || null });
+      } catch (e) {
+        safeLog.error('[NotificationSettings] Parse error:', e);
+        resolve({ success: false, defaults: null });
+      }
+    });
+  });
+});
+
+// Update global notification defaults
+ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults: any) => {
+  const setParts: string[] = [];
+  
+  if (defaults.default_notification_level !== undefined) 
+    setParts.push(`default_notification_level = '${defaults.default_notification_level}'`);
+  if (defaults.default_sound_enabled !== undefined) 
+    setParts.push(`default_sound_enabled = ${defaults.default_sound_enabled ? 1 : 0}`);
+  if (defaults.default_sound_type !== undefined) 
+    setParts.push(`default_sound_type = '${defaults.default_sound_type}'`);
+  if (defaults.default_desktop_notifications !== undefined) 
+    setParts.push(`default_desktop_notifications = ${defaults.default_desktop_notifications ? 1 : 0}`);
+  if (defaults.quiet_hours_enabled !== undefined) 
+    setParts.push(`quiet_hours_enabled = ${defaults.quiet_hours_enabled ? 1 : 0}`);
+  if (defaults.quiet_start !== undefined) 
+    setParts.push(`quiet_start = '${defaults.quiet_start}'`);
+  if (defaults.quiet_end !== undefined) 
+    setParts.push(`quiet_end = '${defaults.quiet_end}'`);
+  if (defaults.default_priority_level !== undefined) 
+    setParts.push(`default_priority_level = '${defaults.default_priority_level}'`);
+  if (defaults.do_not_disturb_enabled !== undefined) 
+    setParts.push(`do_not_disturb_enabled = ${defaults.do_not_disturb_enabled ? 1 : 0}`);
+  if (defaults.dnd_until !== undefined) 
+    setParts.push(`dnd_until = ${defaults.dnd_until ? `'${defaults.dnd_until}'` : 'NULL'}`);
+  if (defaults.enable_batching !== undefined) 
+    setParts.push(`enable_batching = ${defaults.enable_batching ? 1 : 0}`);
+  if (defaults.batch_interval_minutes !== undefined) 
+    setParts.push(`batch_interval_minutes = ${defaults.batch_interval_minutes}`);
+  
+  if (setParts.length === 0) {
+    return { success: false, error: 'No updates provided' };
+  }
+  
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE global_notification_defaults SET ${setParts.join(', ')} WHERE id = 1"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Set global defaults error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Get effective settings (with global fallback)
+ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM effective_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Get effective error:', error);
+        resolve({ success: false, settings: null });
+        return;
+      }
+      
+      try {
+        const settings = JSON.parse(stdout || '[]');
+        resolve({ success: true, settings: settings[0] || null });
+      } catch (e) {
+        safeLog.error('[NotificationSettings] Parse error:', e);
+        resolve({ success: false, settings: null });
+      }
+    });
+  });
+});
+
+// Quick mute conversation
+ipcMain.handle('notification-settings:mute', async (_, sessionKey: string, duration?: string) => {
+  let muteUntil = 'NULL';
+  
+  if (duration) {
+    muteUntil = `'${duration}'`;
+  } else {
+    // Default: mute for 24 hours
+    const tomorrow = new Date();
+    tomorrow.setHours(tomorrow.getHours() + 24);
+    muteUntil = `'${tomorrow.toISOString()}'`;
+  }
+  
+  // Check if settings exist
+  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
+  
+  return new Promise((resolve) => {
+    exec(checkCmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Mute check error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      const existing = JSON.parse(stdout || '[]');
+      let cmd: string;
+      
+      if (existing.length > 0) {
+        // UPDATE existing
+        cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET mute_until = ${muteUntil}, notification_level = 'none' WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
+      } else {
+        // INSERT new
+        cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_notification_settings (session_key, notification_level, mute_until) VALUES ('${sessionKey.replace(/'/g, "''")}', 'none', ${muteUntil})"`;
+      }
+      
+      exec(cmd, { timeout: 5000 }, (error) => {
+        if (error) {
+          safeLog.error('[NotificationSettings] Mute error:', error);
+          resolve({ success: false, error: error.message });
+          return;
+        }
+        
+        resolve({ success: true });
+      });
+    });
+  });
+});
+
+// Unmute conversation
+ipcMain.handle('notification-settings:unmute', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[NotificationSettings] Unmute error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
     });
   });
 });
@@ -1183,6 +1505,891 @@ ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
       }
       
       resolve({ success: true, output: stdout });
+    });
+  });
+});
+
+// ============== FOLDER MANAGEMENT HANDLERS ==============
+// IPC handlers for message folder/label system
+
+// List all folders with conversation counts
+ipcMain.handle('folders:list', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Folders] List error:', error);
+        resolve({ success: false, folders: [] });
+        return;
+      }
+      
+      try {
+        const folders = JSON.parse(stdout || '[]');
+        resolve({ success: true, folders });
+      } catch (e) {
+        safeLog.error('[Folders] Parse error:', e);
+        resolve({ success: false, folders: [] });
+      }
+    });
+  });
+});
+
+// Create new folder
+ipcMain.handle('folders:create', async (_, folder: { name: string; icon?: string; color?: string; description?: string }) => {
+  const icon = folder.icon || '📁';
+  const color = folder.color || '#6366f1';
+  const description = folder.description || '';
+  
+  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO message_folders (name, icon, color, description) VALUES ('${folder.name.replace(/'/g, "''")}', '${icon}', '${color}', '${description.replace(/'/g, "''")}'); SELECT last_insert_rowid()"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Folders] Create error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      const folderId = parseInt(stdout.trim());
+      resolve({ success: true, folderId });
+    });
+  });
+});
+
+// Update folder properties
+ipcMain.handle('folders:update', async (_, folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => {
+  const setParts: string[] = [];
+  
+  if (updates.name) setParts.push(`name = '${updates.name.replace(/'/g, "''")}'`);
+  if (updates.icon) setParts.push(`icon = '${updates.icon}'`);
+  if (updates.color) setParts.push(`color = '${updates.color}'`);
+  if (updates.description !== undefined) setParts.push(`description = '${updates.description.replace(/'/g, "''")}'`);
+  if (updates.sort_order !== undefined) setParts.push(`sort_order = ${updates.sort_order}`);
+  
+  if (setParts.length === 0) {
+    return { success: false, error: 'No updates provided' };
+  }
+  
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ${folderId}"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Folders] Update error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Delete folder
+ipcMain.handle('folders:delete', async (_, folderId: number) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM message_folders WHERE id = ${folderId}"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Folders] Delete error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Assign conversation to folder
+ipcMain.handle('folders:assign', async (_, folderId: number, sessionKey: string, notes?: string) => {
+  const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL';
+  const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (${folderId}, '${sessionKey.replace(/'/g, "''")}', ${notesValue})"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Folders] Assign error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Unassign conversation from folder
+ipcMain.handle('folders:unassign', async (_, folderId: number, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE folder_id = ${folderId} AND session_key = '${sessionKey.replace(/'/g, "''")}'`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Folders] Unassign error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Get folders for a specific conversation
+ipcMain.handle('folders:for-conversation', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = '${sessionKey.replace(/'/g, "''")}' ORDER BY f.sort_order, f.name" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Folders] Get for conversation error:', error);
+        resolve({ success: false, folders: [] });
+        return;
+      }
+      
+      try {
+        const folders = JSON.parse(stdout || '[]');
+        resolve({ success: true, folders });
+      } catch (e) {
+        safeLog.error('[Folders] Parse error:', e);
+        resolve({ success: false, folders: [] });
+      }
+    });
+  });
+});
+
+// Get conversations in a folder
+ipcMain.handle('folders:conversations', async (_, folderId: number) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ${folderId} ORDER BY added_at DESC" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Folders] Get conversations error:', error);
+        resolve({ success: false, conversations: [] });
+        return;
+      }
+      
+      try {
+        const conversations = JSON.parse(stdout || '[]');
+        resolve({ success: true, conversations });
+      } catch (e) {
+        safeLog.error('[Folders] Parse error:', e);
+        resolve({ success: false, conversations: [] });
+      }
+    });
+  });
+});
+
+// ============== SMART FOLDER RULES HANDLERS ==============
+// IPC handlers for smart folder auto-assignment rules
+
+// List all rules
+ipcMain.handle('folders:rules:list', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[FolderRules] List error:', error);
+        resolve({ success: false, rules: [] });
+        return;
+      }
+      
+      try {
+        const folders = JSON.parse(stdout || '[]');
+        const rules = folders.map((f: any) => {
+          try {
+            const parsed = f.rules ? JSON.parse(f.rules) : null;
+            return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
+          } catch (e) {
+            return null;
+          }
+        }).filter(Boolean);
+        resolve({ success: true, rules });
+      } catch (e) {
+        safeLog.error('[FolderRules] Parse error:', e);
+        resolve({ success: false, rules: [] });
+      }
+    });
+  });
+});
+
+// Get rules for a specific folder
+ipcMain.handle('folders:rules:get', async (_, folderId: number) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT rules FROM message_folders WHERE id = ${folderId}" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[FolderRules] Get error:', error);
+        resolve({ success: false, rule: null });
+        return;
+      }
+      
+      try {
+        const rows = JSON.parse(stdout || '[]');
+        if (rows.length > 0 && rows[0].rules) {
+          const rule = JSON.parse(rows[0].rules);
+          resolve({ success: true, rule });
+        } else {
+          resolve({ success: true, rule: null });
+        }
+      } catch (e) {
+        safeLog.error('[FolderRules] Parse error:', e);
+        resolve({ success: false, rule: null });
+      }
+    });
+  });
+});
+
+// Save rules for a folder
+ipcMain.handle('folders:rules:save', async (_, folderId: number, rule: any) => {
+  const rulesJson = JSON.stringify(rule).replace(/'/g, "''");
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET rules = '${rulesJson}', is_smart = 1 WHERE id = ${folderId}"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[FolderRules] Save error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Delete rules for a folder (make it non-smart)
+ipcMain.handle('folders:rules:delete', async (_, folderId: number) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ${folderId}"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[FolderRules] Delete error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true });
+    });
+  });
+});
+
+// Auto-assign conversation based on rules
+ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversationData: any) => {
+  // First, load all smart folder rules
+  const listCmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL" -json`;
+  
+  return new Promise((resolve) => {
+    exec(listCmd, { timeout: 5000 }, async (error, stdout) => {
+      if (error) {
+        safeLog.error('[FolderRules] Auto-assign list error:', error);
+        resolve({ success: false, matchedFolderIds: [] });
+        return;
+      }
+      
+      try {
+        const folders = JSON.parse(stdout || '[]');
+        const matchedFolderIds: number[] = [];
+        
+        for (const folder of folders) {
+          try {
+            const rule = JSON.parse(folder.rules);
+            // Import and use rule evaluation logic (simplified here)
+            // In production, this would use the folderRules.ts logic
+            if (evaluateRuleSimple(rule, conversationData)) {
+              matchedFolderIds.push(folder.id);
+              
+              // Auto-assign to folder
+              const assignCmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (${folder.id}, '${sessionKey.replace(/'/g, "''")}', 'rule')"`;
+              exec(assignCmd, { timeout: 5000 }, () => {});
+            }
+          } catch (e) {
+            safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
+          }
+        }
+        
+        resolve({ success: true, matchedFolderIds });
+      } catch (e) {
+        safeLog.error('[FolderRules] Auto-assign parse error:', e);
+        resolve({ success: false, matchedFolderIds: [] });
+      }
+    });
+  });
+});
+
+// Simple rule evaluation (matching subset of folderRules.ts logic)
+function evaluateRuleSimple(rule: any, data: any): boolean {
+  if (!rule.enabled || !rule.conditions || rule.conditions.length === 0) {
+    return false;
+  }
+
+  const results = rule.conditions.map((cond: any) => {
+    let result = false;
+
+    switch (cond.type) {
+      case 'sender_matches':
+        result = data.sender ? data.sender.includes(cond.value) : false;
+        break;
+      case 'sender_name_contains':
+        result = data.senderName ? data.senderName.toLowerCase().includes(String(cond.value).toLowerCase()) : false;
+        break;
+      case 'content_contains':
+        result = data.content ? data.content.toLowerCase().includes(String(cond.value).toLowerCase()) : false;
+        break;
+      case 'platform_is':
+        result = data.platform ? data.platform.toLowerCase() === String(cond.value).toLowerCase() : false;
+        break;
+      case 'priority_above':
+        result = data.priorityScore !== undefined ? data.priorityScore > Number(cond.value) : false;
+        break;
+      case 'priority_below':
+        result = data.priorityScore !== undefined ? data.priorityScore < Number(cond.value) : false;
+        break;
+      case 'is_urgent':
+        result = Boolean(data.isUrgent);
+        break;
+      case 'has_attachment':
+        result = Boolean(data.hasAttachment);
+        break;
+      default:
+        result = false;
+    }
+
+    return cond.negate ? !result : result;
+  });
+
+  return rule.operator === 'AND' ? results.every((r: boolean) => r) : results.some((r: boolean) => r);
+}
+
+// ============== PINNED CONVERSATIONS HANDLERS ==============
+// IPC handlers for pinning/unpinning conversations
+
+// Get all pinned conversations
+ipcMain.handle('pins:list', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Pins] List error:', error);
+        resolve({ success: false, pins: [] });
+        return;
+      }
+      
+      try {
+        const pins = JSON.parse(stdout || '[]');
+        resolve({ success: true, pins });
+      } catch (e) {
+        safeLog.error('[Pins] Parse error:', e);
+        resolve({ success: false, pins: [] });
+      }
+    });
+  });
+});
+
+// Check if a conversation is pinned
+ipcMain.handle('pins:is-pinned', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Pins] Is-pinned error:', error);
+        resolve({ success: false, pinned: false });
+        return;
+      }
+      
+      try {
+        const result = JSON.parse(stdout || '[]');
+        resolve({ success: true, pinned: result.length > 0 });
+      } catch (e) {
+        safeLog.error('[Pins] Is-pinned parse error:', e);
+        resolve({ success: false, pinned: false });
+      }
+    });
+  });
+});
+
+// Pin a conversation
+ipcMain.handle('pins:pin', async (_, sessionKey: string, notes?: string) => {
+  // Check pin count first (max 10)
+  const countCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
+  
+  return new Promise((resolve) => {
+    exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
+      if (countError) {
+        safeLog.error('[Pins] Count check error:', countError);
+        resolve({ success: false, error: countError.message });
+        return;
+      }
+      
+      try {
+        const countResult = JSON.parse(countStdout || '[{"count":0}]');
+        const currentCount = countResult[0]?.count || 0;
+        
+        // Check if already pinned (don't count against limit)
+        const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
+        
+        exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
+          if (checkError) {
+            safeLog.error('[Pins] Check existing error:', checkError);
+            resolve({ success: false, error: checkError.message });
+            return;
+          }
+          
+          try {
+            const existing = JSON.parse(checkStdout || '[]');
+            const isAlreadyPinned = existing.length > 0;
+            
+            // If not already pinned and at limit, reject
+            if (!isAlreadyPinned && currentCount >= 10) {
+              safeLog.error('[Pins] Pin limit reached (10 max)');
+              resolve({ success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' });
+              return;
+            }
+            
+            // Get next pin_order (highest + 1)
+            const orderCmd = `sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins" -json`;
+            
+            exec(orderCmd, { timeout: 5000 }, (orderError, orderStdout) => {
+              if (orderError) {
+                safeLog.error('[Pins] Get order error:', orderError);
+                resolve({ success: false, error: orderError.message });
+                return;
+              }
+              
+              try {
+                const orderResult = JSON.parse(orderStdout || '[{"next_order":0}]');
+                const nextOrder = orderResult[0]?.next_order || 0;
+                
+                const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL';
+                const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR REPLACE INTO conversation_pins (session_key, notes, pin_order) VALUES ('${sessionKey.replace(/'/g, "''")}', ${notesValue}, ${nextOrder})"`;
+                
+                exec(cmd, { timeout: 5000 }, (error) => {
+                  if (error) {
+                    safeLog.error('[Pins] Pin error:', error);
+                    resolve({ success: false, error: error.message });
+                    return;
+                  }
+                  
+                  safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
+                  resolve({ success: true });
+                });
+              } catch (e) {
+                safeLog.error('[Pins] Order parse error:', e);
+                resolve({ success: false, error: 'Parse error' });
+              }
+            });
+          } catch (e) {
+            safeLog.error('[Pins] Check parse error:', e);
+            resolve({ success: false, error: 'Parse error' });
+          }
+        });
+      } catch (e) {
+        safeLog.error('[Pins] Count parse error:', e);
+        resolve({ success: false, error: 'Parse error' });
+      }
+    });
+  });
+});
+
+// Unpin a conversation
+ipcMain.handle('pins:unpin', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Pins] Unpin error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      safeLog.log('[Pins] Unpinned:', sessionKey);
+      resolve({ success: true });
+    });
+  });
+});
+
+// Toggle pin state
+ipcMain.handle('pins:toggle', async (_, sessionKey: string) => {
+  // First check if pinned
+  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
+      if (checkError) {
+        safeLog.error('[Pins] Toggle check error:', checkError);
+        resolve({ success: false, error: checkError.message });
+        return;
+      }
+      
+      try {
+        const result = JSON.parse(checkStdout || '[]');
+        const isPinned = result.length > 0;
+        
+        if (isPinned) {
+          // Unpin
+          const toggleCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}'"`; 
+          
+          exec(toggleCmd, { timeout: 5000 }, (toggleError) => {
+            if (toggleError) {
+              safeLog.error('[Pins] Toggle unpin error:', toggleError);
+              resolve({ success: false, error: toggleError.message });
+              return;
+            }
+            
+            safeLog.log('[Pins] Toggled:', sessionKey, '→ unpinned');
+            resolve({ success: true, pinned: false });
+          });
+        } else {
+          // Pin - check limit first
+          const countCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
+          
+          exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
+            if (countError) {
+              safeLog.error('[Pins] Toggle count error:', countError);
+              resolve({ success: false, error: countError.message });
+              return;
+            }
+            
+            try {
+              const countResult = JSON.parse(countStdout || '[{"count":0}]');
+              const currentCount = countResult[0]?.count || 0;
+              
+              if (currentCount >= 10) {
+                safeLog.error('[Pins] Toggle pin limit reached (10 max)');
+                resolve({ success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' });
+                return;
+              }
+              
+              // Get next pin_order
+              const orderCmd = `sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins" -json`;
+              
+              exec(orderCmd, { timeout: 5000 }, (orderError, orderStdout) => {
+                if (orderError) {
+                  safeLog.error('[Pins] Toggle order error:', orderError);
+                  resolve({ success: false, error: orderError.message });
+                  return;
+                }
+                
+                try {
+                  const orderResult = JSON.parse(orderStdout || '[{"next_order":0}]');
+                  const nextOrder = orderResult[0]?.next_order || 0;
+                  
+                  const toggleCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_pins (session_key, pin_order) VALUES ('${sessionKey.replace(/'/g, "''")}', ${nextOrder})"`;
+                  
+                  exec(toggleCmd, { timeout: 5000 }, (toggleError) => {
+                    if (toggleError) {
+                      safeLog.error('[Pins] Toggle pin error:', toggleError);
+                      resolve({ success: false, error: toggleError.message });
+                      return;
+                    }
+                    
+                    safeLog.log('[Pins] Toggled:', sessionKey, '→ pinned at order', nextOrder);
+                    resolve({ success: true, pinned: true });
+                  });
+                } catch (e) {
+                  safeLog.error('[Pins] Toggle order parse error:', e);
+                  resolve({ success: false, error: 'Parse error' });
+                }
+              });
+            } catch (e) {
+              safeLog.error('[Pins] Toggle count parse error:', e);
+              resolve({ success: false, error: 'Parse error' });
+            }
+          });
+        }
+      } catch (e) {
+        safeLog.error('[Pins] Toggle parse error:', e);
+        resolve({ success: false, error: 'Parse error' });
+      }
+    });
+  });
+});
+
+// Reorder pinned conversations
+ipcMain.handle('pins:reorder', async (_, sessionKeys: string[]) => {
+  // Check pin limit (max 10)
+  if (sessionKeys.length > 10) {
+    safeLog.error('[Pins] Reorder error: Too many pins (max 10)');
+    return { success: false, error: 'Cannot have more than 10 pinned conversations' };
+  }
+
+  // Update pin_order for each session
+  const updates: Promise<any>[] = sessionKeys.map((sessionKey, index) => {
+    const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_pins SET pin_order = ${index} WHERE session_key = '${sessionKey.replace(/'/g, "''")}'"`; 
+    
+    return new Promise((resolve) => {
+      exec(cmd, { timeout: 5000 }, (error) => {
+        if (error) {
+          safeLog.error('[Pins] Reorder update error for', sessionKey, ':', error);
+          resolve({ success: false });
+        } else {
+          resolve({ success: true });
+        }
+      });
+    });
+  });
+
+  try {
+    const results = await Promise.all(updates);
+    const allSuccess = results.every((r: any) => r.success);
+    
+    if (allSuccess) {
+      safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
+      return { success: true };
+    } else {
+      return { success: false, error: 'Some updates failed' };
+    }
+  } catch (e) {
+    safeLog.error('[Pins] Reorder error:', e);
+    return { success: false, error: 'Reorder failed' };
+  }
+});
+
+// Get pin count
+ipcMain.handle('pins:count', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Pins] Count error:', error);
+        resolve({ success: false, count: 0 });
+        return;
+      }
+      
+      try {
+        const result = JSON.parse(stdout || '[{"count":0}]');
+        resolve({ success: true, count: result[0]?.count || 0 });
+      } catch (e) {
+        safeLog.error('[Pins] Count parse error:', e);
+        resolve({ success: false, count: 0 });
+      }
+    });
+  });
+});
+
+// ============== SNOOZE HANDLERS ==============
+// IPC handlers for conversation snooze system
+
+// List all snoozed conversations
+ipcMain.handle('snooze:list', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Snooze] List error:', error);
+        resolve({ success: false, snoozes: [] });
+        return;
+      }
+      try {
+        const snoozes = JSON.parse(stdout || '[]');
+        resolve({ success: true, snoozes });
+      } catch (e) {
+        safeLog.error('[Snooze] Parse error:', e);
+        resolve({ success: false, snoozes: [] });
+      }
+    });
+  });
+});
+
+// Check if a session is snoozed
+ipcMain.handle('snooze:get', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Snooze] Get error:', error);
+        resolve({ success: false, snooze: null });
+        return;
+      }
+      try {
+        const result = JSON.parse(stdout || '[]');
+        resolve({ 
+          success: true, 
+          snooze: result.length > 0 ? result[0] : null 
+        });
+      } catch (e) {
+        safeLog.error('[Snooze] Parse error:', e);
+        resolve({ success: false, snooze: null });
+      }
+    });
+  });
+});
+
+// Set/update snooze for a conversation
+ipcMain.handle('snooze:set', async (_, sessionKey: string, snoozeUntil: number, reason?: string) => {
+  const now = Date.now();
+  const reasonEscaped = reason ? reason.replace(/'/g, "''") : '';
+  
+  // Check if already snoozed (for update vs insert)
+  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
+      if (checkError) {
+        safeLog.error('[Snooze] Set check error:', checkError);
+        resolve({ success: false, error: checkError.message });
+        return;
+      }
+      
+      try {
+        const existing = JSON.parse(checkStdout || '[]');
+        let snoozeCmd: string;
+        
+        if (existing.length > 0) {
+          // Update existing snooze
+          snoozeCmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_snoozes SET snooze_until = ${snoozeUntil}, snooze_reason = '${reasonEscaped}', reminder_sent = 0, updated_at = ${now} WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
+        } else {
+          // Insert new snooze
+          snoozeCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_snoozes (session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at) VALUES ('${sessionKey.replace(/'/g, "''")}', ${snoozeUntil}, '${reasonEscaped}', 0, ${now}, ${now})"`;
+        }
+        
+        exec(snoozeCmd, { timeout: 5000 }, (snoozeError) => {
+          if (snoozeError) {
+            safeLog.error('[Snooze] Set error:', snoozeError);
+            resolve({ success: false, error: snoozeError.message });
+            return;
+          }
+          
+          safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
+          resolve({ success: true });
+        });
+      } catch (e) {
+        safeLog.error('[Snooze] Set parse error:', e);
+        resolve({ success: false, error: 'Parse error' });
+      }
+    });
+  });
+});
+
+// Unsnooze a conversation (remove snooze)
+ipcMain.handle('snooze:unset', async (_, sessionKey: string) => {
+  const now = Date.now();
+  
+  // First get the snooze data for history
+  const getCmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
+  
+  return new Promise((resolve) => {
+    exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
+      if (getError) {
+        safeLog.error('[Snooze] Unset get error:', getError);
+        resolve({ success: false, error: getError.message });
+        return;
+      }
+      
+      try {
+        const snoozes = JSON.parse(getStdout || '[]');
+        
+        if (snoozes.length === 0) {
+          // Not snoozed, nothing to do
+          resolve({ success: true });
+          return;
+        }
+        
+        const snooze = snoozes[0];
+        const reasonEscaped = snooze.snooze_reason ? snooze.snooze_reason.replace(/'/g, "''") : '';
+        
+        // Add to history
+        const historyCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES ('${sessionKey.replace(/'/g, "''")}', ${snooze.snooze_until}, '${reasonEscaped}', ${now}, ${snooze.created_at})"`;
+        
+        exec(historyCmd, { timeout: 5000 }, (historyError) => {
+          if (historyError) {
+            safeLog.warn('[Snooze] History insert error (non-fatal):', historyError);
+          }
+          
+          // Delete from active snoozes
+          const deleteCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
+          
+          exec(deleteCmd, { timeout: 5000 }, (deleteError) => {
+            if (deleteError) {
+              safeLog.error('[Snooze] Unset delete error:', deleteError);
+              resolve({ success: false, error: deleteError.message });
+              return;
+            }
+            
+            safeLog.log('[Snooze] Unsnoozed:', sessionKey);
+            resolve({ success: true });
+          });
+        });
+      } catch (e) {
+        safeLog.error('[Snooze] Unset parse error:', e);
+        resolve({ success: false, error: 'Parse error' });
+      }
+    });
+  });
+});
+
+// Mark reminder as sent for a snooze
+ipcMain.handle('snooze:markReminderSent', async (_, sessionKey: string) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Snooze] Mark reminder error:', error);
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
+      resolve({ success: true });
+    });
+  });
+});
+
+// Get expired snoozes (for reminder processing)
+ipcMain.handle('snooze:expired', async () => {
+  const now = Date.now();
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE snooze_until <= ${now} AND reminder_sent = 0 ORDER BY snooze_until ASC" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Snooze] Expired list error:', error);
+        resolve({ success: false, snoozes: [] });
+        return;
+      }
+      try {
+        const snoozes = JSON.parse(stdout || '[]');
+        resolve({ success: true, snoozes });
+      } catch (e) {
+        safeLog.error('[Snooze] Expired parse error:', e);
+        resolve({ success: false, snoozes: [] });
+      }
+    });
+  });
+});
+
+// Get snooze history for a session
+ipcMain.handle('snooze:history', async (_, sessionKey: string, limit: number = 10) => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM snooze_history WHERE session_id = '${sessionKey.replace(/'/g, "''")}' ORDER BY created_at DESC LIMIT ${limit}" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Snooze] History error:', error);
+        resolve({ success: false, history: [] });
+        return;
+      }
+      try {
+        const history = JSON.parse(stdout || '[]');
+        resolve({ success: true, history });
+      } catch (e) {
+        safeLog.error('[Snooze] History parse error:', e);
+        resolve({ success: false, history: [] });
+      }
     });
   });
 });
@@ -1828,6 +3035,290 @@ ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
         });
       } catch {
         resolve({ success: false, error: 'Failed to parse item' });
+      }
+    });
+  });
+});
+
+// ============== INBOX FILTER & SEARCH IPC HANDLERS ==============
+ipcMain.handle('inbox:toggleStar', async (_, messageId: string) => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh toggle-star "${messageId}"`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve({ success: false, error: 'Failed to parse response' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:markRead', async (_, messageId: string, isRead: boolean = true) => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve({ success: false, error: 'Failed to parse response' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:addTag', async (_, messageId: string, tag: string) => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh add-tag "${messageId}" "${tag}"`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve({ success: false, error: 'Failed to parse response' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:removeTag', async (_, messageId: string, tag: string) => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh remove-tag "${messageId}" "${tag}"`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve({ success: false, error: 'Failed to parse response' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:setProject', async (_, messageId: string, project: string) => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh set-project "${messageId}" "${project}"`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        resolve(JSON.parse(stdout));
+      } catch {
+        resolve({ success: false, error: 'Failed to parse response' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh search "${query}" ${limit}`;
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        // Parse sqlite output (pipe-separated or JSON)
+        const results = stdout.trim().split('\n').filter(Boolean);
+        resolve({ success: true, results });
+      } catch {
+        resolve({ success: false, error: 'Failed to parse search results' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:filter', async (_, criteria: any) => {
+  return new Promise((resolve) => {
+    const criteriaJson = JSON.stringify(criteria).replace(/'/g, "\\'");
+    const cmd = `echo '${criteriaJson}' | ~/clawd/scripts/inbox-filter.sh filter`;
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        const results = stdout.trim().split('\n').filter(Boolean);
+        resolve({ success: true, results });
+      } catch {
+        resolve({ success: false, error: 'Failed to parse filter results' });
+      }
+    });
+  });
+});
+
+ipcMain.handle('inbox:getSuggestions', async (_, type: 'senders' | 'projects' | 'tags' | 'platforms') => {
+  return new Promise((resolve) => {
+    const cmd = `~/clawd/scripts/inbox-filter.sh suggestions ${type}`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      try {
+        const suggestions = stdout.trim().split('\n').filter(Boolean);
+        resolve({ success: true, suggestions });
+      } catch {
+        resolve({ success: false, error: 'Failed to parse suggestions' });
+      }
+    });
+  });
+});
+
+// ============== VIP SENDER IPC HANDLERS ==============
+
+// List all VIP senders
+ipcMain.handle('vip:list', async (_, category?: string) => {
+  return new Promise((resolve) => {
+    let cmd = `froggo-db vip-list --json`;
+    if (category) {
+      cmd += ` --category "${category}"`;
+    }
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve([]);
+        return;
+      }
+      
+      try {
+        const vips = JSON.parse(stdout || '[]');
+        resolve(vips);
+      } catch {
+        resolve([]);
+      }
+    });
+  });
+});
+
+// Add VIP sender
+ipcMain.handle('vip:add', async (_, data: {
+  identifier: string;
+  label: string;
+  type?: string;
+  category?: string;
+  boost?: number;
+  notes?: string;
+}) => {
+  return new Promise((resolve) => {
+    const type = data.type || 'email';
+    const boost = data.boost || 30;
+    
+    let cmd = `froggo-db vip-add "${data.identifier}" "${data.label}" --type "${type}" --boost ${boost}`;
+    
+    if (data.category) {
+      cmd += ` --category "${data.category}"`;
+    }
+    if (data.notes) {
+      cmd += ` --notes "${data.notes}"`;
+    }
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      // Extract VIP ID from output
+      const idMatch = stdout.match(/ID: (\d+)/);
+      const vipId = idMatch ? parseInt(idMatch[1]) : null;
+      
+      resolve({ 
+        success: true, 
+        id: vipId,
+        message: 'VIP added successfully' 
+      });
+    });
+  });
+});
+
+// Update VIP sender
+ipcMain.handle('vip:update', async (_, id: number, updates: {
+  label?: string;
+  boost?: number;
+  category?: string;
+  notes?: string;
+}) => {
+  return new Promise((resolve) => {
+    let cmd = `froggo-db vip-update ${id}`;
+    
+    if (updates.label) {
+      cmd += ` --label "${updates.label}"`;
+    }
+    if (updates.boost !== undefined) {
+      cmd += ` --boost ${updates.boost}`;
+    }
+    if (updates.category) {
+      cmd += ` --category "${updates.category}"`;
+    }
+    if (updates.notes) {
+      cmd += ` --notes "${updates.notes}"`;
+    }
+    
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true, message: 'VIP updated successfully' });
+    });
+  });
+});
+
+// Remove VIP sender
+ipcMain.handle('vip:remove', async (_, id: number) => {
+  return new Promise((resolve) => {
+    const cmd = `froggo-db vip-remove ${id}`;
+    
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      resolve({ success: true, message: 'VIP removed successfully' });
+    });
+  });
+});
+
+// Check if identifier is VIP
+ipcMain.handle('vip:check', async (_, identifier: string) => {
+  return new Promise((resolve) => {
+    const cmd = `froggo-db vip-check "${identifier}" --json`;
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve(null);
+        return;
+      }
+      
+      try {
+        const result = JSON.parse(stdout || '{"vip":false}');
+        if (result.vip === false) {
+          resolve(null);
+        } else {
+          resolve(result);
+        }
+      } catch {
+        resolve(null);
       }
     });
   });
@@ -2505,8 +3996,8 @@ ipcMain.handle('search:local', async (_, query: string) => {
   const escapedQuery = query.replace(/'/g, "''");
   
   return new Promise((resolve) => {
-    // Search froggo-db for tasks, facts, and messages
-    const cmd = `froggo-db search "${escapedQuery}" --limit 20 --json 2>/dev/null || froggo-db search "${escapedQuery}" --limit 20`;
+    // Search froggo-db for tasks, facts, and messages with JSON output
+    const cmd = `froggo-db search "${escapedQuery}" --limit 20 --json`;
     
     exec(cmd, { timeout: 15000 }, (error, stdout) => {
       if (error) {
@@ -2516,18 +4007,37 @@ ipcMain.handle('search:local', async (_, query: string) => {
       }
       
       try {
-        // Try to parse JSON output
-        const results = JSON.parse(stdout);
-        resolve({ success: true, results });
-      } catch {
-        // Parse text output into results
-        const lines = stdout.trim().split('\n').filter(l => l.trim());
+        // Parse JSON output (new format with messages/facts arrays)
+        const data = JSON.parse(stdout);
+        
+        // Combine messages and facts into a single results array
+        const allResults = [
+          ...(data.messages || []),
+          ...(data.facts || [])
+        ];
+        
+        // Sort by relevance score (already BM25 ranked)
+        allResults.sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+        
+        resolve({ 
+          success: true, 
+          results: allResults,
+          stats: data.stats || { total: allResults.length, duration_ms: 0 }
+        });
+      } catch (parseError) {
+        safeLog.error('[Search] Failed to parse JSON:', parseError);
+        
+        // Fallback: parse text output
+        const lines = stdout.trim().split('\n').filter(l => l.trim() && !l.startsWith('===') && !l.startsWith('📊'));
         const results = lines.slice(0, 10).map((line, i) => ({
           id: `search-${i}`,
           type: 'message',
           title: line.slice(0, 50),
           text: line,
+          snippet: line,
+          relevance_score: 0,
         }));
+        
         resolve({ success: true, results });
       }
     });
@@ -2613,6 +4123,20 @@ try {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
 } catch {}
+
+// Load OpenAI API key from environment or config (for Whisper transcription)
+let openaiApiKey = process.env.OPENAI_API_KEY || '';
+try {
+  const keyPath = path.join(os.homedir(), '.clawdbot', 'openai.key');
+  if (!openaiApiKey && fs.existsSync(keyPath)) {
+    openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
+  }
+} catch {}
+
+// Expose OpenAI API key to renderer (for Whisper transcription)
+ipcMain.handle('get-openai-key', async () => {
+  return openaiApiKey;
+});
 
 ipcMain.handle('ai:generate-content', async (_, prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => {
   safeLog.log('[AI] Generate content called:', { type, promptLength: prompt.length, hasKey: !!anthropicApiKey });
@@ -2867,7 +4391,15 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
         timestamp: m.timestamp,
         relativeTime: m.relativeTime || '',
         hasReply: !!m.has_reply,
+        has_reply: !!m.has_reply,
         isUrgent: !!m.is_urgent,
+        is_read: !m.is_unread && !m.is_read ? false : !!m.is_read,
+        is_starred: !!m.is_starred,
+        has_attachment: !!m.has_attachment,
+        thread_id: m.thread_id,
+        message_count: m.thread_message_count || 1,
+        unread_count: m.thread_message_count && !m.is_read ? m.thread_message_count : 0,
+        unreplied_count: !m.has_reply ? 1 : 0,
       }));
     }
   } catch (e) {
@@ -2901,20 +4433,41 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
   }
 };
 
-ipcMain.handle('messages:recent', async (_, limit?: number) => {
-  safeLog.log('[Messages] Handler called, limit:', limit);
+ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = false) => {
+  safeLog.log('[Messages] Handler called, limit:', limit, 'includeArchived:', includeArchived);
   const lim = limit || 10;
+  
+  // Get archived conversation session keys (unless includeArchived is true)
+  let archivedKeys: Set<string> = new Set();
+  if (!includeArchived) {
+    try {
+      const archivedRaw = await runMsgCmd(`sqlite3 ~/clawd/data/froggo.db "SELECT session_key FROM conversation_folders WHERE folder_id = 4"`, 3000);
+      if (archivedRaw) {
+        const keys = archivedRaw.trim().split('\n').filter((k: string) => k.length > 0);
+        archivedKeys = new Set<string>(keys);
+        safeLog.log(`[Messages] Found ${archivedKeys.size} archived conversations to filter`);
+      }
+    } catch (e) {
+      safeLog.error('[Messages] Error fetching archived conversations:', e);
+    }
+  }
+  
+  // Helper to create session key from message
+  const getSessionKey = (m: any): string => {
+    return `${m.platform}:${m.from || m.sender}`;
+  };
   
   // Check cache freshness
   const cacheAge = await getCommsCacheAge();
   safeLog.log(`[Messages] Cache age: ${Math.round(cacheAge / 1000)}s`);
   
-  // If cache is fresh (< TTL), return cached data
+  // If cache is fresh (< TTL), return cached data (filtered)
   if (cacheAge < COMMS_CACHE_TTL_MS) {
     const cached = await getCommsFromCache(lim);
     if (cached && cached.length > 0) {
-      safeLog.log(`[Messages] Returning ${cached.length} messages from cache`);
-      return { success: true, chats: cached, fromCache: true, cacheAge: Math.round(cacheAge / 1000) };
+      const filtered = cached.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
+      safeLog.log(`[Messages] Returning ${filtered.length} messages from cache (${cached.length - filtered.length} archived filtered)`);
+      return { success: true, chats: filtered, fromCache: true, cacheAge: Math.round(cacheAge / 1000) };
     }
   }
   
@@ -3111,7 +4664,11 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
       return tb - ta;
     });
     
-    const result = allMessages.slice(0, lim);
+    // Filter out archived conversations (unless includeArchived is true)
+    const filteredMessages = allMessages.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
+    safeLog.log(`[Messages] Filtered ${allMessages.length - filteredMessages.length} archived messages`);
+    
+    const result = filteredMessages.slice(0, lim);
     
     // Write to froggo-db cache (async, don't wait)
     writeCommsToCache(result).catch(e => safeLog.error('[Messages] Cache write failed:', e));
@@ -3123,8 +4680,9 @@ ipcMain.handle('messages:recent', async (_, limit?: number) => {
     // On error, try to return stale cache if available
     const staleCache = await getCommsFromCache(lim);
     if (staleCache && staleCache.length > 0) {
+      const filtered = staleCache.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
       safeLog.log('[Messages] Returning stale cache due to fetch error');
-      return { success: true, chats: staleCache, fromCache: true, stale: true, error: e.message };
+      return { success: true, chats: filtered, fromCache: true, stale: true, error: e.message };
     }
     
     return { success: false, chats: [], error: e.message };
@@ -3249,6 +4807,152 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
     safeLog.error('[Messages:Send] Error:', e);
     return { success: false, error: e.message };
   }
+});
+
+// ============== CONVERSATION ARCHIVE HANDLERS ==============
+// Archive a conversation (assign to Archive folder)
+ipcMain.handle('conversations:archive', async (_, sessionKey: string) => {
+  safeLog.log('[Conversations] Archive:', sessionKey);
+  const ARCHIVE_FOLDER_ID = 4;
+  const escapedKey = sessionKey.replace(/'/g, "''");
+  const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (${ARCHIVE_FOLDER_ID}, '${escapedKey}', 'user')"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Conversations] Archive error:', error);
+        resolve({ success: false, error: error.message });
+      } else {
+        safeLog.log('[Conversations] Archived:', sessionKey);
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+// Unarchive a conversation (remove from Archive folder)
+ipcMain.handle('conversations:unarchive', async (_, sessionKey: string) => {
+  safeLog.log('[Conversations] Unarchive:', sessionKey);
+  const ARCHIVE_FOLDER_ID = 4;
+  const escapedKey = sessionKey.replace(/'/g, "''");
+  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE folder_id = ${ARCHIVE_FOLDER_ID} AND session_key = '${escapedKey}'"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Conversations] Unarchive error:', error);
+        resolve({ success: false, error: error.message });
+      } else {
+        safeLog.log('[Conversations] Unarchived:', sessionKey);
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+// Get archived conversations (with message details)
+ipcMain.handle('conversations:archived', async () => {
+  safeLog.log('[Conversations] Get archived list');
+  const ARCHIVE_FOLDER_ID = 4;
+  
+  return new Promise((resolve) => {
+    // Get archived session keys with metadata
+    const cmd = `sqlite3 "${froggoDbPath}" "SELECT cf.session_key, cf.added_at, COUNT(c.id) as message_count, MAX(c.timestamp) as last_message FROM conversation_folders cf LEFT JOIN comms_cache c ON (c.platform || ':' || c.sender) = cf.session_key WHERE cf.folder_id = ${ARCHIVE_FOLDER_ID} GROUP BY cf.session_key ORDER BY cf.added_at DESC" -json`;
+    
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Conversations] Archived list error:', error);
+        resolve({ success: false, conversations: [] });
+        return;
+      }
+      
+      try {
+        const conversations = JSON.parse(stdout || '[]');
+        safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
+        resolve({ success: true, conversations });
+      } catch (e) {
+        safeLog.error('[Conversations] Parse error:', e);
+        resolve({ success: false, conversations: [] });
+      }
+    });
+  });
+});
+
+// Check if a conversation is archived
+ipcMain.handle('conversations:isArchived', async (_, sessionKey: string) => {
+  const ARCHIVE_FOLDER_ID = 4;
+  const escapedKey = sessionKey.replace(/'/g, "''");
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ${ARCHIVE_FOLDER_ID} AND session_key = '${escapedKey}'"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 3000 }, (error, stdout) => {
+      if (error) {
+        resolve({ isArchived: false });
+      } else {
+        const count = parseInt(stdout.trim() || '0', 10);
+        resolve({ isArchived: count > 0 });
+      }
+    });
+  });
+});
+
+// Mark conversation as read (update all messages in session)
+ipcMain.handle('conversations:markRead', async (_, sessionKey: string) => {
+  safeLog.log('[Conversations] Mark as read:', sessionKey);
+  const escapedKey = sessionKey.replace(/'/g, "''");
+  
+  // Update all messages in comms_cache for this session
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = '${escapedKey}' AND (is_read IS NULL OR is_read = 0)"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error) => {
+      if (error) {
+        safeLog.error('[Conversations] Mark read error:', error);
+        resolve({ success: false, error: error.message });
+      } else {
+        safeLog.log('[Conversations] Marked as read:', sessionKey);
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+// Delete conversation (remove from all folders and delete messages)
+ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
+  safeLog.log('[Conversations] Delete:', sessionKey);
+  const escapedKey = sessionKey.replace(/'/g, "''");
+  
+  // Delete from conversation_folders, comms_cache, and any other related tables
+  const cmds = [
+    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE session_key = '${escapedKey}'"`,
+    `sqlite3 "${froggoDbPath}" "DELETE FROM comms_cache WHERE (platform || ':' || sender) = '${escapedKey}'"`,
+    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_snoozes WHERE session_id = '${escapedKey}'"`,
+    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${escapedKey}'"`,
+    // notification_settings might not exist, ignore error
+    `sqlite3 "${froggoDbPath}" "DELETE FROM notification_settings WHERE session_key = '${escapedKey}'" 2>/dev/null || true`,
+  ];
+  
+  return new Promise((resolve) => {
+    // Execute all delete commands sequentially
+    const execSequential = (commands: string[], index = 0) => {
+      if (index >= commands.length) {
+        safeLog.log('[Conversations] Deleted:', sessionKey);
+        resolve({ success: true });
+        return;
+      }
+      
+      exec(commands[index], { timeout: 5000 }, (error) => {
+        if (error) {
+          safeLog.error(`[Conversations] Delete error (step ${index}):`, error);
+          resolve({ success: false, error: error.message });
+        } else {
+          execSequential(commands, index + 1);
+        }
+      });
+    };
+    
+    execSequential(cmds);
+  });
 });
 
 // ============== EMAIL IPC HANDLERS ==============
@@ -4124,27 +5828,74 @@ app.whenReady().then(() => {
 
 // ============== AGENTS API IPC HANDLERS ==============
 ipcMain.handle('agents:getMetrics', async () => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const agents = ['main', 'coder', 'researcher', 'writer', 'chief'];
+  const agents = ['main', 'coder', 'researcher', 'writer', 'chief', 'onchain_worker'];
   const metrics: Record<string, any> = {};
+  const metricsScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'agent-metrics.sh');
 
   for (const agentId of agents) {
-    const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to = '${agentId}'" -json`;
-    
     try {
-      const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-      const stats = JSON.parse(result)[0] || { total: 0, completed: 0 };
+      const result = execSync(`"${metricsScriptPath}" "${agentId}"`, { 
+        encoding: 'utf-8', 
+        maxBuffer: 10 * 1024 * 1024 
+      });
+      const data = JSON.parse(result);
+      
+      const m = data.metrics || {};
+      const sm = data.subtask_metrics || {};
+      const am = data.activity_metrics || {};
+      const trend = data.performance_trend || [];
       
       metrics[agentId] = {
-        successRate: stats.total > 0 ? stats.completed / stats.total : 0,
-        avgTime: '2.5h', // Mock for now
-        totalTasks: stats.total,
-        completedTasks: stats.completed,
-        inProgressTasks: stats.total - stats.completed,
+        // Core metrics
+        totalTasks: m.total_tasks || 0,
+        completedTasks: m.completed_tasks || 0,
+        inProgressTasks: m.in_progress_tasks || 0,
+        reviewTasks: m.review_tasks || 0,
+        blockedTasks: m.blocked_tasks || 0,
+        
+        // Performance indicators
+        completionRate: m.completion_rate || 0, // Accuracy rate
+        avgTaskTimeHours: m.avg_task_time_hours || 0,
+        reviewSuccessRate: m.review_success_rate || 0,
+        
+        // Recent activity
+        completedLast7Days: m.completed_last_7_days || 0,
+        
+        // Priority breakdown
+        p0Tasks: m.p0_tasks || 0,
+        p1Tasks: m.p1_tasks || 0,
+        p2Tasks: m.p2_tasks || 0,
+        p3Tasks: m.p3_tasks || 0,
+        
+        // Subtask metrics
+        totalSubtasks: sm.total_subtasks || 0,
+        completedSubtasks: sm.completed_subtasks || 0,
+        subtaskCompletionRate: sm.subtask_completion_rate || 0,
+        
+        // Activity metrics
+        totalActivities: am.total_activities || 0,
+        completionActions: am.completion_actions || 0,
+        blockedActions: am.blocked_actions || 0,
+        progressUpdates: am.progress_updates || 0,
+        lastActivityTimestamp: am.last_activity_timestamp || null,
+        
+        // Performance trend
+        performanceTrend: trend,
+        
+        // Legacy compatibility
+        successRate: (m.completion_rate || 0) / 100,
+        avgTime: m.avg_task_time_hours ? `${m.avg_task_time_hours}h` : 'N/A',
       };
     } catch (e) {
       safeLog.error(`Failed to get metrics for ${agentId}:`, e);
-      metrics[agentId] = { successRate: 0, avgTime: 'N/A', totalTasks: 0, completedTasks: 0, inProgressTasks: 0 };
+      metrics[agentId] = { 
+        totalTasks: 0, 
+        completedTasks: 0, 
+        completionRate: 0,
+        avgTaskTimeHours: 0,
+        successRate: 0, 
+        avgTime: 'N/A' 
+      };
     }
   }
 
@@ -4342,6 +6093,192 @@ ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {
   });
 });
 
+// Generate AI-powered suggested replies based on conversation context
+ipcMain.handle('chat:suggestReplies', async (_, context: { role: string; content: string }[]) => {
+  return new Promise((resolve) => {
+    // Extract last N messages for context (up to 10)
+    const recentMessages = context.slice(-10);
+    
+    // Build context string for the AI
+    const conversationContext = recentMessages
+      .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+      .join('\n\n');
+    
+    // Create prompt for generating suggestions
+    const prompt = `Based on this conversation, suggest 2-3 brief, contextually appropriate reply options (each under 15 words). Provide ONLY the suggestions, one per line, no numbering or explanations.
+
+Conversation:
+${conversationContext}
+
+Suggestions:`;
+
+    // Use claude CLI in non-interactive mode
+    const claudeCmd = `/Users/worker/.local/bin/claude --print "${prompt.replace(/"/g, '\\"')}"`;
+    
+    safeLog.log('[SuggestedReplies] Generating suggestions...');
+    
+    exec(claudeCmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.error('[SuggestedReplies] Error:', error.message);
+        safeLog.error('[SuggestedReplies] stderr:', stderr);
+        resolve({ 
+          success: false, 
+          error: 'Failed to generate suggestions',
+          suggestions: [] 
+        });
+        return;
+      }
+      
+      try {
+        // Parse the output - expect one suggestion per line
+        const suggestions = stdout
+          .trim()
+          .split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && s.length < 200) // Reasonable length filter
+          .slice(0, 3); // Max 3 suggestions
+        
+        safeLog.log('[SuggestedReplies] Generated', suggestions.length, 'suggestions');
+        
+        if (suggestions.length === 0) {
+          resolve({
+            success: false,
+            error: 'No valid suggestions generated',
+            suggestions: []
+          });
+        } else {
+          resolve({
+            success: true,
+            suggestions
+          });
+        }
+      } catch (parseError: any) {
+        safeLog.error('[SuggestedReplies] Parse error:', parseError.message);
+        resolve({
+          success: false,
+          error: 'Failed to parse suggestions',
+          suggestions: []
+        });
+      }
+    });
+  });
+});
+
+// ============== STARRED MESSAGES ==============
+
+// Star a message
+ipcMain.handle('starred:star', async (_, messageId: number, note?: string, category?: string) => {
+  const noteArg = note ? `--note "${note.replace(/"/g, '\\"')}"` : '';
+  const catArg = category ? `--category "${category}"` : '';
+  const cmd = `froggo-db star-message ${messageId} ${noteArg} ${catArg}`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.error('[Starred] Star error:', stderr || error.message);
+        resolve({ success: false, error: stderr || error.message });
+      } else {
+        safeLog.log('[Starred] Message starred:', messageId);
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+// Unstar a message
+ipcMain.handle('starred:unstar', async (_, identifier: number) => {
+  const cmd = `froggo-db unstar-message ${identifier}`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.error('[Starred] Unstar error:', stderr || error.message);
+        resolve({ success: false, error: stderr || error.message });
+      } else {
+        safeLog.log('[Starred] Message unstarred:', identifier);
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+// List starred messages
+ipcMain.handle('starred:list', async (_, options?: { category?: string; sessionKey?: string; limit?: number }) => {
+  const catArg = options?.category ? `--category "${options.category}"` : '';
+  const sessionArg = options?.sessionKey ? `--session "${options.sessionKey}"` : '';
+  const limitArg = options?.limit ? `--limit ${options.limit}` : '';
+  const cmd = `froggo-db starred-list ${catArg} ${sessionArg} ${limitArg} --json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.error('[Starred] List error:', stderr || error.message);
+        resolve({ success: false, error: stderr || error.message, starred: [] });
+      } else {
+        try {
+          const starred = JSON.parse(stdout);
+          resolve({ success: true, starred });
+        } catch (e: any) {
+          safeLog.error('[Starred] Parse error:', e.message);
+          resolve({ success: false, error: e.message, starred: [] });
+        }
+      }
+    });
+  });
+});
+
+// Search starred messages
+ipcMain.handle('starred:search', async (_, query: string, limit?: number) => {
+  const limitArg = limit ? `--limit ${limit}` : '';
+  const cmd = `froggo-db starred-search "${query.replace(/"/g, '\\"')}" ${limitArg} --json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.error('[Starred] Search error:', stderr || error.message);
+        resolve({ success: false, error: stderr || error.message, results: [] });
+      } else {
+        try {
+          const results = JSON.parse(stdout);
+          resolve({ success: true, results });
+        } catch (e: any) {
+          safeLog.error('[Starred] Parse error:', e.message);
+          resolve({ success: false, error: e.message, results: [] });
+        }
+      }
+    });
+  });
+});
+
+// Get starred stats
+ipcMain.handle('starred:stats', async () => {
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) as total FROM starred_messages; SELECT category, COUNT(*) as count FROM starred_messages GROUP BY category;"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, stats: { total: 0, byCategory: [] } });
+      } else {
+        const lines = stdout.trim().split('\n');
+        const total = parseInt(lines[0]) || 0;
+        resolve({ success: true, stats: { total } });
+      }
+    });
+  });
+});
+
+// Check if a message is starred
+ipcMain.handle('starred:check', async (_, messageId: number) => {
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id FROM starred_messages WHERE message_id=${messageId}"`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 2000 }, (error, stdout) => {
+      const isStarred = !error && stdout.trim().length > 0;
+      resolve({ success: true, isStarred });
+    });
+  });
+});
+
 // ============== SECURITY IPC HANDLERS ==============
 const SECURITY_DB = path.join(os.homedir(), 'clawd', 'data', 'security.db');
 
@@ -4524,5 +6461,113 @@ ipcMain.handle('security:runAudit', async () => {
       findings: [],
       alerts: []
     };
+  }
+});
+
+// ============== EXPORT & BACKUP HANDLERS ==============
+
+// Export tasks to CSV or JSON
+ipcMain.handle('export:tasks', async (_, options: { format: 'json' | 'csv'; filters?: any }) => {
+  try {
+    safeLog.log('[Export] Exporting tasks with format:', options.format);
+    const filepath = await exportBackupService.exportTasks(options);
+    return { success: true, filepath };
+  } catch (error: any) {
+    safeLog.error('[Export] Task export error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Export agent logs
+ipcMain.handle('export:agentLogs', async (_, options: { format: 'json' | 'csv'; filters?: any }) => {
+  try {
+    safeLog.log('[Export] Exporting agent logs');
+    const filepath = await exportBackupService.exportAgentLogs(options);
+    return { success: true, filepath };
+  } catch (error: any) {
+    safeLog.error('[Export] Agent logs export error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Export chat history
+ipcMain.handle('export:chatHistory', async (_, options: { format: 'json' | 'csv'; filters?: any }) => {
+  try {
+    safeLog.log('[Export] Exporting chat history');
+    const filepath = await exportBackupService.exportChatHistory(options);
+    return { success: true, filepath };
+  } catch (error: any) {
+    safeLog.error('[Export] Chat history export error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Create full database backup
+ipcMain.handle('backup:create', async (_, options?: { includeAttachments?: boolean }) => {
+  try {
+    safeLog.log('[Backup] Creating database backup');
+    const filepath = await exportBackupService.createBackup(options);
+    return { success: true, filepath };
+  } catch (error: any) {
+    safeLog.error('[Backup] Create backup error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Restore from backup
+ipcMain.handle('backup:restore', async (_, backupPath: string) => {
+  try {
+    safeLog.log('[Backup] Restoring from:', backupPath);
+    await exportBackupService.restoreBackup(backupPath);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Backup] Restore error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// List available backups
+ipcMain.handle('backup:list', async () => {
+  try {
+    const backups = await exportBackupService.listBackups();
+    return { success: true, backups };
+  } catch (error: any) {
+    safeLog.error('[Backup] List backups error:', error);
+    return { success: false, backups: [], error: error.message };
+  }
+});
+
+// Cleanup old backups
+ipcMain.handle('backup:cleanup', async (_, keepCount: number) => {
+  try {
+    safeLog.log('[Backup] Cleaning up old backups, keeping:', keepCount);
+    const deletedCount = await exportBackupService.cleanupOldBackups(keepCount);
+    return { success: true, deletedCount };
+  } catch (error: any) {
+    safeLog.error('[Backup] Cleanup error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Import tasks from JSON
+ipcMain.handle('import:tasks', async (_, filepath: string) => {
+  try {
+    safeLog.log('[Import] Importing tasks from:', filepath);
+    const result = await exportBackupService.importTasks(filepath);
+    return { success: true, ...result };
+  } catch (error: any) {
+    safeLog.error('[Import] Import error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Get export/backup statistics
+ipcMain.handle('exportBackup:stats', async () => {
+  try {
+    const stats = await exportBackupService.getStats();
+    return { success: true, stats };
+  } catch (error: any) {
+    safeLog.error('[ExportBackup] Stats error:', error);
+    return { success: false, stats: null, error: error.message };
   }
 });

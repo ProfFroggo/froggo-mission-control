@@ -71,7 +71,7 @@ export function FocusModeIndicator({ mode, onClick }: FocusModeIndicatorProps) {
       onClick={onClick}
       className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-white ${config.color} hover:opacity-90 transition-opacity`}
     >
-      <Icon size={12} />
+      <Icon size={14} />
       <span>{config.label}</span>
     </button>
   );

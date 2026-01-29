@@ -1,0 +1,196 @@
+/**
+ * Threading Handler - Backend API for conversation threading
+ * Provides IPC handlers for thread operations
+ */
+
+const { execSync } = require('child_process');
+const path = require('path');
+
+// Path to threading manager script
+const THREADING_SCRIPT = path.join(process.env.HOME, 'clawd', 'scripts', 'threading-manager.sh');
+
+/**
+ * Execute threading script command
+ */
+function execThreadingCommand(args) {
+  try {
+    const cmd = `${THREADING_SCRIPT} ${args}`;
+    const output = execSync(cmd, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+    
+    // Try to parse as JSON first
+    try {
+      return { success: true, data: JSON.parse(output) };
+    } catch {
+      // Return as text if not JSON
+      return { success: true, data: output };
+    }
+  } catch (error) {
+    console.error('[threading-handler] Command failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Register IPC handlers for threading operations
+ */
+function registerThreadingHandlers(ipcMain) {
+  // Detect and create threads from existing messages
+  ipcMain.handle('inbox:detectThreads', async () => {
+    console.log('[threading-handler] Detecting threads...');
+    return execThreadingCommand('detect-threads');
+  });
+
+  // Get all messages in a thread
+  ipcMain.handle('inbox:getThread', async (event, threadId) => {
+    console.log('[threading-handler] Getting thread:', threadId);
+    const result = execThreadingCommand(`get-thread "${threadId}"`);
+    
+    if (result.success && Array.isArray(result.data)) {
+      return {
+        success: true,
+        messages: result.data.map(msg => ({
+          id: String(msg.id),
+          platform: msg.platform,
+          sender: msg.sender,
+          sender_name: msg.sender_name,
+          preview: msg.preview,
+          full_content: msg.full_content,
+          timestamp: msg.timestamp,
+          is_thread_root: Boolean(msg.is_thread_root),
+          is_read: Boolean(msg.is_read),
+          is_starred: Boolean(msg.is_starred),
+          has_attachment: Boolean(msg.has_attachment),
+          subject: msg.subject,
+        })),
+      };
+    }
+    
+    return result;
+  });
+
+  // List all threads (optionally filtered by platform)
+  ipcMain.handle('inbox:listThreads', async (event, platform) => {
+    console.log('[threading-handler] Listing threads, platform:', platform || 'all');
+    const result = execThreadingCommand(platform ? `list-threads "${platform}"` : 'list-threads');
+    
+    if (result.success && Array.isArray(result.data)) {
+      return {
+        success: true,
+        threads: result.data.map(thread => {
+          // Parse participants JSON if it's a string
+          let participants = [];
+          if (typeof thread.participants === 'string') {
+            try {
+              participants = JSON.parse(thread.participants);
+            } catch {
+              participants = [thread.participants];
+            }
+          } else if (Array.isArray(thread.participants)) {
+            participants = thread.participants;
+          }
+
+          return {
+            thread_id: thread.thread_id,
+            platform: thread.platform,
+            subject: thread.subject,
+            participants,
+            message_count: thread.message_count,
+            last_activity: thread.last_activity,
+            unread_count: thread.unread_count || 0,
+            unreplied_count: thread.unreplied_count || 0,
+            has_starred: Boolean(thread.has_starred),
+            root_message_id: thread.root_message_id,
+            root_preview: thread.root_preview,
+            sender: thread.sender,
+            sender_name: thread.sender_name,
+          };
+        }),
+      };
+    }
+    
+    return result;
+  });
+
+  // Toggle star on entire thread
+  ipcMain.handle('inbox:toggleThreadStar', async (event, threadId) => {
+    console.log('[threading-handler] Toggling star for thread:', threadId);
+    
+    // Get all messages in thread and toggle star on all
+    const thread = execThreadingCommand(`get-thread "${threadId}"`);
+    if (!thread.success || !Array.isArray(thread.data)) {
+      return { success: false, error: 'Failed to get thread' };
+    }
+
+    // Check current starred state (if any message is starred, we unstar all; otherwise star all)
+    const anyStarred = thread.data.some(msg => msg.is_starred);
+    const newStarredState = !anyStarred;
+
+    // Update all messages in thread
+    const sqlite3 = require('sqlite3').verbose();
+    const dbPath = path.join(process.env.HOME, 'clawd', 'data', 'froggo.db');
+    
+    return new Promise((resolve) => {
+      const db = new sqlite3.Database(dbPath);
+      db.run(
+        'UPDATE comms_cache SET is_starred = ? WHERE thread_id = ?',
+        [newStarredState ? 1 : 0, threadId],
+        function (err) {
+          db.close();
+          if (err) {
+            console.error('[threading-handler] Failed to toggle star:', err);
+            resolve({ success: false, error: err.message });
+          } else {
+            resolve({ success: true, has_starred: newStarredState });
+          }
+        }
+      );
+    });
+  });
+
+  // Mark entire thread as read/unread
+  ipcMain.handle('inbox:markThreadRead', async (event, threadId, isRead = true) => {
+    console.log('[threading-handler] Marking thread as read:', threadId, isRead);
+    
+    const sqlite3 = require('sqlite3').verbose();
+    const dbPath = path.join(process.env.HOME, 'clawd', 'data', 'froggo.db');
+    
+    return new Promise((resolve) => {
+      const db = new sqlite3.Database(dbPath);
+      db.run(
+        'UPDATE comms_cache SET is_read = ? WHERE thread_id = ?',
+        [isRead ? 1 : 0, threadId],
+        function (err) {
+          db.close();
+          if (err) {
+            console.error('[threading-handler] Failed to mark read:', err);
+            resolve({ success: false, error: err.message });
+          } else {
+            resolve({ success: true });
+          }
+        }
+      );
+    });
+  });
+
+  // Get threading statistics
+  ipcMain.handle('inbox:threadingStats', async () => {
+    console.log('[threading-handler] Getting threading stats');
+    return execThreadingCommand('stats');
+  });
+
+  // Archive thread
+  ipcMain.handle('inbox:archiveThread', async (event, threadId) => {
+    console.log('[threading-handler] Archiving thread:', threadId);
+    return execThreadingCommand(`archive-thread "${threadId}"`);
+  });
+
+  // Unarchive thread
+  ipcMain.handle('inbox:unarchiveThread', async (event, threadId) => {
+    console.log('[threading-handler] Unarchiving thread:', threadId);
+    return execThreadingCommand(`unarchive-thread "${threadId}"`);
+  });
+
+  console.log('[threading-handler] Registered threading IPC handlers');
+}
+
+module.exports = { registerThreadingHandlers };

@@ -7,7 +7,7 @@ interface MarkdownMessageProps {
 
 export default function MarkdownMessage({ content }: MarkdownMessageProps) {
   return (
-    <div className="prose prose-invert prose-sm max-w-none">
+    <div className="prose prose-invert prose-sm max-w-none leading-relaxed">
       {parseMarkdown(content)}
     </div>
   );
@@ -38,19 +38,19 @@ function parseMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
-    // Headers
+    // Headers (scaled down for chat context)
     if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className="text-base font-semibold mt-4 mb-2">{line.slice(4)}</h3>);
+      elements.push(<h3 key={key++} className="text-sm font-semibold mt-3 mb-1.5 text-clawd-text">{line.slice(4)}</h3>);
       i++;
       continue;
     }
     if (line.startsWith('## ')) {
-      elements.push(<h2 key={key++} className="text-lg font-semibold mt-4 mb-2">{line.slice(3)}</h2>);
+      elements.push(<h2 key={key++} className="text-base font-semibold mt-3 mb-2 text-clawd-text">{line.slice(3)}</h2>);
       i++;
       continue;
     }
     if (line.startsWith('# ')) {
-      elements.push(<h1 key={key++} className="text-xl font-bold mt-4 mb-2">{line.slice(2)}</h1>);
+      elements.push(<h1 key={key++} className="text-lg font-bold mt-3 mb-2 text-clawd-text">{line.slice(2)}</h1>);
       i++;
       continue;
     }
@@ -63,9 +63,9 @@ function parseMarkdown(text: string): React.ReactNode[] {
         i++;
       }
       elements.push(
-        <ul key={key++} className="list-disc list-inside my-2 space-y-1">
+        <ul key={key++} className="list-disc list-inside my-2 space-y-2 pl-1">
           {listItems.map((item, idx) => (
-            <li key={idx}>{formatInline(item)}</li>
+            <li key={idx} className="leading-relaxed">{formatInline(item)}</li>
           ))}
         </ul>
       );
@@ -80,9 +80,9 @@ function parseMarkdown(text: string): React.ReactNode[] {
         i++;
       }
       elements.push(
-        <ol key={key++} className="list-decimal list-inside my-2 space-y-1">
+        <ol key={key++} className="list-decimal list-inside my-2 space-y-2 pl-1">
           {listItems.map((item, idx) => (
-            <li key={idx}>{formatInline(item)}</li>
+            <li key={idx} className="leading-relaxed">{formatInline(item)}</li>
           ))}
         </ol>
       );
@@ -96,7 +96,7 @@ function parseMarkdown(text: string): React.ReactNode[] {
     }
 
     // Regular paragraph
-    elements.push(<p key={key++} className="my-1">{formatInline(line)}</p>);
+    elements.push(<p key={key++} className="my-1.5 leading-relaxed">{formatInline(line)}</p>);
     i++;
   }
 
@@ -116,12 +116,12 @@ function formatInline(text: string): React.ReactNode {
 
   // Inline code `code`
   remaining = remaining.replace(/`([^`]+)`/g, (_, content) => {
-    return `<code class="px-1.5 py-0.5 bg-clawd-border rounded text-sm font-mono">${content}</code>`;
+    return `<code class="px-1.5 py-0.5 bg-clawd-border rounded text-sm font-mono text-clawd-accent font-semibold">${content}</code>`;
   });
 
   // Links [text](url)
   remaining = remaining.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
-    return `<a href="${url}" class="text-clawd-accent hover:underline" target="_blank">${text}</a>`;
+    return `<a href="${url}" class="text-clawd-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${text}</a>`;
   });
 
   return <span dangerouslySetInnerHTML={{ __html: remaining }} />;
@@ -137,19 +137,22 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
   };
 
   return (
-    <div className="relative my-3 rounded-lg overflow-hidden bg-clawd-bg border border-clawd-border">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-clawd-border/50 text-xs text-clawd-text-dim">
-        <span>{language || 'code'}</span>
+    <div className="relative my-3 rounded-lg overflow-hidden bg-clawd-bg border border-clawd-border shadow-sm">
+      <div className="flex items-center justify-between px-3 py-2 bg-clawd-surface/50 border-b border-clawd-border/50">
+        <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">
+          {language || 'code'}
+        </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 hover:text-clawd-text transition-colors"
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-clawd-border/50 hover:text-clawd-text transition-all"
+          title="Copy code"
         >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? 'Copied!' : 'Copy'}
+          {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+          <span>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
       </div>
-      <pre className="p-3 overflow-x-auto text-sm">
-        <code className="font-mono">{code}</code>
+      <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
+        <code className="font-mono text-clawd-text">{code}</code>
       </pre>
     </div>
   );

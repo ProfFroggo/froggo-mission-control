@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles } from 'lucide-react';
+import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { gateway } from '../lib/gateway';
+import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} /> },
@@ -56,6 +57,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [priority, setPriority] = useState<TaskPriority | ''>('');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
+  const [reviewerId, setReviewerId] = useState<string>('froggo'); // Default to Froggo as reviewer
 
   // Chat mode state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -89,6 +91,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         if (initialData.priority) setPriority(initialData.priority);
         if (initialData.dueDate) setDueDate(initialData.dueDate);
         if (initialData.assignedTo) setAssignedTo(initialData.assignedTo);
+        // Always default reviewer to froggo unless explicitly set
+        setReviewerId('froggo');
+      } else {
+        // Fresh task - default reviewer to froggo
+        setReviewerId('froggo');
       }
       
       // Start chat with greeting if in chat mode
@@ -115,19 +122,40 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     }
   }, [isOpen, mode]);
 
-  // ESC key to close
+  // ⌘S to save (manual mode only)
   useEffect(() => {
-    if (!isOpen) return;
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
+    if (!isOpen || mode !== 'manual') return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (title.trim()) {
+          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+          handleManualSubmit(fakeEvent);
+        }
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, onClose]);
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, mode, title]);
 
-  if (!isOpen) return null;
+  // ⌘Enter to create from chat (chat mode only)
+  useEffect(() => {
+    if (!isOpen || mode !== 'chat') return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        if (conversationComplete && extractedData.title) {
+          handleCreateFromChat();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, mode, conversationComplete, extractedData]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +169,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: priority || undefined,
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       assignedTo: assignedTo || undefined,
+      reviewerId: reviewerId || 'froggo', // Always set reviewer (default: froggo)
+      reviewStatus: 'pending', // Initialize review status
     };
 
     addTask(newTask);
@@ -255,6 +285,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       priority: extractedData.priority,
       dueDate: extractedData.dueDate,
       assignedTo: extractedData.assignedTo || autoAssignWorker(extractedData),
+      reviewerId: 'froggo', // Always default to Froggo as reviewer
+      reviewStatus: 'pending' as const, // Initialize review status
     };
 
     addTask(newTask);
@@ -317,6 +349,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setPriority('');
     setDueDate('');
     setAssignedTo('');
+    setReviewerId('froggo'); // Reset to default reviewer
     setChatMessages([]);
     setChatInput('');
     setExtractedData({});
@@ -329,53 +362,51 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      maxHeight="90vh"
+      ariaLabel="Create New Task"
+      closeButtonPosition="floating"
+    >
+      <div className="flex flex-col h-full">
+        {/* Header with Mode Selector */}
         <div className="p-6 border-b border-clawd-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Create New Task</h2>
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <h2 className="text-xl font-semibold mb-4">Create New Task</h2>
 
           {/* Mode Selector */}
           <div className="flex gap-2">
             <button
               onClick={() => setMode('chat')}
+              type="button"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'chat'
                   ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <MessageSquare size={18} />
+              <MessageSquare size={16} />
               <span className="font-medium">Chat with Froggo</span>
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
             </button>
             <button
               onClick={() => setMode('manual')}
+              type="button"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'manual'
                   ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
                   : 'bg-clawd-surface border-clawd-border hover:border-clawd-accent/50'
               }`}
             >
-              <Edit3 size={18} />
+              <Edit3 size={16} />
               <span className="font-medium">Manual Entry</span>
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <BaseModalBody noPadding className="flex-1 min-h-0">
           {mode === 'chat' ? (
             // Chat Mode
             <div className="flex flex-col h-full">
@@ -407,7 +438,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-clawd-surface border border-clawd-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
                       <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={12} className="animate-spin text-clawd-accent" />
+                        <Loader2 size={14} className="animate-spin text-clawd-accent" />
                         <span className="text-xs text-clawd-text-dim">Froggo is typing...</span>
                       </div>
                     </div>
@@ -446,6 +477,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     </div>
                     <button
                       onClick={handleCreateFromChat}
+                      type="button"
                       className="mt-3 w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium"
                     >
                       Create Task
@@ -474,10 +506,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   />
                   <button
                     onClick={handleChatSubmit}
+                    type="button"
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
                     className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
                 <div className="text-xs text-clawd-text-dim mt-2">
@@ -622,7 +655,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               {/* Assign to Agent */}
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
-                  <Bot size={14} /> Assign to Agent
+                  <Bot size={14} /> Assign to Agent (Worker)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
@@ -657,6 +690,36 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 </div>
               </div>
 
+              {/* Assign Reviewer */}
+              <div>
+                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  👀 Agent Reviewer
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {agents
+                    .filter(agent => agent.id !== assignedTo)
+                    .map(agent => (
+                      <button
+                        key={agent.id}
+                        type="button"
+                        onClick={() => setReviewerId(agent.id)}
+                        className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
+                          reviewerId === agent.id
+                            ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
+                            : 'border-clawd-border hover:border-clawd-accent/50'
+                        }`}
+                      >
+                        <span className="text-base">{agent.avatar || '🤖'}</span>
+                        <span className="truncate">{agent.name}</span>
+                        {agent.id === 'froggo' && <span className="text-xs opacity-60">(default)</span>}
+                      </button>
+                    ))}
+                </div>
+                <p className="text-xs text-clawd-text-dim mt-2">
+                  📌 Default: Froggo (agent reviewer for all tasks)
+                </p>
+              </div>
+
               {/* Submit */}
               <div className="flex justify-end gap-3 pt-4 border-t border-clawd-border">
                 <button
@@ -673,12 +736,13 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 >
                   Create Task
                   {assignedTo && <span className="text-xs opacity-75">& Assign</span>}
+                  <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">⌘S</kbd>
                 </button>
               </div>
             </form>
           )}
-        </div>
+        </BaseModalBody>
       </div>
-    </div>
+    </BaseModal>
   );
 }

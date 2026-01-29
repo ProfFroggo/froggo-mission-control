@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Calendar, Mail, MessageSquare, RefreshCw, ExternalLink, Clock, MapPin, Users, AlertCircle } from 'lucide-react';
+import { Calendar, Mail, MessageSquare, RefreshCw, Clock, MapPin, AlertCircle } from 'lucide-react';
+import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 
 // X logo component
 const XLogo = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
@@ -45,18 +46,6 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     if (isOpen) fetchEvents();
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      return () => window.removeEventListener('keydown', handleEsc);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   const formatTime = (iso: string, isAllDay?: boolean) => {
     if (isAllDay) return 'All day';
     return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -81,58 +70,67 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
   }, {} as Record<string, any[]>);
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Calendar size={20} className="text-blue-400" />
-            Calendar - Next 3 Days
-          </h2>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchEvents} className="p-2 hover:bg-clawd-border rounded-lg" disabled={loading}>
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button onClick={onClose} className="p-2 hover:bg-clawd-border rounded-lg">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-        
-        <div className="max-h-96 overflow-y-auto">
-          {loading ? (
-            <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-400">{error}</div>
-          ) : events.length === 0 ? (
-            <div className="p-8 text-center text-clawd-text-dim">No events</div>
-          ) : (
-            Object.entries(grouped).map(([date, dateEvents]) => (
-              <div key={date}>
-                <div className="px-4 py-2 text-xs font-medium text-clawd-text-dim bg-clawd-bg/50">{date}</div>
-                {(dateEvents as any[]).map((event: any) => (
-                  <div key={event.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30">
-                    <div className="font-medium">{event.title}</div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-clawd-text-dim">
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} />
-                        {formatTime(event.start, event.isAllDay)}
-                        {event.end && !event.isAllDay && ` - ${formatTime(event.end)}`}
-                      </span>
-                      {event.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin size={12} />
-                          {event.location}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))
-          )}
-        </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      maxHeight="80vh"
+      ariaLabel="Calendar Events"
+    >
+      <BaseModalHeader
+        title="Calendar - Next 3 Days"
+        icon={<Calendar size={20} className="text-blue-400" />}
+        onClose={onClose}
+      />
+      
+      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+        <button 
+          onClick={fetchEvents} 
+          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          disabled={loading}
+          type="button"
+          aria-label="Refresh events"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
-    </div>
+
+      <BaseModalBody noPadding maxHeight="60vh">
+        {loading ? (
+          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-400">{error}</div>
+        ) : events.length === 0 ? (
+          <div className="p-8 text-center text-clawd-text-dim">No events</div>
+        ) : (
+          Object.entries(grouped).map(([date, dateEvents]) => (
+            <div key={date}>
+              <div className="px-4 py-2 text-xs font-medium text-clawd-text-dim bg-clawd-bg/50 sticky top-0">
+                {date}
+              </div>
+              {(dateEvents as any[]).map((event: any) => (
+                <div key={event.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+                  <div className="font-medium">{event.title}</div>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-clawd-text-dim">
+                    <span className="flex items-center gap-1">
+                      <Clock size={14} />
+                      {formatTime(event.start, event.isAllDay)}
+                      {event.end && !event.isAllDay && ` - ${formatTime(event.end)}`}
+                    </span>
+                    {event.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin size={14} />
+                        {event.location}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </BaseModalBody>
+    </BaseModal>
   );
 }
 
@@ -178,58 +176,53 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
     if (isOpen) fetchEmails();
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      return () => window.removeEventListener('keydown', handleEsc);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Mail size={20} className="text-green-400" />
-            Unread Emails
-          </h2>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchEmails} className="p-2 hover:bg-clawd-border rounded-lg" disabled={loading}>
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button onClick={onClose} className="p-2 hover:bg-clawd-border rounded-lg">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-        
-        <div className="max-h-96 overflow-y-auto">
-          {loading ? (
-            <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-400">{error}</div>
-          ) : emails.length === 0 ? (
-            <div className="p-8 text-center text-clawd-text-dim">No unread emails</div>
-          ) : (
-            emails.map((email) => (
-              <div key={email.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs px-1.5 py-0.5 bg-clawd-border rounded">{email.account}</span>
-                  <span className="text-xs text-clawd-text-dim truncate">{email.from}</span>
-                </div>
-                <div className="font-medium truncate">{email.subject}</div>
-                <div className="text-xs text-clawd-text-dim truncate mt-1">{email.snippet}</div>
-              </div>
-            ))
-          )}
-        </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      maxHeight="80vh"
+      ariaLabel="Unread Emails"
+    >
+      <BaseModalHeader
+        title="Unread Emails"
+        icon={<Mail size={20} className="text-green-400" />}
+        onClose={onClose}
+      />
+      
+      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+        <button 
+          onClick={fetchEmails} 
+          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          disabled={loading}
+          type="button"
+          aria-label="Refresh emails"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
-    </div>
+
+      <BaseModalBody noPadding maxHeight="60vh">
+        {loading ? (
+          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-400">{error}</div>
+        ) : emails.length === 0 ? (
+          <div className="p-8 text-center text-clawd-text-dim">No unread emails</div>
+        ) : (
+          emails.map((email) => (
+            <div key={email.id} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs px-1.5 py-0.5 bg-clawd-border rounded flex-shrink-0 whitespace-nowrap">{email.account}</span>
+                <span className="text-xs text-clawd-text-dim truncate">{email.from}</span>
+              </div>
+              <div className="font-medium truncate">{email.subject}</div>
+              <div className="text-xs text-clawd-text-dim truncate mt-1">{email.snippet}</div>
+            </div>
+          ))
+        )}
+      </BaseModalBody>
+    </BaseModal>
   );
 }
 
@@ -280,62 +273,57 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
     if (isOpen) fetchMentions();
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      return () => window.removeEventListener('keydown', handleEsc);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-          <h2 className="font-semibold flex items-center gap-2">
-            <XLogo size={20} className="text-white" />
-            X Mentions
-          </h2>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchMentions} className="p-2 hover:bg-clawd-border rounded-lg" disabled={loading}>
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button onClick={onClose} className="p-2 hover:bg-clawd-border rounded-lg">
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-        
-        <div className="max-h-96 overflow-y-auto">
-          {loading ? (
-            <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
-          ) : error ? (
-            <div className="p-8 text-center text-clawd-text-dim">
-              <AlertCircle size={24} className="mx-auto mb-2 text-yellow-400" />
-              <p>{error}</p>
-              <p className="text-xs mt-2">X API may need setup</p>
-            </div>
-          ) : mentions.length === 0 ? (
-            <div className="p-8 text-center text-clawd-text-dim">No recent mentions</div>
-          ) : (
-            mentions.map((tweet: any, i) => (
-              <div key={tweet.id || i} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium">@{tweet.author?.username || tweet.author || tweet.user?.screen_name || 'unknown'}</span>
-                  {tweet.author?.name && <span className="text-xs text-clawd-text-dim">({tweet.author.name})</span>}
-                </div>
-                <div className="text-sm">{tweet.text || tweet.full_text}</div>
-                {tweet.createdAt && <div className="text-xs text-clawd-text-dim mt-1">{tweet.createdAt}</div>}
-              </div>
-            ))
-          )}
-        </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      maxHeight="80vh"
+      ariaLabel="X Mentions"
+    >
+      <BaseModalHeader
+        title="X Mentions"
+        icon={<XLogo size={20} className="text-white" />}
+        onClose={onClose}
+      />
+      
+      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+        <button 
+          onClick={fetchMentions} 
+          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          disabled={loading}
+          type="button"
+          aria-label="Refresh mentions"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
       </div>
-    </div>
+
+      <BaseModalBody noPadding maxHeight="60vh">
+        {loading ? (
+          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+        ) : error ? (
+          <div className="p-8 text-center text-clawd-text-dim">
+            <AlertCircle size={24} className="mx-auto mb-2 text-yellow-400" />
+            <p>{error}</p>
+            <p className="text-xs mt-2">X API may need setup</p>
+          </div>
+        ) : mentions.length === 0 ? (
+          <div className="p-8 text-center text-clawd-text-dim">No recent mentions</div>
+        ) : (
+          mentions.map((tweet: any, i) => (
+            <div key={tweet.id || i} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium">@{tweet.author?.username || tweet.author || tweet.user?.screen_name || 'unknown'}</span>
+                {tweet.author?.name && <span className="text-xs text-clawd-text-dim">({tweet.author.name})</span>}
+              </div>
+              <div className="text-sm">{tweet.text || tweet.full_text}</div>
+              {tweet.createdAt && <div className="text-xs text-clawd-text-dim mt-1">{tweet.createdAt}</div>}
+            </div>
+          ))
+        )}
+      </BaseModalBody>
+    </BaseModal>
   );
 }
 
@@ -386,68 +374,63 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
     if (isOpen) fetchMessages();
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      return () => window.removeEventListener('keydown', handleEsc);
-    }
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-lg max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
-          <h2 className="font-semibold flex items-center gap-2">
-            <MessageSquare size={20} className="text-purple-400" />
-            Recent Messages
-          </h2>
-          <div className="flex items-center gap-2">
-            <button onClick={fetchMessages} className="p-2 hover:bg-clawd-border rounded-lg" disabled={loading}>
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            </button>
-            <button onClick={onClose} className="p-2 hover:bg-clawd-border rounded-lg">
-              <X size={16} />
-            </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      maxHeight="80vh"
+      ariaLabel="Recent Messages"
+    >
+      <BaseModalHeader
+        title="Recent Messages"
+        icon={<MessageSquare size={20} className="text-purple-400" />}
+        onClose={onClose}
+      />
+      
+      <div className="flex items-center justify-end px-6 py-2 border-b border-clawd-border/50">
+        <button 
+          onClick={fetchMessages} 
+          className="p-2 hover:bg-clawd-border rounded-lg transition-colors" 
+          disabled={loading}
+          type="button"
+          aria-label="Refresh messages"
+        >
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      <BaseModalBody noPadding maxHeight="60vh">
+        {loading ? (
+          <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
+        ) : error ? (
+          <div className="p-8 text-center text-red-400">{error}</div>
+        ) : messages.length === 0 ? (
+          <div className="p-8 text-center text-clawd-text-dim">
+            <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
+            <p>No recent messages</p>
+            <p className="text-xs mt-2">WhatsApp/Telegram integration needed</p>
           </div>
-        </div>
-        
-        <div className="max-h-96 overflow-y-auto">
-          {loading ? (
-            <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-400">{error}</div>
-          ) : messages.length === 0 ? (
-            <div className="p-8 text-center text-clawd-text-dim">
-              <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
-              <p>No recent messages</p>
-              <p className="text-xs mt-2">WhatsApp/Telegram integration needed</p>
-            </div>
-          ) : (
-            messages.map((msg: any, i) => (
-              <div key={msg.id || i} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30">
-                <div className="flex items-start gap-3">
-                  <PlatformIcon platform={msg.platform} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium truncate">{msg.name}</span>
-                      <span className="text-xs text-clawd-text-dim whitespace-nowrap">{msg.relativeTime}</span>
-                    </div>
-                    <div className="text-sm text-clawd-text-dim truncate mt-0.5">
-                      {msg.fromMe && <span className="text-clawd-text-dim mr-1">You:</span>}
-                      {msg.preview || <span className="italic opacity-50">(no preview)</span>}
-                    </div>
+        ) : (
+          messages.map((msg: any, i) => (
+            <div key={msg.id || i} className="p-4 border-b border-clawd-border/50 hover:bg-clawd-bg/30 transition-colors">
+              <div className="flex items-start gap-3">
+                <PlatformIcon platform={msg.platform} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium truncate">{msg.name}</span>
+                    <span className="text-xs text-clawd-text-dim whitespace-nowrap">{msg.relativeTime}</span>
+                  </div>
+                  <div className="text-sm text-clawd-text-dim truncate mt-0.5">
+                    {msg.fromMe && <span className="text-clawd-text-dim mr-1">You:</span>}
+                    {msg.preview || <span className="italic opacity-50">(no preview)</span>}
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
+            </div>
+          ))
+        )}
+      </BaseModalBody>
+    </BaseModal>
   );
 }

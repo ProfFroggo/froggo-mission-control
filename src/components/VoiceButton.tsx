@@ -63,7 +63,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
       } disabled:opacity-50`}
       title={listening ? 'Stop listening' : 'Voice input'}
     >
-      {listening ? <MicOff size={18} /> : <Mic size={18} />}
+      {listening ? <MicOff size={16} /> : <Mic size={16} />}
     </button>
   );
 }

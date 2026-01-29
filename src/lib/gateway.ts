@@ -576,6 +576,99 @@ class Gateway {
   async getSessionHistory(sessionKey: string, limit = 20) {
     return this.request('sessions.history', { sessionKey, limit });
   }
+
+  // --- Channels ---
+  async getChannelsStatus() {
+    return this.request<{
+      channelOrder: string[];
+      channelLabels: Record<string, string>;
+      channelAccounts: Record<string, Array<{
+        accountId: string; name?: string; connected?: boolean; enabled?: boolean;
+        configured?: boolean; linked?: boolean; running?: boolean;
+        reconnectAttempts?: number; lastConnectedAt?: number; lastError?: string;
+        lastStartAt?: number; lastStopAt?: number; lastInboundAt?: number;
+        lastOutboundAt?: number; dmPolicy?: string; mode?: string;
+        tokenSource?: string; botTokenSource?: string;
+      }>>;
+      channelDefaultAccountId: Record<string, string>;
+    }>('channels.status', {});
+  }
+  async channelLogout(channel: string, accountId?: string) {
+    return this.request('channels.logout', { channel, accountId });
+  }
+
+  // --- Cron ---
+  async getCronJobs() {
+    return this.request<{ jobs: any[] }>('cron.list', { includeDisabled: true });
+  }
+  async getCronStatus() {
+    return this.request('cron.status', {});
+  }
+  async addCronJob(job: any) {
+    return this.request('cron.add', job);
+  }
+  async updateCronJob(id: string, patch: any) {
+    return this.request('cron.update', { id, patch });
+  }
+  async removeCronJob(id: string) {
+    return this.request('cron.remove', { id });
+  }
+  async runCronJob(id: string, mode: 'force' | 'due' = 'force') {
+    return this.request('cron.run', { id, mode });
+  }
+  async getCronRuns(id: string, limit = 20) {
+    return this.request<{ entries: any[] }>('cron.runs', { id, limit });
+  }
+
+  // --- Skills ---
+  async getSkillsStatus() {
+    return this.request('skills.status', {});
+  }
+  async getSkillsBins() {
+    return this.request<{ bins: string[] }>('skills.bins', {});
+  }
+  async installSkill(name: string, installId: string) {
+    return this.request('skills.install', { name, installId });
+  }
+  async updateSkill(skillKey: string, opts: { enabled?: boolean; apiKey?: string; env?: Record<string, string> }) {
+    return this.request('skills.update', { skillKey, ...opts });
+  }
+
+  // --- Nodes ---
+  async getNodes() {
+    return this.request<{ nodes: any[] }>('node.list', {});
+  }
+  async describeNode(nodeId: string) {
+    return this.request('node.describe', { nodeId });
+  }
+  async renameNode(nodeId: string, displayName: string) {
+    return this.request('node.rename', { nodeId, displayName });
+  }
+  async listNodePairRequests() {
+    return this.request('node.pair.list', {});
+  }
+  async approveNodePair(requestId: string) {
+    return this.request('node.pair.approve', { requestId });
+  }
+  async rejectNodePair(requestId: string) {
+    return this.request('node.pair.reject', { requestId });
+  }
+
+  // --- Config ---
+  async getConfig() {
+    return this.request<{ exists: boolean; valid: boolean; hash: string; config: any; raw: string; issues?: any[] }>('config.get', {});
+  }
+  async getConfigSchema() {
+    return this.request<{ schema: any; uiHints: any; version: string }>('config.schema', {});
+  }
+  async applyConfig(raw: string, baseHash: string, restartDelayMs = 2000) {
+    return this.request('config.apply', { raw, baseHash, restartDelayMs });
+  }
+
+  // --- Logs ---
+  async tailLogs(opts?: { cursor?: number; limit?: number; maxBytes?: number }) {
+    return this.request<{ file: string; cursor: number; size: number; lines: string[]; truncated?: boolean; reset?: boolean }>('logs.tail', opts || {});
+  }
 }
 
 export const gateway = new Gateway();

@@ -44,6 +44,36 @@ contextBridge.exposeInMainWorld('clawdbot', {
     speak: (text: string, voice?: string) => ipcRenderer.invoke('voice:speak', text, voice),
     isDev: () => isDev,
   },
+  // API keys (secure access)
+  getOpenAIKey: () => ipcRenderer.invoke('get-openai-key'),
+  // Notifications
+  notifications: {
+    getPrefs: () => ipcRenderer.invoke('notifications:get-prefs'),
+    updatePrefs: (updates: any) => ipcRenderer.invoke('notifications:update-prefs', updates),
+    send: (options: any) => ipcRenderer.invoke('notifications:send', options),
+    test: () => ipcRenderer.invoke('notifications:test'),
+    onReceived: (callback: (notification: any) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on('notification-received', handler);
+      return () => ipcRenderer.removeListener('notification-received', handler);
+    },
+    onPrefsUpdated: (callback: (prefs: any) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on('notification-prefs-updated', handler);
+      return () => ipcRenderer.removeListener('notification-prefs-updated', handler);
+    },
+    onAction: (callback: (action: any) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on('notification-action', handler);
+      return () => ipcRenderer.removeListener('notification-action', handler);
+    },
+  },
+  // Navigation helper (from notification clicks)
+  onNavigate: (callback: (view: string, data?: any) => void) => {
+    const handler = (_: any, view: string, data?: any) => callback(view, data);
+    ipcRenderer.on('navigate-to-view', handler);
+    return () => ipcRenderer.removeListener('navigate-to-view', handler);
+  },
   // Task sync to froggo-db
   tasks: {
     sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string }) => 
@@ -86,6 +116,101 @@ contextBridge.exposeInMainWorld('clawdbot', {
       open: (filePath: string) => ipcRenderer.invoke('attachments:open', filePath),
       autoDetect: (taskId: string) => ipcRenderer.invoke('attachments:auto-detect', taskId),
     },
+  },
+  // Folder/Label Management
+  folders: {
+    list: () => ipcRenderer.invoke('folders:list'),
+    create: (folder: { name: string; icon?: string; color?: string; description?: string }) =>
+      ipcRenderer.invoke('folders:create', folder),
+    update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) =>
+      ipcRenderer.invoke('folders:update', folderId, updates),
+    delete: (folderId: number) => ipcRenderer.invoke('folders:delete', folderId),
+    assign: (folderId: number, sessionKey: string, notes?: string) =>
+      ipcRenderer.invoke('folders:assign', folderId, sessionKey, notes),
+    unassign: (folderId: number, sessionKey: string) =>
+      ipcRenderer.invoke('folders:unassign', folderId, sessionKey),
+    forConversation: (sessionKey: string) =>
+      ipcRenderer.invoke('folders:for-conversation', sessionKey),
+    conversations: (folderId: number) =>
+      ipcRenderer.invoke('folders:conversations', folderId),
+    // Smart folder rules
+    rules: {
+      list: () => ipcRenderer.invoke('folders:rules:list'),
+      get: (folderId: number) => ipcRenderer.invoke('folders:rules:get', folderId),
+      save: (folderId: number, rule: any) => ipcRenderer.invoke('folders:rules:save', folderId, rule),
+      delete: (folderId: number) => ipcRenderer.invoke('folders:rules:delete', folderId),
+    },
+    autoAssign: (sessionKey: string, conversationData: any) =>
+      ipcRenderer.invoke('folders:auto-assign', sessionKey, conversationData),
+  },
+  // Pinned Conversations
+  pins: {
+    list: () => ipcRenderer.invoke('pins:list'),
+    isPinned: (sessionKey: string) => ipcRenderer.invoke('pins:is-pinned', sessionKey),
+    pin: (sessionKey: string, notes?: string) => ipcRenderer.invoke('pins:pin', sessionKey, notes),
+    unpin: (sessionKey: string) => ipcRenderer.invoke('pins:unpin', sessionKey),
+    toggle: (sessionKey: string) => ipcRenderer.invoke('pins:toggle', sessionKey),
+    reorder: (sessionKeys: string[]) => ipcRenderer.invoke('pins:reorder', sessionKeys),
+    count: () => ipcRenderer.invoke('pins:count'),
+  },
+  // Snooze & Reminders
+  snooze: {
+    list: () => ipcRenderer.invoke('snooze:list'),
+    get: (sessionKey: string) => ipcRenderer.invoke('snooze:get', sessionKey),
+    set: (sessionKey: string, snoozeUntil: number, reason?: string) => 
+      ipcRenderer.invoke('snooze:set', sessionKey, snoozeUntil, reason),
+    unset: (sessionKey: string) => ipcRenderer.invoke('snooze:unset', sessionKey),
+    markReminderSent: (sessionKey: string) => ipcRenderer.invoke('snooze:markReminderSent', sessionKey),
+    expired: () => ipcRenderer.invoke('snooze:expired'),
+    history: (sessionKey: string, limit?: number) => ipcRenderer.invoke('snooze:history', sessionKey, limit),
+  },
+  // Per-conversation notification settings
+  notificationSettings: {
+    // Get settings for a specific conversation
+    get: (sessionKey: string) => ipcRenderer.invoke('notification-settings:get', sessionKey),
+    // Set/update settings for a conversation
+    set: (sessionKey: string, settings: {
+      notification_level?: string;
+      sound_enabled?: boolean;
+      sound_type?: string;
+      desktop_notifications?: boolean;
+      quiet_hours_enabled?: boolean;
+      quiet_start?: string;
+      quiet_end?: string;
+      keyword_alerts?: string[];
+      priority_level?: string;
+      mute_until?: string;
+      notification_frequency?: string;
+      show_message_preview?: boolean;
+      badge_count_enabled?: boolean;
+      notes?: string;
+    }) => ipcRenderer.invoke('notification-settings:set', sessionKey, settings),
+    // Delete conversation-specific settings (fall back to global defaults)
+    delete: (sessionKey: string) => ipcRenderer.invoke('notification-settings:delete', sessionKey),
+    // Get global notification defaults
+    getGlobalDefaults: () => ipcRenderer.invoke('notification-settings:global-defaults'),
+    // Update global defaults
+    setGlobalDefaults: (defaults: {
+      default_notification_level?: string;
+      default_sound_enabled?: boolean;
+      default_sound_type?: string;
+      default_desktop_notifications?: boolean;
+      quiet_hours_enabled?: boolean;
+      quiet_start?: string;
+      quiet_end?: string;
+      default_priority_level?: string;
+      do_not_disturb_enabled?: boolean;
+      dnd_until?: string;
+      enable_batching?: boolean;
+      batch_interval_minutes?: number;
+    }) => ipcRenderer.invoke('notification-settings:set-global-defaults', defaults),
+    // Get effective settings (with global fallback applied)
+    getEffective: (sessionKey: string) => ipcRenderer.invoke('notification-settings:get-effective', sessionKey),
+    // Quick mute actions
+    muteConversation: (sessionKey: string, duration?: string) => 
+      ipcRenderer.invoke('notification-settings:mute', sessionKey, duration),
+    unmuteConversation: (sessionKey: string) => 
+      ipcRenderer.invoke('notification-settings:unmute', sessionKey),
   },
   // Rejection logging
   rejections: {
@@ -141,6 +266,36 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.on('inbox-updated', (_, data) => callback(data));
       return () => ipcRenderer.removeAllListeners('inbox-updated');
     },
+    // Filter and search operations
+    toggleStar: (messageId: string) => ipcRenderer.invoke('inbox:toggleStar', messageId),
+    markRead: (messageId: string, isRead: boolean = true) => ipcRenderer.invoke('inbox:markRead', messageId, isRead),
+    addTag: (messageId: string, tag: string) => ipcRenderer.invoke('inbox:addTag', messageId, tag),
+    removeTag: (messageId: string, tag: string) => ipcRenderer.invoke('inbox:removeTag', messageId, tag),
+    setProject: (messageId: string, project: string) => ipcRenderer.invoke('inbox:setProject', messageId, project),
+    search: (query: string, limit?: number) => ipcRenderer.invoke('inbox:search', query, limit),
+    filter: (criteria: any) => ipcRenderer.invoke('inbox:filter', criteria),
+    getSuggestions: (type: 'senders' | 'projects' | 'tags' | 'platforms') => 
+      ipcRenderer.invoke('inbox:getSuggestions', type),
+  },
+  // VIP Sender Management
+  vip: {
+    list: (category?: string) => ipcRenderer.invoke('vip:list', category),
+    add: (data: {
+      identifier: string;
+      label: string;
+      type?: string;
+      category?: string;
+      boost?: number;
+      notes?: string;
+    }) => ipcRenderer.invoke('vip:add', data),
+    update: (id: number, updates: {
+      label?: string;
+      boost?: number;
+      category?: string;
+      notes?: string;
+    }) => ipcRenderer.invoke('vip:update', id, updates),
+    remove: (id: number) => ipcRenderer.invoke('vip:remove', id),
+    check: (identifier: string) => ipcRenderer.invoke('vip:check', identifier),
   },
   // Filesystem
   fs: {
@@ -213,9 +368,18 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // Messages (wacli)
   messages: {
-    recent: (limit?: number) => ipcRenderer.invoke('messages:recent', limit),
+    recent: (limit?: number, includeArchived?: boolean) => ipcRenderer.invoke('messages:recent', limit, includeArchived),
     context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
     send: (platform: string, to: string, message: string) => ipcRenderer.invoke('messages:send', { platform, to, message }),
+  },
+  // Conversation management (archive/unarchive)
+  conversations: {
+    archive: (sessionKey: string) => ipcRenderer.invoke('conversations:archive', sessionKey),
+    unarchive: (sessionKey: string) => ipcRenderer.invoke('conversations:unarchive', sessionKey),
+    archived: () => ipcRenderer.invoke('conversations:archived'),
+    isArchived: (sessionKey: string) => ipcRenderer.invoke('conversations:isArchived', sessionKey),
+    markRead: (sessionKey: string) => ipcRenderer.invoke('conversations:markRead', sessionKey),
+    delete: (sessionKey: string) => ipcRenderer.invoke('conversations:delete', sessionKey),
   },
   // Email (gog CLI)
   email: {
@@ -293,6 +457,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.invoke('chat:loadMessages', limit || 50, sessionKey),
     clearMessages: (sessionKey?: string) =>
       ipcRenderer.invoke('chat:clearMessages', sessionKey),
+    suggestReplies: (context: { role: string; content: string }[]) =>
+      ipcRenderer.invoke('chat:suggestReplies', context),
   },
   // Security management
   security: {
@@ -306,6 +472,74 @@ contextBridge.exposeInMainWorld('clawdbot', {
     listAlerts: () => ipcRenderer.invoke('security:listAlerts'),
     dismissAlert: (alertId: string) => ipcRenderer.invoke('security:dismissAlert', alertId),
     runAudit: () => ipcRenderer.invoke('security:runAudit'),
+  },
+  // Export & Backup management
+  exportBackup: {
+    // Export functions
+    exportTasks: (options: { format: 'json' | 'csv'; filters?: any }) =>
+      ipcRenderer.invoke('export:tasks', options),
+    exportAgentLogs: (options: { format: 'json' | 'csv'; filters?: any }) =>
+      ipcRenderer.invoke('export:agentLogs', options),
+    exportChatHistory: (options: { format: 'json' | 'csv'; filters?: any }) =>
+      ipcRenderer.invoke('export:chatHistory', options),
+    // Backup functions
+    createBackup: (options?: { includeAttachments?: boolean }) =>
+      ipcRenderer.invoke('backup:create', options),
+    restoreBackup: (backupPath: string) =>
+      ipcRenderer.invoke('backup:restore', backupPath),
+    listBackups: () => ipcRenderer.invoke('backup:list'),
+    cleanupOldBackups: (keepCount: number) =>
+      ipcRenderer.invoke('backup:cleanup', keepCount),
+    // Import functions
+    importTasks: (filepath: string) =>
+      ipcRenderer.invoke('import:tasks', filepath),
+    // Statistics
+    getStats: () => ipcRenderer.invoke('exportBackup:stats'),
+  },
+  // Starred Messages
+  starred: {
+    star: (messageId: number, note?: string, category?: string) =>
+      ipcRenderer.invoke('starred:star', messageId, note, category),
+    unstar: (identifier: number) =>
+      ipcRenderer.invoke('starred:unstar', identifier),
+    list: (options?: { category?: string; sessionKey?: string; limit?: number }) =>
+      ipcRenderer.invoke('starred:list', options),
+    search: (query: string, limit?: number) =>
+      ipcRenderer.invoke('starred:search', query, limit),
+    stats: () =>
+      ipcRenderer.invoke('starred:stats'),
+    check: (messageId: number) =>
+      ipcRenderer.invoke('starred:check', messageId),
+  },
+  // X Automations
+  xAutomations: {
+    list: () => ipcRenderer.invoke('x-automations:list'),
+    get: (id: string) => ipcRenderer.invoke('x-automations:get', id),
+    create: (automation: {
+      name: string;
+      description?: string;
+      trigger_type: string;
+      trigger_config: string;
+      conditions?: string;
+      actions: string;
+      max_executions_per_hour?: number;
+      max_executions_per_day?: number;
+    }) => ipcRenderer.invoke('x-automations:create', automation),
+    update: (id: string, updates: {
+      name?: string;
+      description?: string;
+      trigger_type?: string;
+      trigger_config?: string;
+      conditions?: string;
+      actions?: string;
+      max_executions_per_hour?: number;
+      max_executions_per_day?: number;
+    }) => ipcRenderer.invoke('x-automations:update', id, updates),
+    delete: (id: string) => ipcRenderer.invoke('x-automations:delete', id),
+    toggle: (id: string, enabled: boolean) => ipcRenderer.invoke('x-automations:toggle', id, enabled),
+    executions: (automationId?: string, limit?: number) => 
+      ipcRenderer.invoke('x-automations:executions', automationId, limit),
+    rateLimit: (automationId: string) => ipcRenderer.invoke('x-automations:rate-limit', automationId),
   },
 });
 
