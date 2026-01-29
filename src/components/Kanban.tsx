@@ -742,13 +742,42 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
       <div className="flex items-start gap-2 mb-2">
         {/* Priority indicator */}
         {priorityConfig && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowPriority(!showPriority); }}
-            className={`p-1 rounded ${priorityConfig.bg} ${priorityConfig.color} flex-shrink-0`}
-            title={priorityConfig.label}
-          >
-            {priorityConfig.icon}
-          </button>
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowPriority(!showPriority); }}
+              className={`p-1 rounded ${priorityConfig.bg} ${priorityConfig.color}`}
+              title={priorityConfig.label}
+            >
+              {priorityConfig.icon}
+            </button>
+            
+            {/* Priority Picker Modal */}
+            {showPriority && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowPriority(false)} />
+                <div 
+                  className="absolute left-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-40 min-w-[160px]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
+                  <div className="space-y-1">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
+                        className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                          task.priority === p.id ? `${p.bg} ${p.color}` : ''
+                        }`}
+                      >
+                        <span className={p.color}>{p.icon}</span>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         )}
         
         {/* Active agent indicator + Title */}
@@ -841,100 +870,75 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
           )}
         </div>
         
-        {assignedAgent ? (
-          <div className="flex items-center gap-1.5 no-shrink">
-            {isAgentWorking ? (
-              <span className="icon-badge-sm bg-yellow-500/20 text-yellow-400 animate-pulse">
-                <Zap size={14} className="no-shrink" />
-              </span>
-            ) : canStart ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
-                disabled={isSpawning}
-                className="icon-badge-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        <div className="relative flex-shrink-0">
+          {assignedAgent ? (
+            <div className="flex items-center gap-1.5 no-shrink">
+              {isAgentWorking ? (
+                <span className="icon-badge-sm bg-yellow-500/20 text-yellow-400 animate-pulse">
+                  <Zap size={14} className="no-shrink" />
+                </span>
+              ) : canStart ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
+                  disabled={isSpawning}
+                  className="icon-badge-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
+                </button>
+              ) : null}
+              <button 
+                className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
+                onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
               >
-                {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
+                <span>{assignedAgent.avatar || '🤖'}</span>
               </button>
-            ) : null}
+            </div>
+          ) : (
             <button 
-              className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
+              className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
               onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
             >
-              <span>{assignedAgent.avatar || '🤖'}</span>
+              <User size={14} className="no-shrink" />
             </button>
-          </div>
-        ) : (
-          <button 
-            className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
-            onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
-          >
-            <User size={14} className="no-shrink" />
-          </button>
-        )}
-      </div>
-
-      {/* Priority Picker */}
-      {showPriority && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setShowPriority(false)} />
-          <div 
-            className="absolute left-0 right-0 top-full mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-40"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
-            <div className="space-y-1">
-              {PRIORITIES.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
-                  className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                    task.priority === p.id ? `${p.bg} ${p.color}` : ''
-                  }`}
-                >
-                  <span className={p.color}>{p.icon}</span>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Assign Modal */}
-      {showAssign && (
-        <>
-          <div className="fixed inset-0 z-30" onClick={() => setShowAssign(false)} />
-          <div 
-            className="absolute left-0 right-0 top-full mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-40"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
-            <div className="space-y-1">
-              <button
-                onClick={() => { onAssign(''); setShowAssign(false); }}
-                className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                  !task.assignedTo ? 'bg-clawd-border' : ''
-                }`}
+          )}
+          
+          {/* Assign Agent Modal */}
+          {showAssign && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setShowAssign(false)} />
+              <div 
+                className="absolute right-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-40 min-w-[160px]"
+                onClick={(e) => e.stopPropagation()}
               >
-                <User size={16} className="text-clawd-text-dim" />
-                Unassigned
-              </button>
-              {agents.map(agent => (
-                <button
-                  key={agent.id}
-                  onClick={() => { onAssign(agent.id); setShowAssign(false); }}
-                  className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                    task.assignedTo === agent.id ? 'bg-clawd-accent/20 text-clawd-accent' : ''
-                  }`}
-                >
-                  <span className="text-base">{agent.avatar || '🤖'}</span>
-                  {agent.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+                <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { onAssign(''); setShowAssign(false); }}
+                    className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                      !task.assignedTo ? 'bg-clawd-border' : ''
+                    }`}
+                  >
+                    <User size={16} className="text-clawd-text-dim" />
+                    Unassigned
+                  </button>
+                  {agents.map(agent => (
+                    <button
+                      key={agent.id}
+                      onClick={() => { onAssign(agent.id); setShowAssign(false); }}
+                      className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                        task.assignedTo === agent.id ? 'bg-clawd-accent/20 text-clawd-accent' : ''
+                      }`}
+                    >
+                      <span className="text-base">{agent.avatar || '🤖'}</span>
+                      {agent.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }, (prevProps, nextProps) => {
