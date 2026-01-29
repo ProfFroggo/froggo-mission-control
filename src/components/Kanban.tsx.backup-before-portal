@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
@@ -707,13 +707,6 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
-  const [priorityBtnPos, setPriorityBtnPos] = useState<{top: number, left: number} | null>(null);
-  const [assignBtnPos, setAssignBtnPos] = useState<{top: number, left: number} | null>(null);
-  const [menuBtnPos, setMenuBtnPos] = useState<{top: number, left: number} | null>(null);
-  
-  const priorityBtnRef = useRef<HTMLButtonElement>(null);
-  const assignBtnRef = useRef<HTMLButtonElement>(null);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
   
   const assignedAgent = task.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
@@ -752,15 +745,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
         {priorityConfig && (
           <div className="relative flex-shrink-0">
             <button
-              ref={priorityBtnRef}
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                if (!showPriority && priorityBtnRef.current) {
-                  const rect = priorityBtnRef.current.getBoundingClientRect();
-                  setPriorityBtnPos({ top: rect.bottom + 4, left: rect.left });
-                }
-                setShowPriority(!showPriority); 
-              }}
+              onClick={(e) => { e.stopPropagation(); setShowPriority(!showPriority); }}
               className={`p-1 rounded ${priorityConfig.bg} ${priorityConfig.color}`}
               title={priorityConfig.label}
             >
@@ -768,12 +753,11 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
             </button>
             
             {/* Priority Picker Modal */}
-            {showPriority && priorityBtnPos && createPortal(
+            {showPriority && (
               <>
-                <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} />
+                <div className="fixed inset-0 z-40" onClick={() => setShowPriority(false)} />
                 <div 
-                  className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
-                  style={{ top: `${priorityBtnPos.top}px`, left: `${priorityBtnPos.left}px` }}
+                  className="absolute left-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-50 min-w-[160px]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
@@ -792,8 +776,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                     ))}
                   </div>
                 </div>
-              </>,
-              document.body
+              </>
             )}
           </div>
         )}
@@ -806,47 +789,24 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
         
         <div className="relative flex-shrink-0">
           <button 
-            ref={menuBtnRef}
             className="icon-btn-sm text-clawd-text-dim opacity-0 group-hover:opacity-100"
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              if (!showMenu && menuBtnRef.current) {
-                const rect = menuBtnRef.current.getBoundingClientRect();
-                setMenuBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
-              }
-              setShowMenu(!showMenu); 
-            }}
+            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
           >
             <MoreHorizontal size={16} className="flex-shrink-0" />
           </button>
           
-          {showMenu && menuBtnPos && createPortal(
+          {showMenu && (
             <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
-              <div className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-[101] min-w-40"
-                style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-8 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-50 min-w-40">
                 <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (menuBtnPos) {
-                      setPriorityBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left });
-                    }
-                    setShowPriority(true); 
-                    setShowMenu(false); 
-                  }}
+                  onClick={(e) => { e.stopPropagation(); setShowPriority(true); setShowMenu(false); }}
                   className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
                   <Flag size={16} className="flex-shrink-0" /> Set Priority
                 </button>
                 <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    if (menuBtnPos) {
-                      setAssignBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left });
-                    }
-                    setShowAssign(true); 
-                    setShowMenu(false); 
-                  }}
+                  onClick={(e) => { e.stopPropagation(); setShowAssign(true); setShowMenu(false); }}
                   className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
                   <Bot size={16} className="flex-shrink-0" /> Assign Agent
@@ -861,8 +821,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                   {isDeleting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
-            </>,
-            document.body
+            </>
           )}
         </div>
       </div>
@@ -929,44 +888,27 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                 </button>
               ) : null}
               <button 
-                ref={assignBtnRef}
                 className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  if (!showAssign && assignBtnRef.current) {
-                    const rect = assignBtnRef.current.getBoundingClientRect();
-                    setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
-                  }
-                  setShowAssign(true); 
-                }}
+                onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
               >
                 <span>{assignedAgent.avatar || '🤖'}</span>
               </button>
             </div>
           ) : (
             <button 
-              ref={assignBtnRef}
               className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                if (!showAssign && assignBtnRef.current) {
-                  const rect = assignBtnRef.current.getBoundingClientRect();
-                  setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
-                }
-                setShowAssign(true); 
-              }}
+              onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
             >
               <User size={14} className="no-shrink" />
             </button>
           )}
           
           {/* Assign Agent Modal */}
-          {showAssign && assignBtnPos && createPortal(
+          {showAssign && (
             <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => setShowAssign(false)} />
               <div 
-                className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
-                style={{ top: `${assignBtnPos.top}px`, left: `${assignBtnPos.left}px` }}
+                className="absolute right-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-50 min-w-[160px]"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
@@ -994,8 +936,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                   ))}
                 </div>
               </div>
-            </>,
-            document.body
+            </>
           )}
         </div>
       </div>
