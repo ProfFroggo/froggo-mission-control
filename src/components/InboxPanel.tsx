@@ -599,11 +599,16 @@ export default function InboxPanel() {
     try {
       // Check if this is a task review (not a regular inbox item)
       if ((item as any).isTask && item.metadata) {
-        // This is a task in review status - mark it as done
+        // This is a task in review status - approve and move to in-progress
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'done' });
-          console.log('[Inbox] Task approved and marked done:', meta.taskId);
+          console.log('[Inbox] Approving task:', meta.taskId);
+          // ATOMIC UPDATE: Set both reviewStatus and status together
+          await window.clawdbot!.tasks.update(meta.taskId, { 
+            reviewStatus: 'approved',
+            status: 'in-progress' 
+          });
+          console.log('[Inbox] Task approved and moved to in-progress:', meta.taskId);
           return;
         }
       }
