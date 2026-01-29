@@ -20,5 +20,6 @@
     }
   },
   "include": ["src"],
+  "exclude": ["src/components/backup-*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

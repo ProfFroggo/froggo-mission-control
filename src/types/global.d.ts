@@ -135,6 +135,7 @@ declare global {
       // Database
       db: {
         exec: (query: string, params?: any[]) => Promise<{ success: boolean; result?: any[]; error?: string }>;
+        query: (query: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
       };
       // Library
       library: {
@@ -239,6 +240,7 @@ declare global {
         pin: (sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
         unpin: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
         toggle: (sessionKey: string) => Promise<{ success: boolean; pinned: boolean; error?: string }>;
+        reorder: (order: string[]) => Promise<{ success: boolean; error?: string }>;
       };
       // Message Folders
       folders: {
@@ -264,6 +266,46 @@ declare global {
       exec: {
         run: (command: string) => Promise<{ success: boolean; stdout: string; stderr: string }>;
       };
+      // Notification settings (per-conversation)
+      notificationSettings: {
+        get: (sessionKey: string) => Promise<{ success: boolean; settings?: any; error?: string }>;
+        set: (sessionKey: string, settings: any) => Promise<{ success: boolean; error?: string }>;
+        delete: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        getEffective: (sessionKey: string) => Promise<{ success: boolean; settings?: any; error?: string }>;
+        getGlobalDefaults: () => Promise<{ success: boolean; defaults?: any; error?: string }>;
+        setGlobalDefaults: (defaults: any) => Promise<{ success: boolean; error?: string }>;
+        muteConversation: (sessionKey: string, until?: string) => Promise<{ success: boolean; error?: string }>;
+        unmuteConversation: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // VIP contacts
+      vip: {
+        list: (category?: string) => Promise<any>;
+        add: (vip: { identifier: string; label?: string; category?: string; boost?: number }) => Promise<{ success: boolean; error?: string }>;
+        update: (id: number | string, updates: { label?: string; boost?: number; category?: string }) => Promise<{ success: boolean; error?: string }>;
+        remove: (id: number | string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Snooze conversations
+      snooze: {
+        list: () => Promise<{ success: boolean; snoozes?: any[]; error?: string }>;
+        get: (sessionKey: string) => Promise<{ success: boolean; snooze?: any; error?: string }>;
+        set: (sessionKey: string, until: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
+        unset: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Froggo DB direct queries
+      froggo: {
+        query: (sql: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
+      };
+      // System notifications
+      notifications: {
+        getPrefs: () => Promise<any>;
+        updatePrefs: (updates: any) => Promise<void>;
+        send: (options: any) => Promise<void>;
+        test: () => Promise<void>;
+        onReceived: (callback: (notification: any) => void) => () => void;
+        onAction: (callback: (action: any) => void) => () => void;
+      };
+      // Navigation
+      onNavigate: (callback: (view: string, data?: any) => void) => () => void;
       // Starred messages
       starred: {
         star: (messageId: number, note?: string, category?: string) => Promise<{ success: boolean; error?: string }>;
