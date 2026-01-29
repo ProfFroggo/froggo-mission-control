@@ -754,9 +754,9 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
             {/* Priority Picker Modal */}
             {showPriority && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => setShowPriority(false)} />
+                <div className="fixed inset-0 z-40" onClick={() => setShowPriority(false)} />
                 <div 
-                  className="absolute left-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-40 min-w-[160px]"
+                  className="absolute left-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-50 min-w-[160px]"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
@@ -796,8 +796,8 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
           
           {showMenu && (
             <>
-              <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-8 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-40 min-w-40">
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-8 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-50 min-w-40">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowPriority(true); setShowMenu(false); }}
                   className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
@@ -905,9 +905,9 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
           {/* Assign Agent Modal */}
           {showAssign && (
             <>
-              <div className="fixed inset-0 z-30" onClick={() => setShowAssign(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => setShowAssign(false)} />
               <div 
-                className="absolute right-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-40 min-w-[160px]"
+                className="absolute right-0 top-full mt-1 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-50 min-w-[160px]"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
