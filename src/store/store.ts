@@ -453,13 +453,35 @@ export const useStore = create<Store>()(
         (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
       },
       updateTask: (id: string, updates: Partial<Task>) => {
+        // Optimistically update UI
         set((s: Store) => ({
           tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
         }));
+        
         // Persist to database via IPC
-        (window as any).clawdbot?.tasks?.update(id, updates).catch((err: any) => {
-          console.error('[Store] Failed to update task:', err);
-        });
+        (window as any).clawdbot?.tasks?.update(id, updates)
+          .then((result: any) => {
+            if (!result?.success) {
+              console.error('[Store] Task update failed:', result?.error);
+              // Rollback optimistic update
+              set((s: Store) => ({
+                tasks: s.tasks.map((t: Task) => 
+                  t.id === id ? { ...t, ...Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: undefined }), {}) } : t
+                )
+              }));
+            } else {
+              console.log('[Store] Task update persisted:', id, updates);
+            }
+          })
+          .catch((err: any) => {
+            console.error('[Store] Task update exception:', err);
+            // Rollback optimistic update
+            set((s: Store) => ({
+              tasks: s.tasks.map((t: Task) => 
+                t.id === id ? { ...t, ...Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: undefined }), {}) } : t
+              )
+            }));
+          });
       },
       moveTask: (id: string, status: TaskStatus) => {
         const task = get().tasks.find((t: Task) => t.id === id);
@@ -1202,7 +1224,9 @@ gateway.on('task.created', (payload: any) => {
 
 gateway.on('task.updated', (payload: any) => {
   console.log('[Store] Task updated event received:', payload);
-  useStore.getState().loadTasksFromDB();
+  // Don't reload all tasks - that causes race conditions with optimistic updates
+  // The optimistic update already handled the UI change
+  // Just log for debugging
 });
 
 gateway.on('tasks.refresh', () => {
@@ -1255,7 +1279,7 @@ gateway.on('chat.message', (payload: any) => {
   // Detect approval request patterns
   if (content.includes('[NEEDS_APPROVAL]') || content.includes('[DRAFT]')) {
     // Parse the approval from the message
-    const __lines = content.split('\n');
+  //   const __lines = content.split('\n');
     const typeMatch = content.match(/\[TYPE:(\w+)\]/);
     const titleMatch = content.match(/\[TITLE:([^\]]+)\]/);
     
