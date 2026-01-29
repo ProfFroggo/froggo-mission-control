@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Inbox, Check, X, Clock, MessageSquare, Mail, Send, 
   Calendar, Bot, AlertTriangle, ShieldAlert, 
-  TrendingUp, Edit3, Search
+  TrendingUp, Edit3, Search, Play
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { LoadingButton } from './LoadingStates';
@@ -49,7 +49,7 @@ const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string
   email: { icon: Mail, color: 'text-green-400 bg-green-500/20', label: 'Email' },
   message: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/20', label: 'Message' },
   task: { icon: Bot, color: 'text-yellow-400 bg-yellow-500/20', label: 'Task' },
-  action: { icon: Calendar, color: 'text-orange-400 bg-orange-500/20', label: 'Action' },
+  action: { icon: Play, color: 'text-green-400 bg-green-500/20', label: 'Action' },
 };
 
 const riskStyles: Record<string, { bg: string; text: string; border: string }> = {

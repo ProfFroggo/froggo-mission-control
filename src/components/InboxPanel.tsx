@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
@@ -60,7 +60,7 @@ const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string
   email: { icon: Mail, color: 'text-green-400 bg-green-500/20', label: 'Email' },
   message: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/20', label: 'Message' },
   task: { icon: Bot, color: 'text-yellow-400 bg-yellow-500/20', label: 'Task' },
-  action: { icon: Calendar, color: 'text-orange-400 bg-orange-500/20', label: 'Action' },
+  action: { icon: Play, color: 'text-green-400 bg-green-500/20', label: 'Action' },
 };
 
 // Helper component for shortcut rows
@@ -1119,7 +1119,7 @@ export default function InboxPanel() {
                     return (
                       <div className={`${style.bg} ${style.text} px-4 py-2 flex items-center gap-2 border-b ${style.border}`}>
                         <ShieldAlert size={20} className="flex-shrink-0" />
-                        <div className="flex-1 min-w-0 min-w-0">
+                        <div className="flex-1 min-w-0">
                           <div className="icon-text flex-wrap">
                             <span className="font-semibold text-sm">⚠️ Potential {warning.type.replace('_', ' ')}</span>
                             <span className={`text-xs px-2 py-0.5 rounded ${style.bg} font-medium uppercase`}>
@@ -1137,7 +1137,7 @@ export default function InboxPanel() {
                   
                   {/* Header */}
                   <div className="p-4 flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1 min-w-0 min-w-0">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Selection checkbox */}
                       <input
                         type="checkbox"
@@ -1147,7 +1147,7 @@ export default function InboxPanel() {
                         className="w-4 h-4 mt-1 rounded border-clawd-border text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 bg-clawd-bg cursor-pointer"
                       />
                       <IconBadge icon={Icon} size={18} color={config.color} />
-                      <div className="flex-1 min-w-0 min-w-0">
+                      <div className="flex-1 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
                           <span className="text-xs font-medium px-2 py-0.5 bg-clawd-border rounded">
                             {config.label}
