@@ -314,14 +314,19 @@ aside {
 button,
 a,
 [role="button"],
-[role="link"],
-input[type="checkbox"],
-input[type="radio"] {
+[role="link"] {
   min-width: 44px;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Checkboxes/radios: smaller touch target, styled via forms.css */
+input[type="checkbox"],
+input[type="radio"] {
+  min-width: unset;
+  min-height: unset;
 }
 
 /* Exception for inline elements */
