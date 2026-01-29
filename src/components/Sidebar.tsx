@@ -36,9 +36,15 @@ const navItems = [
   { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '⌘⇧S' },
 ];
 
+interface SystemStatus {
+  watcherRunning: boolean;
+  killSwitchOn: boolean;
+}
+
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange }: SidebarProps) {
   const [expanded, setExpanded] = useState(true); // Open by default
   const [inboxCount, setInboxCount] = useState(0);
+  const [sysStatus, setSysStatus] = useState<SystemStatus>({ watcherRunning: false, killSwitchOn: true });
   const { connected, tasks } = useStore();
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
@@ -71,6 +77,19 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     const interval = setInterval(loadInboxCount, 5000); // Poll every 5s
     return () => clearInterval(interval);
   }, []);
+
+  // System status polling
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const result = await (window as any).clawdbot?.system?.status();
+        if (result?.success) setSysStatus(result.status);
+      } catch {}
+    };
+    check();
+    const interval = setInterval(check, 10000);
+    return () => clearInterval(interval);
+  }, []);
   
   const unreadNotifications = inboxCount;
 
@@ -83,15 +102,15 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       aria-label="Main navigation"
       aria-expanded={expanded}
     >
-      {/* Drag region */}
-      <div className="drag-region h-12 flex items-center justify-center border-b border-clawd-border">
+      {/* Drag region — traffic light safe zone */}
+      <div className="drag-region h-12 flex items-center pl-[76px] border-b border-clawd-border">
         <button
-          className="no-drag text-2xl cursor-pointer hover:scale-110 transition-transform duration-200"
+          className="no-drag text-sm font-semibold text-clawd-text cursor-pointer hover:text-clawd-accent transition-colors duration-200"
           onClick={() => onNavigate('dashboard')}
           aria-label="Go to dashboard home"
           title="Dashboard home"
         >
-          🐸
+          Clawd
         </button>
       </div>
       
@@ -193,21 +212,33 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {expanded && <span className="text-xs">⌘K for commands</span>}
         </div>
 
-        {/* Connection status */}
+        {/* Connection + System status */}
         <div 
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${expanded ? '' : 'justify-center'}`}
+          className={`flex flex-col gap-1 px-3 py-2 rounded-lg`}
           role="status"
           aria-live="polite"
-          aria-label={connected ? 'Connected to server' : 'Connecting to server'}
         >
-          <span 
-            className={`w-2 h-2 rounded-full transition-colors flex-shrink-0 ${connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`}
-            aria-hidden="true"
-          />
+          <div className={`flex items-center gap-2 ${expanded ? '' : 'justify-center'}`}>
+            <span 
+              className={`w-2 h-2 rounded-full transition-colors flex-shrink-0 ${connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`}
+              aria-hidden="true"
+            />
+            {expanded && (
+              <span className="text-xs text-clawd-text-dim">
+                {connected ? 'Connected' : 'Connecting...'}
+              </span>
+            )}
+          </div>
           {expanded && (
-            <span className="text-xs text-clawd-text-dim">
-              {connected ? 'Connected' : 'Connecting...'}
-            </span>
+            <div className="flex items-center gap-2 pl-4 text-[10px] font-medium">
+              <span className={`${connected ? 'text-green-400' : 'text-clawd-text-dim'}`}>Online</span>
+              <span className={`${sysStatus.watcherRunning ? 'text-green-400' : 'text-red-400'}`}>
+                {sysStatus.watcherRunning ? 'Watcher' : 'Watcher ✗'}
+              </span>
+              {sysStatus.killSwitchOn && (
+                <span className="text-red-400">Blocked</span>
+              )}
+            </div>
           )}
         </div>
         

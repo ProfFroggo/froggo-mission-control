@@ -4,6 +4,7 @@ import { initApprovalQueue } from './lib/approvalQueue';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
+import FloatingToolbar from './components/FloatingToolbar';
 import LoadingPanel from './components/LoadingPanel';
 import PerformanceProfiler from './components/PerformanceProfiler';
 // Import protected panels with error boundaries
@@ -313,6 +314,9 @@ function App() {
             sidebarWidth={sidebarWidth}
           />
         </ErrorBoundary>
+
+        {/* Floating voice/phone toolbar */}
+        <FloatingToolbar onCallClick={handleCallClick} />
         
         {/* Sidebar */}
         <ErrorBoundary panelName="Sidebar">
