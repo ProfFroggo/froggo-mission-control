@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
-import { spawnAgent, spawnWorker, matchTaskToAgent, AGENTS } from '../lib/agents';
+import { matchTaskToAgent } from '../lib/agents';
 
 export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
@@ -456,14 +456,10 @@ export const useStore = create<Store>()(
         set((s: Store) => ({
           tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
         }));
-        // Persist to database
-        const task = get().tasks.find((t: Task) => t.id === id);
-        if (task) {
-          const updatedTask = { ...task, ...updates, updatedAt: Date.now() };
-          (window as any).clawdbot?.tasks?.sync(updatedTask).catch((err: any) => {
-            console.error('[Store] Failed to sync task update:', err);
-          });
-        }
+        // Persist to database via IPC
+        (window as any).clawdbot?.tasks?.update(id, updates).catch((err: any) => {
+          console.error('[Store] Failed to update task:', err);
+        });
       },
       moveTask: (id: string, status: TaskStatus) => {
         const task = get().tasks.find((t: Task) => t.id === id);
@@ -1259,7 +1255,7 @@ gateway.on('chat.message', (payload: any) => {
   // Detect approval request patterns
   if (content.includes('[NEEDS_APPROVAL]') || content.includes('[DRAFT]')) {
     // Parse the approval from the message
-    const lines = content.split('\n');
+    const __lines = content.split('\n');
     const typeMatch = content.match(/\[TYPE:(\w+)\]/);
     const titleMatch = content.match(/\[TITLE:([^\]]+)\]/);
     

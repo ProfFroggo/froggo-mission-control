@@ -1024,11 +1024,27 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
   });
 });
 
-ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string }) => {
-  // Handle planningNotes directly via SQL since froggo-db CLI doesn't support it yet
+ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string; reviewStatus?: string; reviewerId?: string }) => {
+  // Handle fields that need direct SQL (froggo-db CLI doesn't support them yet)
+  const sqlFields: string[] = [];
+  
   if (updates.planningNotes !== undefined) {
-    const escapedNotes = updates.planningNotes.replace(/'/g, "''"); // SQL escape
-    const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE tasks SET planning_notes='${escapedNotes}', updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
+    const escapedNotes = updates.planningNotes.replace(/'/g, "''");
+    sqlFields.push(`planning_notes='${escapedNotes}'`);
+  }
+  
+  if (updates.reviewStatus !== undefined) {
+    const escapedStatus = updates.reviewStatus.replace(/'/g, "''");
+    sqlFields.push(`reviewStatus='${escapedStatus}'`);
+  }
+  
+  if (updates.reviewerId !== undefined) {
+    const escapedReviewer = updates.reviewerId.replace(/'/g, "''");
+    sqlFields.push(`reviewerId='${escapedReviewer}'`);
+  }
+  
+  if (sqlFields.length > 0) {
+    const sqlCmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "UPDATE tasks SET ${sqlFields.join(', ')}, updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
     
     return new Promise((resolve) => {
       exec(sqlCmd, { timeout: 10000 }, (error) => {
@@ -1048,6 +1064,10 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
     updates.status ? `--status ${updates.status}` : '',
     updates.assignedTo ? `--assign ${updates.assignedTo}` : ''
   ].filter(Boolean).join(' ');
+  
+  if (args.length === 0) {
+    return { success: true }; // Nothing to update
+  }
   
   const cmd = `froggo-db task-update "${taskId}" ${args}`;
   
