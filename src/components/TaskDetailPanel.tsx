@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight, HandMetal, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
@@ -24,7 +24,7 @@ interface TaskDetailPanelProps {
 
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
-  const [loading, setLoading] = useState(false);
+  const [_loading, _setLoading] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
@@ -41,8 +41,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
-  const [showAgentWarning, setShowAgentWarning] = useState(false);
-  const [activeAgentSession, setActiveAgentSession] = useState<any>(null);
+  const [_showAgentWarning, _setShowAgentWarning] = useState(false);
+  const [_activeAgentSession, _setActiveAgentSession] = useState<any>(null);
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -1102,7 +1102,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   <button
                     onClick={() => {
                       setReviewStatus('approved');
-                      showToast('success', 'Task approved! You can now mark it as done.');
+                      // Also try to move to done
+                      moveTask(task.id, 'done');
+                      logTaskActivity(task.id, 'approved', 'Task approved and moved to done');
                     }}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                   >
