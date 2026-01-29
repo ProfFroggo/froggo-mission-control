@@ -79,26 +79,14 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     }]);
 
     try {
-      // Check if gateway is connected
-      if (!gateway.connected) {
-        setMessages([{
-          role: 'system',
-          content: `⚠️ Gateway not connected. Please check your connection and try again.`,
-          timestamp: Date.now(),
-        }]);
-        setSpawning(false);
-        return;
+      // Spawn a real agent session via IPC
+      const ipc = (window as any).clawdbot?.agents;
+      if (!ipc?.spawnChat) {
+        throw new Error('Agent chat IPC not available — are you running in the Electron app?');
       }
 
-      // Spawn a real agent session via gateway
-      const label = `dashboard-chat-${agentId}`;
-      const systemPrompt = agentSystemPrompts[agentId] || `You are ${agent?.name || agentId}. Help the user.`;
-      const task = `${systemPrompt}\n\nYou are now in a collaborative chat session started from the dashboard. Be helpful, concise, and conversational.`;
-
-      const result = await gateway.spawnAgent(task, label, 'anthropic/claude-sonnet-4');
-
-      if (result && (result as any).sessionKey) {
-        const key = (result as any).sessionKey;
+      const key = await ipc.spawnChat(agentId);
+      if (key) {
         setSessionKey(key);
         setMessages([{
           role: 'system',
@@ -175,8 +163,11 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       });
       streamCleanupRef.current = unsub;
 
-      // Send the message to the real session
-      const result = await gateway.sendToSession(sessionKey, userText);
+      // Send the message to the real session via IPC
+      const ipc = (window as any).clawdbot?.agents;
+      const result = ipc?.chat
+        ? await ipc.chat(sessionKey, userText)
+        : await gateway.sendToSession(sessionKey, userText);
 
       // If we get a direct response (non-streaming), use it
       if (result && (result as any).response) {
