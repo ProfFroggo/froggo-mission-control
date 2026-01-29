@@ -4493,11 +4493,29 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
     
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    if (diffMins < 1) return 'now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    
+    // For yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    }
+    
+    // For this week (show day name)
+    if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, etc.
+    }
+    
+    // For this year (show "Jan 28")
+    if (date.getFullYear() === now.getFullYear()) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    
+    // For older messages (show "Jan 28, 2023")
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
   
   try {
@@ -4631,20 +4649,67 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     safeLog.log('[Messages] Fetching emails...');
     const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
     for (const acct of emailAccounts) {
-      const emailRaw = await runCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 5`, 15000);
+      // FIXED: Increased limit from 5 to 500, removed "is:unread" filter to show ALL emails
+      // Search in all mail (in:all = all messages from all folders including archived/sent)
+      const emailRaw = await runCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "in:all" --json --max 500`, 30000);
       if (emailRaw) {
         try {
           const emailData = JSON.parse(emailRaw);
           const emails = emailData.threads || emailData || [];
           safeLog.log(`[Messages] Email account ${acct}: ${emails.length} threads`);
-          for (const email of emails.slice(0, 3)) {
+          // FIXED: Removed .slice(0, 3) to show all fetched emails
+          for (const email of emails) {
+            // Extract sender name and email address
+            const fromField = email.from || email.From || '';
+            const fromMatch = fromField.match(/^(.*?)\s*<(.+?)>$/);
+            let senderName = fromMatch ? fromMatch[1].trim() : fromField.split('<')[0].trim() || 'Unknown';
+            const senderEmail = fromMatch ? fromMatch[2].trim() : fromField;
+            
+            // Clean up redundant names like "Name from Name" or "Name via Name"
+            if (senderName.includes(' from ')) {
+              const parts = senderName.split(' from ');
+              if (parts.length === 2 && parts[0].trim() === parts[1].trim()) {
+                senderName = parts[0].trim();
+              }
+            }
+            if (senderName.includes(' via ')) {
+              const parts = senderName.split(' via ');
+              if (parts.length === 2 && parts[0].trim() === parts[1].trim()) {
+                senderName = parts[0].trim();
+              }
+            }
+            
+            // Get subject and snippet
+            const subject = email.subject || email.Subject || '(No Subject)';
+            const snippet = email.snippet || email.body || '';
+            
+            // Extract preview text (first ~150 chars of body/snippet, cleaned)
+            let preview = snippet
+              .replace(/<[^>]+>/g, '') // Remove HTML tags
+              .replace(/\s+/g, ' ')     // Normalize whitespace
+              .trim()
+              .slice(0, 150);
+            if (snippet.length > 150) preview += '...';
+            
+            // Detect attachments from labels
+            const labels = email.labels || email.Labels || [];
+            const hasAttachment = labels.some((l: string) => l.toLowerCase().includes('attachment'));
+            
+            // Detect read status from labels (UNREAD label = unread)
+            const isRead = !labels.some((l: string) => l === 'UNREAD' || l === 'unread');
+            
             allMessages.push({
               id: `email-${email.id || email.ID}`,
               platform: 'email',
-              name: email.from?.split('<')[0]?.trim() || email.From?.split('<')[0]?.trim() || 'Unknown',
-              preview: email.subject || email.Subject || email.snippet || '',
+              name: senderName,
+              from: senderEmail,
+              subject: subject,
+              preview: preview || subject, // Fallback to subject if no preview
               timestamp: email.date || email.Date || new Date().toISOString(),
               relativeTime: relativeTime(email.date || email.Date || new Date().toISOString()),
+              has_attachment: hasAttachment,
+              is_read: isRead,
+              is_starred: false, // TODO: Detect starred status from labels
               fromMe: false,
             });
           }
@@ -4958,7 +5023,8 @@ ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
 // ============== EMAIL IPC HANDLERS ==============
 ipcMain.handle('email:unread', async (_, account?: string) => {
   const acct = account || 'kevin@carbium.io';
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 20`;
+  // FIXED: Increased limit from 20 to 500
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --max 500`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
@@ -4996,7 +5062,8 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
 ipcMain.handle('email:search', async (_, query: string, account?: string) => {
   const acct = account || 'kevin@carbium.io';
   const escapedQuery = query.replace(/"/g, '\\"');
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${escapedQuery}" --json --limit 20`;
+  // FIXED: Increased limit from 20 to 500
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${escapedQuery}" --json --max 500`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
@@ -5181,7 +5248,8 @@ async function runImportantEmailCheck() {
     try {
       const output = await new Promise<string>((resolve) => {
         exec(
-          `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread newer_than:1d" --json --limit 20`,
+          // FIXED: Increased limit from 20 to 500, removed newer_than:1d to check all unread emails
+          `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --max 500`,
           { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } },
           (error, stdout) => {
             if (error) resolve('[]');

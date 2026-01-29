@@ -14,6 +14,7 @@ import {
   Reply, ReplyAll, Forward, MoreHorizontal,
   Sparkles, X, Paperclip, Check, Eye
 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 // X logo
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -114,6 +115,21 @@ function platformColor(p: string): string {
     discord: 'text-indigo-400', twitter: 'text-gray-300'
   };
   return map[p] || 'text-clawd-text-dim';
+}
+
+// Detect if content is HTML
+function isHTML(content: string): boolean {
+  const htmlTags = /<[^>]+>/;
+  return htmlTags.test(content);
+}
+
+// Sanitize HTML content
+function sanitizeHTML(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'div', 'span', 'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target'],
+    ALLOW_DATA_ATTR: false,
+  });
 }
 
 // ─── Left Pane: Account & Folder Selector ─────────────────────────────────────
@@ -294,51 +310,65 @@ function CenterPane({
             <button
               key={conv.id}
               onClick={() => onSelect(conv)}
-              className={`w-full text-left px-4 py-3 border-b border-clawd-border/50 transition-colors ${
+              className={`w-full text-left px-4 py-3 border-b border-clawd-border/50 transition-all duration-150 group ${
                 selectedId === conv.id
                   ? 'bg-clawd-accent/10 border-l-2 border-l-clawd-accent'
-                  : 'hover:bg-clawd-surface/50'
+                  : 'hover:bg-clawd-surface/80'
               } ${!conv.is_read ? 'bg-clawd-surface/30' : ''}`}
             >
-              <div className="flex items-start gap-2">
-                {/* Unread dot */}
-                <div className="mt-2 flex-shrink-0 w-2">
-                  {!conv.is_read && <div className="w-2 h-2 bg-clawd-accent rounded-full" />}
+              <div className="flex items-start gap-3">
+                {/* Avatar/Icon */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-clawd-border/50 flex items-center justify-center relative mt-0.5">
+                  {!conv.is_read && (
+                    <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-clawd-accent rounded-full border-2 border-clawd-bg" />
+                  )}
+                  {conv.platform === 'email' && <Mail size={16} className="text-orange-400" />}
+                  {conv.platform === 'whatsapp' && <MessageCircle size={16} className="text-green-400" />}
+                  {conv.platform === 'telegram' && <Send size={16} className="text-sky-400" />}
+                  {conv.platform === 'discord' && <Gamepad2 size={16} className="text-indigo-400" />}
+                  {conv.platform === 'twitter' && <XIcon size={16} className="text-gray-300" />}
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className={`text-sm truncate ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
-                      {conv.name || conv.from || 'Unknown'}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  {/* Header: Sender + Timestamp */}
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className={`text-sm truncate ${!conv.is_read ? 'font-bold' : 'font-semibold'} text-clawd-text`}>
+                      {(() => {
+                        // Clean up redundant sender names like "Name from Name"
+                        const name = conv.name || conv.from || 'Unknown';
+                        const parts = name.split(' from ');
+                        return parts.length > 1 && parts[0] === parts[1] ? parts[0] : name;
+                      })()}
                     </span>
-                    <span className="text-xs text-clawd-text-dim flex-shrink-0 ml-2">{conv.relativeTime}</span>
+                    <span className="text-xs text-clawd-text-dim flex-shrink-0 font-medium tabular-nums">{conv.relativeTime}</span>
                   </div>
+
+                  {/* Subject (if exists) - Allow 2 lines with ellipsis */}
                   {conv.subject && (
-                    <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : ''}`}>
+                    <div className={`text-sm leading-snug ${!conv.is_read ? 'font-semibold' : 'font-medium'} text-clawd-text line-clamp-2`}>
                       {conv.subject}
                     </div>
                   )}
-                  <p className="text-xs text-clawd-text-dim truncate mt-0.5">{conv.preview}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`${platformColor(conv.platform)}`}>
-                      {conv.platform === 'email' && <Mail size={10} />}
-                      {conv.platform === 'whatsapp' && <MessageCircle size={10} />}
-                      {conv.platform === 'telegram' && <Send size={10} />}
-                      {conv.platform === 'discord' && <Gamepad2 size={10} />}
-                      {conv.platform === 'twitter' && <XIcon size={10} />}
-                    </span>
+
+                  {/* Preview - Allow 2 lines with ellipsis */}
+                  <p className="text-xs text-clawd-text-dim leading-relaxed line-clamp-2">
+                    {conv.preview}
+                  </p>
+
+                  {/* Metadata badges */}
+                  <div className="flex items-center gap-2 mt-0.5">
                     {conv.message_count && conv.message_count > 1 && (
-                      <span className="text-[10px] text-clawd-text-dim bg-clawd-border rounded px-1">
+                      <span className="text-[10px] text-clawd-text-dim bg-clawd-border rounded px-1.5 py-0.5 font-medium">
                         {conv.message_count}
                       </span>
                     )}
                     {conv.unread_count && conv.unread_count > 0 && (
-                      <span className="text-[10px] text-blue-400 bg-blue-500/20 rounded px-1 font-semibold" title="Unread messages">
+                      <span className="text-[10px] text-blue-400 bg-blue-500/20 rounded px-1.5 py-0.5 font-semibold" title="Unread messages">
                         {conv.unread_count} unread
                       </span>
                     )}
                     {(conv.unreplied_count && conv.unreplied_count > 0) || (conv.has_reply === false) && (
-                      <span className="text-[10px] text-orange-400 bg-orange-500/20 rounded px-1 flex items-center gap-0.5 font-semibold" title="Awaiting reply">
+                      <span className="text-[10px] text-orange-400 bg-orange-500/20 rounded px-1.5 py-0.5 flex items-center gap-0.5 font-semibold" title="Awaiting reply">
                         <Reply size={8} />
                         reply
                       </span>
@@ -350,12 +380,13 @@ function CenterPane({
                   </div>
                 </div>
 
-                {/* Star toggle */}
+                {/* Star toggle button */}
                 <button
                   onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                  className={`p-1 rounded hover:bg-clawd-border flex-shrink-0 ${
-                    conv.is_starred ? 'text-yellow-400' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
+                  className={`p-1.5 rounded-lg hover:bg-clawd-border flex-shrink-0 transition-all duration-150 mt-0.5 ${
+                    conv.is_starred ? 'text-yellow-400 opacity-100' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
                   }`}
+                  title={conv.is_starred ? 'Unstar' : 'Star'}
                 >
                   <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
                 </button>
@@ -530,30 +561,55 @@ function RightPane({
       <div className="flex-1 overflow-y-auto px-6 py-4">
         {loadingThread || loadingBody ? (
           <div className="text-center text-clawd-text-dim py-8 text-sm">Loading...</div>
-        ) : conversation.platform === 'email' && emailBody ? (
-          /* Email body */
+        ) : conversation.platform === 'email' ? (
+          /* Email view */
           <div className="bg-clawd-surface rounded-lg p-4 border border-clawd-border">
             <div className="flex items-center gap-2 mb-3 pb-3 border-b border-clawd-border">
               <span className="font-semibold text-sm">{conversation.name || conversation.from}</span>
               <span className="text-xs text-clawd-text-dim">{conversation.relativeTime}</span>
             </div>
-            <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{emailBody}</pre>
+            {emailBody ? (
+              isHTML(emailBody) ? (
+                /* Render HTML email */
+                <div 
+                  className="text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-clawd-text prose-p:text-clawd-text prose-a:text-clawd-accent prose-strong:text-clawd-text prose-ul:text-clawd-text prose-ol:text-clawd-text"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(emailBody) }}
+                />
+              ) : (
+                /* Render plain text email */
+                <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{emailBody}</pre>
+              )
+            ) : (
+              /* Fallback to preview if body not available */
+              <div className="text-sm text-clawd-text-dim italic">
+                <p className="mb-2">Email body not available. Preview:</p>
+                <p className="text-clawd-text">{conversation.preview}</p>
+              </div>
+            )}
           </div>
         ) : thread.length > 0 ? (
           /* Chat thread */
-          <div className="space-y-4">
+          <div className="space-y-3">
             {thread.map((msg, i) => (
-              <div key={msg.id || i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
-                  msg.fromMe
-                    ? 'bg-clawd-accent/20 border border-clawd-accent/30'
-                    : 'bg-clawd-surface border border-clawd-border'
-                }`}>
-                  <div className="flex items-center gap-2 mb-1">
+              <div key={msg.id || i} className={`flex gap-3 ${msg.fromMe ? 'flex-row-reverse' : ''}`}>
+                {/* Avatar */}
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-clawd-border/50 flex items-center justify-center text-xs font-semibold text-clawd-text-dim">
+                  {msg.fromMe ? 'K' : (msg.senderName || msg.sender || '?')[0].toUpperCase()}
+                </div>
+                
+                {/* Message bubble */}
+                <div className={`max-w-[70%] flex flex-col ${msg.fromMe ? 'items-end' : 'items-start'}`}>
+                  <div className="flex items-center gap-2 mb-1 px-1">
                     <span className="text-xs font-semibold">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</span>
-                    <span className="text-[10px] text-clawd-text-dim">{msg.timestamp}</span>
+                    <span className="text-xs text-clawd-text-dim font-medium">{msg.timestamp}</span>
                   </div>
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
+                  <div className={`rounded-xl px-4 py-2.5 ${
+                    msg.fromMe
+                      ? 'bg-clawd-accent/20 border border-clawd-accent/30'
+                      : 'bg-clawd-surface border border-clawd-border'
+                  }`}>
+                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -818,7 +874,8 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.messages?.recent(50, showArchived);
+      // FIXED: Increased limit from 50 to 500 to show more messages
+      const result = await (window as any).clawdbot?.messages?.recent(500, showArchived);
       if (result?.success && result.chats && isMounted.current) {
         const msgs = result.chats as ConversationItem[];
         setAllMessages(msgs);
@@ -862,15 +919,25 @@ export default function CommsInbox3Pane() {
       if (selectedConversation.platform === 'email') {
         setLoadingBody(true);
         try {
-          const emailId = selectedConversation.id.replace('email-', '');
+          // Extract email ID - handle various formats
+          let emailId = selectedConversation.id;
+          if (emailId.startsWith('email-')) {
+            emailId = emailId.replace('email-', '');
+          }
+          
+          console.log('[CommsInbox3Pane] Fetching email body for ID:', emailId);
           const result = await (window as any).clawdbot?.email?.body(emailId);
+          console.log('[CommsInbox3Pane] Email body result:', result?.success, 'body length:', result?.body?.length);
+          
           if (result?.success && result.body) {
             setEmailBody(result.body);
           } else {
+            console.warn('[CommsInbox3Pane] No email body returned:', result?.error);
+            // Fall back to preview if body not available
             setEmailBody('');
           }
         } catch (e) {
-          console.error('Failed to load email body:', e);
+          console.error('[CommsInbox3Pane] Failed to load email body:', e);
           setEmailBody('');
         } finally {
           setLoadingBody(false);

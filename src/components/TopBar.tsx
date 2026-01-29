@@ -69,10 +69,10 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
       aria-label="Top navigation bar"
     >
       {/* System Status Indicators */}
-      <div className="no-drag flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-[calc(100%-200px)]" role="status" aria-label="System status indicators">
+      <div className="no-drag flex items-center gap-1.5 overflow-x-auto scrollbar-hide max-w-[calc(100%-200px)]" role="status" aria-label="System status indicators">
         {/* Gateway Connection */}
         <div 
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
             connectionState === 'connected'
               ? 'bg-green-500/10 text-green-400'
               : connectionState === 'connecting' || connectionState === 'authenticating'
@@ -82,7 +82,7 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
           role="status"
           aria-label={`Gateway connection: ${connectionState}`}
         >
-          {connectionState === 'connected' ? <Wifi size={14} aria-hidden="true" className="flex-shrink-0" /> : <WifiOff size={14} aria-hidden="true" className="flex-shrink-0" />}
+          {connectionState === 'connected' ? <Wifi size={12} aria-hidden="true" className="flex-shrink-0" /> : <WifiOff size={12} aria-hidden="true" className="flex-shrink-0" />}
           <span className="flex-shrink-0">
             {connectionState === 'connected' ? 'Online' : 
              connectionState === 'connecting' ? 'Connecting...' :
@@ -91,23 +91,23 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
         </div>
 
         {/* Watcher Status */}
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
           status.watcherRunning 
             ? 'bg-green-500/10 text-green-400' 
             : 'bg-red-500/10 text-red-400'
         }`}>
-          <Activity size={14} aria-hidden="true" className="flex-shrink-0" />
+          <Activity size={12} aria-hidden="true" className="flex-shrink-0" />
           <span className="flex-shrink-0">Watcher</span>
-          <span className={`w-2 h-2 rounded-full transition-colors flex-shrink-0 ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} aria-hidden="true" />
+          <span className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0 ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} aria-hidden="true" />
         </div>
 
         {/* Kill Switch Status */}
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
           status.killSwitchOn 
             ? 'bg-red-500/10 text-red-400' 
             : 'bg-green-500/10 text-green-400'
         }`}>
-          {status.killSwitchOn ? <Lock size={14} aria-hidden="true" className="flex-shrink-0" /> : <Unlock size={14} aria-hidden="true" className="flex-shrink-0" />}
+          {status.killSwitchOn ? <Lock size={12} aria-hidden="true" className="flex-shrink-0" /> : <Unlock size={12} aria-hidden="true" className="flex-shrink-0" />}
           <span className="flex-shrink-0">{status.killSwitchOn ? 'Blocked' : 'Live'}</span>
         </div>
 
@@ -118,16 +118,16 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
 
         {/* Pending Inbox */}
         {status.pendingInbox > 0 && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-yellow-500/10 text-yellow-400 transition-colors flex-shrink-0 whitespace-nowrap">
-            <Inbox size={14} aria-hidden="true" className="flex-shrink-0" />
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-yellow-500/10 text-yellow-400 transition-colors flex-shrink-0 whitespace-nowrap">
+            <Inbox size={12} aria-hidden="true" className="flex-shrink-0" />
             <span className="flex-shrink-0 tabular-nums">{status.pendingInbox} pending</span>
           </div>
         )}
 
         {/* In-Progress Tasks */}
         {status.inProgressTasks > 0 && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-400 transition-colors flex-shrink-0 whitespace-nowrap">
-            <Loader size={14} className="animate-spin flex-shrink-0" aria-hidden="true" />
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-400 transition-colors flex-shrink-0 whitespace-nowrap">
+            <Loader size={12} className="animate-spin flex-shrink-0" aria-hidden="true" />
             <span className="flex-shrink-0 tabular-nums">{status.inProgressTasks} running</span>
           </div>
         )}

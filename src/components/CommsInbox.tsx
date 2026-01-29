@@ -749,7 +749,8 @@ export default function CommsInbox() {
   const fetchMessages = useCallback(async (): Promise<{ messages: Message[] | null; fromCache: boolean }> => {
     console.log('[CommsInbox] Fetching messages...', 'showArchived:', showArchived);
     try {
-      const result = await (window as any).clawdbot?.messages?.recent(30, showArchived);
+      // FIXED: Increased limit from 30 to 500 to show more messages
+      const result = await (window as any).clawdbot?.messages?.recent(500, showArchived);
       if (result?.success && result.chats) {
         const msgs = result.chats as Message[];
         console.log('[CommsInbox] Got messages:', {

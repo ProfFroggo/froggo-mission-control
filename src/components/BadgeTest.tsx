@@ -70,31 +70,31 @@ export default function BadgeTest() {
           <p className="text-sm text-clawd-text-dim">Each badge should be whitespace-nowrap and flex-shrink-0</p>
           
           <div className="p-4 bg-clawd-surface rounded-xl space-y-3">
-            {/* Simulate TopBar status badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 flex-shrink-0 whitespace-nowrap">
-                <Wifi size={14} className="flex-shrink-0" />
+            {/* Simulate TopBar status badges - Updated styling for smaller, professional look */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-500/10 text-green-400 flex-shrink-0 whitespace-nowrap">
+                <Wifi size={12} className="flex-shrink-0" />
                 <span className="flex-shrink-0">Online</span>
               </div>
               
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-500/10 text-green-400 flex-shrink-0 whitespace-nowrap">
-                <Activity size={14} className="flex-shrink-0" />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-green-500/10 text-green-400 flex-shrink-0 whitespace-nowrap">
+                <Activity size={12} className="flex-shrink-0" />
                 <span className="flex-shrink-0">Watcher</span>
-                <span className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" />
               </div>
               
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 flex-shrink-0 whitespace-nowrap">
-                <Lock size={14} className="flex-shrink-0" />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-red-500/10 text-red-400 flex-shrink-0 whitespace-nowrap">
+                <Lock size={12} className="flex-shrink-0" />
                 <span className="flex-shrink-0">Blocked</span>
               </div>
               
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-yellow-500/10 text-yellow-400 flex-shrink-0 whitespace-nowrap">
-                <Inbox size={14} className="flex-shrink-0" />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-yellow-500/10 text-yellow-400 flex-shrink-0 whitespace-nowrap">
+                <Inbox size={12} className="flex-shrink-0" />
                 <span className="flex-shrink-0">15 pending</span>
               </div>
               
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 text-blue-400 flex-shrink-0 whitespace-nowrap">
-                <Loader size={14} className="animate-spin flex-shrink-0" />
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-400 flex-shrink-0 whitespace-nowrap">
+                <Loader size={12} className="animate-spin flex-shrink-0" />
                 <span className="flex-shrink-0">3 running</span>
               </div>
             </div>
