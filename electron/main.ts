@@ -5956,16 +5956,27 @@ ipcMain.handle('agents:getMetrics', async () => {
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
   
+  // Each query is independently try/caught so one failure doesn't kill all data
+  let taskStats = { total: 0, completed: 0 };
+  let recentTasks: any[] = [];
+  let skills: any[] = [];
+  let brainNotes: string[] = [];
+  let agentRules = 'AGENT.md not found';
+
+  // Get task stats
   try {
-    // Get task stats
     const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to = '${agentId}'" -json`;
     const taskStatsResult = execSync(taskStatsCmd, { encoding: 'utf-8' });
-    const taskStats = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
-    
-    // Get recent tasks
+    taskStats = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] taskStats query failed for ${agentId}:`, e.message);
+  }
+
+  // Get recent tasks
+  try {
     const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to = '${agentId}' ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
     const recentTasksResult = execSync(recentTasksCmd, { encoding: 'utf-8' });
-    const recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
+    recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
       let outcome = 'unknown';
       try {
         const metadata = task.metadata ? JSON.parse(task.metadata) : {};
@@ -5975,77 +5986,69 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       }
       return { ...task, outcome, completedAt: task.completed_at };
     });
-    
-    // Get skills
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] recentTasks query failed for ${agentId}:`, e.message);
+  }
+
+  // Get skills
+  try {
     const skillsCmd = `sqlite3 "${froggoDbPath}" "SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC" -json`;
     const skillsResult = execSync(skillsCmd, { encoding: 'utf-8' });
-    const skills = JSON.parse(skillsResult || '[]').map((s: any) => ({
+    skills = JSON.parse(skillsResult || '[]').map((s: any) => ({
       name: s.name,
       proficiency: s.proficiency,
       lastUsed: s.last_used,
       successCount: s.success_count,
       failureCount: s.failure_count,
     }));
-    
-    // Get brain notes
-    const brainNotesCmd = `sqlite3 "${froggoDbPath}" "SELECT content FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`;
-    const brainNotesResult = execSync(brainNotesCmd, { encoding: 'utf-8' });
-    const brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.content);
-    
-    // Load AGENT.md
-    let agentRules = 'AGENT.md not found';
-    try {
-      const agentMdPath = path.join(os.homedir(), 'clawd', 'agents', agentId, 'AGENT.md');
-      agentRules = fs.readFileSync(agentMdPath, 'utf-8');
-    } catch (e) {
-      // Try alternative paths
-      try {
-        const altPaths = [
-          path.join(os.homedir(), 'clawd', 'agents', agentId.toLowerCase(), 'AGENT.md'),
-          path.join(os.homedir(), 'clawd', 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
-        ];
-        
-        for (const altPath of altPaths) {
-          if (fs.existsSync(altPath)) {
-            agentRules = fs.readFileSync(altPath, 'utf-8');
-            break;
-          }
-        }
-      } catch (e2) {
-        // Keep default message
-      }
-    }
-    
-    const successRate = taskStats.total > 0 ? taskStats.completed / taskStats.total : 0;
-    
-    return {
-      success: true,
-      successRate,
-      avgTime: '2.5h',
-      totalTasks: taskStats.total,
-      successfulTasks: taskStats.completed,
-      failedTasks: taskStats.total - taskStats.completed,
-      skills,
-      recentTasks,
-      brainNotes,
-      agentRules,
-    };
-  } catch (error: any) {
-    safeLog.error(`Failed to get details for ${agentId}:`, error);
-    return {
-      success: false,
-      error: error.message || 'Failed to load agent details',
-      successRate: 0,
-      avgTime: 'N/A',
-      totalTasks: 0,
-      successfulTasks: 0,
-      failedTasks: 0,
-      skills: [],
-      recentTasks: [],
-      brainNotes: [],
-      agentRules: 'Error loading agent details',
-    };
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] skills query failed for ${agentId}:`, e.message);
   }
+
+  // Get brain notes (column is 'description', not 'content')
+  try {
+    const brainNotesCmd = `sqlite3 "${froggoDbPath}" "SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`;
+    const brainNotesResult = execSync(brainNotesCmd, { encoding: 'utf-8' });
+    brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.description);
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] brainNotes query failed for ${agentId}:`, e.message);
+  }
+
+  // Load AGENT.md
+  try {
+    const agentMdPath = path.join(os.homedir(), 'clawd', 'agents', agentId, 'AGENT.md');
+    agentRules = fs.readFileSync(agentMdPath, 'utf-8');
+  } catch (e) {
+    try {
+      const altPaths = [
+        path.join(os.homedir(), 'clawd', 'agents', agentId.toLowerCase(), 'AGENT.md'),
+        path.join(os.homedir(), 'clawd', 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
+      ];
+      for (const altPath of altPaths) {
+        if (fs.existsSync(altPath)) {
+          agentRules = fs.readFileSync(altPath, 'utf-8');
+          break;
+        }
+      }
+    } catch (e2) {
+      // Keep default message
+    }
+  }
+
+  const successRate = taskStats.total > 0 ? taskStats.completed / taskStats.total : 0;
+
+  return {
+    success: true,
+    successRate,
+    avgTime: '2.5h',
+    totalTasks: taskStats.total,
+    successfulTasks: taskStats.completed,
+    failedTasks: taskStats.total - taskStats.completed,
+    skills,
+    recentTasks,
+    brainNotes,
+    agentRules,
+  };
 });
 
 ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
