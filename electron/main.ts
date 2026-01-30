@@ -5956,6 +5956,19 @@ ipcMain.handle('agents:getMetrics', async () => {
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
   
+  // Agent ID aliases - some agents have multiple IDs that map to the same DB records
+  const agentAliases: Record<string, string[]> = {
+    main: ['main', 'froggo'],
+    froggo: ['main', 'froggo'],
+    coder: ['coder'],
+    researcher: ['researcher'],
+    writer: ['writer'],
+    chief: ['chief'],
+    onchain_worker: ['onchain_worker'],
+  };
+  const dbIds = agentAliases[agentId] || [agentId];
+  const dbIdsSql = dbIds.map(id => `'${id}'`).join(',');
+  
   // Each query is independently try/caught so one failure doesn't kill all data
   let taskStats = { total: 0, completed: 0 };
   let recentTasks: any[] = [];
@@ -5965,7 +5978,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 
   // Get task stats
   try {
-    const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to = '${agentId}'" -json`;
+    const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${dbIdsSql})" -json`;
     const taskStatsResult = execSync(taskStatsCmd, { encoding: 'utf-8' });
     taskStats = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
   } catch (e: any) {
@@ -5974,7 +5987,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 
   // Get recent tasks
   try {
-    const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to = '${agentId}' ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
+    const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${dbIdsSql}) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
     const recentTasksResult = execSync(recentTasksCmd, { encoding: 'utf-8' });
     recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
       let outcome = 'unknown';
@@ -6023,6 +6036,8 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       const altPaths = [
         path.join(os.homedir(), 'clawd', 'agents', agentId.toLowerCase(), 'AGENT.md'),
         path.join(os.homedir(), 'clawd', 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
+        // Try all aliases (e.g. froggo -> main)
+        ...dbIds.filter(id => id !== agentId).map(id => path.join(os.homedir(), 'clawd', 'agents', id, 'AGENT.md')),
       ];
       for (const altPath of altPaths) {
         if (fs.existsSync(altPath)) {

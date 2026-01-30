@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
+import { usePanelConfigStore } from '../store/panelConfig';
 
 // X logo as SVG component
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -19,17 +20,26 @@ interface SidebarProps {
   onWidthChange?: (width: number) => void; // Callback for width changes
 }
 
-const navItems = [
-  { id: 'inbox' as View, icon: Mail, label: 'Inbox', shortcut: '⌘1' },
-  { id: 'dashboard' as View, icon: LayoutDashboard, label: 'Dashboard', shortcut: '⌘2' },
-  { id: 'analytics' as View, icon: BarChart2, label: 'Analytics', shortcut: '⌘3' },
-  { id: 'kanban' as View, icon: Kanban, label: 'Tasks', shortcut: '⌘4' },
-  { id: 'agents' as View, icon: Bot, label: 'Agents', shortcut: '⌘5' },
-  { id: 'twitter' as View, icon: XIcon, label: 'X', shortcut: '⌘6' },
-  { id: 'voice' as View, icon: Mic, label: 'Voice', shortcut: '⌘7' },
-  { id: 'chat' as View, icon: MessageSquare, label: 'Chat', shortcut: '⌘8' },
-  { id: 'accounts' as View, icon: Cloud, label: 'Accounts', shortcut: '⌘9' },
-  { id: 'approvals' as View, icon: Inbox, label: 'Approvals', shortcut: '⌘0', badge: 'inbox' },
+// Icon map for panel config lookups
+const panelIconMap: Record<string, any> = {
+  inbox: Mail,
+  dashboard: LayoutDashboard,
+  analytics: BarChart2,
+  kanban: Kanban,
+  agents: Bot,
+  twitter: XIcon,
+  voice: Mic,
+  chat: MessageSquare,
+  accounts: Cloud,
+  approvals: Inbox,
+  context: Sparkles,
+  codeagent: Code,
+  library: FolderOpen,
+  schedule: Calendar,
+};
+
+// Static items not managed by panel config (always shown)
+const staticNavItems = [
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
@@ -46,8 +56,21 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   const [inboxCount, setInboxCount] = useState(0);
   const [sysStatus, setSysStatus] = useState<SystemStatus>({ watcherRunning: false, killSwitchOn: true });
   const { connected, tasks } = useStore();
+  const { panels: panelConfig, openEditModal } = usePanelConfigStore();
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
+
+  // Keyboard shortcut: Cmd+Shift+E to open Edit Panels
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'E') {
+        e.preventDefault();
+        openEditModal();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [openEditModal]);
 
   // Report width changes to parent
   useEffect(() => {
@@ -109,7 +132,21 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       {/* Navigation */}
       <nav className="flex-1 py-4 px-2" aria-label="Primary navigation">
         <div className="space-y-1">
-          {navItems.map(({ id, icon: Icon, label, shortcut }) => {
+          {/* Configurable panels - ordered and filtered by panel config */}
+          {[...panelConfig]
+            .sort((a, b) => a.order - b.order)
+            .filter(p => p.visible)
+            .map((p, idx) => {
+              const Icon = panelIconMap[p.id];
+              if (!Icon) return null;
+              const id = p.id as View;
+              const label = p.label;
+              const shortcutNum = idx < 10 ? `⌘${idx + 1 > 9 ? 0 : idx + 1}` : undefined;
+              const shortcut = shortcutNum || '';
+              return { id, icon: Icon, label, shortcut };
+            })
+            .filter(Boolean)
+            .map(({ id, icon: Icon, label, shortcut }: any) => {
             const isActive = currentView === id;
             let badge = 0;
             if (id === 'inbox') badge = inboxCount;
@@ -156,6 +193,29 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                     size="sm"
                   />
                 )}
+              </button>
+            );
+          })}
+
+          {/* Static nav items (not configurable) */}
+          {staticNavItems.map(({ id, icon: Icon, label, shortcut }) => {
+            const isActive = currentView === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                  isActive
+                    ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                    : 'text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
+                } ${expanded ? '' : 'justify-center'}`}
+                title={expanded ? undefined : `${label} (${shortcut})`}
+                aria-label={label}
+                aria-current={isActive ? 'page' : undefined}
+                data-view={id}
+              >
+                <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
+                {expanded && <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>}
               </button>
             );
           })}
@@ -234,6 +294,19 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           )}
         </div>
         
+        {/* Edit Panels */}
+        <button
+          onClick={openEditModal}
+          className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text ${
+            expanded ? '' : 'justify-center'
+          }`}
+          title="Edit Panels (⌘⇧E)"
+          aria-label="Edit Panels (Command Shift E)"
+        >
+          <SlidersHorizontal size={20} className="flex-shrink-0" aria-hidden="true" />
+          {expanded && <span className="text-sm font-medium">Edit Panels</span>}
+        </button>
+
         {/* Help */}
         {onOpenHelp && (
           <button 

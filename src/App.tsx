@@ -37,6 +37,7 @@ import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
 import ErrorBoundaryTest from './components/ErrorBoundaryTest';
 import HelpPanel from './components/HelpPanel';
+import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
@@ -350,6 +351,9 @@ function App() {
             onNavigate={(view) => setCurrentView(view as View)}
           />
         </ErrorBoundary>
+
+        {/* Edit Panels Modal */}
+        <EditPanelsModal />
 
         {/* Toast notifications */}
         <ErrorBoundary panelName="Toast System">

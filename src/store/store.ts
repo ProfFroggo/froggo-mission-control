@@ -258,7 +258,7 @@ async function executeApproval(item: ApprovalItem) {
 
 const defaultAgents: Agent[] = [
   { id: 'main', name: 'Froggo', avatar: '🐸', description: 'Main assistant - orchestrates everything', status: 'active', capabilities: ['chat', 'code', 'web', 'email', 'orchestrate'] },
-  { id: 'froggo', name: 'Froggo', avatar: '🐸', description: 'Agent reviewer - reviews all completed work', status: 'active', capabilities: ['review', 'orchestrate', 'approve'] },
+  { id: 'froggo', name: 'Froggo (Reviewer)', avatar: '🐸', description: 'Agent reviewer - reviews all completed work', status: 'active', capabilities: ['review', 'orchestrate', 'approve'] },
   { id: 'coder', name: 'Coder', avatar: '💻', description: 'Software engineering tasks', status: 'idle', capabilities: ['code', 'git', 'debug', 'test'] },
   { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
   { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
