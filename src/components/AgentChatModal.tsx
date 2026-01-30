@@ -85,7 +85,9 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         throw new Error('Agent chat IPC not available — are you running in the Electron app?');
       }
 
-      const key = await ipc.spawnChat(agentId);
+      const result = await ipc.spawnChat(agentId);
+      // Handle both formats: string key (legacy) or { success, sessionKey } (new)
+      const key = typeof result === 'string' ? result : result?.sessionKey;
       if (key) {
         setSessionKey(key);
         setMessages([{
@@ -94,7 +96,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
           timestamp: Date.now(),
         }]);
       } else {
-        throw new Error('No session key returned');
+        throw new Error(result?.error || 'No session key returned');
       }
     } catch (e: any) {
       console.error('Failed to spawn chat session:', e);
@@ -170,14 +172,26 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         : await gateway.sendToSession(sessionKey, userText);
 
       // If we get a direct response (non-streaming), use it
-      if (result && (result as any).response) {
+      const responseText = typeof result === 'string' ? result : (result as any)?.response;
+      if (responseText) {
         // Clean up stream listener since we got a direct response
         unsub();
         streamCleanupRef.current = null;
         setStreamingContent('');
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: (result as any).response,
+          content: responseText,
+          timestamp: Date.now(),
+        }]);
+        setSending(false);
+      } else if (result && !(result as any).success && (result as any).error) {
+        // Handle error response
+        unsub();
+        streamCleanupRef.current = null;
+        setStreamingContent('');
+        setMessages(prev => [...prev, {
+          role: 'system',
+          content: `⚠️ Error: ${(result as any).error}`,
           timestamp: Date.now(),
         }]);
         setSending(false);

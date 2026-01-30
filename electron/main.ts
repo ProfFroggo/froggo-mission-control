@@ -6019,6 +6019,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
     const successRate = taskStats.total > 0 ? taskStats.completed / taskStats.total : 0;
     
     return {
+      success: true,
       successRate,
       avgTime: '2.5h',
       totalTasks: taskStats.total,
@@ -6032,6 +6033,8 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   } catch (error: any) {
     safeLog.error(`Failed to get details for ${agentId}:`, error);
     return {
+      success: false,
+      error: error.message || 'Failed to load agent details',
       successRate: 0,
       avgTime: 'N/A',
       totalTasks: 0,
@@ -6108,10 +6111,10 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
     };
     
     safeLog.log(`Spawned chat session for ${agentId}: ${sessionKey}`);
-    return sessionKey;
+    return { success: true, sessionKey };
   } catch (error: any) {
     safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
-    throw error;
+    return { success: false, error: error.message || 'Failed to spawn chat session' };
   }
 });
 
@@ -6121,7 +6124,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
     const session = sessions[sessionKey];
     
     if (!session) {
-      return { response: `Session ${sessionKey} not found. Please reconnect.` };
+      return { success: false, error: `Session ${sessionKey} not found. Please reconnect.` };
     }
     
     // Add user message to history
@@ -6230,10 +6233,10 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
       session.messages = [session.messages[0], ...session.messages.slice(-40)];
     }
     
-    return { response };
+    return { success: true, response };
   } catch (error: any) {
     safeLog.error('Agent chat error:', error);
-    return { response: `❌ Error: ${error.message || 'Unknown error'}` };
+    return { success: false, error: error.message || 'Unknown error', response: `❌ Error: ${error.message || 'Unknown error'}` };
   }
 });
 
