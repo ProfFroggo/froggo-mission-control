@@ -244,17 +244,17 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         })));
       }
 
-      // Search agents (mock data - can be replaced with real agent search)
-      const agents = ['coder', 'writer', 'researcher', 'chief', 'social-manager'];
-      const matchingAgents = agents.filter(a => a.toLowerCase().includes(q.toLowerCase()));
-      if (matchingAgents.length > 0) {
-        allResults.push(...matchingAgents.map(a => ({
-          id: `agent-${a}`,
+      // Search agents from database
+      const agentResult = await (window as any).clawdbot?.agents?.search(q);
+      if (agentResult?.success && agentResult.agents?.length > 0) {
+        allResults.push(...agentResult.agents.map((a: any) => ({
+          id: `agent-${a.id}`,
           type: 'agent' as const,
-          title: a.charAt(0).toUpperCase() + a.slice(1),
-          snippet: `Agent role: ${a}`,
+          title: `${a.name} — ${a.role}`,
+          snippet: `${a.description}${a.recentTask ? ` • Latest: ${a.recentTask}` : ''} • ${a.taskCount} tasks • ${a.status}`,
           source: 'Agents',
-          metadata: { role: a },
+          metadata: { role: a.id, capabilities: a.capabilities, status: a.status },
+          status: a.status === 'active' ? 'in-progress' : undefined,
         })));
       }
 

@@ -114,12 +114,12 @@ router.get('/:agentId/details', async (req, res) => {
 
     // Get brain notes from learning_events
     const brainNotes = db.prepare(`
-      SELECT content, outcome
+      SELECT description, outcome
       FROM learning_events
       WHERE outcome IN ('insight', 'pattern')
       ORDER BY timestamp DESC
       LIMIT 20
-    `).all().map((row: any) => row.content);
+    `).all().map((row: any) => row.description);
 
     db.close();
 
@@ -216,18 +216,37 @@ router.post('/spawn-chat', async (req, res) => {
   const { agentId } = req.body;
 
   try {
-    // Load agent prompt
-    let agentPrompt = '';
+    const agentPrompts: Record<string, string> = {
+      main: 'You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.',
+      froggo: 'You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.',
+      coder: 'You are Coder, a software engineering agent. You help with code, debugging, architecture, and technical problems.',
+      researcher: 'You are Researcher, a research and analysis agent. You help with research, data gathering, and analysis.',
+      writer: 'You are Writer, a content creation agent. You help with writing, editing, and content strategy.',
+      chief: 'You are Chief, the executive oversight agent. You help with planning, prioritization, and strategic decisions.',
+    };
+
+    // Try to load AGENT.md for richer context
+    let agentPrompt = agentPrompts[agentId] || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
     try {
       const agentMdPath = path.join(AGENTS_PATH, agentId, 'AGENT.md');
-      agentPrompt = await readFile(agentMdPath, 'utf-8');
+      const agentMd = await readFile(agentMdPath, 'utf-8');
+      agentPrompt = `${agentPrompt}\n\nYour agent rules:\n${agentMd.slice(0, 2000)}`;
     } catch (e) {
-      agentPrompt = `You are ${agentId}, a specialized agent. You are in a collaborative chat to discuss improvements, skills, and performance.`;
+      // Use default prompt
     }
 
-    // For now, return a mock session key
-    // In production, this would spawn via gateway
     const sessionKey = `chat-${agentId}-${Date.now()}`;
+
+    // Store session for chat handler
+    if (!(global as any)._agentChatSessions) {
+      (global as any)._agentChatSessions = {};
+    }
+    (global as any)._agentChatSessions[sessionKey] = {
+      agentId,
+      systemPrompt: agentPrompt,
+      messages: [{ role: 'system', content: agentPrompt }],
+      label: `dashboard-chat-${agentId}-${Date.now()}`,
+    };
 
     res.json({ sessionKey });
   } catch (error) {
@@ -241,23 +260,53 @@ router.post('/chat', async (req, res) => {
   const { sessionKey, message } = req.body;
 
   try {
-    // Mock response for now
-    // In production, this would use gateway.request('sessions.send', ...)
+    // Route through clawdbot agent CLI for real LLM responses
+    const sessions = (global as any)._agentChatSessions || {};
+    const session = sessions[sessionKey];
     
-    const responses = [
-      "That's a great suggestion! I'll focus on improving that area.",
-      "I've been working on that skill. Let me know if you see improvements.",
-      "Thanks for the feedback. I'll incorporate that into my workflow.",
-      "I need more practice with that. Can you assign me some tasks to learn?",
-      "Let me analyze my recent performance and get back to you.",
-    ];
+    if (!session) {
+      res.status(404).json({ error: `Session ${sessionKey} not found. Please reconnect.` });
+      return;
+    }
 
-    const response = responses[Math.floor(Math.random() * responses.length)];
+    // Add user message to history
+    session.messages.push({ role: 'user', content: message });
+
+    // Build context
+    const recentHistory = session.messages
+      .filter((m: any) => m.role !== 'system')
+      .slice(-6)
+      .map((m: any) => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
+      .join('\n\n');
+
+    const fullMessage = session.messages.length <= 2
+      ? `${session.systemPrompt}\n\nRespond to this message from the dashboard user:\n${message}`
+      : `${session.systemPrompt}\n\nConversation so far:\n${recentHistory}`;
+
+    const escapedMsg = fullMessage.replace(/'/g, "'\\''");
+    const agentIdMap: Record<string, string> = {
+      main: 'chat-agent', froggo: 'chat-agent', coder: 'coder',
+      researcher: 'researcher', writer: 'writer', chief: 'chief',
+    };
+    const clawdAgentId = agentIdMap[session.agentId] || session.agentId;
+
+    const { stdout } = await execAsync(
+      `clawdbot agent --message '${escapedMsg}' --session-id '${sessionKey}' --agent ${clawdAgentId}`,
+      { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }
+    );
+
+    const response = stdout.trim() || 'No response from agent';
+    session.messages.push({ role: 'assistant', content: response });
+
+    // Keep history manageable
+    if (session.messages.length > 41) {
+      session.messages = [session.messages[0], ...session.messages.slice(-40)];
+    }
 
     res.json({ response });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to send chat message:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    res.status(500).json({ error: error.message || 'Failed to send message' });
   }
 });
 

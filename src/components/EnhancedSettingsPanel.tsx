@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive
 } from 'lucide-react';
 import { useStore } from '../store/store';
+import { useUserSettings } from '../store/userSettings';
 import { reconnectGateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
@@ -145,7 +146,7 @@ const defaultSettings: Settings = {
   externalActionsEnabled: false,
   rateLimitTweets: 10,
   rateLimitEmails: 20,
-  defaultEmailAccount: 'kevin@carbium.io',
+  defaultEmailAccount: useUserSettings.getState().email,
   defaultCalendarAccount: 'kevin.macarthur@bitso.com',
   performance: {
     enableCache: true,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, Star, Mail, Check, User, Paperclip } from 'lucide-react';
+import { useUserSettings } from '../store/userSettings';
 
 interface ThreadMessage {
   id: string;
@@ -240,8 +241,7 @@ export default function ThreadView({
     }
   };
 
-  const myEmail = 'kevin@carbium.io'; // TODO: Get from user context/settings
-  const myPhone = '+35054008841'; // TODO: Get from user context/settings
+  const { email: myEmail, phone: myPhone } = useUserSettings();
 
   return (
     <div className="flex flex-col h-full bg-clawd-bg">

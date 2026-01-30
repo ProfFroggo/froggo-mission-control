@@ -412,23 +412,65 @@ function RightPane({
     }
   }, [showAIPanel, conversation]);
 
+  const buildThreadContext = () => {
+    const threadMessages: Array<{role: string, content: string}> = [];
+    if (thread.length > 0) {
+      for (const msg of thread.slice(-10)) {
+        threadMessages.push({
+          role: msg.senderName || msg.sender || 'them',
+          content: msg.text || '',
+        });
+      }
+    } else if (conversation) {
+      threadMessages.push({
+        role: conversation.name || conversation.from || 'them',
+        content: conversation.preview || conversation.subject || '',
+      });
+    }
+    return threadMessages;
+  };
+
+  const callAIReply = async (tone: 'formal' | 'casual' | 'auto' = 'auto', intentOverride?: string) => {
+    const threadMessages = buildThreadContext();
+    if (intentOverride) {
+      threadMessages.push({ role: 'user-intent', content: `User wants to say: ${intentOverride}` });
+    }
+    const result = await (window as any).clawdbot?.ai?.generateReply({
+      threadMessages,
+      platform: conversation?.platform,
+      recipientName: conversation?.name || conversation?.from,
+      subject: conversation?.subject,
+      tone,
+    });
+    return result;
+  };
+
   const generateSuggestions = async () => {
     if (!conversation) return;
     setLoadingSuggestions(true);
     try {
-      // Simulate AI suggestions based on context
-      await new Promise(r => setTimeout(r, 1200));
-      const name = (conversation.name || conversation.from || 'there').split(' ')[0];
-      const suggestions = [
-        `Hi ${name}, thanks for reaching out! I'll look into this and get back to you shortly.`,
-        `Thanks for the message. Let me check on that for you.`,
-        `Got it, ${name}. I'll take care of this today.`,
-        `Appreciate you following up. I'm on it!`,
-        `Thanks ${name}! I'll review and respond with details soon.`
-      ];
+      // Generate 3 suggestions with different tones
+      const [formal, casual, auto] = await Promise.all([
+        callAIReply('formal'),
+        callAIReply('casual'),
+        callAIReply('auto'),
+      ]);
+
+      const suggestions: string[] = [];
+      if (auto?.success && auto.draft) suggestions.push(auto.draft);
+      if (formal?.success && formal.draft) suggestions.push(formal.draft);
+      if (casual?.success && casual.draft) suggestions.push(casual.draft);
+
+      if (suggestions.length === 0) {
+        // Fallback
+        const name = (conversation.name || conversation.from || 'there').split(' ')[0];
+        suggestions.push(`Hi ${name}, thanks for reaching out! I'll look into this and get back to you shortly.`);
+      }
       setSuggestedReplies(suggestions);
     } catch (e) {
       console.error('Failed to generate suggestions:', e);
+      const name = (conversation.name || conversation.from || 'there').split(' ')[0];
+      setSuggestedReplies([`Hi ${name}, thanks for your message. Let me get back to you on this.`]);
     } finally {
       setLoadingSuggestions(false);
     }
@@ -438,15 +480,18 @@ function RightPane({
     if (!aiIntent.trim()) return;
     setGeneratingFromIntent(true);
     try {
-      // Simulate AI generation from intent
-      await new Promise(r => setTimeout(r, 1000));
-      const name = (conversation?.name || conversation?.from || 'there').split(' ')[0];
-      // Mock response based on intent
-      const generated = `Hi ${name},\n\n${aiIntent}\n\nLet me know if you need anything else!\n\nBest regards`;
-      setReplyText(generated);
+      const result = await callAIReply('auto', aiIntent);
+      if (result?.success && result.draft) {
+        setReplyText(result.draft);
+      } else {
+        // Fallback
+        const name = (conversation?.name || conversation?.from || 'there').split(' ')[0];
+        setReplyText(`Hi ${name},\n\n${aiIntent}\n\nBest regards`);
+      }
       setAiIntent('');
     } catch (e) {
       console.error('Failed to generate from intent:', e);
+      setReplyText(aiIntent);
     } finally {
       setGeneratingFromIntent(false);
     }
@@ -460,10 +505,21 @@ function RightPane({
   const generateReply = async () => {
     if (!conversation) return;
     setGenerating(true);
-    await new Promise(r => setTimeout(r, 800));
-    const name = (conversation.name || conversation.from || 'there').split(' ')[0];
-    setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
-    setGenerating(false);
+    try {
+      const result = await callAIReply('auto');
+      if (result?.success && result.draft) {
+        setReplyText(result.draft);
+      } else {
+        const name = (conversation.name || conversation.from || 'there').split(' ')[0];
+        setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
+      }
+    } catch (e) {
+      console.error('Failed to generate reply:', e);
+      const name = (conversation.name || conversation.from || 'there').split(' ')[0];
+      setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleSend = () => {

@@ -406,84 +406,146 @@ export default function ThreePaneInbox() {
         </div>
       </div>
 
-      {/* CENTER PANE: Conversation List */}
+      {/* CENTER PANE: Message List */}
       <div className="w-96 border-r border-clawd-border bg-clawd-surface flex flex-col">
-        <div className="p-4 border-b border-clawd-border">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold">
+        <div className="px-5 py-4 border-b border-clawd-border">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold tracking-wide uppercase text-clawd-text-dim">
               {folders.find(f => f.id === selectedFolder)?.name || 'Items'}
             </h3>
-            <span className="text-xs text-clawd-text-dim">
-              {filteredItems.length} items
+            <span className="text-xs text-clawd-text-dim tabular-nums">
+              {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}
             </span>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {loading && items.length === 0 ? (
-            <div className="p-4 space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-20 bg-clawd-border rounded-lg" />
+            <div className="p-4 space-y-1">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="animate-pulse flex items-center gap-3 px-5 py-4">
+                  <div className="w-10 h-10 rounded-full bg-clawd-border/60 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 bg-clawd-border/60 rounded w-2/3" />
+                    <div className="h-3 bg-clawd-border/40 rounded w-full" />
+                    <div className="h-3 bg-clawd-border/30 rounded w-1/2" />
+                  </div>
                 </div>
               ))}
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <Inbox size={48} className="text-clawd-text-dim mb-3 opacity-50" />
-              <p className="text-sm text-clawd-text-dim">
-                {searchQuery ? 'No items match your search' : 'No items in this folder'}
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <div className="w-16 h-16 rounded-full bg-clawd-border/30 flex items-center justify-center mb-4">
+                <Inbox size={28} className="text-clawd-text-dim opacity-50" />
+              </div>
+              <p className="text-sm font-medium text-clawd-text-dim mb-1">
+                {searchQuery ? 'No results found' : 'All clear'}
+              </p>
+              <p className="text-xs text-clawd-text-dim/60">
+                {searchQuery ? 'Try a different search term' : 'Nothing needs your attention right now'}
               </p>
             </div>
           ) : (
-            filteredItems.map(item => {
-              const config = typeConfig[item.type];
-              const Icon = config.icon;
-              const isSelected = selectedItemId === item.id;
-              const warning = getInjectionWarning(item);
-              const { label, color } = getPriorityLevel(item.priority_score || 0);
+            <div className="py-1">
+              {filteredItems.map(item => {
+                const config = typeConfig[item.type];
+                const Icon = config.icon;
+                const isSelected = selectedItemId === item.id;
+                const warning = getInjectionWarning(item);
+                const isPending = item.status === 'pending';
+                const isHighPriority = (item.priority_score || 0) >= 60;
+                const { color: priorityColor } = getPriorityLevel(item.priority_score || 0);
 
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedItemId(item.id)}
-                  className={`p-4 border-b border-clawd-border cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'bg-clawd-accent/10 border-l-4 border-l-clawd-accent'
-                      : 'hover:bg-clawd-bg border-l-4 border-l-transparent'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <IconBadge icon={Icon} size={16} color={config.color} />
+                // Get initials from type for avatar
+                const avatarColors: Record<string, string> = {
+                  tweet: 'bg-sky-500/20 text-sky-400',
+                  reply: 'bg-blue-500/20 text-blue-400',
+                  email: 'bg-emerald-500/20 text-emerald-400',
+                  message: 'bg-purple-500/20 text-purple-400',
+                  task: 'bg-amber-500/20 text-amber-400',
+                  action: 'bg-green-500/20 text-green-400',
+                };
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setSelectedItemId(item.id)}
+                    className={`group relative flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-all duration-150 ${
+                      isSelected
+                        ? 'bg-clawd-accent/10'
+                        : 'hover:bg-clawd-bg/50'
+                    }`}
+                  >
+                    {/* Selection indicator */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-r-full transition-all duration-150 ${
+                      isSelected ? 'bg-clawd-accent' : 'bg-transparent'
+                    }`} />
+
+                    {/* Unread dot */}
+                    {isPending && (
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                        <div className="w-2 h-2 rounded-full bg-clawd-accent" />
+                      </div>
+                    )}
+
+                    {/* Avatar */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      avatarColors[item.type] || 'bg-clawd-border text-clawd-text-dim'
+                    }`}>
+                      <Icon size={18} />
+                    </div>
+
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`text-xs px-2 py-0.5 rounded ${color}`}>
-                          {label}
+                      {/* Top row: sender/type + timestamp */}
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
+                        <span className={`text-sm truncate ${
+                          isPending ? 'font-semibold text-clawd-text' : 'font-medium text-clawd-text/80'
+                        }`}>
+                          {config.label}
+                          {item.source_channel && (
+                            <span className="text-clawd-text-dim font-normal"> · {item.source_channel}</span>
+                          )}
                         </span>
-                        {warning && (
-                          <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${
-                            riskStyles[warning.risk]?.bg
-                          } ${riskStyles[warning.risk]?.text}`}>
-                            <AlertTriangle size={10} />
-                            {warning.risk}
-                          </span>
-                        )}
-                        <span className="text-xs text-clawd-text-dim flex items-center gap-1">
-                          <Clock size={10} />
+                        <span className="text-[11px] text-clawd-text-dim flex-shrink-0 tabular-nums">
                           {formatTime(item.created)}
                         </span>
                       </div>
-                      <h4 className="text-sm font-medium truncate mb-1">
+
+                      {/* Subject line */}
+                      <h4 className={`text-[13px] truncate mb-0.5 ${
+                        isPending ? 'font-medium text-clawd-text' : 'text-clawd-text/70'
+                      }`}>
                         {item.title}
                       </h4>
-                      <p className="text-xs text-clawd-text-dim line-clamp-2">
+
+                      {/* Preview text */}
+                      <p className="text-xs text-clawd-text-dim/70 line-clamp-1 leading-relaxed">
                         {item.content}
                       </p>
+
+                      {/* Bottom indicators row */}
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        {isHighPriority && (
+                          <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${priorityColor}`}>
+                            <AlertTriangle size={9} className="mr-0.5" />
+                            Priority
+                          </span>
+                        )}
+                        {warning && (
+                          <span className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            riskStyles[warning.risk]?.bg
+                          } ${riskStyles[warning.risk]?.text}`}>
+                            <ShieldAlert size={9} className="mr-0.5" />
+                            {warning.risk}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

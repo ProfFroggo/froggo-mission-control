@@ -25,6 +25,7 @@ import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
 import CalendarFilterModal from './CalendarFilterModal';
 import TaskModal from './TaskModal';
 import { TaskPriority } from '../store/store';
+import { useUserSettings } from '../store/userSettings';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -73,11 +74,8 @@ interface CalendarAccount {
 
 type ViewMode = 'month' | 'week' | 'day';
 
-const ACCOUNTS: CalendarAccount[] = [
-  { email: 'kevin.macarthur@bitso.com', label: 'Bitso (Work)' },
-  { email: 'kevin@carbium.io', label: 'Carbium' },
-  { email: 'kmacarthur.gpt@gmail.com', label: 'Personal' },
-];
+// Calendar accounts derived from user settings - see useUserSettings store
+const ACCOUNTS: CalendarAccount[] = useUserSettings.getState().emailAccounts.map(a => ({ email: a.email, label: a.label }));
 
 const TIMEZONES = [
   'Europe/Gibraltar',

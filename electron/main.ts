@@ -4276,6 +4276,95 @@ Return just the tweet text, nothing else.`;
   }
 });
 
+// ============== AI REPLY GENERATION ==============
+
+ipcMain.handle('ai:generateReply', async (_, context: {
+  threadMessages: Array<{role: string, content: string}>,
+  platform?: string,
+  recipientName?: string,
+  subject?: string,
+  tone?: 'formal' | 'casual' | 'auto'
+}) => {
+  safeLog.log('[AI] Generate reply called:', { platform: context.platform, tone: context.tone, threadLen: context.threadMessages?.length });
+
+  if (!anthropicApiKey) {
+    return { success: false, error: 'No API key configured' };
+  }
+
+  const tone = context.tone || 'auto';
+  const platform = context.platform || 'chat';
+  const name = context.recipientName || 'there';
+
+  // Build system prompt based on platform and tone
+  let toneInstruction = '';
+  if (tone === 'formal') {
+    toneInstruction = 'Use a professional, formal tone. Include proper greetings and sign-offs.';
+  } else if (tone === 'casual') {
+    toneInstruction = 'Use a friendly, casual tone. Keep it conversational.';
+  } else {
+    toneInstruction = 'Match the tone of the conversation — if formal, stay formal; if casual, stay casual.';
+  }
+
+  let platformInstruction = '';
+  if (platform === 'email') {
+    platformInstruction = 'This is an email reply. Use appropriate email formatting with greeting and sign-off.';
+  } else if (platform === 'whatsapp' || platform === 'telegram') {
+    platformInstruction = 'This is a chat message. Keep it short and conversational — no formal sign-offs.';
+  } else if (platform === 'discord') {
+    platformInstruction = 'This is a Discord message. Keep it concise and natural.';
+  }
+
+  const systemPrompt = `You are drafting a reply on behalf of the user. Generate a helpful, contextual reply to the conversation below.
+
+${toneInstruction}
+${platformInstruction}
+
+Rules:
+- Be concise and to the point
+- Sound natural, not robotic
+- Don't be overly eager or sycophantic
+- Address the actual content of the messages
+- Return ONLY the reply text, no explanations or meta-commentary`;
+
+  const threadText = context.threadMessages
+    .slice(-10)
+    .map(m => `${m.role}: ${m.content}`)
+    .join('\n');
+
+  const userPrompt = `Conversation with ${name}${context.subject ? ` (Subject: ${context.subject})` : ''}:\n\n${threadText}\n\nDraft a reply:`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      safeLog.error('[AI] Reply generation API error:', response.status, errText);
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    const draft = data.content?.[0]?.text?.trim() || '';
+    safeLog.log('[AI] Reply generated, length:', draft.length);
+    return { success: true, draft };
+  } catch (e: any) {
+    safeLog.error('[AI] Reply generation error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
 // ============== TWITTER IPC HANDLERS ==============
 const BIRD_PATH = '/opt/homebrew/bin/bird';
 const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
@@ -6090,6 +6179,76 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
       resolve({ success: !error, error: error?.message });
     });
   });
+});
+
+ipcMain.handle('agents:search', async (_, query: string) => {
+  const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  
+  const agentDefinitions: Record<string, { role: string; description: string; capabilities: string[] }> = {
+    main: { role: 'Orchestrator', description: 'Main agent - coordinates all other agents, handles general tasks', capabilities: ['coordination', 'task management', 'general assistance'] },
+    froggo: { role: 'Orchestrator', description: 'Main agent (alias) - coordinates all other agents', capabilities: ['coordination', 'task management', 'general assistance'] },
+    coder: { role: 'Software Engineer', description: 'Writes code, fixes bugs, builds features, reviews PRs', capabilities: ['coding', 'debugging', 'code review', 'architecture', 'typescript', 'python'] },
+    researcher: { role: 'Researcher', description: 'Researches topics, gathers information, analyzes data', capabilities: ['research', 'analysis', 'web search', 'summarization'] },
+    writer: { role: 'Writer', description: 'Writes content, documentation, emails, creative writing', capabilities: ['writing', 'editing', 'documentation', 'copywriting'] },
+    chief: { role: 'Lead Engineer', description: 'Reviews code, makes architectural decisions, mentors team', capabilities: ['code review', 'architecture', 'mentoring', 'technical decisions'] },
+    onchain_worker: { role: 'Blockchain Agent', description: 'Handles on-chain operations, crypto transactions, DeFi', capabilities: ['blockchain', 'crypto', 'defi', 'smart contracts', 'web3'] },
+  };
+
+  const q = query.toLowerCase();
+  const results: any[] = [];
+
+  for (const [agentId, def] of Object.entries(agentDefinitions)) {
+    const searchable = `${agentId} ${def.role} ${def.description} ${def.capabilities.join(' ')}`.toLowerCase();
+    if (searchable.includes(q)) {
+      // Get task stats from DB
+      let taskCount = 0;
+      let recentTask = '';
+      let status = 'idle';
+      try {
+        const aliases: Record<string, string[]> = {
+          main: ['main', 'froggo'], froggo: ['main', 'froggo'],
+          coder: ['coder'], researcher: ['researcher'], writer: ['writer'],
+          chief: ['chief'], onchain_worker: ['onchain_worker'],
+        };
+        const dbIds = (aliases[agentId] || [agentId]).map(id => `'${id}'`).join(',');
+        
+        const countResult = execSync(
+          `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds})" -json`,
+          { encoding: 'utf-8', timeout: 3000 }
+        );
+        taskCount = JSON.parse(countResult)?.[0]?.cnt || 0;
+
+        const activeResult = execSync(
+          `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds}) AND status IN ('in-progress','todo')" -json`,
+          { encoding: 'utf-8', timeout: 3000 }
+        );
+        const activeCount = JSON.parse(activeResult)?.[0]?.cnt || 0;
+        status = activeCount > 0 ? 'active' : 'idle';
+
+        const recentResult = execSync(
+          `sqlite3 "${froggoDbPath}" "SELECT title FROM tasks WHERE assigned_to IN (${dbIds}) ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1" -json`,
+          { encoding: 'utf-8', timeout: 3000 }
+        );
+        const recent = JSON.parse(recentResult || '[]');
+        recentTask = recent[0]?.title || '';
+      } catch (e) {
+        // DB query failed, continue with defaults
+      }
+
+      results.push({
+        id: agentId,
+        name: agentId.charAt(0).toUpperCase() + agentId.slice(1).replace(/_/g, ' '),
+        role: def.role,
+        description: def.description,
+        capabilities: def.capabilities,
+        taskCount,
+        recentTask,
+        status,
+      });
+    }
+  }
+
+  return { success: true, agents: results };
 });
 
 ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {

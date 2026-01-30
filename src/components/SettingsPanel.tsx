@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
 import { useStore } from '../store/store';
+import { useUserSettings } from '../store/userSettings';
 import { reconnectGateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
@@ -98,7 +99,7 @@ const defaultSettings: Settings = {
   externalActionsEnabled: false,
   rateLimitTweets: 10,
   rateLimitEmails: 20,
-  defaultEmailAccount: 'kevin@carbium.io',
+  defaultEmailAccount: useUserSettings.getState().email,
   defaultCalendarAccount: 'kevin.macarthur@bitso.com',
 };
 

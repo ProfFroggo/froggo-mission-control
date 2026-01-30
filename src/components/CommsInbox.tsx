@@ -263,22 +263,53 @@ function MessageModal({ message, isOpen, onClose, onSendReply, onScheduleReply }
     }
   };
 
-  const generateReply = async () => {
+  const generateReply = async (tone?: 'formal' | 'casual' | 'auto') => {
     if (!message) return;
     setGenerating(true);
     setHasGenerated(true);
-    // TODO: Call actual AI to generate reply
-    await new Promise(resolve => setTimeout(resolve, 800));
-    // Generate contextual reply based on message content
-    const greetings = ['Hi', 'Hey', 'Hello'];
-    const greeting = greetings[Math.floor(Math.random() * greetings.length)];
-    const responses = [
-      `${greeting} ${(message.name || message.from || 'there').split(' ')[0]}! Thanks for your message. I'll get back to you on this shortly.`,
-      `${greeting}! Got your message about "${message.preview.slice(0, 30)}...". Let me look into it and follow up.`,
-      `Thanks for reaching out! I've noted this and will respond properly soon.`,
-    ];
-    setReply(responses[Math.floor(Math.random() * responses.length)]);
-    setGenerating(false);
+
+    try {
+      // Build thread context from loaded context messages + current message
+      const threadMessages: Array<{role: string, content: string}> = [];
+      
+      if (contextMessages.length > 0) {
+        for (const ctx of contextMessages) {
+          threadMessages.push({
+            role: ctx.sender || 'them',
+            content: ctx.text || '',
+          });
+        }
+      }
+      
+      // Add the current message
+      threadMessages.push({
+        role: message.name || message.from || 'them',
+        content: emailBody || message.preview || '',
+      });
+
+      // Call AI to generate reply
+      const result = await (window as any).clawdbot?.ai?.generateReply({
+        threadMessages,
+        platform: message.platform,
+        recipientName: message.name || message.from,
+        tone: tone || 'auto',
+      });
+
+      if (result?.success && result.draft) {
+        setReply(result.draft);
+      } else {
+        // Fallback to simple template on error
+        console.warn('[CommsInbox] AI reply failed:', result?.error);
+        const name = (message.name || message.from || 'there').split(' ')[0];
+        setReply(`Hi ${name}, thanks for your message. Let me get back to you on this shortly.`);
+      }
+    } catch (e) {
+      console.error('[CommsInbox] AI reply generation error:', e);
+      const name = (message.name || message.from || 'there').split(' ')[0];
+      setReply(`Hi ${name}, thanks for your message. Let me get back to you on this shortly.`);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (!isOpen || !message) return null;

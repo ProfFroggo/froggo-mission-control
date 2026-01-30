@@ -360,6 +360,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
   ai: {
     generateContent: (prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => 
       ipcRenderer.invoke('ai:generate-content', prompt, type),
+    generateReply: (context: {
+      threadMessages: Array<{role: string, content: string}>,
+      platform?: string,
+      recipientName?: string,
+      subject?: string,
+      tone?: 'formal' | 'casual' | 'auto'
+    }) => ipcRenderer.invoke('ai:generateReply', context),
   },
   // Twitter (bird CLI)
   twitter: {
@@ -449,6 +456,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     addSkill: (agentId: string, skill: string) => ipcRenderer.invoke('agents:addSkill', agentId, skill),
     updateSkill: (agentId: string, skillName: string, proficiency: number) => 
       ipcRenderer.invoke('agents:updateSkill', agentId, skillName, proficiency),
+    search: (query: string) => ipcRenderer.invoke('agents:search', query),
     spawnChat: (agentId: string) => ipcRenderer.invoke('agents:spawnChat', agentId),
     chat: (sessionKey: string, message: string) => ipcRenderer.invoke('agents:chat', sessionKey, message),
   },

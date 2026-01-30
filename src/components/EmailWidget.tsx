@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag } from 'lucide-react';
 import { gateway } from '../lib/gateway';
+import { useUserSettings } from '../store/userSettings';
 
 interface EmailAccount {
   email: string;
@@ -10,13 +11,9 @@ interface EmailAccount {
   starred: number;
 }
 
-const ACCOUNTS = [
-  { email: 'kevin.macarthur@bitso.com', label: 'Bitso', color: 'text-blue-400' },
-  { email: 'kevin@carbium.io', label: 'Carbium', color: 'text-green-400' },
-  { email: 'kmacarthur.gpt@gmail.com', label: 'Personal', color: 'text-purple-400' },
-];
-
 export default function EmailWidget() {
+  const { emailAccounts } = useUserSettings();
+  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label, color: a.color || 'text-gray-400' }));
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
