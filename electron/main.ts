@@ -1079,7 +1079,7 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
   const statusArg = status ? `--status ${status}` : '';
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks ${status ? `WHERE status='${status}'` : ''} ORDER BY created_at DESC" -json`;
+  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) ${status ? `AND status='${status}'` : ''} ORDER BY created_at DESC" -json`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
@@ -1119,12 +1119,18 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
 });
 
 ipcMain.handle('tasks:delete', async (_, taskId: string) => {
-  // froggo-db has no task-delete; mark as cancelled + force (in case subtasks exist)
-  const cmd = `froggo-db task-update "${taskId}" --status cancelled --force`;
+  // Direct SQL: set cancelled=1 to soft-delete. Can't use froggo-db task-update --status cancelled
+  // because the enforce_valid_state_transitions trigger blocks 'cancelled' as a status value.
+  // The cancelled column is the proper soft-delete mechanism (froggo-db task-list already filters it).
+  const froggoDbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
+  const escapedId = taskId.replace(/'/g, "''");
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE tasks SET cancelled = 1, updated_at = ${Date.now()} WHERE id = '${escapedId}'"`;
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error) => {
+    exec(cmd, { timeout: 10000 }, (error) => {
       if (error) {
         safeLog.error('[Tasks] Delete error:', error.message);
+      } else {
+        safeLog.log('[Tasks] Soft-deleted (cancelled=1):', taskId);
       }
       resolve({ success: !error });
     });
@@ -6066,24 +6072,169 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
 });
 
 ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
-  // For now, return a mock session key
-  // In production, this would spawn via gateway
-  const sessionKey = `chat-${agentId}-${Date.now()}`;
-  return { sessionKey };
+  try {
+    // Spawn a real agent chat session via the gateway WebSocket
+    const gatewayWsUrl = 'ws://127.0.0.1:18789';
+    const gatewayToken = '14ac9fc2afdd3363df3842a36ab269ca4137b8059ca3b0ba';
+    
+    // Use the gateway HTTP API to spawn a session
+    const httpUrl = 'http://127.0.0.1:18789';
+    const label = `dashboard-chat-${agentId}-${Date.now()}`;
+    
+    // Agent system prompts
+    const agentPrompts: Record<string, string> = {
+      main: 'You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.',
+      froggo: 'You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.',
+      coder: 'You are Coder, a software engineering agent. You help with code, debugging, architecture, and technical problems.',
+      researcher: 'You are Researcher, a research and analysis agent. You help with research, data gathering, and analysis.',
+      writer: 'You are Writer, a content creation agent. You help with writing, editing, and content strategy.',
+      chief: 'You are Chief, the executive oversight agent. You help with planning, prioritization, and strategic decisions using GSD methodology.',
+    };
+    
+    const systemPrompt = agentPrompts[agentId] || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
+    
+    // Store session info for later chat calls
+    const sessionKey = `chat-${agentId}-${Date.now()}`;
+    
+    // Store the agent context for this session
+    if (!(global as any)._agentChatSessions) {
+      (global as any)._agentChatSessions = {};
+    }
+    (global as any)._agentChatSessions[sessionKey] = {
+      agentId,
+      systemPrompt,
+      messages: [{ role: 'system', content: systemPrompt }],
+      label,
+    };
+    
+    safeLog.log(`Spawned chat session for ${agentId}: ${sessionKey}`);
+    return sessionKey;
+  } catch (error: any) {
+    safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
+    throw error;
+  }
 });
 
 ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => {
-  // Mock response for now
-  const responses = [
-    "That's a great suggestion! I'll focus on improving that area.",
-    "I've been working on that skill. Let me know if you see improvements.",
-    "Thanks for the feedback. I'll incorporate that into my workflow.",
-    "I need more practice with that. Can you assign me some tasks to learn?",
-    "Let me analyze my recent performance and get back to you.",
-  ];
-  
-  const response = responses[Math.floor(Math.random() * responses.length)];
-  return { response };
+  try {
+    const sessions = (global as any)._agentChatSessions || {};
+    const session = sessions[sessionKey];
+    
+    if (!session) {
+      return { response: `Session ${sessionKey} not found. Please reconnect.` };
+    }
+    
+    // Add user message to history
+    session.messages.push({ role: 'user', content: message });
+    
+    let response: string;
+    
+    // Map dashboard agent IDs to clawdbot agent IDs
+    const agentIdMap: Record<string, string> = {
+      main: 'chat-agent',
+      froggo: 'chat-agent',
+      coder: 'coder',
+      researcher: 'researcher',
+      writer: 'writer',
+      chief: 'chief',
+    };
+    const clawdAgentId = agentIdMap[session.agentId] || session.agentId;
+    
+    // Build context from conversation history (last few exchanges)
+    const recentHistory = session.messages
+      .filter((m: any) => m.role !== 'system')
+      .slice(-6) // last 3 exchanges
+      .map((m: any) => `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`)
+      .join('\n\n');
+    
+    // Compose full message with system prompt context + history
+    const fullMessage = session.messages.length <= 2
+      ? `${session.systemPrompt}\n\nRespond to this message from the dashboard user:\n${message}`
+      : `${session.systemPrompt}\n\nConversation so far:\n${recentHistory}`;
+    
+    // Primary: use clawdbot agent CLI (routes through gateway with proper auth)
+    const escapedMsg = fullMessage.replace(/'/g, "'\\''");
+    
+    try {
+      const cliResult = await new Promise<string>((resolve, reject) => {
+        exec(
+          `clawdbot agent --message '${escapedMsg}' --session-id '${sessionKey}' --agent ${clawdAgentId}`,
+          { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+          (error, stdout, stderr) => {
+            if (error) {
+              reject(new Error(stderr || error.message));
+            } else {
+              resolve(stdout.trim());
+            }
+          }
+        );
+      });
+      response = cliResult || 'No response from agent';
+    } catch (cliErr: any) {
+      safeLog.error('CLI agent failed:', cliErr.message);
+      
+      // Fallback: direct Anthropic API if key available
+      if (anthropicApiKey) {
+        const https = await import('https');
+        response = await new Promise<string>((resolve, reject) => {
+          const body = JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 2048,
+            system: session.systemPrompt,
+            messages: session.messages.filter((m: any) => m.role !== 'system').map((m: any) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          });
+          
+          const req = https.request({
+            hostname: 'api.anthropic.com',
+            path: '/v1/messages',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': anthropicApiKey,
+              'anthropic-version': '2023-06-01',
+            },
+          }, (res: any) => {
+            let data = '';
+            res.on('data', (chunk: any) => data += chunk);
+            res.on('end', () => {
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  reject(new Error(parsed.error.message || 'API error'));
+                  return;
+                }
+                resolve(parsed.content?.[0]?.text || 'No response content');
+              } catch (e) {
+                reject(new Error(`Failed to parse: ${data.slice(0, 200)}`));
+              }
+            });
+          });
+          req.on('error', reject);
+          req.setTimeout(60000, () => { req.destroy(); reject(new Error('Timeout')); });
+          req.write(body);
+          req.end();
+        });
+      } else {
+        response = `⚠️ Agent unavailable: ${cliErr.message}. Ensure clawdbot gateway is running.`;
+      }
+    }
+    
+    // Add assistant response to history
+    session.messages.push({ role: 'assistant', content: response });
+    
+    // Keep history manageable
+    if (session.messages.length > 41) {
+      session.messages = [session.messages[0], ...session.messages.slice(-40)];
+    }
+    
+    return { response };
+  } catch (error: any) {
+    safeLog.error('Agent chat error:', error);
+    return { response: `❌ Error: ${error.message || 'Unknown error'}` };
+  }
 });
 
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============

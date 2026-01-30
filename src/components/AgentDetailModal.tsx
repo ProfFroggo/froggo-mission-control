@@ -65,50 +65,58 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
   const buildDetailsFromRealData = async () => {
     setLoading(true);
 
-    // Get tasks assigned to this agent
-    const agentTasks = tasks.filter(t => t.assignedTo === agentId);
-    const doneTasks = agentTasks.filter(t => t.status === 'done');
-    const failedTasks = agentTasks.filter(t => (t.status as string) === 'failed' || (t.status as string) === 'blocked');
-    const inProgressTasks = agentTasks.filter(t => t.status === 'in-progress');
-
-    const totalTasks = agentTasks.length;
-    const successfulCount = doneTasks.length;
-    const failedCount = failedTasks.length;
-    const successRate = totalTasks > 0 ? successfulCount / totalTasks : 0;
-
-    // Calculate average time (from tasks that have timestamps)
-    let avgTimeStr = 'N/A';
-    const completedWithTime = doneTasks.filter(t => (t as any).completedAt && (t as any).createdAt);
-    if (completedWithTime.length > 0) {
-      const avgMs = completedWithTime.reduce((sum, t) => {
-        return sum + ((t as any).completedAt - (t as any).createdAt);
-      }, 0) / completedWithTime.length;
-      if (avgMs < 60000) avgTimeStr = `${Math.round(avgMs / 1000)}s`;
-      else if (avgMs < 3600000) avgTimeStr = `${Math.round(avgMs / 60000)}m`;
-      else avgTimeStr = `${(avgMs / 3600000).toFixed(1)}h`;
+    // Try IPC first (reads from froggo.db with real data)
+    let ipcDetails: any = null;
+    try {
+      const ipc = (window as any).clawdbot?.agents;
+      if (ipc?.getDetails) {
+        ipcDetails = await ipc.getDetails(agentId);
+        console.log('[AgentDetail] IPC getDetails result:', agentId, ipcDetails);
+      }
+    } catch (e) {
+      console.error('[AgentDetail] IPC getDetails failed:', e);
     }
 
-    // Build skills from agent capabilities
-    const skills = (agent?.capabilities || []).map(cap => ({
-      name: cap,
-      proficiency: 0.7 + Math.random() * 0.3, // Will be replaced with real proficiency tracking
-      lastUsed: 'Active',
-      successCount: Math.floor(successfulCount * Math.random()),
-      failureCount: Math.floor(failedCount * Math.random()),
-    }));
+    // Get tasks from store as fallback/supplement
+    const agentTasks = tasks.filter(t => t.assignedTo === agentId);
+    const doneTasks = agentTasks.filter(t => t.status === 'done');
+    const failedTasksList = agentTasks.filter(t => (t.status as string) === 'failed' || (t.status as string) === 'blocked');
+    const inProgressTasks = agentTasks.filter(t => t.status === 'in-progress');
 
-    // Recent tasks (sorted by most recent)
-    const recentTasks = agentTasks
-      .sort((a, b) => ((b as any).updatedAt || 0) - ((a as any).updatedAt || 0))
-      .slice(0, 20)
-      .map(t => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        outcome: t.status === 'done' ? 'success' : t.status === 'failed' ? 'failed' : 'pending',
-        completedAt: (t as any).completedAt || (t as any).updatedAt || 0,
-        project: t.project,
+    // Use IPC data if available, otherwise fall back to store data
+    const totalTasks = ipcDetails?.totalTasks || agentTasks.length;
+    const successfulCount = ipcDetails?.successfulTasks || doneTasks.length;
+    const failedCount = ipcDetails?.failedTasks || failedTasksList.length;
+    const successRate = ipcDetails?.successRate ?? (totalTasks > 0 ? successfulCount / totalTasks : 0);
+    const avgTimeStr = ipcDetails?.avgTime || 'N/A';
+
+    // Skills: prefer IPC data, fall back to agent capabilities
+    let skills = ipcDetails?.skills || [];
+    if (skills.length === 0 && agent?.capabilities?.length) {
+      skills = agent.capabilities.map((cap: string) => ({
+        name: cap,
+        proficiency: 0.5,
+        lastUsed: 'N/A',
+        successCount: 0,
+        failureCount: 0,
       }));
+    }
+
+    // Recent tasks: prefer IPC, supplement with store
+    let recentTasks = ipcDetails?.recentTasks || [];
+    if (recentTasks.length === 0 && agentTasks.length > 0) {
+      recentTasks = agentTasks
+        .sort((a, b) => ((b as any).updatedAt || 0) - ((a as any).updatedAt || 0))
+        .slice(0, 20)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          outcome: t.status === 'done' ? 'success' : t.status === 'failed' ? 'failed' : 'pending',
+          completedAt: (t as any).completedAt || (t as any).updatedAt || 0,
+          project: t.project,
+        }));
+    }
 
     // Active gateway sessions for this agent
     const agentSessions = gatewaySessions.filter(s => {
@@ -126,40 +134,35 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
       label: s.label || undefined,
     }));
 
-    // Try to load AGENT.md rules
-    let rulesContent = '';
-    try {
-      const result = await (window as any).clawdbot?.exec?.run(
-        `cat ~/clawd/clawd-${agentId}/AGENTS.md 2>/dev/null || cat ~/clawd/clawd-${agentId}/AGENT.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
-      );
-      if (result?.stdout) {
-        rulesContent = result.stdout;
-      }
-    } catch (e) {
-      rulesContent = `Could not load rules for ${agentId}`;
-    }
-    // Also try to fetch from the gateway API
-    let brainNotes: string[] = [];
-    try {
-      // Check if there are any memory files
-      const memResult = await (window as any).clawdbot?.exec?.run(
-        `ls -1 ~/clawd/clawd-${agentId}/memory/ 2>/dev/null | tail -5`
-      );
-      if (memResult?.stdout?.trim()) {
-        const files = memResult.stdout.trim().split('\n');
-        brainNotes = files.map((f: string) => `📝 ${f}`);
-        
-        // Read today's memory file if exists
-        const today = new Date().toISOString().split('T')[0];
-        const todayResult = await (window as any).clawdbot?.exec?.run(
-          `head -20 ~/clawd/clawd-${agentId}/memory/${today}.md 2>/dev/null || echo ""`
+    // Rules and brain notes from IPC or exec fallback
+    let rulesContent = ipcDetails?.agentRules || '';
+    let brainNotes: string[] = ipcDetails?.brainNotes || [];
+
+    if (!rulesContent) {
+      try {
+        const result = await (window as any).clawdbot?.exec?.run(
+          `cat ~/clawd/clawd-${agentId}/AGENTS.md 2>/dev/null || cat ~/clawd/clawd-${agentId}/AGENT.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
         );
-        if (todayResult?.stdout?.trim()) {
-          brainNotes.unshift(`Today's notes:\n${todayResult.stdout.trim()}`);
+        if (result?.stdout) {
+          rulesContent = result.stdout;
         }
+      } catch (e) {
+        rulesContent = `Could not load rules for ${agentId}`;
       }
-    } catch (e) {
-      // OK - no memory files
+    }
+
+    if (brainNotes.length === 0) {
+      try {
+        const memResult = await (window as any).clawdbot?.exec?.run(
+          `ls -1 ~/clawd/clawd-${agentId}/memory/ 2>/dev/null | tail -5`
+        );
+        if (memResult?.stdout?.trim()) {
+          const files = memResult.stdout.trim().split('\n');
+          brainNotes = files.map((f: string) => `📝 ${f}`);
+        }
+      } catch (e) {
+        // OK
+      }
     }
 
     setDetails({
@@ -168,7 +171,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
       totalTasks,
       successfulTasks: successfulCount,
       failedTasks: failedCount,
-      inProgressTasks: inProgressTasks.length,
+      inProgressTasks: ipcDetails ? (totalTasks - successfulCount - failedCount) : inProgressTasks.length,
       skills,
       recentTasks,
       activeSessions,

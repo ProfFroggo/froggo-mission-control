@@ -6,6 +6,7 @@ import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
 import AgentChatModal from './AgentChatModal';
 import AgentMetricsCard from './AgentMetricsCard';
+import HRSection from './HRSection';
 import { InlineLoader } from './LoadingStates';
 
 // Agent theme config — colors, profile pics, accent rings
@@ -16,6 +17,7 @@ const agentThemes: Record<string, { color: string; border: string; bg: string; t
   researcher: { color: '#FF9800', border: 'border-orange-500/40', bg: 'bg-orange-500/8',  text: 'text-orange-400', ring: 'ring-orange-500/50', dot: 'bg-orange-400', pic: 'researcher.png' },
   writer:     { color: '#9C27B0', border: 'border-purple-500/40', bg: 'bg-purple-500/8',  text: 'text-purple-400', ring: 'ring-purple-500/50', dot: 'bg-purple-400', pic: 'writer.png' },
   chief:      { color: '#F44336', border: 'border-red-500/40',    bg: 'bg-red-500/8',     text: 'text-red-400',    ring: 'ring-red-500/50',    dot: 'bg-red-400',   pic: 'chief.png' },
+  hr:         { color: '#00897B', border: 'border-teal-500/40',   bg: 'bg-teal-500/8',    text: 'text-teal-400',   ring: 'ring-teal-500/50',   dot: 'bg-teal-400',  pic: 'hr.png' },
 };
 
 const defaultTheme = { color: '#666', border: 'border-clawd-border', bg: 'bg-clawd-surface', text: 'text-clawd-text-dim', ring: 'ring-clawd-border', dot: 'bg-gray-400', pic: '' };
@@ -25,7 +27,7 @@ function getTheme(id: string) {
 }
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, updateAgentStatus, gatewaySessions, loadGatewaySessions } = useStore();
+  const { agents, tasks, spawnAgentForTask, updateAgentStatus, gatewaySessions, loadGatewaySessions, loadTasksFromDB } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [compareAgents, setCompareAgents] = useState<string[]>([]);
@@ -39,9 +41,10 @@ export default function AgentPanel() {
 
   useEffect(() => {
     loadGatewaySessions();
+    loadTasksFromDB(); // Ensure tasks are loaded for agent detail modals
     const interval = setInterval(loadGatewaySessions, 5000);
     return () => clearInterval(interval);
-  }, [loadGatewaySessions]);
+  }, [loadGatewaySessions, loadTasksFromDB]);
 
   useEffect(() => { loadAgentMetrics(); }, []);
 
@@ -140,6 +143,9 @@ export default function AgentPanel() {
             </div>
           </div>
         )}
+
+        {/* HR Agent Section */}
+        <HRSection />
 
         {/* Core Agents — Profile Card Grid */}
         <div className="mb-8">
