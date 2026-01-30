@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2 } from 'lucide-react';
+import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 
@@ -387,11 +388,11 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                           ? 'rounded-2xl rounded-tl-sm' 
                           : 'rounded-2xl rounded-tl-md'
                   }`}>
-                    <p className={`whitespace-pre-wrap leading-relaxed ${
-                      msg.role === 'system' ? 'text-sm' : ''
-                    }`}>
-                      {msg.content}
-                    </p>
+                    {msg.role === 'user' ? (
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    ) : (
+                      <MarkdownMessage content={msg.content} />
+                    )}
                   </div>
 
                   {/* Timestamp */}

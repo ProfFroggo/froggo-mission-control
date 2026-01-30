@@ -8,6 +8,7 @@ import { showToast } from './Toast';
 import { LoadingButton } from './LoadingStates';
 import { calculatePriorityScore, getPriorityLevel } from '../lib/priorityScoring';
 import IconBadge from './IconBadge';
+import MarkdownMessage from './MarkdownMessage';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -627,9 +628,7 @@ export default function ThreePaneInbox() {
               {/* Main Content */}
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
                 <h3 className="text-sm font-semibold mb-3 text-clawd-text-dim">Content</h3>
-                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                  {selectedItem.content}
-                </pre>
+                <MarkdownMessage content={selectedItem.content} />
               </div>
 
               {/* Priority Breakdown */}
