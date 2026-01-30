@@ -80,6 +80,7 @@ async function transcribeWithWhisper(audioBlob: Blob, mimeType?: string): Promis
   formData.append('file', audioBlob, `audio.${ext}`);
   formData.append('model', 'whisper-1');
   formData.append('language', 'en');
+  // TODO: Pull speaker name from useUserSettings store; topics should also be configurable
   formData.append('prompt', 'Speaker: Kevin MacArthur. Topics: AI, software, crypto, perps trading, onchain, Bitso, Froggo, Clawdbot, Kanban, Dashboard, Solana.');
   
   try {

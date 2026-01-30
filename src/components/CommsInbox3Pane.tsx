@@ -73,6 +73,7 @@ interface ThreadMessage {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+// TODO: Derive email accounts from useUserSettings store (requires refactor to hook-based approach)
 
 const ACCOUNTS: Account[] = [
   { id: 'gmail-bitso', label: 'Bitso', platform: 'email', address: 'kevin.macarthur@bitso.com', icon: <Mail size={16} />, color: 'text-orange-400' },

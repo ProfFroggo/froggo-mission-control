@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Mail, MessageSquare, RefreshCw, Clock, MapPin, AlertCircle } from 'lucide-react';
 import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
+import { useUserSettings } from '../store/userSettings';
 
 // X logo component
 const XLogo = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
@@ -140,10 +141,8 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const ACCOUNTS = [
-    { email: 'kevin.macarthur@bitso.com', label: 'Bitso' },
-    { email: 'kevin@carbium.io', label: 'Carbium' },
-  ];
+  const { emailAccounts } = useUserSettings();
+  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label }));
 
   const fetchEmails = async () => {
     setLoading(true);

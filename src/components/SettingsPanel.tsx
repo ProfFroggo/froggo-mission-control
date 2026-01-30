@@ -1064,8 +1064,8 @@ export default function SettingsPanel() {
                       <div className="text-sm text-blue-300 space-y-2">
                         <p>No default accounts! Froggo intelligently chooses which account to use based on context:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Email to kevin@carbium.io → Reply from kevin@carbium.io</li>
-                          <li>Email to kevin.macarthur@bitso.com → Reply from kevin.macarthur@bitso.com</li>
+                          <li>Email to your address → Reply from that same address</li>
+                          <li>Email to work address → Reply from work address</li>
                           <li>Calendar invite on iCloud → Use iCloud calendar</li>
                           <li>Reply-to address matching for email threads</li>
                         </ul>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
@@ -67,7 +68,8 @@ export default function EpicCalendar() {
   const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
   const [pendingReschedule, setPendingReschedule] = useState<{ event: CalendarEvent; newStart: Date; newEnd: Date } | null>(null);
 
-  const accounts = ['kevin@carbium.io', 'kevin.macarthur@bitso.com', 'kmacarthur.gpt@gmail.com'];
+  const { emailAccounts } = useUserSettings();
+  const accounts = emailAccounts.map(a => a.email);
 
   // Open create event modal
   const handleCreateEvent = () => {
@@ -628,7 +630,8 @@ function EventCard({
 }) {
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
-  const accountColor = event.account === 'kevin@carbium.io' ? 'bg-blue-500' : 'bg-purple-500';
+  const primaryEmail = useUserSettings.getState().email;
+  const accountColor = event.account === primaryEmail ? 'bg-blue-500' : 'bg-purple-500';
 
   if (compact) {
     return (

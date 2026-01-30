@@ -213,7 +213,7 @@ export const SELECTION_RULES = [
   {
     priority: 1,
     rule: 'Exact Address Match',
-    description: 'Email received at kevin@carbium.io → Reply from kevin@carbium.io',
+    description: 'Email received at your primary address → Reply from that address', // TODO: use dynamic user email from settings
     example: 'Highest priority - ensures replies come from the right address',
   },
   {

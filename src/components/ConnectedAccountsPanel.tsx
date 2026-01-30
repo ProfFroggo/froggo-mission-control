@@ -331,7 +331,7 @@ export default function ConnectedAccountsPanel() {
             </summary>
             <div className="mt-3 space-y-2">
               {[
-                { priority: 1, rule: 'Exact Address Match', description: 'Email received at kevin@carbium.io → Reply from kevin@carbium.io', example: 'Highest priority - ensures replies come from the right address' },
+                { priority: 1, rule: 'Exact Address Match', description: 'Email received at your address → Reply from that same address', example: 'Highest priority - ensures replies come from the right address' },
                 { priority: 2, rule: 'Reply-To Header', description: 'Uses reply-to address from original message', example: 'Respects email threading and conversation flow' },
                 { priority: 3, rule: 'Conversation Continuity', description: 'Continues thread with same account used previously', example: 'Keeps multi-message conversations consistent' },
                 { priority: 4, rule: 'Calendar Source', description: 'Invite on iCloud calendar → Uses iCloud account', example: 'Matches calendar events to their source' },

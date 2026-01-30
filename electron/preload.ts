@@ -213,6 +213,10 @@ contextBridge.exposeInMainWorld('clawdbot', {
     unmuteConversation: (sessionKey: string) => 
       ipcRenderer.invoke('notification-settings:unmute', sessionKey),
   },
+  // Analytics (real data from froggo.db)
+  analytics: {
+    getData: (timeRange: string) => ipcRenderer.invoke('analytics:getData', timeRange),
+  },
   // Rejection logging
   rejections: {
     log: (rejection: { type: string; title: string; content?: string; reason?: string }) =>

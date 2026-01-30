@@ -1097,6 +1097,62 @@ ipcMain.handle('tasks:list', async (_, status?: string) => {
   });
 });
 
+// ============== ANALYTICS DATA HANDLER ==============
+ipcMain.handle('analytics:getData', async (_, timeRange: string) => {
+  const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+
+  return new Promise((resolve) => {
+    // Query 1: Daily task completions
+    const completionsQuery = `SELECT date(updated_at/1000, 'unixepoch') as date, COUNT(*) as tasks_completed FROM tasks WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND updated_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`;
+
+    // Query 2: Daily task creation (as proxy for activity)
+    const createdQuery = `SELECT date(created_at/1000, 'unixepoch') as date, COUNT(*) as tasks_created FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`;
+
+    // Query 3: Agent activity
+    const agentQuery = `SELECT assigned_to as agent, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND assigned_to IS NOT NULL AND assigned_to != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY assigned_to ORDER BY total DESC`;
+
+    // Query 4: Project progress
+    const projectQuery = `SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`;
+
+    const results: any = { completions: [], created: [], agents: [], projects: [] };
+    let pending = 4;
+
+    const done = () => {
+      pending--;
+      if (pending === 0) resolve({ success: true, ...results, days });
+    };
+
+    exec(`sqlite3 "${dbPath}" "${completionsQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
+      if (!err && stdout?.trim()) {
+        try { results.completions = JSON.parse(stdout); } catch {}
+      }
+      done();
+    });
+
+    exec(`sqlite3 "${dbPath}" "${createdQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
+      if (!err && stdout?.trim()) {
+        try { results.created = JSON.parse(stdout); } catch {}
+      }
+      done();
+    });
+
+    exec(`sqlite3 "${dbPath}" "${agentQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
+      if (!err && stdout?.trim()) {
+        try { results.agents = JSON.parse(stdout); } catch {}
+      }
+      done();
+    });
+
+    exec(`sqlite3 "${dbPath}" "${projectQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
+      if (!err && stdout?.trim()) {
+        try { results.projects = JSON.parse(stdout); } catch {}
+      }
+      done();
+    });
+  });
+});
+
 ipcMain.handle('tasks:start', async (_, taskId: string) => {
   const cmd = `froggo-db task-start "${taskId}"`;
   

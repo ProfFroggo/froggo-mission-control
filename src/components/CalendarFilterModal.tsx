@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
+import { useUserSettings } from '../store/userSettings';
 
 interface CalendarSource {
   id: string;
@@ -46,12 +47,14 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
       const savedFilters = localStorage.getItem('calendar-filter-preferences');
       const enabledIds = savedFilters ? JSON.parse(savedFilters) : null;
 
-      // 1. Google Calendar accounts
-      const googleAccounts = [
-        { email: 'kevin.macarthur@bitso.com', name: 'Bitso (Work)', color: '#3b82f6' },
-        { email: 'kevin@carbium.io', name: 'Carbium', color: '#8b5cf6' },
-        { email: 'kmacarthur.gpt@gmail.com', name: 'Personal Gmail', color: '#22c55e' },
-      ];
+      // 1. Google Calendar accounts (from user settings)
+      const userAccounts = useUserSettings.getState().emailAccounts;
+      const defaultColors = ['#3b82f6', '#8b5cf6', '#22c55e', '#ef4444', '#f59e0b'];
+      const googleAccounts = userAccounts.map((a, i) => ({
+        email: a.email,
+        name: a.label,
+        color: defaultColors[i % defaultColors.length],
+      }));
 
       for (const account of googleAccounts) {
         // Try to fetch calendars for this account
