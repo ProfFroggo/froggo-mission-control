@@ -3,6 +3,7 @@ import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2 } from
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
+import { getAgentTheme } from '../utils/agentThemes';
 
 interface AgentChatModalProps {
   agentId: string;
@@ -275,7 +276,18 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         {/* Header */}
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{agent.avatar}</span>
+            {(() => {
+              const theme = getAgentTheme(agent.id);
+              return theme.pic ? (
+                <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-clawd-bg`}>
+                  <img src={`./agent-profiles/${theme.pic}`} alt={agent.name} className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }} />
+                  <span className="hidden absolute inset-0 flex items-center justify-center text-2xl">{agent.avatar}</span>
+                </div>
+              ) : (
+                <span className="text-3xl">{agent.avatar}</span>
+              );
+            })()}
             <div>
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 Chat with {agent.name}

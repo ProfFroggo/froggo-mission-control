@@ -236,7 +236,10 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
         {/* Header */}
         <div className="p-6 border-b border-clawd-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">{agent.avatar}</span>
+            <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-clawd-bg">
+              {(() => { const themes: Record<string, string> = { main: 'froggo.png', froggo: 'froggo.png', coder: 'coder.png', researcher: 'researcher.png', writer: 'writer.png', chief: 'chief.png', hr: 'hr.png', ox: 'ox.png' }; const pic = themes[agent.id.toLowerCase()]; return pic ? <img src={`./agent-profiles/${pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }} /> : null; })()}
+              <span className={`${['main','froggo','coder','researcher','writer','chief','hr','ox'].includes(agent.id.toLowerCase()) ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-4xl`}>{agent.avatar}</span>
+            </div>
             <div>
               <h2 className="text-2xl font-semibold">{agent.name}</h2>
               <p className="text-sm text-clawd-text-dim">{agent.description}</p>

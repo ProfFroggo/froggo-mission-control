@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, TrendingUp, Award, CheckCircle, Clock, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
+import { getAgentTheme } from '../utils/agentThemes';
 
 interface AgentCompareModalProps {
   agentIds: string[];
@@ -138,7 +139,17 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                   return (
                     <div key={agentId} className="bg-clawd-bg rounded-lg p-4 text-center">
-                      <div className="text-4xl mb-2">{agentData.avatar}</div>
+                      <div className="mb-2">
+                        {(() => {
+                          const theme = getAgentTheme(agentId);
+                          return theme.pic ? (
+                            <img src={`./agent-profiles/${theme.pic}`} alt={agentData.name} className="w-12 h-12 rounded-xl object-cover mx-auto ring-2 ring-white/10"
+                              onError={(e) => { (e.target as HTMLImageElement).replaceWith(Object.assign(document.createElement('span'), { className: 'text-4xl', textContent: agentData.avatar })); }} />
+                          ) : (
+                            <span className="text-4xl">{agentData.avatar}</span>
+                          );
+                        })()}
+                      </div>
                       <div className="font-semibold">{agentData.name}</div>
                     </div>
                   );
