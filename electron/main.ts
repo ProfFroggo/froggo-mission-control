@@ -6099,6 +6099,7 @@ ipcMain.handle('agents:getMetrics', async () => {
 });
 
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
+  safeLog.log(`[agents:getDetails] Called with agentId: ${agentId}`);
   const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
   
   // Agent ID aliases - some agents have multiple IDs that map to the same DB records
@@ -6123,16 +6124,18 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 
   // Get task stats
   try {
-    const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${dbIdsSql})" -json`;
+    const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0)" -json`;
     const taskStatsResult = execSync(taskStatsCmd, { encoding: 'utf-8' });
-    taskStats = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
+    const parsed = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
+    taskStats = { total: parsed.total || 0, completed: parsed.completed || 0 };
+    safeLog.log(`[agents:getDetails] taskStats for ${agentId}: total=${taskStats.total}, completed=${taskStats.completed}`);
   } catch (e: any) {
     safeLog.error(`[agents:getDetails] taskStats query failed for ${agentId}:`, e.message);
   }
 
   // Get recent tasks
   try {
-    const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${dbIdsSql}) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
+    const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
     const recentTasksResult = execSync(recentTasksCmd, { encoding: 'utf-8' });
     recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
       let outcome = 'unknown';
@@ -6197,18 +6200,20 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 
   const successRate = taskStats.total > 0 ? taskStats.completed / taskStats.total : 0;
 
-  return {
+  const result = {
     success: true,
     successRate,
     avgTime: '2.5h',
     totalTasks: taskStats.total,
-    successfulTasks: taskStats.completed,
-    failedTasks: taskStats.total - taskStats.completed,
+    successfulTasks: taskStats.completed || 0,
+    failedTasks: taskStats.total - (taskStats.completed || 0),
     skills,
     recentTasks,
     brainNotes,
     agentRules,
   };
+  safeLog.log(`[agents:getDetails] Returning for ${agentId}: totalTasks=${result.totalTasks}, success=${result.successfulTasks}, recentTasks=${recentTasks.length}, skills=${skills.length}`);
+  return result;
 });
 
 ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
@@ -6308,6 +6313,7 @@ ipcMain.handle('agents:search', async (_, query: string) => {
 });
 
 ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
+  safeLog.log(`[agents:spawnChat] Called with agentId: ${agentId}`);
   try {
     // Spawn a real agent chat session via the gateway WebSocket
     const gatewayWsUrl = 'ws://127.0.0.1:18789';
@@ -6343,7 +6349,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
       label,
     };
     
-    safeLog.log(`Spawned chat session for ${agentId}: ${sessionKey}`);
+    safeLog.log(`[agents:spawnChat] Spawned session for ${agentId}: ${sessionKey}`);
     return { success: true, sessionKey };
   } catch (error: any) {
     safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
@@ -6352,6 +6358,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
 });
 
 ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => {
+  safeLog.log(`[agents:chat] Called with sessionKey: ${sessionKey}, message length: ${message.length}`);
   try {
     const sessions = (global as any)._agentChatSessions || {};
     const session = sessions[sessionKey];
@@ -6406,8 +6413,9 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
         );
       });
       response = cliResult || 'No response from agent';
+      safeLog.log(`[agents:chat] CLI success, response length: ${response.length}`);
     } catch (cliErr: any) {
-      safeLog.error('CLI agent failed:', cliErr.message);
+      safeLog.error(`[agents:chat] CLI agent failed: ${cliErr.message}`);
       
       // Fallback: direct Anthropic API if key available
       if (anthropicApiKey) {

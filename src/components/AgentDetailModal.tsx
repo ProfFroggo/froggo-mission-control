@@ -69,26 +69,31 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
     let ipcDetails: any = null;
     try {
       const ipc = (window as any).clawdbot?.agents;
+      console.log('[AgentDetail] IPC available:', !!ipc, 'getDetails:', !!ipc?.getDetails);
       if (ipc?.getDetails) {
         ipcDetails = await ipc.getDetails(agentId);
-        console.log('[AgentDetail] IPC getDetails result:', agentId, ipcDetails);
+        console.log('[AgentDetail] IPC result:', JSON.stringify(ipcDetails, null, 2));
+      } else {
+        console.warn('[AgentDetail] No IPC getDetails available');
       }
-    } catch (e) {
-      console.error('[AgentDetail] IPC getDetails failed:', e);
+    } catch (e: any) {
+      console.error('[AgentDetail] IPC getDetails failed:', e?.message || e);
     }
 
     // Get tasks from store as fallback/supplement
     const agentTasks = tasks.filter(t => t.assignedTo === agentId);
+    console.log('[AgentDetail] Store tasks for', agentId, ':', agentTasks.length, 'total store tasks:', tasks.length);
     const doneTasks = agentTasks.filter(t => t.status === 'done');
     const failedTasksList = agentTasks.filter(t => (t.status as string) === 'failed' || (t.status as string) === 'blocked');
     const inProgressTasks = agentTasks.filter(t => t.status === 'in-progress');
 
     // Use IPC data if available, otherwise fall back to store data
-    const totalTasks = ipcDetails?.totalTasks || agentTasks.length;
-    const successfulCount = ipcDetails?.successfulTasks || doneTasks.length;
-    const failedCount = ipcDetails?.failedTasks || failedTasksList.length;
+    const totalTasks = ipcDetails?.totalTasks ?? agentTasks.length;
+    const successfulCount = ipcDetails?.successfulTasks ?? doneTasks.length;
+    const failedCount = ipcDetails?.failedTasks ?? failedTasksList.length;
     const successRate = ipcDetails?.successRate ?? (totalTasks > 0 ? successfulCount / totalTasks : 0);
     const avgTimeStr = ipcDetails?.avgTime || 'N/A';
+    console.log('[AgentDetail] Final data:', { totalTasks, successfulCount, failedCount, successRate });
 
     // Skills: prefer IPC data, fall back to agent capabilities
     let skills = ipcDetails?.skills || [];
