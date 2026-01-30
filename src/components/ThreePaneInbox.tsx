@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Inbox, Check, X, Clock, MessageSquare, Mail, Send, 
   Calendar, Bot, AlertTriangle, ShieldAlert, 
@@ -70,6 +70,7 @@ export default function ThreePaneInbox() {
   const [searchQuery, setSearchQuery] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const recentlyRejectedTaskIds = useRef<Set<string>>(new Set());
 
   // Folders
   const [folders] = useState<FolderType[]>([
@@ -98,7 +99,9 @@ export default function ThreePaneInbox() {
       try {
         const tasksResult = await window.clawdbot.tasks.list('review');
         if (tasksResult?.success && tasksResult.tasks?.length > 0) {
-          const taskItems = tasksResult.tasks.map((t: any) => ({
+          const taskItems = tasksResult.tasks
+            .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
+            .map((t: any) => ({
             id: `task-review-${t.id}`,
             type: 'task' as const,
             title: `✅ Review: ${t.title}`,
@@ -250,6 +253,8 @@ export default function ThreePaneInbox() {
       if (isTaskItem && item.metadata) {
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
+          recentlyRejectedTaskIds.current.add(meta.taskId);
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 30000);
           await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
         }
       } else {

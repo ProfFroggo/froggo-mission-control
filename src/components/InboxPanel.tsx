@@ -95,6 +95,7 @@ export default function InboxPanel() {
   const [rejectReason, setRejectReason] = useState('');
   const rejectInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const recentlyRejectedTaskIds = useRef<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   
   // Sorting state
@@ -146,18 +147,20 @@ export default function InboxPanel() {
         const tasksResult = await window.clawdbot!.tasks.list('review');
         if (tasksResult?.success && tasksResult.tasks?.length > 0) {
           // Convert tasks to inbox item format
-          const taskItems = tasksResult.tasks.map((t: any) => ({
-            id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
-            type: 'task' as const,
-            title: `✅ Review: ${t.title}`,
-            content: t.description || t.last_agent_update || 'Task completed, ready for review',
-            context: `Project: ${t.project || 'General'}`,
-            status: 'pending',
-            source_channel: 'kanban',
-            created: new Date(t.created_at || Date.now()).toISOString(),
-            metadata: JSON.stringify({ taskId: t.id, project: t.project }),
-            isTask: true, // Flag to handle differently
-          }));
+          const taskItems = tasksResult.tasks
+            .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
+            .map((t: any) => ({
+              id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
+              type: 'task' as const,
+              title: `✅ Review: ${t.title}`,
+              content: t.description || t.last_agent_update || 'Task completed, ready for review',
+              context: `Project: ${t.project || 'General'}`,
+              status: 'pending',
+              source_channel: 'kanban',
+              created: new Date(t.created_at || Date.now()).toISOString(),
+              metadata: JSON.stringify({ taskId: t.id, project: t.project }),
+              isTask: true, // Flag to handle differently
+            }));
           allItems = [...taskItems, ...allItems];
         }
       } catch (e) {
@@ -688,11 +691,26 @@ export default function InboxPanel() {
       setItems(prev => prev.filter(i => i.id !== item.id));
       showToast('warning', 'Rejected ✗', item.title);
       
-      // Sync in background
-      await window.clawdbot!.inbox.update(item.id, { 
-        status: 'rejected',
-        feedback: reason 
-      });
+      // Check if this is a task review item
+      const isTaskItem = (item as any).isTask || String(item.id).startsWith('task-review-');
+      
+      if (isTaskItem && item.metadata) {
+        // For task items, update the task status back to in-progress
+        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (meta.taskId) {
+          // Prevent poll from re-adding this task while status update propagates
+          recentlyRejectedTaskIds.current.add(meta.taskId);
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 30000);
+          await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
+        }
+      } else {
+        // Regular inbox item
+        await window.clawdbot!.inbox.update(item.id, { 
+          status: 'rejected',
+          feedback: reason 
+        });
+      }
       
       await window.clawdbot!.rejections.log({
         type: item.type,
@@ -732,6 +750,9 @@ export default function InboxPanel() {
         // For task items, update the task status back to in-progress with feedback
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
+          // Prevent poll from re-adding this task while status update propagates
+          recentlyRejectedTaskIds.current.add(meta.taskId);
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 30000);
           await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
           // Log activity with rejection reason
           gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
