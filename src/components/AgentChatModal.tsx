@@ -72,6 +72,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   }, []);
 
   const initChat = async () => {
+    console.log('[AgentChat] ===== initChat START for', agentId, '=====');
     setSpawning(true);
     setMessages([{
       role: 'system',
@@ -82,13 +83,17 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     try {
       // Spawn a real agent session via IPC
       const ipc = (window as any).clawdbot?.agents;
+      console.log('[AgentChat] IPC available:', !!ipc, 'spawnChat:', typeof ipc?.spawnChat, 'chat:', typeof ipc?.chat);
       if (!ipc?.spawnChat) {
         throw new Error('Agent chat IPC not available — are you running in the Electron app?');
       }
 
+      console.log('[AgentChat] Calling ipc.spawnChat(' + agentId + ')...');
       const result = await ipc.spawnChat(agentId);
+      console.log('[AgentChat] spawnChat result:', JSON.stringify(result));
       // Handle both formats: string key (legacy) or { success, sessionKey } (new)
       const key = typeof result === 'string' ? result : result?.sessionKey;
+      console.log('[AgentChat] Extracted sessionKey:', key);
       if (key) {
         setSessionKey(key);
         setMessages([{
@@ -100,7 +105,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         throw new Error(result?.error || 'No session key returned');
       }
     } catch (e: any) {
-      console.error('Failed to spawn chat session:', e);
+      console.error('[AgentChat] Failed to spawn chat session:', e?.message, e?.stack);
       setMessages([{
         role: 'system',
         content: `❌ Failed to connect: ${e.message || 'Unknown error'}. The gateway may not support agent spawning, or the session limit was reached.`,
@@ -168,12 +173,16 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
       // Send the message to the real session via IPC
       const ipc = (window as any).clawdbot?.agents;
+      console.log('[AgentChat] Sending message via', ipc?.chat ? 'IPC agents:chat' : 'gateway.sendToSession');
+      console.log('[AgentChat] sessionKey:', sessionKey, 'message:', userText.slice(0, 100));
       const result = ipc?.chat
         ? await ipc.chat(sessionKey, userText)
         : await gateway.sendToSession(sessionKey, userText);
+      console.log('[AgentChat] Send result type:', typeof result, 'result:', JSON.stringify(result)?.slice(0, 500));
 
       // If we get a direct response (non-streaming), use it
       const responseText = typeof result === 'string' ? result : (result as any)?.response;
+      console.log('[AgentChat] responseText:', responseText?.slice(0, 200));
       if (responseText) {
         // Clean up stream listener since we got a direct response
         unsub();

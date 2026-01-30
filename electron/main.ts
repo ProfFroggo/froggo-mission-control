@@ -15,28 +15,30 @@ import { registerXAutomationsHandlers } from './x-automations-service';
 
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
+// Debug file logger for agent issues
+const debugLogPath = '/tmp/clawd-dashboard-debug.log';
+function debugLog(...args: any[]) {
+  try {
+    const ts = new Date().toISOString();
+    const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+    require('fs').appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
+  } catch (e) { /* ignore */ }
+}
+
 const safeLog = {
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
-        safeLog.log(...args);
+        console.log(...args);
       }
     } catch (e: any) {
       // Silently ignore EPIPE and other stream errors
-      if (e.code !== 'EPIPE' && e.code !== 'ERR_STREAM_DESTROYED') {
-        // Only report unexpected errors to stderr (if writable)
-        try {
-          if (process.stderr.writable) {
-            safeLog.error('[SafeLog] Unexpected error:', e);
-          }
-        } catch {}
-      }
     }
   },
   error: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        safeLog.error(...args);
+        console.error(...args);
       }
     } catch (e: any) {
       // Silently ignore stream errors
@@ -45,7 +47,7 @@ const safeLog = {
   warn: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        safeLog.warn(...args);
+        console.warn(...args);
       }
     } catch (e: any) {
       // Silently ignore stream errors
@@ -6020,6 +6022,23 @@ function startQueueWatcher() {
 // Start watcher after window is created
 app.whenReady().then(() => {
   setTimeout(startQueueWatcher, 1000);
+  
+  // Self-test: verify agent DB queries work on startup
+  setTimeout(() => {
+    debugLog('[SELF-TEST] Testing agents:getDetails DB queries...');
+    const testDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+    try {
+      const testCmd = `sqlite3 "${testDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN ('coder') AND (cancelled IS NULL OR cancelled = 0)" -json`;
+      debugLog('[SELF-TEST] Running:', testCmd);
+      const testResult = execSync(testCmd, { encoding: 'utf-8', timeout: 5000 });
+      debugLog('[SELF-TEST] Result:', testResult.trim());
+      const parsed = JSON.parse(testResult);
+      debugLog('[SELF-TEST] Parsed:', JSON.stringify(parsed));
+      debugLog('[SELF-TEST] ✅ DB queries work! total=' + parsed[0]?.total + ' completed=' + parsed[0]?.completed);
+    } catch (e: any) {
+      debugLog('[SELF-TEST] ❌ FAILED:', e.message);
+    }
+  }, 3000);
 });
 
 // ============== AGENTS API IPC HANDLERS ==============
@@ -6100,6 +6119,7 @@ ipcMain.handle('agents:getMetrics', async () => {
 
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   safeLog.log(`[agents:getDetails] Called with agentId: ${agentId}`);
+  debugLog(`[agents:getDetails] Called with agentId: ${agentId}`);
   const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
   
   // Agent ID aliases - some agents have multiple IDs that map to the same DB records
@@ -6213,6 +6233,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
     agentRules,
   };
   safeLog.log(`[agents:getDetails] Returning for ${agentId}: totalTasks=${result.totalTasks}, success=${result.successfulTasks}, recentTasks=${recentTasks.length}, skills=${skills.length}`);
+  debugLog(`[agents:getDetails] Returning for ${agentId}: totalTasks=${result.totalTasks}, success=${result.successfulTasks}, recentTasks=${recentTasks.length}, skills=${skills.length}, fullResult=`, JSON.stringify(result).slice(0, 500));
   return result;
 });
 
@@ -6314,6 +6335,7 @@ ipcMain.handle('agents:search', async (_, query: string) => {
 
 ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
   safeLog.log(`[agents:spawnChat] Called with agentId: ${agentId}`);
+  debugLog(`[agents:spawnChat] Called with agentId: ${agentId}`);
   try {
     // Spawn a real agent chat session via the gateway WebSocket
     const gatewayWsUrl = 'ws://127.0.0.1:18789';
@@ -6350,6 +6372,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
     };
     
     safeLog.log(`[agents:spawnChat] Spawned session for ${agentId}: ${sessionKey}`);
+    debugLog(`[agents:spawnChat] Spawned session for ${agentId}: ${sessionKey}`);
     return { success: true, sessionKey };
   } catch (error: any) {
     safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
@@ -6359,6 +6382,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
 
 ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => {
   safeLog.log(`[agents:chat] Called with sessionKey: ${sessionKey}, message length: ${message.length}`);
+  debugLog(`[agents:chat] Called with sessionKey: ${sessionKey}, message length: ${message.length}`);
   try {
     const sessions = (global as any)._agentChatSessions || {};
     const session = sessions[sessionKey];
@@ -6414,6 +6438,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
       });
       response = cliResult || 'No response from agent';
       safeLog.log(`[agents:chat] CLI success, response length: ${response.length}`);
+      debugLog(`[agents:chat] CLI success, response length: ${response.length}, preview: ${response.slice(0, 200)}`);
     } catch (cliErr: any) {
       safeLog.error(`[agents:chat] CLI agent failed: ${cliErr.message}`);
       
