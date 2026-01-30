@@ -73,7 +73,7 @@ export default function AgentPanel() {
     else if (compareAgents.length < 3) setCompareAgents([...compareAgents, agentId]);
   };
 
-  const mainAgents = agents.filter(a => ['main', 'coder', 'researcher', 'writer', 'chief'].includes(a.id));
+  const mainAgents = agents.filter(a => ['main', 'coder', 'researcher', 'writer', 'chief', 'designer'].includes(a.id));
   const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
 
   return (

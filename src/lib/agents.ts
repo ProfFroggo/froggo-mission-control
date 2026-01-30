@@ -11,14 +11,35 @@ export interface AgentConfig {
   systemPromptPath?: string;
   capabilities: string[];
   model?: string;
+  workspace?: string;
+  workspaceFiles?: {
+    memory: string;
+    tools: string;
+    agents: string;
+    soul: string;
+    skills: string;
+  };
 }
 
 // Pre-defined agents
+// Helper to build workspace file paths
+function workspaceFiles(dir: string) {
+  return {
+    memory: `${dir}/MEMORY.md`,
+    tools: `${dir}/TOOLS.md`,
+    agents: `${dir}/AGENTS.md`,
+    soul: `${dir}/SOUL.md`,
+    skills: `${dir}/skills`,
+  };
+}
+
 export const AGENTS: Record<string, AgentConfig> = {
   coder: {
     id: 'coder',
     name: 'Coder',
     emoji: '💻',
+    workspace: '/Users/worker/clawd-coder',
+    workspaceFiles: workspaceFiles('/Users/worker/clawd-coder'),
     description: 'Software engineering tasks',
     systemPromptPath: '/Users/worker/clawd/agents/coder/AGENT.md',
     capabilities: ['code', 'git', 'debug', 'test'],
@@ -29,6 +50,8 @@ export const AGENTS: Record<string, AgentConfig> = {
     name: 'Researcher',
     emoji: '🔍',
     description: 'Research and analysis',
+    workspace: '/Users/worker/clawd-researcher',
+    workspaceFiles: workspaceFiles('/Users/worker/clawd-researcher'),
     systemPromptPath: '/Users/worker/clawd/agents/researcher/AGENT.md',
     capabilities: ['web', 'analyze', 'summarize'],
     model: 'anthropic/claude-sonnet-4',
@@ -38,6 +61,8 @@ export const AGENTS: Record<string, AgentConfig> = {
     name: 'Writer',
     emoji: '✍️',
     description: 'Content creation',
+    workspace: '/Users/worker/clawd-writer',
+    workspaceFiles: workspaceFiles('/Users/worker/clawd-writer'),
     systemPromptPath: '/Users/worker/clawd/agents/writer/AGENT.md',
     capabilities: ['write', 'edit', 'social'],
     model: 'anthropic/claude-sonnet-4',
@@ -47,6 +72,8 @@ export const AGENTS: Record<string, AgentConfig> = {
     name: 'Chief',
     emoji: '👨‍💻',
     description: 'Lead Engineer (GSD methodology)',
+    workspace: '/Users/worker/clawd-chief',
+    workspaceFiles: workspaceFiles('/Users/worker/clawd-chief'),
     systemPromptPath: '/Users/worker/clawd/agents/lead-engineer/AGENT.md',
     capabilities: ['code', 'architecture', 'planning'],
     model: 'anthropic/claude-sonnet-4',
@@ -56,6 +83,8 @@ export const AGENTS: Record<string, AgentConfig> = {
     name: 'Froggo',
     emoji: '🐸',
     description: 'Main orchestrator and agent reviewer',
+    workspace: '/Users/worker/clawd',
+    workspaceFiles: workspaceFiles('/Users/worker/clawd'),
     systemPromptPath: '/Users/worker/clawd/AGENTS.md',
     capabilities: ['orchestrate', 'review', 'approve', 'delegate'],
     model: 'anthropic/claude-sonnet-4-5',

@@ -254,8 +254,19 @@ export default function ThreePaneInbox() {
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
           recentlyRejectedTaskIds.current.add(meta.taskId);
-          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 30000);
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
+          try {
+            await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          } catch (updateErr) {
+            console.error('[ThreePaneInbox] Failed to update task status on reject, retrying...', updateErr);
+            setTimeout(async () => {
+              try {
+                await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+              } catch (retryErr) {
+                console.error('[ThreePaneInbox] Retry also failed:', retryErr);
+              }
+            }, 2000);
+          }
         }
       } else {
         await window.clawdbot!.inbox.update(item.id, {

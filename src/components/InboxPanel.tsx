@@ -700,8 +700,21 @@ export default function InboxPanel() {
         if (meta.taskId) {
           // Prevent poll from re-adding this task while status update propagates
           recentlyRejectedTaskIds.current.add(meta.taskId);
-          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 30000);
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
+          try {
+            await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          } catch (updateErr) {
+            console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
+            // Retry once after a short delay
+            setTimeout(async () => {
+              try {
+                await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+                console.log('[Inbox] Retry succeeded for task:', meta.taskId);
+              } catch (retryErr) {
+                console.error('[Inbox] Retry also failed:', retryErr);
+              }
+            }, 2000);
+          }
           gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
         }
       } else {
@@ -752,8 +765,19 @@ export default function InboxPanel() {
         if (meta.taskId) {
           // Prevent poll from re-adding this task while status update propagates
           recentlyRejectedTaskIds.current.add(meta.taskId);
-          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 30000);
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
+          try {
+            await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          } catch (updateErr) {
+            console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
+            setTimeout(async () => {
+              try {
+                await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+              } catch (retryErr) {
+                console.error('[Inbox] Retry also failed:', retryErr);
+              }
+            }, 2000);
+          }
           // Log activity with rejection reason
           gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
         }

@@ -587,7 +587,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
             <h2 className="text-xl font-semibold mb-2">{task.title}</h2>
             {task.description && (
-              <p className="text-sm text-clawd-text-dim">{task.description}</p>
+              <div className="max-h-96 overflow-y-auto text-sm text-clawd-text-dim">{task.description}</div>
             )}
           </div>
           <button

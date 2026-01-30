@@ -263,6 +263,7 @@ const defaultAgents: Agent[] = [
   { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
   { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
   { id: 'chief', name: 'Chief', avatar: '👨‍💻', description: 'Lead Engineer (GSD methodology)', status: 'idle', capabilities: ['code', 'architecture', 'planning'] },
+  { id: 'designer', name: 'Designer', avatar: '🎨', description: 'UI/UX & Graphic Design', status: 'idle', capabilities: ['design', 'ui-mockups', 'image-generation'] },
 ];
 
 export const useStore = create<Store>()(
