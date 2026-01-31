@@ -3,6 +3,7 @@ import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, Message
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { gateway } from '../lib/gateway';
 import BaseModal, { BaseModalBody } from './BaseModal';
+import AgentAvatar from './AgentAvatar';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} /> },
@@ -683,7 +684,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                             : 'border-clawd-border hover:border-clawd-accent/50'
                         }`}
                       >
-                        <span className="text-base">{agent.avatar || '🤖'}</span>
+                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
                       </button>
                     ))}
@@ -709,7 +710,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                             : 'border-clawd-border hover:border-clawd-accent/50'
                         }`}
                       >
-                        <span className="text-base">{agent.avatar || '🤖'}</span>
+                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
                         {agent.id === 'froggo' && <span className="text-xs opacity-60">(default)</span>}
                       </button>

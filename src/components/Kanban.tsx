@@ -8,6 +8,7 @@ import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
 import TaskStatusIndicator from './TaskStatusIndicator';
+import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
 
@@ -940,7 +941,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                   setShowAssign(true); 
                 }}
               >
-                <span>{assignedAgent.avatar || '🤖'}</span>
+                <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="xs" />
               </button>
             </div>
           ) : (
@@ -988,7 +989,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                         task.assignedTo === agent.id ? 'bg-clawd-accent/20 text-clawd-accent' : ''
                       }`}
                     >
-                      <span className="text-base">{agent.avatar || '🤖'}</span>
+                      <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                       {agent.name}
                     </button>
                   ))}

@@ -4,6 +4,7 @@ import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
+import AgentAvatar from './AgentAvatar';
 
 interface TaskAttachment {
   id: number;
@@ -641,7 +642,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Worker Agent</h3>
             {assignedAgent ? (
               <div className="flex items-center gap-2 p-2 bg-clawd-bg rounded-lg border border-clawd-border">
-                <div className="text-lg">{assignedAgent.avatar || '🤖'}</div>
+                <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="md" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{assignedAgent.name}</div>
                 </div>
@@ -680,7 +681,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Review Agent</h3>
             {reviewer ? (
               <div className="flex items-center gap-2 p-2 bg-clawd-bg rounded-lg border border-clawd-border">
-                <div className="text-lg">{reviewer.avatar || '👀'}</div>
+                <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="md" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{reviewer.name}</div>
                 </div>

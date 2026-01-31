@@ -427,11 +427,22 @@ export const useStore = create<Store>()(
             });
             
             // Enrich agent statuses from session data
+            // Map session agent keys to dashboard agent IDs
+            const agentKeyMap: Record<string, string> = {
+              'chat-agent': 'main',
+            };
+            const resolveAgentId = (key: string): string | null => {
+              const match = (key || '').match(/^agent:([^:]+)/);
+              if (!match) return null;
+              const raw = match[1];
+              return agentKeyMap[raw] || raw;
+            };
+
             // Group non-subagent sessions by agent_id to determine activity
             const agentActivity = new Map<string, { latestUpdate: number; totalTokens: number; sessionCount: number; activeCount: number; model?: string; channel?: string }>();
             for (const s of processed) {
               if (s.type === 'subagent') continue;
-              const agentId = (s.key || '').match(/^agent:([^:]+)/)?.[1];
+              const agentId = resolveAgentId(s.key);
               if (!agentId) continue;
               const existing = agentActivity.get(agentId) || { latestUpdate: 0, totalTokens: 0, sessionCount: 0, activeCount: 0 };
               if ((s.updatedAt || 0) > existing.latestUpdate) {
@@ -449,7 +460,7 @@ export const useStore = create<Store>()(
             const subagentCounts = new Map<string, number>();
             for (const s of processed) {
               if (s.type !== 'subagent') continue;
-              const agentId = (s.key || '').match(/^agent:([^:]+)/)?.[1];
+              const agentId = resolveAgentId(s.key);
               if (!agentId) continue;
               subagentCounts.set(agentId, (subagentCounts.get(agentId) || 0) + (s.isActive ? 1 : 0));
             }
@@ -458,11 +469,14 @@ export const useStore = create<Store>()(
               gatewaySessions: processed,
               agents: state.agents.map((agent: Agent) => {
                 const activity = agentActivity.get(agent.id);
-                if (!activity) return agent;
+                const activeSubagents = subagentCounts.get(agent.id) || 0;
 
-                const ageMs = activity.latestUpdate ? now - activity.latestUpdate : Infinity;
+                // If no activity AND no active subagents, keep default status
+                if (!activity && !activeSubagents) return agent;
+
+                const ageMs = activity?.latestUpdate ? now - activity.latestUpdate : Infinity;
                 let status: Agent['status'];
-                if (activity.activeCount > 0 || subagentCounts.get(agent.id)) {
+                if ((activity?.activeCount || 0) > 0 || activeSubagents > 0) {
                   status = 'active';
                 } else if (ageMs < 30 * 60 * 1000) { // 30 minutes
                   status = 'idle';
@@ -473,7 +487,7 @@ export const useStore = create<Store>()(
                 return {
                   ...agent,
                   status,
-                  lastActivity: activity.latestUpdate || agent.lastActivity,
+                  lastActivity: activity?.latestUpdate || agent.lastActivity,
                 };
               }),
             }));

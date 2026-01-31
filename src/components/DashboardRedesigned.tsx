@@ -6,6 +6,7 @@ import {
   TrendingUp, Clock, Zap, Users
 } from 'lucide-react';
 import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
+import AgentAvatar from './AgentAvatar';
 
 // X logo component  
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -432,7 +433,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               )}
                               {agent && (
                                 <span className="flex items-center gap-1.5">
-                                  <span>{agent.avatar}</span>
+                                  <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
                                   {agent.name}
                                 </span>
                               )}
@@ -561,7 +562,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         key={agent.id} 
                         className="flex items-center gap-3 p-3 rounded-lg bg-clawd-surface/50 hover:bg-clawd-surface transition-colors"
                       >
-                        <span className="text-2xl">{agent.avatar}</span>
+                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="lg" />
                         <div className="flex-1">
                           <div className="text-sm font-medium">{agent.name}</div>
                           <div className={`text-xs ${

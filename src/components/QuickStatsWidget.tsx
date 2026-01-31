@@ -1,5 +1,6 @@
 import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
+import AgentAvatar from './AgentAvatar';
 
 export default function QuickStatsWidget() {
   const { sessions, agents, tasks, activities, gatewaySessions } = useStore();
@@ -91,7 +92,7 @@ export default function QuickStatsWidget() {
             {busyAgents.length > 0 ? (
               busyAgents.map(agent => (
                 <div key={agent.id} className="flex items-center gap-2 text-xs overflow-hidden">
-                  <span className="no-shrink">{agent.avatar}</span>
+                  <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
                   <span className="text-clawd-text agent-name flex-shrink">{agent.name}</span>
                   {agent.currentTaskId && (
                     <span className="ml-auto text-clawd-text-dim text-truncate flex-1">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy } from 'lucide-react';
+import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import FilePreviewModal from './FilePreviewModal';
 import { gateway, ConnectionState } from '../lib/gateway';
@@ -753,9 +754,7 @@ export default function ChatPanel() {
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-clawd-accent/20 flex items-center justify-center text-xl">
-            🐸
-          </div>
+          <AgentAvatar agentId="froggo" size="lg" />
           <div>
             <h2 className="font-semibold">Froggo</h2>
             <div className="flex items-center gap-2 text-xs">
@@ -836,7 +835,7 @@ export default function ChatPanel() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center py-16 text-clawd-text-dim">
-            <div className="text-6xl mb-4">🐸</div>
+            <AgentAvatar agentId="froggo" size="2xl" className="mx-auto mb-4" />
             <p className="text-lg font-medium mb-2">Hey! I'm Froggo</p>
             <p className="text-sm">Your AI assistant. Ask me anything!</p>
             <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-md mx-auto">
@@ -885,9 +884,7 @@ export default function ChatPanel() {
                       K
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-xl shadow-md ring-2 ring-white/20">
-                      🐸
-                    </div>
+                    <AgentAvatar agentId="froggo" size="lg" ring />
                   )}
                 </div>
 

@@ -8,6 +8,7 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { voiceService } from '../lib/voiceService';
+import AgentAvatar from './AgentAvatar';
 import type { Model, KaldiRecognizer } from 'vosk-browser';
 
 interface Message {
@@ -1629,7 +1630,7 @@ Give a helpful, concise answer based on the meeting content.`;
     if (processing) return <Loader2 size={48} className="animate-spin text-yellow-500" />;
     if (speaking) return <span className="animate-pulse text-5xl">🗣️</span>;
     if (listening) return <span style={{ transform: `scale(${1 + audioLevel * 0.3})` }} className="text-5xl">🎤</span>;
-    return <span className="text-5xl">🐸</span>;
+    return <AgentAvatar agentId="froggo" size="2xl" />;
   };
 
   const canStart = modelLoaded && !modelError && !modelLoading;
@@ -1796,7 +1797,7 @@ Give a helpful, concise answer based on the meeting content.`;
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-clawd-text-dim">
                   <div className="text-center">
-                    <span className="text-6xl mb-4 block">🐸</span>
+                    <AgentAvatar agentId="froggo" size="2xl" className="mx-auto mb-4" />
                     <p className="text-lg font-medium">Click the frog to start</p>
                     <p className="text-sm mt-2">Real-time transcription with Vosk WASM</p>
                     <p className="text-xs mt-4 text-clawd-text-dim">
