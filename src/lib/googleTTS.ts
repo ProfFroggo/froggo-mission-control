@@ -22,15 +22,49 @@ async function getApiKey(): Promise<string> {
   // Try to get from electron IPC
   try {
     if ((window as any).clawdbot?.getGoogleCloudKey) {
-      cachedApiKey = await (window as any).clawdbot.getGoogleCloudKey();
-      if (cachedApiKey) return cachedApiKey;
+      const key = await (window as any).clawdbot.getGoogleCloudKey();
+      if (key) { cachedApiKey = key; return cachedApiKey; }
     }
   } catch {}
   
-  // Fall back to the Gemini key (same Google project usually)
-  // This is the key already used in VoicePanel.tsx
-  cachedApiKey = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
-  return cachedApiKey;
+  // Try settings
+  try {
+    if ((window as any).clawdbot?.settings?.get) {
+      const result = await (window as any).clawdbot.settings.get();
+      if (result?.success && result.settings?.googleApiKey) {
+        cachedApiKey = result.settings.googleApiKey;
+        return cachedApiKey;
+      }
+    }
+  } catch {}
+
+  // Try reading from config file via exec
+  try {
+    if ((window as any).clawdbot?.exec?.run) {
+      const result = await (window as any).clawdbot.exec.run(
+        'cat ~/.clawdbot/google-api-key 2>/dev/null || echo $GOOGLE_API_KEY 2>/dev/null || echo ""'
+      );
+      if (result?.success && result.stdout?.trim()) {
+        cachedApiKey = result.stdout.trim();
+        return cachedApiKey;
+      }
+    }
+  } catch {}
+  
+  // No valid key found — return empty string so callers can fall back gracefully
+  console.warn('[GoogleTTS] No Google Cloud API key configured. Set GOOGLE_API_KEY env var or save to ~/.clawdbot/google-api-key');
+  return '';
+}
+
+/** Allow external code to set the API key */
+export function setGoogleTTSApiKey(key: string) {
+  cachedApiKey = key;
+}
+
+/** Check if a valid API key is available */
+export async function hasGoogleTTSApiKey(): Promise<boolean> {
+  const key = await getApiKey();
+  return !!key;
 }
 
 /**
@@ -56,6 +90,11 @@ export async function synthesizeSpeech(
     .trim();
   
   if (!cleanText) return null;
+  
+  if (!apiKey) {
+    console.warn('[GoogleTTS] No API key — falling back to browser TTS');
+    return null;
+  }
   
   // Truncate very long responses
   const truncated = cleanText.slice(0, 4000);
