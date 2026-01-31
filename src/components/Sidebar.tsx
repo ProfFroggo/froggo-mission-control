@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -43,7 +43,8 @@ const staticNavItems = [
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
-  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '⌘⇧S' },
+  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '' },
+  { id: 'starred' as View, icon: Star, label: 'Starred', shortcut: '⌘⇧S' },
 ];
 
 interface SystemStatus {

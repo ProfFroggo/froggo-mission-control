@@ -42,7 +42,7 @@ export default function QuickStatsWidget() {
     discord: 'text-indigo-400',
     telegram: 'text-blue-400',
     whatsapp: 'text-green-400',
-    web: 'text-gray-400',
+    web: 'text-clawd-text-dim',
   };
 
   return (
@@ -68,7 +68,7 @@ export default function QuickStatsWidget() {
                 className="flex items-center gap-1.5 px-2 py-1 bg-clawd-bg/50 rounded-md text-xs"
               >
                 <span>{channelIcons[channel] || '💻'}</span>
-                <span className={channelColors[channel] || 'text-gray-400'}>
+                <span className={channelColors[channel] || 'text-clawd-text-dim'}>
                   {channel}
                 </span>
                 <span className="text-clawd-text-dim">×{count}</span>

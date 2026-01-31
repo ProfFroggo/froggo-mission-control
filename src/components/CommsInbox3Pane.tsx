@@ -73,16 +73,37 @@ interface ThreadMessage {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-// TODO: Derive email accounts from useUserSettings store (requires refactor to hook-based approach)
 
-const ACCOUNTS: Account[] = [
+// Default email accounts (fallback when settings don't specify emailAccounts)
+const DEFAULT_EMAIL_ACCOUNTS: Account[] = [
   { id: 'gmail-bitso', label: 'Bitso', platform: 'email', address: 'kevin.macarthur@bitso.com', icon: <Mail size={16} />, color: 'text-orange-400' },
   { id: 'gmail-carbium', label: 'Carbium', platform: 'email', address: 'kevin@carbium.io', icon: <Mail size={16} />, color: 'text-blue-400' },
+];
+
+const PLATFORM_ACCOUNTS: Account[] = [
   { id: 'whatsapp', label: 'WhatsApp', platform: 'whatsapp', icon: <MessageCircle size={16} />, color: 'text-green-400' },
   { id: 'telegram', label: 'Telegram', platform: 'telegram', icon: <Send size={16} />, color: 'text-sky-400' },
   { id: 'discord', label: 'Discord', platform: 'discord', icon: <Gamepad2 size={16} />, color: 'text-indigo-400' },
-  { id: 'twitter', label: 'X DMs', platform: 'twitter', icon: <XIcon size={16} />, color: 'text-gray-300' },
+  { id: 'twitter', label: 'X DMs', platform: 'twitter', icon: <XIcon size={16} />, color: 'text-clawd-text-dim' },
 ];
+
+// Build accounts list from settings (email accounts are dynamic, platforms are static)
+function buildAccounts(settingsEmailAccounts?: Array<{ id: string; label: string; address: string; color?: string }>): Account[] {
+  const emailAccounts: Account[] = settingsEmailAccounts
+    ? settingsEmailAccounts.map(a => ({
+        id: a.id,
+        label: a.label,
+        platform: 'email' as const,
+        address: a.address,
+        icon: <Mail size={16} />,
+        color: a.color || 'text-blue-400',
+      }))
+    : DEFAULT_EMAIL_ACCOUNTS;
+  return [...emailAccounts, ...PLATFORM_ACCOUNTS];
+}
+
+// Legacy constant for backward compatibility (uses defaults)
+const ACCOUNTS: Account[] = buildAccounts();
 
 const FOLDERS: Folder[] = [
   { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: (m) => !m.is_starred },
@@ -112,7 +133,7 @@ const FOLDERS: Folder[] = [
 function platformColor(p: string): string {
   const map: Record<string, string> = {
     email: 'text-orange-400', whatsapp: 'text-green-400', telegram: 'text-sky-400',
-    discord: 'text-indigo-400', twitter: 'text-gray-300'
+    discord: 'text-indigo-400', twitter: 'text-clawd-text-dim'
   };
   return map[p] || 'text-clawd-text-dim';
 }
@@ -126,6 +147,7 @@ function LeftPane({
   onSelectFolder,
   accountCounts,
   folderCounts,
+  accounts = ACCOUNTS,
 }: {
   selectedAccount: string | null;
   selectedFolder: string;
@@ -133,6 +155,7 @@ function LeftPane({
   onSelectFolder: (id: string) => void;
   accountCounts: Record<string, number>;
   folderCounts: Record<string, number>;
+  accounts?: Account[];
 }) {
   const [accountsExpanded, setAccountsExpanded] = useState(true);
   const [foldersExpanded, setFoldersExpanded] = useState(true);
@@ -166,7 +189,7 @@ function LeftPane({
         </button>
         {accountsExpanded && (
           <div className="pb-2">
-            {ACCOUNTS.map(account => (
+            {accounts.map(account => (
               <button
                 key={account.id}
                 onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
@@ -767,6 +790,17 @@ function RightPane({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CommsInbox3Pane() {
+  // Dynamic accounts from settings (email accounts configurable, platforms static)
+  const [settingsAccounts, setSettingsAccounts] = useState<Account[]>(ACCOUNTS);
+  useEffect(() => {
+    (window as any).clawdbot?.settings?.get().then((resp: any) => {
+      if (resp?.success && resp.settings?.emailAccounts) {
+        setSettingsAccounts(buildAccounts(resp.settings.emailAccounts));
+      }
+    }).catch(() => {});
+  }, []);
+  const accounts = settingsAccounts;
+
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedConversation, setSelectedConversation] = useState<ConversationItem | null>(null);
@@ -786,13 +820,13 @@ export default function CommsInbox3Pane() {
   // Determine which account's platform we're filtering on
   const getAccountPlatform = (accountId: string | null): string | null => {
     if (!accountId) return null;
-    const account = ACCOUNTS.find(a => a.id === accountId);
+    const account = accounts.find(a => a.id === accountId);
     return account?.platform || null;
   };
 
   // const getAccountAddress = (accountId: string | null): string | undefined => {
   //   if (!accountId) return undefined;
-  //   return ACCOUNTS.find(a => a.id === accountId)?.address;
+  //   return accounts.find(a => a.id === accountId)?.address;
   // };
 
   // Filter and sort messages for display
@@ -848,7 +882,7 @@ export default function CommsInbox3Pane() {
     const aCounts: Record<string, number> = {};
     const fCounts: Record<string, number> = {};
 
-    for (const account of ACCOUNTS) {
+    for (const account of accounts) {
       const platform = account.platform;
       aCounts[account.id] = msgs.filter(m => m.platform === platform && !m.is_read).length;
     }
@@ -1005,7 +1039,7 @@ export default function CommsInbox3Pane() {
   // Get label for center pane header
   const getAccountLabel = (): string => {
     if (!selectedAccount) return 'All Messages';
-    const account = ACCOUNTS.find(a => a.id === selectedAccount);
+    const account = accounts.find(a => a.id === selectedAccount);
     return account ? `${account.label}${account.address ? ` (${account.address})` : ''}` : 'Messages';
   };
 
@@ -1018,6 +1052,7 @@ export default function CommsInbox3Pane() {
         onSelectFolder={setSelectedFolder}
         accountCounts={accountCounts}
         folderCounts={folderCounts}
+        accounts={accounts}
       />
       <CenterPane
         conversations={displayMessages}

@@ -689,7 +689,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     task.reviewStatus === 'approved' ? 'bg-green-500/20 text-green-400' :
                     task.reviewStatus === 'needs-changes' ? 'bg-red-500/20 text-red-400' :
                     task.reviewStatus === 'in-review' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-gray-500/20 text-gray-400'
+                    'bg-clawd-bg0/20 text-clawd-text-dim'
                   }`}>
                     {task.reviewStatus}
                   </span>
@@ -1262,7 +1262,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-colors ${
                   validation.allowed && !checkingAgent
                     ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+                    : 'bg-clawd-bg0/50 text-clawd-text-dim cursor-not-allowed'
                 }`}
                 title={validation.allowed ? 'Mark task as done' : validation.reasons.join('\n')}
               >

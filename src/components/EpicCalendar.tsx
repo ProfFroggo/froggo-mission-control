@@ -327,7 +327,10 @@ export default function EpicCalendar() {
       console.log('[EpicCalendar] Fetching aggregated events...');
       
       // Use the new calendar aggregation service
-      const response = await window.clawdbot.calendar.aggregate({
+      if (!window.clawdbot?.calendar?.aggregate) {
+        throw new Error('Calendar service not available — running outside Electron?');
+      }
+      const response = await window.clawdbot?.calendar?.aggregate({
         days: 30,
         includeGoogle: true,
         includeMissionControl: true,

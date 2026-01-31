@@ -91,6 +91,9 @@ export interface GatewaySession {
   totalTokens?: number;
   contextTokens?: number;
   label?: string; // Sub-agent label when spawned with sessions_spawn
+  channel?: string; // Delivery channel (discord, whatsapp, etc.)
+  inputTokens?: number;
+  outputTokens?: number;
   // Derived fields for UI
   type: 'main' | 'subagent' | 'cron' | 'discord' | 'telegram' | 'whatsapp' | 'web' | 'other';
   displayName: string;
@@ -125,6 +128,8 @@ export interface ApprovalItem {
   metadata?: {
     to?: string;
     from?: string;
+    subject?: string;
+    account?: string;
     platform?: string;
     replyTo?: string;
     scheduledFor?: string;
@@ -223,36 +228,84 @@ interface Store {
   getTasksNeedingReview: () => Task[];
 }
 
-// Execute approved items
-async function executeApproval(item: ApprovalItem) {
-  console.log('Executing approval:', item.type, item.title);
+// Execute approved items via direct IPC calls
+async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; error?: string }> {
+  console.log('[Approval] Executing:', item.type, item.title);
+  const clawdbot = (window as any).clawdbot;
   
   try {
     switch (item.type) {
       case 'tweet':
-      case 'reply':
-        // Send to gateway to post via bird CLI
-        await gateway.sendChat(`[APPROVED] Post this ${item.type}: ${item.content}`);
+      case 'reply': {
+        // Post tweet directly via bird CLI IPC
+        if (clawdbot?.execute?.tweet) {
+          const result = await clawdbot.execute.tweet(item.content);
+          if (!result.success) {
+            console.error('[Approval] Tweet failed:', result.error);
+            // Fallback: notify agent to handle it
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Tweet failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
+            return { success: false, error: result.error };
+          }
+          console.log('[Approval] Tweet posted successfully');
+        } else {
+          // Fallback if IPC not available
+          await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch(() => {});
+        }
         break;
-      case 'email':
-        // Send email via gateway
-        await gateway.sendChat(`[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`);
+      }
+      case 'email': {
+        // Send email directly via gog gmail IPC
+        if (clawdbot?.email?.send && item.metadata?.to) {
+          const result = await clawdbot.email.send({
+            to: item.metadata.to,
+            subject: item.metadata.subject || item.title || 'No subject',
+            body: item.content,
+            account: item.metadata.account,
+          });
+          if (!result.success) {
+            console.error('[Approval] Email failed:', result.error);
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Email to ${item.metadata.to} failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
+            return { success: false, error: result.error };
+          }
+          console.log('[Approval] Email sent successfully to', item.metadata.to);
+        } else {
+          await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch(() => {});
+        }
         break;
-      case 'message':
-        // Send message via gateway
-        await gateway.sendChat(`[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`);
+      }
+      case 'message': {
+        // Send message via messages IPC
+        if (clawdbot?.messages?.send && item.metadata?.platform && item.metadata?.to) {
+          const result = await clawdbot.messages.send(item.metadata.platform, item.metadata.to, item.content);
+          if (!result?.success) {
+            console.error('[Approval] Message failed:', result?.error);
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.metadata.platform} message to ${item.metadata.to} failed: ${result?.error}`).catch(() => {});
+            return { success: false, error: result?.error };
+          }
+          console.log('[Approval] Message sent successfully');
+        } else {
+          await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch(() => {});
+        }
         break;
+      }
+      case 'task': {
+        // Notify agent to create task (tasks are managed by the agent/froggo-db)
+        await gateway.sendToSession('main', `[APPROVED] Create task: ${item.title}\n${item.content}`).catch(() => {});
+        break;
+      }
       case 'action':
-        // Execute action via gateway
-        await gateway.sendChat(`[APPROVED] Execute action: ${item.title}\n${item.content}`);
+      default: {
+        // Generic actions - notify agent to execute
+        await gateway.sendToSession('main', `[APPROVED] Execute action: ${item.title}\n${item.content}`).catch(() => {});
         break;
-      case 'task':
-        // Create/update task
-        await gateway.sendChat(`[APPROVED] Task: ${item.title}\n${item.content}`);
-        break;
+      }
     }
-  } catch (e) {
-    console.error('Failed to execute approval:', e);
+    return { success: true };
+  } catch (e: any) {
+    console.error('[Approval] Failed to execute:', e);
+    // Notify agent about the failure so it can retry or handle
+    await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${e.message}\n\nContent: ${item.content}`).catch(() => {});
+    return { success: false, error: e.message };
   }
 }
 
@@ -363,6 +416,9 @@ export const useStore = create<Store>()(
                 model: s.model,
                 totalTokens: s.totalTokens,
                 contextTokens: s.contextTokens,
+                inputTokens: s.inputTokens,
+                outputTokens: s.outputTokens,
+                channel: s.channel,
                 label,
                 type,
                 displayName,
@@ -370,7 +426,57 @@ export const useStore = create<Store>()(
               };
             });
             
-            set({ gatewaySessions: processed });
+            // Enrich agent statuses from session data
+            // Group non-subagent sessions by agent_id to determine activity
+            const agentActivity = new Map<string, { latestUpdate: number; totalTokens: number; sessionCount: number; activeCount: number; model?: string; channel?: string }>();
+            for (const s of processed) {
+              if (s.type === 'subagent') continue;
+              const agentId = (s.key || '').match(/^agent:([^:]+)/)?.[1];
+              if (!agentId) continue;
+              const existing = agentActivity.get(agentId) || { latestUpdate: 0, totalTokens: 0, sessionCount: 0, activeCount: 0 };
+              if ((s.updatedAt || 0) > existing.latestUpdate) {
+                if (s.model) existing.model = s.model;
+                if (s.channel) existing.channel = s.channel;
+              }
+              existing.latestUpdate = Math.max(existing.latestUpdate, s.updatedAt || 0);
+              existing.totalTokens += s.totalTokens || 0;
+              existing.sessionCount++;
+              if (s.isActive) existing.activeCount++;
+              agentActivity.set(agentId, existing);
+            }
+
+            // Count active subagents per parent agent
+            const subagentCounts = new Map<string, number>();
+            for (const s of processed) {
+              if (s.type !== 'subagent') continue;
+              const agentId = (s.key || '').match(/^agent:([^:]+)/)?.[1];
+              if (!agentId) continue;
+              subagentCounts.set(agentId, (subagentCounts.get(agentId) || 0) + (s.isActive ? 1 : 0));
+            }
+
+            set((state: Store) => ({
+              gatewaySessions: processed,
+              agents: state.agents.map((agent: Agent) => {
+                const activity = agentActivity.get(agent.id);
+                if (!activity) return agent;
+
+                const ageMs = activity.latestUpdate ? now - activity.latestUpdate : Infinity;
+                let status: Agent['status'];
+                if (activity.activeCount > 0 || subagentCounts.get(agent.id)) {
+                  status = 'active';
+                } else if (ageMs < 30 * 60 * 1000) { // 30 minutes
+                  status = 'idle';
+                } else {
+                  status = 'offline';
+                }
+
+                return {
+                  ...agent,
+                  status,
+                  lastActivity: activity.latestUpdate || agent.lastActivity,
+                };
+              }),
+            }));
           }
         } catch (error) {
           console.error('Failed to load gateway sessions:', error);
@@ -926,25 +1032,37 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         const state = get();
         const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
-          // Execute the action
-          executeApproval(item);
-          // Create completion task
-          const completionTask: Task = {
-            id: `task-exec-${Date.now()}`,
-            title: `Execute: ${item.title}`,
-            description: `Approved ${item.type}: ${item.content?.slice(0, 200)}...`,
-            status: 'in-progress',
-            project: 'Approvals',
-            assignedTo: 'coder', // Never assign to main/froggo - use coder for execution
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
+          // Remove from inbox immediately (optimistic)
           set((s: Store) => ({
-            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Remove from inbox
-            tasks: [completionTask, ...s.tasks],
+            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id),
           }));
-          // Notify main session
-          gateway.sendToSession('main', `[APPROVED] Execute ${item.type}: "${item.title}"\n\nContent:\n${item.content}`).catch(() => {});
+          
+          // Also remove from file-based approval queue
+          (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
+          
+          // Execute the action asynchronously
+          executeApproval(item).then((result) => {
+            const taskStatus = result.success ? 'done' : 'failed';
+            const completionTask: Task = {
+              id: `task-exec-${Date.now()}`,
+              title: `${result.success ? '✅' : '❌'} ${item.type}: ${item.title}`,
+              description: result.success 
+                ? `Executed ${item.type}: ${item.content?.slice(0, 200)}` 
+                : `Failed to execute ${item.type}: ${result.error}\n\nContent: ${item.content?.slice(0, 200)}`,
+              status: taskStatus,
+              project: 'Approvals',
+              assignedTo: 'coder',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
+            set((s: Store) => ({
+              tasks: [completionTask, ...s.tasks],
+            }));
+            // Notify main session
+            if (result.success) {
+              gateway.sendToSession('main', `[EXECUTED] ${item.type}: "${item.title}" completed successfully`).catch(() => {});
+            }
+          });
         }
       },
       rejectItem: (id: string) => {
@@ -961,6 +1079,8 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           // Notify main session
           gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch(() => {});
         }
+        // Remove from file-based queue
+        (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
         set((s: Store) => ({
           approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
         }));
@@ -980,6 +1100,8 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
+          // Remove from file-based queue
+          (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
           set((s: Store) => ({
             approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
             tasks: [revisionTask, ...s.tasks],

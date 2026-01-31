@@ -369,10 +369,18 @@ All tweets require approval before posting (unless auto-approval enabled in Sett
 - ⌘N: New (context-aware)
 - ⌘S: Save/submit
 
+**Appearance & Navigation:**
+- ⌘⇧D: Toggle dark/light mode (quick theme switch)
+- ⌥↑: Scroll up
+- ⌥↓: Scroll down
+- ⌥⇞: Scroll page up
+- ⌥⇟: Scroll page down
+
 **Quick Actions:**
 - ⌘⇧M: Quick message
 - ⌘⇧N: Add contact
 - ⌘⇧K: Add skill
+- ⌘⇧S: Starred messages
 
 **Task Management:**
 - N: New task
@@ -388,8 +396,49 @@ All tweets require approval before posting (unless auto-approval enabled in Sett
 - X: Defer
 
 Press ⌘? anytime to view the full shortcut reference.`,
-    keywords: ['keyboard', 'shortcuts', 'hotkey', 'keys', 'navigation', 'productivity'],
-    lastUpdated: '2026-01-28'
+    keywords: ['keyboard', 'shortcuts', 'hotkey', 'keys', 'navigation', 'productivity', 'theme', 'scroll'],
+    lastUpdated: '2026-01-30'
+  },
+
+  // Theme Toggle & Scroll Navigation
+  {
+    id: 'theme-scroll-hotkeys',
+    title: 'Theme Toggle & Scroll Navigation',
+    category: 'Productivity',
+    content: `Quickly switch themes and navigate without using your mouse.
+
+**Theme Toggle (⌘⇧D):**
+Press ⌘⇧D (Cmd+Shift+D) to instantly toggle between dark and light mode. This works from any page and shows a toast notification confirming the change.
+
+**Why use it?**
+- Quick testing of light/dark mode designs
+- Switch based on time of day or lighting conditions
+- No need to open Settings panel
+- Works everywhere in the app
+
+**Scroll Navigation (⌥ + Arrows):**
+Use Option/Alt key with arrow keys to scroll through content:
+- ⌥↑ (Option+Up): Scroll up smoothly
+- ⌥↓ (Option+Down): Scroll down smoothly
+- ⌥⇞ (Option+Page Up): Scroll up by page
+- ⌥⇟ (Option+Page Down): Scroll down by page
+
+**Why use it?**
+- Keyboard-only navigation
+- Precise scrolling without mouse/trackpad
+- Faster than reaching for mouse
+- Smooth scroll animation for comfort
+
+**Pro Tips:**
+- Use theme toggle during screen sharing to improve visibility
+- Combine scroll navigation with other keyboard shortcuts for full hands-on-keyboard workflow
+- Theme preference is saved automatically
+- Scroll amount is optimized for readability
+
+These features are designed for power users who prefer keyboard navigation and frequent testing workflows.`,
+    keywords: ['theme', 'dark', 'light', 'toggle', 'scroll', 'navigation', 'keyboard', 'hotkey', 'accessibility'],
+    relatedTo: ['settings', 'dashboard'],
+    lastUpdated: '2026-01-30'
   },
 
   // Settings
@@ -559,6 +608,18 @@ export const quickTips: QuickTip[] = [
     title: 'Approve with Keyboard',
     description: 'Use J/K to navigate inbox and A/R to approve/reject. Lightning fast!',
     icon: '⌨️'
+  },
+  {
+    id: 'tip-theme-toggle',
+    title: 'Quick Theme Switch',
+    description: 'Press ⌘⇧D to instantly toggle between dark and light mode. Perfect for testing or adjusting to lighting conditions!',
+    icon: '🌓'
+  },
+  {
+    id: 'tip-scroll-navigation',
+    title: 'Keyboard Scrolling',
+    description: 'Use ⌥↑/↓ (Option+Arrows) to scroll smoothly without touching your mouse. Full keyboard workflow!',
+    icon: '⬆️'
   }
 ];
 

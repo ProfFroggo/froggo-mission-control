@@ -132,7 +132,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
             <CheckCircle size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
             <div className="text-xs font-semibold text-green-400">Agent Progress Report</div>
           </div>
-          <div className="text-sm text-gray-300 whitespace-pre-wrap ml-6">
+          <div className="text-sm text-clawd-text-dim whitespace-pre-wrap ml-6">
             {response}
           </div>
         </div>

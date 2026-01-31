@@ -1,6 +1,9 @@
 /**
  * Analytics Service
  * Provides comprehensive analytics data for tasks, agents, and productivity
+ * 
+ * Uses the existing IPC `analytics:getData` handler in the main process,
+ * which queries froggo.db via sqlite3 CLI.
  */
 
 export interface TaskCompletionTrend {
@@ -18,8 +21,8 @@ export interface AgentUtilization {
   tasksCompleted: number;
   tasksInProgress: number;
   completionRate: number;
-  avgCompletionTime: number; // in hours
-  totalTimeSpent: number; // in hours
+  avgCompletionTime: number;
+  totalTimeSpent: number;
 }
 
 export interface TimeTrackingData {
@@ -29,13 +32,13 @@ export interface TimeTrackingData {
   agent: string;
   startTime: number;
   endTime: number | null;
-  duration: number | null; // in milliseconds
+  duration: number | null;
   status: string;
 }
 
 export interface ProductivityHeatmap {
   date: string;
-  dayOfWeek: number; // 0 = Sunday
+  dayOfWeek: number;
   hour: number;
   activityCount: number;
 }
@@ -45,8 +48,8 @@ export interface ProjectStats {
   totalTasks: number;
   completedTasks: number;
   inProgressTasks: number;
-  avgCompletionTime: number; // in hours
-  totalTimeSpent: number; // in hours
+  avgCompletionTime: number;
+  totalTimeSpent: number;
 }
 
 export interface WeeklyReport {
@@ -73,259 +76,171 @@ export interface MonthlyReport {
   insights: string[];
 }
 
+// ─── Cached IPC data ──────────────────────────────────────────────────────────
+
+interface IPCAnalyticsData {
+  success: boolean;
+  days: number;
+  completions: Array<{ date: string; tasks_completed: number }>;
+  created: Array<{ date: string; tasks_created: number }>;
+  agents: Array<{ agent: string; total: number; completed: number }>;
+  projects: Array<{ project: string; total: number; completed: number; completion_rate: number }>;
+}
+
+let cachedData: IPCAnalyticsData | null = null;
+let cachedDays: number = 0;
+let cacheTimestamp: number = 0;
+const CACHE_TTL = 30000; // 30 seconds
+
+async function fetchAnalyticsData(days: number): Promise<IPCAnalyticsData> {
+  const now = Date.now();
+  if (cachedData && cachedDays === days && (now - cacheTimestamp) < CACHE_TTL) {
+    return cachedData;
+  }
+
+  const timeRange = days <= 7 ? '7d' : days <= 30 ? '30d' : '90d';
+  
+  try {
+    const result = await (window as any).clawdbot?.analytics?.getData(timeRange);
+    if (result?.success) {
+      cachedData = result;
+      cachedDays = days;
+      cacheTimestamp = now;
+      return result;
+    }
+  } catch (err) {
+    console.error('analytics:getData IPC failed:', err);
+  }
+
+  // Return empty data on failure
+  return {
+    success: false,
+    days,
+    completions: [],
+    created: [],
+    agents: [],
+    projects: [],
+  };
+}
+
+// ─── Public API (matches original interface signatures) ───────────────────────
+
 /**
  * Get task completion trends over time
  */
 export async function getTaskCompletionTrends(
   days: number = 30
 ): Promise<TaskCompletionTrend[]> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
+  const data = await fetchAnalyticsData(days);
 
-  const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
+  // Build a map of completions and creations by date
+  const completionMap = new Map<string, number>();
+  const createdMap = new Map<string, number>();
 
-  const query = `
-    WITH RECURSIVE
-      dates(date) AS (
-        SELECT date('now', '-${days} days')
-        UNION ALL
-        SELECT date(date, '+1 day')
-        FROM dates
-        WHERE date < date('now')
-      ),
-      daily_stats AS (
-        SELECT 
-          date(created_at / 1000, 'unixepoch') as date,
-          COUNT(*) as created,
-          SUM(CASE WHEN status = 'done' AND completed_at IS NOT NULL THEN 1 ELSE 0 END) as completed
-        FROM tasks
-        WHERE created_at >= ${cutoffDate}
-        GROUP BY date
-      )
-    SELECT 
-      dates.date,
-      COALESCE(ds.created, 0) as created,
-      COALESCE(ds.completed, 0) as completed,
-      (SELECT COUNT(*) FROM tasks WHERE created_at <= strftime('%s', dates.date || ' 23:59:59') * 1000) as total,
-      CASE 
-        WHEN COALESCE(ds.created, 0) > 0 
-        THEN ROUND(CAST(COALESCE(ds.completed, 0) AS FLOAT) / ds.created * 100, 2)
-        ELSE 0 
-      END as completionRate
-    FROM dates
-    LEFT JOIN daily_stats ds ON dates.date = ds.date
-    ORDER BY dates.date;
-  `;
+  for (const row of data.completions) {
+    completionMap.set(row.date, row.tasks_completed);
+  }
+  for (const row of data.created) {
+    createdMap.set(row.date, row.tasks_created);
+  }
 
-  const result = await db.query(query);
-  await db.close();
+  // Generate all dates in range
+  const trends: TaskCompletionTrend[] = [];
+  let runningTotal = 0;
 
-  return result.rows.map((row: any) => ({
-    date: row.date,
-    completed: row.completed,
-    created: row.created,
-    total: row.total,
-    completionRate: row.completionRate,
-  }));
+  for (let i = days; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+
+    const completed = completionMap.get(dateStr) || 0;
+    const created = createdMap.get(dateStr) || 0;
+    runningTotal += created;
+
+    trends.push({
+      date: dateStr,
+      completed,
+      created,
+      total: runningTotal,
+      completionRate: created > 0 ? Math.round((completed / created) * 100 * 100) / 100 : 0,
+    });
+  }
+
+  return trends;
 }
 
 /**
  * Get agent utilization statistics
  */
 export async function getAgentUtilization(): Promise<AgentUtilization[]> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
+  const data = await fetchAnalyticsData(30);
 
-  const query = `
-    SELECT 
-      COALESCE(assigned_to, 'unassigned') as agentId,
-      COALESCE(assigned_to, 'unassigned') as agentName,
-      COUNT(*) as tasksAssigned,
-      SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as tasksCompleted,
-      SUM(CASE WHEN status = 'in-progress' THEN 1 ELSE 0 END) as tasksInProgress,
-      ROUND(
-        CASE 
-          WHEN COUNT(*) > 0 
-          THEN CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100
-          ELSE 0 
-        END, 
-        2
-      ) as completionRate,
-      ROUND(
-        AVG(
-          CASE 
-            WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-            THEN (completed_at - started_at) / 1000.0 / 3600.0
-            ELSE NULL 
-          END
-        ),
-        2
-      ) as avgCompletionTime,
-      ROUND(
-        SUM(
-          CASE 
-            WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-            THEN (completed_at - started_at) / 1000.0 / 3600.0
-            WHEN started_at IS NOT NULL AND status = 'in-progress'
-            THEN (strftime('%s', 'now') * 1000 - started_at) / 1000.0 / 3600.0
-            ELSE 0 
-          END
-        ),
-        2
-      ) as totalTimeSpent
-    FROM tasks
-    WHERE assigned_to IS NOT NULL
-    GROUP BY assigned_to
-    ORDER BY tasksCompleted DESC;
-  `;
+  return data.agents.map((agent) => {
+    const inProgress = Math.max(0, agent.total - agent.completed);
+    const completionRate = agent.total > 0
+      ? Math.round((agent.completed / agent.total) * 100 * 100) / 100
+      : 0;
 
-  const result = await db.query(query);
-  await db.close();
-
-  return result.rows.map((row: any) => ({
-    agentId: row.agentId,
-    agentName: row.agentName,
-    tasksAssigned: row.tasksAssigned,
-    tasksCompleted: row.tasksCompleted,
-    tasksInProgress: row.tasksInProgress,
-    completionRate: row.completionRate,
-    avgCompletionTime: row.avgCompletionTime || 0,
-    totalTimeSpent: row.totalTimeSpent || 0,
-  }));
+    return {
+      agentId: agent.agent,
+      agentName: agent.agent,
+      tasksAssigned: agent.total,
+      tasksCompleted: agent.completed,
+      tasksInProgress: inProgress,
+      completionRate,
+      avgCompletionTime: 0, // Not available from IPC data
+      totalTimeSpent: 0, // Not available from IPC data
+    };
+  });
 }
 
 /**
  * Get time tracking data for all tasks
+ * Note: The IPC handler doesn't provide per-task time data,
+ * so we return an empty array. The TimeTrackingPanel will show
+ * a "no data" state gracefully.
  */
 export async function getTimeTrackingData(
-  projectFilter?: string
+  _projectFilter?: string
 ): Promise<TimeTrackingData[]> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
-
-  const whereClause = projectFilter ? `WHERE project = ?` : '';
-  const params = projectFilter ? [projectFilter] : [];
-
-  const query = `
-    SELECT 
-      id as taskId,
-      title as taskTitle,
-      COALESCE(project, 'Uncategorized') as project,
-      COALESCE(assigned_to, 'unassigned') as agent,
-      started_at as startTime,
-      completed_at as endTime,
-      CASE 
-        WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-        THEN completed_at - started_at
-        WHEN started_at IS NOT NULL AND status = 'in-progress'
-        THEN strftime('%s', 'now') * 1000 - started_at
-        ELSE NULL 
-      END as duration,
-      status
-    FROM tasks
-    ${whereClause}
-    ORDER BY started_at DESC NULLS LAST;
-  `;
-
-  const result = await db.query(query, params);
-  await db.close();
-
-  return result.rows.map((row: any) => ({
-    taskId: row.taskId,
-    taskTitle: row.taskTitle,
-    project: row.project,
-    agent: row.agent,
-    startTime: row.startTime,
-    endTime: row.endTime,
-    duration: row.duration,
-    status: row.status,
-  }));
+  return [];
 }
 
 /**
- * Get productivity heatmap data (activity by day and hour)
+ * Get productivity heatmap data
  */
 export async function getProductivityHeatmap(
   days: number = 30
 ): Promise<ProductivityHeatmap[]> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
-
-  const cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
-
-  const query = `
-    SELECT 
-      date(timestamp / 1000, 'unixepoch') as date,
-      CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek,
-      CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour,
-      COUNT(*) as activityCount
-    FROM task_activity
-    WHERE timestamp >= ${cutoffDate}
-    GROUP BY date, dayOfWeek, hour
-    ORDER BY date, hour;
-  `;
-
-  const result = await db.query(query);
-  await db.close();
-
-  return result.rows.map((row: any) => ({
-    date: row.date,
-    dayOfWeek: row.dayOfWeek,
-    hour: row.hour,
-    activityCount: row.activityCount,
-  }));
+  try {
+    const result = await (window as any).clawdbot?.analytics?.heatmap(days);
+    if (result?.success && result.data) {
+      return result.data.map((row: any) => ({
+        date: row.date,
+        dayOfWeek: row.dayOfWeek,
+        hour: row.hour,
+        activityCount: row.activityCount,
+      }));
+    }
+  } catch (err) {
+    console.error('analytics:heatmap IPC failed:', err);
+  }
+  return [];
 }
 
 /**
  * Get project statistics
  */
 export async function getProjectStats(): Promise<ProjectStats[]> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
+  const data = await fetchAnalyticsData(30);
 
-  const query = `
-    SELECT 
-      COALESCE(project, 'Uncategorized') as project,
-      COUNT(*) as totalTasks,
-      SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completedTasks,
-      SUM(CASE WHEN status = 'in-progress' THEN 1 ELSE 0 END) as inProgressTasks,
-      ROUND(
-        AVG(
-          CASE 
-            WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-            THEN (completed_at - started_at) / 1000.0 / 3600.0
-            ELSE NULL 
-          END
-        ),
-        2
-      ) as avgCompletionTime,
-      ROUND(
-        SUM(
-          CASE 
-            WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-            THEN (completed_at - started_at) / 1000.0 / 3600.0
-            WHEN started_at IS NOT NULL AND status = 'in-progress'
-            THEN (strftime('%s', 'now') * 1000 - started_at) / 1000.0 / 3600.0
-            ELSE 0 
-          END
-        ),
-        2
-      ) as totalTimeSpent
-    FROM tasks
-    GROUP BY project
-    ORDER BY totalTasks DESC;
-  `;
-
-  const result = await db.query(query);
-  await db.close();
-
-  return result.rows.map((row: any) => ({
-    project: row.project,
-    totalTasks: row.totalTasks,
-    completedTasks: row.completedTasks,
-    inProgressTasks: row.inProgressTasks,
-    avgCompletionTime: row.avgCompletionTime || 0,
-    totalTimeSpent: row.totalTimeSpent || 0,
+  return data.projects.map((proj) => ({
+    project: proj.project,
+    totalTasks: proj.total,
+    completedTasks: proj.completed,
+    inProgressTasks: Math.max(0, proj.total - proj.completed),
+    avgCompletionTime: 0,
+    totalTimeSpent: 0,
   }));
 }
 
@@ -333,102 +248,29 @@ export async function getProjectStats(): Promise<ProjectStats[]> {
  * Generate weekly report
  */
 export async function generateWeeklyReport(): Promise<WeeklyReport> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
+  const data = await fetchAnalyticsData(7);
 
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week (Sunday)
-  weekStart.setHours(0, 0, 0, 0);
-  
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-  weekEnd.setHours(23, 59, 59, 999);
+  const totalCreated = data.created.reduce((sum, r) => sum + r.tasks_created, 0);
+  const totalCompleted = data.completions.reduce((sum, r) => sum + r.tasks_completed, 0);
+  const completionRate = totalCreated > 0 ? Math.round((totalCompleted / totalCreated) * 100) : 0;
 
-  const weekStartTs = weekStart.getTime();
-  const weekEndTs = weekEnd.getTime();
+  const topAgent = data.agents.length > 0 ? data.agents[0].agent : 'None';
+  const topProject = data.projects.length > 0 ? data.projects[0].project : 'None';
 
-  // Get basic stats
-  const statsQuery = `
-    SELECT 
-      COUNT(*) as created,
-      SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
-      ROUND(
-        SUM(
-          CASE 
-            WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-            THEN (completed_at - started_at) / 1000.0 / 3600.0
-            ELSE 0 
-          END
-        ),
-        2
-      ) as totalHours
-    FROM tasks
-    WHERE created_at BETWEEN ${weekStartTs} AND ${weekEndTs};
-  `;
-
-  const statsResult = await db.query(statsQuery);
-  const stats = statsResult.rows[0];
-
-  // Get top agent
-  const agentQuery = `
-    SELECT assigned_to, COUNT(*) as count
-    FROM tasks
-    WHERE created_at BETWEEN ${weekStartTs} AND ${weekEndTs}
-      AND status = 'done'
-      AND assigned_to IS NOT NULL
-    GROUP BY assigned_to
-    ORDER BY count DESC
-    LIMIT 1;
-  `;
-
-  const agentResult = await db.query(agentQuery);
-  const topAgent = agentResult.rows[0]?.assigned_to || 'None';
-
-  // Get top project
-  const projectQuery = `
-    SELECT project, COUNT(*) as count
-    FROM tasks
-    WHERE created_at BETWEEN ${weekStartTs} AND ${weekEndTs}
-      AND project IS NOT NULL
-    GROUP BY project
-    ORDER BY count DESC
-    LIMIT 1;
-  `;
-
-  const projectResult = await db.query(projectQuery);
-  const topProject = projectResult.rows[0]?.project || 'None';
-
-  await db.close();
-
-  const completionRate = stats.created > 0 
-    ? Math.round((stats.completed / stats.created) * 100) 
-    : 0;
-
-  // Generate insights
   const insights: string[] = [];
-  if (completionRate >= 80) {
-    insights.push('🎉 Excellent completion rate this week!');
-  } else if (completionRate < 50) {
-    insights.push('⚠️ Completion rate below 50% - consider reviewing task priorities');
-  }
-  
-  if (stats.totalHours > 40) {
-    insights.push('💪 High productivity week with ' + stats.totalHours.toFixed(1) + ' hours logged');
-  }
-  
-  if (topAgent !== 'None') {
-    insights.push('🌟 Top performer: ' + topAgent);
-  }
+  if (completionRate >= 80) insights.push('🎉 Excellent completion rate this week!');
+  else if (completionRate < 50) insights.push('⚠️ Completion rate below 50% - consider reviewing task priorities');
+  if (topAgent !== 'None') insights.push('🌟 Top performer: ' + topAgent);
 
   return {
-    weekStart: weekStart.toISOString().split('T')[0],
-    weekEnd: weekEnd.toISOString().split('T')[0],
-    tasksCreated: stats.created,
-    tasksCompleted: stats.completed,
+    weekStart: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
+    weekEnd: new Date().toISOString().split('T')[0],
+    tasksCreated: totalCreated,
+    tasksCompleted: totalCompleted,
     completionRate,
     topAgent,
     topProject,
-    totalHours: stats.totalHours || 0,
+    totalHours: 0,
     insights,
   };
 }
@@ -437,77 +279,31 @@ export async function generateWeeklyReport(): Promise<WeeklyReport> {
  * Generate monthly report
  */
 export async function generateMonthlyReport(): Promise<MonthlyReport> {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const data = await fetchAnalyticsData(30);
 
-  const monthStartTs = monthStart.getTime();
-  const monthEndTs = monthEnd.getTime();
+  const totalCreated = data.created.reduce((sum, r) => sum + r.tasks_created, 0);
+  const totalCompleted = data.completions.reduce((sum, r) => sum + r.tasks_completed, 0);
+  const completionRate = totalCreated > 0 ? Math.round((totalCompleted / totalCreated) * 100) : 0;
 
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
-
-  // Get basic stats
-  const statsQuery = `
-    SELECT 
-      COUNT(*) as created,
-      SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
-      ROUND(
-        SUM(
-          CASE 
-            WHEN started_at IS NOT NULL AND completed_at IS NOT NULL 
-            THEN (completed_at - started_at) / 1000.0 / 3600.0
-            ELSE 0 
-          END
-        ),
-        2
-      ) as totalHours
-    FROM tasks
-    WHERE created_at BETWEEN ${monthStartTs} AND ${monthEndTs};
-  `;
-
-  const statsResult = await db.query(statsQuery);
-  const stats = statsResult.rows[0];
-
-  await db.close();
-
-  // Get agent performance and project breakdown using existing functions
   const agentPerformance = await getAgentUtilization();
   const projectBreakdown = await getProjectStats();
 
-  const completionRate = stats.created > 0 
-    ? Math.round((stats.completed / stats.created) * 100) 
-    : 0;
-
-  // Generate insights
   const insights: string[] = [];
-  if (stats.completed > 50) {
-    insights.push('🚀 Highly productive month with ' + stats.completed + ' tasks completed');
-  }
-  
-  if (completionRate >= 75) {
-    insights.push('✨ Strong completion rate of ' + completionRate + '%');
-  }
-  
-  const topAgent = agentPerformance[0];
-  if (topAgent) {
-    insights.push('🏆 ' + topAgent.agentName + ' completed ' + topAgent.tasksCompleted + ' tasks');
-  }
-  
-  const topProject = projectBreakdown[0];
-  if (topProject) {
-    insights.push('📊 Most active project: ' + topProject.project + ' (' + topProject.totalTasks + ' tasks)');
-  }
+  if (totalCompleted > 50) insights.push('🚀 Highly productive month with ' + totalCompleted + ' tasks completed');
+  if (completionRate >= 75) insights.push('✨ Strong completion rate of ' + completionRate + '%');
+  if (agentPerformance.length > 0) insights.push('🏆 ' + agentPerformance[0].agentName + ' completed ' + agentPerformance[0].tasksCompleted + ' tasks');
+  if (projectBreakdown.length > 0) insights.push('📊 Most active project: ' + projectBreakdown[0].project + ' (' + projectBreakdown[0].totalTasks + ' tasks)');
 
+  const now = new Date();
   return {
-    month: monthStart.toLocaleString('default', { month: 'long' }),
-    year: monthStart.getFullYear(),
-    tasksCreated: stats.created,
-    tasksCompleted: stats.completed,
+    month: now.toLocaleString('default', { month: 'long' }),
+    year: now.getFullYear(),
+    tasksCreated: totalCreated,
+    tasksCompleted: totalCompleted,
     completionRate,
-    agentPerformance: agentPerformance.slice(0, 5), // Top 5 agents
-    projectBreakdown: projectBreakdown.slice(0, 5), // Top 5 projects
-    totalHours: stats.totalHours || 0,
+    agentPerformance: agentPerformance.slice(0, 5),
+    projectBreakdown: projectBreakdown.slice(0, 5),
+    totalHours: 0,
     insights,
   };
 }
@@ -521,89 +317,50 @@ export async function getTaskVelocity(days: number = 30): Promise<{
   completed: number;
   velocity: number;
 }[]> {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
+  const data = await fetchAnalyticsData(days);
 
-  // const __cutoffDate = Date.now() - days * 24 * 60 * 60 * 1000;
+  const completionMap = new Map<string, number>();
+  const createdMap = new Map<string, number>();
 
-  const query = `
-    WITH RECURSIVE
-      dates(date) AS (
-        SELECT date('now', '-${days} days')
-        UNION ALL
-        SELECT date(date, '+1 day')
-        FROM dates
-        WHERE date < date('now')
-      )
-    SELECT 
-      dates.date,
-      COALESCE((
-        SELECT COUNT(*) 
-        FROM tasks 
-        WHERE date(created_at / 1000, 'unixepoch') = dates.date
-      ), 0) as created,
-      COALESCE((
-        SELECT COUNT(*) 
-        FROM tasks 
-        WHERE date(completed_at / 1000, 'unixepoch') = dates.date 
-          AND status = 'done'
-      ), 0) as completed,
-      COALESCE((
-        SELECT COUNT(*) 
-        FROM tasks 
-        WHERE date(completed_at / 1000, 'unixepoch') = dates.date 
-          AND status = 'done'
-      ), 0) - COALESCE((
-        SELECT COUNT(*) 
-        FROM tasks 
-        WHERE date(created_at / 1000, 'unixepoch') = dates.date
-      ), 0) as velocity
-    FROM dates
-    ORDER BY dates.date;
-  `;
+  for (const row of data.completions) {
+    completionMap.set(row.date, row.tasks_completed);
+  }
+  for (const row of data.created) {
+    createdMap.set(row.date, row.tasks_created);
+  }
 
-  const result = await db.query(query);
-  await db.close();
+  const results: { date: string; created: number; completed: number; velocity: number }[] = [];
 
-  return result.rows.map((row: any) => ({
-    date: row.date,
-    created: row.created,
-    completed: row.completed,
-    velocity: row.velocity,
-  }));
+  for (let i = days; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+
+    const created = createdMap.get(dateStr) || 0;
+    const completed = completionMap.get(dateStr) || 0;
+
+    results.push({
+      date: dateStr,
+      created,
+      completed,
+      velocity: completed - created,
+    });
+  }
+
+  return results;
 }
 
 /**
  * Get subtask completion statistics
  */
-export async function getSubtaskStats() {
-  const db = await (window as any).clawdbot?.db?.connect();
-  if (!db) throw new Error('Database not available');
-
-  const query = `
-    SELECT 
-      t.id as taskId,
-      t.title as taskTitle,
-      COUNT(s.id) as totalSubtasks,
-      SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks,
-      ROUND(
-        CASE 
-          WHEN COUNT(s.id) > 0 
-          THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100
-          ELSE 0 
-        END,
-        2
-      ) as completionRate
-    FROM tasks t
-    LEFT JOIN subtasks s ON t.id = s.task_id
-    WHERE t.status != 'done'
-    GROUP BY t.id, t.title
-    HAVING COUNT(s.id) > 0
-    ORDER BY completionRate ASC;
-  `;
-
-  const result = await db.query(query);
-  await db.close();
-
-  return result.rows;
+export async function getSubtaskStats(): Promise<any[]> {
+  try {
+    const result = await (window as any).clawdbot?.analytics?.subtaskStats();
+    if (result?.success && result.data) {
+      return result.data;
+    }
+  } catch (err) {
+    console.error('analytics:subtaskStats IPC failed:', err);
+  }
+  return [];
 }

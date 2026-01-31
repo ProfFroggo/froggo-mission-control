@@ -51,7 +51,7 @@ const CHANNELS: { id: ChannelFilter; label: string; icon: string; color: string 
   { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'text-green-400' },
   { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'text-blue-400' },
   { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-purple-400' },
-  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-gray-400' },
+  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-clawd-text-dim' },
   { id: 'agents', label: 'Agents', icon: '🤖', color: 'text-yellow-400' },
 ];
 
@@ -727,7 +727,7 @@ export default function SessionsFilter() {
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/30 rounded-full text-xs">
@@ -890,7 +890,7 @@ export default function SessionsFilter() {
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
                               <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full text-xs">

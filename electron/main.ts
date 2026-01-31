@@ -13,6 +13,37 @@ import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 // const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
 
+// ============== AGENT REGISTRY ==============
+interface AgentRegistryEntry {
+  role: string;
+  description: string;
+  capabilities: string[];
+  prompt: string;
+  aliases: string[];
+  clawdAgentId: string;
+}
+
+function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
+  const registryPath = path.join(__dirname, 'agent-registry.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+    return data.agents || {};
+  } catch (err) {
+    console.error('Failed to load agent registry, using empty:', err);
+    return {};
+  }
+}
+
+function getAgentRegistry(): Record<string, AgentRegistryEntry> {
+  // Cache with 60s TTL so file changes are picked up without restart
+  const now = Date.now();
+  if (!(global as any)._agentRegistryCache || now - ((global as any)._agentRegistryCacheTime || 0) > 60000) {
+    (global as any)._agentRegistryCache = loadAgentRegistry();
+    (global as any)._agentRegistryCacheTime = now;
+  }
+  return (global as any)._agentRegistryCache;
+}
+
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
 // Debug file logger for agent issues
@@ -188,7 +219,7 @@ let lastTaskNotifyMtime = 0;
 // Helper function to emit task events for real-time Dashboard updates
 function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
   // Get task data from database for the event payload
-  const dbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   const query = `SELECT id, title, description, status, project, assigned_to, reviewerId as reviewer_id, priority, due_date, updated_at FROM tasks WHERE id='${taskId}'`;
   
   exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 1000 }, (error, stdout) => {
@@ -243,7 +274,7 @@ const SCHEDULE_CHECK_INTERVAL = 30000; // 30 seconds
 
 // Process scheduled items that are overdue
 async function processScheduledItems() {
-  const dbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   
   // Query for pending items where scheduled_for <= now
   // Fetch all pending and filter in JS (handles various datetime formats)
@@ -508,24 +539,58 @@ ipcMain.handle('gateway:sessions', async () => {
   }
 });
 
-// Get real sessions from Clawdbot CLI (more reliable than HTTP API)
+// Get real sessions from centralized session store (SQLite)
 ipcMain.handle('gateway:sessions:list', async () => {
-  return new Promise((resolve) => {
-    exec('clawdbot sessions list --json', { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Gateway] Sessions list error:', error);
-        resolve({ success: false, sessions: [], error: error.message });
-        return;
-      }
+  try {
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    if (!fs.existsSync(sessionsDbPath)) {
+      safeLog.error('[Gateway] sessions.db not found at', sessionsDbPath);
+      return { success: false, sessions: [], error: 'sessions.db not found' };
+    }
+
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const query = `SELECT agent_id, session_key, session_id, updated_at, created_at, model, input_tokens, output_tokens, total_tokens, context_tokens, channel, system_sent, aborted_last_run, extra FROM sessions ORDER BY updated_at DESC LIMIT 500`;
+    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
+
+    let rows: any[] = [];
+    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+
+    const now = Date.now();
+    const allSessions = rows.map((r: any) => {
+      const key = r.session_key || '';
+      let label: string | undefined;
       try {
-        const data = JSON.parse(stdout);
-        resolve({ success: true, sessions: data.sessions || [], count: data.count || 0 });
-      } catch (e) {
-        safeLog.error('[Gateway] Sessions parse error:', e);
-        resolve({ success: false, sessions: [], error: 'Parse error' });
-      }
+        if (r.extra) {
+          const extra = JSON.parse(r.extra);
+          label = extra.label || undefined;
+        }
+      } catch {}
+      return {
+        key,
+        agent: r.agent_id || '',
+        agentId: r.agent_id || '',
+        kind: key.includes(':subagent:') ? 'subagent' : 'direct',
+        label,
+        updatedAt: r.updated_at || 0,
+        ageMs: r.updated_at ? now - r.updated_at : 0,
+        sessionId: r.session_id || '',
+        channel: r.channel || undefined,
+        systemSent: !!r.system_sent,
+        abortedLastRun: !!r.aborted_last_run,
+        inputTokens: r.input_tokens || 0,
+        outputTokens: r.output_tokens || 0,
+        totalTokens: r.total_tokens || 0,
+        model: r.model || undefined,
+        contextTokens: r.context_tokens || 0,
+      };
     });
-  });
+
+    return { success: true, sessions: allSessions, count: allSessions.length };
+  } catch (e: any) {
+    safeLog.error('[Gateway] Sessions DB query error:', e);
+    return { success: false, sessions: [], error: e.message };
+  }
 });
 
 // ============== WHISPER (Legacy - keeping for fallback) ==============
@@ -1155,6 +1220,34 @@ ipcMain.handle('analytics:getData', async (_, timeRange: string) => {
   });
 });
 
+ipcMain.handle('analytics:subtaskStats', async () => {
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const query = `SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`;
+
+  return new Promise((resolve) => {
+    exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, (err, stdout) => {
+      if (!err && stdout?.trim()) {
+        try { resolve({ success: true, data: JSON.parse(stdout) }); return; } catch {}
+      }
+      resolve({ success: true, data: [] });
+    });
+  });
+});
+
+ipcMain.handle('analytics:heatmap', async (_, days: number = 30) => {
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const query = `SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`;
+
+  return new Promise((resolve) => {
+    exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, (err, stdout) => {
+      if (!err && stdout?.trim()) {
+        try { resolve({ success: true, data: JSON.parse(stdout) }); return; } catch {}
+      }
+      resolve({ success: true, data: [] });
+    });
+  });
+});
+
 ipcMain.handle('tasks:start', async (_, taskId: string) => {
   const cmd = `froggo-db task-start "${taskId}"`;
   
@@ -1222,7 +1315,7 @@ ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
 });
 
 // ============== SUBTASKS IPC HANDLERS ==============
-const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('subtasks:list', async (_, taskId: string) => {
   const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM subtasks WHERE task_id='${taskId}' ORDER BY position, created_at" -json`;
@@ -3444,7 +3537,7 @@ ipcMain.handle('screenshot:navigate', async (_, view: string) => {
 });
 
 // ============== SCHEDULE IPC HANDLERS ==============
-const scheduleDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('schedule:list', async () => {
   safeLog.log('[Schedule:list] Called');
@@ -3822,7 +3915,7 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
 // Execute SQL against froggo.db
 ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
   return new Promise((resolve) => {
-    const dbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+    const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
     
     // For safety, only allow SELECT and INSERT statements from the renderer
     const queryLower = query.trim().toLowerCase();
@@ -5895,9 +5988,42 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 // ============== SESSIONS IPC HANDLERS ==============
 ipcMain.handle('sessions:list', async () => {
   try {
-    const response = await fetch('http://localhost:18789/api/sessions');
-    const data = await response.json();
-    return { success: true, sessions: data.sessions || [] };
+    // Query centralized session store instead of gateway API
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    if (!fs.existsSync(sessionsDbPath)) {
+      return { success: false, sessions: [] };
+    }
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const query = `SELECT agent_id, session_key, session_id, updated_at, model, input_tokens, output_tokens, total_tokens, context_tokens, channel, system_sent, extra FROM sessions ORDER BY updated_at DESC LIMIT 200`;
+    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
+    let rows: any[] = [];
+    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+
+    const now = Date.now();
+    const sessions = rows.map((r: any) => {
+      const key = r.session_key || '';
+      let label: string | undefined;
+      try { if (r.extra) { label = JSON.parse(r.extra).label; } } catch {}
+      return {
+        key,
+        agent: r.agent_id || '',
+        agentId: r.agent_id || '',
+        kind: key.includes(':subagent:') ? 'subagent' : 'direct',
+        label,
+        updatedAt: r.updated_at || 0,
+        ageMs: r.updated_at ? now - r.updated_at : 0,
+        sessionId: r.session_id || '',
+        channel: r.channel || undefined,
+        model: r.model || undefined,
+        totalTokens: r.total_tokens || 0,
+        inputTokens: r.input_tokens || 0,
+        outputTokens: r.output_tokens || 0,
+        contextTokens: r.context_tokens || 0,
+      };
+    });
+
+    return { success: true, sessions };
   } catch (error) {
     safeLog.error('[Sessions] List error:', error);
     return { success: false, sessions: [] };
@@ -6026,7 +6152,7 @@ app.whenReady().then(() => {
   // Self-test: verify agent DB queries work on startup
   setTimeout(() => {
     debugLog('[SELF-TEST] Testing agents:getDetails DB queries...');
-    const testDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+    const testDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
     try {
       const testCmd = `sqlite3 "${testDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN ('coder') AND (cancelled IS NULL OR cancelled = 0)" -json`;
       debugLog('[SELF-TEST] Running:', testCmd);
@@ -6043,7 +6169,8 @@ app.whenReady().then(() => {
 
 // ============== AGENTS API IPC HANDLERS ==============
 ipcMain.handle('agents:getMetrics', async () => {
-  const agents = ['main', 'coder', 'researcher', 'writer', 'chief', 'onchain_worker'];
+  const registry = getAgentRegistry();
+  const agents = Object.keys(registry).filter(id => id !== 'froggo'); // skip alias duplicate
   const metrics: Record<string, any> = {};
   const metricsScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'agent-metrics.sh');
 
@@ -6120,7 +6247,7 @@ ipcMain.handle('agents:getMetrics', async () => {
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   safeLog.log(`[agents:getDetails] Called with agentId: ${agentId}`);
   debugLog(`[agents:getDetails] Called with agentId: ${agentId}`);
-  const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   
   // Agent ID aliases - some agents have multiple IDs that map to the same DB records
   const agentAliases: Record<string, string[]> = {
@@ -6238,7 +6365,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 });
 
 ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
-  const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   const escapedSkill = skill.replace(/'/g, "''");
   
   const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES ('${escapedSkill}', 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')"`;
@@ -6251,7 +6378,7 @@ ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
 });
 
 ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: string, proficiency: number) => {
-  const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   const escapedSkill = skillName.replace(/'/g, "''");
   
   const cmd = `sqlite3 "${froggoDbPath}" "UPDATE skill_evolution SET proficiency = ${proficiency}, updated_at = datetime('now') WHERE skill_name = '${escapedSkill}'"`;
@@ -6264,17 +6391,13 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
 });
 
 ipcMain.handle('agents:search', async (_, query: string) => {
-  const froggoDbPath = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
+  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   
-  const agentDefinitions: Record<string, { role: string; description: string; capabilities: string[] }> = {
-    main: { role: 'Orchestrator', description: 'Main agent - coordinates all other agents, handles general tasks', capabilities: ['coordination', 'task management', 'general assistance'] },
-    froggo: { role: 'Orchestrator', description: 'Main agent (alias) - coordinates all other agents', capabilities: ['coordination', 'task management', 'general assistance'] },
-    coder: { role: 'Software Engineer', description: 'Writes code, fixes bugs, builds features, reviews PRs', capabilities: ['coding', 'debugging', 'code review', 'architecture', 'typescript', 'python'] },
-    researcher: { role: 'Researcher', description: 'Researches topics, gathers information, analyzes data', capabilities: ['research', 'analysis', 'web search', 'summarization'] },
-    writer: { role: 'Writer', description: 'Writes content, documentation, emails, creative writing', capabilities: ['writing', 'editing', 'documentation', 'copywriting'] },
-    chief: { role: 'Lead Engineer', description: 'Reviews code, makes architectural decisions, mentors team', capabilities: ['code review', 'architecture', 'mentoring', 'technical decisions'] },
-    onchain_worker: { role: 'Blockchain Agent', description: 'Handles on-chain operations, crypto transactions, DeFi', capabilities: ['blockchain', 'crypto', 'defi', 'smart contracts', 'web3'] },
-  };
+  const registry = getAgentRegistry();
+  const agentDefinitions: Record<string, { role: string; description: string; capabilities: string[] }> = {};
+  for (const [id, entry] of Object.entries(registry)) {
+    agentDefinitions[id] = { role: entry.role, description: entry.description, capabilities: entry.capabilities };
+  }
 
   const q = query.toLowerCase();
   const results: any[] = [];
@@ -6287,12 +6410,8 @@ ipcMain.handle('agents:search', async (_, query: string) => {
       let recentTask = '';
       let status = 'idle';
       try {
-        const aliases: Record<string, string[]> = {
-          main: ['main', 'froggo'], froggo: ['main', 'froggo'],
-          coder: ['coder'], researcher: ['researcher'], writer: ['writer'],
-          chief: ['chief'], onchain_worker: ['onchain_worker'],
-        };
-        const dbIds = (aliases[agentId] || [agentId]).map(id => `'${id}'`).join(',');
+        const agentEntry = registry[agentId];
+        const dbIds = (agentEntry?.aliases || [agentId]).map(id => `'${id}'`).join(',');
         
         const countResult = execSync(
           `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds})" -json`,
@@ -6345,17 +6464,9 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
     const httpUrl = 'http://127.0.0.1:18789';
     const label = `dashboard-chat-${agentId}-${Date.now()}`;
     
-    // Agent system prompts
-    const agentPrompts: Record<string, string> = {
-      main: 'You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.',
-      froggo: 'You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.',
-      coder: 'You are Coder, a software engineering agent. You help with code, debugging, architecture, and technical problems.',
-      researcher: 'You are Researcher, a research and analysis agent. You help with research, data gathering, and analysis.',
-      writer: 'You are Writer, a content creation agent. You help with writing, editing, and content strategy.',
-      chief: 'You are Chief, the executive oversight agent. You help with planning, prioritization, and strategic decisions using GSD methodology.',
-    };
-    
-    const systemPrompt = agentPrompts[agentId] || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
+    // Agent system prompts from registry
+    const chatRegistry = getAgentRegistry();
+    const systemPrompt = chatRegistry[agentId]?.prompt || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
     
     // Store session info for later chat calls
     const sessionKey = `chat-${agentId}-${Date.now()}`;
@@ -6397,15 +6508,8 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
     let response: string;
     
     // Map dashboard agent IDs to clawdbot agent IDs
-    const agentIdMap: Record<string, string> = {
-      main: 'chat-agent',
-      froggo: 'chat-agent',
-      coder: 'coder',
-      researcher: 'researcher',
-      writer: 'writer',
-      chief: 'chief',
-    };
-    const clawdAgentId = agentIdMap[session.agentId] || session.agentId;
+    const chatReg = getAgentRegistry();
+    const clawdAgentId = chatReg[session.agentId]?.clawdAgentId || session.agentId;
     
     // Build context from conversation history (last few exchanges)
     const recentHistory = session.messages

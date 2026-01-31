@@ -531,7 +531,7 @@ export default function XAutomationsTab() {
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         automation.enabled
                           ? 'bg-green-500/20 text-green-400'
-                          : 'bg-gray-500/20 text-gray-400'
+                          : 'bg-clawd-bg0/20 text-clawd-text-dim'
                       }`}>
                         {automation.enabled ? 'Active' : 'Disabled'}
                       </span>
@@ -547,7 +547,7 @@ export default function XAutomationsTab() {
                       className={`p-2 rounded-lg transition-colors ${
                         automation.enabled
                           ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-                          : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30'
+                          : 'bg-clawd-bg0/20 text-clawd-text-dim hover:bg-clawd-bg0/30'
                       }`}
                       title={automation.enabled ? 'Disable' : 'Enable'}
                     >

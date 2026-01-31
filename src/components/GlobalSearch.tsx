@@ -66,7 +66,7 @@ const typeLabels = {
 };
 
 const statusColors = {
-  todo: 'text-gray-400',
+  todo: 'text-clawd-text-dim',
   'in-progress': 'text-blue-400',
   done: 'text-green-400',
   blocked: 'text-red-400',

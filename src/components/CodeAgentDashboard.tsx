@@ -161,7 +161,7 @@ export default function CodeAgentDashboard() {
   };
 
   const taskStatusColors = {
-    pending: 'bg-gray-500',
+    pending: 'bg-clawd-bg0',
     'in-progress': 'bg-yellow-500',
     review: 'bg-purple-500',
     done: 'bg-green-500',

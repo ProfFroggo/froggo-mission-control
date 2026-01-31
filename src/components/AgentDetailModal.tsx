@@ -436,7 +436,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                                   task.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
                                   task.status === 'failed' ? 'bg-red-500/20 text-red-400' :
                                   task.status === 'blocked' ? 'bg-orange-500/20 text-orange-400' :
-                                  'bg-gray-500/20 text-gray-400'
+                                  'bg-clawd-bg0/20 text-clawd-text-dim'
                                 }`}>
                                   {task.status}
                                 </span>
@@ -488,7 +488,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                               {session.isActive ? (
                                 <Wifi size={16} className="text-green-400" />
                               ) : (
-                                <WifiOff size={16} className="text-gray-500" />
+                                <WifiOff size={16} className="text-clawd-text-dim" />
                               )}
                               <span className="font-medium text-sm">
                                 {session.label || session.key.slice(0, 40)}

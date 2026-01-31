@@ -60,7 +60,7 @@ export default function LibrarySkillsTab() {
     if (proficiency >= 0.6) return 'bg-blue-500';
     if (proficiency >= 0.4) return 'bg-yellow-500';
     if (proficiency >= 0.2) return 'bg-orange-500';
-    return 'bg-gray-500';
+    return 'bg-clawd-bg0';
   };
 
   return (

@@ -209,7 +209,7 @@ const TaskStatusIndicator = memo(function TaskStatusIndicator({
           statusInfo.status === 'active' ? 'text-green-400' :
           statusInfo.status === 'paused' ? 'text-yellow-400' :
           statusInfo.status === 'stuck' ? 'text-red-400' :
-          'text-gray-400'
+          'text-clawd-text-dim'
         }`}>
           {config.label}
           {statusInfo.agentName ? ` · ${statusInfo.agentName}` : ''}

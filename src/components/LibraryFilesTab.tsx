@@ -24,7 +24,7 @@ const categoryConfig: Record<FileCategory, { icon: any; color: string; label: st
   draft: { icon: FileText, color: 'text-blue-400 bg-blue-500/10', label: 'Drafts' },
   document: { icon: FileText, color: 'text-green-400 bg-green-500/10', label: 'Documents' },
   media: { icon: Image, color: 'text-purple-400 bg-purple-500/10', label: 'Media' },
-  other: { icon: File, color: 'text-gray-400 bg-gray-500/10', label: 'Other' },
+  other: { icon: File, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
 };
 
 const getFileIcon = (mimeType?: string) => {

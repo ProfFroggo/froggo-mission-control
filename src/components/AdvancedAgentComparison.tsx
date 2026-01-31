@@ -161,7 +161,7 @@ export default function AdvancedAgentComparison({
   const getTrendIcon = (value: number, threshold: number) => {
     if (value > threshold) return <ArrowUpRight size={16} className="text-green-400" />;
     if (value < threshold) return <ArrowDownRight size={16} className="text-red-400" />;
-    return <Minus size={16} className="text-gray-400" />;
+    return <Minus size={16} className="text-clawd-text-dim" />;
   };
 
   return (

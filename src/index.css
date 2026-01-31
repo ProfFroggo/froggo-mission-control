@@ -10,6 +10,12 @@
 /* Import design system tokens */
 @import './design-tokens.css';
 
+/* Import component patterns */
+@import './component-patterns.css';
+
+/* Import dashboard redesign styles */
+@import './dashboard-redesign.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

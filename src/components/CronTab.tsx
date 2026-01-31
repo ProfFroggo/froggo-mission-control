@@ -201,7 +201,7 @@ export default function CronTab() {
                       <span>{formatSchedule(job.schedule)}</span>
                       <span>Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
                       {job.state.lastStatus && (
-                        <span className={job.state.lastStatus === 'ok' ? 'text-green-400' : job.state.lastStatus === 'error' ? 'text-red-400' : 'text-gray-400'}>
+                        <span className={job.state.lastStatus === 'ok' ? 'text-green-400' : job.state.lastStatus === 'error' ? 'text-red-400' : 'text-clawd-text-dim'}>
                           Last: {job.state.lastStatus} {formatTimeAgo(job.state.lastRunAtMs)}
                         </span>
                       )}

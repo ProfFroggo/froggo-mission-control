@@ -1263,82 +1263,176 @@ OUTPUT:`;
     }
   }, [setMeetingActive, detectActionItems]);
 
+  // Ref to track when endMeeting is handling cleanup (prevents global sync effect from racing)
+  const endMeetingInProgressRef = useRef(false);
+
   // End meeting
   const endMeeting = useCallback(async () => {
+    // Guard against double-calls
+    if (endMeetingInProgressRef.current) {
+      console.log('[Meeting] endMeeting already in progress, skipping');
+      return;
+    }
+    endMeetingInProgressRef.current = true;
     console.log('[Meeting] Ending...');
     
-    // Stop Whisper interval
-    if (whisperIntervalRef.current) {
-      clearInterval(whisperIntervalRef.current);
-      whisperIntervalRef.current = null;
-    }
-    
-    // Clear overlap buffer
-    previousChunkBufferRef.current = [];
-    
-    // Process any remaining audio
-    if (mediaRecorderRef.current && audioChunksRef.current.length > 0) {
-      const usedMimeType = (mediaRecorderRef.current as any)?.usedMimeType || 'audio/webm';
-      mediaRecorderRef.current.stop();
+    try {
+      // Stop Whisper interval FIRST to prevent new recordings
+      if (whisperIntervalRef.current) {
+        clearInterval(whisperIntervalRef.current);
+        whisperIntervalRef.current = null;
+      }
       
-      // Final transcription of remaining audio
-      const audioBlob = new Blob(audioChunksRef.current, { type: usedMimeType });
-      audioChunksRef.current = [];
+      // Clear overlap buffer
+      previousChunkBufferRef.current = [];
       
-      if (audioBlob.size > 1000) {
-        setStatusMessage('Final transcription...');
-        const transcript = await transcribeWithWhisper(audioBlob, usedMimeType);
-        if (transcript.trim()) {
-          setMeetingTranscript(prev => [...prev, transcript]);
+      // Capture the current transcript snapshot before async operations
+      // (avoids stale closure issues with meetingTranscript)
+      let transcriptSnapshot = [...meetingTranscript];
+      const actionItemsSnapshot = [...meetingActionItems];
+      
+      // Process any remaining audio from the active recorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        try {
+          // Determine mimeType from the recorder
+          const recorderMimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+          
+          // Wait for the recorder to stop and deliver final data
+          const finalChunks = await new Promise<Blob[]>((resolve) => {
+            const recorder = mediaRecorderRef.current!;
+            const collectedChunks = [...audioChunksRef.current];
+            
+            recorder.ondataavailable = (e) => {
+              if (e.data.size > 0) collectedChunks.push(e.data);
+            };
+            
+            recorder.onstop = () => {
+              resolve(collectedChunks);
+            };
+            
+            // Timeout safety: don't wait forever for recorder to stop
+            const timeout = setTimeout(() => {
+              console.warn('[Meeting] Recorder stop timed out, using collected chunks');
+              resolve(collectedChunks);
+            }, 3000);
+            
+            recorder.addEventListener('stop', () => clearTimeout(timeout), { once: true });
+            
+            recorder.stop();
+          });
+          
+          audioChunksRef.current = [];
+          
+          if (finalChunks.length > 0) {
+            const audioBlob = new Blob(finalChunks, { type: recorderMimeType });
+            
+            if (audioBlob.size > 1000) {
+              setStatusMessage('Final transcription...');
+              // Timeout the Whisper call to prevent indefinite hang
+              const transcript = await Promise.race([
+                transcribeWithWhisper(audioBlob, recorderMimeType),
+                new Promise<string>((resolve) => setTimeout(() => {
+                  console.warn('[Meeting] Final Whisper transcription timed out');
+                  resolve('');
+                }, 30000))
+              ]);
+              if (transcript.trim()) {
+                transcriptSnapshot.push(transcript);
+                setMeetingTranscript(prev => [...prev, transcript]);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[Meeting] Error processing final audio:', err);
         }
       }
-    }
-    
-    // Stop mic
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    mediaRecorderRef.current = null;
-    listeningRef.current = false;
-    setListening(false);
-    setMeetingActive(false);
-    setConversationMode(false);
-    
-    if (meetingTranscript.length > 0) {
-      setStatusMessage('Saving meeting notes...');
       
-      const savedPath = await saveMeetingToFile(meetingTranscript, meetingActionItems);
-      const { count: tasksCreated, tasks: extractedTasks } = await createTasksFromMeeting(meetingTranscript);
-      
-      setMeetingEndSummary({
-        savedPath,
-        tasksCreated,
-        extractedTasks,
-      });
-      
-      if (savedPath || tasksCreated > 0) {
-        const messages: string[] = [];
-        if (savedPath) messages.push(`Notes saved`);
-        if (tasksCreated > 0) messages.push(`${tasksCreated} task${tasksCreated > 1 ? 's' : ''} created`);
-        setStatusMessage(messages.join(' • '));
-        
-        addActivity({ 
-          type: 'system', 
-          message: `📋 Meeting ended: ${savedPath ? 'transcript saved' : ''} ${tasksCreated > 0 ? `+ ${tasksCreated} tasks` : ''}`.trim(),
-          timestamp: Date.now() 
-        });
-      } else {
-        setStatusMessage('Meeting ended.');
+      // Stop mic and clean up audio resources
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
       
-      // Refresh past meetings list
-      loadPastMeetings();
-    } else {
-      setStatusMessage('Meeting ended (no transcript).');
+      mediaRecorderRef.current = null;
+      audioChunksRef.current = [];
+      listeningRef.current = false;
+      setListening(false);
+      setConversationMode(false);
+      
+      // Set meeting inactive AFTER cleanup (global sync effect checks endMeetingInProgressRef)
+      setMeetingActive(false);
+      
+      // Post-processing: save notes and create tasks
+      if (transcriptSnapshot.length > 0) {
+        setStatusMessage('Saving meeting notes...');
+        
+        let savedPath: string | null = null;
+        let tasksCreated = 0;
+        let extractedTasks: string[] = [];
+        
+        try {
+          // Save with timeout
+          savedPath = await Promise.race([
+            saveMeetingToFile(transcriptSnapshot, actionItemsSnapshot),
+            new Promise<null>((resolve) => setTimeout(() => {
+              console.warn('[Meeting] Save to file timed out');
+              resolve(null);
+            }, 15000))
+          ]);
+        } catch (err) {
+          console.error('[Meeting] Error saving meeting file:', err);
+        }
+        
+        try {
+          // Create tasks with timeout
+          const taskResult = await Promise.race([
+            createTasksFromMeeting(transcriptSnapshot),
+            new Promise<{ count: number; tasks: string[] }>((resolve) => setTimeout(() => {
+              console.warn('[Meeting] Task creation timed out');
+              resolve({ count: 0, tasks: [] });
+            }, 15000))
+          ]);
+          tasksCreated = taskResult.count;
+          extractedTasks = taskResult.tasks;
+        } catch (err) {
+          console.error('[Meeting] Error creating tasks:', err);
+        }
+        
+        setMeetingEndSummary({
+          savedPath,
+          tasksCreated,
+          extractedTasks,
+        });
+        
+        if (savedPath || tasksCreated > 0) {
+          const statusParts: string[] = [];
+          if (savedPath) statusParts.push(`Notes saved`);
+          if (tasksCreated > 0) statusParts.push(`${tasksCreated} task${tasksCreated > 1 ? 's' : ''} created`);
+          setStatusMessage(statusParts.join(' • '));
+          
+          addActivity({ 
+            type: 'system', 
+            message: `📋 Meeting ended: ${savedPath ? 'transcript saved' : ''} ${tasksCreated > 0 ? `+ ${tasksCreated} tasks` : ''}`.trim(),
+            timestamp: Date.now() 
+          });
+        } else {
+          setStatusMessage('Meeting ended.');
+        }
+        
+        // Refresh past meetings list
+        loadPastMeetings();
+      } else {
+        setStatusMessage('Meeting ended (no transcript).');
+      }
+    } catch (err) {
+      console.error('[Meeting] Unexpected error in endMeeting:', err);
+      setStatusMessage('Meeting ended with errors.');
+      setMeetingActive(false);
+    } finally {
+      endMeetingInProgressRef.current = false;
+      console.log('[Meeting] End meeting complete');
     }
-  }, [meetingTranscript, meetingActionItems, stopListening, setMeetingActive, saveMeetingToFile, createTasksFromMeeting, addActivity, loadPastMeetings]);
+  }, [meetingTranscript, meetingActionItems, setMeetingActive, saveMeetingToFile, createTasksFromMeeting, addActivity, loadPastMeetings]);
   
   // Sync with global meeting state (for TopBar call button)
   const prevMeetingActive = useRef(false);
@@ -1373,8 +1467,13 @@ OUTPUT:`;
         hasInitialized.current = true;
         setActiveTab('meetings');
       } else if (!isMeetingActive && prevMeetingActive.current) {
-        console.log('[Meeting] Stopping from global state');
-        await stopListeningRef.current();
+        // Only stop if endMeeting isn't already handling cleanup
+        if (!endMeetingInProgressRef.current) {
+          console.log('[Meeting] Stopping from global state');
+          await stopListeningRef.current();
+        } else {
+          console.log('[Meeting] Skipping stopListening - endMeeting is handling cleanup');
+        }
       }
       prevMeetingActive.current = isMeetingActive;
     };

@@ -22,10 +22,16 @@ const shortcuts = [
   ]},
   { category: 'Extended Navigation', items: [
     { keys: ['⌘', '⇧', 'C'], action: 'Context Control' },
-    { keys: ['⌘', '⇧', 'D'], action: 'Code Agent Dashboard' },
     { keys: ['⌘', '⇧', 'I'], action: '3-Pane Inbox' },
     { keys: ['⌘', '⇧', 'L'], action: 'Library' },
     { keys: ['⌘', '⇧', 'S'], action: 'Starred Messages' },
+  ]},
+  { category: 'Appearance & Navigation', items: [
+    { keys: ['⌘', '⇧', 'D'], action: 'Toggle Dark/Light Mode' },
+    { keys: ['⌥', '↑'], action: 'Scroll Up' },
+    { keys: ['⌥', '↓'], action: 'Scroll Down' },
+    { keys: ['⌥', '⇞'], action: 'Scroll Page Up' },
+    { keys: ['⌥', '⇟'], action: 'Scroll Page Down' },
   ]},
   { category: 'Global Actions', items: [
     { keys: ['⌘', 'K'], action: 'Global Search (primary)' },

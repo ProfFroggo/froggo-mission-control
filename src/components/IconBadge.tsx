@@ -16,7 +16,7 @@ interface IconBadgeProps {
 export default function IconBadge({ 
   icon: Icon, 
   size = 18, 
-  color = 'bg-gray-500/10 text-gray-400',
+  color = 'bg-clawd-bg0/10 text-clawd-text-dim',
   rounded = 'lg',
   className = ''
 }: IconBadgeProps) {

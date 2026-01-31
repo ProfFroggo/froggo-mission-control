@@ -805,7 +805,16 @@ export default function EnhancedSettingsPanel() {
                       {(['dark', 'light', 'system'] as const).map((t) => (
                         <button
                           key={t}
-                          onClick={() => setSettings(s => ({ ...s, theme: t }))}
+                          onClick={() => {
+                            setSettings(s => {
+                              const newSettings = { ...s, theme: t };
+                              // Apply theme immediately
+                              applyTheme(t, s.accentColor, s.fontFamily, s.fontSize);
+                              // Save to localStorage immediately
+                              localStorage.setItem('froggo-settings', JSON.stringify(newSettings));
+                              return newSettings;
+                            });
+                          }}
                           className={`py-3 px-4 rounded-lg border transition-colors ${
                             settings.theme === t 
                               ? 'border-clawd-accent bg-clawd-accent/20 text-clawd-accent' 

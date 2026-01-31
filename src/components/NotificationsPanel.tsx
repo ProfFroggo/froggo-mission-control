@@ -24,7 +24,7 @@ const sourceConfig: Record<string, { icon: any; color: string; label: string }> 
   discord: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/10', label: 'Discord' },
   email: { icon: Mail, color: 'text-red-400 bg-red-500/10', label: 'Email' },
   calendar: { icon: Calendar, color: 'text-orange-400 bg-orange-500/10', label: 'Calendar' },
-  system: { icon: Bell, color: 'text-gray-400 bg-gray-500/10', label: 'System' },
+  system: { icon: Bell, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'System' },
 };
 
 export default function NotificationsPanel() {

@@ -56,7 +56,7 @@ export default function AgentPanel() {
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean }> = {
     active:  { color: 'bg-green-400',  label: 'Active' },
     busy:    { color: 'bg-amber-400',  label: 'Working…', pulse: true },
-    idle:    { color: 'bg-gray-500',   label: 'Idle' },
+    idle:    { color: 'bg-clawd-bg0',   label: 'Idle' },
     offline: { color: 'bg-red-500',    label: 'Offline' },
   };
 
@@ -116,12 +116,17 @@ export default function AgentPanel() {
               {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
             <div className="grid grid-cols-4 gap-3">
-              {[
-                { val: tasks.filter(t => t.status === 'done').length, label: 'Completed', color: 'text-green-400' },
-                { val: tasks.filter(t => t.status === 'in-progress').length, label: 'In Progress', color: 'text-blue-400' },
-                { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-amber-400' },
-                { val: Object.keys(agentMetrics).length, label: 'Tracked Skills', color: 'text-purple-400' },
-              ].map((s, i) => (
+              {(() => {
+                const totalTokens = gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0);
+                const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
+                const formatTokens = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
+                return [
+                  { val: activeAgentCount, label: 'Active Agents', color: 'text-green-400' },
+                  { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-amber-400' },
+                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-blue-400' },
+                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-purple-400' },
+                ];
+              })().map((s, i) => (
                 <div key={i} className="rounded-lg border border-clawd-border p-4">
                   <div className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.val}</div>
                   <div className="text-xs text-clawd-text-dim mt-1">{s.label}</div>
@@ -323,7 +328,7 @@ export default function AgentPanel() {
                           {session.label}
                         </span>
                       )}
-                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`} />
+                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-green-400 animate-pulse' : 'bg-clawd-bg0'}`} />
                       {session.isActive && <span className="text-[10px] text-green-400 no-shrink no-wrap">Active</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-clawd-text-dim overflow-hidden">
@@ -333,7 +338,7 @@ export default function AgentPanel() {
                     </div>
                   </div>
                   <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded ${
-                    session.isActive ? 'text-green-400 border border-green-500/20' : 'text-gray-500 border border-clawd-border'
+                    session.isActive ? 'text-green-400 border border-green-500/20' : 'text-clawd-text-dim border border-clawd-border'
                   }`}>
                     {session.isActive ? 'Running' : 'Idle'}
                   </span>

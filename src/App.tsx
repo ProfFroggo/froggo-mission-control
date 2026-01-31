@@ -6,6 +6,8 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import LoadingPanel from './components/LoadingPanel';
 import PerformanceProfiler from './components/PerformanceProfiler';
+import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
+import { showToast } from './components/Toast';
 // Import protected panels with error boundaries
 import {
   Dashboard,
@@ -134,6 +136,43 @@ function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Theme toggle - ⌘⇧D
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        const newTheme = toggleTheme();
+        const themeName = getThemeDisplayName(newTheme);
+        showToast('success', 'Theme Changed', `Switched to ${themeName}`);
+        return;
+      }
+
+      // Scroll navigation - Option/Alt + Arrow keys
+      if (e.altKey) {
+        const mainContent = document.getElementById('main-content');
+        if (!mainContent) return;
+
+        const scrollAmount = 100; // pixels
+        const pageScrollAmount = mainContent.clientHeight * 0.8; // 80% of viewport
+
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            mainContent.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+            return;
+          case 'ArrowDown':
+            e.preventDefault();
+            mainContent.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+            return;
+          case 'PageUp':
+            e.preventDefault();
+            mainContent.scrollBy({ top: -pageScrollAmount, behavior: 'smooth' });
+            return;
+          case 'PageDown':
+            e.preventDefault();
+            mainContent.scrollBy({ top: pageScrollAmount, behavior: 'smooth' });
+            return;
+        }
+      }
+
       // Global search - ⌘K or ⌘F (primary shortcuts)
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'f')) {
         e.preventDefault();
@@ -253,25 +292,19 @@ function App() {
             break;
         }
 
-        // Cmd+Shift shortcuts
+        // Cmd+Shift shortcuts (navigation only - theme toggle handled above)
         if (e.shiftKey) {
           switch (e.key.toUpperCase()) {
             case 'C':
               e.preventDefault();
               setCurrentView('context');
               break;
-            case 'D':
-              e.preventDefault();
-              setCurrentView('codeagent');
-              break;
             case 'L':
               e.preventDefault();
               setCurrentView('library');
               break;
-            case 'S':
-              e.preventDefault();
-              setCurrentView('schedule');
-              break;
+            // Note: ⌘⇧D is now theme toggle
+            // Note: ⌘⇧S is now starred messages (handled above)
           }
         }
       }
@@ -338,6 +371,7 @@ function App() {
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
               {currentView === 'starred' && <StarredMessagesPanel />}
+              {currentView === 'contacts' && <ContactModal isOpen={true} onClose={() => setCurrentView('dashboard')} />}
               {currentView === 'error-test' && import.meta.env.DEV && <ErrorBoundaryTest />}
             </Suspense>
           </PerformanceProfiler>

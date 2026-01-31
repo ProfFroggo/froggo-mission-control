@@ -13,7 +13,7 @@ interface EmailAccount {
 
 export default function EmailWidget() {
   const { emailAccounts } = useUserSettings();
-  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label, color: a.color || 'text-gray-400' }));
+  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label, color: a.color || 'text-clawd-text-dim' }));
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

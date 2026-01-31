@@ -16,7 +16,7 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
   { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
   { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
   { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={14} className="flex-shrink-0" /> },
-  { id: 'p3', label: 'Low', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
+  { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
 // function formatRelativeTime(timestamp: number): string {
@@ -49,7 +49,7 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
-  { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-gray-500/10', emoji: '📋' },
+  { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-clawd-bg0/10', emoji: '📋' },
   { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10', emoji: '📝' },
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
   { id: 'review', title: 'Agent Review', color: 'border-l-purple-500', bg: 'bg-purple-500/10', emoji: '🤖' },
@@ -434,7 +434,7 @@ export default function Kanban() {
                 </span>
               )}
               {stats.unassigned > 0 && (
-                <span className="icon-text-tight text-gray-400">
+                <span className="icon-text-tight text-clawd-text-dim">
                   <User size={14} className="flex-shrink-0" /> {stats.unassigned} unassigned
                 </span>
               )}

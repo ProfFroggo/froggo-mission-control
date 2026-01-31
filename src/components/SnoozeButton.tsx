@@ -119,7 +119,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs bg-clawd-surface text-clawd-text rounded hover:bg-clawd-border transition-colors"
         title="Snooze conversation"
       >
         <Clock className="w-3 h-3" />
@@ -128,14 +128,14 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="bg-clawd-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 className="text-lg font-semibold text-clawd-text dark:text-white">
                 Snooze Conversation
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-clawd-text-dim hover:text-clawd-text-dim dark:hover:text-clawd-text-dim"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -143,7 +143,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Reason input */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text dark:text-clawd-text-dim mb-2">
                 Reason (optional)
               </label>
               <input
@@ -151,13 +151,13 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Why are you snoozing this?"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Quick options */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text dark:text-clawd-text-dim mb-2">
                 Quick Snooze
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -175,7 +175,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Custom date/time */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text dark:text-clawd-text-dim mb-2">
                 Custom Time
               </label>
               <div className="flex gap-2">
@@ -184,19 +184,19 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <input
                   type="time"
                   value={customTime}
                   onChange={(e) => setCustomTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <button
                 onClick={handleCustomSnooze}
                 disabled={!customDate || !customTime}
-                className="mt-2 w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                className="mt-2 w-full px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-clawd-border disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
               >
                 Snooze Until Custom Time
               </button>
@@ -204,7 +204,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             <button
               onClick={() => setShowModal(false)}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition-colors"
+              className="w-full px-4 py-2 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border font-medium transition-colors"
             >
               Cancel
             </button>

@@ -116,9 +116,6 @@ export default function AnalyticsDashboard() {
 
   const handleExport = async () => {
     try {
-      const db = await (window as any).clawdbot?.db?.connect();
-      if (!db) throw new Error('Database not available');
-
       // Export analytics data
       const exportData = {
         generatedAt: new Date().toISOString(),
@@ -127,7 +124,6 @@ export default function AnalyticsDashboard() {
           end: dateRange.end.toISOString(),
         },
         currentTab: activeTab,
-        // Add more export data as needed
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -139,8 +135,6 @@ export default function AnalyticsDashboard() {
       a.download = `analytics-export-${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-
-      await db.close();
     } catch (error) {
       console.error('Failed to export analytics:', error);
     }

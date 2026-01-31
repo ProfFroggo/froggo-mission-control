@@ -383,7 +383,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                         ? 'text-blue-400' 
                         : msg.role === 'assistant' 
                           ? 'text-emerald-500' 
-                          : 'text-gray-400'
+                          : 'text-clawd-text-dim'
                     }`}>
                       {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? agent?.name : 'System'}
                     </div>

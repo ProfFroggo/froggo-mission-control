@@ -436,7 +436,7 @@ export default function ConnectedAccountsPanel() {
                           return (
                             <span
                               key={type}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type] || 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30'}`}
                             >
                               <Icon size={14} />
                               {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -559,7 +559,7 @@ export default function ConnectedAccountsPanel() {
                   return (
                     <div
                       key={type}
-                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type] || 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30'}`}
                     >
                       <Icon size={16} />
                       <span className="capitalize">{type}</span>

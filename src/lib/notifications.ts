@@ -3,7 +3,9 @@
 // Play notification sound
 export function playNotificationSound(type: 'approval' | 'message' | 'alert' = 'message') {
   // Use Web Audio API for notification sounds
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return; // Not available in test/SSR environments
+  const audioContext = new AudioCtx();
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
 
@@ -56,7 +58,8 @@ export async function showDesktopNotification(title: string, body: string, optio
   sound?: boolean;
   onClick?: () => void;
 }) {
-  // Check permission
+  // Check permission - guard for test/SSR environments
+  if (typeof Notification === 'undefined') return;
   if (Notification.permission === 'default') {
     await Notification.requestPermission();
   }

@@ -216,6 +216,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Analytics (real data from froggo.db)
   analytics: {
     getData: (timeRange: string) => ipcRenderer.invoke('analytics:getData', timeRange),
+    subtaskStats: () => ipcRenderer.invoke('analytics:subtaskStats'),
+    heatmap: (days: number) => ipcRenderer.invoke('analytics:heatmap', days),
   },
   // Rejection logging
   rejections: {

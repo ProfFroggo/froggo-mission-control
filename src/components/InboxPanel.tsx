@@ -73,11 +73,11 @@ function ShortcutRow({ keys, description }: { keys: string[]; description: strin
             <kbd className="px-2 py-1 bg-clawd-border rounded text-xs font-mono">
               {key}
             </kbd>
-            {i < keys.length - 1 && <span className="mx-1 text-zinc-500">then</span>}
+            {i < keys.length - 1 && <span className="mx-1 text-clawd-text-dim">then</span>}
           </span>
         ))}
       </div>
-      <span className="text-zinc-400 text-xs ml-3">{description}</span>
+      <span className="text-clawd-text-dim text-xs ml-3">{description}</span>
     </div>
   );
 }
@@ -1450,9 +1450,9 @@ export default function InboxPanel() {
       {/* Rejection Dialog */}
       {rejectDialogItem && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
-            <p className="text-sm text-zinc-400 mb-4">This helps me learn what you don't want.</p>
+            <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don't want.</p>
             <input
               ref={rejectInputRef}
               type="text"
@@ -1468,7 +1468,7 @@ export default function InboxPanel() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setRejectDialogItem(null)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-clawd-text-dim hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -1486,7 +1486,7 @@ export default function InboxPanel() {
       {/* Schedule Modal */}
       {scheduleModal && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setScheduleModal(null)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded-lg ${typeConfig[scheduleModal.item.type].color}`}>
@@ -1494,13 +1494,13 @@ export default function InboxPanel() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Send or Schedule?</h3>
-                <p className="text-sm text-zinc-400">{scheduleModal.item.title}</p>
+                <p className="text-sm text-clawd-text-dim">{scheduleModal.item.title}</p>
               </div>
             </div>
 
             {/* Content Preview */}
             <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
-              <pre className="text-sm whitespace-pre-wrap font-mono text-zinc-300">
+              <pre className="text-sm whitespace-pre-wrap font-mono text-clawd-text-dim">
                 {scheduleModal.item.content}
               </pre>
             </div>
@@ -1514,28 +1514,28 @@ export default function InboxPanel() {
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 min-w-0">
-                    <label className="text-xs text-zinc-400 mb-1 block">Date</label>
+                    <label className="text-xs text-clawd-text-dim mb-1 block">Date</label>
                     <input
                       type="date"
                       value={scheduleModal.date}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                      className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <label className="text-xs text-zinc-400 mb-1 block">Time</label>
+                    <label className="text-xs text-clawd-text-dim mb-1 block">Time</label>
                     <input
                       type="time"
                       value={scheduleModal.time}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, time: e.target.value })}
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                      className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
                     />
                   </div>
                 </div>
                 {/* Friendly time display */}
                 {scheduleModal.date && scheduleModal.time && (
-                  <p className="text-xs text-zinc-400 mt-2">
+                  <p className="text-xs text-clawd-text-dim mt-2">
                     Will be sent on {new Date(`${scheduleModal.date}T${scheduleModal.time}`).toLocaleString(undefined, {
                       weekday: 'long',
                       month: 'short',
@@ -1623,7 +1623,7 @@ export default function InboxPanel() {
                   {/* Schedule picker state: Back / Confirm */}
                   <button
                     onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: false })}
-                    className="px-4 py-3 bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                    className="px-4 py-3 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors"
                   >
                     Back
                   </button>
@@ -1693,7 +1693,7 @@ export default function InboxPanel() {
             {/* Cancel link */}
             <button
               onClick={() => setScheduleModal(null)}
-              className="w-full mt-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="w-full mt-3 py-2 text-sm text-clawd-text-dim hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -1704,11 +1704,11 @@ export default function InboxPanel() {
       {/* Keyboard Shortcuts Help Overlay */}
       {showKeyboardHelp && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold mb-1">⌨️ Keyboard Shortcuts</h2>
-                <p className="text-sm text-zinc-400">Gmail-style navigation and actions</p>
+                <p className="text-sm text-clawd-text-dim">Gmail-style navigation and actions</p>
               </div>
               <button
                 onClick={() => setShowKeyboardHelp(false)}
@@ -1774,7 +1774,7 @@ export default function InboxPanel() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-clawd-border">
-              <p className="text-xs text-zinc-400 text-center">
+              <p className="text-xs text-clawd-text-dim text-center">
                 Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">?</kbd> to toggle this help • 
                 Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">Esc</kbd> to close
               </p>
@@ -1786,7 +1786,7 @@ export default function InboxPanel() {
       {/* Agent Still Active Warning Modal */}
       {showAgentWarning && activeAgentSession && pendingApprovalItem && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowAgentWarning(false)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-yellow-500/20 rounded-lg">
@@ -1794,7 +1794,7 @@ export default function InboxPanel() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Agent Still Active</h3>
-                <p className="text-sm text-zinc-400">Cannot approve yet</p>
+                <p className="text-sm text-clawd-text-dim">Cannot approve yet</p>
               </div>
             </div>
 
@@ -1803,7 +1803,7 @@ export default function InboxPanel() {
               <p className="text-sm text-yellow-200 mb-2">
                 ⚠️ An agent is currently working on this task
               </p>
-              <div className="text-xs text-zinc-400 space-y-1">
+              <div className="text-xs text-clawd-text-dim space-y-1">
                 <div>
                   <span className="font-medium">Session:</span> {activeAgentSession.displayName || activeAgentSession.label || 'Unknown'}
                 </div>
@@ -1816,7 +1816,7 @@ export default function InboxPanel() {
               </div>
             </div>
             
-            <p className="text-sm text-zinc-300 mb-3">
+            <p className="text-sm text-clawd-text-dim mb-3">
               If you approve now, the agent might reset the task status when it finishes, creating an approval loop.
             </p>
             
@@ -1832,7 +1832,7 @@ export default function InboxPanel() {
                   setActiveAgentSession(null);
                   setPendingApprovalItem(null);
                 }}
-                className="flex-1 min-w-0 px-4 py-3 bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                className="flex-1 min-w-0 px-4 py-3 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors"
               >
                 Cancel
               </button>

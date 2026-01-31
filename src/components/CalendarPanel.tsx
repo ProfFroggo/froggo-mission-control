@@ -615,8 +615,8 @@ export default function CalendarPanel() {
         return {
           borderColor: 'border-l-gray-500',
           icon: Calendar,
-          iconColor: 'text-gray-400',
-          bgColor: 'bg-gray-500/10',
+          iconColor: 'text-clawd-text-dim',
+          bgColor: 'bg-clawd-bg0/10',
         };
     }
   };
@@ -871,7 +871,7 @@ export default function CalendarPanel() {
                               <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                                 event.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                                 event.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-gray-500/20 text-gray-400'
+                                'bg-clawd-bg0/20 text-clawd-text-dim'
                               }`}>
                                 {event.priority}
                               </span>
@@ -880,7 +880,7 @@ export default function CalendarPanel() {
                               <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                                 event.status === 'pending' ? 'bg-purple-500/20 text-purple-400' :
                                 event.status === 'sent' ? 'bg-green-500/20 text-green-400' :
-                                'bg-gray-500/20 text-gray-400'
+                                'bg-clawd-bg0/20 text-clawd-text-dim'
                               }`}>
                                 {event.status}
                               </span>

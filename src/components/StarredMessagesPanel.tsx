@@ -111,20 +111,20 @@ export default function StarredMessagesPanel() {
   const uniqueSessions = Array.from(new Set(starred.map(s => s.session_key).filter(Boolean))) as string[];
 
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-clawd-bg">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
+      <div className="bg-clawd-surface border-b border-clawd-border p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Star className="w-6 h-6 text-yellow-500 fill-yellow-500" />
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Starred Messages</h2>
-              <p className="text-sm text-gray-500">{stats.total} starred</p>
+              <h2 className="text-xl font-bold text-clawd-text">Starred Messages</h2>
+              <p className="text-sm text-clawd-text-dim">{stats.total} starred</p>
             </div>
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 text-sm"
+            className="px-3 py-2 bg-clawd-surface hover:bg-clawd-border/50 rounded-lg flex items-center gap-2 text-sm"
           >
             <Filter className="w-4 h-4" />
             Filters
@@ -134,14 +134,14 @@ export default function StarredMessagesPanel() {
         {/* Search Bar */}
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-clawd-text-dim" />
             <input
               type="text"
               placeholder="Search starred messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <button
@@ -153,7 +153,7 @@ export default function StarredMessagesPanel() {
           {(searchQuery || categoryFilter || sessionFilter) && (
             <button
               onClick={clearFilters}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center gap-2"
+              className="px-4 py-2 bg-clawd-border/50 hover:bg-clawd-border rounded-lg flex items-center gap-2"
             >
               <X className="w-4 h-4" />
               Clear
@@ -163,15 +163,15 @@ export default function StarredMessagesPanel() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+          <div className="mt-4 p-4 bg-clawd-bg rounded-lg space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-clawd-text mb-1">
                 Category
               </label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All categories</option>
                 {uniqueCategories.map(cat => (
@@ -180,13 +180,13 @@ export default function StarredMessagesPanel() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-clawd-text mb-1">
                 Session
               </label>
               <select
                 value={sessionFilter}
                 onChange={(e) => setSessionFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All sessions</option>
                 {uniqueSessions.map(session => (
@@ -203,14 +203,14 @@ export default function StarredMessagesPanel() {
       {/* Messages List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {loading ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-clawd-text-dim">
             Loading starred messages...
           </div>
         ) : starred.length === 0 ? (
           <div className="text-center py-12">
-            <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No starred messages</p>
-            <p className="text-gray-400 text-sm mt-2">
+            <Star className="w-16 h-16 text-clawd-text-dim mx-auto mb-4" />
+            <p className="text-clawd-text-dim text-lg">No starred messages</p>
+            <p className="text-clawd-text-dim text-sm mt-2">
               Star messages to bookmark them for quick reference
             </p>
           </div>
@@ -218,7 +218,7 @@ export default function StarredMessagesPanel() {
           starred.map((msg) => (
             <div
               key={msg.id}
-              className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+              className="bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:shadow-md transition-shadow"
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
@@ -226,16 +226,16 @@ export default function StarredMessagesPanel() {
                   <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-clawd-text">
                         {msg.channel || 'unknown'}
                       </span>
-                      <span className="text-xs text-gray-400">•</span>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-xs text-clawd-text-dim">•</span>
+                      <span className="text-sm text-clawd-text-dim">
                         {msg.message_role === 'user' ? 'You' : 'Assistant'}
                       </span>
                       {msg.category && (
                         <>
-                          <span className="text-xs text-gray-400">•</span>
+                          <span className="text-xs text-clawd-text-dim">•</span>
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                             <Tag className="w-3 h-3" />
                             {msg.category}
@@ -243,12 +243,12 @@ export default function StarredMessagesPanel() {
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-clawd-text-dim">
                       <Calendar className="w-3 h-3" />
                       <span>
                         {new Date(msg.message_timestamp).toLocaleString()}
                       </span>
-                      <span className="text-gray-400">•</span>
+                      <span className="text-clawd-text-dim">•</span>
                       <span>
                         Starred {new Date(msg.starred_at).toLocaleDateString()}
                       </span>
@@ -257,7 +257,7 @@ export default function StarredMessagesPanel() {
                 </div>
                 <button
                   onClick={() => handleUnstar(msg.message_id)}
-                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="p-2 text-clawd-text-dim hover:text-red-600 hover:bg-error-subtle rounded-lg transition-colors"
                   title="Remove star"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -281,7 +281,7 @@ export default function StarredMessagesPanel() {
 
               {/* Session Link */}
               {msg.session_key && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="mt-3 pt-3 border-t border-clawd-border">
                   <button
                     className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
                     onClick={() => {

@@ -1,37 +1,32 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useStore } from '../../store/store';
-import type { Task } from '../../store/store';
+import type { Task, Session } from '../../store/store';
 
 describe('Zustand Store', () => {
   beforeEach(() => {
-    // Reset store before each test
-    const { result } = renderHook(() => useStore());
-    act(() => {
-      result.current.tasks = [];
-      result.current.agents = [];
-      result.current.sessions = [];
-      result.current.activities = [];
+    // Reset store before each test using Zustand's setState
+    useStore.setState({
+      tasks: [],
+      agents: [],
+      sessions: [],
+      activities: [],
+      approvals: [],
     });
   });
 
   describe('Task Management', () => {
     it('adds task to store', () => {
       const { result } = renderHook(() => useStore());
-      
-      const newTask: Task = {
-        id: 'task-1',
-        title: 'Test Task',
-        description: 'Test description',
-        status: 'todo',
-        priority: 'p1',
-        project: 'Dev',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
 
       act(() => {
-        result.current.setTasks([newTask]);
+        result.current.addTask({
+          title: 'Test Task',
+          description: 'Test description',
+          status: 'todo',
+          priority: 'p1',
+          project: 'Dev',
+        });
       });
 
       expect(result.current.tasks).toHaveLength(1);
@@ -40,23 +35,19 @@ describe('Zustand Store', () => {
 
     it('updates task status', () => {
       const { result } = renderHook(() => useStore());
-      
-      const task: Task = {
-        id: 'task-1',
-        title: 'Test Task',
-        status: 'todo',
-        project: 'Dev',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
 
       act(() => {
-        result.current.setTasks([task]);
+        result.current.addTask({
+          title: 'Test Task',
+          status: 'todo',
+          project: 'Dev',
+        });
       });
 
+      const taskId = result.current.tasks[0].id;
+
       act(() => {
-        const updated = { ...task, status: 'in-progress' as const };
-        result.current.setTasks([updated]);
+        result.current.moveTask(taskId, 'in-progress');
       });
 
       expect(result.current.tasks[0].status).toBe('in-progress');
@@ -64,15 +55,11 @@ describe('Zustand Store', () => {
 
     it('filters tasks by status', () => {
       const { result } = renderHook(() => useStore());
-      
-      const tasks: Task[] = [
-        { id: 'task-1', title: 'Task 1', status: 'todo', project: 'Dev', createdAt: Date.now(), updatedAt: Date.now() },
-        { id: 'task-2', title: 'Task 2', status: 'in-progress', project: 'Dev', createdAt: Date.now(), updatedAt: Date.now() },
-        { id: 'task-3', title: 'Task 3', status: 'done', project: 'Dev', createdAt: Date.now(), updatedAt: Date.now() },
-      ];
 
       act(() => {
-        result.current.setTasks(tasks);
+        result.current.addTask({ title: 'Task 1', status: 'todo', project: 'Dev' });
+        result.current.addTask({ title: 'Task 2', status: 'in-progress', project: 'Dev' });
+        result.current.addTask({ title: 'Task 3', status: 'done', project: 'Dev' });
       });
 
       const todoTasks = result.current.tasks.filter(t => t.status === 'todo');
@@ -82,15 +69,11 @@ describe('Zustand Store', () => {
 
     it('filters tasks by priority', () => {
       const { result } = renderHook(() => useStore());
-      
-      const tasks: Task[] = [
-        { id: 'task-1', title: 'Task 1', status: 'todo', priority: 'p0', project: 'Dev', createdAt: Date.now(), updatedAt: Date.now() },
-        { id: 'task-2', title: 'Task 2', status: 'todo', priority: 'p1', project: 'Dev', createdAt: Date.now(), updatedAt: Date.now() },
-        { id: 'task-3', title: 'Task 3', status: 'todo', priority: 'p3', project: 'Dev', createdAt: Date.now(), updatedAt: Date.now() },
-      ];
 
       act(() => {
-        result.current.setTasks(tasks);
+        result.current.addTask({ title: 'Task 1', status: 'todo', priority: 'p0', project: 'Dev' });
+        result.current.addTask({ title: 'Task 2', status: 'todo', priority: 'p1', project: 'Dev' });
+        result.current.addTask({ title: 'Task 3', status: 'todo', priority: 'p3', project: 'Dev' });
       });
 
       const urgentTasks = result.current.tasks.filter(t => t.priority === 'p0');
@@ -99,8 +82,6 @@ describe('Zustand Store', () => {
     });
 
     it('calculates task progress from subtasks', () => {
-      const { result } = renderHook(() => useStore());
-      
       const task: Task = {
         id: 'task-1',
         title: 'Task with subtasks',
@@ -115,35 +96,60 @@ describe('Zustand Store', () => {
         updatedAt: Date.now(),
       };
 
-      act(() => {
-        result.current.setTasks([task]);
-      });
+      useStore.setState({ tasks: [task] });
 
       const completedCount = task.subtasks!.filter(s => s.completed).length;
       const progress = (completedCount / task.subtasks!.length) * 100;
-      
-      expect(progress).toBe(66.66666666666666);
+
+      expect(progress).toBeCloseTo(66.67, 1);
+    });
+
+    it('filters tasks by project', () => {
+      useStore.setState({
+        tasks: [
+          { id: 't1', title: 'Task 1', status: 'todo', project: 'Frontend', createdAt: Date.now(), updatedAt: Date.now() },
+          { id: 't2', title: 'Task 2', status: 'todo', project: 'Backend', createdAt: Date.now(), updatedAt: Date.now() },
+          { id: 't3', title: 'Task 3', status: 'todo', project: 'Frontend', createdAt: Date.now(), updatedAt: Date.now() },
+        ] as Task[],
+      });
+
+      const store = useStore.getState();
+      const frontendTasks = store.tasks.filter(t => t.project === 'Frontend');
+      expect(frontendTasks).toHaveLength(2);
+    });
+
+    it('updates task details', () => {
+      const { result } = renderHook(() => useStore());
+
+      act(() => {
+        result.current.addTask({ title: 'Original', status: 'todo', project: 'Dev' });
+      });
+
+      const taskId = result.current.tasks[0].id;
+
+      act(() => {
+        result.current.updateTask(taskId, { title: 'Updated Title', description: 'New desc' });
+      });
+
+      expect(result.current.tasks[0].title).toBe('Updated Title');
+      expect(result.current.tasks[0].description).toBe('New desc');
     });
   });
 
   describe('Agent Management', () => {
     it('updates agent status', () => {
       const { result } = renderHook(() => useStore());
-      
-      const agent = {
-        id: 'coder',
-        name: 'Coder',
-        status: 'idle' as const,
-      };
 
       act(() => {
-        result.current.setAgents([agent]);
+        useStore.setState({
+          agents: [{ id: 'coder', name: 'Coder', status: 'idle' as const }],
+        });
       });
 
       expect(result.current.agents[0].status).toBe('idle');
 
       act(() => {
-        result.current.setAgents([{ ...agent, status: 'busy' as const }]);
+        result.current.updateAgentStatus('coder', 'busy');
       });
 
       expect(result.current.agents[0].status).toBe('busy');
@@ -151,30 +157,19 @@ describe('Zustand Store', () => {
 
     it('assigns task to agent', () => {
       const { result } = renderHook(() => useStore());
-      
-      const task: Task = {
-        id: 'task-1',
-        title: 'Test Task',
-        status: 'todo',
-        project: 'Dev',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-
-      const agent = {
-        id: 'coder',
-        name: 'Coder',
-        status: 'idle' as const,
-      };
 
       act(() => {
-        result.current.setTasks([task]);
-        result.current.setAgents([agent]);
+        result.current.addTask({ title: 'Test Task', status: 'todo', project: 'Dev' });
       });
 
+      useStore.setState({
+        agents: [{ id: 'coder', name: 'Coder', status: 'idle' as const }],
+      });
+
+      const taskId = result.current.tasks[0].id;
+
       act(() => {
-        const updated = { ...task, assignedTo: 'coder' };
-        result.current.setTasks([updated]);
+        result.current.assignTask(taskId, 'coder');
       });
 
       expect(result.current.tasks[0].assignedTo).toBe('coder');
@@ -184,16 +179,13 @@ describe('Zustand Store', () => {
   describe('Session Management', () => {
     it('tracks active sessions', () => {
       const { result } = renderHook(() => useStore());
-      
-      const session = {
+
+      const session: Session = {
         key: 'session-1',
-        kind: 'direct' as const,
-        updatedAt: Date.now(),
-        ageMs: 1000,
-        sessionId: 'session-1',
-        type: 'main' as const,
-        displayName: 'Main Session',
-        isActive: true,
+        agentId: 'coder',
+        createdAt: Date.now(),
+        lastActivity: Date.now(),
+        messageCount: 5,
       };
 
       act(() => {
@@ -201,28 +193,24 @@ describe('Zustand Store', () => {
       });
 
       expect(result.current.sessions).toHaveLength(1);
-      expect(result.current.sessions[0].isActive).toBe(true);
+      expect(result.current.sessions[0].key).toBe('session-1');
     });
 
     it('identifies stale sessions', () => {
       const { result } = renderHook(() => useStore());
-      
-      const staleSession = {
+
+      const staleSession: Session = {
         key: 'session-old',
-        kind: 'direct' as const,
-        updatedAt: Date.now() - 600000, // 10 minutes ago
-        ageMs: 600000,
-        sessionId: 'session-old',
-        type: 'main' as const,
-        displayName: 'Old Session',
-        isActive: false,
+        createdAt: Date.now() - 600000,
+        lastActivity: Date.now() - 600000,
+        messageCount: 1,
       };
 
       act(() => {
         result.current.setSessions([staleSession]);
       });
 
-      const stale = result.current.sessions.filter(s => !s.isActive);
+      const stale = result.current.sessions.filter(s => Date.now() - s.lastActivity > 300000);
       expect(stale).toHaveLength(1);
     });
   });
@@ -230,7 +218,7 @@ describe('Zustand Store', () => {
   describe('UI State', () => {
     it('toggles mute state', () => {
       const { result } = renderHook(() => useStore());
-      
+
       const initialMute = result.current.isMuted;
 
       act(() => {
@@ -242,7 +230,7 @@ describe('Zustand Store', () => {
 
     it('sets meeting active state', () => {
       const { result } = renderHook(() => useStore());
-      
+
       act(() => {
         result.current.setMeetingActive(true);
       });
@@ -260,35 +248,32 @@ describe('Zustand Store', () => {
   describe('Approval Queue', () => {
     it('loads approvals', () => {
       const { result } = renderHook(() => useStore());
-      
-      const approvals = [
-        {
-          id: 'approval-1',
-          type: 'tweet',
-          content: 'Test tweet',
-          status: 'pending',
-          timestamp: Date.now(),
-        },
-      ];
 
       act(() => {
-        result.current.setApprovals(approvals as any);
+        result.current.addApproval({
+          type: 'tweet',
+          title: 'Test tweet',
+          content: 'Tweet content',
+        });
       });
 
       expect(result.current.approvals).toHaveLength(1);
+      expect(result.current.approvals[0].status).toBe('pending');
     });
 
     it('filters pending approvals', () => {
       const { result } = renderHook(() => useStore());
-      
-      const approvals = [
-        { id: '1', type: 'tweet', content: 'Tweet 1', status: 'pending', timestamp: Date.now() },
-        { id: '2', type: 'email', content: 'Email 1', status: 'approved', timestamp: Date.now() },
-        { id: '3', type: 'tweet', content: 'Tweet 2', status: 'pending', timestamp: Date.now() },
-      ];
 
       act(() => {
-        result.current.setApprovals(approvals as any);
+        result.current.addApproval({ type: 'tweet', title: 'Tweet 1', content: 'content 1' });
+        result.current.addApproval({ type: 'email', title: 'Email 1', content: 'content 2' });
+        result.current.addApproval({ type: 'tweet', title: 'Tweet 2', content: 'content 3' });
+      });
+
+      // Approve one
+      const emailId = result.current.approvals.find(a => a.type === 'email')!.id;
+      act(() => {
+        result.current.approveItem(emailId);
       });
 
       const pending = result.current.approvals.filter(a => a.status === 'pending');
@@ -298,8 +283,6 @@ describe('Zustand Store', () => {
 
   describe('Performance', () => {
     it('handles large datasets efficiently', () => {
-      const { result } = renderHook(() => useStore());
-      
       const tasks: Task[] = Array.from({ length: 1000 }, (_, i) => ({
         id: `task-${i}`,
         title: `Task ${i}`,
@@ -310,22 +293,14 @@ describe('Zustand Store', () => {
       }));
 
       const start = performance.now();
-      
-      act(() => {
-        result.current.setTasks(tasks);
-      });
-
+      useStore.setState({ tasks });
       const end = performance.now();
-      const duration = end - start;
 
-      // Should set 1000 tasks in less than 100ms
-      expect(duration).toBeLessThan(100);
-      expect(result.current.tasks).toHaveLength(1000);
+      expect(end - start).toBeLessThan(100);
+      expect(useStore.getState().tasks).toHaveLength(1000);
     });
 
     it('filters large datasets quickly', () => {
-      const { result } = renderHook(() => useStore());
-      
       const tasks: Task[] = Array.from({ length: 1000 }, (_, i) => ({
         id: `task-${i}`,
         title: `Task ${i}`,
@@ -335,17 +310,13 @@ describe('Zustand Store', () => {
         updatedAt: Date.now(),
       }));
 
-      act(() => {
-        result.current.setTasks(tasks);
-      });
+      useStore.setState({ tasks });
 
       const start = performance.now();
-      const todoTasks = result.current.tasks.filter(t => t.status === 'todo');
+      const todoTasks = useStore.getState().tasks.filter(t => t.status === 'todo');
       const end = performance.now();
-      const duration = end - start;
 
-      // Should filter in less than 10ms
-      expect(duration).toBeLessThan(10);
+      expect(end - start).toBeLessThan(10);
       expect(todoTasks).toHaveLength(500);
     });
   });

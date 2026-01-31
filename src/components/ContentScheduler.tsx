@@ -605,7 +605,7 @@ export default function ContentScheduler() {
                           item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
                           item.status === 'sent' ? 'bg-green-500/20 text-green-400' :
                           item.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                          'bg-gray-500/20 text-gray-400'
+                          'bg-clawd-bg0/20 text-clawd-text-dim'
                         }`}>
                           {item.status}
                         </span>

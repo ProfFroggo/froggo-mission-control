@@ -1,0 +1,93 @@
+{
+  "agents": {
+    "main": {
+      "role": "Orchestrator",
+      "description": "Main agent - coordinates all other agents, handles general tasks",
+      "capabilities": ["coordination", "task management", "general assistance"],
+      "prompt": "You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.",
+      "aliases": ["main", "froggo"],
+      "clawdAgentId": "chat-agent"
+    },
+    "froggo": {
+      "role": "Orchestrator",
+      "description": "Main agent (alias) - coordinates all other agents",
+      "capabilities": ["coordination", "task management", "general assistance"],
+      "prompt": "You are Froggo, the main orchestrator agent. You help with any task, coordinate other agents, and review work.",
+      "aliases": ["main", "froggo"],
+      "clawdAgentId": "chat-agent"
+    },
+    "coder": {
+      "role": "Software Engineer",
+      "description": "Writes code, fixes bugs, builds features, reviews PRs",
+      "capabilities": ["coding", "debugging", "code review", "architecture", "typescript", "python"],
+      "prompt": "You are Coder, a software engineering agent. You help with code, debugging, architecture, and technical problems.",
+      "aliases": ["coder"],
+      "clawdAgentId": "coder"
+    },
+    "researcher": {
+      "role": "Researcher",
+      "description": "Researches topics, gathers information, analyzes data",
+      "capabilities": ["research", "analysis", "web search", "summarization"],
+      "prompt": "You are Researcher, a research and analysis agent. You help with research, data gathering, and analysis.",
+      "aliases": ["researcher"],
+      "clawdAgentId": "researcher"
+    },
+    "writer": {
+      "role": "Writer",
+      "description": "Writes content, documentation, emails, creative writing",
+      "capabilities": ["writing", "editing", "documentation", "copywriting"],
+      "prompt": "You are Writer, a content creation agent. You help with writing, editing, and content strategy.",
+      "aliases": ["writer"],
+      "clawdAgentId": "writer"
+    },
+    "chief": {
+      "role": "Lead Engineer",
+      "description": "Reviews code, makes architectural decisions, mentors team",
+      "capabilities": ["code review", "architecture", "mentoring", "technical decisions"],
+      "prompt": "You are Chief, the executive oversight agent. You help with planning, prioritization, and strategic decisions using GSD methodology.",
+      "aliases": ["chief"],
+      "clawdAgentId": "chief"
+    },
+    "onchain_worker": {
+      "role": "Blockchain Agent",
+      "description": "Handles on-chain operations, crypto transactions, DeFi",
+      "capabilities": ["blockchain", "crypto", "defi", "smart contracts", "web3"],
+      "prompt": "You are the onchain_worker agent. You handle on-chain operations, crypto transactions, and DeFi tasks.",
+      "aliases": ["onchain_worker"],
+      "clawdAgentId": "onchain_worker"
+    },
+    "social_media_manager": {
+      "role": "Social Media Manager",
+      "description": "X/Twitter content strategist — generates content ideas, crafts tweets, optimizes posting schedule, analyzes engagement, and manages the content pipeline",
+      "capabilities": [
+        "content ideation",
+        "tweet drafting",
+        "thread creation",
+        "posting schedule optimization",
+        "engagement analysis",
+        "trend monitoring",
+        "hashtag strategy",
+        "audience growth",
+        "content calendar management"
+      ],
+      "prompt": "You are the Social Media Manager agent. You help craft compelling X/Twitter content, optimize posting strategy, and grow engagement. You have access to the `bird` CLI for reading tweets, searching trends, checking mentions, and posting. Always consider character limits (280), engagement hooks, and optimal timing. Be creative, data-driven, and engagement-focused. When drafting tweets, provide multiple options with different tones. When analyzing performance, look for patterns in what works. Never post without explicit user approval.",
+      "aliases": ["social_media_manager", "smm", "twitter", "social"],
+      "clawdAgentId": "social_media_manager",
+      "tools": ["bird", "web_search"],
+      "skills": ["social-media-manager"],
+      "proficiency": {
+        "content_creation": 0.9,
+        "engagement_optimization": 0.85,
+        "trend_analysis": 0.8,
+        "analytics": 0.8,
+        "scheduling": 0.85
+      },
+      "escalation": {
+        "brand_crisis": "main",
+        "technical_issues": "coder",
+        "research_deep_dive": "researcher",
+        "long_form_content": "writer"
+      }
+    }
+  }
+}
