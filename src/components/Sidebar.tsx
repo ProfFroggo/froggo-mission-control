@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Mic, Phone, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Phone, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star, Users } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -28,7 +28,7 @@ const panelIconMap: Record<string, any> = {
   kanban: Kanban,
   agents: Bot,
   twitter: XIcon,
-  voice: Mic,
+  voice: Users,
   chat: MessageSquare,
   accounts: Cloud,
   approvals: Inbox,

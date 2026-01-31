@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Loader2, 
-  Trash2, MessageSquare
+  Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
@@ -9,7 +9,6 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { synthesizeSpeech, playAudio, speakBrowser, stopSpeaking } from '../lib/googleTTS';
-import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 
 interface VoiceChatMessage {
@@ -22,6 +21,8 @@ interface VoiceChatMessage {
 interface VoiceChatPanelProps {
   /** When embedded in ChatPanel, the agent to voice-chat with */
   agentId?: string;
+  /** Optional session key for an already-spawned chat session */
+  sessionKey?: string;
   /** Callback to switch back to text mode (embedded) */
   onSwitchToText?: () => void;
   /** Whether this panel is embedded inside ChatPanel */
@@ -44,7 +45,7 @@ function saveHistory(agentId: string, msgs: VoiceChatMessage[]) {
   } catch {}
 }
 
-export default function VoiceChatPanel({ agentId, onSwitchToText, embedded }: VoiceChatPanelProps) {
+export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {
   const { addActivity } = useStore();
   
   // Agent selection
@@ -60,6 +61,14 @@ export default function VoiceChatPanel({ agentId, onSwitchToText, embedded }: Vo
   const [processing, setProcessing] = useState(false);
   const [muted, setMuted] = useState(false);
   const [autoListen, setAutoListen] = useState(true);
+  
+  // Screen share & video
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [videoActive, setVideoActive] = useState(false);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
+  const screenVideoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   
   // Audio visualization levels (0-1)
   const [micLevel, setMicLevel] = useState(0);
@@ -429,6 +438,59 @@ export default function VoiceChatPanel({ agentId, onSwitchToText, embedded }: Vo
     localStorage.removeItem(storageKey(selectedAgent.id));
   };
   
+  // ── Screen share ──
+  const toggleScreenShare = async () => {
+    if (screenSharing) {
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+      setScreenSharing(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      screenStreamRef.current = stream;
+      stream.getVideoTracks()[0].onended = () => {
+        screenStreamRef.current = null;
+        setScreenSharing(false);
+      };
+      setScreenSharing(true);
+      // Attach to preview (defer to let React render the element)
+      requestAnimationFrame(() => {
+        if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
+      });
+    } catch (e) {
+      console.warn('[VoiceChat] Screen share failed:', e);
+    }
+  };
+
+  // ── Camera video ──
+  const toggleVideo = async () => {
+    if (videoActive) {
+      videoStreamRef.current?.getTracks().forEach(t => t.stop());
+      videoStreamRef.current = null;
+      setVideoActive(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      videoStreamRef.current = stream;
+      setVideoActive(true);
+      requestAnimationFrame(() => {
+        if (cameraVideoRef.current) cameraVideoRef.current.srcObject = stream;
+      });
+    } catch (e) {
+      console.warn('[VoiceChat] Camera failed:', e);
+    }
+  };
+
+  // Cleanup streams on unmount
+  useEffect(() => {
+    return () => {
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      videoStreamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
   const handleAgentSwitch = (agent: ChatAgent) => {
     if (callActive) endCall();
     setSelectedAgent(agent);
@@ -501,6 +563,28 @@ export default function VoiceChatPanel({ agentId, onSwitchToText, embedded }: Vo
             </button>
           )}
           
+          {/* Screen share toggle */}
+          <button
+            onClick={toggleScreenShare}
+            className={`p-2 rounded-lg transition-colors ${
+              screenSharing ? 'bg-blue-500/20 text-blue-400' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+            }`}
+            title={screenSharing ? 'Stop screen share' : 'Share screen'}
+          >
+            {screenSharing ? <MonitorOff size={16} /> : <Monitor size={16} />}
+          </button>
+          
+          {/* Video toggle */}
+          <button
+            onClick={toggleVideo}
+            className={`p-2 rounded-lg transition-colors ${
+              videoActive ? 'bg-purple-500/20 text-purple-400' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+            }`}
+            title={videoActive ? 'Stop camera' : 'Start camera'}
+          >
+            {videoActive ? <VideoOff size={16} /> : <Video size={16} />}
+          </button>
+          
           {/* Mute agent voice */}
           <button
             onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
@@ -522,6 +606,37 @@ export default function VoiceChatPanel({ agentId, onSwitchToText, embedded }: Vo
           </button>
         </div>
       </div>
+      
+      {/* ── Video previews ── */}
+      {(screenSharing || videoActive) && (
+        <div className="flex gap-2 px-4 pt-3">
+          {screenSharing && (
+            <div className="relative flex-1 max-h-48 rounded-lg overflow-hidden bg-black border border-clawd-border">
+              <video
+                ref={screenVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-contain"
+              />
+              <span className="absolute top-1 left-2 text-[10px] bg-blue-500/80 text-white px-1.5 py-0.5 rounded">Screen</span>
+            </div>
+          )}
+          {videoActive && (
+            <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-black border border-clawd-border flex-shrink-0">
+              <video
+                ref={cameraVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover mirror"
+                style={{ transform: 'scaleX(-1)' }}
+              />
+              <span className="absolute top-1 left-2 text-[10px] bg-purple-500/80 text-white px-1.5 py-0.5 rounded">Camera</span>
+            </div>
+          )}
+        </div>
+      )}
       
       {/* ── Message history ── */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -664,6 +779,36 @@ export default function VoiceChatPanel({ agentId, onSwitchToText, embedded }: Vo
           >
             {callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
           </button>
+          
+          {/* Screen share during call */}
+          {callActive && (
+            <button
+              onClick={toggleScreenShare}
+              className={`p-4 rounded-full transition-all ${
+                screenSharing
+                  ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'
+              }`}
+              title={screenSharing ? 'Stop screen share' : 'Share screen'}
+            >
+              {screenSharing ? <MonitorOff size={22} /> : <Monitor size={22} />}
+            </button>
+          )}
+          
+          {/* Video during call */}
+          {callActive && (
+            <button
+              onClick={toggleVideo}
+              className={`p-4 rounded-full transition-all ${
+                videoActive
+                  ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'
+              }`}
+              title={videoActive ? 'Stop camera' : 'Start camera'}
+            >
+              {videoActive ? <VideoOff size={22} /> : <Video size={22} />}
+            </button>
+          )}
           
           {/* Auto-listen toggle */}
           {callActive && (
