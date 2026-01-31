@@ -1288,30 +1288,73 @@ ipcMain.handle('tasks:delete', async (_, taskId: string) => {
   });
 });
 
-// Poke a task - send message to Gateway main session asking for status update
+// Poke a task - INTERNAL: spawn agent chat session for status update (no Discord posting)
 ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
-  safeLog.log(`[Tasks] Poke: ${taskId} - ${title}`);
+  // Legacy handler kept for backwards compat - just logs internally now
+  safeLog.log(`[Tasks] Poke (legacy): ${taskId} - ${title}`);
+  return { success: true, message: `Poke registered for "${title}"` };
+});
+
+// Internal poke - spawns agent session and gets personality-driven status response
+ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) => {
+  safeLog.log(`[Tasks] Internal Poke: ${taskId} - ${title}`);
   
-  const pokeMessage = `🫵 Poke: What's the status of "${title}"? (${taskId})`;
+  const pokePrompt = `You are Froggo responding to a poke/nudge about a task. Be casual, direct, bit of humor - like texting a mate about work.
+Task: "${title}" (ID: ${taskId})
+The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
+Examples of your vibe:
+- "Oi why you poking me? 😂 Working on X, nearly done"
+- "Getting there boss, just dealing with Y"
+- "Almost cracked it, give me 5 more min"
+Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
   
-  return new Promise((resolve) => {
-    // Send poke message to Discord channel where Brain listens
-    // Using clawdbot message send which is quick and async
-    const escapedMessage = pokeMessage.replace(/"/g, '\\"').replace(/`/g, '\\`');
-    const discordChannelId = '1465351776759975977';  // #get_shit_done channel
-    const cmd = `/opt/homebrew/bin/clawdbot message send --target ${discordChannelId} --message "${escapedMessage}" --channel discord`;
+  try {
+    // Spawn a chat session scoped to this task poke
+    const sessionKey = `poke-${taskId}-${Date.now()}`;
+    const sessions = (global as any)._agentChatSessions = (global as any)._agentChatSessions || {};
     
-    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
-      if (error) {
-        safeLog.error('[Tasks] Poke error:', error.message, stderr);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      safeLog.log('[Tasks] Poke sent to Discord:', stdout.trim());
-      resolve({ success: true, message: pokeMessage });
+    sessions[sessionKey] = {
+      agentId: 'main',
+      messages: [{ role: 'system', content: pokePrompt }],
+      systemPrompt: pokePrompt,
+      taskId,
+      taskTitle: title,
+      createdAt: Date.now(),
+    };
+
+    // Get initial response via agent CLI
+    const escapedPrompt = pokePrompt.replace(/'/g, "'\\''");
+    const response = await new Promise<string>((resolve, reject) => {
+      exec(
+        `clawdbot agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent main`,
+        { encoding: 'utf-8', timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+        (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(stderr || error.message));
+          } else {
+            resolve(stdout.trim());
+          }
+        }
+      );
     });
-  });
+    
+    // Store the response in session history
+    sessions[sessionKey].messages.push(
+      { role: 'user', content: `What's the status of "${title}"?` },
+      { role: 'assistant', content: response }
+    );
+    
+    safeLog.log(`[Tasks] Internal poke response (${response.length} chars): ${response.slice(0, 100)}...`);
+    return { success: true, sessionKey, response };
+  } catch (e: any) {
+    safeLog.error(`[Tasks] Internal poke error: ${e.message}`);
+    // Fallback: return a fun error message instead of boring error
+    return { 
+      success: true, 
+      sessionKey: null, 
+      response: `😅 Couldn't reach the agent right now - they might be deep in something. Try again in a sec? (Error: ${e.message})` 
+    };
+  }
 });
 
 // ============== SUBTASKS IPC HANDLERS ==============

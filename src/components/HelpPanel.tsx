@@ -453,7 +453,7 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
         )}
 
         {/* Content */}
-        <div className="prose prose-invert max-w-none">
+        <div className="max-w-none text-left">
           <div className="whitespace-pre-wrap text-clawd-text leading-relaxed">
             {article.content}
           </div>

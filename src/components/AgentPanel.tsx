@@ -53,11 +53,11 @@ export default function AgentPanel() {
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
-  const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean }> = {
-    active:  { color: 'bg-green-400',  label: 'Active' },
-    busy:    { color: 'bg-amber-400',  label: 'Working…', pulse: true },
-    idle:    { color: 'bg-clawd-bg0',   label: 'Idle' },
-    offline: { color: 'bg-red-500',    label: 'Offline' },
+  const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
+    active:  { color: 'bg-green-400',  label: 'Active', pulse: true },
+    busy:    { color: 'bg-green-400',  label: 'Working…', pulse: true },
+    idle:    { color: 'bg-yellow-400', label: 'Idle' },
+    offline: { color: 'bg-gray-500',   label: 'Offline', hideDot: true },
   };
 
   const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
@@ -159,6 +159,9 @@ export default function AgentPanel() {
               const metrics = agentMetrics[agent.id] || {};
               const isCompareSelected = compareAgents.includes(agent.id);
               const sc = statusConfig[agent.status];
+              // Hide dot when: no current task, task is done/review, or status says hideDot
+              const hasActiveTask = currentTask && !['done', 'review', 'completed'].includes(currentTask.status);
+              const showDot = !sc.hideDot && (agent.status === 'active' || agent.status === 'busy' || (agent.status === 'idle' && hasActiveTask));
 
               return (
                 <div
@@ -185,8 +188,8 @@ export default function AgentPanel() {
                           />
                         ) : null}
                         <span className={`${theme.pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-3xl`}>{agent.avatar}</span>
-                        {/* Status dot */}
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-clawd-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />
+                        {/* Status dot - only show for active/busy agents or idle with active task */}
+                        {showDot && <span className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-clawd-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -366,7 +369,7 @@ export default function AgentPanel() {
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
                       <span className="font-medium agent-name flex-1 min-w-0">{agent.name}</span>
-                      <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />
+                      {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />}
                     </div>
                     <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
                   </div>

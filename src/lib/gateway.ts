@@ -391,6 +391,11 @@ class Gateway {
 
   getState(): ConnectionState { return this.state; }
   getSessionKey(): string { return this.sessionKey; }
+  
+  setSessionKey(key: string) {
+    this.sessionKey = key;
+    console.log('[Gateway] Session key changed to:', key);
+  }
 
   // High-level methods
   async getSessions() {

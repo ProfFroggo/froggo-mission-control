@@ -275,7 +275,7 @@ export default function StarredMessagesPanel() {
               )}
 
               {/* Message Content */}
-              <div className="prose prose-sm max-w-none">
+              <div className="max-w-none text-sm text-left">
                 <MarkdownMessage content={msg.message_content} />
               </div>
 

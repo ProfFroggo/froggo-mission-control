@@ -83,6 +83,7 @@ declare global {
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;
         // Poke Brain for status update
         poke: (taskId: string, title: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+        pokeInternal: (taskId: string, title: string) => Promise<{ success: boolean; sessionKey?: string; response?: string; error?: string }>;
         // Subtask operations
         subtasks: {
           list: (taskId: string) => Promise<{ success: boolean; subtasks: SubtaskData[] }>;

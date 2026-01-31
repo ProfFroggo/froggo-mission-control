@@ -30,6 +30,7 @@ const ContentCalendarRaw = lazy(() => import('./ContentCalendar'));
 const AnalyticsDashboardRaw = lazy(() => import('./AnalyticsDashboard'));
 const ConnectedAccountsPanelRaw = lazy(() => import('./ConnectedAccountsPanel'));
 const StarredMessagesPanelRaw = lazy(() => import('./StarredMessagesPanel'));
+const VoiceChatPanelRaw = lazy(() => import('./VoiceChatPanel'));
 
 // Wrap all panels with error boundaries
 export const Dashboard = withErrorBoundary(DashboardRaw, 'Dashboard');
@@ -54,6 +55,7 @@ export const ContentCalendar = withErrorBoundary(ContentCalendarRaw, 'Content Ca
 export const AnalyticsDashboard = withErrorBoundary(AnalyticsDashboardRaw, 'Analytics');
 export const ConnectedAccountsPanel = withErrorBoundary(ConnectedAccountsPanelRaw, 'Connected Accounts');
 export const StarredMessagesPanel = withErrorBoundary(StarredMessagesPanelRaw, 'Starred Messages');
+export const VoiceChatPanel = withErrorBoundary(VoiceChatPanelRaw, 'Voice Chat');
 
 // Export the error boundary itself for custom usage
 export { default as ErrorBoundary, withErrorBoundary } from './ErrorBoundary';

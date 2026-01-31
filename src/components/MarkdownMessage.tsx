@@ -7,7 +7,7 @@ interface MarkdownMessageProps {
 
 export default function MarkdownMessage({ content }: MarkdownMessageProps) {
   return (
-    <div className="prose prose-invert prose-sm max-w-none leading-relaxed">
+    <div className="max-w-none leading-relaxed text-left text-sm">
       {parseMarkdown(content)}
     </div>
   );

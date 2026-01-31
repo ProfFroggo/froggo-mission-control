@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
+import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
+import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
+import CreateRoomModal from './CreateRoomModal';
+import ChatRoomView from './ChatRoomView';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { useChatRoomStore } from '../store/chatRoomStore';
 import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 
@@ -26,6 +31,9 @@ interface Message {
 
 export default function ChatPanel() {
   const { addActivity } = useStore();
+  const { rooms, activeRoomId, setActiveRoom, createRoom } = useChatRoomStore();
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [showRoomList, setShowRoomList] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +49,11 @@ export default function ChatPanel() {
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
+  const [selectedAgent, setSelectedAgent] = useState<ChatAgent>(CHAT_AGENTS[0]);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  
+  // Cache messages per agent so switching is instant
+  const messageCacheRef = useRef<Map<string, Message[]>>(new Map());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -51,11 +64,46 @@ export default function ChatPanel() {
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Agent switching handler
+  const handleAgentSwitch = useCallback(async (agent: ChatAgent) => {
+    if (agent.id === selectedAgent.id) return;
+    
+    // Save current messages to cache
+    messageCacheRef.current.set(selectedAgent.id, messages);
+    
+    // Update gateway session key
+    gateway.setSessionKey(agent.sessionKey);
+    setSelectedAgent(agent);
+    setLoading(false);
+    setSuggestedReplies([]);
+    setSearchQuery('');
+    setShowSearch(false);
+    
+    // Check cache first
+    const cached = messageCacheRef.current.get(agent.id);
+    if (cached) {
+      setMessages(cached);
+      setHistoryLoaded(true);
+      return;
+    }
+    
+    // Load from DB for this agent
+    setMessages([]);
+    setHistoryLoaded(true); // prevent gateway fallback race
+    if (window.clawdbot?.chat?.loadMessages) {
+      const result = await window.clawdbot.chat.loadMessages(50, agent.dbSessionKey);
+      if (result?.success && result.messages?.length > 0) {
+        setMessages(result.messages);
+        messageCacheRef.current.set(agent.id, result.messages);
+      }
+    }
+  }, [selectedAgent, messages]);
+
   // Load starred message IDs
   useEffect(() => {
     const loadStarredIds = async () => {
       if (window.clawdbot?.starred?.list) {
-        const result = await window.clawdbot.starred.list({ sessionKey: 'chat:main', limit: 1000 });
+        const result = await window.clawdbot.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
         if (result?.success && result.starred) {
           const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
           setStarredMessageIds(ids);
@@ -63,7 +111,7 @@ export default function ChatPanel() {
       }
     };
     loadStarredIds();
-  }, [messages.length]);
+  }, [messages.length, selectedAgent.id]);
 
   // Toggle star on a message
   const handleToggleStar = async (msg: Message, e: React.MouseEvent) => {
@@ -107,18 +155,19 @@ export default function ChatPanel() {
     }
   };
 
-  // Load messages from database on mount - this is the source of truth
+  // Load messages from database on mount (and when agent changes) - this is the source of truth
   useEffect(() => {
     const loadFromDb = async () => {
-      console.log('[Chat] Loading from froggo.db...');
+      console.log('[Chat] Loading from froggo.db for agent:', selectedAgent.id);
       // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
       setHistoryLoaded(true);
       
       if (window.clawdbot?.chat?.loadMessages) {
-        const result = await window.clawdbot.chat.loadMessages(50);
+        const result = await window.clawdbot.chat.loadMessages(50, selectedAgent.dbSessionKey);
         console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
         if (result.success && result.messages?.length > 0) {
           setMessages(result.messages);
+          messageCacheRef.current.set(selectedAgent.id, result.messages);
           console.log('[Chat] Loaded', result.messages.length, 'messages from DB');
         } else {
           console.log('[Chat] No messages in DB');
@@ -126,17 +175,17 @@ export default function ChatPanel() {
       }
     };
     loadFromDb();
-  }, []);
+  }, []); // Only on mount - agent switching handled by handleAgentSwitch
 
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
     if (window.clawdbot?.chat?.saveMessage) {
       try {
-        const result = await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now() });
+        const result = await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
         if (result?.success) {
           console.log(`[Chat] ${role} message saved to DB`);
         } else {
-          console.error(`[Chat] Failed to save ${role} message:`, result?.error);
+          console.error(`[Chat] Failed to save ${role} message:`, result);
         }
       } catch (err) {
         console.error(`[Chat] Error saving ${role} message:`, err);
@@ -317,7 +366,8 @@ export default function ChatPanel() {
           window.clawdbot.chat.saveMessage({ 
             role: 'assistant', 
             content: finalContent, 
-            timestamp: Date.now() 
+            timestamp: Date.now(),
+            sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
               console.log('[Chat] Assistant message saved to DB (handleEnd)');
@@ -388,7 +438,8 @@ export default function ChatPanel() {
           window.clawdbot.chat.saveMessage({ 
             role: 'assistant', 
             content: finalContent, 
-            timestamp: Date.now() 
+            timestamp: Date.now(),
+            sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
               console.log('[Chat] Assistant message saved to DB');
@@ -451,7 +502,7 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [speakResponses]);
+  }, [speakResponses, selectedAgent.dbSessionKey]);
 
   // Setup voice recognition
   useEffect(() => {
@@ -704,11 +755,12 @@ export default function ChatPanel() {
 
   const clearChat = async () => {
     setMessages([]);
+    messageCacheRef.current.delete(selectedAgent.id);
     window.speechSynthesis.cancel();
     // Also clear from database
     if (window.clawdbot?.chat?.clearMessages) {
-      await window.clawdbot.chat.clearMessages();
-      console.log('[Chat] Cleared messages from DB');
+      await window.clawdbot.chat.clearMessages(selectedAgent.dbSessionKey);
+      console.log('[Chat] Cleared messages from DB for', selectedAgent.id);
     }
   };
 
@@ -735,6 +787,29 @@ export default function ChatPanel() {
     }
   };
 
+  const handleCreateRoom = (name: string, agents: string[]) => {
+    createRoom(name, agents);
+    setShowRoomList(false);
+    showToast(`Room "${name}" created!`, 'success');
+  };
+
+  // If viewing a room, render the room view
+  if (activeRoomId) {
+    return (
+      <>
+        <ChatRoomView
+          roomId={activeRoomId}
+          onBack={() => setActiveRoom(null)}
+        />
+        <CreateRoomModal
+          isOpen={showCreateRoom}
+          onClose={() => setShowCreateRoom(false)}
+          onCreate={handleCreateRoom}
+        />
+      </>
+    );
+  }
+
   return (
     <div 
       className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-clawd-accent ring-inset' : ''}`}
@@ -753,26 +828,32 @@ export default function ChatPanel() {
       )}
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
-        <div className="flex items-center gap-3">
-          <AgentAvatar agentId="froggo" size="lg" />
-          <div>
-            <h2 className="font-semibold">Froggo</h2>
-            <div className="flex items-center gap-2 text-xs">
-              <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-              <span className="text-clawd-text-dim">{getStatusText()}</span>
-              {connectionState === 'disconnected' && (
-                <button
-                  onClick={reconnect}
-                  className="text-clawd-accent hover:underline flex items-center gap-1"
-                >
-                  <RefreshCw size={10} /> Reconnect
-                </button>
-              )}
-            </div>
+        <div className="flex items-center gap-1">
+          <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
+          <div className="flex items-center gap-2 text-xs ml-2">
+            <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
+            <span className="text-clawd-text-dim">{getStatusText()}</span>
+            {connectionState === 'disconnected' && (
+              <button
+                onClick={reconnect}
+                className="text-clawd-accent hover:underline flex items-center gap-1"
+              >
+                <RefreshCw size={10} /> Reconnect
+              </button>
+            )}
           </div>
         </div>
         
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsVoiceMode(!isVoiceMode)}
+            className={`p-2 rounded-lg transition-colors ${
+              isVoiceMode ? 'bg-purple-500/20 text-purple-400' : 'bg-clawd-border text-clawd-text-dim hover:text-purple-400'
+            }`}
+            title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+          >
+            {isVoiceMode ? <PhoneOff size={16} /> : <Phone size={16} />}
+          </button>
           <button
             onClick={() => setShowSearch(!showSearch)}
             className={`p-2 rounded-lg transition-colors ${
@@ -798,11 +879,86 @@ export default function ChatPanel() {
           >
             <Trash2 size={16} />
           </button>
+          <div className="w-px h-5 bg-clawd-border mx-1" />
+          <button
+            onClick={() => setShowRoomList(!showRoomList)}
+            className={`p-2 rounded-lg transition-colors relative ${
+              showRoomList ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+            }`}
+            title="Chat Rooms"
+          >
+            <Users size={16} />
+            {rooms.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-clawd-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {rooms.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setShowCreateRoom(true)}
+            className="p-2 rounded-lg bg-gradient-to-r from-clawd-accent to-purple-500 text-white hover:opacity-90 transition-opacity"
+            title="Create Chat Room"
+          >
+            <MessageSquarePlus size={16} />
+          </button>
         </div>
       </div>
 
+      {/* Room List Dropdown */}
+      {showRoomList && (
+        <div className="border-b border-clawd-border bg-clawd-surface/95 backdrop-blur-sm">
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">Chat Rooms</span>
+              <button
+                onClick={() => { setShowCreateRoom(true); setShowRoomList(false); }}
+                className="text-xs text-clawd-accent hover:underline flex items-center gap-1"
+              >
+                <MessageSquarePlus size={12} /> New Room
+              </button>
+            </div>
+            {rooms.length === 0 ? (
+              <p className="text-sm text-clawd-text-dim py-3 text-center">
+                No rooms yet. Create one to start a multi-agent discussion!
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {rooms.map(room => (
+                  <button
+                    key={room.id}
+                    onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-clawd-bg border border-transparent hover:border-clawd-border transition-all text-left"
+                  >
+                    <div className="flex -space-x-1.5">
+                      {room.agents.slice(0, 3).map(id => (
+                        <AgentAvatar key={id} agentId={id} size="xs" />
+                      ))}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{room.name}</div>
+                      <div className="text-xs text-clawd-text-dim">
+                        {room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Voice Mode */}
+      {isVoiceMode && (
+        <VoiceChatPanel
+          agentId={selectedAgent.id === 'froggo' ? 'froggo' : selectedAgent.id}
+          onSwitchToText={() => setIsVoiceMode(false)}
+          embedded={true}
+        />
+      )}
+
       {/* Search Bar */}
-      {showSearch && (
+      {!isVoiceMode && showSearch && (
         <div className="px-4 py-3 border-b border-clawd-border bg-clawd-bg/50">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
@@ -832,12 +988,12 @@ export default function ChatPanel() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
         {messages.length === 0 ? (
           <div className="text-center py-16 text-clawd-text-dim">
-            <AgentAvatar agentId="froggo" size="2xl" className="mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">Hey! I'm Froggo</p>
-            <p className="text-sm">Your AI assistant. Ask me anything!</p>
+            <AgentAvatar agentId={selectedAgent.id} size="2xl" className="mx-auto mb-4" />
+            <p className="text-lg font-medium mb-2">Hey! I'm {selectedAgent.name}</p>
+            <p className="text-sm">{selectedAgent.role}. Ask me anything!</p>
             <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-md mx-auto">
               {['Check my calendar', 'Draft a tweet', 'What tasks are pending?', 'Check my emails'].map((q, i) => (
                 <button
@@ -884,7 +1040,7 @@ export default function ChatPanel() {
                       K
                     </div>
                   ) : (
-                    <AgentAvatar agentId="froggo" size="lg" ring />
+                    <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
                   )}
                 </div>
 
@@ -895,7 +1051,7 @@ export default function ChatPanel() {
                     <div className={`text-xs font-medium mb-1 px-1 ${
                       isUser ? 'text-clawd-accent' : 'text-emerald-600'
                     }`}>
-                      {isUser ? 'You' : 'Froggo'}
+                      {isUser ? 'You' : selectedAgent.name}
                     </div>
                   )}
 
@@ -996,7 +1152,7 @@ export default function ChatPanel() {
       </div>
 
       {/* Connection banner */}
-      {connectionState === 'disconnected' && (
+      {!isVoiceMode && connectionState === 'disconnected' && (
         <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2 text-sm">
           <WifiOff size={14} />
           <span>Disconnected from gateway</span>
@@ -1007,7 +1163,7 @@ export default function ChatPanel() {
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-clawd-border bg-clawd-surface">
+      <div className={`p-4 border-t border-clawd-border bg-clawd-surface ${isVoiceMode ? 'hidden' : ''}`}>
         {/* Attachment preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -1117,7 +1273,7 @@ export default function ChatPanel() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={connected ? "Message Froggo..." : "Waiting for connection..."}
+              placeholder={connected ? `Message ${selectedAgent.name}...` : "Waiting for connection..."}
               disabled={!connected || loading}
               rows={1}
               className="w-full bg-clawd-bg border border-clawd-border rounded-xl px-4 py-3 pr-12 resize-none focus:outline-none focus:border-clawd-accent disabled:opacity-50"
@@ -1139,6 +1295,13 @@ export default function ChatPanel() {
         isOpen={!!previewFile}
         onClose={() => setPreviewFile(null)}
         file={previewFile}
+      />
+
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        isOpen={showCreateRoom}
+        onClose={() => setShowCreateRoom(false)}
+        onCreate={handleCreateRoom}
       />
     </div>
   );

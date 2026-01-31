@@ -1852,7 +1852,7 @@ Give a helpful, concise answer based on the meeting content.`;
         </div>
       ) : (
         /* Meetings Tab */
-        <div className="flex-1 overflow-hidden flex">
+        <div className="flex-1 overflow-hidden flex text-left">
           {/* Meeting Control & Active Meeting Panel */}
           <div className="w-96 border-r border-clawd-border flex flex-col">
             {/* Big Start/End Meeting Button */}

@@ -564,7 +564,7 @@ function RightPane({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-clawd-bg min-w-0">
+    <div className="flex-1 flex flex-col bg-clawd-bg min-w-0 text-left">
       {/* Header */}
       <div className="px-6 py-4 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-1">
@@ -607,7 +607,7 @@ function RightPane({
       </div>
 
       {/* Thread / Message Body */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-6 py-4 text-left min-w-0">
         {loadingThread || loadingBody ? (
           <div className="text-center text-clawd-text-dim py-8 text-sm">Loading...</div>
         ) : conversation.platform === 'email' && emailBody ? (

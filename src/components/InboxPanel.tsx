@@ -8,6 +8,7 @@ import { LoadingButton } from './LoadingStates';
 import { calculatePriorityScore, getPriorityLevel } from '../lib/priorityScoring';
 import AIAssistancePanel from './AIAssistancePanel';
 import IconBadge from './IconBadge';
+import MarkdownMessage from './MarkdownMessage';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -336,9 +337,13 @@ export default function InboxPanel() {
           break;
           
         // Selection shortcuts
-        case 'x': // Toggle selection
+        case 'x': // Toggle selection (Shift+X = bulk approve)
           e.preventDefault();
-          if (navItems[focusedIndex]) {
+          if (e.shiftKey) {
+            if (selectedIds.size > 0) {
+              handleBulkApprove();
+            }
+          } else if (navItems[focusedIndex]) {
             toggleSelection(navItems[focusedIndex].id);
           }
           break;
@@ -353,9 +358,11 @@ export default function InboxPanel() {
           break;
           
         // Action shortcuts
-        case 'a': // Approve focused item
+        case 'a': // Approve focused item (Shift+A = approve all)
           e.preventDefault();
-          if (navItems[focusedIndex]) {
+          if (e.shiftKey) {
+            handleApproveAll();
+          } else if (navItems[focusedIndex]) {
             handleApprove(navItems[focusedIndex]);
           }
           break;
@@ -374,21 +381,7 @@ export default function InboxPanel() {
           }
           break;
           
-        case 'shift+a': // Approve all
-          if (e.shiftKey && key === 'a') {
-            e.preventDefault();
-            handleApproveAll();
-          }
-          break;
-          
-        case 'shift+x': // Bulk approve selected
-          if (e.shiftKey && key === 'x') {
-            e.preventDefault();
-            if (selectedIds.size > 0) {
-              handleBulkApprove();
-            }
-          }
-          break;
+        // Shift+A and Shift+X handled in 'a' and 'x' cases above
           
         // Filter shortcuts
         case '/': // Focus search/filter (can be implemented later)
@@ -608,9 +601,8 @@ export default function InboxPanel() {
           console.log('[Inbox] Approving task:', meta.taskId);
           // ATOMIC UPDATE: Set both reviewStatus and status together
           await window.clawdbot!.tasks.update(meta.taskId, { 
-            reviewStatus: 'approved',
             status: 'in-progress' 
-          });
+          } as any);
           console.log('[Inbox] Task approved and moved to in-progress:', meta.taskId);
           return;
         }
@@ -1329,9 +1321,9 @@ export default function InboxPanel() {
                       
                       <div className="mt-4 mb-4">
                         <div className="text-sm text-clawd-text-dim mb-2">Content:</div>
-                        <pre className="bg-clawd-bg p-3 rounded-lg text-sm whitespace-pre-wrap font-mono border border-clawd-border">
-                          {item.content}
-                        </pre>
+                        <div className="bg-clawd-bg p-3 rounded-lg text-sm whitespace-pre-wrap font-mono border border-clawd-border text-left overflow-x-auto">
+                          <MarkdownMessage content={item.content} />
+                        </div>
                       </div>
 
                       {/* Feedback Form */}

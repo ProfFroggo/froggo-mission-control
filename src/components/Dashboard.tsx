@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { 
   Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, 
   ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, 
-  ChevronRight, Inbox, ListTodo, AlertTriangle, Sparkles, 
+  Inbox, ListTodo, AlertTriangle, Sparkles, 
   TrendingUp, Clock, Zap, Users
 } from 'lucide-react';
 import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';

@@ -337,7 +337,7 @@ export default function ContextControlBoard() {
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded text-xs ${
                       agent.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                      agent.status === 'idle' ? 'bg-yellow-500/20 text-yellow-400' :
+                      agent.status === 'idle' ? 'bg-gray-500/20 text-gray-400' :
                       'bg-clawd-bg0/20 text-clawd-text-dim'
                     }`}>
                       {agent.status}

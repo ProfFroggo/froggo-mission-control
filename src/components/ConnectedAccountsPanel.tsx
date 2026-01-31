@@ -413,7 +413,7 @@ export default function ConnectedAccountsPanel() {
                   <div className="flex items-start gap-4 flex-1">
                     {/* Account Icon */}
                     <div className="text-3xl">
-                      {ACCOUNT_TYPE_ICONS[account.accountType] || '📧'}
+                      {ACCOUNT_TYPE_ICONS[account.accountType || ''] || '📧'}
                     </div>
 
                     {/* Account Info */}
@@ -504,7 +504,7 @@ export default function ConnectedAccountsPanel() {
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="text-4xl">
-                  {ACCOUNT_TYPE_ICONS[selectedAccount.accountType] || '📧'}
+                  {ACCOUNT_TYPE_ICONS[selectedAccount.accountType || ''] || '📧'}
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">{selectedAccount.email}</h2>

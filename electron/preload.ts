@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     // Poke a task to get status update from Brain
     delete: (taskId: string) => ipcRenderer.invoke('tasks:delete', taskId),
     poke: (taskId: string, title: string) => ipcRenderer.invoke('tasks:poke', taskId, title),
+    pokeInternal: (taskId: string, title: string) => ipcRenderer.invoke('tasks:pokeInternal', taskId, title),
     // Real-time task notification listener
     onNotification: (callback: (notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => void) => {
       const handler = (_: any, notification: any) => callback(notification);

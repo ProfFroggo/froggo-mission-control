@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
@@ -34,6 +35,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   const [sessionKey, setSessionKey] = useState<string | null>(null);
   const [spawning, setSpawning] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamCleanupRef = useRef<(() => void) | null>(null);
 
@@ -310,17 +312,42 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               </p>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
-            aria-label="Close modal"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            {sessionKey && (
+              <button
+                onClick={() => setIsVoiceMode(!isVoiceMode)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isVoiceMode
+                    ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                    : 'hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                }`}
+                title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+              >
+                {isVoiceMode ? <MessageSquare size={16} /> : <Mic size={16} />}
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              aria-label="Close modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
+        {/* Voice Mode */}
+        {isVoiceMode && sessionKey && (
+          <VoiceChatPanel
+            agentId={agentId}
+            sessionKey={sessionKey}
+            onSwitchToText={() => setIsVoiceMode(false)}
+            embedded={true}
+          />
+        )}
+
         {/* Quick Prompts */}
-        {messages.length <= 1 && !spawning && sessionKey && (
+        {!isVoiceMode && messages.length <= 1 && !spawning && sessionKey && (
           <div className="p-4 border-b border-clawd-border">
             <h3 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2">
               Quick Prompts
@@ -343,7 +370,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto p-4 space-y-4">
+        <div className={`flex-1 overflow-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
           {messages.map((msg, i) => {
             const showAvatar = i === 0 || messages[i - 1]?.role !== msg.role;
             const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.role !== msg.role;
@@ -478,7 +505,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-clawd-border">
+        <div className={`p-4 border-t border-clawd-border ${isVoiceMode ? 'hidden' : ''}`}>
           <div className="flex gap-2">
             <textarea
               value={input}

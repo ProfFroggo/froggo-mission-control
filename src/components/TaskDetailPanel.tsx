@@ -5,6 +5,7 @@ import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
 import AgentAvatar from './AgentAvatar';
+import PokeModal from './PokeModal';
 
 interface TaskAttachment {
   id: number;
@@ -35,6 +36,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [poking, setPoking] = useState(false);
+  const [showPokeModal, setShowPokeModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
@@ -341,21 +343,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handlePoke = async () => {
     if (!task) return;
-    setPoking(true);
-    try {
-      const result = await (window as any).clawdbot.tasks.poke(task.id, task.title);
-      if (result.success) {
-        showToast('info', '🫵 Poked!', 'Brain will respond with status update');
-        await logTaskActivity(task.id, 'poked', 'Task poked for status update');
-        loadActivity();
-      } else {
-        showToast('error', 'Poke failed', result.error || 'Could not reach Gateway');
-      }
-    } catch (err: any) {
-      showToast('error', 'Poke failed', err.message);
-    } finally {
-      setPoking(false);
-    }
+    // Open internal poke modal instead of posting to Discord
+    setShowPokeModal(true);
   };
 
   const handleReopen = async () => {
@@ -1476,6 +1465,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
           </div>
         </div>
+      )}
+
+      {/* Poke Modal - Internal status update + chat */}
+      {showPokeModal && task && (
+        <PokeModal
+          taskId={task.id}
+          taskTitle={task.title}
+          onClose={() => {
+            setShowPokeModal(false);
+            loadActivity();
+          }}
+        />
       )}
     </div>
   );

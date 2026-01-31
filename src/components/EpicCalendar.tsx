@@ -98,7 +98,8 @@ export default function EpicCalendar() {
         ? new Date(end).toISOString().split('T')[0]
         : new Date(end).toISOString();
 
-      let command = `GOG_ACCOUNT=${account} gog calendar events create --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      const gogAccount = formData.account || accounts[0] || '';
+      let command = `GOG_ACCOUNT=${gogAccount} gog calendar events create --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
       
       if (description) {
         command += ` --description "${description.replace(/"/g, '\\"')}"`;
@@ -137,7 +138,8 @@ export default function EpicCalendar() {
         ? new Date(end).toISOString().split('T')[0]
         : new Date(end).toISOString();
 
-      let command = `GOG_ACCOUNT=${account} gog calendar events update --event-id "${eventId}" --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      const gogAccount = formData.account || accounts[0] || '';
+      let command = `GOG_ACCOUNT=${gogAccount} gog calendar events update --event-id "${eventId}" --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
       
       if (description) {
         command += ` --description "${description.replace(/"/g, '\\"')}"`;
@@ -233,7 +235,7 @@ export default function EpicCalendar() {
     
     if (!draggedEvent) return;
 
-    const { start, isAllDay } = getEventTime(draggedEvent);
+    const { start, end, isAllDay } = getEventTime(draggedEvent);
 
     // Calculate new start time
     let newStart: Date;
@@ -251,10 +253,11 @@ export default function EpicCalendar() {
       newStart.setHours(start.getHours(), start.getMinutes(), 0, 0);
     }
 
-        // const newEnd = new Date(newStart.getTime() + eventDuration);
+    const eventDuration = end.getTime() - start.getTime();
+    const newEnd = new Date(newStart.getTime() + eventDuration);
 
     // Show confirmation dialog
-    setPendingReschedule({ event: draggedEvent, newStart });
+    setPendingReschedule({ event: draggedEvent, newStart, newEnd });
     setShowRescheduleConfirm(true);
     
     // Clear drag state
@@ -265,7 +268,7 @@ export default function EpicCalendar() {
   const confirmReschedule = async () => {
     if (!pendingReschedule) return;
 
-    const { event, newStart } = pendingReschedule;
+    const { event, newStart, newEnd } = pendingReschedule;
     const { isAllDay } = getEventTime(event);
 
     try {

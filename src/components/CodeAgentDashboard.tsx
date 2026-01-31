@@ -154,9 +154,9 @@ export default function CodeAgentDashboard() {
   };
 
   const statusColors = {
-    running: 'bg-green-500',
-    idle: 'bg-yellow-500',
-    completed: 'bg-blue-500',
+    running: 'bg-yellow-500',
+    idle: 'bg-green-500',
+    completed: 'bg-green-500',
     failed: 'bg-red-500',
   };
 

@@ -566,7 +566,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         <div className="flex-1">
                           <div className="text-sm font-medium">{agent.name}</div>
                           <div className={`text-xs ${
-                            agent.status === 'busy' ? 'text-yellow-600 dark:text-yellow-400' :
+                            agent.status === 'busy' ? 'text-green-600 dark:text-green-400' :
                             agent.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-clawd-text-dim'
                           }`}>
                             {agent.status}

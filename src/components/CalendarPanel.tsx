@@ -476,7 +476,7 @@ export default function CalendarPanel() {
     markdown += `**Date:** ${startDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
     markdown += `**Time:** ${formatTime(event.start, event.isAllDay)}`;
     if (endDate && !event.isAllDay) {
-      markdown += ` - ${formatTime(event.end)}`;
+      markdown += ` - ${formatTime(event.end!)}`;
     }
     markdown += `\n`;
     
