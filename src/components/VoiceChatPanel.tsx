@@ -91,6 +91,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const [videoActive, setVideoActive] = useState(false);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   
+  // Audio context state
+  const [audioState, setAudioState] = useState<'suspended' | 'running' | 'closed' | null>(null);
+  
   // Audio levels
   const [micLevel, setMicLevel] = useState(0);
   const [speakLevel, setSpeakLevel] = useState(0);
@@ -139,6 +142,29 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   // Auto-scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  
+  // ── Track playback AudioContext state ──
+  useEffect(() => {
+    if (!callActive) { setAudioState(null); return; }
+    const interval = setInterval(() => {
+      const ctx = geminiLive.playbackAudioContext;
+      setAudioState(ctx ? ctx.state as 'suspended' | 'running' | 'closed' : null);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [callActive]);
+  
+  const handleEnableAudio = async () => {
+    const ctx = geminiLive.playbackAudioContext;
+    if (ctx && ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+        setAudioState('running');
+        addSystemMessage('🔊 Audio enabled');
+      } catch (e: any) {
+        addSystemMessage(`⚠️ Audio resume failed: ${e.message}`);
+      }
+    }
+  };
   
   // ── Gemini Live event listeners ──
   useEffect(() => {
@@ -507,6 +533,18 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         
         <div ref={messagesEndRef} />
       </div>
+      
+      {/* Enable Audio button - shown when AudioContext is suspended */}
+      {callActive && audioState === 'suspended' && (
+        <div className="px-4 py-2 border-t border-yellow-500/30 bg-yellow-500/10">
+          <button onClick={handleEnableAudio}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-medium transition-colors">
+            <Volume2 size={18} />
+            Enable Audio
+          </button>
+          <p className="text-center text-[10px] text-yellow-400/70 mt-1">Browser requires a click to play audio</p>
+        </div>
+      )}
       
       {/* Audio visualizer */}
       {callActive && (
