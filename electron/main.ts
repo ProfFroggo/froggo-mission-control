@@ -6283,6 +6283,24 @@ app.whenReady().then(() => {
 });
 
 // ============== AGENTS API IPC HANDLERS ==============
+
+// Return the full agent registry so the dashboard can show all configured agents
+ipcMain.handle('agents:getRegistry', async () => {
+  const registry = getAgentRegistry();
+  const result: Record<string, { role: string; description: string; capabilities: string[]; aliases: string[]; clawdAgentId: string }> = {};
+  for (const [id, entry] of Object.entries(registry)) {
+    if (id === 'froggo') continue; // skip alias duplicate
+    result[id] = {
+      role: entry.role || 'Agent',
+      description: (entry as any).description || '',
+      capabilities: entry.capabilities || [],
+      aliases: entry.aliases || [],
+      clawdAgentId: entry.clawdAgentId || id,
+    };
+  }
+  return result;
+});
+
 ipcMain.handle('agents:getMetrics', async () => {
   const registry = getAgentRegistry();
   const agents = Object.keys(registry).filter(id => id !== 'froggo'); // skip alias duplicate

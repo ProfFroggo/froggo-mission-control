@@ -468,6 +468,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // Chat message persistence (froggo-db backed)
   agents: {
+    getRegistry: () => ipcRenderer.invoke('agents:getRegistry'),
     getMetrics: () => ipcRenderer.invoke('agents:getMetrics'),
     getDetails: (agentId: string) => ipcRenderer.invoke('agents:getDetails', agentId),
     addSkill: (agentId: string, skill: string) => ipcRenderer.invoke('agents:addSkill', agentId, skill),
