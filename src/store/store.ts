@@ -312,6 +312,7 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 }
 
 // Avatar mapping for agents (registry doesn't store avatars since they're UI-only)
+// Avatar mapping - only real gateway agents (from 'clawdbot agents list')
 const AGENT_AVATARS: Record<string, string> = {
   froggo: '🐸',
   'chat-agent': '💬',
@@ -321,33 +322,22 @@ const AGENT_AVATARS: Record<string, string> = {
   chief: '👨‍💻',
   hr: '🎓',
   clara: '👁️',
-  designer: '🎨',
-  'growth-director': '📈',
-  'lead-engineer': '🔧',
-  'social-manager': '📱',
-  voice: '🎙️',
-  // Legacy aliases
+  // Alias for main session
   main: '🐸',
-  froggo: '🐸',
-  growth_director: '📈',
-  social_media_manager: '📱',
-  lead_engineer: '🔧',
-  onchain_worker: '⛓️',
 };
 
 // Display name overrides (registry uses role, but some need friendlier names)
+// Display name overrides - only real gateway agents
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
   froggo: 'Froggo',
   'chat-agent': 'Chat Agent',
-  'social-manager': 'Social Manager',
-  'growth-director': 'Growth Director',
-  'lead-engineer': 'Lead Engineer',
-  // Legacy aliases
+  coder: 'Coder',
+  researcher: 'Researcher',
+  writer: 'Writer',
+  chief: 'Chief',
+  hr: 'HR',
+  clara: 'Clara',
   main: 'Froggo',
-  social_media_manager: 'Social Manager',
-  growth_director: 'Growth Director',
-  lead_engineer: 'Lead Engineer',
-  onchain_worker: 'Onchain Worker',
 };
 
 /** Convert agent-registry.json data to Agent[] for the dashboard */
@@ -512,10 +502,10 @@ export const useStore = create<Store>()(
             }
 
             // Real gateway agents only (no phantom agents)
+            // Only real gateway agents (from 'clawdbot agents list')
             const REAL_GATEWAY_AGENTS = [
               'chat-agent', 'writer', 'researcher', 'coder', 'chief',
-              'hr', 'clara', 'designer', 'growth-director', 
-              'lead-engineer', 'social-manager', 'voice'
+              'hr', 'clara'
             ];
 
             set((state: Store) => ({
