@@ -65,7 +65,7 @@ export class GeminiLiveService {
   private audioContext: AudioContext | null = null;
   private micStream: MediaStream | null = null;
   private videoStream: MediaStream | null = null;
-  private micProcessor: ScriptProcessorNode | null = null;
+  private micProcessor: AudioWorkletNode | null = null;
   private micSource: MediaStreamAudioSourceNode | null = null;
 
   // Playback state
@@ -146,20 +146,25 @@ export class GeminiLiveService {
         const setupMsg: any = {
           setup: {
             model: model || MODEL,
-            response_modalities: ['AUDIO'],
-            speech_config: {
-              voice_config: {
-                prebuilt_voice_config: {
-                  voice_name: voice,
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: {
+                    voiceName: voice,
+                  },
                 },
               },
             },
+            // Enable transcription of user speech and model speech
+            inputAudioTranscription: {},
+            outputAudioTranscription: {},
           },
         };
         
         // Add system instruction if provided
         if (systemInstruction) {
-          setupMsg.setup.system_instruction = {
+          setupMsg.setup.systemInstruction = {
             parts: [{ text: systemInstruction }],
           };
         }
@@ -308,19 +313,42 @@ export class GeminiLiveService {
       this.micAnalyser.fftSize = 256;
       this.micSource.connect(this.micAnalyser);
 
-      // ScriptProcessor to get raw PCM data
-      // Note: Using ScriptProcessorNode (deprecated but widely supported).
-      // AudioWorklet would be better but adds complexity.
-      const bufferSize = 4096;
-      this.micProcessor = this.audioContext.createScriptProcessor(bufferSize, 1, 1);
+      // AudioWorklet for raw PCM data capture (replaces deprecated ScriptProcessorNode)
+      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
+      this.micProcessor = new AudioWorkletNode(this.audioContext, 'audio-capture-processor');
       this.micSource.connect(this.micProcessor);
-      // Connect to destination to keep the processor running
-      this.micProcessor.connect(this.audioContext.destination);
+      // Connect to a silent sink to keep the processor running.
+      // IMPORTANT: Do NOT connect to audioContext.destination — that plays mic audio
+      // through speakers, causing feedback where model TTS gets re-captured as "user speech".
+      const silentGain = this.audioContext.createGain();
+      silentGain.gain.value = 0;
+      silentGain.connect(this.audioContext.destination);
+      this.micProcessor.connect(silentGain);
 
-      this.micProcessor.onaudioprocess = (e) => {
+      this.micProcessor.port.onmessage = (e) => {
         if (!this._listening || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         
-        const float32 = e.inputBuffer.getChannelData(0);
+        const float32 = e.data.audio as Float32Array;
+        
+        // Suppress mic input while model is speaking to prevent echo/feedback.
+        // Without this, the model's TTS output gets picked up by the mic and
+        // re-sent to the API, causing "internal messages" to appear as user speech.
+        if (this._speaking) {
+          // Send silence instead of actual mic data to maintain the stream
+          // but prevent the model's own speech from being transcribed as user input.
+          const silence = new Int16Array(float32.length);
+          const base64 = this.arrayBufferToBase64(silence.buffer as ArrayBuffer);
+          this.ws.send(JSON.stringify({
+            realtimeInput: {
+              mediaChunks: [{
+                mimeType: 'audio/pcm',
+                data: base64,
+              }],
+            },
+          }));
+          return;
+        }
+        
         const int16 = this.float32ToInt16(float32);
         const base64 = this.arrayBufferToBase64(int16.buffer as ArrayBuffer);
 
