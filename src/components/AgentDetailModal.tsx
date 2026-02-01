@@ -153,7 +153,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
     if (!rulesContent) {
       try {
         const result = await (window as any).clawdbot?.exec?.run(
-          `cat ~/clawd/clawd-${agentId}/AGENTS.md 2>/dev/null || cat ~/clawd/clawd-${agentId}/AGENT.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
+          `cat ~/clawd/agents/${agentId}/AGENT.md 2>/dev/null || cat ~/clawd-${agentId}/AGENTS.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
         );
         if (result?.stdout) {
           rulesContent = result.stdout;
