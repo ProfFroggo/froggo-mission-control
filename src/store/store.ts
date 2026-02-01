@@ -317,7 +317,13 @@ const defaultAgents: Agent[] = [
   { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
   { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
   { id: 'chief', name: 'Chief', avatar: '👨‍💻', description: 'Lead Engineer (GSD methodology)', status: 'idle', capabilities: ['code', 'architecture', 'planning'] },
-  { id: 'designer', name: 'Designer', avatar: '🎨', description: 'UI/UX & Graphic Design', status: 'idle', capabilities: ['design', 'ui-mockups', 'image-generation'] },
+  { id: 'clara', name: 'Clara', avatar: '👁️', description: 'Independent Reviewer & Quality Auditor', status: 'idle', capabilities: ['review', 'quality', 'audit'] },
+  { id: 'hr', name: 'HR', avatar: '🎓', description: 'Agent Management & Training Specialist', status: 'idle', capabilities: ['training', 'agent-creation', 'skill-analysis'] },
+  { id: 'growth-director', name: 'Growth Director', avatar: '📈', description: 'Head of Growth / Product Marketing', status: 'idle', capabilities: ['strategy', 'growth', 'marketing', 'gtm'] },
+  { id: 'social-manager', name: 'Social Manager', avatar: '📱', description: 'Content scheduling, posting & social media', status: 'idle', capabilities: ['social', 'content', 'scheduling'] },
+  { id: 'lead-engineer', name: 'Lead Engineer', avatar: '🔧', description: 'Lead Engineer / Technical Co-founder', status: 'idle', capabilities: ['engineering', 'architecture', 'gsd'] },
+  { id: 'voice', name: 'Voice', avatar: '🎙️', description: 'Voice & Audio Agent', status: 'idle', capabilities: ['tts', 'voice', 'audio'] },
+  { id: 'chat-agent', name: 'Chat Agent', avatar: '💬', description: 'Main chat interface agent', status: 'idle', capabilities: ['chat', 'coordination'] },
 ];
 
 export const useStore = create<Store>()(
