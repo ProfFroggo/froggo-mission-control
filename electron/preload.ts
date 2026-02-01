@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, desktopCapturer } from 'electron';
 
 // Detect if running in dev or prod mode via env var (set by start script)
 const isDev = process.env.ELECTRON_DEV === '1';
@@ -349,6 +349,16 @@ contextBridge.exposeInMainWorld('clawdbot', {
     discord: (query: string) => ipcRenderer.invoke('search:discord', query),
     telegram: (query: string) => ipcRenderer.invoke('search:telegram', query),
     whatsapp: (query: string) => ipcRenderer.invoke('search:whatsapp', query),
+  },
+  // Screen capture (for screen sharing in Electron)
+  screenCapture: {
+    getSources: (opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }) =>
+      ipcRenderer.invoke('screen:getSources', opts),
+  },
+  // Media permissions (camera, mic, screen)
+  mediaPermissions: {
+    check: () => ipcRenderer.invoke('media:checkPermissions'),
+    request: (mediaType: 'camera' | 'microphone') => ipcRenderer.invoke('media:requestPermission', mediaType),
   },
   // System status
   system: {
