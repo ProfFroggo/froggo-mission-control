@@ -76,7 +76,7 @@ export default function AgentPanel() {
 
   // Real gateway agents only (from 'clawdbot agents list')
   const REAL_GATEWAY_AGENTS = [
-    'chat-agent',
+    'froggo',
     'writer',
     'researcher',
     'coder',

@@ -26,7 +26,6 @@ import {
   ContextControlBoard,
   AnalyticsDashboard,
   ConnectedAccountsPanel,
-  StarredMessagesPanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
 import { MicTestPanel } from './components/MicTestPanel';
@@ -44,7 +43,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'mictest' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'mictest' | 'error-test';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -225,12 +224,7 @@ function App() {
         return;
       }
 
-      // Starred messages - ⌘⇧S
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        setCurrentView('starred');
-        return;
-      }
+      // Starred messages removed - keyboard shortcut disabled
 
       // Mute toggle - ⌘M
       if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
@@ -367,7 +361,6 @@ function App() {
               {currentView === 'context' && <ContextControlBoard />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
-              {currentView === 'starred' && <StarredMessagesPanel />}
               {currentView === 'contacts' && <ContactModal isOpen={true} onClose={() => setCurrentView('dashboard')} />}
               {currentView === 'error-test' && import.meta.env.DEV && <ErrorBoundaryTest />}
             </Suspense>

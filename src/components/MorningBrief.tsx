@@ -233,7 +233,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
             if (s.key?.includes('whatsapp')) channelMap['WhatsApp'] = (channelMap['WhatsApp'] || 0) + 1;
             else if (s.key?.includes('discord')) channelMap['Discord'] = (channelMap['Discord'] || 0) + 1;
             else if (s.key?.includes('telegram')) channelMap['Telegram'] = (channelMap['Telegram'] || 0) + 1;
-            else if (s.key?.includes('chat-agent')) channelMap['Dashboard'] = (channelMap['Dashboard'] || 0) + 1;
+            else if (s.key?.includes('froggo')) channelMap['Dashboard'] = (channelMap['Dashboard'] || 0) + 1;
             else if (s.key?.includes('cron')) channelMap['Cron Jobs'] = (channelMap['Cron Jobs'] || 0) + 1;
           });
 

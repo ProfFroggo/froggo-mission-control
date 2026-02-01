@@ -635,6 +635,13 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 
     try {
       if (mode === 'camera') {
+        // Request camera permission via Electron IPC first
+        if ((window as any).clawdbot?.media?.request) {
+          const granted = await (window as any).clawdbot.media.request('camera');
+          if (!granted) {
+            throw new Error('Camera permission denied');
+          }
+        }
         this.videoStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
         });

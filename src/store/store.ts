@@ -315,7 +315,7 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 // Avatar mapping - only real gateway agents (from 'clawdbot agents list')
 const AGENT_AVATARS: Record<string, string> = {
   froggo: '🐸',
-  'chat-agent': '💬',
+  'froggo': '💬',
   coder: '💻',
   researcher: '🔍',
   writer: '✍️',
@@ -330,7 +330,7 @@ const AGENT_AVATARS: Record<string, string> = {
 // Display name overrides - only real gateway agents
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
   froggo: 'Froggo',
-  'chat-agent': 'Chat Agent',
+  'froggo': 'Chat Agent',
   coder: 'Coder',
   researcher: 'Researcher',
   writer: 'Writer',
@@ -465,7 +465,7 @@ export const useStore = create<Store>()(
             // Enrich agent statuses from session data
             // Map session agent keys to dashboard agent IDs
             const agentKeyMap: Record<string, string> = {
-              'chat-agent': 'main',
+              'froggo': 'main',
             };
             const resolveAgentId = (key: string): string | null => {
               const match = (key || '').match(/^agent:([^:]+)/);
@@ -504,7 +504,7 @@ export const useStore = create<Store>()(
             // Real gateway agents only (no phantom agents)
             // Only real gateway agents (from 'clawdbot agents list')
             const REAL_GATEWAY_AGENTS = [
-              'chat-agent', 'writer', 'researcher', 'coder', 'chief',
+              'froggo', 'writer', 'researcher', 'coder', 'chief',
               'hr', 'clara'
             ];
 

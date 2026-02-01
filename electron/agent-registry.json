@@ -13,7 +13,7 @@
         "main",
         "froggo"
       ],
-      "clawdAgentId": "chat-agent"
+      "clawdAgentId": "main"
     },
     "froggo": {
       "role": "Orchestrator",
@@ -28,7 +28,7 @@
         "main",
         "froggo"
       ],
-      "clawdAgentId": "chat-agent"
+      "clawdAgentId": "main"
     },
     "coder": {
       "role": "Software Engineer",

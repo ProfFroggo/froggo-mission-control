@@ -155,17 +155,7 @@ export const AGENTS: Record<string, AgentConfig> = {
     capabilities: ['tts', 'voice', 'audio'],
     model: 'anthropic/claude-sonnet-4',
   },
-  'chat-agent': {
-    id: 'chat-agent',
-    name: 'Chat Agent',
-    emoji: '💬',
-    description: 'Main chat interface agent',
-    workspace: '/Users/worker/clawd-chat-agent',
-    workspaceFiles: workspaceFiles('/Users/worker/clawd-chat-agent'),
-    systemPromptPath: '/Users/worker/clawd-chat-agent/AGENTS.md',
-    capabilities: ['chat', 'coordination'],
-    model: 'anthropic/claude-sonnet-4',
-  },
+  // chat-agent removed - use froggo instead
 };
 
 // Spawn an agent with a specific task
