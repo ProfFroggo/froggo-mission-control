@@ -247,7 +247,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         apiKey: apiKey.current,
         voice,
         videoMode,
-        systemInstruction: buildSystemInstruction(selectedAgent, agentContextRef.current),
+        systemInstruction: buildSystemInstruction(selectedAgent, agentContextRef.current, videoMode),
         tools: buildAgentTools(),
       });
       
@@ -264,6 +264,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
           });
           addSystemMessage(videoMode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
+          // Nudge Gemini about video becoming active
+          if (videoMode === 'screen') {
+            geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
+          } else if (videoMode === 'camera') {
+            geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
+          }
         } catch (e: any) {
           console.warn('[VoiceChat] Video start failed:', e);
         }
@@ -297,6 +303,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
       setVideoActive(false);
       addSystemMessage('Video stopped');
+      geminiLive.sendText('[SYSTEM: Camera/screen sharing has stopped. You can no longer see the user.]');
     } else {
       try {
         const mode = videoMode !== 'none' ? videoMode : 'camera';
@@ -307,6 +314,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
         });
         addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
+        if (mode === 'screen') {
+          geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
+        } else {
+          geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
+        }
       } catch (e: any) {
         addSystemMessage(`⚠️ Video failed: ${e.message}`);
       }
@@ -319,6 +331,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       geminiLive.stopVideo();
       if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
       setVideoActive(false);
+      geminiLive.sendText('[SYSTEM: Screen sharing has stopped. You can no longer see the screen.]');
     } else {
       try {
         if (videoActive) geminiLive.stopVideo();
@@ -329,6 +342,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
         });
         addSystemMessage('🖥️ Screen sharing active');
+        geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
       } catch (e: any) {
         addSystemMessage(`⚠️ Screen share failed: ${e.message}`);
       }
@@ -678,6 +692,52 @@ function buildAgentTools(): GeminiTool[] {
         required: ['agent_id'],
       },
     },
+    {
+      name: 'read_file',
+      description: 'Read a file from the workspace.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (e.g., ~/clawd/SOUL.md)' },
+          max_lines: { type: 'number', description: 'Max lines to read (default 100)' },
+        },
+        required: ['path'],
+      },
+    },
+    {
+      name: 'run_command',
+      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git).',
+      parameters: {
+        type: 'object',
+        properties: {
+          command: { type: 'string', description: 'Command to run' },
+        },
+        required: ['command'],
+      },
+    },
+    {
+      name: 'send_message',
+      description: 'Send a message to a Discord channel.',
+      parameters: {
+        type: 'object',
+        properties: {
+          channel: { type: 'string', description: 'Channel name (e.g., homebase)' },
+          message: { type: 'string', description: 'Message text' },
+        },
+        required: ['channel', 'message'],
+      },
+    },
+    {
+      name: 'search_workspace',
+      description: 'Search for text in workspace files.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Text to search for' },
+        },
+        required: ['query'],
+      },
+    },
   ];
 }
 
@@ -732,6 +792,30 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
           active_sessions: ctx.sessions.filter(s => s.state === 'running' || s.state === 'active').length,
         };
       }
+      case 'read_file': {
+        const maxLines = args.max_lines || 100;
+        const r = await exec(`head -n ${maxLines} ${args.path} 2>&1`);
+        return { content: r.stdout || r.stderr || 'File not found' };
+      }
+      case 'run_command': {
+        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git'];
+        const cmd = args.command.trim().split(/\s+/)[0];
+        if (!allowed.includes(cmd)) {
+          return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
+        }
+        const r = await exec(args.command + ' 2>&1');
+        return { stdout: r.stdout, stderr: r.stderr };
+      }
+      case 'send_message': {
+        const escapedMsg = args.message.replace(/"/g, '\\"');
+        const r = await exec(`clawdbot gateway sessions-send --label discord --message "${escapedMsg}" 2>&1`);
+        return { success: r.success, output: r.stdout?.trim() };
+      }
+      case 'search_workspace': {
+        const escapedQuery = args.query.replace(/"/g, '\\"');
+        const r = await exec(`grep -rl "${escapedQuery}" ~/clawd/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
+        return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
+      }
       default:
         return { error: `Unknown tool: ${fnName}` };
     }
@@ -741,7 +825,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
 }
 
 // ── System instruction builder ──
-function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null): string {
+function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null, currentVideoMode?: VideoMode): string {
   const parts: string[] = [];
 
   if (context?.personality) {
@@ -752,21 +836,63 @@ function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null)
     parts.push(`You are ${agent.name}, ${agent.role || 'an AI assistant'}.`);
   }
 
+  parts.push(`\nCurrent date: ${new Date().toLocaleString()}`);
+
+  // Core identity from SOUL.md
+  if (context?.workspaceFiles?.soul) {
+    parts.push(`\n## Your Core Identity (SOUL.md)\n${context.workspaceFiles.soul}`);
+  }
+
+  // User context from USER.md
+  if (context?.workspaceFiles?.user) {
+    parts.push(`\n## About Your Human (USER.md)\n${context.workspaceFiles.user}`);
+  }
+
+  // Identity details
+  if (context?.workspaceFiles?.identity) {
+    parts.push(`\n## Identity Details\n${context.workspaceFiles.identity}`);
+  }
+
+  // Long-term curated memory
+  if (context?.workspaceFiles?.memory_longterm) {
+    parts.push(`\n## Long-term Memory\n${context.workspaceFiles.memory_longterm}`);
+  }
+
+  // Today's memory
+  if (context?.memory) {
+    parts.push(`\n## Recent Memory (Today)\n${context.memory.slice(0, 1000)}`);
+  }
+
   parts.push(`
 You are speaking to your human via voice chat. Be conversational, concise, and natural.
 Keep responses to 1-3 sentences unless asked for detail.
-You have tools to manage tasks, spawn agents, and check status. Use them when asked.
 Don't narrate tool usage — just do it and report the result naturally.`);
+
+  // Tool capability awareness
+  parts.push(`\n## Your Capabilities
+You have access to powerful tools:
+- create_task, update_task, list_tasks — Manage tasks in Kanban
+- spawn_agent, get_agent_status — Work with other agents
+- read_file — Read workspace files
+- run_command — Execute shell commands (cat, head, tail, ls, find, grep, froggo-db, git)
+- send_message — Send messages to Discord
+- search_workspace — Search files
+
+Use these tools proactively when helpful.`);
+
+  // Video/screen awareness
+  if (currentVideoMode && currentVideoMode !== 'none') {
+    parts.push(`\n## Visual Context
+You can currently SEE ${currentVideoMode === 'camera' ? "the user's camera feed" : "the user's screen"}.
+Frames are sent every second. Reference what you see when relevant.
+If they ask "what do you see?" — describe what's visible.`);
+  }
 
   if (context?.tasks?.length) {
     parts.push(`\nYour current tasks:`);
     for (const t of context.tasks.slice(0, 10)) {
       parts.push(`- [${t.status}] ${t.title} (${t.priority})`);
     }
-  }
-
-  if (context?.memory) {
-    parts.push(`\nRecent memory: ${context.memory.slice(0, 500)}`);
   }
 
   return parts.join('\n');

@@ -29,6 +29,7 @@ export interface AgentContext {
     agentId?: string;
   }>;
   memory: string | null;
+  workspaceFiles?: Record<string, string | null>;
   loadedAt: number;
 }
 
@@ -164,6 +165,34 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
   return [];
 }
 
+async function loadWorkspaceFiles(agentId: string): Promise<Record<string, string | null>> {
+  const exec = (window as any).clawdbot?.exec?.run;
+  if (!exec) return {};
+
+  const agentDir = agentId === 'froggo' ? '.' : `clawd-${agentId}`;
+  const base = `~/clawd/${agentDir}`;
+  const today = new Date().toISOString().split('T')[0];
+
+  const fileSpecs = [
+    { key: 'soul', path: `${base}/SOUL.md`, maxChars: 2000 },
+    { key: 'user', path: `${base}/USER.md`, maxChars: 1000 },
+    { key: 'identity', path: `${base}/IDENTITY.md`, maxChars: 500 },
+    { key: 'memory_longterm', path: `${base}/MEMORY.md`, maxChars: 3000 },
+    { key: 'memory_today', path: `${base}/memory/${today}.md`, maxChars: 2000 },
+  ];
+
+  const results = await Promise.all(
+    fileSpecs.map(async (spec) => {
+      try {
+        const r = await exec(`head -c ${spec.maxChars} ${spec.path} 2>/dev/null || echo ""`);
+        return [spec.key, r.success && r.stdout?.trim() ? r.stdout.trim() : null] as [string, string | null];
+      } catch { return [spec.key, null] as [string, string | null]; }
+    })
+  );
+
+  return Object.fromEntries(results);
+}
+
 async function loadAgentMemory(agentId: string): Promise<string | null> {
   try {
     if ((window as any).clawdbot?.exec?.run) {
@@ -193,11 +222,12 @@ export async function loadAgentContext(agentId: string): Promise<AgentContext> {
   }
   
   // Load all in parallel
-  const [personalities, tasks, sessions, memory] = await Promise.all([
+  const [personalities, tasks, sessions, memory, workspaceFiles] = await Promise.all([
     loadPersonalities(),
     loadAgentTasks(agentId),
     loadAgentSessions(agentId),
     loadAgentMemory(agentId),
+    loadWorkspaceFiles(agentId),
   ]);
   
   const personalityKey = AGENT_PERSONALITY_MAP[agentId] || agentId;
@@ -208,6 +238,7 @@ export async function loadAgentContext(agentId: string): Promise<AgentContext> {
     tasks,
     sessions,
     memory,
+    workspaceFiles,
     loadedAt: Date.now(),
   };
   
@@ -219,6 +250,7 @@ export async function loadAgentContext(agentId: string): Promise<AgentContext> {
     taskCount: tasks.length,
     sessionCount: sessions.length,
     hasMemory: !!memory,
+    workspaceFiles: Object.entries(workspaceFiles).filter(([, v]) => v).map(([k]) => k),
   });
   
   return context;

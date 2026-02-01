@@ -92,6 +92,7 @@
       "icon": "build/icon.icns",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Froggo uses your microphone for voice commands and meeting transcription.",
+        "NSCameraUsageDescription": "Froggo uses your camera for video chat and visual context during voice conversations.",
         "NSSpeechRecognitionUsageDescription": "Froggo uses speech recognition for voice commands."
       }
     },
