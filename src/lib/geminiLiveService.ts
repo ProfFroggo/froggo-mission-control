@@ -5,6 +5,8 @@
  * Supports: real-time audio, camera/screen video, text input, interruptions.
  */
 
+import { getVoiceProfile } from '../config/agent-voices';
+
 // Audio constants matching Gemini Live API requirements
 const SEND_SAMPLE_RATE = 16000;
 const RECEIVE_SAMPLE_RATE = 24000;
@@ -13,7 +15,81 @@ const MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
 export type VideoMode = 'camera' | 'screen' | 'none';
-export type GeminiVoice = 'Zephyr' | 'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Aoede' | 'Leda' | 'Orus' | 'Perseus';
+export type GeminiVoice = 
+  // Core voices
+  | 'Puck' | 'Charon' | 'Kore' | 'Fenrir'
+  // Extended TTS voices
+  | 'Zephyr' | 'Leda' | 'Orus' | 'Aoede' | 'Enceladus' | 'Umbriel' 
+  | 'Vindemiatrix' | 'Callirrhoe' | 'Despina' | 'Rasalgethi' | 'Zubenelgenubi';
+
+/**
+ * Map agent voice profiles to Gemini Live voices
+ * 
+ * Based on official Gemini Live API voice characteristics:
+ * https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_LiveAPI.py
+ * 
+ * Core voices:
+ * - Puck: Conversational, friendly, and upbeat
+ * - Charon: Deep, authoritative, and informative
+ * - Kore: Neutral, firm, and professional
+ * - Fenrir: Warm, approachable, and excitable
+ * 
+ * Extended TTS voices:
+ * - Zephyr: Bright and energetic
+ * - Leda: Youthful and friendly
+ * - Orus: Firm and professional
+ * - Aoede: Breezy and conversational
+ * - Enceladus: Breathy and soft
+ * - Umbriel: Easy-going, calm, and trustworthy
+ * - Vindemiatrix: Gentle, calm, and mature
+ * - Callirrhoe: Easy-going and accessible
+ * - Despina: Smooth and warm
+ * - Rasalgethi: Informative and clear
+ * - Zubenelgenubi: Deep, resonant, and serious
+ */
+export function getGeminiVoiceForAgent(agentId: string): GeminiVoice {
+  const profile = getVoiceProfile(agentId);
+  if (!profile) return 'Puck';
+
+  const { gender, age, qualities } = profile;
+
+  // Deep voice override
+  if (qualities?.includes('deep')) {
+    return 'Zubenelgenubi'; // ox - deep, resonant, and serious
+  }
+
+  // Female voices
+  if (gender === 'female') {
+    if (age === 'young') {
+      // clara, designer
+      return agentId === 'clara' ? 'Leda' : 'Aoede'; // Leda: youthful/friendly, Aoede: breezy/conversational
+    }
+    if (age === 'middle-aged') {
+      // hr, researcher
+      return agentId === 'researcher' ? 'Rasalgethi' : 'Despina'; // Rasalgethi: informative/clear, Despina: smooth/warm
+    }
+    if (age === 'older') {
+      return 'Vindemiatrix'; // chief - gentle, calm, and mature
+    }
+  }
+
+  // Male voices
+  if (gender === 'male') {
+    if (age === 'young') {
+      // growth-director, social-manager, voice
+      if (agentId === 'growth-director') return 'Zephyr'; // bright and energetic
+      return 'Puck'; // conversational, friendly, upbeat
+    }
+    if (age === 'middle-aged') {
+      // froggo, coder, lead-engineer, writer
+      if (agentId === 'lead-engineer') return 'Orus'; // firm and professional
+      if (agentId === 'writer') return 'Umbriel'; // easy-going, calm, trustworthy
+      return 'Charon'; // deep, authoritative, informative (froggo, coder)
+    }
+  }
+
+  return 'Puck'; // fallback
+}
 
 export type GeminiLiveEvent = 
   | 'connected' | 'disconnected' | 'error'
@@ -324,6 +400,7 @@ export class GeminiLiveService {
     if (this._listening || !this._connected) return;
 
     try {
+      console.log('[GeminiLive] startMic: requesting getUserMedia...');
       // Use simple constraints like MeetingsPanel (which works in production)
       this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -342,7 +419,28 @@ export class GeminiLiveService {
       this.micSource.connect(this.micAnalyser);
 
       // AudioWorklet for raw PCM data capture (replaces deprecated ScriptProcessorNode)
-      await this.audioContext.audioWorklet.addModule('/audio-processor.js');
+      // Use inline Blob URL — file:// protocol breaks addModule in packaged Electron builds
+      const workletCode = `
+class AudioCaptureProcessor extends AudioWorkletProcessor {
+  process(inputs, outputs, parameters) {
+    const input = inputs[0];
+    if (input.length > 0 && input[0].length > 0) {
+      const channelData = new Float32Array(input[0]);
+      this.port.postMessage({ audio: channelData }, [channelData.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor('audio-capture-processor', AudioCaptureProcessor);
+`;
+      const blob = new Blob([workletCode], { type: 'application/javascript' });
+      const workletUrl = URL.createObjectURL(blob);
+      console.log('[GeminiLive] Loading audio processor from blob URL');
+      try {
+        await this.audioContext.audioWorklet.addModule(workletUrl);
+      } finally {
+        URL.revokeObjectURL(workletUrl);
+      }
       this.micProcessor = new AudioWorkletNode(this.audioContext, 'audio-capture-processor');
       this.micSource.connect(this.micProcessor);
       // Connect to a silent sink to keep the processor running.
