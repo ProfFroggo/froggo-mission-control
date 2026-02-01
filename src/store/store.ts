@@ -195,8 +195,9 @@ interface Store {
   loadTaskActivity: (taskId: string, limit?: number) => Promise<TaskActivity[]>;
   logTaskActivity: (taskId: string, action: string, message: string, agentId?: string, details?: string) => Promise<boolean>;
 
-  // Agents (predefined + dynamic)
+  // Agents (loaded from registry + dynamic)
   agents: Agent[];
+  fetchAgents: () => Promise<void>;
   spawnAgentForTask: (taskId: string) => Promise<void>;
   createWorkerAgent: (name: string, task: string) => Promise<string>;
   updateAgentStatus: (agentId: string, status: Agent['status'], sessionKey?: string) => void;
@@ -310,20 +311,39 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
   }
 }
 
-const defaultAgents: Agent[] = [
+// Avatar mapping for agents (registry doesn't store avatars since they're UI-only)
+const AGENT_AVATARS: Record<string, string> = {
+  main: '🐸', froggo: '🐸', coder: '💻', researcher: '🔍', writer: '✍️',
+  chief: '👨‍💻', clara: '👁️', hr: '🎓', 'growth-director': '📈', growth_director: '📈',
+  'social-manager': '📱', social_media_manager: '📱', 'lead-engineer': '🔧', lead_engineer: '🔧',
+  voice: '🎙️', designer: '🎨', 'chat-agent': '💬', onchain_worker: '⛓️',
+};
+
+// Display name overrides (registry uses role, but some need friendlier names)
+const AGENT_DISPLAY_NAMES: Record<string, string> = {
+  main: 'Froggo', social_media_manager: 'Social Manager', growth_director: 'Growth Director',
+  lead_engineer: 'Lead Engineer', onchain_worker: 'Onchain Worker',
+};
+
+/** Convert agent-registry.json data to Agent[] for the dashboard */
+function registryToAgents(registry: Record<string, { role: string; description: string; capabilities: string[]; aliases: string[]; clawdAgentId: string }>): Agent[] {
+  return Object.entries(registry).map(([id, entry]) => ({
+    id,
+    name: AGENT_DISPLAY_NAMES[id] || entry.role || id,
+    avatar: AGENT_AVATARS[id] || AGENT_AVATARS[entry.clawdAgentId] || '🤖',
+    description: entry.description || '',
+    status: (id === 'main' ? 'active' : 'idle') as Agent['status'],
+    capabilities: entry.capabilities || [],
+  }));
+}
+
+// Fallback agents in case registry is unavailable (e.g., non-Electron env)
+const fallbackAgents: Agent[] = [
   { id: 'main', name: 'Froggo', avatar: '🐸', description: 'Main assistant - orchestrates everything', status: 'active', capabilities: ['chat', 'code', 'web', 'email', 'orchestrate'] },
-  { id: 'froggo', name: 'Froggo (Reviewer)', avatar: '🐸', description: 'Agent reviewer - reviews all completed work', status: 'active', capabilities: ['review', 'orchestrate', 'approve'] },
   { id: 'coder', name: 'Coder', avatar: '💻', description: 'Software engineering tasks', status: 'idle', capabilities: ['code', 'git', 'debug', 'test'] },
   { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
   { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
   { id: 'chief', name: 'Chief', avatar: '👨‍💻', description: 'Lead Engineer (GSD methodology)', status: 'idle', capabilities: ['code', 'architecture', 'planning'] },
-  { id: 'clara', name: 'Clara', avatar: '👁️', description: 'Independent Reviewer & Quality Auditor', status: 'idle', capabilities: ['review', 'quality', 'audit'] },
-  { id: 'hr', name: 'HR', avatar: '🎓', description: 'Agent Management & Training Specialist', status: 'idle', capabilities: ['training', 'agent-creation', 'skill-analysis'] },
-  { id: 'growth-director', name: 'Growth Director', avatar: '📈', description: 'Head of Growth / Product Marketing', status: 'idle', capabilities: ['strategy', 'growth', 'marketing', 'gtm'] },
-  { id: 'social-manager', name: 'Social Manager', avatar: '📱', description: 'Content scheduling, posting & social media', status: 'idle', capabilities: ['social', 'content', 'scheduling'] },
-  { id: 'lead-engineer', name: 'Lead Engineer', avatar: '🔧', description: 'Lead Engineer / Technical Co-founder', status: 'idle', capabilities: ['engineering', 'architecture', 'gsd'] },
-  { id: 'voice', name: 'Voice', avatar: '🎙️', description: 'Voice & Audio Agent', status: 'idle', capabilities: ['tts', 'voice', 'audio'] },
-  { id: 'chat-agent', name: 'Chat Agent', avatar: '💬', description: 'Main chat interface agent', status: 'idle', capabilities: ['chat', 'coordination'] },
 ];
 
 export const useStore = create<Store>()(
@@ -850,7 +870,31 @@ export const useStore = create<Store>()(
         }
       },
 
-      agents: defaultAgents,
+      agents: fallbackAgents,
+
+      fetchAgents: async () => {
+        try {
+          get().setLoading('agents', true);
+          const registry = await (window as any).clawdbot?.agents?.getRegistry();
+          if (registry && Object.keys(registry).length > 0) {
+            const registryAgents = registryToAgents(registry);
+            // Merge: preserve runtime status/sessionKey from current agents
+            const current = get().agents;
+            const merged = registryAgents.map((ra: Agent) => {
+              const existing = current.find((a: Agent) => a.id === ra.id);
+              return existing ? { ...ra, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity } : ra;
+            });
+            // Also keep any dynamically-created agents not in registry
+            const dynamicAgents = current.filter((a: Agent) => !registryAgents.find((ra: Agent) => ra.id === a.id));
+            set({ agents: [...merged, ...dynamicAgents] });
+            console.log(`[Store] Loaded ${registryAgents.length} agents from registry`);
+          }
+        } catch (e) {
+          console.error('[Store] Failed to fetch agents from registry, using fallback:', e);
+        } finally {
+          get().setLoading('agents', false);
+        }
+      },
 
       // Spawn an agent to work on a task
       spawnAgentForTask: async (taskId: string) => {

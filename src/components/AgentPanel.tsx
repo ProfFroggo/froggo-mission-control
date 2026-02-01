@@ -14,7 +14,7 @@ import { getAgentTheme } from '../utils/agentThemes';
 const getTheme = getAgentTheme;
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, updateAgentStatus, gatewaySessions, loadGatewaySessions, loadTasksFromDB } = useStore();
+  const { agents, tasks, spawnAgentForTask, updateAgentStatus, fetchAgents, gatewaySessions, loadGatewaySessions, loadTasksFromDB } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [compareAgents, setCompareAgents] = useState<string[]>([]);
@@ -27,11 +27,12 @@ export default function AgentPanel() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    fetchAgents(); // Load agents from registry
     loadGatewaySessions();
     loadTasksFromDB(); // Ensure tasks are loaded for agent detail modals
     const interval = setInterval(loadGatewaySessions, 5000);
     return () => clearInterval(interval);
-  }, [loadGatewaySessions, loadTasksFromDB]);
+  }, [fetchAgents, loadGatewaySessions, loadTasksFromDB]);
 
   useEffect(() => { loadAgentMetrics(); }, []);
 
