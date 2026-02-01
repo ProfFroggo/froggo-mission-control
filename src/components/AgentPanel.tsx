@@ -74,7 +74,7 @@ export default function AgentPanel() {
     else if (compareAgents.length < 3) setCompareAgents([...compareAgents, agentId]);
   };
 
-  // REAL GATEWAY AGENTS - Only these 12 should be shown
+  // Real gateway agents only (from 'clawdbot agents list')
   const REAL_GATEWAY_AGENTS = [
     'chat-agent',
     'writer',
@@ -83,11 +83,6 @@ export default function AgentPanel() {
     'chief',
     'hr',
     'clara',
-    'designer',
-    'growth-director',
-    'lead-engineer',
-    'social-manager',
-    'voice'
   ];
 
   // Filter agents: ONLY real gateway agents (no duplicates, no phantom agents)
