@@ -43,7 +43,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     { id: 'nav-tasks', icon: <ListTodo size={16} />, label: 'Go to Tasks', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('kanban'); onClose(); } },
     { id: 'nav-agents', icon: <Bot size={16} />, label: 'Go to Agents', shortcut: '⌘5', category: 'Navigation', action: () => { onNavigate('agents'); onClose(); } },
     { id: 'nav-twitter', icon: <XIcon size={16} />, label: 'Go to X', shortcut: '⌘6', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
-    { id: 'nav-voice', icon: <Mic size={16} />, label: 'Go to Voice', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('voice'); onClose(); } },
+    { id: 'nav-meetings', icon: <Mic size={16} />, label: 'Go to Meetings', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('meetings'); onClose(); } },
     { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
     { id: 'nav-accounts', icon: <Settings size={16} />, label: 'Go to Accounts', shortcut: '⌘9', category: 'Navigation', action: () => { onNavigate('accounts'); onClose(); } },
     { id: 'nav-approvals', icon: <Inbox size={16} />, label: 'Go to Approvals', shortcut: '⌘0', category: 'Navigation', action: () => { onNavigate('approvals'); onClose(); } },

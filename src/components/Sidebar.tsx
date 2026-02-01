@@ -11,7 +11,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'voice-chat' | 'voice-live' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'error-test';
 
 interface SidebarProps {
   currentView: View;
@@ -28,7 +28,7 @@ const panelIconMap: Record<string, any> = {
   kanban: Kanban,
   agents: Bot,
   twitter: XIcon,
-  voice: Users,
+  meetings: Users,
   chat: MessageSquare,
   accounts: Cloud,
   approvals: Inbox,
@@ -41,7 +41,7 @@ const panelIconMap: Record<string, any> = {
 // Static items not managed by panel config (always shown)
 const staticNavItems = [
   { id: 'voice-chat' as View, icon: Phone, label: 'Voice Chat', shortcut: '⌘⇧V' },
-  { id: 'voice-live' as View, icon: Zap, label: 'Gemini Live', shortcut: '' },
+  { id: 'gemini-voice' as View, icon: Zap, label: 'Gemini Live', shortcut: '⌘⇧G' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },

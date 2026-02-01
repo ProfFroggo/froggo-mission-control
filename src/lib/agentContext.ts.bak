@@ -56,38 +56,38 @@ async function loadPersonalities(): Promise<Record<string, any>> {
   
   console.log('[AgentContext] Loading personalities...');
   
-  // In Electron, try exec first (file:// fetch doesn't work)
-  const isElectron = !!(window as any).clawdbot?.exec?.run;
-  
-  if (isElectron) {
-    try {
-      console.log('[AgentContext] Electron mode - using exec...');
-      const r = await (window as any).clawdbot.exec.run(
-        'cat ~/clawd/clawd-dashboard/dist/agent-profiles/personalities.json'
-      );
-      if (r.success && r.stdout) {
-        personalitiesData = JSON.parse(r.stdout);
-        console.log('[AgentContext] ✅ Loaded from exec');
-        return personalitiesData!;
-      }
-    } catch (err) {
-      console.warn('[AgentContext] Exec failed:', err);
-    }
-  }
-  
-  // Fallback: fetch (works in dev mode)
+  // Try loading from the bundled dist path (works in dev mode via Vite)
   try {
     const resp = await fetch('/agent-profiles/personalities.json');
+    console.log('[AgentContext] Fetch response:', resp.status, resp.ok);
     if (resp.ok) {
       personalitiesData = await resp.json();
-      console.log('[AgentContext] ✅ Loaded from fetch');
+      console.log('[AgentContext] ✅ Loaded personalities from fetch:', Object.keys(personalitiesData || {}));
       return personalitiesData!;
     }
   } catch (err) {
     console.warn('[AgentContext] Fetch failed:', err);
   }
   
-  console.error('[AgentContext] ❌ Failed to load personalities');
+  // Try via clawdbot exec (for Electron mode where file:// doesn't work with fetch)
+  try {
+    if ((window as any).clawdbot?.exec?.run) {
+      console.log('[AgentContext] Trying clawdbot exec...');
+      const r = await (window as any).clawdbot.exec.run(
+        'cat ~/clawd/clawd-dashboard/public/agent-profiles/personalities.json 2>/dev/null || cat ~/clawd/clawd-dashboard/dist/agent-profiles/personalities.json 2>/dev/null'
+      );
+      console.log('[AgentContext] Exec result:', r.success, r.stdout ? 'HAS DATA' : 'NO DATA');
+      if (r.success && r.stdout) {
+        personalitiesData = JSON.parse(r.stdout);
+        console.log('[AgentContext] ✅ Loaded personalities from exec:', Object.keys(personalitiesData || {}));
+        return personalitiesData!;
+      }
+    }
+  } catch (err) {
+    console.warn('[AgentContext] Exec failed:', err);
+  }
+  
+  console.warn('[AgentContext] ⚠️ Could not load personalities, using empty object');
   return {};
 }
 

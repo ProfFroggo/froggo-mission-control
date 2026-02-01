@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
+import { AGENTS } from '../lib/agents';
 import MarkdownMessage from './MarkdownMessage';
 import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
@@ -91,7 +92,7 @@ export default function ChatPanel() {
     setMessages([]);
     setHistoryLoaded(true); // prevent gateway fallback race
     if (window.clawdbot?.chat?.loadMessages) {
-      const result = await window.clawdbot.chat.loadMessages(50, agent.dbSessionKey);
+      const result = await window.clawdbot?.chat.loadMessages(50, agent.dbSessionKey);
       if (result?.success && result.messages?.length > 0) {
         setMessages(result.messages);
         messageCacheRef.current.set(agent.id, result.messages);
@@ -103,7 +104,7 @@ export default function ChatPanel() {
   useEffect(() => {
     const loadStarredIds = async () => {
       if (window.clawdbot?.starred?.list) {
-        const result = await window.clawdbot.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
+        const result = await window.clawdbot?.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
         if (result?.success && result.starred) {
           const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
           setStarredMessageIds(ids);
@@ -128,7 +129,7 @@ export default function ChatPanel() {
     try {
       if (isStarred) {
         // Unstar
-        const result = await window.clawdbot.starred.unstar(messageId);
+        const result = await window.clawdbot?.starred.unstar(messageId);
         if (result?.success) {
           setStarredMessageIds(prev => {
             const next = new Set(prev);
@@ -141,7 +142,7 @@ export default function ChatPanel() {
         }
       } else {
         // Star
-        const result = await window.clawdbot.starred.star(messageId);
+        const result = await window.clawdbot?.starred.star(messageId);
         if (result?.success) {
           setStarredMessageIds(prev => new Set(prev).add(msg.id));
           showToast('Message starred', 'success');
@@ -163,7 +164,7 @@ export default function ChatPanel() {
       setHistoryLoaded(true);
       
       if (window.clawdbot?.chat?.loadMessages) {
-        const result = await window.clawdbot.chat.loadMessages(50, selectedAgent.dbSessionKey);
+        const result = await window.clawdbot?.chat.loadMessages(50, selectedAgent.dbSessionKey);
         console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
         if (result.success && result.messages?.length > 0) {
           setMessages(result.messages);
@@ -181,7 +182,7 @@ export default function ChatPanel() {
   const saveMessageToDb = async (role: string, content: string) => {
     if (window.clawdbot?.chat?.saveMessage) {
       try {
-        const result = await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
+        const result = await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
         if (result?.success) {
           console.log(`[Chat] ${role} message saved to DB`);
         } else {
@@ -363,7 +364,7 @@ export default function ChatPanel() {
         
         // Save assistant message to database
         if (finalContent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot.chat.saveMessage({ 
+          window.clawdbot?.chat.saveMessage({ 
             role: 'assistant', 
             content: finalContent, 
             timestamp: Date.now(),
@@ -435,7 +436,7 @@ export default function ChatPanel() {
         
         // Save assistant message to database
         if (finalContent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot.chat.saveMessage({ 
+          window.clawdbot?.chat.saveMessage({ 
             role: 'assistant', 
             content: finalContent, 
             timestamp: Date.now(),
@@ -580,7 +581,7 @@ export default function ChatPanel() {
       }));
       
       if (window.clawdbot?.chat?.suggestReplies) {
-        const result = await window.clawdbot.chat.suggestReplies(context);
+        const result = await window.clawdbot?.chat.suggestReplies(context);
         
         if (result.success && result.suggestions?.length > 0) {
           setSuggestedReplies(result.suggestions);
@@ -759,7 +760,7 @@ export default function ChatPanel() {
     window.speechSynthesis.cancel();
     // Also clear from database
     if (window.clawdbot?.chat?.clearMessages) {
-      await window.clawdbot.chat.clearMessages(selectedAgent.dbSessionKey);
+      await window.clawdbot?.chat.clearMessages(selectedAgent.dbSessionKey);
       console.log('[Chat] Cleared messages from DB for', selectedAgent.id);
     }
   };
@@ -791,6 +792,14 @@ export default function ChatPanel() {
     createRoom(name, agents);
     setShowRoomList(false);
     showToast(`Room "${name}" created!`, 'success');
+  };
+
+  const startTeamMeeting = () => {
+    const allAgentIds = Object.keys(AGENTS);
+    const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    createRoom(`Team Meeting — ${timestamp}`, allAgentIds);
+    setShowRoomList(false);
+    showToast('🏢 Team Meeting started! All agents are here.', 'success');
   };
 
   // If viewing a room, render the room view
@@ -880,6 +889,14 @@ export default function ChatPanel() {
             <Trash2 size={16} />
           </button>
           <div className="w-px h-5 bg-clawd-border mx-1" />
+          <button
+            onClick={startTeamMeeting}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            title="Start Team Meeting — All agents join"
+          >
+            <UsersRound size={15} />
+            <span className="hidden sm:inline">Team Meeting</span>
+          </button>
           <button
             onClick={() => setShowRoomList(!showRoomList)}
             className={`p-2 rounded-lg transition-colors relative ${

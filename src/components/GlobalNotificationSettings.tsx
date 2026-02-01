@@ -30,7 +30,7 @@ export default function GlobalNotificationSettings() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot.notificationSettings.getGlobalDefaults();
+      const result = await window.clawdbot!.notificationSettings.getGlobalDefaults();
       
       if (result.success && result.defaults) {
         const d = result.defaults;
@@ -74,7 +74,7 @@ export default function GlobalNotificationSettings() {
         batch_interval_minutes: batchIntervalMinutes,
       };
 
-      const result = await window.clawdbot.notificationSettings.setGlobalDefaults(updatedDefaults);
+      const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults);
 
       if (result.success) {
         alert('Global notification settings saved successfully!');

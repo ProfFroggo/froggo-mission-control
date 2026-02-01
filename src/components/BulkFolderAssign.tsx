@@ -27,7 +27,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
   const loadFolders = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot.folders.list();
+      const result = await window.clawdbot!.folders.list();
       if (result.success && result.folders) {
         setFolders(result.folders);
       }
@@ -60,7 +60,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       // Assign each session to selected folders
       for (const sessionKey of sessionKeys) {
         for (const folderId of selectedFolders) {
-          const result = await window.clawdbot.folders.assign(
+          const result = await window.clawdbot!.folders.assign(
             folderId,
             sessionKey,
             'Bulk assignment'

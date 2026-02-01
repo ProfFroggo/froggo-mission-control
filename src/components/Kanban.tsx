@@ -2,11 +2,12 @@ import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
+import PokeModal from './PokeModal';
 import TaskStatusIndicator from './TaskStatusIndicator';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
@@ -116,6 +117,7 @@ export default function Kanban() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>('todo');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [pokeTask, setPokeTask] = useState<Task | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   
@@ -630,6 +632,7 @@ export default function Kanban() {
                       onStartAgent={() => handleSpawnAgent(task.id)}
                       onClick={() => setSelectedTask(task)}
                       onSetPriority={(priority) => handleQuickPriority(task.id, priority)}
+                      onPoke={() => setPokeTask(task)}
                       isDragging={draggedTask === task.id}
                       isDeleting={deletingTasks.has(task.id)}
                       isSpawning={spawningTasks.has(task.id)}
@@ -684,6 +687,14 @@ export default function Kanban() {
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
       />
+
+      {pokeTask && (
+        <PokeModal
+          taskId={pokeTask.id}
+          taskTitle={pokeTask.title}
+          onClose={() => setPokeTask(null)}
+        />
+      )}
     </div>
   );
 }
@@ -698,13 +709,14 @@ interface TaskCardProps {
   onStartAgent: () => void;
   onClick: () => void;
   onSetPriority: (priority: TaskPriority) => void;
+  onPoke: () => void;
   isDragging: boolean;
   isDeleting?: boolean;
   isSpawning?: boolean;
   isMoving?: boolean;
 }
 
-const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
@@ -851,6 +863,12 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                   className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
                   <Bot size={16} className="flex-shrink-0" /> Assign Agent
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPoke(); setShowMenu(false); }}
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
+                >
+                  <Hand size={16} className="flex-shrink-0" /> Poke
                 </button>
                 <hr className="my-1 border-clawd-border" />
                 <button

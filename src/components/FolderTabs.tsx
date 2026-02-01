@@ -109,9 +109,9 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
   const loadFolders = async () => {
     try {
-      const result = await window.clawdbot.folders.list();
-      if (result.success) {
-        const sortedFolders = (result.folders || []).sort((a: MessageFolder, b: MessageFolder) => 
+      const result = await window.clawdbot?.folders.list();
+      if (result?.success) {
+        const sortedFolders = (result?.folders || []).sort((a: MessageFolder, b: MessageFolder) => 
           (a as any).sort_order - (b as any).sort_order
         );
         setFolders(sortedFolders);
@@ -155,7 +155,7 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
       // Update sort order in database
       try {
         for (let i = 0; i < reorderedFolders.length; i++) {
-          await window.clawdbot.folders.update(reorderedFolders[i].id, {
+          await window.clawdbot?.folders.update(reorderedFolders[i].id, {
             sort_order: i
           });
         }

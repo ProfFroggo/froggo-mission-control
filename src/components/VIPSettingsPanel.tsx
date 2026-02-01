@@ -57,7 +57,7 @@ export default function VIPSettingsPanel() {
   const loadVips = async () => {
     setLoading(true);
     try {
-      const data = await window.clawdbot.vip.list(categoryFilter || undefined);
+      const data = await window.clawdbot?.vip.list(categoryFilter || undefined);
       setVips(data);
     } catch (error) {
       console.error('[VIP] Load error:', error);
@@ -74,7 +74,7 @@ export default function VIPSettingsPanel() {
     }
 
     try {
-      const result = await window.clawdbot.vip.add({
+      const result = await window.clawdbot?.vip.add({
         identifier: formData.identifier,
         label: formData.label,
         type: formData.type,
@@ -83,13 +83,13 @@ export default function VIPSettingsPanel() {
         notes: formData.notes || undefined,
       });
 
-      if (result.success) {
+      if (result?.success) {
         showToast('success', `VIP added: ${formData.label}`);
         setShowAddForm(false);
         resetForm();
         loadVips();
       } else {
-        showToast('error', result.error || 'Failed to add VIP');
+        showToast('error', result?.error || 'Failed to add VIP');
       }
     } catch (error: any) {
       console.error('[VIP] Add error:', error);
@@ -102,20 +102,20 @@ export default function VIPSettingsPanel() {
     if (!vip) return;
 
     try {
-      const result = await window.clawdbot.vip.update(id, {
+      const result = await window.clawdbot?.vip.update(id, {
         label: formData.label,
         boost: formData.boost,
         category: formData.category,
         notes: formData.notes || undefined,
       });
 
-      if (result.success) {
+      if (result?.success) {
         showToast('success', `VIP updated: ${formData.label}`);
         setEditingId(null);
         resetForm();
         loadVips();
       } else {
-        showToast('error', result.error || 'Failed to update VIP');
+        showToast('error', result?.error || 'Failed to update VIP');
       }
     } catch (error: any) {
       console.error('[VIP] Update error:', error);
@@ -127,13 +127,13 @@ export default function VIPSettingsPanel() {
     if (!confirm(`Remove VIP: ${label}?`)) return;
 
     try {
-      const result = await window.clawdbot.vip.remove(id);
+      const result = await window.clawdbot?.vip.remove(id);
 
-      if (result.success) {
+      if (result?.success) {
         showToast('success', `VIP removed: ${label}`);
         loadVips();
       } else {
-        showToast('error', result.error || 'Failed to remove VIP');
+        showToast('error', result?.error || 'Failed to remove VIP');
       }
     } catch (error: any) {
       console.error('[VIP] Remove error:', error);

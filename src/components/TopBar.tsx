@@ -12,7 +12,7 @@ interface SystemStatus {
 
 interface TopBarProps {
   onCallClick?: () => void;
-  onNavigate?: (view: string) => void;
+  onNavigate?: (view: any) => void;
   sidebarWidth?: number;
 }
 
@@ -53,7 +53,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   return (
     <>
       <header 
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-clawd-bg/80 backdrop-blur-sm border-b border-white/[0.04] transition-all duration-200" 
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-clawd-bg backdrop-blur-md border-b border-white/[0.06] transition-all duration-200" 
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}

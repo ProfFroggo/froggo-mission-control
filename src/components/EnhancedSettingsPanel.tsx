@@ -110,7 +110,7 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
   { id: 'kanban', name: 'Tasks', description: 'Navigate to Kanban', defaultKey: '5', currentKey: '5', modifiers: ['cmd'] },
   { id: 'agents', name: 'Agents', description: 'Navigate to Agents', defaultKey: '6', currentKey: '6', modifiers: ['cmd'] },
   { id: 'twitter', name: 'Twitter', description: 'Navigate to Twitter', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
-  { id: 'voice', name: 'Voice', description: 'Navigate to Voice', defaultKey: '8', currentKey: '8', modifiers: ['cmd'] },
+  { id: 'meetings', name: 'Meetings', description: 'Navigate to Meetings', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
   { id: 'chat', name: 'Chat', description: 'Navigate to Chat', defaultKey: '9', currentKey: '9', modifiers: ['cmd'] },
   { id: 'settings', name: 'Settings', description: 'Open Settings', defaultKey: ',', currentKey: ',', modifiers: ['cmd'] },
   { id: 'commandPalette', name: 'Command Palette', description: 'Open command palette', defaultKey: 'k', currentKey: 'k', modifiers: ['cmd'] },
