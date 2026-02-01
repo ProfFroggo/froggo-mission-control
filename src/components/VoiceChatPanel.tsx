@@ -13,6 +13,9 @@ import { geminiLive, GeminiVoice } from '../lib/geminiLiveService';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
+// Fallback API key (temporary - proper key management via voice agent brain integration)
+const FALLBACK_GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
+
 // Voice mapping per agent for personality
 const AGENT_VOICES: Record<string, GeminiVoice> = {
   froggo: 'Puck',
@@ -130,7 +133,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   useEffect(() => {
     (async () => {
       try {
-        // Try env var first
+        // Try Vite env var first (from .env file)
+        const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+        if (viteKey) {
+          apiKeyRef.current = viteKey;
+          return;
+        }
+        // Try system env var
         if ((window as any).clawdbot?.exec?.run) {
           const r = await (window as any).clawdbot.exec.run('echo $GEMINI_API_KEY 2>/dev/null || echo $GOOGLE_API_KEY 2>/dev/null');
           if (r.success && r.stdout.trim()) {
@@ -143,7 +152,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           const r = await (window as any).clawdbot.settings.get();
           if (r?.success && (r.settings?.geminiApiKey || r.settings?.googleApiKey)) {
             apiKeyRef.current = r.settings.geminiApiKey || r.settings.googleApiKey;
+            return;
           }
+        }
+        // Fallback to hardcoded key
+        if (FALLBACK_GEMINI_API_KEY) {
+          apiKeyRef.current = FALLBACK_GEMINI_API_KEY;
         }
       } catch {}
     })();
@@ -534,6 +548,19 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     setCallActive(true);
     callActiveRef.current = true;
     
+    // Refresh agent context on call start
+    invalidateAgentContext(selectedAgent.id);
+    loadAgentContext(selectedAgent.id).then(ctx => {
+      agentContextRef.current = ctx;
+      setAgentContext(ctx);
+      if (ctx.tasks.length > 0) {
+        addSystemMessage(`📋 ${selectedAgent.name} has ${ctx.tasks.length} active task${ctx.tasks.length > 1 ? 's' : ''}`);
+      }
+      if (ctx.sessions.filter(s => s.state === 'running').length > 0) {
+        addSystemMessage(`🔄 ${ctx.sessions.filter(s => s.state === 'running').length} active sub-session(s)`);
+      }
+    }).catch(() => {});
+    
     if (geminiMode) {
       // Connect to Gemini Live as voice I/O engine
       const apiKey = apiKeyRef.current;
@@ -552,7 +579,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         await geminiLive.connect({
           apiKey,
           voice,
-          systemInstruction: buildRelayInstruction(selectedAgent),
+          systemInstruction: buildRelayInstruction(selectedAgent, agentContextRef.current),
         });
         
         addSystemMessage(`🎙️ Voice call active with ${selectedAgent.name} — speak naturally`);
@@ -741,6 +768,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               <span className="text-xs text-green-400">
                 {geminiConnected ? 'Gemini Live' : 'Active'}
               </span>
+              {agentContext && agentContext.tasks.length > 0 && (
+                <span className="text-[10px] text-clawd-text-dim bg-clawd-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks loaded`}>
+                  🧠 {agentContext.tasks.length}
+                </span>
+              )}
               {speaking && <Waveform level={speakLevel} color="#4ade80" bars={5} height={20} />}
             </div>
           )}
@@ -847,6 +879,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                 <>Press the call button to start a voice conversation.</>
               )}
               {selectedAgent.role && <span className="block mt-1 text-xs opacity-70">{selectedAgent.role}</span>}
+              {agentContext && (
+                <span className="block mt-2 text-xs opacity-60">
+                  🧠 {agentContext.tasks.length} task{agentContext.tasks.length !== 1 ? 's' : ''}
+                  {agentContext.sessions.length > 0 && ` · ${agentContext.sessions.length} session${agentContext.sessions.length !== 1 ? 's' : ''}`}
+                  {agentContext.personality && ` · ${agentContext.personality.emoji} ${agentContext.personality.role}`}
+                </span>
+              )}
+              {contextLoading && <span className="block mt-1 text-xs opacity-40">Loading agent context…</span>}
             </p>
           </div>
         )}
@@ -1009,7 +1049,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
 }
 
 // ── System instruction for Gemini Live relay mode ──
-function buildRelayInstruction(agent: ChatAgent): string {
+function buildRelayInstruction(agent: ChatAgent, context?: AgentContext | null): string {
+  const personalityHint = context?.personality 
+    ? `\nPersonality: ${context.personality.personality}\nVibe: ${context.personality.vibe}`
+    : '';
+  
   return `You are a VOICE RELAY system. Your ONLY purpose is to:
 
 1. LISTEN: When the user speaks, output their speech as accurate text transcription.
@@ -1020,9 +1064,10 @@ CRITICAL RULES:
 - NEVER answer questions yourself - you are just a relay
 - When transcribing user speech, output ONLY what they said, nothing else
 - When speaking [SPEAK] content, speak it naturally as if you are ${agent.name} (${agent.role})
-- Match the personality and tone appropriate for ${agent.name}
+- Match the personality and tone appropriate for ${agent.name}${personalityHint}
 - If the [SPEAK] content has technical terms, pronounce them clearly
 - Keep your voice warm and conversational
 
 You are the voice interface for ${agent.name}. The actual intelligence comes from the real agent system behind you. You just handle the audio.`;
 }
+
