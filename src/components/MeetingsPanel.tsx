@@ -19,7 +19,7 @@ import { useStore } from '../store/store';
 // Gemini API key (same as used elsewhere in dashboard)
 const GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
-const GEMINI_MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+const GEMINI_MODEL = 'models/gemini-live-2.5-flash-preview';
 
 interface Message {
   role: 'user' | 'assistant';

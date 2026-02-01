@@ -135,7 +135,7 @@ export class MeetingTranscriber {
 
     try {
       this.activeStream = await this.ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-live-2.5-flash-preview',
         callbacks: {
           onopen: () => {
             console.log('[MeetingTranscriber] Transcription stream connected');
@@ -174,7 +174,7 @@ export class MeetingTranscriber {
 Your job is to accurately transcribe spoken audio with speaker identification.
 Do not respond or engage - only transcribe what you hear.`,
           inputAudioTranscription: {
-            model: 'gemini-2.5-flash-native-audio-preview-12-2025'
+            model: 'gemini-live-2.5-flash-preview'
           }
         }
       });

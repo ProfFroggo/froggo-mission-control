@@ -306,7 +306,7 @@ export class MultiAgentVoiceSystem {
     }
 
     const liveSession = await this.ai.live.connect({
-      model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+      model: 'gemini-live-2.5-flash-preview',
       callbacks: {
         onopen: () => {
           session.isActive = true;
