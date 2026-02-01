@@ -32,7 +32,7 @@ interface DashboardProps {
 export default function DashboardRedesigned({ onNavigate, onShowBrief }: DashboardProps) {
   const { 
     connected, sessions, tasks, agents, activities, approvals, 
-    fetchSessions, clearActivities, gatewaySessions, loadGatewaySessions, loading 
+    fetchSessions, fetchAgents, clearActivities, gatewaySessions, loadGatewaySessions, loading 
   } = useStore();
   
   const [greeting, setGreeting] = useState('');
@@ -65,6 +65,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     else if (hour < 17) setGreeting('Good afternoon');
     else setGreeting('Good evening');
   }, []);
+
+  useEffect(() => {
+    // Load agents from registry on mount
+    fetchAgents();
+  }, [fetchAgents]);
 
   useEffect(() => {
     if (connected) {

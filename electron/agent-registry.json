@@ -267,6 +267,24 @@
         "tts"
       ],
       "clawdAgentId": "voice"
+    },
+    "designer": {
+      "role": "UI/UX Designer",
+      "description": "Design systems, UI/UX, visual design, user flows, prototyping",
+      "capabilities": [
+        "ui design",
+        "ux design",
+        "design systems",
+        "prototyping",
+        "user flows",
+        "visual design"
+      ],
+      "prompt": "You are Designer, a UI/UX design agent. You help with design systems, user experience, visual design, and prototyping.",
+      "aliases": [
+        "designer",
+        "design"
+      ],
+      "clawdAgentId": "designer"
     }
   }
 }
