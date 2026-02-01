@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, X } from 'lucide-react';
-import { Session } from '../types';
+import { Session } from '../store/store';
 
 interface SnoozeButtonProps {
   session: Session;
@@ -48,7 +48,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
       until = now + option.duration;
     }
 
-    onSnooze(session.id, until, reason || undefined);
+    onSnooze(session.key, until, reason || undefined);
     setShowModal(false);
     setReason('');
   };
@@ -65,7 +65,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
       return;
     }
 
-    onSnooze(session.id, dateTime.getTime(), reason || undefined);
+    onSnooze(session.key, dateTime.getTime(), reason || undefined);
     setShowModal(false);
     setCustomDate('');
     setCustomTime('');
@@ -73,7 +73,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
   };
 
   const handleUnsnooze = () => {
-    onUnsnooze(session.id);
+    onUnsnooze(session.key);
   };
 
   const formatSnoozeTime = (timestamp: number) => {

@@ -129,7 +129,8 @@ class NotificationService {
     console.log('[NotificationService] New notification:', notification);
 
     // Check preferences
-    const prefs = await this.getPreferences(notification.type);
+    const prefsResult = await this.getPreferences(notification.type);
+    const prefs = Array.isArray(prefsResult) ? prefsResult[0] : prefsResult;
     if (!prefs?.enabled) return;
 
     // Check quiet hours

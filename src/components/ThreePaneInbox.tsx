@@ -728,7 +728,7 @@ export default function ThreePaneInbox() {
                                 <span className="text-clawd-text-dim capitalize">
                                   {key.replace(/([A-Z])/g, ' $1').trim()}:
                                 </span>
-                                <span className="ml-2 text-clawd-accent font-medium">{value}</span>
+                                <span className="ml-2 text-clawd-accent font-medium">{String(value)}</span>
                               </div>
                             ))}
                           </div>

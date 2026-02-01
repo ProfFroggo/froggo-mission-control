@@ -230,7 +230,7 @@ export default function SkillsTab() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{skill.name}</span>
                       {skill.hasApiKey && (
-                        <Key size={14} className="text-clawd-accent" title="API key configured" />
+                        <span title="API key configured"><Key size={14} className="text-clawd-accent" /></span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

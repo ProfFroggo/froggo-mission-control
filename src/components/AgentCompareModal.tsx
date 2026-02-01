@@ -62,7 +62,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         const details = await (window as any).clawdbot.agents.getDetails(agentId);
         results[agentId] = {
           name: agent.name,
-          avatar: agent.avatar,
+          avatar: agent.avatar || '',
           successRate: details.successRate || 0,
           avgTime: details.avgTime || 'N/A',
           totalTasks: details.totalTasks || 0,

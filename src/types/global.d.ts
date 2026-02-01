@@ -247,12 +247,17 @@ declare global {
       folders: {
         list: () => Promise<{ success: boolean; folders: any[]; error?: string }>;
         create: (folder: { name: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; folder?: any; error?: string }>;
-        update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
+        update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => Promise<{ success: boolean; error?: string }>;
         delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
         assign: (folderId: number, sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
         unassign: (folderId: number, sessionKey: string) => Promise<{ success: boolean; error?: string }>;
         forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: any[]; error?: string }>;
         conversations: (folderId: number) => Promise<{ success: boolean; conversations: any[]; error?: string }>;
+        rules: {
+          get: (folderId: number) => Promise<{ success: boolean; rule?: any; error?: string }>;
+          save: (folderId: number, rule: any) => Promise<{ success: boolean; error?: string }>;
+          delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
+        };
       };
       // Conversations
       conversations: {
@@ -281,8 +286,8 @@ declare global {
       // VIP contacts
       vip: {
         list: (category?: string) => Promise<any>;
-        add: (vip: { identifier: string; label?: string; category?: string; boost?: number }) => Promise<{ success: boolean; error?: string }>;
-        update: (id: number | string, updates: { label?: string; boost?: number; category?: string }) => Promise<{ success: boolean; error?: string }>;
+        add: (vip: { identifier: string; label?: string; type?: string; category?: string; boost?: number; notes?: string }) => Promise<{ success: boolean; error?: string }>;
+        update: (id: number | string, updates: { label?: string; boost?: number; category?: string; notes?: string }) => Promise<{ success: boolean; error?: string }>;
         remove: (id: number | string) => Promise<{ success: boolean; error?: string }>;
       };
       // Snooze conversations

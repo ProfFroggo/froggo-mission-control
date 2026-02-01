@@ -29,6 +29,7 @@ import {
   StarredMessagesPanel,
   VoiceChatPanel,
   GeminiVoicePanel,
+  MultiAgentVoicePanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
 import CommandPalette from './components/CommandPalette';
@@ -45,7 +46,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'multi-agent-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'error-test';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -367,6 +368,7 @@ function App() {
               {currentView === 'voice-chat' && <VoiceChatPanel />}
               {currentView === 'voice-live' && <VoiceChatPanel />}
               {currentView === 'gemini-voice' && <GeminiVoicePanel />}
+              {currentView === 'multi-agent-voice' && <MultiAgentVoicePanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}

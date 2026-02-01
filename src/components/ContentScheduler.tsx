@@ -26,6 +26,9 @@ interface ScheduledItem {
     replyTo?: string;
     recipient?: string;
     subject?: string;
+    mediaPath?: string;
+    mediaType?: string;
+    mediaFileName?: string;
   };
 }
 

@@ -139,7 +139,7 @@ export default function PanelHeader({
                   ) : ActionIcon ? (
                     <ActionIcon size={16} className="flex-shrink-0" />
                   ) : (
-                    action.icon
+                    action.icon as ReactNode
                   )}
                   {action.label && <span>{action.label}</span>}
                   {action.kbd && (

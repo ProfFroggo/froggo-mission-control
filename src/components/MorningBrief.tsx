@@ -661,10 +661,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                       </span>
                     </div>
                     <p className="text-sm text-clawd-text line-clamp-2">{mention.text}</p>
-                    {(mention.likeCount > 0 || mention.replyCount > 0) && (
+                    {((mention.likeCount ?? 0) > 0 || (mention.replyCount ?? 0) > 0) && (
                       <div className="flex gap-3 mt-2 text-xs text-clawd-text-dim">
-                        {mention.replyCount > 0 && <span>💬 {mention.replyCount}</span>}
-                        {mention.likeCount > 0 && <span>❤️ {mention.likeCount}</span>}
+                        {(mention.replyCount ?? 0) > 0 && <span>💬 {mention.replyCount}</span>}
+                        {(mention.likeCount ?? 0) > 0 && <span>❤️ {mention.likeCount}</span>}
                       </div>
                     )}
                   </div>

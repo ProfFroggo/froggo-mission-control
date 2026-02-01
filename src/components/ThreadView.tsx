@@ -253,9 +253,9 @@ export default function ThreadView({
             <h3 className="font-semibold text-sm truncate">
               {metadata?.subject || `Thread on ${metadata?.platform}`}
             </h3>
-            {metadata?.unread_count > 0 && (
+            {(metadata?.unread_count ?? 0) > 0 && (
               <span className="bg-clawd-accent text-white text-xs px-2 py-0.5 rounded-full">
-                {metadata.unread_count} new
+                {metadata?.unread_count} new
               </span>
             )}
           </div>
