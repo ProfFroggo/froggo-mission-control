@@ -9,7 +9,7 @@
 const SEND_SAMPLE_RATE = 16000;
 const RECEIVE_SAMPLE_RATE = 24000;
 const CHANNELS = 1;
-const MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+const MODEL = 'models/gemini-live-2.5-flash-preview';
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
 export type VideoMode = 'camera' | 'screen' | 'none';
@@ -175,6 +175,17 @@ export class GeminiLiveService {
           setupMsg.setup.systemInstruction = {
             parts: [{ text: systemInstruction }],
           };
+        }
+        
+        // Add tools if provided
+        if (tools && tools.length > 0) {
+          setupMsg.setup.tools = [{
+            functionDeclarations: tools.map(t => ({
+              name: t.name,
+              description: t.description,
+              parameters: t.parameters,
+            })),
+          }];
         }
         console.log('[GeminiLive] Sending setup:', JSON.stringify(setupMsg, null, 2));
         ws.send(JSON.stringify(setupMsg));
