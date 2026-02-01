@@ -83,6 +83,8 @@ export default function AgentPanel() {
     'chief',
     'hr',
     'clara',
+    'social-manager',
+    'designer',
   ];
 
   // Filter agents: ONLY real gateway agents (no duplicates, no phantom agents)
