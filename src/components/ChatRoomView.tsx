@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign } from 'lucide-react';
+import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Mic } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
+import TeamVoiceMeeting from './TeamVoiceMeeting';
 import { gateway } from '../lib/gateway';
 import { AGENTS } from '../lib/agents';
 import { getAgentTheme } from '../utils/agentThemes';
@@ -21,6 +22,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
+  const [voiceMode, setVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const pendingAgentRef = useRef<string | null>(null);
@@ -310,10 +312,18 @@ Respond as ${agentConfig?.name || forAgent}:`;
 
   const { deleteRoom } = useChatRoomStore();
 
+  // Detect if this is a team meeting (has all or nearly all agents)
+  const totalAgents = Object.keys(AGENTS).length;
+  const isTeamMeeting = room.agents.length >= totalAgents - 1 || room.name.toLowerCase().includes('team meeting');
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-clawd-border bg-clawd-surface flex items-center gap-3">
+      <div className={`p-4 border-b flex items-center gap-3 ${
+        isTeamMeeting
+          ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30'
+          : 'bg-clawd-surface border-clawd-border'
+      }`}>
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-clawd-border transition-colors"
@@ -322,47 +332,132 @@ Respond as ${agentConfig?.name || forAgent}:`;
           <ArrowLeft size={18} />
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex -space-x-2">
-            {room.agents.slice(0, 4).map(id => (
-              <AgentAvatar key={id} agentId={id} size="sm" ring />
-            ))}
-          </div>
+          {isTeamMeeting ? (
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+              <UsersRound size={20} className="text-white" />
+            </div>
+          ) : (
+            <div className="flex -space-x-2">
+              {room.agents.slice(0, 4).map(id => (
+                <AgentAvatar key={id} agentId={id} size="sm" ring />
+              ))}
+            </div>
+          )}
           <div>
-            <h2 className="font-semibold text-sm">{room.name}</h2>
+            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-amber-500' : ''}`}>
+              {isTeamMeeting && '🏢 '}{room.name}
+            </h2>
             <p className="text-xs text-clawd-text-dim">
-              You + {room.agents.map(id => AGENTS[id]?.name || id).join(', ')}
+              {isTeamMeeting
+                ? `All ${room.agents.length} agents present`
+                : `You + ${room.agents.map(id => AGENTS[id]?.name || id).join(', ')}`
+              }
             </p>
           </div>
         </div>
+
+        {/* Agent presence indicators for team meetings */}
+        {isTeamMeeting && (
+          <div className="hidden md:flex items-center gap-1 ml-2">
+            {room.agents.map(id => (
+              <div key={id} className="relative group">
+                <AgentAvatar agentId={id} size="xs" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                  {AGENTS[id]?.name || id}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="ml-auto flex items-center gap-2">
+          {/* Voice meeting toggle */}
+          <button
+            onClick={() => setVoiceMode(!voiceMode)}
+            className={`p-2 rounded-lg transition-colors ${
+              voiceMode
+                ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50'
+                : 'text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border'
+            }`}
+            title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
+          >
+            <Mic size={16} />
+          </button>
           <button
             onClick={() => {
-              if (confirm('Delete this room?')) {
+              if (confirm(isTeamMeeting ? 'End this meeting?' : 'Delete this room?')) {
                 deleteRoom(room.id);
                 onBack();
               }
             }}
-            className="p-2 rounded-lg text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            title="Delete room"
+            className={`p-2 rounded-lg transition-colors ${
+              isTeamMeeting
+                ? 'text-amber-400 hover:text-red-400 hover:bg-red-500/10'
+                : 'text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10'
+            }`}
+            title={isTeamMeeting ? 'End meeting' : 'Delete room'}
           >
             <Trash2 size={16} />
           </button>
         </div>
       </div>
 
+      {/* Voice Meeting Mode */}
+      {voiceMode ? (
+        <TeamVoiceMeeting roomId={roomId} onEndVoice={() => setVoiceMode(false)} />
+      ) : (
+      <>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {room.messages.length === 0 ? (
           <div className="text-center py-16 text-clawd-text-dim">
-            <Users size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium mb-2">Room Created!</p>
-            <p className="text-sm mb-4">
-              Start a conversation with {room.agents.map(id => AGENTS[id]?.name || id).join(' and ')}.
-            </p>
-            <p className="text-xs">
-              Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> to address specific agents,
-              or just type to talk to everyone.
-            </p>
+            {isTeamMeeting ? (
+              <>
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                  <UsersRound size={40} className="text-amber-500" />
+                </div>
+                <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started 🏢</p>
+                <p className="text-sm mb-4">
+                  All {room.agents.length} agents are present and ready.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 mb-6 max-w-md mx-auto">
+                  {room.agents.map(id => (
+                    <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-clawd-surface border border-clawd-border rounded-full text-xs">
+                      <AgentAvatar agentId={id} size="xs" />
+                      <span>{AGENTS[id]?.name || id}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs mb-4">
+                  Address everyone at once, or use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center max-w-sm mx-auto">
+                  {["Everyone, let's discuss the sprint plan", "Team status update please", "@Chief What are the priorities?"].map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setInput(q)}
+                      className="px-3 py-1.5 text-xs bg-amber-500/10 border border-amber-500/30 rounded-lg hover:border-amber-500 transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <Users size={48} className="mx-auto mb-4 opacity-30" />
+                <p className="text-lg font-medium mb-2">Room Created!</p>
+                <p className="text-sm mb-4">
+                  Start a conversation with {room.agents.map(id => AGENTS[id]?.name || id).join(' and ')}.
+                </p>
+                <p className="text-xs">
+                  Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> to address specific agents,
+                  or just type to talk to everyone.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           room.messages.map((msg, idx) => {
@@ -505,6 +600,8 @@ Respond as ${agentConfig?.name || forAgent}:`;
           </button>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

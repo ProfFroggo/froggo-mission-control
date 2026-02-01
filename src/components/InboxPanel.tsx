@@ -140,12 +140,12 @@ export default function InboxPanel() {
       }
       
       // Load inbox items
-      const result = await window.clawdbot!.inbox.list();
+      const result = await window.clawdbot?.inbox.list();
       let allItems = result.success ? (result.items || []) : [];
       
       // Also load tasks in "review" status
       try {
-        const tasksResult = await window.clawdbot!.tasks.list('review');
+        const tasksResult = await window.clawdbot?.tasks.list('review');
         if (tasksResult?.success && tasksResult.tasks?.length > 0) {
           // Convert tasks to inbox item format
           const taskItems = tasksResult.tasks
@@ -439,10 +439,10 @@ export default function InboxPanel() {
   // Check if agent is still active on this task
   const checkForActiveAgent = async (taskId: string) => {
     try {
-      const result = await window.clawdbot!.sessions.list();
-      if (result.success && result.sessions) {
+      const result = await window.clawdbot?.sessions.list();
+      if (result?.success && result?.sessions) {
         // Find session with label matching task ID
-        const activeSession = result.sessions.find((s: any) => {
+        const activeSession = result?.sessions.find((s: any) => {
           // Session is active if updated within last 5 minutes
           const isActive = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
           // Label contains task ID (e.g., "coder-task-123")
@@ -560,15 +560,15 @@ export default function InboxPanel() {
       
       try {
         // Add Stage 2 item to inbox
-        const result = await window.clawdbot!.inbox.addWithMetadata(stage2Item);
+        const result = await window.clawdbot?.inbox.addWithMetadata(stage2Item);
         
-        if (result.success) {
+        if (result?.success) {
           // Mark original as approved (Stage 1 complete)
           setItems(prev => prev.filter(i => i.id !== item.id));
-          await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+          await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
           showToast('success', 'Email content approved', `Ready to send to ${recipient}`);
         } else {
-          showToast('error', 'Failed to create send task', result.error);
+          showToast('error', 'Failed to create send task', result?.error);
         }
       } catch (error: any) {
         console.error('[Inbox] Stage 1 email approval error:', error);
@@ -600,7 +600,7 @@ export default function InboxPanel() {
         if (meta.taskId) {
           console.log('[Inbox] Approving task:', meta.taskId);
           // ATOMIC UPDATE: Set both reviewStatus and status together
-          await window.clawdbot!.tasks.update(meta.taskId, { 
+          await window.clawdbot?.tasks.update(meta.taskId, { 
             status: 'in-progress' 
           } as any);
           console.log('[Inbox] Task approved and moved to in-progress:', meta.taskId);
@@ -609,7 +609,7 @@ export default function InboxPanel() {
       }
       
       // Regular inbox item - update and create execution task
-      await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+      await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
       const projectMap: Record<string, string> = {
@@ -641,14 +641,14 @@ export default function InboxPanel() {
         metadata,
       };
       
-      const result = await window.clawdbot!.tasks.sync(taskData);
-      if (!result.success) {
-        console.error('[Inbox] Task creation failed:', result.error);
+      const result = await window.clawdbot?.tasks.sync(taskData);
+      if (!result?.success) {
+        console.error('[Inbox] Task creation failed:', result?.error);
       } else {
         // SAFEGUARD: Verify the status is correct after a brief delay
         setTimeout(async () => {
           try {
-            await window.clawdbot!.tasks.update(taskData.id, { status: 'in-progress' });
+            await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
             console.log('[Inbox] Status verified for task:', taskData.id);
           } catch (e) {
             console.warn('[Inbox] Status verify failed:', e);
@@ -694,13 +694,13 @@ export default function InboxPanel() {
           recentlyRejectedTaskIds.current.add(meta.taskId);
           setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
           try {
-            await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+            await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
           } catch (updateErr) {
             console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
             // Retry once after a short delay
             setTimeout(async () => {
               try {
-                await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+                await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
                 console.log('[Inbox] Retry succeeded for task:', meta.taskId);
               } catch (retryErr) {
                 console.error('[Inbox] Retry also failed:', retryErr);
@@ -711,13 +711,13 @@ export default function InboxPanel() {
         }
       } else {
         // Regular inbox item
-        await window.clawdbot!.inbox.update(item.id, { 
+        await window.clawdbot?.inbox.update(item.id, { 
           status: 'rejected',
           feedback: reason 
         });
       }
       
-      await window.clawdbot!.rejections.log({
+      await window.clawdbot?.rejections.log({
         type: item.type,
         title: item.title,
         content: item.content,
@@ -759,12 +759,12 @@ export default function InboxPanel() {
           recentlyRejectedTaskIds.current.add(meta.taskId);
           setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
           try {
-            await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+            await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
           } catch (updateErr) {
             console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
             setTimeout(async () => {
               try {
-                await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+                await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
               } catch (retryErr) {
                 console.error('[Inbox] Retry also failed:', retryErr);
               }
@@ -775,13 +775,13 @@ export default function InboxPanel() {
         }
       } else {
         // Regular inbox item
-        await window.clawdbot!.inbox.update(item.id, { 
+        await window.clawdbot?.inbox.update(item.id, { 
           status: 'rejected',
           feedback: reason 
         });
       }
       
-      await window.clawdbot!.rejections.log({
+      await window.clawdbot?.rejections.log({
         type: item.type,
         title: item.title,
         content: item.content,
@@ -814,14 +814,14 @@ export default function InboxPanel() {
       // For task items, update the task status back to in-progress with feedback
       const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
       if (meta.taskId) {
-        await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+        await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
         gateway.sendToMain(`[TASK_FEEDBACK] Task "${item.title}" needs revision.\nFeedback: ${feedbackText}`);
         showToast('success', 'Feedback sent', 'Task moved back to In Progress');
       }
     } else {
       // Regular inbox item - update status and create revision task
-      await window.clawdbot!.inbox.update(item.id, { 
+      await window.clawdbot?.inbox.update(item.id, { 
         status: 'needs-revision', 
         feedback: feedbackText 
       });
@@ -837,10 +837,10 @@ export default function InboxPanel() {
         assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
       };
       
-      const result = await window.clawdbot!.tasks.sync(taskData);
+      const result = await window.clawdbot?.tasks.sync(taskData);
       if (result?.success) {
         showToast('success', 'Revision task created', 'Check Tasks tab');
-        await window.clawdbot!.tasks.update?.(taskData.id, { status: 'in-progress' });
+        await window.clawdbot?.tasks.update?.(taskData.id, { status: 'in-progress' });
       } else {
         console.error('[Inbox] Task creation failed:', result);
         showToast('error', 'Revision task failed', result?.error || 'Unknown error');
@@ -1573,18 +1573,18 @@ export default function InboxPanel() {
                         showToast('info', 'Sending email...', `To: ${recipient}`);
                         
                         try {
-                          const result = await window.clawdbot!.email.send({
+                          const result = await window.clawdbot?.email.send({
                             to: recipient,
                             subject,
                             body: item.content,
                             account,
                           });
                           
-                          if (result.success) {
-                            await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+                          if (result?.success) {
+                            await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
                             showToast('success', 'Email sent ✓', `To: ${recipient}`);
                           } else {
-                            showToast('error', 'Email failed', result.error);
+                            showToast('error', 'Email failed', result?.error);
                             loadInbox(); // Revert
                           }
                         } catch (e: any) {
@@ -1639,7 +1639,7 @@ export default function InboxPanel() {
                       
                       // Add to schedule
                       try {
-                        const result = await window.clawdbot!.schedule.add({
+                        const result = await window.clawdbot?.schedule.add({
                           type: item.type,
                           content: item.content,
                           scheduledFor,
@@ -1650,10 +1650,10 @@ export default function InboxPanel() {
                           },
                         });
                         
-                        if (result.success) {
+                        if (result?.success) {
                           // Remove from inbox
                           setItems(prev => prev.filter(i => i.id !== item.id));
-                          await window.clawdbot!.inbox.update(item.id, { status: 'scheduled' });
+                          await window.clawdbot?.inbox.update(item.id, { status: 'scheduled' });
                           
                           const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
                             weekday: 'short',
@@ -1833,11 +1833,11 @@ export default function InboxPanel() {
                   setAbortingAgent(true);
                   try {
                     // Kill the agent session
-                    const result = await window.clawdbot!.exec.run(
+                    const result = await window.clawdbot?.exec.run(
                       `clawdbot sessions kill ${activeAgentSession.sessionId}`
                     );
                     
-                    if (result.success) {
+                    if (result?.success) {
                       showToast('success', 'Agent aborted', 'Proceeding with approval...');
                       
                       // Wait a moment for session to fully terminate
@@ -1849,7 +1849,7 @@ export default function InboxPanel() {
                         : pendingApprovalItem.metadata;
                       
                       if (meta.taskId) {
-                        await window.clawdbot!.tasks.update(meta.taskId, { status: 'done' });
+                        await window.clawdbot?.tasks.update(meta.taskId, { status: 'done' });
                         setItems(prev => prev.filter(i => i.id !== pendingApprovalItem.id));
                         showToast('success', 'Task approved and completed ✓');
                       }
@@ -1858,7 +1858,7 @@ export default function InboxPanel() {
                       setActiveAgentSession(null);
                       setPendingApprovalItem(null);
                     } else {
-                      showToast('error', 'Failed to abort agent', result.stderr || 'Unknown error');
+                      showToast('error', 'Failed to abort agent', result?.stderr || 'Unknown error');
                     }
                   } catch (err: any) {
                     showToast('error', 'Abort failed', err.message);

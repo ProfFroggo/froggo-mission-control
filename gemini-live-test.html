@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Gemini Live API Test</title>
+<style>
+  body { font-family: system-ui; background: #1a1a2e; color: #eee; max-width: 700px; margin: 40px auto; padding: 20px; }
+  h1 { color: #7dd87d; }
+  button { padding: 12px 24px; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
+  #connectBtn { background: #7dd87d; color: #000; }
+  #connectBtn:disabled { background: #555; color: #999; }
+  #disconnectBtn { background: #e74c3c; color: #fff; }
+  #log { background: #0d0d1a; padding: 15px; border-radius: 8px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; }
+  .ok { color: #7dd87d; } .err { color: #e74c3c; } .info { color: #5dade2; } .warn { color: #f39c12; }
+  #status { font-size: 18px; margin: 10px 0; }
+  #level { width: 100%; height: 10px; background: #333; border-radius: 5px; margin: 10px 0; }
+  #levelBar { height: 100%; background: #7dd87d; border-radius: 5px; width: 0%; transition: width 50ms; }
+</style>
+</head>
+<body>
+<h1>🐸 Gemini Live API Test</h1>
+<div id="status">⚪ Disconnected</div>
+<div id="level"><div id="levelBar"></div></div>
+<button id="connectBtn" onclick="connect()">🎤 Connect & Talk</button>
+<button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+<div id="log"></div>
+
+<script>
+const API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
+const MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
+const SEND_RATE = 16000;
+const RECV_RATE = 24000;
+
+let ws = null;
+let micStream = null;
+let audioCtx = null;
+let playCtx = null;
+let processor = null;
+let playQueue = [];
+let isPlaying = false;
+
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const levelBar = document.getElementById('levelBar');
+
+function log(msg, cls = 'info') {
+  const t = new Date().toLocaleTimeString();
+  logEl.innerHTML += `<span class="${cls}">[${t}] ${msg}</span>\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function connect() {
+  document.getElementById('connectBtn').disabled = true;
+  document.getElementById('disconnectBtn').disabled = false;
+  
+  log('Connecting to Gemini Live API...', 'info');
+  statusEl.textContent = '🟡 Connecting...';
+
+  try {
+    // Open WebSocket
+    ws = new WebSocket(`${WS_URL}?key=${API_KEY}`);
+    
+    ws.onopen = () => {
+      log('WebSocket open, sending setup...', 'ok');
+      const setup = {
+        setup: {
+          model: MODEL,
+          generationConfig: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: 'Puck'
+                }
+              }
+            }
+          },
+          inputAudioTranscription: {},
+          outputAudioTranscription: {},
+          systemInstruction: {
+            parts: [{ text: 'You are Froggo, a helpful AI assistant. Be concise and friendly.' }]
+          }
+        }
+      };
+      log('Setup: ' + JSON.stringify(setup, null, 2), 'info');
+      ws.send(JSON.stringify(setup));
+    };
+
+    ws.onmessage = async (event) => {
+      let data;
+      if (event.data instanceof Blob) {
+        data = JSON.parse(await event.data.text());
+      } else {
+        data = JSON.parse(event.data);
+      }
+
+      if (data.setupComplete !== undefined) {
+        log('✅ Setup complete! Start speaking...', 'ok');
+        statusEl.textContent = '🟢 Connected - Speak!';
+        startMic();
+        return;
+      }
+
+      if (data.serverContent) {
+        const sc = data.serverContent;
+        if (sc.modelTurn?.parts) {
+          for (const part of sc.modelTurn.parts) {
+            if (part.inlineData) {
+              log(`🔊 Received audio chunk (${part.inlineData.data.length} bytes b64)`, 'ok');
+              const bytes = base64ToArrayBuffer(part.inlineData.data);
+              playQueue.push(bytes);
+              if (!isPlaying) playAudio();
+            }
+            if (part.text) {
+              log(`📝 Text: ${part.text}`, 'info');
+            }
+          }
+        }
+        if (sc.turnComplete) {
+          log('Turn complete', 'info');
+        }
+        if (sc.interrupted) {
+          log('⚡ Interrupted', 'warn');
+          playQueue = [];
+          isPlaying = false;
+        }
+        if (sc.inputTranscription?.text) {
+          log(`🎤 You: ${sc.inputTranscription.text}`, 'warn');
+        }
+        if (sc.outputTranscription?.text) {
+          log(`🐸 Froggo: ${sc.outputTranscription.text}`, 'ok');
+        }
+      }
+
+      if (data.toolCall) {
+        log('🔧 Tool call: ' + JSON.stringify(data.toolCall), 'warn');
+      }
+    };
+
+    ws.onerror = (e) => {
+      log('WebSocket error: ' + e.type, 'err');
+      statusEl.textContent = '🔴 Error';
+    };
+
+    ws.onclose = (e) => {
+      log(`WebSocket closed: ${e.code} ${e.reason}`, e.code === 1000 ? 'info' : 'err');
+      statusEl.textContent = '⚪ Disconnected';
+      stopMic();
+      document.getElementById('connectBtn').disabled = false;
+      document.getElementById('disconnectBtn').disabled = true;
+    };
+
+  } catch (err) {
+    log('Error: ' + err.message, 'err');
+    statusEl.textContent = '🔴 Error';
+    document.getElementById('connectBtn').disabled = false;
+  }
+}
+
+async function startMic() {
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: SEND_RATE, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+    audioCtx = new AudioContext({ sampleRate: SEND_RATE });
+    const source = audioCtx.createMediaStreamSource(micStream);
+    processor = audioCtx.createScriptProcessor(4096, 1, 1);
+    
+    // Analyser for level meter
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    const dataArr = new Uint8Array(analyser.frequencyBinCount);
+    
+    function updateLevel() {
+      analyser.getByteFrequencyData(dataArr);
+      const avg = dataArr.reduce((a, b) => a + b, 0) / dataArr.length;
+      levelBar.style.width = Math.min(100, avg * 1.5) + '%';
+      if (micStream) requestAnimationFrame(updateLevel);
+    }
+    updateLevel();
+
+    processor.onaudioprocess = (e) => {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      const pcm = e.inputBuffer.getChannelData(0);
+      const int16 = float32ToInt16(pcm);
+      const b64 = arrayBufferToBase64(int16.buffer);
+      ws.send(JSON.stringify({
+        realtimeInput: {
+          audio: {
+            data: b64,
+            mimeType: 'audio/pcm;rate=16000'
+          }
+        }
+      }));
+    };
+
+    source.connect(processor);
+    processor.connect(audioCtx.destination); // needed for processing
+    log('🎤 Microphone active', 'ok');
+  } catch (err) {
+    log('Mic error: ' + err.message, 'err');
+  }
+}
+
+function stopMic() {
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (processor) { processor.disconnect(); processor = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  levelBar.style.width = '0%';
+}
+
+async function playAudio() {
+  if (!playCtx) playCtx = new AudioContext({ sampleRate: RECV_RATE });
+  isPlaying = true;
+  
+  while (playQueue.length > 0) {
+    const raw = playQueue.shift();
+    const int16 = new Int16Array(raw);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
+    
+    const buffer = playCtx.createBuffer(1, float32.length, RECV_RATE);
+    buffer.getChannelData(0).set(float32);
+    
+    const source = playCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(playCtx.destination);
+    source.start();
+    
+    await new Promise(r => source.onended = r);
+  }
+  isPlaying = false;
+}
+
+function disconnect() {
+  if (ws) ws.close();
+  stopMic();
+}
+
+function float32ToInt16(float32) {
+  const int16 = new Int16Array(float32.length);
+  for (let i = 0; i < float32.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32[i]));
+    int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return int16;
+}
+
+function base64ToArrayBuffer(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function arrayBufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+</script>
+</body>
+</html>

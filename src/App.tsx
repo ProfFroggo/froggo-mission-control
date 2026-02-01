@@ -14,7 +14,7 @@ import {
   Kanban,
   AgentPanel,
   ChatPanel,
-  VoicePanel,
+  MeetingsPanel,
   SettingsPanel,
   NotificationsPanel,
   XPanel,
@@ -28,6 +28,7 @@ import {
   ConnectedAccountsPanel,
   StarredMessagesPanel,
   VoiceChatPanel,
+  GeminiVoicePanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
 import CommandPalette from './components/CommandPalette';
@@ -44,7 +45,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'voice-chat' | 'voice-live' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'error-test';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -129,9 +130,9 @@ function App() {
     }
   }, []);
 
-  // Handle call button click - navigate to voice and start meeting
+  // Handle call button click - navigate to voice chat
   const handleCallClick = useCallback(() => {
-    setCurrentView('voice');
+    setCurrentView('voice-chat');
   }, []);
 
   // Global keyboard shortcuts
@@ -273,7 +274,7 @@ function App() {
             break;
           case '7':
             e.preventDefault();
-            setCurrentView('voice');
+            setCurrentView('meetings');
             break;
           case '8':
             e.preventDefault();
@@ -299,6 +300,10 @@ function App() {
             case 'C':
               e.preventDefault();
               setCurrentView('context');
+              break;
+            case 'G':
+              e.preventDefault();
+              setCurrentView('gemini-voice');
               break;
             case 'L':
               e.preventDefault();
@@ -348,7 +353,7 @@ function App() {
         {/* Main content - each panel already wrapped via ProtectedPanels */}
         <main 
           id="main-content"
-          className="flex-1 overflow-hidden pt-12"
+          className="flex-1 overflow-hidden pt-12 relative z-0"
           role="main"
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
         >
@@ -358,9 +363,10 @@ function App() {
               {currentView === 'kanban' && <Kanban />}
               {currentView === 'agents' && <AgentPanel />}
               {currentView === 'chat' && <ChatPanel />}
-              {currentView === 'voice' && <VoicePanel />}
+              {currentView === 'meetings' && <MeetingsPanel />}
               {currentView === 'voice-chat' && <VoiceChatPanel />}
               {currentView === 'voice-live' && <VoiceChatPanel />}
+              {currentView === 'gemini-voice' && <GeminiVoicePanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}

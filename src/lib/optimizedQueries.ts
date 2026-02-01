@@ -69,8 +69,8 @@ export const optimizedQueries = {
       query += ' ORDER BY updated_at DESC';
 
       // Execute via gateway
-      const result = await window.clawdbot.froggo.query(query, params);
-      return result.results || [];
+      const result = await window.clawdbot!.froggo.query(query, params);
+      return result.rows || [];
     });
   },
 
@@ -81,11 +81,11 @@ export const optimizedQueries = {
     const cacheKey = cacheKeys.task(id);
 
     return queryCache.get(cacheKey, async () => {
-      const result = await window.clawdbot.froggo.query(
+      const result = await window.clawdbot!.froggo.query(
         'SELECT * FROM tasks WHERE id = ?',
         [id]
       );
-      return result.results?.[0] || null;
+      return result.rows?.[0] || null;
     });
   },
 
@@ -97,14 +97,14 @@ export const optimizedQueries = {
 
     return queryCache.get(cacheKey, async () => {
       // Get all sessions
-      const sessions = await window.clawdbot.gateway.sessions();
+      const sessions = await window.clawdbot!.gateway.sessions() as any;
       if (!sessions.success) return [];
 
       // Batch-load folder assignments
       const sessionKeys = sessions.sessions.map((s: any) => s.key);
       const folderAssignments = await Promise.all(
         sessionKeys.map(async (key: string) => {
-          const result = await window.clawdbot.folders.forConversation(key);
+          const result = await window.clawdbot!.folders.forConversation(key);
           return {
             key,
             folders: result.success ? result.folders : [],
@@ -136,11 +136,11 @@ export const optimizedQueries = {
     const cacheKey = cacheKeys.activity(taskId);
 
     return queryCache.get(cacheKey, async () => {
-      const result = await window.clawdbot.froggo.query(
+      const result = await window.clawdbot!.froggo.query(
         'SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?',
         [taskId, limit]
       );
-      return result.results || [];
+      return result.rows || [];
     }, 3000); // 3s cache for activity
   },
 
@@ -177,8 +177,8 @@ export const optimizedQueries = {
         params.push(filters.limit);
       }
 
-      const result = await window.clawdbot.froggo.query(query, params);
-      return result.results || [];
+      const result = await window.clawdbot!.froggo.query(query, params);
+      return result.rows || [];
     });
   },
 
@@ -189,7 +189,7 @@ export const optimizedQueries = {
     const cacheKey = cacheKeys.approvals();
 
     return queryCache.get(cacheKey, async () => {
-      const result = await window.clawdbot.inbox.list();
+      const result = await window.clawdbot!.inbox.list();
       return result.success ? result.items : [];
     }, 5000); // 5s cache
   },
@@ -211,7 +211,7 @@ export const optimizedQueries = {
       ORDER BY updated_at DESC
       LIMIT ?
     `;
-    const tasksResult = await window.clawdbot.froggo.query(taskQuery, [
+    const tasksResult = await window.clawdbot!.froggo.query(taskQuery, [
       searchTerm,
       searchTerm,
       limit,
@@ -224,14 +224,14 @@ export const optimizedQueries = {
       ORDER BY starred_at DESC
       LIMIT ?
     `;
-    const messagesResult = await window.clawdbot.froggo.query(messageQuery, [
+    const messagesResult = await window.clawdbot!.froggo.query(messageQuery, [
       searchTerm,
       searchTerm,
       limit,
     ]);
 
     // Search sessions (in-memory)
-    const sessions = await window.clawdbot.gateway.sessions();
+    const sessions = await window.clawdbot!.gateway.sessions() as any;
     const filteredSessions = sessions.success
       ? sessions.sessions
           .filter((s: any) =>
@@ -241,8 +241,8 @@ export const optimizedQueries = {
       : [];
 
     return {
-      tasks: tasksResult.results || [],
-      messages: messagesResult.results || [],
+      tasks: tasksResult.rows || [],
+      messages: messagesResult.rows || [],
       sessions: filteredSessions,
     };
   },

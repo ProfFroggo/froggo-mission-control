@@ -105,16 +105,16 @@ export default function SessionsFilter() {
 
   const loadFolders = async () => {
     try {
-      const result = await window.clawdbot.folders.list();
-      if (result.success) {
-        setFolders(result.folders || []);
+      const result = await window.clawdbot?.folders.list();
+      if (result?.success) {
+        setFolders(result?.folders || []);
         
         // Load folder assignments for all sessions
         const assignments: Record<string, number[]> = {};
         for (const session of sessions) {
-          const folderResult = await window.clawdbot.folders.forConversation(session.key);
-          if (folderResult.success && folderResult.folders.length > 0) {
-            assignments[session.key] = folderResult.folders.map((f: any) => f.id);
+          const folderResult = await window.clawdbot?.folders.forConversation(session.key);
+          if (folderResult?.success && folderResult?.folders.length > 0) {
+            assignments[session.key] = folderResult?.folders.map((f: any) => f.id);
           }
         }
         setFolderAssignments(assignments);
@@ -128,9 +128,9 @@ export default function SessionsFilter() {
     try {
       const settings: Record<string, any> = {};
       for (const session of sessions) {
-        const result = await window.clawdbot.notificationSettings.getEffective(session.key);
-        if (result.success && result.settings) {
-          settings[session.key] = result.settings;
+        const result = await window.clawdbot?.notificationSettings.getEffective(session.key);
+        if (result?.success && result?.settings) {
+          settings[session.key] = result?.settings;
         }
       }
       setNotificationSettings(settings);
@@ -141,10 +141,10 @@ export default function SessionsFilter() {
 
   const loadPinnedSessions = async () => {
     try {
-      const result = await window.clawdbot.pins.list();
-      if (result.success && result.pins) {
+      const result = await window.clawdbot?.pins.list();
+      if (result?.success && result?.pins) {
         // Pins are already sorted by pin_order ASC from the backend
-        const orderedKeys = result.pins.map((p: any) => p.session_key);
+        const orderedKeys = result?.pins.map((p: any) => p.session_key);
         const pinSet = new Set(orderedKeys);
         setPinnedSessions(pinSet);
         setPinnedOrder(orderedKeys);
@@ -156,10 +156,10 @@ export default function SessionsFilter() {
 
   const loadSnoozedSessions = async () => {
     try {
-      const result = await window.clawdbot.snooze.list();
-      if (result.success && result.snoozes) {
+      const result = await window.clawdbot?.snooze.list();
+      if (result?.success && result.snoozes) {
         const snoozeMap: Record<string, any> = {};
-        result.snoozes.forEach((snooze: any) => {
+        result?.snoozes.forEach((snooze: any) => {
           snoozeMap[snooze.session_id] = snooze;
         });
         setSnoozedSessions(snoozeMap);
@@ -171,13 +171,13 @@ export default function SessionsFilter() {
 
   const togglePin = async (sessionKey: string) => {
     try {
-      const result = await window.clawdbot.pins.toggle(sessionKey);
-      if (result.success) {
+      const result = await window.clawdbot?.pins.toggle(sessionKey);
+      if (result?.success) {
         // Reload pins to update UI
         await loadPinnedSessions();
-      } else if (result.error) {
+      } else if (result?.error) {
         // Show error if pin limit reached
-        alert(result.error);
+        alert(result?.error);
       }
     } catch (error) {
       console.error('[SessionsFilter] Failed to toggle pin:', error);
@@ -213,9 +213,9 @@ export default function SessionsFilter() {
     
     // Save to backend
     try {
-      const result = await window.clawdbot.pins.reorder(newOrder);
-      if (!result.success) {
-        console.error('[SessionsFilter] Failed to reorder pins:', result.error);
+      const result = await window.clawdbot?.pins.reorder(newOrder);
+      if (!result?.success) {
+        console.error('[SessionsFilter] Failed to reorder pins:', result?.error);
         // Reload to restore correct order
         await loadPinnedSessions();
       }
@@ -368,12 +368,12 @@ export default function SessionsFilter() {
       // Delete each selected session
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot.conversations.delete(sessionKey);
-          if (result.success) {
+          const result = await window.clawdbot?.conversations.delete(sessionKey);
+          if (result?.success) {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to delete ${sessionKey}:`, result.error);
+            console.error(`[SessionsFilter] Failed to delete ${sessionKey}:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -409,12 +409,12 @@ export default function SessionsFilter() {
       // Archive each selected session
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot.conversations.archive(sessionKey);
-          if (result.success) {
+          const result = await window.clawdbot?.conversations.archive(sessionKey);
+          if (result?.success) {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to archive ${sessionKey}:`, result.error);
+            console.error(`[SessionsFilter] Failed to archive ${sessionKey}:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -449,12 +449,12 @@ export default function SessionsFilter() {
       // Mark each selected session as read
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot.conversations.markRead(sessionKey);
-          if (result.success) {
+          const result = await window.clawdbot?.conversations.markRead(sessionKey);
+          if (result?.success) {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to mark ${sessionKey} as read:`, result.error);
+            console.error(`[SessionsFilter] Failed to mark ${sessionKey} as read:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -487,13 +487,13 @@ export default function SessionsFilter() {
   const handleConversationDrop = async (sessionKey: string, folderId: number) => {
     try {
       console.log('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
-      const result = await window.clawdbot.folders.assign(folderId, sessionKey);
-      if (result.success) {
+      const result = await window.clawdbot?.folders.assign(folderId, sessionKey);
+      if (result?.success) {
         // Refresh folders and assignments
         await loadFolders();
         console.log('[SessionsFilter] Successfully assigned conversation to folder');
       } else {
-        console.error('[SessionsFilter] Failed to assign folder:', result.error);
+        console.error('[SessionsFilter] Failed to assign folder:', result?.error);
         alert('Failed to assign to folder');
       }
     } catch (error) {

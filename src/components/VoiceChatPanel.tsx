@@ -9,12 +9,31 @@ import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
-import { geminiLive, GeminiVoice } from '../lib/geminiLiveService';
+import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall } from '../lib/geminiLiveService';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
 // Fallback API key (temporary - proper key management via voice agent brain integration)
-const FALLBACK_GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
+const FALLBACK_GEMINI_API_KEY = 'AIzaSyCziHu8LUZ6RXmt-4lu_NzgEfczM0DC1RE';
+
+// Load API key synchronously at module level
+function loadApiKeySync(): string {
+  // Try Vite env var first (from .env file)
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  if (viteKey && viteKey !== 'your_key_here') {
+    console.log('[VoiceChat] ✅ API key loaded from .env');
+    return viteKey;
+  }
+
+  // Use fallback
+  if (FALLBACK_GEMINI_API_KEY) {
+    console.log('[VoiceChat] ⚠️ Using fallback API key (set VITE_GEMINI_API_KEY in .env)');
+    return FALLBACK_GEMINI_API_KEY;
+  }
+
+  console.error('[VoiceChat] ❌ No API key available');
+  return '';
+}
 
 // Voice mapping per agent for personality
 const AGENT_VOICES: Record<string, GeminiVoice> = {
@@ -59,12 +78,17 @@ function saveHistory(agentId: string, msgs: VoiceChatMessage[]) {
 }
 
 export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {
+  console.log('🎙️ VoiceChatPanel MOUNTED');
+  console.log('Props:', { agentId, embedded });
+  
   const { addActivity } = useStore();
   
   const initialAgent = agentId 
     ? CHAT_AGENTS.find(a => a.id === agentId) || CHAT_AGENTS[0]
     : CHAT_AGENTS[0];
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent>(initialAgent);
+  
+  console.log('Initial agent:', initialAgent.name);
   
   // Call / voice state
   const [callActive, setCallActive] = useState(false);
@@ -78,6 +102,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // Screen share & video
   const [screenSharing, setScreenSharing] = useState(false);
   const [videoActive, setVideoActive] = useState(false);
+  const [videoMode, setVideoMode] = useState<'none' | 'camera' | 'screen'>('none');
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   
@@ -86,6 +111,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const [speakLevel, setSpeakLevel] = useState(0);
   
   // Messages & transcript
+  const msgCounter = useRef(0);
+  const nextId = (suffix: string) => `vc-${Date.now()}-${++msgCounter.current}-${suffix}`;
   const [messages, setMessages] = useState<VoiceChatMessage[]>([]);
   const [partialTranscript, setPartialTranscript] = useState('');
   
@@ -96,7 +123,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const callActiveRef = useRef(false);
-  const apiKeyRef = useRef<string | null>(null);
+  const apiKeyRef = useRef<string | null>(loadApiKeySync()); // Load API key immediately on mount
   const currentResponseRef = useRef('');
   const currentMsgIdRef = useRef('');
   const pendingUserTextRef = useRef('');
@@ -129,37 +156,40 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     return () => { unsub(); };
   }, []);
   
-  // Load API key for Gemini
+  // Optionally try to load API key from system env/settings (async fallback)
   useEffect(() => {
+    // Only try async sources if we don't have a key yet
+    if (apiKeyRef.current) {
+      console.log('[VoiceChat] API key already loaded:', apiKeyRef.current.substring(0, 10) + '...');
+      return;
+    }
+
     (async () => {
       try {
-        // Try Vite env var first (from .env file)
-        const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
-        if (viteKey) {
-          apiKeyRef.current = viteKey;
-          return;
-        }
         // Try system env var
         if ((window as any).clawdbot?.exec?.run) {
           const r = await (window as any).clawdbot.exec.run('echo $GEMINI_API_KEY 2>/dev/null || echo $GOOGLE_API_KEY 2>/dev/null');
-          if (r.success && r.stdout.trim()) {
+          if (r.success && r.stdout?.trim()) {
             apiKeyRef.current = r.stdout.trim().split('\n')[0];
+            console.log('[VoiceChat] ✅ API key loaded from system env');
             return;
           }
         }
+        
         // Try settings
         if ((window as any).clawdbot?.settings?.get) {
           const r = await (window as any).clawdbot.settings.get();
           if (r?.success && (r.settings?.geminiApiKey || r.settings?.googleApiKey)) {
             apiKeyRef.current = r.settings.geminiApiKey || r.settings.googleApiKey;
+            console.log('[VoiceChat] ✅ API key loaded from settings');
             return;
           }
         }
-        // Fallback to hardcoded key
-        if (FALLBACK_GEMINI_API_KEY) {
-          apiKeyRef.current = FALLBACK_GEMINI_API_KEY;
-        }
-      } catch {}
+        
+        console.warn('[VoiceChat] ⚠️ No API key found in async sources');
+      } catch (err) {
+        console.error('[VoiceChat] Error loading API key from async sources:', err);
+      }
     })();
   }, []);
   
@@ -229,40 +259,70 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         console.error('[VoiceChat] Gemini error:', message);
         addSystemMessage(`⚠️ ${message}`);
       }),
-      // Transcript from Gemini Live - this is the user's speech transcribed
-      geminiLive.on('transcript', ({ text, role }: { text: string; role: string }) => {
-        if (role === 'user') {
-          // User speech transcribed - but Gemini Live doesn't emit user transcripts
-          // We handle this via the model's relay behavior
-        } else if (role === 'model') {
-          // Model response - this is Gemini relaying the user's speech as text
-          // Check if it looks like a transcription relay
-          handleGeminiTranscript(text);
+      // Model thinking (internal reasoning - not spoken text, just log it)
+      geminiLive.on('model-thinking', ({ text }: { text: string }) => {
+        console.log('[VoiceChat] Model thinking:', text.slice(0, 100));
+      }),
+      // Transcript from Gemini Live (inputTranscription / outputTranscription)
+      geminiLive.on('transcript', (data: { text: string; role: string }) => {
+        handleGeminiTranscript(data);
+      }),
+      // Tool calls from Gemini Live - execute agent capabilities
+      geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
+        if (!toolCall?.functionCalls?.length) return;
+        
+        const responses: Array<{ id: string; name: string; response: any }> = [];
+        
+        for (const fc of toolCall.functionCalls) {
+          console.log(`[VoiceChat] Tool call: ${fc.name}`, fc.args);
+          addSystemMessage(`🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
+          
+          const result = await executeToolCall(fc.name, fc.args || {}, selectedAgent);
+          console.log(`[VoiceChat] Tool result:`, result);
+          
+          responses.push({ id: fc.id, name: fc.name, response: result });
+          
+          // Invalidate context cache after mutations
+          if (['create_task', 'update_task', 'spawn_agent'].includes(fc.name)) {
+            invalidateAgentContext();
+            // Reload context
+            loadAgentContext(selectedAgent.id).then(ctx => {
+              agentContextRef.current = ctx;
+              setAgentContext(ctx);
+            }).catch(() => {});
+          }
         }
+        
+        // Send tool responses back to Gemini so it can speak the result
+        await geminiLive.sendToolResponse(responses);
       }),
     ];
     
     return () => unsubs.forEach(u => u());
-  }, [geminiMode, selectedAgent]);
+  }, [geminiMode, selectedAgent.id]);
   
-  // ── Handle transcript from Gemini (acting as relay) ──
-  // Gemini is instructed to transcribe user speech. When it outputs text,
-  // we check if it's a relay of user speech or a spoken agent response.
-  const handleGeminiTranscript = useCallback((text: string) => {
-    if (!text?.trim()) return;
+  // ── Handle transcript from Gemini Live ──
+  // In full Gemini Live mode, this is Gemini's spoken response
+  const handleGeminiTranscript = useCallback((data: { text: string; role: string }) => {
+    const text = data.text?.trim();
+    if (!text) return;
     
-    // If we're currently processing an agent response (we sent text to speak),
-    // this transcript is Gemini speaking the agent's response - ignore it
-    if (currentMsgIdRef.current && currentResponseRef.current) return;
-    
-    // This is user speech transcribed by Gemini
-    // Clean up any relay prefixes Gemini might add
-    let cleaned = text.trim();
-    cleaned = cleaned.replace(/^(User said|Transcription|The user said)[:\s]*/i, '');
-    if (cleaned) {
-      setPartialTranscript('');
-      handleUserSpeech(cleaned);
-    }
+    const role = data.role === 'model' ? 'assistant' : 'user';
+    setMessages(prev => {
+      const lastMsg = prev[prev.length - 1];
+      // Append to last same-role message if recent
+      if (lastMsg?.role === role && Date.now() - lastMsg.timestamp < 3000) {
+        return prev.map((m, i) =>
+          i === prev.length - 1 ? { ...m, content: m.content + ' ' + text } : m
+        );
+      }
+      return [...prev, {
+        id: nextId(role === 'assistant' ? 'gemini' : 'u'),
+        role,
+        content: text,
+        timestamp: Date.now(),
+      }];
+    });
   }, []);
   
   // ── Streaming response listeners from gateway ──
@@ -343,46 +403,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }).catch(() => {});
     }
     
-    // Speak the response via Gemini Live TTS
-    if (!muted && text && callActiveRef.current) {
-      if (geminiMode && geminiLive.connected) {
-        // Stop mic while agent speaks to prevent feedback
-        geminiLive.stopMic();
-        // Send agent response to Gemini Live for TTS
-        // Strip markdown for cleaner speech
-        const spokenText = text
-          .replace(/```[\s\S]*?```/g, '(code block)')
-          .replace(/`([^`]+)`/g, '$1')
-          .replace(/\*\*([^*]+)\*\*/g, '$1')
-          .replace(/\*([^*]+)\*/g, '$1')
-          .replace(/#{1,6}\s+/g, '')
-          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-          .replace(/\n{2,}/g, '. ')
-          .trim();
-        
-        await geminiLive.sendText(`[SPEAK] ${spokenText}`);
-        
-        // Wait for Gemini to finish speaking, then resume mic
-        const waitForSpeechEnd = () => new Promise<void>(resolve => {
-          if (!geminiLive.speaking) {
-            // Give a small buffer for audio to complete
-            setTimeout(resolve, 500);
-            return;
-          }
-          const unsub = geminiLive.on('speaking-end', () => {
-            unsub();
-            setTimeout(resolve, 300);
-          });
-          // Timeout safety
-          setTimeout(() => { unsub(); resolve(); }, 30000);
-        });
-        
-        await waitForSpeechEnd();
-        
-        // Resume listening
-        if (callActiveRef.current) {
-          geminiLive.startMic();
-        }
+    // Speak the response (not used in Gemini Live mode - Gemini speaks directly)
+    if (!muted && text && callActiveRef.current && !geminiMode) {
+      if (false) {
+        // Gemini Live mode removed - Gemini handles its own responses
       } else {
         // Fallback: browser speech synthesis
         const utterance = new SpeechSynthesisUtterance(text);
@@ -409,21 +433,30 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const handleUserSpeech = useCallback(async (text: string) => {
     if (!text || !connected) return;
     
-    // Pause mic while processing
+    // In Gemini Live mode, don't send to gateway - let Gemini handle conversation
     if (geminiMode && geminiLive.connected) {
-      geminiLive.stopMic();
+      // Just display user's speech in UI
+      const userMsg: VoiceChatMessage = {
+        id: nextId("u"),
+        role: 'user',
+        content: text,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, userMsg]);
+      // Gemini will respond naturally via its own audio output
+      return;
     }
     
     // Add user message
     const userMsg: VoiceChatMessage = {
-      id: `vc-${Date.now()}-u`,
+      id: nextId("u"),
       role: 'user',
       content: text,
       timestamp: Date.now(),
     };
     
     // Placeholder for assistant
-    const assistantId = `vc-${Date.now()}-a`;
+    const assistantId = nextId("a");
     currentMsgIdRef.current = assistantId;
     currentResponseRef.current = '';
     
@@ -544,6 +577,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   // ── Call controls ──
   const startCall = async () => {
+    console.log('[VoiceChat] ===== START CALL CLICKED =====');
+    try {
     gateway.setSessionKey(selectedAgent.sessionKey);
     setCallActive(true);
     callActiveRef.current = true;
@@ -564,13 +599,20 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     if (geminiMode) {
       // Connect to Gemini Live as voice I/O engine
       const apiKey = apiKeyRef.current;
+      console.log('[VoiceChat] startCall: Checking API key...');
+      console.log('[VoiceChat] startCall: apiKeyRef.current =', apiKey ? `PRESENT (${apiKey.substring(0, 10)}...)` : 'NULL/UNDEFINED');
+      console.log('[VoiceChat] startCall: FALLBACK_GEMINI_API_KEY =', FALLBACK_GEMINI_API_KEY ? `PRESENT (${FALLBACK_GEMINI_API_KEY.substring(0, 10)}...)` : 'NULL/UNDEFINED');
+      
       if (!apiKey) {
+        console.error('[VoiceChat] ❌ NO API KEY - Falling back to browser speech');
         addSystemMessage('⚠️ No Gemini API key found. Set GEMINI_API_KEY. Falling back to browser speech.');
         setGeminiMode(false);
         addSystemMessage(`📞 Voice call started with ${selectedAgent.name} (browser mode)`);
         startListeningFallback();
         return;
       }
+      
+      console.log('[VoiceChat] ✅ API key present, connecting to Gemini Live...');
       
       try {
         addSystemMessage(`📞 Connecting to ${selectedAgent.name}...`);
@@ -579,7 +621,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         await geminiLive.connect({
           apiKey,
           voice,
+          videoMode,
           systemInstruction: buildRelayInstruction(selectedAgent, agentContextRef.current),
+          tools: buildAgentTools(),
         });
         
         addSystemMessage(`🎙️ Voice call active with ${selectedAgent.name} — speak naturally`);
@@ -595,6 +639,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     } else {
       addSystemMessage(`📞 Voice call started with ${selectedAgent.name}`);
       startListeningFallback();
+    }
+    } catch (fatal: any) {
+      console.error('[VoiceChat] FATAL startCall error:', fatal);
     }
   };
   
@@ -631,7 +678,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   const addSystemMessage = (content: string) => {
     setMessages(prev => [...prev, {
-      id: `vc-${Date.now()}-s`,
+      id: nextId("s"),
       role: 'system',
       content,
       timestamp: Date.now(),
@@ -740,6 +787,18 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // ── Render ──
   return (
     <div className="flex flex-col h-full bg-clawd-bg">
+      {/* API Key Warning */}
+      {!apiKeyRef.current && (
+        <div className="bg-red-500/20 border-b border-red-500/50 px-4 py-2 text-center">
+          <p className="text-red-400 text-sm font-medium">
+            ⚠️ No Gemini API key found
+          </p>
+          <p className="text-red-300 text-xs mt-1">
+            Set VITE_GEMINI_API_KEY in .env file or configure in Voice Settings
+          </p>
+        </div>
+      )}
+      
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-clawd-border">
         <div className="flex items-center gap-3">
@@ -787,6 +846,20 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             >
               <MessageSquare size={16} />
             </button>
+          )}
+          
+          {/* Video Mode Selector (before call) */}
+          {!callActive && geminiMode && (
+            <select
+              value={videoMode}
+              onChange={(e) => setVideoMode(e.target.value as 'none' | 'camera' | 'screen')}
+              className="px-2 py-1 text-xs rounded bg-clawd-border text-clawd-text border border-clawd-border/50"
+              title="Select video mode for Gemini Live"
+            >
+              <option value="none">🎙️ Audio only</option>
+              <option value="camera">📹 Camera</option>
+              <option value="screen">🖥️ Screen</option>
+            </select>
           )}
           
           {/* Gemini Live toggle */}
@@ -1048,26 +1121,224 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   );
 }
 
-// ── System instruction for Gemini Live relay mode ──
+// ── Agent tool definitions for Gemini Live function calling ──
+function buildAgentTools(): GeminiTool[] {
+  return [
+    {
+      name: 'create_task',
+      description: 'Create a new task in the task board (froggo.db). Use when the user asks you to add, create, or track a new task/todo/issue.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Short title for the task' },
+          description: { type: 'string', description: 'Detailed description of what needs to be done' },
+          priority: { type: 'string', description: 'Task priority', enum: ['low', 'medium', 'high', 'critical'] },
+          assigned_to: { type: 'string', description: 'Agent ID to assign to (e.g. coder, researcher, writer, froggo, designer, chief, hr)' },
+          status: { type: 'string', description: 'Initial status', enum: ['todo', 'in-progress'] },
+        },
+        required: ['title'],
+      },
+    },
+    {
+      name: 'update_task',
+      description: 'Update an existing task status, priority, or assignment. Use when user says to mark something done, change priority, reassign, etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          task_id: { type: 'string', description: 'The task ID to update' },
+          status: { type: 'string', description: 'New status', enum: ['todo', 'in-progress', 'done', 'blocked'] },
+          priority: { type: 'string', description: 'New priority', enum: ['low', 'medium', 'high', 'critical'] },
+          assigned_to: { type: 'string', description: 'New assignee agent ID' },
+        },
+        required: ['task_id'],
+      },
+    },
+    {
+      name: 'list_tasks',
+      description: 'List current tasks, optionally filtered by agent or status. Use when user asks what tasks exist, what you\'re working on, etc.',
+      parameters: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Filter by assigned agent ID' },
+          status: { type: 'string', description: 'Filter by status', enum: ['todo', 'in-progress', 'done', 'blocked', 'all'] },
+        },
+      },
+    },
+    {
+      name: 'spawn_agent',
+      description: 'Spawn another agent to perform a task. Use when user asks you to tell/ask another agent to do something.',
+      parameters: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Agent to spawn (coder, researcher, writer, designer, chief, hr, froggo)' },
+          message: { type: 'string', description: 'The instruction/request to send to the agent' },
+          task_title: { type: 'string', description: 'Optional task title to create for the spawned agent' },
+        },
+        required: ['agent_id', 'message'],
+      },
+    },
+    {
+      name: 'send_message',
+      description: 'Send a message to another agent session. Use for inter-agent communication.',
+      parameters: {
+        type: 'object',
+        properties: {
+          target_session: { type: 'string', description: 'Target session key (e.g. agent:researcher:main)' },
+          message: { type: 'string', description: 'Message content to send' },
+        },
+        required: ['target_session', 'message'],
+      },
+    },
+    {
+      name: 'get_agent_status',
+      description: 'Get the current status of an agent - their tasks, sessions, and what they\'re working on.',
+      parameters: {
+        type: 'object',
+        properties: {
+          agent_id: { type: 'string', description: 'Agent ID to check (coder, researcher, writer, etc.)' },
+        },
+        required: ['agent_id'],
+      },
+    },
+  ];
+}
+
+// ── Tool call executor ──
+async function executeToolCall(fnName: string, args: Record<string, any>, currentAgent: ChatAgent): Promise<any> {
+  const exec = (window as any).clawdbot?.exec?.run;
+  if (!exec) return { error: 'Exec not available (not in Electron)' };
+
+  try {
+    switch (fnName) {
+      case 'create_task': {
+        const title = args.title || 'Untitled task';
+        const desc = args.description || '';
+        const priority = args.priority || 'medium';
+        const assignee = args.assigned_to || currentAgent.id;
+        const status = args.status || 'todo';
+        const r = await exec(
+          `froggo-db task-add "${title.replace(/"/g, '\\"')}" --priority ${priority} --assign ${assignee} --status ${status} ${desc ? `--desc "${desc.replace(/"/g, '\\"')}"` : ''} 2>&1`
+        );
+        invalidateAgentContext(assignee);
+        if (assignee !== currentAgent.id) invalidateAgentContext(currentAgent.id);
+        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim(), task_created: title, assigned_to: assignee };
+      }
+
+      case 'update_task': {
+        const parts = [`froggo-db task-update ${args.task_id}`];
+        if (args.status) parts.push(`--status ${args.status}`);
+        if (args.priority) parts.push(`--priority ${args.priority}`);
+        if (args.assigned_to) parts.push(`--assign ${args.assigned_to}`);
+        const r = await exec(parts.join(' ') + ' 2>&1');
+        invalidateAgentContext();
+        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+      }
+
+      case 'list_tasks': {
+        const agent = args.agent_id || '';
+        const status = args.status || 'all';
+        const where = [];
+        if (agent) where.push(`assigned_to='${agent}'`);
+        if (status && status !== 'all') where.push(`status='${status}'`);
+        const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+        const r = await exec(
+          `froggo-db query "SELECT id, title, status, priority, assigned_to FROM tasks ${whereClause} ORDER BY created_at DESC LIMIT 15" --json 2>&1`
+        );
+        if (r.success && r.stdout?.trim()) {
+          try { return { tasks: JSON.parse(r.stdout) }; } catch {}
+        }
+        return { tasks: [], raw: r.stdout?.trim() };
+      }
+
+      case 'spawn_agent': {
+        const agentId = args.agent_id;
+        const message = args.message;
+        // Create a task for the agent if title provided
+        if (args.task_title) {
+          await exec(
+            `froggo-db task-add "${args.task_title.replace(/"/g, '\\"')}" --assign ${agentId} --priority high --status todo 2>&1`
+          );
+        }
+        // Send message via gateway sessions_send
+        const r = await exec(
+          `clawdbot gateway sessions-send --target "agent:${agentId}:main" --message "${message.replace(/"/g, '\\"')}" 2>&1`
+        );
+        invalidateAgentContext(agentId);
+        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim(), agent_spawned: agentId };
+      }
+
+      case 'send_message': {
+        const r = await exec(
+          `clawdbot gateway sessions-send --target "${args.target_session}" --message "${args.message.replace(/"/g, '\\"')}" 2>&1`
+        );
+        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+      }
+
+      case 'get_agent_status': {
+        const ctx = await loadAgentContext(args.agent_id);
+        return {
+          agent: args.agent_id,
+          personality: ctx.personality ? `${ctx.personality.emoji} ${ctx.personality.name} - ${ctx.personality.role}` : 'Unknown',
+          tasks: ctx.tasks.map(t => ({ id: t.id, title: t.title, status: t.status, priority: t.priority })),
+          active_sessions: ctx.sessions.filter(s => s.state === 'running' || s.state === 'active').length,
+          memory_available: !!ctx.memory,
+        };
+      }
+
+      default:
+        return { error: `Unknown tool: ${fnName}` };
+    }
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+// ── System instruction for Gemini Live ──
 function buildRelayInstruction(agent: ChatAgent, context?: AgentContext | null): string {
-  const personalityHint = context?.personality 
-    ? `\nPersonality: ${context.personality.personality}\nVibe: ${context.personality.vibe}`
-    : '';
-  
-  return `You are a VOICE RELAY system. Your ONLY purpose is to:
+  const parts: string[] = [];
 
-1. LISTEN: When the user speaks, output their speech as accurate text transcription.
-2. SPEAK: When you receive a message starting with [SPEAK], read that content aloud with natural, expressive intonation. Do NOT modify the content.
+  // Identity
+  if (context?.personality) {
+    const p = context.personality;
+    parts.push(`You are ${p.name} (${p.emoji}), ${p.role}. ${p.personality}. ${p.vibe}`);
+    if (p.bio) parts.push(`Bio: ${p.bio}`);
+  } else {
+    parts.push(`You are ${agent.name}, ${agent.role || 'an AI assistant'}.`);
+  }
 
-CRITICAL RULES:
-- NEVER generate your own responses, opinions, or commentary
-- NEVER answer questions yourself - you are just a relay
-- When transcribing user speech, output ONLY what they said, nothing else
-- When speaking [SPEAK] content, speak it naturally as if you are ${agent.name} (${agent.role})
-- Match the personality and tone appropriate for ${agent.name}${personalityHint}
-- If the [SPEAK] content has technical terms, pronounce them clearly
-- Keep your voice warm and conversational
+  // Core behavior
+  parts.push(`
+You are speaking to your human via voice chat. Be conversational, concise, and natural.
+Keep responses to 1-3 sentences unless the user asks for detail.
+CRITICAL: Never narrate your internal reasoning, thoughts, or strategy. Never say things like "I am now doing X" or "My focus is Y". Just speak naturally as a person would.
+Do NOT output any meta-commentary, chain-of-thought, or self-narration. Only speak words meant for the listener.
+You have REAL tools to manage tasks, spawn other agents, and communicate across the system.
+When the user asks you to DO something (create a task, update status, ask another agent), USE YOUR TOOLS — don't just describe what you'd do.`);
 
-You are the voice interface for ${agent.name}. The actual intelligence comes from the real agent system behind you. You just handle the audio.`;
+  // Tasks context
+  if (context?.tasks?.length) {
+    parts.push(`\nYour current tasks:`);
+    for (const t of context.tasks.slice(0, 10)) {
+      parts.push(`  - [${t.id}] "${t.title}" (${t.status}${t.priority ? `, ${t.priority}` : ''})`);
+    }
+  }
+
+  // Sessions context
+  if (context?.sessions?.length) {
+    const active = context.sessions.filter(s => s.state === 'running' || s.state === 'active');
+    if (active.length > 0) {
+      parts.push(`\nYour active sessions: ${active.map(s => s.key + (s.label ? ` (${s.label})` : '')).join(', ')}`);
+    }
+  }
+
+  // Memory
+  if (context?.memory) {
+    parts.push(`\nToday's notes:\n${context.memory.slice(0, 1500)}`);
+  }
+
+  // Available agents
+  parts.push(`\nOther agents you can spawn or message: coder, researcher, writer, designer, chief, hr, froggo (main coordinator). Use spawn_agent to delegate work.`);
+
+  return parts.join('\n');
 }
 

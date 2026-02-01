@@ -22,10 +22,10 @@ import WeatherWidget from './WeatherWidget';
 import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
 import { useStore } from '../store/store';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'approvals';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'approvals';
 
 interface DashboardProps {
-  onNavigate?: (view: View) => void;
+  onNavigate?: (view: any) => void;
   onShowBrief?: () => void;
 }
 

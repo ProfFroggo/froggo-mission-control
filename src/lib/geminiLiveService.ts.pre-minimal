@@ -20,7 +20,7 @@ export type GeminiLiveEvent =
   | 'speaking-start' | 'speaking-end'
   | 'listening-start' | 'listening-end'
   | 'audio-level' | 'model-audio-level'
-  | 'transcript' | 'interrupted' | 'model-thinking'
+  | 'transcript' | 'interrupted'
   | 'video-frame' | 'tool-call';
 
 /** Tool declaration for Gemini Live function calling */
@@ -112,27 +112,16 @@ export class GeminiLiveService {
   // ── Connection ──
 
   async connect(config: GeminiLiveConfig): Promise<void> {
-    // Kill any existing WS (even mid-handshake)
-    if (this.ws) {
-      this.ws.onclose = null;
-      this.ws.onerror = null;
-      this.ws.onmessage = null;
-      try { this.ws.close(); } catch {}
-      this.ws = null;
-    }
-    this._connected = false;
+    if (this._connected) await this.disconnect();
 
     const { apiKey, voice = 'Zephyr', videoMode = 'none', systemInstruction, model, tools } = config;
     this._videoMode = videoMode;
 
     const url = `${WS_URL}?key=${apiKey}`;
-    console.log('[GeminiLive] Connecting to:', url.replace(/key=.*/, 'key=***'));
     
     return new Promise((resolve, reject) => {
-      console.log('[GeminiLive] Creating WebSocket...');
       const ws = new WebSocket(url);
       this.ws = ws;
-      console.log('[GeminiLive] WebSocket created, readyState:', ws.readyState);
 
       const timeout = setTimeout(() => {
         reject(new Error('WebSocket connection timeout'));
@@ -140,41 +129,44 @@ export class GeminiLiveService {
       }, 15000);
 
       ws.onopen = () => {
-        console.log('[GeminiLive] WebSocket OPEN');
         clearTimeout(timeout);
-        // Setup message must use camelCase for raw WebSocket API
+        // Send setup message - WebSocket protocol format (not Python SDK format)
         const setupMsg: any = {
           setup: {
             model: model || MODEL,
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: {
-                    voiceName: voice,
-                  },
-                },
-              },
-            },
-            // Enable transcription of input and output audio
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-            ...(systemInstruction ? {
-              systemInstruction: {
-                parts: [{ text: systemInstruction }],
-              },
-            } : {}),
-            ...(tools && tools.length > 0 ? {
-              tools: [{
-                functionDeclarations: tools.map(t => ({
-                  name: t.name,
-                  description: t.description,
-                  parameters: t.parameters,
-                })),
-              }],
-            } : {}),
           },
         };
+        
+        // Add system instruction if provided
+        if (systemInstruction) {
+          setupMsg.setup.system_instruction = {
+            parts: [{ text: systemInstruction }],
+          };
+        }
+        
+        // Add generation config (WebSocket protocol uses snake_case)
+        setupMsg.setup.generation_config = {
+          response_modalities: ['AUDIO'],
+          speech_config: {
+            voice_config: {
+              prebuilt_voice_config: {
+                voice_name: voice,
+              },
+            },
+          },
+        };
+        
+        // Add tool declarations for agent capabilities
+        if (tools && tools.length > 0) {
+          setupMsg.setup.tools = [{
+            function_declarations: tools.map(t => ({
+              name: t.name,
+              description: t.description,
+              parameters: t.parameters,
+            })),
+          }];
+        }
+        
         console.log('[GeminiLive] Sending setup:', JSON.stringify(setupMsg, null, 2));
         ws.send(JSON.stringify(setupMsg));
         this.pendingSetup = { resolve, reject };
@@ -205,13 +197,9 @@ export class GeminiLiveService {
     });
   }
 
-  private async handleMessage(event: MessageEvent) {
+  private handleMessage(event: MessageEvent) {
     try {
-      let raw = event.data;
-      if (raw instanceof Blob) {
-        raw = await raw.text();
-      }
-      const msg = JSON.parse(raw);
+      const msg = JSON.parse(event.data);
 
       // Setup complete response
       if (msg.setupComplete) {
@@ -240,22 +228,9 @@ export class GeminiLiveService {
               }
             }
             if (part.text) {
-              // Native audio models return text as internal thinking/reasoning.
-              // The actual spoken response is in the audio data.
-              // Emit as 'model-thinking' so UI can optionally show/hide it.
-              this.emit('model-thinking', { text: part.text });
+              this.emit('transcript', { text: part.text, role: 'model' });
             }
           }
-        }
-
-        // Input transcription (what the user said)
-        if (sc.inputTranscription?.text) {
-          this.emit('transcript', { text: sc.inputTranscription.text, role: 'user' });
-        }
-
-        // Output transcription (what the model actually spoke)
-        if (sc.outputTranscription?.text) {
-          this.emit('transcript', { text: sc.outputTranscription.text, role: 'model' });
         }
 
         // Turn complete - model finished speaking

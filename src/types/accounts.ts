@@ -35,12 +35,24 @@ export interface ConnectedAccount {
     // Google
     calendarsCount?: number;
     labelsCount?: number;
+    emailQuota?: string | number;
+    emailUsed?: number;
+    calendarQuota?: string | number;
+    calendarUsed?: number;
+    driveUsed?: string | number;
+    driveQuota?: string | number;
+    emailsCount?: number;
+    taskssCount?: number;
+    contactssCount?: number;
+    drivesCount?: number;
     
     // iCloud
     devices?: string[];
     
     // Microsoft
     tenantId?: string;
+    
+    [key: string]: any;
   };
   
   // Auth data (stored securely)

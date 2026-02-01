@@ -12,12 +12,31 @@ import { MeetingTranscriber, Meeting, MeetingTranscript, TranscriptionSegment } 
 import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
 import MarkdownMessage from './MarkdownMessage';
 
+// Fallback API key if .env is not configured
+const FALLBACK_GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
+
 function getApiKey(): string {
-  const key = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
-  if (!key || key === 'your_key_here') {
-    throw new Error('Gemini API key not set. Configure it in Voice Settings.');
+  // Try Vite env var first (from .env file)
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  if (viteKey && viteKey !== 'your_key_here') {
+    console.log('[MeetingTranscribe] ✅ Using API key from .env');
+    return viteKey;
   }
-  return key;
+
+  // Try localStorage
+  const storedKey = localStorage.getItem('gemini_api_key');
+  if (storedKey && storedKey !== 'your_key_here') {
+    console.log('[MeetingTranscribe] ✅ Using API key from localStorage');
+    return storedKey;
+  }
+
+  // Use fallback
+  if (FALLBACK_GEMINI_API_KEY) {
+    console.log('[MeetingTranscribe] ⚠️ Using fallback API key');
+    return FALLBACK_GEMINI_API_KEY;
+  }
+
+  throw new Error('Gemini API key not set. Configure VITE_GEMINI_API_KEY in .env or set it in Voice Settings.');
 }
 
 export default function MeetingTranscribe() {
@@ -276,6 +295,18 @@ export default function MeetingTranscribe() {
 
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white">
+      {/* API Key Warning */}
+      {(!import.meta.env.VITE_GEMINI_API_KEY && !localStorage.getItem('gemini_api_key')) && (
+        <div className="bg-yellow-500/20 border-b border-yellow-500/50 px-4 py-2 text-center">
+          <p className="text-yellow-400 text-sm font-medium">
+            ⚠️ Using fallback API key
+          </p>
+          <p className="text-yellow-300 text-xs mt-1">
+            Set VITE_GEMINI_API_KEY in .env for production use
+          </p>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">

@@ -498,7 +498,7 @@ function MessageCard({
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={handleCheckboxClick}
+              onChange={() => onToggleSelect?.(message.id)}
               onClick={handleCheckboxClick}
               className="flex-shrink-0 w-4 h-4 rounded border-clawd-border bg-clawd-bg checked:bg-clawd-accent cursor-pointer"
             />
