@@ -258,12 +258,12 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       <div className="p-2 border-t border-clawd-border space-y-1" role="group" aria-label="Settings and status">
         {/* Command Palette hint */}
         <div 
-          className={`flex items-center gap-3 px-3 py-2.5 text-clawd-text-dim ${expanded ? '' : 'justify-center'}`}
+          className={`flex items-center justify-center px-3 py-2.5 text-clawd-text-dim`}
           role="status"
           aria-label="Keyboard shortcut hint"
+          title="⌘K for commands"
         >
           <Command size={20} className="flex-shrink-0" aria-hidden="true" />
-          {expanded && <span className="text-xs">⌘K for commands</span>}
         </div>
 
         {/* Connection + System status */}
@@ -276,15 +276,11 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             <span 
               className={`w-2 h-2 rounded-full transition-colors flex-shrink-0 ${connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`}
               aria-hidden="true"
+              title={connected ? 'Connected' : 'Connecting...'}
             />
-            {expanded && (
-              <span className="text-xs text-clawd-text-dim">
-                {connected ? 'Connected' : 'Connecting...'}
-              </span>
-            )}
           </div>
           {expanded && (
-            <div className="flex items-center gap-2 pl-4 text-[10px] font-medium">
+            <div className="flex items-center gap-2 text-[10px] font-medium">
               <span className={`${connected ? 'text-green-400' : 'text-clawd-text-dim'}`}>Online</span>
               <span className={`${sysStatus.watcherRunning ? 'text-green-400' : 'text-red-400'}`}>
                 {sysStatus.watcherRunning ? 'Watcher' : 'Watcher ✗'}
@@ -299,59 +295,49 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         {/* Edit Panels */}
         <button
           onClick={openEditModal}
-          className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text ${
-            expanded ? '' : 'justify-center'
-          }`}
+          className="no-drag w-full flex items-center justify-center px-3 py-2.5 rounded-xl transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
           title="Edit Panels (⌘⇧E)"
           aria-label="Edit Panels (Command Shift E)"
         >
           <SlidersHorizontal size={20} className="flex-shrink-0" aria-hidden="true" />
-          {expanded && <span className="text-sm font-medium">Edit Panels</span>}
         </button>
 
         {/* Help */}
         {onOpenHelp && (
           <button 
             onClick={onOpenHelp}
-            className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text ${
-              expanded ? '' : 'justify-center'
-            }`}
+            className="no-drag w-full flex items-center justify-center px-3 py-2.5 rounded-xl transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
             title="Help & Documentation (⌘H)"
             aria-label="Help & Documentation (Command H)"
           >
             <HelpCircle size={20} className="flex-shrink-0" aria-hidden="true" />
-            {expanded && <span className="text-sm font-medium">Help</span>}
           </button>
         )}
 
         {/* Settings */}
         <button 
           onClick={() => onNavigate('settings')}
-          className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+          className={`no-drag w-full flex items-center justify-center px-3 py-2.5 rounded-xl transition-all duration-200 ${
             currentView === 'settings'
               ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
               : 'text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
-          } ${expanded ? '' : 'justify-center'}`}
+          }`}
           title="Settings (⌘,)"
           aria-label="Settings (Command comma)"
           aria-current={currentView === 'settings' ? 'page' : undefined}
         >
           <Settings size={20} className="flex-shrink-0" aria-hidden="true" />
-          {expanded && <span className="text-sm font-medium">Settings</span>}
         </button>
 
         {/* Expand toggle */}
         <button
           onClick={() => setExpanded(!expanded)}
-          className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text transition-all duration-200 ${
-            expanded ? '' : 'justify-center'
-          }`}
+          className="no-drag w-full flex items-center justify-center px-3 py-2.5 rounded-xl text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text transition-all duration-200"
           title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-expanded={expanded}
         >
           {expanded ? <ChevronLeft size={20} className="flex-shrink-0" aria-hidden="true" /> : <ChevronRight size={20} className="flex-shrink-0" aria-hidden="true" />}
-          {expanded && <span className="text-sm font-medium">Collapse</span>}
         </button>
       </div>
     </aside>

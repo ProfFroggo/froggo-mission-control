@@ -11,8 +11,8 @@ export interface AgentTheme {
 }
 
 export const agentThemes: Record<string, AgentTheme> = {
-  main:       { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400', pic: 'froggo.png' },
   froggo:     { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400', pic: 'froggo.png' },
+  main:       { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400', pic: 'froggo.png' },
   coder:      { color: '#2196F3', border: 'border-blue-500/40',   bg: 'bg-blue-500/8',    text: 'text-blue-400',   ring: 'ring-blue-500/50',   dot: 'bg-blue-400',  pic: 'coder.png' },
   researcher: { color: '#FF9800', border: 'border-orange-500/40', bg: 'bg-orange-500/8',  text: 'text-orange-400', ring: 'ring-orange-500/50', dot: 'bg-orange-400', pic: 'researcher.png' },
   writer:     { color: '#9C27B0', border: 'border-purple-500/40', bg: 'bg-purple-500/8',  text: 'text-purple-400', ring: 'ring-purple-500/50', dot: 'bg-purple-400', pic: 'writer.png' },
@@ -25,7 +25,7 @@ export const agentThemes: Record<string, AgentTheme> = {
   'social-manager': { color: '#1DA1F2', border: 'border-sky-500/40', bg: 'bg-sky-500/8', text: 'text-sky-400', ring: 'ring-sky-500/50', dot: 'bg-sky-400', pic: 'social-manager.png' },
   'lead-engineer': { color: '#795548', border: 'border-amber-700/40', bg: 'bg-amber-700/8', text: 'text-amber-300', ring: 'ring-amber-700/50', dot: 'bg-amber-300', pic: 'lead-engineer.png' },
   voice: { color: '#E91E63', border: 'border-rose-500/40', bg: 'bg-rose-500/8', text: 'text-rose-400', ring: 'ring-rose-500/50', dot: 'bg-rose-400', pic: 'voice.png' },
-  'chat-agent': { color: '#4CAF50', border: 'border-green-500/40', bg: 'bg-green-500/8', text: 'text-green-400', ring: 'ring-green-500/50', dot: 'bg-green-400', pic: 'chat-agent.png' },
+  'chat-agent': { color: '#4CAF50', border: 'border-green-500/40', bg: 'bg-green-500/8', text: 'text-green-400', ring: 'ring-green-500/50', dot: 'bg-green-400', pic: 'froggo.png' },
 };
 
 export const defaultTheme: AgentTheme = { color: '#666', border: 'border-clawd-border', bg: 'bg-clawd-surface', text: 'text-clawd-text-dim', ring: 'ring-clawd-border', dot: 'bg-gray-400', pic: '' };

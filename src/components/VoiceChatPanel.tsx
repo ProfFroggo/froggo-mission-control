@@ -15,7 +15,7 @@ import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
-import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode } from '../lib/geminiLiveService';
+import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
 // API key loading
@@ -27,19 +27,6 @@ function loadApiKey(): string {
   if (FALLBACK_GEMINI_API_KEY) return FALLBACK_GEMINI_API_KEY;
   return '';
 }
-
-// Voice mapping per agent
-const AGENT_VOICES: Record<string, GeminiVoice> = {
-  froggo: 'Puck',
-  coder: 'Fenrir',
-  researcher: 'Charon',
-  writer: 'Aoede',
-  chief: 'Orus',
-  hr: 'Kore',
-  clara: 'Leda',
-  social_media_manager: 'Zephyr',
-  designer: 'Perseus',
-};
 
 interface VoiceChatMessage {
   id: string;
@@ -255,7 +242,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     }).catch(() => {});
     
     try {
-      const voice = AGENT_VOICES[selectedAgent.id] || 'Zephyr';
+      const voice = getGeminiVoiceForAgent(selectedAgent.id);
       await geminiLive.connect({
         apiKey: apiKey.current,
         voice,

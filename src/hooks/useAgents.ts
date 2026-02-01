@@ -65,28 +65,29 @@ async function fetchAgents(): Promise<AgentInfo[]> {
 
   const agentMap = new Map<string, AgentInfo>();
 
-  // 0. Agent registry — baseline list of ALL configured agents
+  // 0. Agent list from gateway — baseline list of ALL configured agents
   //    This ensures agents appear even when they have no active sessions.
+  //    Uses 'clawdbot agents list' via IPC instead of the old registry JSON.
   try {
-    if (clawdbot.agents?.getRegistry) {
-      const registry: Record<string, { role: string; description: string; aliases: string[]; clawdAgentId: string }> =
-        await clawdbot.agents.getRegistry() ?? {};
-      for (const [id, entry] of Object.entries(registry)) {
-        const displayName = entry.clawdAgentId || id;
-        agentMap.set(displayName, {
-          id: displayName,
-          name: displayName,
-          role: entry.role || 'Agent',
-          status: 'offline',
-          stats: {
-            tasksCompleted: 0,
-            tasksInProgress: 0,
-          },
-        });
+    if (clawdbot.agents?.list) {
+      const result = await clawdbot.agents.list();
+      if (result?.success && Array.isArray(result.agents)) {
+        for (const agent of result.agents) {
+          agentMap.set(agent.id, {
+            id: agent.id,
+            name: agent.name || agent.id,
+            role: agent.description || 'Agent',
+            status: 'offline',
+            stats: {
+              tasksCompleted: 0,
+              tasksInProgress: 0,
+            },
+          });
+        }
       }
     }
   } catch {
-    // registry API may not be available
+    // agents list API may not be available
   }
 
   // 1. Gateway sessions — live agent sessions from ALL workspaces
