@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec, execSync } from 'child_process';
@@ -120,10 +120,13 @@ let modelServerPort = 18799;
 
 let mainWindow: BrowserWindow | null = null;
 
-// Request microphone access on macOS
+// Request microphone AND camera access on macOS
 if (process.platform === 'darwin') {
   systemPreferences.askForMediaAccess('microphone').then(granted => {
     safeLog.log('Microphone access:', granted ? 'granted' : 'denied');
+  });
+  systemPreferences.askForMediaAccess('camera').then(granted => {
+    safeLog.log('Camera access:', granted ? 'granted' : 'denied');
   });
 }
 
@@ -171,9 +174,17 @@ function createWindow() {
     mainWindow.loadFile(distPath);
   }
 
-  // Handle permission requests (microphone for voice)
+  // Handle permission requests (microphone, camera, screen capture)
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowedPermissions = ['media', 'microphone', 'audioCapture'];
+    const allowedPermissions = [
+      'media',           // Generic media access
+      'microphone',      // Microphone
+      'camera',          // Camera
+      'audioCapture',    // Audio capture
+      'videoCapture',    // Video capture (camera)
+      'display-capture', // Screen sharing / getDisplayMedia
+      'screen',          // Screen access
+    ];
     if (allowedPermissions.includes(permission)) {
       safeLog.log('Permission granted:', permission);
       callback(true);
@@ -181,6 +192,19 @@ function createWindow() {
       safeLog.log('Permission denied:', permission);
       callback(false);
     }
+  });
+
+  // Handle permission checks (Electron checks permissions before requesting them)
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    const allowedPermissions = [
+      'media', 'microphone', 'camera', 'audioCapture',
+      'videoCapture', 'display-capture', 'screen',
+    ];
+    if (allowedPermissions.includes(permission)) {
+      return true;
+    }
+    safeLog.log('Permission check denied:', permission, 'from', requestingOrigin);
+    return false;
   });
 
   // Catch renderer crashes to diagnose issues
@@ -527,6 +551,45 @@ app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   }
+});
+
+// ============== SCREEN CAPTURE IPC HANDLER ==============
+ipcMain.handle('screen:getSources', async (_, opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }) => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: (opts?.types as any) || ['window', 'screen'],
+      thumbnailSize: opts?.thumbnailSize || { width: 320, height: 180 },
+    });
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL(),
+      display_id: source.display_id,
+      appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
+    }));
+  } catch (error: any) {
+    safeLog.error('[ScreenCapture] Failed to get sources:', error);
+    return [];
+  }
+});
+
+// ============== MEDIA PERMISSIONS CHECK ==============
+ipcMain.handle('media:checkPermissions', async () => {
+  if (process.platform === 'darwin') {
+    const camera = systemPreferences.getMediaAccessStatus('camera');
+    const microphone = systemPreferences.getMediaAccessStatus('microphone');
+    const screen = systemPreferences.getMediaAccessStatus('screen');
+    return { camera, microphone, screen };
+  }
+  return { camera: 'granted', microphone: 'granted', screen: 'granted' };
+});
+
+ipcMain.handle('media:requestPermission', async (_, mediaType: 'camera' | 'microphone') => {
+  if (process.platform === 'darwin') {
+    const granted = await systemPreferences.askForMediaAccess(mediaType);
+    return granted;
+  }
+  return true;
 });
 
 // ============== GATEWAY IPC HANDLERS ==============
