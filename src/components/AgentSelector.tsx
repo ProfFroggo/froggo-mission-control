@@ -20,7 +20,6 @@ export const CHAT_AGENTS: ChatAgent[] = [
   { id: 'hr',       name: 'HR',            role: 'Human Resources',       sessionKey: 'agent:chat-agent:hr',      dbSessionKey: 'chat:hr' },
   { id: 'clara',    name: 'Clara',         role: 'Personal Assistant',    sessionKey: 'agent:chat-agent:clara',   dbSessionKey: 'chat:clara' },
   { id: 'social_media_manager', name: 'Social Media', role: 'Social Media Manager', sessionKey: 'agent:chat-agent:social_media_manager', dbSessionKey: 'chat:social_media_manager' },
-  { id: 'designer', name: 'Designer',      role: 'UI/UX Designer',        sessionKey: 'agent:chat-agent:designer', dbSessionKey: 'chat:designer' },
 ];
 
 interface AgentSelectorProps {

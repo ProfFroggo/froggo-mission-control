@@ -128,11 +128,11 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       aria-expanded={expanded}
     >
       {/* Drag region — traffic light safe zone */}
-      <div className="drag-region h-12 pl-[76px] border-b border-clawd-border">
+      <div className="drag-region h-12 border-b border-clawd-border">
       </div>
       
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-2" aria-label="Primary navigation">
+      <nav className="flex-1 overflow-y-auto pt-1 pb-4 px-2" aria-label="Primary navigation">
         <div className="space-y-1">
           {/* Configurable panels - ordered and filtered by panel config */}
           {[...panelConfig]

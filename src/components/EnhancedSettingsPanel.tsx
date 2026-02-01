@@ -13,6 +13,7 @@ import ConnectedAccountsPanel from './ConnectedAccountsPanel';
 import ConfigTab from './ConfigTab';
 import LogsTab from './LogsTab';
 import GlobalNotificationSettings from './GlobalNotificationSettings';
+import { Toggle } from './Toggle';
 
 interface NotificationPreferences {
   taskUpdates: boolean;
@@ -665,16 +666,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Voice Responses</div>
                       <div className="text-sm text-clawd-text-dim">Read responses aloud</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, voiceEnabled: !s.voiceEnabled }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.voiceEnabled ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.voiceEnabled ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle 
+                      checked={settings.voiceEnabled}
+                      onChange={(checked) => setSettings(s => ({ ...s, voiceEnabled: checked }))}
+                    />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -1443,16 +1438,10 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Developer Mode</div>
                       <div className="text-sm text-clawd-text-dim">Enable developer features</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, developer: { ...s.developer, devMode: !s.developer.devMode } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.developer.devMode ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.developer.devMode ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle
+                      checked={settings.developer.devMode}
+                      onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, devMode: checked } }))}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1460,17 +1449,11 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Show Debug Info</div>
                       <div className="text-sm text-clawd-text-dim">Display debug information in UI</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, developer: { ...s.developer, showDebugInfo: !s.developer.showDebugInfo } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.developer.showDebugInfo ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.developer.showDebugInfo}
+                      onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, showDebugInfo: checked } }))}
                       disabled={!settings.developer.devMode}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.developer.showDebugInfo ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1478,17 +1461,11 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Experimental Features</div>
                       <div className="text-sm text-clawd-text-dim">Enable features in development</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, developer: { ...s.developer, enableExperimentalFeatures: !s.developer.enableExperimentalFeatures } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.developer.enableExperimentalFeatures ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.developer.enableExperimentalFeatures}
+                      onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, enableExperimentalFeatures: checked } }))}
                       disabled={!settings.developer.devMode}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.developer.enableExperimentalFeatures ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1496,17 +1473,11 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Verbose Logging</div>
                       <div className="text-sm text-clawd-text-dim">Enable detailed console logs</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, developer: { ...s.developer, verboseLogging: !s.developer.verboseLogging } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.developer.verboseLogging ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.developer.verboseLogging}
+                      onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, verboseLogging: checked } }))}
                       disabled={!settings.developer.devMode}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.developer.verboseLogging ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -1514,17 +1485,11 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium">Performance Metrics</div>
                       <div className="text-sm text-clawd-text-dim">Show render times and stats</div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, developer: { ...s.developer, showPerformanceMetrics: !s.developer.showPerformanceMetrics } }))}
-                      className={`w-12 h-6 rounded-full transition-colors ${
-                        settings.developer.showPerformanceMetrics ? 'bg-clawd-accent' : 'bg-clawd-border'
-                      }`}
+                    <Toggle
+                      checked={settings.developer.showPerformanceMetrics}
+                      onChange={(checked) => setSettings(s => ({ ...s, developer: { ...s.developer, showPerformanceMetrics: checked } }))}
                       disabled={!settings.developer.devMode}
-                    >
-                      <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        settings.developer.showPerformanceMetrics ? 'translate-x-6' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    />
                   </div>
                 </div>
               </CollapsibleSection>
@@ -1565,16 +1530,12 @@ export default function EnhancedSettingsPanel() {
                           : 'All external actions blocked (safe mode)'}
                       </div>
                     </div>
-                    <button
-                      onClick={() => setSettings(s => ({ ...s, externalActionsEnabled: !s.externalActionsEnabled }))}
-                      className={`w-14 h-7 rounded-full transition-colors ${
-                        settings.externalActionsEnabled ? 'bg-green-500' : 'bg-red-500'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-full bg-white shadow transition-transform ${
-                        settings.externalActionsEnabled ? 'translate-x-7' : 'translate-x-0.5'
-                      }`} />
-                    </button>
+                    <Toggle 
+                      checked={settings.externalActionsEnabled}
+                      onChange={(checked) => setSettings(s => ({ ...s, externalActionsEnabled: checked }))}
+                      size="lg"
+                      colorScheme="red"
+                    />
                   </div>
 
                   {settings.externalActionsEnabled && (

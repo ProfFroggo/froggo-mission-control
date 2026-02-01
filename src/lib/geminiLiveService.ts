@@ -229,6 +229,14 @@ export class GeminiLiveService {
       // Setup complete response
       if (msg.setupComplete) {
         this._connected = true;
+        
+        // Create playback AudioContext early so UI can detect 'suspended' state
+        if (!this.playbackCtx) {
+          this.playbackCtx = new AudioContext({ sampleRate: RECEIVE_SAMPLE_RATE });
+          this.scheduledTime = this.playbackCtx.currentTime;
+          console.log('[GeminiLive] Playback AudioContext created, state:', this.playbackCtx.state);
+        }
+        
         this.emit('connected');
         if (this.pendingSetup) {
           this.pendingSetup.resolve();
@@ -244,7 +252,7 @@ export class GeminiLiveService {
         // Model turn - contains audio parts
         if (sc.modelTurn?.parts) {
           for (const part of sc.modelTurn.parts) {
-            if (part.inlineData?.mimeType === 'audio/pcm' && part.inlineData.data) {
+            if (part.inlineData?.mimeType?.startsWith('audio/pcm') && part.inlineData.data) {
               const pcmData = this.base64ToArrayBuffer(part.inlineData.data);
               console.log('[GeminiLive] Audio chunk received:', pcmData.byteLength, 'bytes');
               this.enqueueAudio(pcmData);
@@ -316,13 +324,12 @@ export class GeminiLiveService {
     if (this._listening || !this._connected) return;
 
     try {
+      // Use simple constraints like MeetingsPanel (which works in production)
       this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: SEND_SAMPLE_RATE,
-          channelCount: CHANNELS,
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
+          sampleRate: SEND_SAMPLE_RATE,
         },
       });
 

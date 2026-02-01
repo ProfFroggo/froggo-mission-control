@@ -1,9 +1,6 @@
 /* Import accessibility styles FIRST */
 @import './accessibility.css';
 
-/* Import form component styles */
-@import './forms.css';
-
 /* Import text utilities */
 @import './text-utilities.css';
 

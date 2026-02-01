@@ -172,6 +172,8 @@ function createWindow() {
   } else {
     safeLog.log('Running in production mode, loading from dist');
     mainWindow.loadFile(distPath);
+    // Temporarily enable DevTools in production for debugging
+    mainWindow.webContents.openDevTools();
   }
 
   // Handle permission requests (microphone, camera, screen capture)

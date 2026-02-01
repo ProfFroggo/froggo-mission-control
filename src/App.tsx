@@ -29,6 +29,7 @@ import {
   StarredMessagesPanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
+import { MicTestPanel } from './components/MicTestPanel';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
@@ -43,7 +44,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'mictest' | 'error-test';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -353,6 +354,7 @@ function App() {
               {currentView === 'chat' && <ChatPanel />}
               {currentView === 'meetings' && <MeetingsPanel />}
               {currentView === 'voicechat' && <VoiceChatPanel />}
+              {currentView === 'mictest' && <MicTestPanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}
