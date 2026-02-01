@@ -97,6 +97,7 @@ export class GeminiLiveService {
   get listening() { return this._listening; }
   get speaking() { return this._speaking; }
   get videoMode() { return this._videoMode; }
+  get playbackAudioContext() { return this.playbackCtx; }
 
   /** Mute/unmute audio playback */
   setMuted(muted: boolean) {
