@@ -329,7 +329,6 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
           </div>
-          <span>⌘K to toggle</span>
         </div>
       </div>
     </div>
