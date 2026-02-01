@@ -232,7 +232,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
   /** Handle user sending a message */
   const handleSend = async () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text) return;
 
     if (!room) return;
 
@@ -585,15 +585,14 @@ Respond as ${agentConfig?.name || forAgent}:`;
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder={`Message the room... (use @name to mention)`}
-              disabled={loading}
               rows={1}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-xl px-4 py-3 resize-none focus:outline-none focus:border-clawd-accent disabled:opacity-50"
+              className="w-full bg-clawd-bg border border-clawd-border rounded-xl px-4 py-3 resize-none focus:outline-none focus:border-clawd-accent"
             />
           </div>
 
           <button
             onClick={handleSend}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim()}
             className="p-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
