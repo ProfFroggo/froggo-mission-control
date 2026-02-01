@@ -44,7 +44,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'voice-chat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'voice-chat' | 'voice-live' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -360,6 +360,7 @@ function App() {
               {currentView === 'chat' && <ChatPanel />}
               {currentView === 'voice' && <VoicePanel />}
               {currentView === 'voice-chat' && <VoiceChatPanel />}
+              {currentView === 'voice-live' && <VoiceChatPanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}
