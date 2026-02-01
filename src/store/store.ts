@@ -313,7 +313,8 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 
 // Avatar mapping for agents (registry doesn't store avatars since they're UI-only)
 const AGENT_AVATARS: Record<string, string> = {
-  'chat-agent': '🐸',
+  froggo: '🐸',
+  'chat-agent': '💬',
   coder: '💻',
   researcher: '🔍',
   writer: '✍️',
@@ -336,7 +337,8 @@ const AGENT_AVATARS: Record<string, string> = {
 
 // Display name overrides (registry uses role, but some need friendlier names)
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  'chat-agent': 'Froggo',
+  froggo: 'Froggo',
+  'chat-agent': 'Chat Agent',
   'social-manager': 'Social Manager',
   'growth-director': 'Growth Director',
   'lead-engineer': 'Lead Engineer',
@@ -355,7 +357,7 @@ function registryToAgents(registry: Record<string, { role: string; description: 
     name: AGENT_DISPLAY_NAMES[id] || entry.role || id,
     avatar: AGENT_AVATARS[id] || AGENT_AVATARS[entry.clawdAgentId] || '🤖',
     description: entry.description || '',
-    status: (id === 'chat-agent' || id === 'main' ? 'active' : 'idle') as Agent['status'],
+    status: (id === 'froggo' || id === 'main' ? 'active' : 'idle') as Agent['status'],
     capabilities: entry.capabilities || [],
   }));
 }
@@ -899,33 +901,35 @@ export const useStore = create<Store>()(
         }
       },
 
-      agents: [], // Start empty - loaded from registry only
+      agents: [], // Start empty - loaded from gateway only
 
       fetchAgents: async () => {
         try {
           get().setLoading('agents', true);
-          const registry = await (window as any).clawdbot?.agents?.getRegistry();
-          if (registry && Object.keys(registry).length > 0) {
-            const registryAgents = registryToAgents(registry);
-            // REPLACE agents completely (not merge) to avoid phantom/duplicate agents
-            // Only preserve runtime state (status/sessionKey) from current agents
+          // Fetch agents from gateway using the new IPC handler
+          const result = await (window as any).clawdbot?.agents?.list();
+          if (result?.success && Array.isArray(result.agents) && result.agents.length > 0) {
+            // Preserve runtime state (status/sessionKey) from current agents
             const current = get().agents;
-            const fresh = registryAgents.map((ra: Agent) => {
+            const fresh = result.agents.map((ra: Agent) => {
               const existing = current.find((a: Agent) => a.id === ra.id);
               // If agent exists, keep its runtime state, otherwise use fresh state
               return existing 
                 ? { ...ra, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity }
                 : ra;
             });
-            // Set agents to ONLY registry agents (no fallback, no dynamic agents)
+            // Set agents to ONLY gateway agents (no fallback, no phantom agents)
             set({ agents: fresh });
-            console.log(`[Store] Loaded ${fresh.length} agents from registry`);
+            console.log(`[Store] Loaded ${fresh.length} agents from gateway:`, fresh.map((a: Agent) => `${a.avatar} ${a.name} (${a.id})`).join(', '));
           } else {
-            // If registry unavailable, keep empty (no phantom agents)
-            console.warn('[Store] Registry unavailable, agents list will be empty until registry loads');
+            // If gateway unavailable, keep empty (no phantom agents)
+            console.warn('[Store] Gateway agents unavailable, agents list will be empty until gateway loads');
+            if (result?.error) {
+              console.error('[Store] Gateway error:', result.error);
+            }
           }
         } catch (e) {
-          console.error('[Store] Failed to fetch agents from registry:', e);
+          console.error('[Store] Failed to fetch agents from gateway:', e);
           // On error, keep current agents (don't inject fallbacks)
         } finally {
           get().setLoading('agents', false);

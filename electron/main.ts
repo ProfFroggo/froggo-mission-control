@@ -44,6 +44,73 @@ function getAgentRegistry(): Record<string, AgentRegistryEntry> {
   return (global as any)._agentRegistryCache;
 }
 
+// ============== AGENTS LIST FROM GATEWAY ==============
+ipcMain.handle('agents:list', async () => {
+  return new Promise((resolve) => {
+    exec('clawdbot agents list', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.error('[Agents] Failed to list agents:', error.message);
+        resolve({ success: false, agents: [], error: error.message });
+        return;
+      }
+
+      try {
+        // Parse the output to extract agents
+        const agents: any[] = [];
+        const lines = stdout.split('\n');
+        let currentAgent: any = null;
+
+        for (const line of lines) {
+          // Match agent header line: "- agent-id (Display Name)" or "- agent-id (default) (Display Name)"
+          const headerMatch = line.match(/^- ([a-z-]+)(?:\s+\(default\))?\s+\((.+?)\)/);
+          if (headerMatch) {
+            // Save previous agent if exists
+            if (currentAgent) {
+              agents.push(currentAgent);
+            }
+
+            const [, id, displayName] = headerMatch;
+            currentAgent = {
+              id,
+              name: displayName,
+              avatar: '🤖', // Default, will be updated if Identity line found
+              description: '',
+              status: id === 'chat-agent' ? 'active' : 'idle',
+              capabilities: [],
+            };
+            continue;
+          }
+
+          // Match identity line: "  Identity: 🐸 Froggo (IDENTITY.md)"
+          if (currentAgent && line.includes('Identity:')) {
+            const identityMatch = line.match(/Identity:\s*([^\s]+)\s+(.+?)\s+\(/);
+            if (identityMatch) {
+              const [, emoji, name] = identityMatch;
+              currentAgent.avatar = emoji;
+              // Use identity name if it's more specific than the role name
+              if (name && name.trim() && name !== currentAgent.name) {
+                currentAgent.description = currentAgent.name; // Role becomes description
+                currentAgent.name = name.trim();
+              }
+            }
+          }
+        }
+
+        // Don't forget the last agent
+        if (currentAgent) {
+          agents.push(currentAgent);
+        }
+
+        safeLog.log(`[Agents] Loaded ${agents.length} agents from gateway`);
+        resolve({ success: true, agents });
+      } catch (parseError: any) {
+        safeLog.error('[Agents] Failed to parse agent list:', parseError);
+        resolve({ success: false, agents: [], error: parseError.message });
+      }
+    });
+  });
+});
+
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
 // Debug file logger for agent issues

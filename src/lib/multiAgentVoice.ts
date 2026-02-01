@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenAI, Modality } from '@google/genai';
+import { getGeminiVoiceForAgent } from './geminiLiveService';
 
 export type AgentType = 'coder' | 'writer' | 'researcher' | 'hr' | 'chief' | 'froggo';
 
@@ -49,7 +50,7 @@ export const AGENT_CONFIGS: Record<AgentType, AgentConfig> = {
   coder: {
     id: 'coder',
     name: 'Coder',
-    voice: 'Charon',
+    voice: getGeminiVoiceForAgent('coder'),
     pitch: 0.9,
     rate: 1.0,
     description: 'Senior engineer for code review and debugging',
@@ -71,7 +72,7 @@ Keep responses brief for voice - around 2-3 sentences unless asked for more deta
   writer: {
     id: 'writer',
     name: 'Writer',
-    voice: 'Kore',
+    voice: getGeminiVoiceForAgent('writer'),
     pitch: 1.1,
     rate: 0.95,
     description: 'Content specialist for writing and documentation',
@@ -92,7 +93,7 @@ Keep responses brief for voice - read drafts aloud concisely.`
   researcher: {
     id: 'researcher',
     name: 'Researcher',
-    voice: 'Zephyr',
+    voice: getGeminiVoiceForAgent('researcher'),
     pitch: 1.0,
     rate: 1.05,
     description: 'Information gatherer and analyst',
@@ -113,7 +114,7 @@ Keep responses brief for voice - summarize key findings.`
   hr: {
     id: 'hr',
     name: 'HR',
-    voice: 'Fenrir',
+    voice: getGeminiVoiceForAgent('hr'),
     pitch: 0.95,
     rate: 1.0,
     description: 'Task manager and agent coordinator',
@@ -134,7 +135,7 @@ Keep responses brief and action-oriented.`
   chief: {
     id: 'chief',
     name: 'Chief',
-    voice: 'Charon',
+    voice: getGeminiVoiceForAgent('chief'),
     pitch: 0.85,
     rate: 0.9,
     description: 'Strategic advisor and decision maker',
@@ -155,7 +156,7 @@ Keep responses brief but insightful - focus on the 'why' and 'what matters most'
   froggo: {
     id: 'froggo',
     name: 'Froggo',
-    voice: 'Puck',
+    voice: getGeminiVoiceForAgent('froggo'),
     pitch: 1.0,
     rate: 1.0,
     description: 'Main orchestrator and dashboard conductor',
