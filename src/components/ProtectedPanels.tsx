@@ -13,6 +13,7 @@ const KanbanRaw = lazy(() => import('./Kanban'));
 const AgentPanelRaw = lazy(() => import('./AgentPanel'));
 const ChatPanelRaw = lazy(() => import('./ChatPanel'));
 const MeetingsPanelRaw = lazy(() => import('./MeetingsPanel'));
+const VoiceChatPanelRaw = lazy(() => import('./VoiceChatPanel'));
 const SettingsPanelRaw = lazy(() => import('./EnhancedSettingsPanel'));
 const NotificationsPanelRaw = lazy(() => import('./NotificationsPanelV2'));
 const XPanelRaw = lazy(() => import('./XPanel'));
@@ -30,16 +31,13 @@ const ContentCalendarRaw = lazy(() => import('./ContentCalendar'));
 const AnalyticsDashboardRaw = lazy(() => import('./AnalyticsDashboard'));
 const ConnectedAccountsPanelRaw = lazy(() => import('./ConnectedAccountsPanel'));
 const StarredMessagesPanelRaw = lazy(() => import('./StarredMessagesPanel'));
-const VoiceChatPanelRaw = lazy(() => import('./VoiceChatPanel'));
-const GeminiVoicePanelRaw = lazy(() => import('./GeminiVoicePanel'));
-const MultiAgentVoicePanelRaw = lazy(() => import('./MultiAgentVoicePanel'));
-
 // Wrap all panels with error boundaries
 export const Dashboard = withErrorBoundary(DashboardRaw, 'Dashboard');
 export const Kanban = withErrorBoundary(KanbanRaw, 'Kanban Board');
 export const AgentPanel = withErrorBoundary(AgentPanelRaw, 'Agent Panel');
 export const ChatPanel = withErrorBoundary(ChatPanelRaw, 'Chat Panel');
 export const MeetingsPanel = withErrorBoundary(MeetingsPanelRaw, 'Meetings');
+export const VoiceChatPanel = withErrorBoundary(VoiceChatPanelRaw, 'Voice Chat');
 export const SettingsPanel = withErrorBoundary(SettingsPanelRaw, 'Settings');
 export const NotificationsPanel = withErrorBoundary(NotificationsPanelRaw, 'Notifications');
 export const XPanel = withErrorBoundary(XPanelRaw, 'X/Twitter');
@@ -57,9 +55,5 @@ export const ContentCalendar = withErrorBoundary(ContentCalendarRaw, 'Content Ca
 export const AnalyticsDashboard = withErrorBoundary(AnalyticsDashboardRaw, 'Analytics');
 export const ConnectedAccountsPanel = withErrorBoundary(ConnectedAccountsPanelRaw, 'Connected Accounts');
 export const StarredMessagesPanel = withErrorBoundary(StarredMessagesPanelRaw, 'Starred Messages');
-export const VoiceChatPanel = withErrorBoundary(VoiceChatPanelRaw, 'Voice Chat');
-export const GeminiVoicePanel = withErrorBoundary(GeminiVoicePanelRaw, 'Gemini Voice Chat');
-export const MultiAgentVoicePanel = withErrorBoundary(MultiAgentVoicePanelRaw, 'Multi-Agent Voice');
-
 // Export the error boundary itself for custom usage
 export { default as ErrorBoundary, withErrorBoundary } from './ErrorBoundary';

@@ -227,35 +227,27 @@ Todo → In Progress → Review → Done
     lastUpdated: '2026-01-28'
   },
 
-  // Voice Assistant
+  // Voice Chat
   {
-    id: 'voice-assistant',
-    title: 'Voice Assistant',
+    id: 'voice-chat',
+    title: 'Voice Chat',
     category: 'Voice',
-    content: `The Voice panel (⌘8) provides real-time transcription and conversation.
+    content: `Voice Chat (⌘8) provides real-time bidirectional voice conversations with agents via Gemini Live.
 
 **Features:**
+- Select any agent to talk to
+- Real-time audio streaming (speak and hear responses)
+- Camera and screen sharing support
+- Text input during calls
+- Tool calling (create tasks, spawn agents, check status)
+- Full conversation history per agent
 
-**Conversation Mode:**
-1. Click the frog orb to start listening
-2. Speak naturally - see real-time transcription
-3. After silence, message sends to Froggo
-4. Froggo responds via text-to-speech
-5. Auto-restarts listening for continuous conversation
-6. Click orb again to stop
-
-**Meeting Eavesdrop Mode:**
-1. Click phone icon to start continuous listening
-2. Transcription runs without sending messages
-3. Auto-detects action items (schedule, email, task keywords)
-4. Click "Send Summary" to send transcript + action items
-5. Click phone icon to end
-
-**Settings:**
-- Choose TTS voice (Samantha, Karen, Daniel)
-- Adjust silence detection threshold
-- Enable/disable auto-send
-- Configure wake words
+**How to use:**
+1. Select an agent from the dropdown
+2. Press the call button to connect
+3. Speak naturally — the agent hears and responds in real-time
+4. Use camera/screen share buttons during a call for visual context
+5. Press end call when done
 
 **Privacy:**
 All transcription runs locally on your device using Vosk. No cloud processing.`,

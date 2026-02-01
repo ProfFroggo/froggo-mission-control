@@ -17,9 +17,10 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'agents', label: 'Agents', visible: true, order: 4 },
   { id: 'twitter', label: 'X/Twitter', visible: true, order: 5 },
   { id: 'meetings', label: 'Meetings', visible: true, order: 6 },
-  { id: 'chat', label: 'Chat', visible: true, order: 7 },
-  { id: 'accounts', label: 'Accounts', visible: true, order: 8 },
-  { id: 'approvals', label: 'Approvals', visible: true, order: 9 },
+  { id: 'voicechat', label: 'Voice Chat', visible: true, order: 7 },
+  { id: 'chat', label: 'Chat', visible: true, order: 8 },
+  { id: 'accounts', label: 'Accounts', visible: true, order: 9 },
+  { id: 'approvals', label: 'Approvals', visible: true, order: 10 },
 ];
 
 function loadFromStorage(): PanelConfig[] {

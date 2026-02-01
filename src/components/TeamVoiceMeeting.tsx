@@ -8,7 +8,16 @@ import MarkdownMessage from './MarkdownMessage';
 import { AGENTS } from '../lib/agents';
 import { getAgentTheme } from '../utils/agentThemes';
 import { gateway } from '../lib/gateway';
-import { synthesizeSpeech, playAudio, speakBrowser, stopSpeaking } from '../lib/googleTTS';
+// Browser speech synthesis helpers (replaced googleTTS)
+function speakBrowser(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
+}
+function stopSpeaking() { window.speechSynthesis.cancel(); }
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 
 interface TranscriptEntry {
@@ -371,30 +380,13 @@ Respond as ${agentConfig?.name || agentId}:`;
     processNextAgent();
   }, [roomId, muted, updateMessage, processNextAgent]);
 
-  // ── Speak agent response with Google TTS ──
-  const speakAgentResponse = async (agentId: string, text: string) => {
-    setSpeakingAgent(agentId);
+  // ── Speak agent response via browser speech ──
+  const speakAgentResponse = async (_agentId: string, text: string) => {
+    setSpeakingAgent(_agentId);
     try {
-      const audioData = await synthesizeSpeech(text, agentId);
-      if (audioData) {
-        await playAudio(audioData, (analyser) => {
-          // Apply volume via gain node - analyser is already connected
-          speakAnalyserRef.current = analyser;
-          const buf = new Uint8Array(analyser.frequencyBinCount);
-          const tick = () => {
-            if (!speakAnalyserRef.current) return;
-            analyser.getByteFrequencyData(buf);
-            const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-            setSpeakLevel(avg / 255);
-            speakAnimRef.current = requestAnimationFrame(tick);
-          };
-          tick();
-        });
-      } else {
-        await speakBrowser(text);
-      }
-    } catch {
       await speakBrowser(text);
+    } catch {
+      // Speech synthesis failed silently
     }
     setSpeakingAgent(null);
     setSpeakLevel(0);

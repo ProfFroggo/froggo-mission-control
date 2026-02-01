@@ -9,7 +9,15 @@ const execAsync = promisify(exec);
 const router = express.Router();
 
 const DB_PATH = path.join(process.env.HOME || '/Users/worker', 'clawd/data/froggo.db');
-const AGENTS_PATH = path.join(process.env.HOME || '/Users/worker', 'clawd/agents');
+// Pattern A ONLY: Each agent lives at /Users/worker/clawd-{agent}/
+// No more /clawd/agents/ directory (deprecated and removed)
+const HOME = process.env.HOME || '/Users/worker';
+function resolveAgentWorkspace(agentId: string): string {
+  if (agentId === 'main' || agentId === 'froggo') {
+    return path.join(HOME, 'clawd');
+  }
+  return path.join(HOME, `clawd-${agentId}`);
+}
 
 // Get agent metrics overview
 router.get('/metrics', async (req, res) => {
@@ -123,19 +131,14 @@ router.get('/:agentId/details', async (req, res) => {
 
     db.close();
 
-    // Load AGENT.md rules
+    // Load AGENTS.md rules (Pattern A: /clawd-{agent}/AGENTS.md)
     let agentRules = '';
     try {
-      const agentMdPath = path.join(AGENTS_PATH, agentId, 'AGENT.md');
+      const workspace = resolveAgentWorkspace(agentId);
+      const agentMdPath = path.join(workspace, 'AGENTS.md');
       agentRules = await readFile(agentMdPath, 'utf-8');
     } catch (e) {
-      // Try alternative paths
-      try {
-        const altPath = path.join(AGENTS_PATH, `${agentId}/AGENT.md`);
-        agentRules = await readFile(altPath, 'utf-8');
-      } catch (e2) {
-        agentRules = 'AGENT.md not found';
-      }
+      agentRules = 'AGENTS.md not found';
     }
 
     res.json({
@@ -225,11 +228,11 @@ router.post('/spawn-chat', async (req, res) => {
       chief: 'You are Chief, the executive oversight agent. You help with planning, prioritization, and strategic decisions.',
     };
 
-    // Try to load AGENT.md for richer context
+    // Load AGENTS.md from Pattern A workspace (/clawd-{agent}/AGENTS.md)
     let agentPrompt = agentPrompts[agentId] || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
     try {
-      const agentMdPath = path.join(AGENTS_PATH, agentId, 'AGENT.md');
-      const agentMd = await readFile(agentMdPath, 'utf-8');
+      const workspace = resolveAgentWorkspace(agentId);
+      const agentMd = await readFile(path.join(workspace, 'AGENTS.md'), 'utf-8');
       agentPrompt = `${agentPrompt}\n\nYour agent rules:\n${agentMd.slice(0, 2000)}`;
     } catch (e) {
       // Use default prompt
