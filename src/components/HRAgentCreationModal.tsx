@@ -308,13 +308,15 @@ Steps:
 3. Insert initial skills into agent_skills table (proficiency 5 for each)
 4. Update index.json to include the new agent
 5. Update personalities.json to include the new agent
-6. Create workspace at /Users/worker/clawd-${agentId}/ with SOUL.md, AGENTS.md, TOOLS.md, USER.md
+6. Create workspace at /Users/worker/clawd-${agentId}/ with: SOUL.md, AGENTS.md, TOOLS.md, USER.md, MEMORY.md, IDENTITY.md
+7. Add '${agentId}' to REAL_GATEWAY_AGENTS array in ~/clawd/clawd-dashboard/src/components/AgentPanel.tsx so it appears in the dashboard
 
 Profile JSON: ${JSON.stringify(profileData, null, 2)}`;
 
-      await gateway.spawnAgent(createTask, `hr-create-${agentId}`, 'anthropic/claude-sonnet-4');
+      // Send request to Froggo to create the agent
+      await gateway.sendChat(`@Froggo ${createTask}`);
       
-      addSystemMessage('✅ Agent creation spawned!');
+      addSystemMessage('✅ Agent creation request sent to Froggo!');
 
       setTimeout(() => {
         const createdAgent: CreatedAgent = {

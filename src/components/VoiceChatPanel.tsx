@@ -311,7 +311,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         const stream = geminiLive.getVideoStream();
         setVideoActive(true);
         requestAnimationFrame(() => {
-          if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
+          if (videoPreviewRef.current && stream) {
+            videoPreviewRef.current.srcObject = stream;
+            videoPreviewRef.current.play().catch(e => console.error('Video play failed:', e));
+          }
         });
         addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
         if (mode === 'screen') {
@@ -339,7 +342,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         const stream = geminiLive.getVideoStream();
         setVideoActive(true);
         requestAnimationFrame(() => {
-          if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
+          if (videoPreviewRef.current && stream) {
+            videoPreviewRef.current.srcObject = stream;
+            videoPreviewRef.current.play().catch(e => console.error('Video play failed:', e));
+          }
         });
         addSystemMessage('🖥️ Screen sharing active');
         geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');

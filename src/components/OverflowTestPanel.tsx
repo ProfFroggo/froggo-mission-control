@@ -217,8 +217,8 @@ export default function OverflowTestPanel() {
             <div className="bg-clawd-surface rounded-lg border border-clawd-border p-3 flex items-center gap-3 overflow-hidden">
               <span className="no-shrink">🤖</span>
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse no-shrink" />
-              <span className="session-name flex-fill" title="agent:chat-agent:subagent:coder-task-extremely-long-identifier-1234567890-abcdefghijklmnop">
-                agent:chat-agent:subagent:coder-task-extremely-long-identifier-1234567890-abcdefghijklmnop
+              <span className="session-name flex-fill" title="agent:froggo:subagent:coder-task-extremely-long-identifier-1234567890-abcdefghijklmnop">
+                agent:froggo:subagent:coder-task-extremely-long-identifier-1234567890-abcdefghijklmnop
               </span>
               <span className="badge-text no-shrink px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
                 Working

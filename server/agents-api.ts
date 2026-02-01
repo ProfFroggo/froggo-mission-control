@@ -288,7 +288,7 @@ router.post('/chat', async (req, res) => {
 
     const escapedMsg = fullMessage.replace(/'/g, "'\\''");
     const agentIdMap: Record<string, string> = {
-      main: 'chat-agent', froggo: 'chat-agent', coder: 'coder',
+      main: 'main', froggo: 'main', coder: 'coder',
       researcher: 'researcher', writer: 'writer', chief: 'chief',
     };
     const clawdAgentId = agentIdMap[session.agentId] || session.agentId;

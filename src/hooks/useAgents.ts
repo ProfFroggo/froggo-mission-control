@@ -38,7 +38,7 @@ function parseSessionKey(key: string): { agent: string; kind: 'direct' | 'subage
   // Common patterns:
   //   agent:coder:cron:uuid          → agent=coder, kind=direct
   //   agent:coder:subagent:uuid      → agent=coder (subagent), kind=subagent
-  //   agent:chat-agent:cron:uuid     → agent=chat-agent, kind=direct
+  //   agent:froggo:cron:uuid     → agent=froggo, kind=direct
   const parts = key.split(':');
   if (parts[0] === 'agent' && parts.length >= 3) {
     const agentName = parts[1];
@@ -196,9 +196,9 @@ async function fetchAgents(): Promise<AgentInfo[]> {
       const metrics: Record<string, any> = metricsRes?.metrics ?? metricsRes ?? {};
       // Map metric agent IDs to session agent names (and vice versa)
       const agentIdAliases: Record<string, string[]> = {
-        main: ['main', 'froggo', 'chat-agent'],
-        'chat-agent': ['main', 'froggo', 'chat-agent'],
-        froggo: ['main', 'froggo', 'chat-agent'],
+        main: ['main', 'froggo', 'froggo'],
+        'froggo': ['main', 'froggo', 'froggo'],
+        froggo: ['main', 'froggo', 'froggo'],
       };
 
       for (const [agentId, data] of Object.entries(metrics)) {

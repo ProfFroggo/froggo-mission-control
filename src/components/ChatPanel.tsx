@@ -339,6 +339,10 @@ export default function ChatPanel() {
             ? { ...m, content: currentResponseRef.current } 
             : m
         ));
+        // Re-enable input on first delta (streaming has started)
+        if (loading) {
+          setLoading(false);
+        }
       }
     };
 

@@ -2,7 +2,7 @@
 
 const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
 const DEFAULT_TOKEN = '14ac9fc2afdd3363df3842a36ab269ca4137b8059ca3b0ba';
-const SESSION_KEY = 'chat-agent'; // Chat agent session (Sonnet, reports to Brain)
+const DEFAULT_SESSION_KEY = 'agent:froggo:dashboard'; // Default session key (overridable via setSessionKey)
 
 // Load settings from localStorage
 function getSettings(): { gatewayUrl: string; gatewayToken: string } {
@@ -33,7 +33,7 @@ class Gateway {
   private reconnectAttempts = 0;
   private maxReconnectDelay = 30000;
   private baseReconnectDelay = 1000;
-  private sessionKey = SESSION_KEY;
+  private sessionKey = DEFAULT_SESSION_KEY;
   private gatewayUrl = DEFAULT_GATEWAY_WS;
   private token = DEFAULT_TOKEN;
   
