@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Phone, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star, Users } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Phone, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star, Users, Zap } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -11,7 +11,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'voice-chat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'voice-chat' | 'voice-live' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'error-test';
 
 interface SidebarProps {
   currentView: View;
@@ -41,6 +41,7 @@ const panelIconMap: Record<string, any> = {
 // Static items not managed by panel config (always shown)
 const staticNavItems = [
   { id: 'voice-chat' as View, icon: Phone, label: 'Voice Chat', shortcut: '⌘⇧V' },
+  { id: 'voice-live' as View, icon: Zap, label: 'Gemini Live', shortcut: '' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
