@@ -313,16 +313,39 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 
 // Avatar mapping for agents (registry doesn't store avatars since they're UI-only)
 const AGENT_AVATARS: Record<string, string> = {
-  main: '🐸', froggo: '🐸', coder: '💻', researcher: '🔍', writer: '✍️',
-  chief: '👨‍💻', clara: '👁️', hr: '🎓', 'growth-director': '📈', growth_director: '📈',
-  'social-manager': '📱', social_media_manager: '📱', 'lead-engineer': '🔧', lead_engineer: '🔧',
-  voice: '🎙️', designer: '🎨', 'chat-agent': '💬', onchain_worker: '⛓️',
+  'chat-agent': '🐸',
+  coder: '💻',
+  researcher: '🔍',
+  writer: '✍️',
+  chief: '👨‍💻',
+  hr: '🎓',
+  clara: '👁️',
+  designer: '🎨',
+  'growth-director': '📈',
+  'lead-engineer': '🔧',
+  'social-manager': '📱',
+  voice: '🎙️',
+  // Legacy aliases
+  main: '🐸',
+  froggo: '🐸',
+  growth_director: '📈',
+  social_media_manager: '📱',
+  lead_engineer: '🔧',
+  onchain_worker: '⛓️',
 };
 
 // Display name overrides (registry uses role, but some need friendlier names)
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  main: 'Froggo', social_media_manager: 'Social Manager', growth_director: 'Growth Director',
-  lead_engineer: 'Lead Engineer', onchain_worker: 'Onchain Worker',
+  'chat-agent': 'Froggo',
+  'social-manager': 'Social Manager',
+  'growth-director': 'Growth Director',
+  'lead-engineer': 'Lead Engineer',
+  // Legacy aliases
+  main: 'Froggo',
+  social_media_manager: 'Social Manager',
+  growth_director: 'Growth Director',
+  lead_engineer: 'Lead Engineer',
+  onchain_worker: 'Onchain Worker',
 };
 
 /** Convert agent-registry.json data to Agent[] for the dashboard */
@@ -332,19 +355,13 @@ function registryToAgents(registry: Record<string, { role: string; description: 
     name: AGENT_DISPLAY_NAMES[id] || entry.role || id,
     avatar: AGENT_AVATARS[id] || AGENT_AVATARS[entry.clawdAgentId] || '🤖',
     description: entry.description || '',
-    status: (id === 'main' ? 'active' : 'idle') as Agent['status'],
+    status: (id === 'chat-agent' || id === 'main' ? 'active' : 'idle') as Agent['status'],
     capabilities: entry.capabilities || [],
   }));
 }
 
-// Fallback agents in case registry is unavailable (e.g., non-Electron env)
-const fallbackAgents: Agent[] = [
-  { id: 'main', name: 'Froggo', avatar: '🐸', description: 'Main assistant - orchestrates everything', status: 'active', capabilities: ['chat', 'code', 'web', 'email', 'orchestrate'] },
-  { id: 'coder', name: 'Coder', avatar: '💻', description: 'Software engineering tasks', status: 'idle', capabilities: ['code', 'git', 'debug', 'test'] },
-  { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
-  { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
-  { id: 'chief', name: 'Chief', avatar: '👨‍💻', description: 'Lead Engineer (GSD methodology)', status: 'idle', capabilities: ['code', 'architecture', 'planning'] },
-];
+// No fallback agents - agents are loaded exclusively from the gateway registry
+// This prevents phantom/duplicate agents from appearing in the UI
 
 export const useStore = create<Store>()(
   persist(
@@ -492,9 +509,21 @@ export const useStore = create<Store>()(
               subagentCounts.set(agentId, (subagentCounts.get(agentId) || 0) + (s.isActive ? 1 : 0));
             }
 
+            // Real gateway agents only (no phantom agents)
+            const REAL_GATEWAY_AGENTS = [
+              'chat-agent', 'writer', 'researcher', 'coder', 'chief',
+              'hr', 'clara', 'designer', 'growth-director', 
+              'lead-engineer', 'social-manager', 'voice'
+            ];
+
             set((state: Store) => ({
               gatewaySessions: processed,
               agents: state.agents.map((agent: Agent) => {
+                // Only enrich status for real gateway agents
+                if (!REAL_GATEWAY_AGENTS.includes(agent.id) && !agent.id.startsWith('worker-')) {
+                  return agent; // Skip phantom/legacy agents
+                }
+
                 const activity = agentActivity.get(agent.id);
                 const activeSubagents = subagentCounts.get(agent.id) || 0;
 
@@ -870,7 +899,7 @@ export const useStore = create<Store>()(
         }
       },
 
-      agents: fallbackAgents,
+      agents: [], // Start empty - loaded from registry only
 
       fetchAgents: async () => {
         try {
@@ -878,19 +907,26 @@ export const useStore = create<Store>()(
           const registry = await (window as any).clawdbot?.agents?.getRegistry();
           if (registry && Object.keys(registry).length > 0) {
             const registryAgents = registryToAgents(registry);
-            // Merge: preserve runtime status/sessionKey from current agents
+            // REPLACE agents completely (not merge) to avoid phantom/duplicate agents
+            // Only preserve runtime state (status/sessionKey) from current agents
             const current = get().agents;
-            const merged = registryAgents.map((ra: Agent) => {
+            const fresh = registryAgents.map((ra: Agent) => {
               const existing = current.find((a: Agent) => a.id === ra.id);
-              return existing ? { ...ra, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity } : ra;
+              // If agent exists, keep its runtime state, otherwise use fresh state
+              return existing 
+                ? { ...ra, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity }
+                : ra;
             });
-            // Also keep any dynamically-created agents not in registry
-            const dynamicAgents = current.filter((a: Agent) => !registryAgents.find((ra: Agent) => ra.id === a.id));
-            set({ agents: [...merged, ...dynamicAgents] });
-            console.log(`[Store] Loaded ${registryAgents.length} agents from registry`);
+            // Set agents to ONLY registry agents (no fallback, no dynamic agents)
+            set({ agents: fresh });
+            console.log(`[Store] Loaded ${fresh.length} agents from registry`);
+          } else {
+            // If registry unavailable, keep empty (no phantom agents)
+            console.warn('[Store] Registry unavailable, agents list will be empty until registry loads');
           }
         } catch (e) {
-          console.error('[Store] Failed to fetch agents from registry, using fallback:', e);
+          console.error('[Store] Failed to fetch agents from registry:', e);
+          // On error, keep current agents (don't inject fallbacks)
         } finally {
           get().setLoading('agents', false);
         }

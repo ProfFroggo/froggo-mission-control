@@ -11,8 +11,7 @@ interface ToggleProps {
 /**
  * Toggle Switch Component
  * 
- * iOS/macOS-style toggle using checkbox + label pattern
- * Works with @tailwindcss/forms plugin
+ * iOS/macOS-style toggle - pill-shaped with sliding thumb
  */
 export function Toggle({ 
   checked, 
@@ -21,55 +20,45 @@ export function Toggle({
   size = 'md',
   colorScheme = 'default'
 }: ToggleProps) {
-  const id = React.useId();
   
-  // Size variants - pill-shaped (2:1 width:height ratio)
-  const sizes = {
-    sm: { track: 'w-11 h-6', thumb: 'w-5 h-5', translate: 'peer-checked:translate-x-5' },
-    md: { track: 'w-12 h-6', thumb: 'w-5 h-5', translate: 'peer-checked:translate-x-6' },
-    lg: { track: 'w-14 h-7', thumb: 'w-6 h-6', translate: 'peer-checked:translate-x-7' },
-  };
+  // Size configurations
+  const config = {
+    sm: { trackWidth: 36, trackHeight: 20, thumbSize: 16, slideDistance: 16 },
+    md: { trackWidth: 44, trackHeight: 22, thumbSize: 18, slideDistance: 22 },
+    lg: { trackWidth: 52, trackHeight: 26, thumbSize: 22, slideDistance: 26 },
+  }[size];
   
-  // Color schemes (for track when checked)
-  const trackColors = {
-    default: 'peer-checked:bg-clawd-accent',
-    green: 'peer-checked:bg-green-500',
-    red: 'peer-checked:bg-green-500', // green when ON even for "red" scheme
-  };
-  
-  // Unchecked track color
-  const uncheckedColor = colorScheme === 'red' ? 'bg-red-500' : 'bg-gray-400';
-  
-  const { track, thumb, translate } = sizes[size];
-  const checkedColor = trackColors[colorScheme];
+  // Colors
+  const trackColor = checked 
+    ? (colorScheme === 'green' ? 'bg-green-500' : 'bg-clawd-accent')
+    : (colorScheme === 'red' ? 'bg-red-500' : 'bg-gray-400');
   
   return (
-    <div className="relative inline-flex flex-shrink-0">
+    <label className="relative inline-flex flex-shrink-0 cursor-pointer">
       <input
-        id={id}
         type="checkbox"
         role="switch"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         disabled={disabled}
-        className="peer sr-only unstyled"
+        className="sr-only"
       />
-      <label
-        htmlFor={id}
-        className={`
-          relative inline-block ${track} ${uncheckedColor} rounded-full ${checkedColor}
-          cursor-pointer transition-colors duration-200
-          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
+      <div
+        className={`relative rounded-full transition-colors duration-200 ${trackColor} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        style={{
+          width: `${config.trackWidth}px`,
+          height: `${config.trackHeight}px`,
+        }}
       >
-        <span
-          className={`
-            inline-block ${thumb} bg-white rounded-full shadow
-            transform transition-transform duration-200 translate-x-0.5 translate-y-0.5
-            ${translate}
-          `}
+        <div
+          className="absolute top-0.5 left-0.5 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out"
+          style={{
+            width: `${config.thumbSize}px`,
+            height: `${config.thumbSize}px`,
+            transform: checked ? `translateX(${config.slideDistance}px)` : 'translateX(0)',
+          }}
         />
-      </label>
-    </div>
+      </div>
+    </label>
   );
 }

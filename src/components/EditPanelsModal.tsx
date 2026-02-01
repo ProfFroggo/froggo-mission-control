@@ -18,26 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePanelConfigStore, PanelConfig } from '../store/panelConfig';
-
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
-  return (
-    <button
-      onClick={onChange}
-      disabled={disabled}
-      className={`unstyled relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0 border-0 p-0 ${
-        checked ? 'bg-[#8b5cf6]' : 'bg-[#3a3a3a]'
-      } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-      role="switch"
-      aria-checked={checked}
-    >
-      <span
-        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
-          checked ? 'translate-x-4.5' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
-  );
-}
+import { Toggle } from './Toggle';
 
 function SortableItem({ panel, isLastVisible, onToggle }: {
   panel: PanelConfig;
@@ -63,23 +44,24 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl bg-[#2a2a2a] transition-shadow ${
-        isDragging ? 'shadow-xl shadow-black/40 scale-[1.02]' : ''
+      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl bg-clawd-surface border border-clawd-border transition-shadow ${
+        isDragging ? 'shadow-xl scale-[1.02]' : ''
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="text-[#666] hover:text-[#999] cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        className="text-clawd-text-dim hover:text-clawd-text cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
         aria-label={`Drag to reorder ${panel.label}`}
       >
         <GripVertical size={20} />
       </button>
-      <span className="flex-1 text-white text-sm font-medium">{panel.label}</span>
+      <span className="flex-1 text-clawd-text text-sm font-medium">{panel.label}</span>
       <Toggle
         checked={panel.visible}
-        onChange={() => onToggle(panel.id)}
+        onChange={(checked) => onToggle(panel.id)}
         disabled={panel.visible && isLastVisible}
+        size="sm"
       />
     </div>
   );
@@ -142,19 +124,19 @@ export default function EditPanelsModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center modal-backdrop"
       onClick={(e) => { if (e.target === e.currentTarget) closeEditModal(); }}
     >
-      <div className="bg-[#1a1a1a] rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl border border-[#2a2a2a]">
+      <div className="glass-modal rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between p-6 pb-4">
           <div>
-            <h2 className="text-xl font-bold text-white">Edit Panels</h2>
-            <p className="text-sm text-[#888] mt-1">Showing {visibleCount} of {draft.length} Panels</p>
+            <h2 className="text-xl font-bold text-clawd-text">Edit Panels</h2>
+            <p className="text-sm text-clawd-text-dim mt-1">Showing {visibleCount} of {draft.length} Panels</p>
           </div>
           <button
             onClick={closeEditModal}
-            className="text-[#888] hover:text-white transition-colors p-1"
+            className="text-clawd-text-dim hover:text-clawd-text transition-colors p-1"
             aria-label="Close"
           >
             <X size={22} />
@@ -182,16 +164,16 @@ export default function EditPanelsModal() {
         </div>
 
         {/* Footer buttons */}
-        <div className="flex gap-3 p-6 pt-4 border-t border-[#2a2a2a]">
+        <div className="flex gap-3 p-6 pt-4 border-t border-clawd-border">
           <button
             onClick={handleReset}
-            className="flex-1 py-3 rounded-xl border border-[#444] text-white font-semibold text-sm hover:bg-[#2a2a2a] transition-colors"
+            className="flex-1 py-3 rounded-xl border border-clawd-border text-clawd-text font-semibold text-sm hover:bg-clawd-surface transition-colors"
           >
             Reset
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-xl bg-[#8b5cf6] text-white font-semibold text-sm hover:bg-[#7c3aed] transition-colors"
+            className="flex-1 py-3 rounded-xl bg-clawd-accent text-white font-semibold text-sm hover:opacity-90 transition-opacity"
           >
             Save
           </button>

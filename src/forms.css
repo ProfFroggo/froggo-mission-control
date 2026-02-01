@@ -408,6 +408,14 @@ input[type="radio"]:disabled:not(.unstyled) {
   white-space: nowrap;
 }
 
+/* ==================== TOGGLE SWITCH STYLES ==================== */
+
+/* Focus state for toggle switches */
+.toggle-switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clawd-accent) 25%, transparent);
+}
+
 /* ==================== ACCESSIBILITY ==================== */
 
 /* Focus visible for keyboard navigation */

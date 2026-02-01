@@ -74,7 +74,30 @@ export default function AgentPanel() {
     else if (compareAgents.length < 3) setCompareAgents([...compareAgents, agentId]);
   };
 
-  const mainAgents = agents.filter(a => !a.id.startsWith('worker-'));
+  // REAL GATEWAY AGENTS - Only these 12 should be shown
+  const REAL_GATEWAY_AGENTS = [
+    'chat-agent',
+    'writer',
+    'researcher',
+    'coder',
+    'chief',
+    'hr',
+    'clara',
+    'designer',
+    'growth-director',
+    'lead-engineer',
+    'social-manager',
+    'voice'
+  ];
+
+  // Filter agents: ONLY real gateway agents (no duplicates, no phantom agents)
+  const realAgents = agents.filter(a => REAL_GATEWAY_AGENTS.includes(a.id));
+  
+  // Remove duplicates by ID (in case store has dupes)
+  const uniqueAgents = Array.from(new Map(realAgents.map(a => [a.id, a])).values());
+  
+  // Split into main agents and workers
+  const mainAgents = uniqueAgents.filter(a => !a.id.startsWith('worker-'));
   const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
 
   return (
