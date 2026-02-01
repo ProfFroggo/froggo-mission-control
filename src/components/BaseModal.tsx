@@ -60,6 +60,15 @@ export interface BaseModalProps {
   /** ARIA describedby for the modal */
   ariaDescribedby?: string;
   
+  /** Modal title */
+  title?: string;
+  
+  /** Modal subtitle */
+  subtitle?: string;
+  
+  /** Modal icon */
+  icon?: any;
+  
   /** Animation duration in ms */
   animationDuration?: number;
   

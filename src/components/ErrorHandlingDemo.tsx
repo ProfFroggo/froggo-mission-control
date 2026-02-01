@@ -353,11 +353,11 @@ export default function ErrorHandlingDemo() {
             type="tasks"
             title="No items yet"
             description="Create your first item to get started"
-            action={{
-              label: 'Create Item',
-              onClick: () => setShowForm(true),
-              icon: <Plus size={16} />,
-            }}
+            action={
+              <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <Plus size={16} /> Create Item
+              </button>
+            }
           />
         )}
 

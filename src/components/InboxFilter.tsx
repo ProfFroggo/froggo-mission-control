@@ -55,7 +55,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const [searchInput, setSearchInput] = useState('');
   const [quickFilterInput, setQuickFilterInput] = useState('');
   const [platforms, setPlatforms] = useState<string[]>([]);
-  const [flags, setFlags] = useState<FilterCriteria['flags']>({});
+  const [flags, setFlags] = useState<NonNullable<FilterCriteria['flags']>>({});
   const [logicMode, setLogicMode] = useState<'AND' | 'OR'>('AND');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSavedFilters, setShowSavedFilters] = useState(false);

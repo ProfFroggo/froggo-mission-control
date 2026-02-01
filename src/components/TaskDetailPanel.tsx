@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
-import { useStore, Task, Subtask, TaskActivity } from '../store/store';
+import { useStore, Task, TaskStatus, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
@@ -357,7 +357,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       // Update task: status to 'todo' and clear completed_at
       await updateTask(task.id, { 
         status: 'todo',
-        completedAt: null
+        completedAt: null as any
       });
       
       // Log activity with reason
@@ -1093,9 +1093,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     onClick={() => {
                       console.log('[TaskDetailPanel] APPROVE CLICKED', task.id, task.status, task.reviewStatus);
                       // ATOMIC UPDATE: Change both reviewStatus AND status in one call
-                      const updates = { 
+                      const updates: any = { 
                         reviewStatus: 'approved',
-                        status: 'in-progress' as TaskStatus
+                        status: 'in-progress'
                       };
                       console.log('[TaskDetailPanel] Calling updateTask with:', updates);
                       updateTask(task.id, updates);

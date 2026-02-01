@@ -27,6 +27,7 @@ export interface PriorityScore {
 export interface VipInfo {
   id: number;
   identifier: string;
+  identifier_type?: string;
   label: string;
   priority_boost: number;
   category?: string;

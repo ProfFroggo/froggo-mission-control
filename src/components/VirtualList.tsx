@@ -52,7 +52,7 @@ function VirtualListInner<T>({
   );
 
   // Calculate total height
-  const totalHeight = items.reduce((acc, index) => {
+  const totalHeight = items.reduce((acc, _item, index) => {
     return acc + getItemHeight(index);
   }, 0);
 
@@ -282,7 +282,7 @@ export function VirtualGrid<T>({
               height: itemHeight,
             }}
           >
-            {renderItem(item, index)}
+            {renderItem(items[index], index)}
           </div>
         ))}
       </div>

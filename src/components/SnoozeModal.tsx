@@ -104,7 +104,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       setSubmitting(true);
       setError('');
 
-      const result = await window.clawdbot!.snooze.set(sessionKey, snoozeUntil, reason || undefined);
+      const result = await window.clawdbot!.snooze.set(sessionKey, String(snoozeUntil), reason || undefined);
       
       if (result.success) {
         console.log('[SnoozeModal] Snooze set successfully');

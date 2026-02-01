@@ -4,7 +4,6 @@
  */
 
 import { useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 export interface SystemNotification {
   type: 'task-completed' | 'agent-failure' | 'approval-request' | 'chat-mention' | 'info';
@@ -30,7 +29,7 @@ export interface NotificationPreferences {
 }
 
 export function useNotifications() {
-  const navigate = useNavigate();
+  const navigate = (path: string) => { console.log('[useNotifications] Navigate:', path); };
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [recentNotifications, setRecentNotifications] = useState<SystemNotification[]>([]);
 
@@ -41,7 +40,7 @@ export function useNotifications() {
 
   const loadPreferences = useCallback(async () => {
     try {
-      const prefs = await window.clawdbot.notifications.getPrefs();
+      const prefs = await window.clawdbot?.notifications.getPrefs();
       setPreferences(prefs);
     } catch (error) {
       console.error('[useNotifications] Failed to load preferences:', error);
@@ -50,7 +49,7 @@ export function useNotifications() {
 
   const updatePreferences = useCallback(async (updates: Partial<NotificationPreferences>) => {
     try {
-      await window.clawdbot.notifications.updatePrefs(updates);
+      await window.clawdbot?.notifications.updatePrefs(updates);
       await loadPreferences();
     } catch (error) {
       console.error('[useNotifications] Failed to update preferences:', error);
@@ -68,7 +67,7 @@ export function useNotifications() {
     data?: any;
   }) => {
     try {
-      await window.clawdbot.notifications.send(options);
+      await window.clawdbot?.notifications.send(options);
     } catch (error) {
       console.error('[useNotifications] Failed to send notification:', error);
       throw error;
@@ -77,7 +76,7 @@ export function useNotifications() {
 
   const testNotification = useCallback(async () => {
     try {
-      await window.clawdbot.notifications.test();
+      await window.clawdbot?.notifications.test();
     } catch (error) {
       console.error('[useNotifications] Failed to test notification:', error);
       throw error;
@@ -86,7 +85,7 @@ export function useNotifications() {
 
   // Handle incoming notifications
   useEffect(() => {
-    const unsubscribe = window.clawdbot.notifications.onReceived((notification: SystemNotification) => {
+    const unsubscribe = window.clawdbot?.notifications.onReceived((notification: SystemNotification) => {
       console.log('[useNotifications] Received:', notification);
       
       // Add to recent notifications
@@ -104,7 +103,7 @@ export function useNotifications() {
 
   // Handle notification actions (from action buttons)
   useEffect(() => {
-    const unsubscribe = window.clawdbot.notifications.onAction((action: NotificationAction) => {
+    const unsubscribe = window.clawdbot?.notifications.onAction((action: NotificationAction) => {
       console.log('[useNotifications] Action triggered:', action);
       handleNotificationAction(action);
     });
@@ -114,7 +113,7 @@ export function useNotifications() {
 
   // Handle navigation requests from notifications
   useEffect(() => {
-    const unsubscribe = window.clawdbot.onNavigate((view: string, data?: any) => {
+    const unsubscribe = window.clawdbot?.onNavigate((view: string, data?: any) => {
       console.log('[useNotifications] Navigate to:', view, data);
       handleNavigationFromNotification(view, data);
     });

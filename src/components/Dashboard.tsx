@@ -131,8 +131,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
         <div className="relative max-w-8xl mx-auto px-8 pt-6 pb-8">
           {/* Greeting & Status Row */}
           <div className="flex items-center justify-between mb-6">
-            <div className="space-y-3">
-              <h1 className="text-4xl font-bold tracking-tight leading-tight bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent">
+            <div className="space-y-4">
+              <h1 className="text-4xl font-bold tracking-tight leading-normal bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent pb-1">
                 {greeting}, Kevin
               </h1>
               

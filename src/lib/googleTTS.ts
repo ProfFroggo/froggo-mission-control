@@ -14,7 +14,7 @@ export const AGENT_VOICES: Record<string, { name: string; languageCode: string; 
 
 const DEFAULT_VOICE = { name: 'en-US-Neural2-F', languageCode: 'en-US', ssmlGender: 'FEMALE' };
 
-let cachedApiKey: string | null = null;
+let cachedApiKey: string = '';
 
 async function getApiKey(): Promise<string> {
   if (cachedApiKey) return cachedApiKey;

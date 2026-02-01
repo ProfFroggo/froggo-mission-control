@@ -837,9 +837,9 @@ export default function ChatPanel() {
       )}
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3 min-w-0">
           <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
-          <div className="flex items-center gap-2 text-xs ml-2">
+          <div className="flex items-center gap-2 text-xs flex-shrink-0">
             <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
             <span className="text-clawd-text-dim">{getStatusText()}</span>
             {connectionState === 'disconnected' && (

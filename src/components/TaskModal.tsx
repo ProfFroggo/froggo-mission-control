@@ -171,7 +171,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       assignedTo: assignedTo || undefined,
       reviewerId: reviewerId || 'froggo', // Always set reviewer (default: froggo)
-      reviewStatus: 'pending', // Initialize review status
+      reviewStatus: 'pending' as any, // Initialize review status
     };
 
     addTask(newTask);
@@ -287,7 +287,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       dueDate: extractedData.dueDate,
       assignedTo: extractedData.assignedTo || autoAssignWorker(extractedData),
       reviewerId: 'froggo', // Always default to Froggo as reviewer
-      reviewStatus: 'pending' as const, // Initialize review status
+      reviewStatus: 'pending' as any, // Initialize review status
     };
 
     addTask(newTask);

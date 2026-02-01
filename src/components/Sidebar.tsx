@@ -11,7 +11,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'multi-agent-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'error-test';
 
 interface SidebarProps {
   currentView: View;
@@ -42,6 +42,7 @@ const panelIconMap: Record<string, any> = {
 const staticNavItems = [
   { id: 'voice-chat' as View, icon: Phone, label: 'Voice Chat', shortcut: '⌘⇧V' },
   { id: 'gemini-voice' as View, icon: Zap, label: 'Gemini Live', shortcut: '⌘⇧G' },
+  { id: 'multi-agent-voice' as View, icon: Users, label: 'Multi-Agent Voice', shortcut: '⌘⇧M' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },

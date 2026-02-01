@@ -142,39 +142,27 @@ export class GeminiLiveService {
       ws.onopen = () => {
         console.log('[GeminiLive] WebSocket OPEN');
         clearTimeout(timeout);
-        // Setup message must use camelCase for raw WebSocket API
+        // Setup message - trying Python SDK field format
         const setupMsg: any = {
           setup: {
             model: model || MODEL,
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: {
-                    voiceName: voice,
-                  },
+            response_modalities: ['AUDIO'],
+            speech_config: {
+              voice_config: {
+                prebuilt_voice_config: {
+                  voice_name: voice,
                 },
               },
             },
-            // Enable transcription of input and output audio
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-            ...(systemInstruction ? {
-              systemInstruction: {
-                parts: [{ text: systemInstruction }],
-              },
-            } : {}),
-            ...(tools && tools.length > 0 ? {
-              tools: [{
-                functionDeclarations: tools.map(t => ({
-                  name: t.name,
-                  description: t.description,
-                  parameters: t.parameters,
-                })),
-              }],
-            } : {}),
           },
         };
+        
+        // Add system instruction if provided
+        if (systemInstruction) {
+          setupMsg.setup.system_instruction = {
+            parts: [{ text: systemInstruction }],
+          };
+        }
         console.log('[GeminiLive] Sending setup:', JSON.stringify(setupMsg, null, 2));
         ws.send(JSON.stringify(setupMsg));
         this.pendingSetup = { resolve, reject };
@@ -334,7 +322,7 @@ export class GeminiLiveService {
         
         const float32 = e.inputBuffer.getChannelData(0);
         const int16 = this.float32ToInt16(float32);
-        const base64 = this.arrayBufferToBase64(int16.buffer);
+        const base64 = this.arrayBufferToBase64(int16.buffer as ArrayBuffer);
 
         this.ws.send(JSON.stringify({
           realtimeInput: {
