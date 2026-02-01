@@ -128,11 +128,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-clawd-accent/5 via-transparent to-purple-500/5 animate-gradient-x opacity-50" />
         
-        <div className="relative max-w-8xl mx-auto px-8 pt-6 pb-8">
+        <div className="relative max-w-8xl mx-auto px-8 pt-8 pb-8">
           {/* Greeting & Status Row */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="space-y-4">
-              <h1 className="text-4xl font-bold tracking-tight leading-normal bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent pb-1">
+          <div className="flex items-start justify-between mb-6">
+            <div className="space-y-3">
+              <h1 className="text-3xl font-bold tracking-tight leading-tight bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent">
                 {greeting}, Kevin
               </h1>
               
