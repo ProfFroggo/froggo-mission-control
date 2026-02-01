@@ -204,7 +204,13 @@ Do not respond or engage - only transcribe what you hear.`,
     };
 
     source.connect(scriptProcessor);
-    scriptProcessor.connect(audioContext.destination);
+    // Connect to a silent sink to keep the processor running.
+    // IMPORTANT: Do NOT connect to audioContext.destination — that plays mic audio
+    // through speakers, causing feedback where system audio gets transcribed instead of speech.
+    const silentGain = audioContext.createGain();
+    silentGain.gain.value = 0;
+    silentGain.connect(audioContext.destination);
+    scriptProcessor.connect(silentGain);
   }
 
   /**

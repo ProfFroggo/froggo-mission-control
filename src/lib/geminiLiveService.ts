@@ -73,6 +73,7 @@ export class GeminiLiveService {
   private playbackQueue: ArrayBuffer[] = [];
   private isPlaying = false;
   private playbackSourceNode: AudioBufferSourceNode | null = null;
+  private playbackGain: GainNode | null = null;
   private scheduledTime = 0;
 
   // Video capture
@@ -96,6 +97,13 @@ export class GeminiLiveService {
   get listening() { return this._listening; }
   get speaking() { return this._speaking; }
   get videoMode() { return this._videoMode; }
+
+  /** Mute/unmute audio playback */
+  setMuted(muted: boolean) {
+    if (this.playbackGain) {
+      this.playbackGain.gain.value = muted ? 0 : 1;
+    }
+  }
 
   // ── Event system ──
 
@@ -226,6 +234,7 @@ export class GeminiLiveService {
           for (const part of sc.modelTurn.parts) {
             if (part.inlineData?.mimeType === 'audio/pcm' && part.inlineData.data) {
               const pcmData = this.base64ToArrayBuffer(part.inlineData.data);
+              console.log('[GeminiLive] Audio chunk received:', pcmData.byteLength, 'bytes');
               this.enqueueAudio(pcmData);
               if (!this._speaking) {
                 this._speaking = true;
@@ -430,6 +439,17 @@ export class GeminiLiveService {
       this.scheduledTime = this.playbackCtx.currentTime;
     }
 
+    // AudioContext starts suspended in browsers — must resume after user gesture
+    if (this.playbackCtx.state === 'suspended') {
+      try {
+        await this.playbackCtx.resume();
+        console.log('[GeminiLive] Playback AudioContext resumed');
+      } catch (err) {
+        console.error('[GeminiLive] Failed to resume playback AudioContext:', err);
+        return;
+      }
+    }
+
     while (this.playbackQueue.length > 0) {
       const pcm = this.playbackQueue.shift()!;
       const int16 = new Int16Array(pcm);
@@ -443,7 +463,17 @@ export class GeminiLiveService {
 
       const source = this.playbackCtx.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(this.playbackCtx.destination);
+
+      // Gain node for mute control
+      if (!this.playbackGain) {
+        this.playbackGain = this.playbackCtx.createGain();
+        this.playbackGain.connect(this.playbackCtx.destination);
+      }
+      source.connect(this.playbackGain);
+
+      // Emit model audio level based on PCM amplitude
+      const rms = Math.sqrt(float32.reduce((sum, v) => sum + v * v, 0) / float32.length);
+      this.emit('model-audio-level', { level: Math.min(1, rms * 3) });
 
       const now = this.playbackCtx.currentTime;
       const startTime = Math.max(now, this.scheduledTime);
@@ -476,6 +506,7 @@ export class GeminiLiveService {
       this.playbackCtx = null;
     }
     this.playbackSourceNode = null;
+    this.playbackGain = null;
     this.scheduledTime = 0;
   }
 

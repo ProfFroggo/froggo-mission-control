@@ -8,16 +8,16 @@ interface KeyboardShortcutsProps {
 
 const shortcuts = [
   { category: 'Global Navigation', items: [
-    { keys: ['⌘', '1'], action: 'Dashboard' },
-    { keys: ['⌘', '2'], action: 'Approvals Inbox' },
-    { keys: ['⌘', '3'], action: 'Comms Inbox' },
-    { keys: ['⌘', '4'], action: 'Analytics' },
-    { keys: ['⌘', '5'], action: 'Tasks (Kanban)' },
-    { keys: ['⌘', '6'], action: 'Agents' },
-    { keys: ['⌘', '7'], action: 'X / Twitter' },
-    { keys: ['⌘', '8'], action: 'Voice Assistant' },
-    { keys: ['⌘', '9'], action: 'Chat' },
-    { keys: ['⌘', '0'], action: 'Connected Accounts' },
+    { keys: ['⌘', '1'], action: 'Inbox' },
+    { keys: ['⌘', '2'], action: 'Dashboard' },
+    { keys: ['⌘', '3'], action: 'Analytics' },
+    { keys: ['⌘', '4'], action: 'Tasks (Kanban)' },
+    { keys: ['⌘', '5'], action: 'Agents' },
+    { keys: ['⌘', '6'], action: 'X / Twitter' },
+    { keys: ['⌘', '7'], action: 'Meetings' },
+    { keys: ['⌘', '8'], action: 'Voice Chat' },
+    { keys: ['⌘', '9'], action: 'Connected Accounts' },
+    { keys: ['⌘', '0'], action: 'Approvals' },
     { keys: ['⌘', ','], action: 'Settings' },
   ]},
   { category: 'Extended Navigation', items: [

@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { initApprovalQueue } from './lib/approvalQueue';
-// PERFORMANCE: voiceService no longer preloads - loads on-demand when Voice panel opens
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -15,6 +14,7 @@ import {
   AgentPanel,
   ChatPanel,
   MeetingsPanel,
+  VoiceChatPanel,
   SettingsPanel,
   NotificationsPanel,
   XPanel,
@@ -27,9 +27,6 @@ import {
   AnalyticsDashboard,
   ConnectedAccountsPanel,
   StarredMessagesPanel,
-  VoiceChatPanel,
-  GeminiVoicePanel,
-  MultiAgentVoicePanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
 import CommandPalette from './components/CommandPalette';
@@ -46,7 +43,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'multi-agent-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'sessions' | 'calendar' | 'templates' | 'error-test';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -129,11 +126,6 @@ function App() {
         console.error('[App] Failed to apply saved theme:', e);
       }
     }
-  }, []);
-
-  // Handle call button click - navigate to voice chat
-  const handleCallClick = useCallback(() => {
-    setCurrentView('voice-chat');
   }, []);
 
   // Global keyboard shortcuts
@@ -279,7 +271,7 @@ function App() {
             break;
           case '8':
             e.preventDefault();
-            setCurrentView('chat');
+            setCurrentView('voicechat');
             break;
           case '9':
             e.preventDefault();
@@ -301,10 +293,6 @@ function App() {
             case 'C':
               e.preventDefault();
               setCurrentView('context');
-              break;
-            case 'G':
-              e.preventDefault();
-              setCurrentView('gemini-voice');
               break;
             case 'L':
               e.preventDefault();
@@ -335,7 +323,6 @@ function App() {
         {/* Top bar with call button */}
         <ErrorBoundary panelName="Top Bar">
           <TopBar 
-            onCallClick={handleCallClick} 
             onNavigate={setCurrentView} 
             sidebarWidth={sidebarWidth}
           />
@@ -365,10 +352,7 @@ function App() {
               {currentView === 'agents' && <AgentPanel />}
               {currentView === 'chat' && <ChatPanel />}
               {currentView === 'meetings' && <MeetingsPanel />}
-              {currentView === 'voice-chat' && <VoiceChatPanel />}
-              {currentView === 'voice-live' && <VoiceChatPanel />}
-              {currentView === 'gemini-voice' && <GeminiVoicePanel />}
-              {currentView === 'multi-agent-voice' && <MultiAgentVoicePanel />}
+              {currentView === 'voicechat' && <VoiceChatPanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}
@@ -462,7 +446,6 @@ function App() {
             onNewTask={() => setCurrentView('kanban')}
             onAddContact={() => setContactModalOpen(true)}
             onAddSkill={() => setSkillModalOpen(true)}
-            onCallClick={handleCallClick}
             onApproveAll={async () => {
               try {
                 const result = await (window as any).clawdbot?.inbox?.approveAll();

@@ -9,7 +9,6 @@ interface QuickActionsProps {
   onApproveAll: () => void;
   onAddContact?: () => void;
   onAddSkill?: () => void;
-  onCallClick?: () => void;
 }
 
 export interface QuickActionsRef {
@@ -60,12 +59,11 @@ function nearestSnapEdge(x: number, y: number): SnapEdge {
   return 'top-left';
 }
 
-const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll, onAddContact, onAddSkill, onCallClick }, ref) => {
+const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({ onNewTask, onSearch, onApproveAll, onAddContact, onAddSkill }, ref) => {
   const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
 
   const handleCallClick = () => {
     toggleMeeting();
-    onCallClick?.();
   };
   const [quickMessageOpen, setQuickMessageOpen] = useState(false);
   const [quickMessage, setQuickMessage] = useState('');

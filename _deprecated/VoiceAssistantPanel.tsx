@@ -179,15 +179,16 @@ export default function VoiceAssistantPanel({ onSwitchToText }: VoiceAssistantPa
       geminiLive.on('speaking-end', () => setSpeaking(false)),
       geminiLive.on('audio-level', (d) => setMicLevel(d?.level ?? 0)),
       geminiLive.on('transcript', (d) => {
-        if (d?.text && d.role === 'model') {
+        if (d?.text) {
+          const role = d.role === 'model' ? 'model' : 'user';
           setMessages(prev => {
             const last = prev[prev.length - 1];
-            if (last?.role === 'model' && Date.now() - last.timestamp < 10000) {
-              return [...prev.slice(0, -1), { ...last, content: last.content + d.text }];
+            if (last?.role === role && Date.now() - last.timestamp < 3000) {
+              return [...prev.slice(0, -1), { ...last, content: last.content + ' ' + d.text }];
             }
             return [...prev, {
-              id: `m-${Date.now()}`,
-              role: 'model',
+              id: `${role[0]}-${Date.now()}`,
+              role,
               content: d.text,
               timestamp: Date.now(),
             }];

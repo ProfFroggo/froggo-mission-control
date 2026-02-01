@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Phone, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star, Users, Zap } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star, Users, Mic } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -11,7 +11,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voice-chat' | 'voice-live' | 'gemini-voice' | 'multi-agent-voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'error-test';
 
 interface SidebarProps {
   currentView: View;
@@ -29,6 +29,7 @@ const panelIconMap: Record<string, any> = {
   agents: Bot,
   twitter: XIcon,
   meetings: Users,
+  voicechat: Mic,
   chat: MessageSquare,
   accounts: Cloud,
   approvals: Inbox,
@@ -40,9 +41,6 @@ const panelIconMap: Record<string, any> = {
 
 // Static items not managed by panel config (always shown)
 const staticNavItems = [
-  { id: 'voice-chat' as View, icon: Phone, label: 'Voice Chat', shortcut: '⌘⇧V' },
-  { id: 'gemini-voice' as View, icon: Zap, label: 'Gemini Live', shortcut: '⌘⇧G' },
-  { id: 'multi-agent-voice' as View, icon: Users, label: 'Multi-Agent Voice', shortcut: '⌘⇧M' },
   { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },

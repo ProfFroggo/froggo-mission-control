@@ -9,7 +9,7 @@ import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 
 /**
- * VoicePanel — Meetings page (standalone)
+ * MeetingsPanel — Meeting transcription & eavesdrop (standalone)
  * 
  * Transcription engine: Gemini Live API (WebSocket-based, real-time input transcription)
  * Cleanup: Gemini Flash for post-processing
@@ -33,15 +33,35 @@ interface ActionItem {
   confidence: number;
 }
 
+interface TranscriptLine {
+  text: string;
+  timestamp: number;
+  cleaned?: string;
+}
+
 interface PastMeeting {
+  id?: string; // DB id
   filename: string;
   filepath: string;
   date: Date;
   time: string;
+  title?: string;
+  duration?: number; // ms
   transcript: string[];
   actionItems: string[];
   tasksCreated: string[];
   rawContent: string;
+  source: 'file' | 'db';
+}
+
+// Format duration as MM:SS or HH:MM:SS
+function formatDuration(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
 // Task extraction patterns
@@ -73,8 +93,18 @@ export default function MeetingsPanel() {
   const [connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
   const connected = connectionState === 'connected';
 
+  // Meeting title & timer
+  const [meetingTitle, setMeetingTitle] = useState('');
+  const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [showTitleInput, setShowTitleInput] = useState(false);
+  const [meetingDbId, setMeetingDbId] = useState<string | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+
   // Meeting state
   const [meetingTranscript, setMeetingTranscript] = useState<string[]>([]);
+  const [meetingTranscriptLines, setMeetingTranscriptLines] = useState<TranscriptLine[]>([]);
   const [meetingActionItems, setMeetingActionItems] = useState<ActionItem[]>([]);
   const [meetingEndSummary, setMeetingEndSummary] = useState<{
     savedPath: string | null;
@@ -104,9 +134,11 @@ export default function MeetingsPanel() {
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const transcriptBufferRef = useRef('');
+  const meetingDbIdRef = useRef<string | null>(null);
 
-  // Keep mute ref in sync
+  // Keep refs in sync
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+  useEffect(() => { meetingDbIdRef.current = meetingDbId; }, [meetingDbId]);
 
   // Track gateway state
   useEffect(() => {
@@ -132,6 +164,124 @@ export default function MeetingsPanel() {
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
       if (audioContextRef.current) { audioContextRef.current.close().catch(() => {}); }
     };
+  }, []);
+
+  // ── Meeting Timer ──
+  useEffect(() => {
+    if (!meetingStartTime) { setElapsedTime(0); return; }
+    const interval = setInterval(() => {
+      setElapsedTime(Date.now() - meetingStartTime);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [meetingStartTime]);
+
+  // ── DB Helpers ──
+  const dbExec = useCallback(async (sql: string, params: any[] = []) => {
+    if (!(window as any).clawdbot?.db?.exec) return;
+    await (window as any).clawdbot.db.exec(sql, params);
+  }, []);
+
+  const dbQuery = useCallback(async (sql: string, params: any[] = []): Promise<any[]> => {
+    if (!(window as any).clawdbot?.db?.query) return [];
+    try {
+      return (await (window as any).clawdbot.db.query(sql, params)) || [];
+    } catch { return []; }
+  }, []);
+
+  const ensureMeetingTables = useCallback(async () => {
+    await dbExec(`CREATE TABLE IF NOT EXISTS meetings (
+      id TEXT PRIMARY KEY, title TEXT NOT NULL, started_at INTEGER NOT NULL,
+      ended_at INTEGER, duration INTEGER, participants TEXT DEFAULT '[]',
+      status TEXT DEFAULT 'active', summary TEXT, file_path TEXT
+    )`);
+    await dbExec(`CREATE TABLE IF NOT EXISTS meeting_transcripts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, meeting_id TEXT NOT NULL,
+      speaker TEXT NOT NULL, text TEXT NOT NULL, cleaned_text TEXT,
+      timestamp INTEGER NOT NULL,
+      FOREIGN KEY (meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
+    )`);
+  }, [dbExec]);
+
+  const saveMeetingToDb = useCallback(async (title: string): Promise<string> => {
+    await ensureMeetingTables();
+    const id = `meeting-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await dbExec(
+      `INSERT INTO meetings (id, title, started_at, status) VALUES (?, ?, ?, 'active')`,
+      [id, title, Date.now()]
+    );
+    return id;
+  }, [dbExec, ensureMeetingTables]);
+
+  const saveTranscriptToDb = useCallback(async (meetingId: string, text: string, cleanedText?: string) => {
+    if (!meetingId) return;
+    await dbExec(
+      `INSERT INTO meeting_transcripts (meeting_id, speaker, text, cleaned_text, timestamp) VALUES (?, 'user', ?, ?, ?)`,
+      [meetingId, text, cleanedText || null, Date.now()]
+    );
+  }, [dbExec]);
+
+  const endMeetingInDb = useCallback(async (meetingId: string, duration: number, summary?: string, filePath?: string) => {
+    if (!meetingId) return;
+    await dbExec(
+      `UPDATE meetings SET ended_at = ?, duration = ?, status = 'ended', summary = ?, file_path = ? WHERE id = ?`,
+      [Date.now(), duration, summary || null, filePath || null, meetingId]
+    );
+  }, [dbExec]);
+
+  const loadDbMeetings = useCallback(async (): Promise<PastMeeting[]> => {
+    await ensureMeetingTables();
+    const rows = await dbQuery(`SELECT * FROM meetings WHERE status = 'ended' ORDER BY started_at DESC LIMIT 50`);
+    const meetings: PastMeeting[] = [];
+    for (const row of rows) {
+      const transcripts = await dbQuery(
+        `SELECT text, cleaned_text FROM meeting_transcripts WHERE meeting_id = ? ORDER BY timestamp ASC`,
+        [row.id]
+      );
+      meetings.push({
+        id: row.id,
+        filename: row.title || 'Untitled',
+        filepath: row.file_path || '',
+        date: new Date(row.started_at),
+        time: new Date(row.started_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        title: row.title,
+        duration: row.duration,
+        transcript: transcripts.map((t: any) => t.cleaned_text || t.text),
+        actionItems: [],
+        tasksCreated: [],
+        rawContent: row.summary || transcripts.map((t: any) => t.cleaned_text || t.text).join('\n'),
+        source: 'db',
+      });
+    }
+    return meetings;
+  }, [dbQuery, ensureMeetingTables]);
+
+  // ── Generate AI Summary ──
+  const generateSummary = useCallback(async (transcript: string[]): Promise<string | null> => {
+    if (transcript.length === 0) return null;
+    setGeneratingSummary(true);
+    try {
+      const fullText = transcript.join('\n');
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `Summarize this meeting transcript. Include:\n1. **Key Topics** discussed\n2. **Decisions** made\n3. **Action Items** with owners if mentioned\n4. **Next Steps**\n\nKeep it concise but comprehensive.\n\nTranscript:\n${fullText}` }] }],
+            generationConfig: { maxOutputTokens: 2048, temperature: 0.3 }
+          })
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+      }
+    } catch (err) {
+      console.error('[Meeting] Summary generation error:', err);
+    } finally {
+      setGeneratingSummary(false);
+    }
+    return null;
   }, []);
 
   // ── Action Item Detection ──
@@ -220,19 +370,30 @@ export default function MeetingsPanel() {
               if (taskMatch) tasksCreated.push(taskMatch[1]);
             }
           }
-          meetings.push({ filename, filepath, date, time, transcript, actionItems, tasksCreated, rawContent: content });
+          meetings.push({ filename, filepath, date, time, transcript, actionItems, tasksCreated, rawContent: content, source: 'file' });
         } catch (err) {
           console.error('[Meetings] Error parsing:', filepath, err);
         }
       }
       meetings.sort((a, b) => b.date.getTime() - a.date.getTime());
+      // Also load DB meetings and merge
+      try {
+        const dbMeetings = await loadDbMeetings();
+        const fileNames = new Set(meetings.map(m => m.filename));
+        for (const dbm of dbMeetings) {
+          if (!fileNames.has(dbm.filename)) {
+            meetings.push(dbm);
+          }
+        }
+        meetings.sort((a, b) => b.date.getTime() - a.date.getTime());
+      } catch {}
       setPastMeetings(meetings);
     } catch (err) {
       console.error('[Meetings] Error loading:', err);
     } finally {
       setLoadingPastMeetings(false);
     }
-  }, []);
+  }, [loadDbMeetings]);
 
   // ── Save Meeting to File ──
   const saveMeetingToFile = useCallback(async (transcript: string[], actionItems: ActionItem[]): Promise<string | null> => {
@@ -359,6 +520,12 @@ export default function MeetingsPanel() {
                 transcriptBufferRef.current = '';
                 
                 setMeetingTranscript(prev => [...prev, finalText]);
+                setMeetingTranscriptLines(prev => [...prev, { text: finalText, timestamp: Date.now() }]);
+                
+                // Save to DB
+                if (meetingDbIdRef.current) {
+                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch(() => {});
+                }
                 
                 // Detect action items
                 const actions = detectActionItems(finalText);
@@ -496,9 +663,24 @@ export default function MeetingsPanel() {
     console.log('[Meeting] Starting with Gemini Live transcription...');
     setStatusMessage('Starting meeting...');
     setMeetingTranscript([]);
+    setMeetingTranscriptLines([]);
     setMeetingActionItems([]);
     setMeetingEndSummary(null);
+    setAiSummary(null);
     transcriptBufferRef.current = '';
+
+    // Set start time for timer
+    const startTime = Date.now();
+    setMeetingStartTime(startTime);
+
+    // Save to DB
+    const title = meetingTitle.trim() || `Meeting ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+    try {
+      const dbId = await saveMeetingToDb(title);
+      setMeetingDbId(dbId);
+    } catch (err) {
+      console.warn('[Meeting] DB save failed, continuing:', err);
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -515,14 +697,16 @@ export default function MeetingsPanel() {
       startAudioStreaming(stream, ws);
 
       setMeetingActive(true);
+      setShowTitleInput(false);
       setStatusMessage('Recording with Gemini...');
     } catch (e: any) {
       console.error('[Meeting] Failed to start:', e);
       setStatusMessage('Failed: ' + e.message);
+      setMeetingStartTime(null);
       listeningRef.current = false;
       setListening(false);
     }
-  }, [setMeetingActive, connectGeminiTranscription, startAudioStreaming]);
+  }, [setMeetingActive, connectGeminiTranscription, startAudioStreaming, meetingTitle, saveMeetingToDb]);
 
   // ── End Meeting ──
   const endMeeting = useCallback(async () => {
@@ -561,19 +745,29 @@ export default function MeetingsPanel() {
       setAudioLevel(0);
       setMeetingActive(false);
 
-      // Get final snapshot
-      // We need to use a ref or callback to get current state
-      // Using a small timeout to let the last setState flush
+      // Calculate duration
+      const duration = meetingStartTime ? Date.now() - meetingStartTime : 0;
+      setMeetingStartTime(null);
+
+      // Wait for state to flush
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // End in DB
+      if (meetingDbId) {
+        try {
+          await endMeetingInDb(meetingDbId, duration);
+        } catch {}
+      }
 
     } catch (err) {
       console.error('[Meeting] Error ending:', err);
       setStatusMessage('Meeting ended with errors.');
       setMeetingActive(false);
+      setMeetingStartTime(null);
     } finally {
       endMeetingInProgressRef.current = false;
     }
-  }, [setMeetingActive]);
+  }, [setMeetingActive, meetingStartTime, meetingDbId, endMeetingInDb]);
 
   // Post-process after meeting ends (save + create tasks)
   // This runs when isMeetingActive transitions to false with transcript data
@@ -595,6 +789,17 @@ export default function MeetingsPanel() {
           tasksCreated = result.count;
           extractedTasks = result.tasks;
         } catch {}
+
+        // Generate AI summary
+        const summary = await generateSummary(meetingTranscript);
+        if (summary) setAiSummary(summary);
+
+        // Update DB with summary and file path
+        if (meetingDbId) {
+          try {
+            await endMeetingInDb(meetingDbId, elapsedTime, summary || undefined, savedPath || undefined);
+          } catch {}
+        }
 
         setMeetingEndSummary({ savedPath, tasksCreated, extractedTasks });
 
@@ -733,16 +938,55 @@ export default function MeetingsPanel() {
           {/* Start/End Button */}
           <div className="p-6 border-b border-clawd-border">
             {isMeetingActive ? (
-              <button
-                onClick={endMeeting}
-                className="w-full py-6 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-500/20"
-              >
-                <PhoneOff size={28} />
-                End Meeting
-              </button>
+              <div>
+                {/* Timer display */}
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-full">
+                    <span className="animate-pulse text-red-400">●</span>
+                    <span className="text-2xl font-mono font-bold text-red-400">{formatDuration(elapsedTime)}</span>
+                  </div>
+                  {meetingTitle && (
+                    <p className="text-sm text-clawd-text-dim mt-2">{meetingTitle}</p>
+                  )}
+                </div>
+                <button
+                  onClick={endMeeting}
+                  className="w-full py-5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-500/20"
+                >
+                  <PhoneOff size={24} />
+                  End Meeting
+                </button>
+              </div>
+            ) : showTitleInput ? (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={meetingTitle}
+                  onChange={(e) => setMeetingTitle(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') startMeeting(); if (e.key === 'Escape') setShowTitleInput(false); }}
+                  placeholder="Meeting title (optional)"
+                  className="w-full px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm focus:outline-none focus:border-clawd-accent"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={startMeeting}
+                    className="flex-1 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl text-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/20"
+                  >
+                    <Mic size={22} />
+                    Start Recording
+                  </button>
+                  <button
+                    onClick={() => setShowTitleInput(false)}
+                    className="px-4 py-4 bg-clawd-surface border border-clawd-border rounded-xl hover:bg-clawd-border transition-all"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
             ) : (
               <button
-                onClick={startMeeting}
+                onClick={() => setShowTitleInput(true)}
                 className="w-full py-6 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/20"
               >
                 <Phone size={28} />
@@ -817,6 +1061,23 @@ export default function MeetingsPanel() {
                       {meetingTranscript.map((line, i) => (
                         <p key={i} className="text-clawd-text-dim">{line}</p>
                       ))}
+                    </div>
+                  </div>
+                )}
+                {/* AI Summary */}
+                {generatingSummary && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mb-4 flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-purple-400" />
+                    <p className="text-sm text-purple-400">Generating AI summary...</p>
+                  </div>
+                )}
+                {aiSummary && (
+                  <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mb-4">
+                    <p className="text-sm font-medium text-purple-400 mb-2 flex items-center gap-1">
+                      <Brain size={14} /> AI Summary
+                    </p>
+                    <div className="text-xs text-clawd-text-dim">
+                      <MarkdownMessage content={aiSummary} />
                     </div>
                   </div>
                 )}
@@ -960,8 +1221,13 @@ export default function MeetingsPanel() {
                       <button key={i} onClick={() => setSelectedMeeting(meeting)} className="w-full p-4 text-left hover:bg-clawd-surface/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium">{meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
-                            <p className="text-sm text-clawd-text-dim">{meeting.time}</p>
+                            <p className="font-medium">{meeting.title || meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                            <div className="flex items-center gap-2 text-sm text-clawd-text-dim">
+                              <span>{meeting.time}</span>
+                              {meeting.duration && meeting.duration > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 bg-clawd-surface rounded">{formatDuration(meeting.duration)}</span>
+                              )}
+                            </div>
                           </div>
                           <ChevronRight size={16} className="text-clawd-text-dim" />
                         </div>

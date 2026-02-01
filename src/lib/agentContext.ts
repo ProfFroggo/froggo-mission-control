@@ -169,7 +169,7 @@ async function loadAgentMemory(agentId: string): Promise<string | null> {
     if ((window as any).clawdbot?.exec?.run) {
       // Try reading the agent's daily memory
       const today = new Date().toISOString().split('T')[0];
-      const agentDir = agentId === 'froggo' ? 'clawd-main' : `clawd-${agentId}`;
+      const agentDir = agentId === 'froggo' ? '.' : `clawd-${agentId}`;
       const r = await (window as any).clawdbot.exec.run(
         `head -100 ~/clawd/${agentDir}/memory/${today}.md 2>/dev/null || echo ""`
       );
