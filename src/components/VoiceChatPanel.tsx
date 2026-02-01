@@ -1,15 +1,30 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Loader2, 
-  Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff
+  Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
+  Zap, ZapOff
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
-import { synthesizeSpeech, playAudio, speakBrowser, stopSpeaking } from '../lib/googleTTS';
+import { geminiLive, GeminiVoice } from '../lib/geminiLiveService';
 import { getUserFriendlyError } from '../utils/errorMessages';
+import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
+
+// Voice mapping per agent for personality
+const AGENT_VOICES: Record<string, GeminiVoice> = {
+  froggo: 'Puck',
+  coder: 'Fenrir',
+  researcher: 'Charon',
+  writer: 'Aoede',
+  chief: 'Orus',
+  hr: 'Kore',
+  clara: 'Leda',
+  social_media_manager: 'Zephyr',
+  designer: 'Perseus',
+};
 
 interface VoiceChatMessage {
   id: string;
@@ -19,17 +34,12 @@ interface VoiceChatMessage {
 }
 
 interface VoiceChatPanelProps {
-  /** When embedded in ChatPanel, the agent to voice-chat with */
   agentId?: string;
-  /** Optional session key for an already-spawned chat session */
   sessionKey?: string;
-  /** Callback to switch back to text mode (embedded) */
   onSwitchToText?: () => void;
-  /** Whether this panel is embedded inside ChatPanel */
   embedded?: boolean;
 }
 
-// Storage key per agent for persistent voice history
 const storageKey = (agentId: string) => `voice-chat-history:${agentId}`;
 
 function loadHistory(agentId: string): VoiceChatMessage[] {
@@ -48,7 +58,6 @@ function saveHistory(agentId: string, msgs: VoiceChatMessage[]) {
 export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {
   const { addActivity } = useStore();
   
-  // Agent selection
   const initialAgent = agentId 
     ? CHAT_AGENTS.find(a => a.id === agentId) || CHAT_AGENTS[0]
     : CHAT_AGENTS[0];
@@ -60,13 +69,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const [speaking, setSpeaking] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [autoListen, setAutoListen] = useState(true);
+  const [geminiConnected, setGeminiConnected] = useState(false);
+  const [geminiMode, setGeminiMode] = useState(true); // true = Gemini Live, false = fallback Web Speech
   
   // Screen share & video
   const [screenSharing, setScreenSharing] = useState(false);
   const [videoActive, setVideoActive] = useState(false);
-  const screenStreamRef = useRef<MediaStream | null>(null);
-  const videoStreamRef = useRef<MediaStream | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   
@@ -83,19 +91,23 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const connected = connectionState === 'connected';
   
   // Refs
-  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const callActiveRef = useRef(false);
-  const listeningRef = useRef(false);
-  const micStreamRef = useRef<MediaStream | null>(null);
-  const micCtxRef = useRef<AudioContext | null>(null);
-  const animRef = useRef<number>(0);
+  const apiKeyRef = useRef<string | null>(null);
   const currentResponseRef = useRef('');
   const currentMsgIdRef = useRef('');
-  const speakAnalyserRef = useRef<AnalyserNode | null>(null);
-  const speakAnimRef = useRef<number>(0);
+  const pendingUserTextRef = useRef('');
   
-  // Sync agentId prop changes (embedded mode)
+  // Agent context
+  const [agentContext, setAgentContext] = useState<AgentContext | null>(null);
+  const [contextLoading, setContextLoading] = useState(false);
+  const agentContextRef = useRef<AgentContext | null>(null);
+  
+  // Web Speech fallback refs
+  const recognitionRef = useRef<any>(null);
+  const listeningRef = useRef(false);
+  
+  // Sync agentId prop changes
   useEffect(() => {
     if (agentId) {
       const agent = CHAT_AGENTS.find(a => a.id === agentId);
@@ -114,6 +126,50 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     return () => { unsub(); };
   }, []);
   
+  // Load API key for Gemini
+  useEffect(() => {
+    (async () => {
+      try {
+        // Try env var first
+        if ((window as any).clawdbot?.exec?.run) {
+          const r = await (window as any).clawdbot.exec.run('echo $GEMINI_API_KEY 2>/dev/null || echo $GOOGLE_API_KEY 2>/dev/null');
+          if (r.success && r.stdout.trim()) {
+            apiKeyRef.current = r.stdout.trim().split('\n')[0];
+            return;
+          }
+        }
+        // Try settings
+        if ((window as any).clawdbot?.settings?.get) {
+          const r = await (window as any).clawdbot.settings.get();
+          if (r?.success && (r.settings?.geminiApiKey || r.settings?.googleApiKey)) {
+            apiKeyRef.current = r.settings.geminiApiKey || r.settings.googleApiKey;
+          }
+        }
+      } catch {}
+    })();
+  }, []);
+  
+  // Load agent context when agent changes
+  useEffect(() => {
+    let cancelled = false;
+    setContextLoading(true);
+    loadAgentContext(selectedAgent.id).then(ctx => {
+      if (!cancelled) {
+        setAgentContext(ctx);
+        agentContextRef.current = ctx;
+        setContextLoading(false);
+        console.log(`[VoiceChat] Agent context loaded for ${selectedAgent.id}:`, {
+          tasks: ctx.tasks.length,
+          sessions: ctx.sessions.length,
+          hasPersonality: !!ctx.personality,
+        });
+      }
+    }).catch(() => {
+      if (!cancelled) setContextLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [selectedAgent.id]);
+  
   // Load persisted history when agent changes
   useEffect(() => {
     setMessages(loadHistory(selectedAgent.id));
@@ -129,89 +185,73 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, partialTranscript]);
   
-  // ── Mic level visualization ──
+  // ── Gemini Live event listeners ──
   useEffect(() => {
-    if (!listening) { setMicLevel(0); return; }
+    if (!geminiMode) return;
     
-    let running = true;
-    
-    (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        micStreamRef.current = stream;
-        const ctx = new AudioContext();
-        micCtxRef.current = ctx;
-        const src = ctx.createMediaStreamSource(stream);
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        src.connect(analyser);
-        
-        const buf = new Uint8Array(analyser.frequencyBinCount);
-        const tick = () => {
-          if (!running) return;
-          analyser.getByteFrequencyData(buf);
-          const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-          setMicLevel(avg / 255);
-          animRef.current = requestAnimationFrame(tick);
-        };
-        tick();
-      } catch {}
-    })();
-    
-    return () => {
-      running = false;
-      cancelAnimationFrame(animRef.current);
-      micStreamRef.current?.getTracks().forEach(t => t.stop());
-      micCtxRef.current?.close().catch(() => {});
-    };
-  }, [listening]);
-  
-  // ── Web Speech API (STT) setup ──
-  useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-    
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) final += t;
-        else interim += t;
-      }
-      if (interim) setPartialTranscript(interim);
-      if (final) {
-        setPartialTranscript('');
-        handleUserSpeech(final.trim());
-      }
-    };
-    
-    recognition.onerror = (e: any) => {
-      if (e.error !== 'aborted' && e.error !== 'no-speech') {
-        console.warn('[VoiceChat] STT error:', e.error);
-      }
-    };
-    
-    recognition.onend = () => {
-      // Auto-restart if still in call
-      if (callActiveRef.current && listeningRef.current) {
-        try { recognition.start(); } catch {}
-      } else {
+    const unsubs = [
+      geminiLive.on('connected', () => {
+        setGeminiConnected(true);
+        addSystemMessage('🔗 Gemini Live connected — voice engine ready');
+      }),
+      geminiLive.on('disconnected', () => {
+        setGeminiConnected(false);
         setListening(false);
-        listeningRef.current = false;
-      }
-    };
+        setSpeaking(false);
+      }),
+      geminiLive.on('listening-start', () => setListening(true)),
+      geminiLive.on('listening-end', () => setListening(false)),
+      geminiLive.on('speaking-start', () => {
+        setSpeaking(true);
+        setSpeakLevel(0.5);
+      }),
+      geminiLive.on('speaking-end', () => {
+        setSpeaking(false);
+        setSpeakLevel(0);
+      }),
+      geminiLive.on('audio-level', ({ level }: { level: number }) => setMicLevel(level)),
+      geminiLive.on('model-audio-level', ({ level }: { level: number }) => setSpeakLevel(level)),
+      geminiLive.on('error', ({ message }: { message: string }) => {
+        console.error('[VoiceChat] Gemini error:', message);
+        addSystemMessage(`⚠️ ${message}`);
+      }),
+      // Transcript from Gemini Live - this is the user's speech transcribed
+      geminiLive.on('transcript', ({ text, role }: { text: string; role: string }) => {
+        if (role === 'user') {
+          // User speech transcribed - but Gemini Live doesn't emit user transcripts
+          // We handle this via the model's relay behavior
+        } else if (role === 'model') {
+          // Model response - this is Gemini relaying the user's speech as text
+          // Check if it looks like a transcription relay
+          handleGeminiTranscript(text);
+        }
+      }),
+    ];
     
-    recognitionRef.current = recognition;
-    return () => { try { recognition.abort(); } catch {} };
+    return () => unsubs.forEach(u => u());
+  }, [geminiMode, selectedAgent]);
+  
+  // ── Handle transcript from Gemini (acting as relay) ──
+  // Gemini is instructed to transcribe user speech. When it outputs text,
+  // we check if it's a relay of user speech or a spoken agent response.
+  const handleGeminiTranscript = useCallback((text: string) => {
+    if (!text?.trim()) return;
+    
+    // If we're currently processing an agent response (we sent text to speak),
+    // this transcript is Gemini speaking the agent's response - ignore it
+    if (currentMsgIdRef.current && currentResponseRef.current) return;
+    
+    // This is user speech transcribed by Gemini
+    // Clean up any relay prefixes Gemini might add
+    let cleaned = text.trim();
+    cleaned = cleaned.replace(/^(User said|Transcription|The user said)[:\s]*/i, '');
+    if (cleaned) {
+      setPartialTranscript('');
+      handleUserSpeech(cleaned);
+    }
   }, []);
   
-  // ── Streaming response listeners ──
+  // ── Streaming response listeners from gateway ──
   useEffect(() => {
     const handleDelta = (data: any) => {
       if (data.delta && currentMsgIdRef.current) {
@@ -247,7 +287,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setProcessing(false);
         currentMsgIdRef.current = '';
         currentResponseRef.current = '';
-        if (callActiveRef.current && autoListen) startListening();
+        // Resume listening
+        if (callActiveRef.current && geminiMode && geminiConnected) {
+          geminiLive.startMic();
+        }
       }
     };
     
@@ -258,21 +301,27 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     const u5 = gateway.on('chat', handleChat);
     
     return () => { u1(); u2(); u3(); u4(); u5(); };
-  }, [autoListen, muted, selectedAgent.id]);
+  }, [geminiMode, geminiConnected, muted, selectedAgent.id]);
   
-  // ── Finish a streaming response ──
+  // ── Finish a streaming response → speak via Gemini Live ──
   const finishResponse = useCallback(async () => {
     const text = currentResponseRef.current;
     setMessages(prev => prev.map(m =>
       m.id === currentMsgIdRef.current ? { ...m, content: text } : m
     ));
     setProcessing(false);
+    const msgId = currentMsgIdRef.current;
     currentMsgIdRef.current = '';
     currentResponseRef.current = '';
     
+    // Invalidate context cache if response suggests mutations (task created, status changed, etc.)
+    if (text && /(?:task[-_]|created|spawned|updated|assigned|completed|done)/i.test(text)) {
+      invalidateAgentContext(selectedAgent.id);
+    }
+    
     // Save to DB
-    if (text && window.clawdbot?.chat?.saveMessage) {
-      window.clawdbot.chat.saveMessage({
+    if (text && (window as any).clawdbot?.chat?.saveMessage) {
+      (window as any).clawdbot.chat.saveMessage({
         role: 'assistant',
         content: text,
         timestamp: Date.now(),
@@ -280,72 +329,76 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }).catch(() => {});
     }
     
-    // Speak the response
-    if (!muted && text) {
-      await speakResponseText(text);
-    }
-    
-    // Resume listening
-    if (callActiveRef.current && autoListen) {
-      startListening();
-    }
-  }, [muted, autoListen, selectedAgent]);
-  
-  // ── Speak response with Google TTS ──
-  const speakResponseText = async (text: string) => {
-    setSpeaking(true);
-    try {
-      const audioData = await synthesizeSpeech(text, selectedAgent.id);
-      if (audioData) {
-        await playAudio(audioData, (analyser) => {
-          speakAnalyserRef.current = analyser;
-          const buf = new Uint8Array(analyser.frequencyBinCount);
-          const tick = () => {
-            if (!speakAnalyserRef.current) return;
-            analyser.getByteFrequencyData(buf);
-            const avg = buf.reduce((a, b) => a + b, 0) / buf.length;
-            setSpeakLevel(avg / 255);
-            speakAnimRef.current = requestAnimationFrame(tick);
-          };
-          tick();
+    // Speak the response via Gemini Live TTS
+    if (!muted && text && callActiveRef.current) {
+      if (geminiMode && geminiLive.connected) {
+        // Stop mic while agent speaks to prevent feedback
+        geminiLive.stopMic();
+        // Send agent response to Gemini Live for TTS
+        // Strip markdown for cleaner speech
+        const spokenText = text
+          .replace(/```[\s\S]*?```/g, '(code block)')
+          .replace(/`([^`]+)`/g, '$1')
+          .replace(/\*\*([^*]+)\*\*/g, '$1')
+          .replace(/\*([^*]+)\*/g, '$1')
+          .replace(/#{1,6}\s+/g, '')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+          .replace(/\n{2,}/g, '. ')
+          .trim();
+        
+        await geminiLive.sendText(`[SPEAK] ${spokenText}`);
+        
+        // Wait for Gemini to finish speaking, then resume mic
+        const waitForSpeechEnd = () => new Promise<void>(resolve => {
+          if (!geminiLive.speaking) {
+            // Give a small buffer for audio to complete
+            setTimeout(resolve, 500);
+            return;
+          }
+          const unsub = geminiLive.on('speaking-end', () => {
+            unsub();
+            setTimeout(resolve, 300);
+          });
+          // Timeout safety
+          setTimeout(() => { unsub(); resolve(); }, 30000);
         });
+        
+        await waitForSpeechEnd();
+        
+        // Resume listening
+        if (callActiveRef.current) {
+          geminiLive.startMic();
+        }
       } else {
-        await speakBrowser(text);
+        // Fallback: browser speech synthesis
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => {
+          setSpeaking(false);
+          if (callActiveRef.current) startListeningFallback();
+        };
+        setSpeaking(true);
+        window.speechSynthesis.speak(utterance);
       }
-    } catch {
-      await speakBrowser(text);
+    } else {
+      // Not speaking - just resume listening
+      if (callActiveRef.current) {
+        if (geminiMode && geminiLive.connected) {
+          geminiLive.startMic();
+        } else {
+          startListeningFallback();
+        }
+      }
     }
-    setSpeaking(false);
-    setSpeakLevel(0);
-    speakAnalyserRef.current = null;
-    cancelAnimationFrame(speakAnimRef.current);
-  };
+  }, [muted, geminiMode, selectedAgent]);
   
-  // ── Start/stop listening ──
-  const startListening = () => {
-    if (!recognitionRef.current || listeningRef.current) return;
-    // Stop any ongoing speech first
-    stopSpeaking();
-    window.speechSynthesis.cancel();
-    try {
-      recognitionRef.current.start();
-      setListening(true);
-      listeningRef.current = true;
-    } catch {}
-  };
-  
-  const stopListeningFn = () => {
-    listeningRef.current = false;
-    setListening(false);
-    try { recognitionRef.current?.abort(); } catch {}
-  };
-  
-  // ── Handle user speech → send to agent ──
+  // ── Handle user speech → send to real agent via gateway ──
   const handleUserSpeech = useCallback(async (text: string) => {
     if (!text || !connected) return;
     
-    // Pause listening while we process
-    stopListeningFn();
+    // Pause mic while processing
+    if (geminiMode && geminiLive.connected) {
+      geminiLive.stopMic();
+    }
     
     // Add user message
     const userMsg: VoiceChatMessage = {
@@ -369,8 +422,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     setProcessing(true);
     
     // Save user message to DB
-    if (window.clawdbot?.chat?.saveMessage) {
-      window.clawdbot.chat.saveMessage({
+    if ((window as any).clawdbot?.chat?.saveMessage) {
+      (window as any).clawdbot.chat.saveMessage({
         role: 'user',
         content: text,
         timestamp: Date.now(),
@@ -378,12 +431,19 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }).catch(() => {});
     }
     
-    addActivity({ type: 'chat', message: `🎤 You: ${text.slice(0, 50)}...`, timestamp: Date.now() });
+    addActivity({ type: 'chat', message: `🎤 You → ${selectedAgent.name}: ${text.slice(0, 50)}...`, timestamp: Date.now() });
     
     try {
-      // Set the correct session key for this agent
+      // Route to the real agent via gateway with full context
       gateway.setSessionKey(selectedAgent.sessionKey);
-      await gateway.sendChatStreaming(text);
+      
+      // Build context-enriched message
+      const ctx = agentContextRef.current;
+      const enrichedMessage = ctx 
+        ? buildContextualMessage(text, ctx, selectedAgent.name)
+        : `[VOICE CHAT] Respond conversationally and concisely — your response will be spoken aloud.\n\n${text}`;
+      
+      await gateway.sendChatStreaming(enrichedMessage);
       
       // Timeout fallback
       setTimeout(() => {
@@ -398,30 +458,148 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       ));
       setProcessing(false);
       currentMsgIdRef.current = '';
-      if (callActiveRef.current && autoListen) startListening();
+      // Resume listening
+      if (callActiveRef.current) {
+        if (geminiMode && geminiLive.connected) geminiLive.startMic();
+        else startListeningFallback();
+      }
     }
-  }, [connected, selectedAgent, autoListen]);
+  }, [connected, selectedAgent, geminiMode, finishResponse]);
+  
+  // ── Web Speech API fallback ──
+  useEffect(() => {
+    if (geminiMode) return; // Don't set up fallback if using Gemini
+    
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      if (interim) setPartialTranscript(interim);
+      if (final) {
+        setPartialTranscript('');
+        handleUserSpeech(final.trim());
+      }
+    };
+    
+    recognition.onerror = (e: any) => {
+      if (e.error !== 'aborted' && e.error !== 'no-speech') {
+        console.warn('[VoiceChat] STT error:', e.error);
+      }
+    };
+    
+    recognition.onend = () => {
+      if (callActiveRef.current && listeningRef.current) {
+        try { recognition.start(); } catch {}
+      } else {
+        setListening(false);
+        listeningRef.current = false;
+      }
+    };
+    
+    recognitionRef.current = recognition;
+    return () => { try { recognition.abort(); } catch {} };
+  }, [geminiMode]);
+  
+  const startListeningFallback = () => {
+    if (!recognitionRef.current || listeningRef.current) return;
+    window.speechSynthesis.cancel();
+    try {
+      recognitionRef.current.start();
+      setListening(true);
+      listeningRef.current = true;
+    } catch {}
+  };
+  
+  const stopListeningFallback = () => {
+    listeningRef.current = false;
+    setListening(false);
+    try { recognitionRef.current?.abort(); } catch {}
+  };
   
   // ── Call controls ──
-  const startCall = () => {
+  const startCall = async () => {
     gateway.setSessionKey(selectedAgent.sessionKey);
     setCallActive(true);
     callActiveRef.current = true;
-    addSystemMessage(`Voice call started with ${selectedAgent.name}`);
-    startListening();
+    
+    if (geminiMode) {
+      // Connect to Gemini Live as voice I/O engine
+      const apiKey = apiKeyRef.current;
+      if (!apiKey) {
+        addSystemMessage('⚠️ No Gemini API key found. Set GEMINI_API_KEY. Falling back to browser speech.');
+        setGeminiMode(false);
+        addSystemMessage(`📞 Voice call started with ${selectedAgent.name} (browser mode)`);
+        startListeningFallback();
+        return;
+      }
+      
+      try {
+        addSystemMessage(`📞 Connecting to ${selectedAgent.name}...`);
+        
+        const voice = AGENT_VOICES[selectedAgent.id] || 'Zephyr';
+        await geminiLive.connect({
+          apiKey,
+          voice,
+          systemInstruction: buildRelayInstruction(selectedAgent),
+        });
+        
+        addSystemMessage(`🎙️ Voice call active with ${selectedAgent.name} — speak naturally`);
+        
+        // Start mic
+        await geminiLive.startMic();
+      } catch (err: any) {
+        console.error('[VoiceChat] Gemini connect failed:', err);
+        addSystemMessage(`⚠️ Gemini Live failed: ${err.message}. Using browser speech.`);
+        setGeminiMode(false);
+        startListeningFallback();
+      }
+    } else {
+      addSystemMessage(`📞 Voice call started with ${selectedAgent.name}`);
+      startListeningFallback();
+    }
   };
   
-  const endCall = () => {
-    stopListeningFn();
-    stopSpeaking();
-    window.speechSynthesis.cancel();
-    setCallActive(false);
+  const endCall = async () => {
     callActiveRef.current = false;
+    setCallActive(false);
     setSpeaking(false);
     setProcessing(false);
     setMicLevel(0);
     setSpeakLevel(0);
-    addSystemMessage('Voice call ended');
+    
+    if (geminiMode && geminiLive.connected) {
+      await geminiLive.disconnect();
+      setGeminiConnected(false);
+    }
+    
+    stopListeningFallback();
+    window.speechSynthesis.cancel();
+    addSystemMessage('📞 Voice call ended');
+  };
+  
+  const toggleMic = async () => {
+    if (geminiMode && geminiLive.connected) {
+      if (listening) {
+        geminiLive.stopMic();
+      } else {
+        await geminiLive.startMic();
+      }
+    } else {
+      if (listening) stopListeningFallback();
+      else startListeningFallback();
+    }
   };
   
   const addSystemMessage = (content: string) => {
@@ -438,61 +616,76 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     localStorage.removeItem(storageKey(selectedAgent.id));
   };
   
-  // ── Screen share ──
+  // ── Screen share via Gemini Live ──
   const toggleScreenShare = async () => {
     if (screenSharing) {
-      screenStreamRef.current?.getTracks().forEach(t => t.stop());
-      screenStreamRef.current = null;
+      if (geminiMode && geminiLive.connected) {
+        geminiLive.stopVideo();
+      }
       setScreenSharing(false);
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      screenStreamRef.current = stream;
-      stream.getVideoTracks()[0].onended = () => {
-        screenStreamRef.current = null;
-        setScreenSharing(false);
-      };
-      setScreenSharing(true);
-      // Attach to preview (defer to let React render the element)
-      requestAnimationFrame(() => {
-        if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
-      });
+      if (geminiMode && geminiLive.connected) {
+        await geminiLive.startVideo('screen');
+        const stream = geminiLive.getVideoStream();
+        setScreenSharing(true);
+        requestAnimationFrame(() => {
+          if (screenVideoRef.current && stream) screenVideoRef.current.srcObject = stream;
+        });
+        addSystemMessage('🖥️ Screen sharing active — agent can see your screen');
+      } else {
+        // Fallback screen share (preview only, no agent vision)
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        stream.getVideoTracks()[0].onended = () => setScreenSharing(false);
+        setScreenSharing(true);
+        requestAnimationFrame(() => {
+          if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
+        });
+      }
     } catch (e) {
       console.warn('[VoiceChat] Screen share failed:', e);
     }
   };
 
-  // ── Camera video ──
   const toggleVideo = async () => {
     if (videoActive) {
-      videoStreamRef.current?.getTracks().forEach(t => t.stop());
-      videoStreamRef.current = null;
+      if (geminiMode && geminiLive.connected) {
+        geminiLive.stopVideo();
+      }
       setVideoActive(false);
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoStreamRef.current = stream;
-      setVideoActive(true);
-      requestAnimationFrame(() => {
-        if (cameraVideoRef.current) cameraVideoRef.current.srcObject = stream;
-      });
+      if (geminiMode && geminiLive.connected) {
+        await geminiLive.startVideo('camera');
+        const stream = geminiLive.getVideoStream();
+        setVideoActive(true);
+        requestAnimationFrame(() => {
+          if (cameraVideoRef.current && stream) cameraVideoRef.current.srcObject = stream;
+        });
+        addSystemMessage('📹 Camera active — agent can see you');
+      } else {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setVideoActive(true);
+        requestAnimationFrame(() => {
+          if (cameraVideoRef.current) cameraVideoRef.current.srcObject = stream;
+        });
+      }
     } catch (e) {
       console.warn('[VoiceChat] Camera failed:', e);
     }
   };
 
-  // Cleanup streams on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      screenStreamRef.current?.getTracks().forEach(t => t.stop());
-      videoStreamRef.current?.getTracks().forEach(t => t.stop());
+      if (geminiLive.connected) geminiLive.disconnect();
     };
   }, []);
 
-  const handleAgentSwitch = (agent: ChatAgent) => {
-    if (callActive) endCall();
+  const handleAgentSwitch = async (agent: ChatAgent) => {
+    if (callActive) await endCall();
     setSelectedAgent(agent);
   };
 
@@ -523,7 +716,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-clawd-border">
         <div className="flex items-center gap-3">
-          {/* Agent picker (standalone mode) or label (embedded) */}
           {embedded ? (
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -534,25 +726,27 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               </div>
               <div>
                 <span className="text-sm font-medium text-clawd-text">{selectedAgent.name}</span>
-                <span className="text-xs text-clawd-text-dim ml-2">Voice</span>
+                <span className="text-xs text-clawd-text-dim ml-2">
+                  {geminiMode ? '⚡ Gemini Live' : 'Voice'}
+                </span>
               </div>
             </div>
           ) : (
             <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
           )}
           
-          {/* Call status indicator */}
           {callActive && (
             <div className="flex items-center gap-2 ml-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-green-400">Active</span>
+              <span className="text-xs text-green-400">
+                {geminiConnected ? 'Gemini Live' : 'Active'}
+              </span>
               {speaking && <Waveform level={speakLevel} color="#4ade80" bars={5} height={20} />}
             </div>
           )}
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Switch to text (embedded) */}
           {onSwitchToText && (
             <button
               onClick={onSwitchToText}
@@ -563,7 +757,21 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </button>
           )}
           
-          {/* Screen share toggle */}
+          {/* Gemini Live toggle */}
+          <button
+            onClick={() => {
+              if (callActive) return; // Can't switch during call
+              setGeminiMode(!geminiMode);
+            }}
+            disabled={callActive}
+            className={`p-2 rounded-lg transition-colors ${
+              geminiMode ? 'bg-yellow-500/20 text-yellow-400' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+            } disabled:opacity-40`}
+            title={geminiMode ? 'Gemini Live mode (real-time audio)' : 'Browser speech mode'}
+          >
+            {geminiMode ? <Zap size={16} /> : <ZapOff size={16} />}
+          </button>
+          
           <button
             onClick={toggleScreenShare}
             className={`p-2 rounded-lg transition-colors ${
@@ -574,7 +782,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {screenSharing ? <MonitorOff size={16} /> : <Monitor size={16} />}
           </button>
           
-          {/* Video toggle */}
           <button
             onClick={toggleVideo}
             className={`p-2 rounded-lg transition-colors ${
@@ -585,9 +792,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {videoActive ? <VideoOff size={16} /> : <Video size={16} />}
           </button>
           
-          {/* Mute agent voice */}
           <button
-            onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
+            onClick={() => setMuted(!muted)}
             className={`p-2 rounded-lg transition-colors ${
               muted ? 'bg-red-500/20 text-red-400' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
             }`}
@@ -596,7 +802,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
           
-          {/* Clear history */}
           <button
             onClick={clearHistory}
             className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-red-400 transition-colors"
@@ -612,26 +817,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         <div className="flex gap-2 px-4 pt-3">
           {screenSharing && (
             <div className="relative flex-1 max-h-48 rounded-lg overflow-hidden bg-black border border-clawd-border">
-              <video
-                ref={screenVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-contain"
-              />
+              <video ref={screenVideoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
               <span className="absolute top-1 left-2 text-[10px] bg-blue-500/80 text-white px-1.5 py-0.5 rounded">Screen</span>
             </div>
           )}
           {videoActive && (
             <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-black border border-clawd-border flex-shrink-0">
-              <video
-                ref={cameraVideoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-full object-cover mirror"
-                style={{ transform: 'scaleX(-1)' }}
-              />
+              <video ref={cameraVideoRef} autoPlay muted playsInline className="w-full h-full object-cover" style={{ transform: 'scaleX(-1)' }} />
               <span className="absolute top-1 left-2 text-[10px] bg-purple-500/80 text-white px-1.5 py-0.5 rounded">Camera</span>
             </div>
           )}
@@ -649,7 +841,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               Voice Chat with {selectedAgent.name}
             </p>
             <p className="text-sm text-center max-w-xs">
-              Press the call button to start a voice conversation. 
+              {geminiMode ? (
+                <>Press call to connect via <span className="text-yellow-400">Gemini Live</span>. Real-time audio streaming with {selectedAgent.name}'s full brain.</>
+              ) : (
+                <>Press the call button to start a voice conversation.</>
+              )}
               {selectedAgent.role && <span className="block mt-1 text-xs opacity-70">{selectedAgent.role}</span>}
             </p>
           </div>
@@ -663,7 +859,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {msg.role === 'assistant' && (
               <div className="relative flex-shrink-0 mt-1">
                 <AgentAvatar agentId={selectedAgent.id} size="xs" />
-                {/* Speaking animation on latest assistant message */}
                 {speaking && msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && (
                   <div className="absolute -inset-1 rounded-full border-2 border-green-400/50 animate-pulse" />
                 )}
@@ -695,7 +890,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </div>
         ))}
         
-        {/* Partial (interim) transcript */}
         {partialTranscript && (
           <div className="flex gap-2 justify-end">
             <div className="max-w-[80%] rounded-2xl px-3 py-2 bg-clawd-accent/40 text-white/70">
@@ -704,7 +898,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </div>
         )}
         
-        {/* Thinking dots */}
         {processing && (
           <div className="flex gap-2">
             <AgentAvatar agentId={selectedAgent.id} size="xs" />
@@ -721,12 +914,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* ── Call controls ── */}
       <div className="border-t border-clawd-border p-4">
-        {/* Status / waveform area */}
         {callActive && (
           <div className="flex items-center justify-center mb-3 h-12">
             {listening && !speaking && !processing && (
               <div className="flex items-center gap-3">
-                <span className="text-xs text-indigo-400">Listening…</span>
+                <span className="text-xs text-indigo-400">
+                  {geminiMode ? '⚡ Listening (Gemini Live)…' : 'Listening…'}
+                </span>
                 <Waveform level={micLevel} color="#818cf8" bars={12} height={40} />
               </div>
             )}
@@ -739,7 +933,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {processing && !speaking && (
               <div className="flex items-center gap-2">
                 <Loader2 size={16} className="animate-spin text-clawd-accent" />
-                <span className="text-xs text-clawd-text-dim">Thinking…</span>
+                <span className="text-xs text-clawd-text-dim">{selectedAgent.name} thinking…</span>
               </div>
             )}
             {!listening && !speaking && !processing && (
@@ -748,12 +942,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </div>
         )}
         
-        {/* Buttons */}
         <div className="flex items-center justify-center gap-4">
-          {/* Mic toggle */}
           {callActive && (
             <button
-              onClick={() => listening ? stopListeningFn() : startListening()}
+              onClick={toggleMic}
               disabled={speaking || processing}
               className={`p-4 rounded-full transition-all ${
                 listening
@@ -766,7 +958,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </button>
           )}
           
-          {/* Call button */}
           <button
             onClick={() => callActive ? endCall() : startCall()}
             disabled={!connected}
@@ -780,7 +971,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {callActive ? <PhoneOff size={26} /> : <Phone size={26} />}
           </button>
           
-          {/* Screen share during call */}
           {callActive && (
             <button
               onClick={toggleScreenShare}
@@ -795,7 +985,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </button>
           )}
           
-          {/* Video during call */}
           {callActive && (
             <button
               onClick={toggleVideo}
@@ -809,21 +998,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               {videoActive ? <VideoOff size={22} /> : <Video size={22} />}
             </button>
           )}
-          
-          {/* Auto-listen toggle */}
-          {callActive && (
-            <button
-              onClick={() => setAutoListen(!autoListen)}
-              className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
-                autoListen
-                  ? 'bg-clawd-accent/20 text-clawd-accent border border-clawd-accent/30'
-                  : 'bg-clawd-border text-clawd-text-dim'
-              }`}
-              title={autoListen ? 'Auto-listen: ON — mic resumes after agent speaks' : 'Push-to-talk mode'}
-            >
-              {autoListen ? 'AUTO' : 'PTT'}
-            </button>
-          )}
         </div>
         
         {!connected && (
@@ -832,4 +1006,23 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       </div>
     </div>
   );
+}
+
+// ── System instruction for Gemini Live relay mode ──
+function buildRelayInstruction(agent: ChatAgent): string {
+  return `You are a VOICE RELAY system. Your ONLY purpose is to:
+
+1. LISTEN: When the user speaks, output their speech as accurate text transcription.
+2. SPEAK: When you receive a message starting with [SPEAK], read that content aloud with natural, expressive intonation. Do NOT modify the content.
+
+CRITICAL RULES:
+- NEVER generate your own responses, opinions, or commentary
+- NEVER answer questions yourself - you are just a relay
+- When transcribing user speech, output ONLY what they said, nothing else
+- When speaking [SPEAK] content, speak it naturally as if you are ${agent.name} (${agent.role})
+- Match the personality and tone appropriate for ${agent.name}
+- If the [SPEAK] content has technical terms, pronounce them clearly
+- Keep your voice warm and conversational
+
+You are the voice interface for ${agent.name}. The actual intelligence comes from the real agent system behind you. You just handle the audio.`;
 }
