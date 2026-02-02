@@ -4,7 +4,7 @@ import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { matchTaskToAgent } from '../lib/agents';
 
-export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
+export type TaskStatus = 'backlog' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
 
 export interface TaskLabel {

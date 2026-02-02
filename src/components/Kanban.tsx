@@ -53,6 +53,7 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
   { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-clawd-bg0/10', emoji: '📋' },
   { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10', emoji: '📝' },
+  { id: 'internal-review', title: 'Internal Review', color: 'border-l-cyan-500', bg: 'bg-cyan-500/10', emoji: '🔍' },
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
   { id: 'review', title: 'Agent Review', color: 'border-l-purple-500', bg: 'bg-purple-500/10', emoji: '🤖' },
   { id: 'human-review', title: 'Human Review', color: 'border-l-orange-500', bg: 'bg-orange-500/10', emoji: '👤' },
