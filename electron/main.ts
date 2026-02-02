@@ -1462,8 +1462,28 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
     const sessionKey = `poke-${taskId}-${Date.now()}`;
     const sessions = (global as any)._agentChatSessions = (global as any)._agentChatSessions || {};
     
+    // Determine which agent to use based on task assignment
+    const taskAgent = await new Promise<string>((resolve) => {
+      exec(
+        `froggo-db task-get ${taskId} 2>/dev/null`,
+        { encoding: 'utf-8', timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+        (error, stdout) => {
+          if (!error && stdout) {
+            try {
+              const taskData = JSON.parse(stdout);
+              if (taskData.assigned_to) {
+                resolve(taskData.assigned_to);
+                return;
+              }
+            } catch {}
+          }
+          resolve('froggo'); // Default to froggo
+        }
+      );
+    });
+
     sessions[sessionKey] = {
-      agentId: 'main',
+      agentId: taskAgent,
       messages: [{ role: 'system', content: pokePrompt }],
       systemPrompt: pokePrompt,
       taskId,
@@ -1475,7 +1495,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
     const escapedPrompt = pokePrompt.replace(/'/g, "'\\''");
     const response = await new Promise<string>((resolve, reject) => {
       exec(
-        `clawdbot agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent main`,
+        `clawdbot agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent ${taskAgent}`,
         { encoding: 'utf-8', timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
         (error, stdout, stderr) => {
           if (error) {

@@ -167,13 +167,19 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setConnecting(false);
         addSystemMessage('🔗 Connected — speak naturally');
       }),
-      geminiLive.on('disconnected', () => {
+      geminiLive.on('disconnected', ({ code, reason }: { code?: number; reason?: string } = {}) => {
+        const wasActive = callActiveRef.current;
         setCallActive(false);
         setConnecting(false);
         setListening(false);
         setSpeaking(false);
         setVideoActive(false);
         callActiveRef.current = false;
+        // If we were in an active call and got disconnected unexpectedly, show a message
+        if (wasActive) {
+          const reasonText = reason || (code ? `code ${code}` : 'unknown reason');
+          addSystemMessage(`⚠️ Connection lost (${reasonText}). Press call to reconnect.`);
+        }
       }),
       geminiLive.on('listening-start', () => setListening(true)),
       geminiLive.on('listening-end', () => setListening(false)),
@@ -215,19 +221,36 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         addSystemMessage('🔄 Interrupted');
       }),
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
-        if (!toolCall?.functionCalls?.length) return;
-        const responses: Array<{ id: string; name: string; response: any }> = [];
-        for (const fc of toolCall.functionCalls) {
-          console.log(`[VoiceChat] Tool: ${fc.name}`, fc.args);
-          addSystemMessage(`🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
-          const result = await executeToolCall(fc.name, fc.args || {}, selectedAgent);
-          responses.push({ id: fc.id, name: fc.name, response: result });
-          if (['create_task', 'update_task', 'spawn_agent'].includes(fc.name)) {
-            invalidateAgentContext();
-            loadAgentContext(selectedAgent.id).then(ctx => { agentContextRef.current = ctx; setAgentContext(ctx); }).catch(() => {});
+        try {
+          if (!toolCall?.functionCalls?.length) return;
+          const responses: Array<{ id: string; name: string; response: any }> = [];
+          for (const fc of toolCall.functionCalls) {
+            console.log(`[VoiceChat] Tool: ${fc.name}`, fc.args);
+            addSystemMessage(`🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
+            let result: any;
+            try {
+              result = await executeToolCall(fc.name, fc.args || {}, selectedAgent);
+            } catch (toolErr: any) {
+              console.error(`[VoiceChat] Tool execution error for ${fc.name}:`, toolErr);
+              result = { error: toolErr.message || 'Tool execution failed' };
+              addSystemMessage(`⚠️ ${fc.name} failed: ${toolErr.message}`);
+            }
+            responses.push({ id: fc.id, name: fc.name, response: result });
+            if (['create_task', 'update_task', 'spawn_agent'].includes(fc.name)) {
+              invalidateAgentContext();
+              loadAgentContext(selectedAgent.id).then(ctx => { agentContextRef.current = ctx; setAgentContext(ctx); }).catch(() => {});
+            }
           }
+          try {
+            await geminiLive.sendToolResponse(responses);
+          } catch (sendErr: any) {
+            console.error('[VoiceChat] Failed to send tool response:', sendErr);
+            addSystemMessage(`⚠️ Tool response send failed: ${sendErr.message}`);
+          }
+        } catch (outerErr: any) {
+          console.error('[VoiceChat] Unexpected error in tool-call handler:', outerErr);
+          addSystemMessage(`⚠️ Tool call error: ${outerErr.message}`);
         }
-        await geminiLive.sendToolResponse(responses);
       }),
     ];
     return () => unsubs.forEach(u => u());
