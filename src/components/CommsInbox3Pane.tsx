@@ -323,33 +323,33 @@ function CenterPane({
             <button
               key={conv.id}
               onClick={() => onSelect(conv)}
-              className={`group w-full text-left px-4 py-3 border-b border-clawd-border/50 transition-colors ${
+              className={`group w-full text-left px-4 py-3 border-b border-clawd-border/50 border-l-2 transition-colors ${
                 selectedId === conv.id
-                  ? 'bg-clawd-accent/10 border-l-2 border-l-clawd-accent'
-                  : 'hover:bg-clawd-surface/50'
+                  ? 'bg-clawd-accent/10 border-l-clawd-accent'
+                  : 'border-l-transparent hover:bg-clawd-surface/50'
               } ${!conv.is_read ? 'bg-clawd-surface/30' : ''}`}
             >
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2 overflow-hidden">
                 {/* Unread dot */}
                 <div className="mt-2 flex-shrink-0 w-2">
                   {!conv.is_read && <div className="w-2 h-2 bg-clawd-accent rounded-full" />}
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className={`text-sm truncate ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
                       {conv.name || conv.from || 'Unknown'}
                     </span>
-                    <span className="text-xs text-clawd-text-dim flex-shrink-0 ml-2">{conv.relativeTime}</span>
+                    <span className="text-[11px] text-clawd-text-dim flex-shrink-0">{conv.relativeTime}</span>
                   </div>
                   {conv.subject && (
-                    <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : ''}`}>
+                    <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-clawd-text/80'}`}>
                       {conv.subject}
                     </div>
                   )}
-                  <p className="text-xs text-clawd-text-dim truncate mt-0.5">{conv.preview}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`${platformColor(conv.platform)}`}>
+                  <p className="text-xs text-clawd-text-dim/70 truncate mt-0.5">{conv.preview}</p>
+                  <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                    <span className={`flex-shrink-0 ${platformColor(conv.platform)}`}>
                       {conv.platform === 'email' && <Mail size={10} />}
                       {conv.platform === 'whatsapp' && <MessageCircle size={10} />}
                       {conv.platform === 'telegram' && <Send size={10} />}
@@ -357,33 +357,33 @@ function CenterPane({
                       {conv.platform === 'twitter' && <XIcon size={10} />}
                     </span>
                     {conv.message_count && conv.message_count > 1 && (
-                      <span className="text-[10px] text-clawd-text-dim bg-clawd-border rounded px-1">
+                      <span className="text-[10px] text-clawd-text-dim bg-clawd-border/60 rounded px-1 py-0.5">
                         {conv.message_count}
                       </span>
                     )}
                     {conv.unread_count && conv.unread_count > 0 && (
-                      <span className="text-[10px] text-blue-400 bg-blue-500/20 rounded px-1 font-semibold" title="Unread messages">
+                      <span className="text-[10px] text-blue-400 bg-blue-500/15 rounded px-1 py-0.5 font-medium" title="Unread messages">
                         {conv.unread_count} unread
                       </span>
                     )}
                     {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                      <span className="text-[10px] text-orange-400 bg-orange-500/20 rounded px-1 flex items-center gap-0.5 font-semibold" title="Awaiting reply">
+                      <span className="text-[10px] text-orange-400 bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                         <Reply size={8} />
                         reply
                       </span>
                     )}
-                    {conv.has_attachment && <Paperclip size={10} className="text-clawd-text-dim" />}
+                    {conv.has_attachment && <Paperclip size={10} className="text-clawd-text-dim flex-shrink-0" />}
                     {conv.is_starred && (
-                      <Star size={10} className="text-yellow-400" fill="currentColor" />
+                      <Star size={10} className="text-yellow-400 flex-shrink-0" fill="currentColor" />
                     )}
                   </div>
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex flex-col gap-0.5 flex-shrink-0">
+                <div className="flex flex-col gap-0.5 flex-shrink-0 ml-1">
                   <button
                     onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                    className={`p-1 rounded hover:bg-clawd-border ${
+                    className={`p-1 rounded hover:bg-clawd-border transition-opacity ${
                       conv.is_starred ? 'text-yellow-400' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
                     }`}
                     title={conv.is_starred ? 'Unstar' : 'Star'}
@@ -392,14 +392,14 @@ function CenterPane({
                   </button>
                   <button
                     onClick={e => { e.stopPropagation(); onArchive(conv); }}
-                    className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100"
+                    className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Archive"
                   >
                     <Archive size={14} />
                   </button>
                   <button
                     onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
-                    className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100"
+                    className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
                     title={conv.is_read ? 'Mark unread' : 'Mark read'}
                   >
                     {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
@@ -589,8 +589,8 @@ function RightPane({
     <div className="flex-1 flex flex-col bg-clawd-bg min-w-0 text-left">
       {/* Header */}
       <div className="px-6 py-4 border-b border-clawd-border bg-clawd-surface">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="font-bold text-lg truncate">
+        <div className="flex items-center justify-between gap-3 mb-1">
+          <h2 className="font-bold text-lg truncate min-w-0 flex-1">
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
           <div className="flex items-center gap-1 flex-shrink-0">

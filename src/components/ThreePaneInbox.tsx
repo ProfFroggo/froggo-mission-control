@@ -512,10 +512,10 @@ export default function ThreePaneInbox() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-hidden text-left">
                       {/* Top row: sender/type + timestamp */}
-                      <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <span className={`text-sm truncate ${
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-sm truncate flex-1 min-w-0 ${
                           isPending ? 'font-semibold text-clawd-text' : 'font-medium text-clawd-text/80'
                         }`}>
                           {config.label}
@@ -536,7 +536,7 @@ export default function ThreePaneInbox() {
                       </h4>
 
                       {/* Preview text */}
-                      <p className="text-xs text-clawd-text-dim/70 line-clamp-1 leading-relaxed">
+                      <p className="text-xs text-clawd-text-dim/70 truncate leading-relaxed">
                         {item.content}
                       </p>
 
@@ -567,7 +567,7 @@ export default function ThreePaneInbox() {
       </div>
 
       {/* RIGHT PANE: Message Details */}
-      <div className="flex-1 flex flex-col bg-clawd-bg min-w-0">
+      <div className="flex-1 flex flex-col bg-clawd-bg min-w-0 text-left">
         {selectedItem ? (
           <>
             {/* Header */}
@@ -580,9 +580,9 @@ export default function ThreePaneInbox() {
                       return <Icon size={24} />;
                     })()}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-xs px-2 py-1 bg-clawd-border rounded font-medium">
+                      <span className="text-xs px-2 py-1 bg-clawd-border rounded font-medium flex-shrink-0">
                         {typeConfig[selectedItem.type].label}
                       </span>
                       {(() => {
