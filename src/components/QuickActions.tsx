@@ -11,6 +11,7 @@ import { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext } from '../lib/agentContext';
 import { buildSystemInstruction, buildAgentTools, executeToolCall, loadRecentChatHistory, type AgentContext } from '../lib/voiceCallShared';
+import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
 
 // ─── Ring tone generator ─────────────────────────────────────────────────────
 
@@ -459,6 +460,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const ringCtxRef = useRef<AudioContext | null>(null);
   const callTranscriptRef = useRef<HTMLDivElement>(null);
   const callVideoRef = useRef<HTMLVideoElement>(null);
+  const [callScreenPickerOpen, setCallScreenPickerOpen] = useState(false);
 
   // Agent chat state
   const [agentChatModalOpen, setAgentChatModalOpen] = useState(false);
@@ -699,11 +701,20 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       setCallVideoMode('none');
       if (callVideoRef.current) callVideoRef.current.srcObject = null;
     } else {
-      try {
-        await geminiLive.startVideo('screen');
-        setCallVideoMode('screen');
-        setTimeout(attachVideoStream, 100);
-      } catch (err: any) { setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Screen share failed` }]); }
+      setCallScreenPickerOpen(true);
+    }
+  };
+
+  const handleCallScreenSourceSelected = async (source: ScreenSource) => {
+    setCallScreenPickerOpen(false);
+    try {
+      const sourceId = source.id === '__browser_picker__' ? undefined : source.id;
+      await geminiLive.startVideo('screen', sourceId);
+      setCallVideoMode('screen');
+      setTimeout(attachVideoStream, 100);
+      setCallTranscript(prev => [...prev, { role: 'system', text: `🖥️ Sharing: ${source.name}` }]);
+    } catch (err: any) {
+      setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Screen share failed` }]);
     }
   };
 
@@ -1020,6 +1031,14 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Screen Source Picker for Call */}
+      {callScreenPickerOpen && (
+        <ScreenSourcePicker
+          onSelect={handleCallScreenSourceSelected}
+          onCancel={() => setCallScreenPickerOpen(false)}
+        />
       )}
 
       {/* Agent Chat Picker */}

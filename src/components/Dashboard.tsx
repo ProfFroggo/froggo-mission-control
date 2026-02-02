@@ -310,65 +310,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
-      {/* Control Bar */}
-      <div className="sticky top-0 z-50 bg-clawd-surface/80 backdrop-blur-xl border-b border-clawd-border/50 px-8 py-3">
-        <div className="max-w-8xl mx-auto flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Dashboard</h2>
-          <div className="flex items-center gap-2">
-            {/* Add Widget Dropdown */}
-            {availableWidgets.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowAddWidget(!showAddWidget)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent/30 transition-colors text-sm font-medium"
-                >
-                  <Plus size={16} />
-                  Add Widget
-                </button>
-                {showAddWidget && (
-                  <div className="absolute right-0 mt-2 w-64 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl overflow-hidden z-50">
-                    {availableWidgets.map(widget => (
-                      <button
-                        key={widget.id}
-                        onClick={() => handleAddWidget(widget.id)}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-clawd-bg transition-colors text-left"
-                      >
-                        <widget.icon size={18} className="text-clawd-accent" />
-                        <span className="text-sm">{widget.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Edit Layout Toggle */}
-            <button
-              onClick={() => setEditMode(!editMode)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${
-                editMode 
-                  ? 'bg-clawd-accent text-white' 
-                  : 'bg-clawd-border/50 text-clawd-text-dim hover:bg-clawd-border'
-              }`}
-            >
-              <Edit3 size={16} />
-              {editMode ? 'Done Editing' : 'Edit Layout'}
-            </button>
-
-            {/* Reset Layout */}
-            <button
-              onClick={handleResetLayout}
-              className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border/50 text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors text-sm font-medium"
-              title="Reset to default layout"
-            >
-              <RotateCcw size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Grid Layout */}
-      <div ref={gridContainerRef} className="max-w-8xl mx-auto px-8 py-8">
+      <div ref={gridContainerRef} className="px-8 py-8">
         <ResponsiveGridLayout
           className="layout"
           layouts={{ lg: layout }}
@@ -384,19 +327,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           preventCollision={false}
         >
           {/* HERO WIDGET */}
-          {!hiddenWidgets.has('hero') && (
+          {/* Hero is NOT a widget — static header, no wrapper */}
             <div key="hero">
-              <DashboardWidget
-                id="hero"
-                title="Dashboard Header"
-                icon={Sparkles}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('hero')}
-                onToggleMinimize={() => handleToggleMinimize('hero')}
-                removable={false}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-6">
+              <div className="h-full flex flex-col justify-center px-6 py-4">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="space-y-3">
                       <h1 className="text-3xl font-bold tracking-tight leading-tight bg-gradient-to-r from-clawd-text via-clawd-text to-clawd-accent bg-clip-text text-transparent">
                         {greeting}, Kevin
@@ -434,11 +368,65 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         )}
                       </div>
                     </div>
+
+                    {/* Edit layout controls */}
+                    <div className="flex items-center gap-2">
+                      {editMode && (
+                        <>
+                          {/* Add Widget */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setShowAddWidget(!showAddWidget)}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent/30 transition-colors text-sm font-medium"
+                            >
+                              <Plus size={16} />
+                              Add Widget
+                            </button>
+                            {showAddWidget && (
+                              <div className="absolute right-0 top-full mt-2 w-56 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto">
+                                {WIDGET_REGISTRY.filter(w => hiddenWidgets.has(w.id)).map(w => (
+                                  <button
+                                    key={w.id}
+                                    onClick={() => { handleAddWidget(w.id); setShowAddWidget(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-clawd-border/50 transition-colors text-left"
+                                  >
+                                    <w.icon size={16} className="text-clawd-accent" />
+                                    <span className="text-sm">{w.title}</span>
+                                  </button>
+                                ))}
+                                {WIDGET_REGISTRY.filter(w => hiddenWidgets.has(w.id)).length === 0 && (
+                                  <div className="px-4 py-3 text-sm text-clawd-text-dim text-center">All widgets visible</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Reset Layout */}
+                          <button
+                            onClick={handleResetLayout}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border/50 text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors text-sm font-medium"
+                            title="Reset to default layout"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => setEditMode(!editMode)}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${
+                          editMode 
+                            ? 'bg-clawd-accent text-white' 
+                            : 'bg-clawd-border/50 text-clawd-text-dim hover:bg-clawd-border'
+                        }`}
+                      >
+                        <Edit3 size={16} />
+                        {editMode ? 'Done' : 'Edit Layout'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </DashboardWidget>
+              </div>
             </div>
-          )}
 
           {/* QUICK ACTIONS WIDGET */}
           {!hiddenWidgets.has('quick-actions') && (
