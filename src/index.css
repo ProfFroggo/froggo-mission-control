@@ -1,6 +1,10 @@
 /* Import accessibility styles FIRST */
 @import './accessibility.css';
 
+/* Import react-grid-layout styles */
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
+
 /* Import text utilities */
 @import './text-utilities.css';
 

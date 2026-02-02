@@ -2,12 +2,46 @@ import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHand
 import {
   Plus, MessageSquare, CheckCircle, Search, Zap, Send, X, UserPlus, Brain,
   ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff,
-  Video, Users, ListTodo, Play, Pause, Square, ArrowRight, Sparkles,
+  Video, Users, ListTodo, Play, Pause, Square, ArrowRight, Sparkles, Monitor, Camera, CameraOff,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import AgentAvatar from './AgentAvatar';
 import { CHAT_AGENTS, ChatAgent } from './AgentSelector';
+import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
+import { loadAgentContext, invalidateAgentContext } from '../lib/agentContext';
+import { buildSystemInstruction, buildAgentTools, executeToolCall, loadRecentChatHistory, type AgentContext } from '../lib/voiceCallShared';
+
+// ─── Ring tone generator ─────────────────────────────────────────────────────
+
+function playRingTone(audioCtx: AudioContext): { stop: () => void } {
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.15;
+  gainNode.connect(audioCtx.destination);
+  let stopped = false;
+  let ringTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const ring = () => {
+    if (stopped) return;
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const merge = audioCtx.createGain();
+    merge.gain.value = 0.5;
+    osc1.frequency.value = 440;
+    osc2.frequency.value = 480;
+    osc1.connect(merge);
+    osc2.connect(merge);
+    merge.connect(gainNode);
+    osc1.start();
+    osc2.start();
+    setTimeout(() => { osc1.stop(); osc2.stop(); if (!stopped) ringTimeout = setTimeout(ring, 2000); }, 1000);
+  };
+  ring();
+  return { stop: () => { stopped = true; if (ringTimeout) clearTimeout(ringTimeout); gainNode.disconnect(); } };
+}
+
+// Singleton Gemini Live service for calls
+const geminiLive = new GeminiLiveService();
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -411,8 +445,29 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const [contextChatOpen, setContextChatOpen] = useState(false);
   const [taskShortcutsOpen, setTaskShortcutsOpen] = useState(false);
 
-  // FEATURE 2: Call persistence
+  // FEATURE 2: Call persistence + real voice state
   const [activeCall, setActiveCall] = useState<{ agentId: string; agentName: string } | null>(loadActiveCall);
+  const [callRinging, setCallRinging] = useState(false);
+  const [callConnected, setCallConnected] = useState(false);
+  const [callTranscript, setCallTranscript] = useState<Array<{ role: 'user' | 'assistant' | 'system'; text: string }>>([]);
+  const [callVideoMode, setCallVideoMode] = useState<VideoMode>('none');
+  const [callMuted, setCallMuted] = useState(false);
+  const [callListening, setCallListening] = useState(false);
+  const [callSpeaking, setCallSpeaking] = useState(false);
+  const [callDialogOpen, setCallDialogOpen] = useState(false);
+  const ringRef = useRef<{ stop: () => void } | null>(null);
+  const ringCtxRef = useRef<AudioContext | null>(null);
+  const callTranscriptRef = useRef<HTMLDivElement>(null);
+  const callVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Agent chat state
+  const [agentChatModalOpen, setAgentChatModalOpen] = useState(false);
+  const [agentChatOpen, setAgentChatOpen] = useState(false);
+  const [chatAgent, setChatAgent] = useState<{ id: string; name: string } | null>(null);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Close all modals helper
   const closeAllModals = () => {
@@ -420,6 +475,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setAgentCallModalOpen(false);
     setContextChatOpen(false);
     setTaskShortcutsOpen(false);
+    setAgentChatModalOpen(false);
   };
 
   // Persist toolbar state
@@ -451,23 +507,268 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     }
   };
 
-  // ─── FEATURE 2: Agent call handling ───
-  const handleAgentCall = (agent: ChatAgent) => {
+  // Agent context for voice calls
+  const agentContextRef = useRef<AgentContext | null>(null);
+  const activeCallAgentRef = useRef<{ id: string; name: string; role?: string } | null>(null);
+
+  // ─── Gemini Live event wiring ───
+  useEffect(() => {
+    const addTx = (role: 'user' | 'assistant' | 'system', text: string) => {
+      setCallTranscript(prev => [...prev.slice(-80), { role, text }]);
+    };
+
+    // Log transcripts to gateway session
+    const logToGateway = (role: string, text: string) => {
+      try {
+        const gateway = (window as any).clawdbot?.gateway;
+        if (gateway?.request) {
+          gateway.request('chat.inject', {
+            sessionKey: gateway.getSessionKey?.() || 'web:dashboard',
+            role, message: text, label: 'voice',
+          }).catch(() => {});
+        }
+      } catch {}
+    };
+
+    const unsubs = [
+      geminiLive.on('connected', () => { setCallConnected(true); setCallRinging(false); }),
+      geminiLive.on('disconnected', () => { setCallConnected(false); setCallListening(false); setCallSpeaking(false); }),
+      geminiLive.on('reconnecting', ({ attempt }: any) => { addTx('system', `🔄 Reconnecting (attempt ${attempt})...`); }),
+      geminiLive.on('listening-start', () => setCallListening(true)),
+      geminiLive.on('listening-end', () => setCallListening(false)),
+      geminiLive.on('speaking-start', () => setCallSpeaking(true)),
+      geminiLive.on('speaking-end', () => setCallSpeaking(false)),
+      geminiLive.on('error', ({ message }: any) => addTx('system', `⚠️ ${message}`)),
+      geminiLive.on('transcript', ({ text, role }: any) => {
+        if (!text?.trim()) return;
+        const r = role === 'model' ? 'assistant' : 'user';
+        addTx(r, text.trim());
+        logToGateway(r, text.trim());
+      }),
+      geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
+        try {
+          if (!toolCall?.functionCalls?.length) return;
+          const agent = activeCallAgentRef.current;
+          const responses: Array<{ id: string; name: string; response: any }> = [];
+          for (const fc of toolCall.functionCalls) {
+            addTx('system', `🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
+            let result: any;
+            try {
+              result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
+            } catch (err: any) {
+              result = { error: err.message || 'Tool execution failed' };
+              addTx('system', `⚠️ ${fc.name} failed: ${err.message}`);
+            }
+            responses.push({ id: fc.id, name: fc.name, response: result });
+          }
+          await geminiLive.sendToolResponse(responses);
+        } catch (err: any) {
+          addTx('system', `⚠️ Tool error: ${err.message}`);
+        }
+      }),
+    ];
+    return () => unsubs.forEach(u => u());
+  }, []);
+
+  // Auto-scroll transcript
+  useEffect(() => {
+    if (callTranscriptRef.current) callTranscriptRef.current.scrollTop = callTranscriptRef.current.scrollHeight;
+  }, [callTranscript]);
+
+  const stopRinging = () => {
+    ringRef.current?.stop(); ringRef.current = null;
+    if (ringCtxRef.current) { ringCtxRef.current.close().catch(() => {}); ringCtxRef.current = null; }
+    setCallRinging(false);
+  };
+
+  const getGeminiApiKey = () => {
+    // 1. Check localStorage settings
+    try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
+    catch {}
+    // 2. Check env vars
+    const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
+    if (envKey) return envKey;
+    // 3. Fallback key (same as VoiceChatPanel)
+    return 'AIzaSyCziHu8LUZ6RXmt-4lu_NzgEfczM0DC1RE';
+  };
+
+  // ─── FEATURE 2: Agent call handling (real Gemini Live) ───
+  const handleAgentCall = async (agent: ChatAgent) => {
     if (activeCall?.agentId === agent.id) {
-      // End call with this agent
+      // End call
+      stopRinging();
+      await geminiLive.disconnect();
       setActiveCall(null);
       saveActiveCall(null);
+      setCallConnected(false);
+      setCallMuted(false);
+      setCallVideoMode('none');
+      setCallDialogOpen(false);
+      setCallTranscript(prev => [...prev, { role: 'system', text: '📵 Call ended' }]);
       if (isMeetingActive) toggleMeeting();
       showToast('success', 'Call Ended', `Disconnected from ${agent.name}`);
     } else {
-      // Start call with agent
+      // Start call
+      const apiKey = getGeminiApiKey();
+      if (!apiKey) {
+        showToast('error', 'No API Key', 'Set Gemini API key in Settings');
+        return;
+      }
+
       const call = { agentId: agent.id, agentName: agent.name };
       setActiveCall(call);
       saveActiveCall(call);
-      if (!isMeetingActive) toggleMeeting();
-      showToast('success', 'Calling...', `Connected to ${agent.name}`);
+      activeCallAgentRef.current = { id: agent.id, name: agent.name, role: agent.role };
+      setCallRinging(true);
+      setCallTranscript([{ role: 'system', text: `📞 Calling ${agent.name}...` }]);
+      setCallDialogOpen(true);
+      setAgentCallModalOpen(false);
+
+      // Play ring tone
+      try {
+        const ctx = new AudioContext();
+        ringCtxRef.current = ctx;
+        ringRef.current = playRingTone(ctx);
+      } catch {}
+
+      try {
+        // Load full agent context (SOUL.md, memory, tasks, etc.) + chat history
+        invalidateAgentContext(agent.id);
+        const [agentCtx, chatHistory] = await Promise.all([
+          loadAgentContext(agent.id).catch(() => null),
+          loadRecentChatHistory(agent.id, 25),
+        ]);
+        agentContextRef.current = agentCtx;
+
+        const sysInstruction = buildSystemInstruction(
+          { id: agent.id, name: agent.name, role: agent.role },
+          agentCtx,
+          undefined,
+          chatHistory
+        ) + '\n\nYou just answered a phone call. Greet the caller naturally and casually — like picking up a phone. Keep it brief.';
+
+        await geminiLive.connect({
+          apiKey,
+          voice: getGeminiVoiceForAgent(agent.id),
+          systemInstruction: sysInstruction,
+          tools: buildAgentTools(),
+        });
+        stopRinging();
+        // Trigger the agent to "answer" the call with a greeting
+        await geminiLive.sendText('Hey, you just picked up the phone. Greet me!');
+        await geminiLive.startMic();
+        if (!isMeetingActive) toggleMeeting();
+      } catch (err: any) {
+        stopRinging();
+        setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ ${err.message}` }]);
+        setActiveCall(null);
+        saveActiveCall(null);
+      }
     }
-    setAgentCallModalOpen(false);
+  };
+
+  const endActiveCall = async () => {
+    if (!activeCall) return;
+    stopRinging();
+    await geminiLive.disconnect();
+    setActiveCall(null);
+    saveActiveCall(null);
+    setCallConnected(false);
+    setCallMuted(false);
+    setCallVideoMode('none');
+    setCallDialogOpen(false);
+    setCallTranscript(prev => [...prev, { role: 'system', text: '📵 Call ended' }]);
+    if (isMeetingActive) toggleMeeting();
+  };
+
+  const toggleCallMute = () => {
+    if (callMuted) { geminiLive.startMic(); } else { geminiLive.stopMic(); }
+    setCallMuted(!callMuted);
+  };
+
+  const attachVideoStream = () => {
+    if (callVideoRef.current) {
+      const stream = geminiLive.getVideoStream();
+      callVideoRef.current.srcObject = stream;
+    }
+  };
+
+  const toggleCallScreen = async () => {
+    if (callVideoMode === 'screen') {
+      geminiLive.stopVideo();
+      setCallVideoMode('none');
+      if (callVideoRef.current) callVideoRef.current.srcObject = null;
+    } else {
+      try {
+        await geminiLive.startVideo('screen');
+        setCallVideoMode('screen');
+        setTimeout(attachVideoStream, 100);
+      } catch (err: any) { setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Screen share failed` }]); }
+    }
+  };
+
+  const toggleCallCamera = async () => {
+    if (callVideoMode === 'camera') {
+      geminiLive.stopVideo();
+      setCallVideoMode('none');
+      if (callVideoRef.current) callVideoRef.current.srcObject = null;
+    } else {
+      try {
+        await geminiLive.startVideo('camera');
+        setCallVideoMode('camera');
+        setTimeout(attachVideoStream, 100);
+      } catch (err: any) { setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Camera failed` }]); }
+    }
+  };
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatScrollRef.current) chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+  }, [chatMessages]);
+
+  // ─── Agent Chat handling ───
+  const handleStartAgentChat = async (agent: ChatAgent) => {
+    setChatAgent({ id: agent.id, name: agent.name });
+    setAgentChatModalOpen(false);
+    setAgentChatOpen(true);
+    setChatMessages([]);
+    setChatLoading(true);
+    // Load chat history from gateway
+    try {
+      const res = await fetch(`http://localhost:18789/api/sessions/${agent.sessionKey || `agent:${agent.id}`}/history?limit=30`);
+      if (res.ok) {
+        const data = await res.json();
+        const msgs = (data.messages || data || []).map((m: any) => ({
+          role: m.role || 'user',
+          content: m.content || m.text || m.message || '',
+        })).filter((m: any) => m.content && (m.role === 'user' || m.role === 'assistant'));
+        setChatMessages(msgs);
+      }
+    } catch {}
+    setChatLoading(false);
+  };
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim() || !chatAgent) return;
+    const msg = chatInput.trim();
+    setChatInput('');
+    setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setChatLoading(true);
+    try {
+      const res = await fetch('http://localhost:18789/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, sessionKey: `agent:${chatAgent.id}` }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const reply = data.response || data.message || data.text || '';
+        if (reply) setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      }
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Failed to get response' }]);
+    }
+    setChatLoading(false);
   };
 
   // ─── FEATURE 3: Context-aware chat ───
@@ -618,6 +919,206 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         </div>
       )}
 
+      {/* FEATURE 2b: Active Call Window (agent image / video + transcript + controls) */}
+      {callDialogOpen && activeCall && (
+        <div className={`absolute w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden ${
+          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isLeft ? 'left-0' : 'right-0'}`}>
+
+          {/* Agent image / Video / Screen share area */}
+          <div className="relative w-full aspect-square bg-black overflow-hidden">
+            {/* Video element (camera or screen share) — hidden until active */}
+            <video
+              ref={callVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`absolute inset-0 w-full h-full object-cover ${callVideoMode !== 'none' ? 'block' : 'hidden'}`}
+            />
+
+            {/* Agent profile pic — shown when no video */}
+            {callVideoMode === 'none' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <img
+                  src={`./agent-profiles/${activeCall.agentId}.png`}
+                  alt={activeCall.agentName}
+                  className={`w-32 h-32 rounded-full object-cover border-4 transition-all duration-300 ${
+                    callRinging ? 'border-yellow-500 animate-pulse scale-95'
+                    : callSpeaking ? 'border-green-500 scale-110 shadow-lg shadow-green-500/30'
+                    : callListening ? 'border-blue-500 scale-105 shadow-lg shadow-blue-500/20'
+                    : 'border-clawd-border'
+                  }`}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+
+            {/* Status overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-white">{activeCall.agentName}</div>
+                  <div className="text-[11px] text-white/70">
+                    {callRinging ? '📞 Ringing...' : callSpeaking ? '🔊 Speaking' : callListening ? '🎤 Listening' : callConnected ? '✅ Connected' : '⏳ Connecting...'}
+                  </div>
+                </div>
+                {callVideoMode !== 'none' && (
+                  <span className="text-[10px] bg-green-500/80 text-white px-2 py-0.5 rounded-full">
+                    {callVideoMode === 'screen' ? '🖥 Screen' : '📷 Camera'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Close button */}
+            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors">
+              <X size={12} />
+            </button>
+          </div>
+
+          {/* Transcript */}
+          <div ref={callTranscriptRef} className="h-[140px] overflow-y-auto px-3 py-2 space-y-1.5 text-xs border-t border-clawd-border">
+            {callTranscript.length === 0 && (
+              <div className="flex items-center justify-center h-full text-clawd-text-dim">
+                {callRinging ? 'Ringing...' : 'Waiting for response...'}
+              </div>
+            )}
+            {callTranscript.map((entry, i) => (
+              <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
+                  entry.role === 'user' ? 'bg-blue-600/20 text-blue-200'
+                  : entry.role === 'system' ? 'bg-clawd-bg text-clawd-text-dim italic text-[10px]'
+                  : 'bg-clawd-border/50 text-clawd-text'
+                }`}>
+                  {entry.text}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Controls bar */}
+          <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-clawd-border bg-clawd-bg/50">
+            <button onClick={toggleCallMute} disabled={!callConnected}
+              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-red-500/20 text-red-400' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              title={callMuted ? 'Unmute' : 'Mute'}>
+              {callMuted ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+            <button onClick={toggleCallScreen} disabled={!callConnected}
+              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-green-500/20 text-green-400' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              title="Share Screen">
+              <Monitor size={16} />
+            </button>
+            <button onClick={toggleCallCamera} disabled={!callConnected}
+              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-green-500/20 text-green-400' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              title="Camera">
+              {callVideoMode === 'camera' ? <CameraOff size={16} /> : <Camera size={16} />}
+            </button>
+            <button onClick={endActiveCall}
+              className="p-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
+              title="End Call">
+              <PhoneOff size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Agent Chat Picker */}
+      {agentChatModalOpen && !state.isCollapsed && (
+        <div className={`absolute w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 ${
+          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isLeft ? 'left-0' : 'right-0'} max-h-80 overflow-y-auto`}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <MessageSquare size={14} className="text-clawd-accent" />
+              Chat with Agent
+            </h3>
+            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+          </div>
+          <div className="space-y-1">
+            {CHAT_AGENTS.filter(a => a.id !== 'voice').map(agent => (
+              <button
+                key={agent.id}
+                onClick={() => handleStartAgentChat(agent)}
+                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm hover:bg-clawd-border"
+              >
+                <AgentAvatar agentId={agent.id} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-xs">{agent.name}</div>
+                  <div className="text-[10px] text-clawd-text-dim truncate">{agent.role}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Agent Chat Interface */}
+      {agentChatOpen && chatAgent && (
+        <div className={`absolute w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden ${
+          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isLeft ? 'left-0' : 'right-0'}`}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-3 py-2.5 bg-clawd-bg/50 border-b border-clawd-border">
+            <div className="flex items-center gap-2">
+              <AgentAvatar agentId={chatAgent.id} size="sm" />
+              <div>
+                <div className="text-xs font-semibold">{chatAgent.name}</div>
+                <div className="text-[10px] text-clawd-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
+              </div>
+            </div>
+            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-clawd-border rounded">
+              <X size={12} />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div ref={chatScrollRef} className="h-[320px] overflow-y-auto px-3 py-2 space-y-2 text-xs">
+            {chatMessages.length === 0 && !chatLoading && (
+              <div className="flex items-center justify-center h-full text-clawd-text-dim">
+                Start a conversation with {chatAgent.name}
+              </div>
+            )}
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-3 py-2 rounded-xl ${
+                  msg.role === 'user'
+                    ? 'bg-clawd-accent/20 text-clawd-text'
+                    : 'bg-clawd-border/50 text-clawd-text'
+                }`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {chatLoading && chatMessages.length > 0 && (
+              <div className="flex justify-start">
+                <div className="bg-clawd-border/50 px-3 py-2 rounded-xl text-clawd-text-dim">
+                  <span className="animate-pulse">●●●</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="px-3 py-2.5 border-t border-clawd-border flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+              placeholder={`Message ${chatAgent.name}...`}
+              className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-clawd-accent"
+            />
+            <button
+              onClick={sendChatMessage}
+              disabled={!chatInput.trim() || chatLoading}
+              className="p-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-40 transition-colors"
+            >
+              <Send size={12} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* FEATURE 3: Context Chat Modal */}
       {contextChatOpen && !state.isCollapsed && (
         <div className={`absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`}>
@@ -657,28 +1158,28 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
         {state.isCollapsed ? (
           <>
-            {/* FEATURE 1: Meeting icon (collapsed) */}
+            {/* Primary: Call button (collapsed) */}
             <button
-              onClick={handleMeetingClick}
+              onClick={() => {
+                closeAllModals();
+                if (activeCall) { setCallDialogOpen(!callDialogOpen); }
+                else { setAgentCallModalOpen(!agentCallModalOpen); }
+              }}
               className={`p-2.5 rounded-full transition-colors ${
-                isMeetingActive ? 'bg-green-500 text-white animate-pulse' : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+                callRinging ? 'bg-yellow-500 text-white animate-pulse'
+                : activeCall ? 'bg-red-500 text-white' : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
               }`}
-              title={isMeetingActive ? 'Go to Meeting' : 'Start Meeting'}
+              title={activeCall ? activeCall.agentName : 'Call Agent'}
             >
-              <Video size={16} />
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
-            {/* FEATURE 5: Active call indicator (collapsed) */}
             {activeCall && (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-400">
                 <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
-            <button
-              onClick={toggleCollapse}
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors"
-              title="Expand toolbar"
-            >
+            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Expand toolbar">
               <ChevronLeft size={16} className="text-clawd-text-dim" />
             </button>
           </>
@@ -702,15 +1203,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </button>
             )}
 
-            {/* Quick Message */}
-            <button
-              onClick={() => { closeAllModals(); setQuickMessageOpen(!quickMessageOpen); }}
-              className={`p-2.5 rounded-full transition-colors ${quickMessageOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
-              title="Quick Message"
-            >
-              <MessageSquare size={16} className={quickMessageOpen ? '' : 'text-clawd-text-dim'} />
-            </button>
-
             {/* FEATURE 3: Context Chat */}
             <button
               onClick={() => { closeAllModals(); setContextChatOpen(!contextChatOpen); }}
@@ -729,76 +1221,39 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <ListTodo size={16} className={taskShortcutsOpen ? '' : 'text-clawd-text-dim'} />
             </button>
 
-            <button onClick={onApproveAll} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Approve All Pending">
-              <CheckCircle size={16} className="text-clawd-text-dim" />
-            </button>
-
             <div className="w-px h-6 bg-clawd-border mx-0.5" />
 
-            {/* ─── Voice & Meeting Section ─── */}
-
-            {/* Active call indicator */}
-            {activeCall && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-400 animate-pulse">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                {activeCall.agentName}
-              </span>
-            )}
-
-            {/* Live meeting indicator */}
-            {isMeetingActive && !activeCall && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-400 animate-pulse">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                Live
-              </span>
-            )}
-
-            {/* Mute toggle */}
+            {/* Agent Chat button */}
             <button
-              onClick={toggleMuted}
+              onClick={() => {
+                closeAllModals();
+                if (agentChatOpen) { setAgentChatOpen(false); }
+                else { setAgentChatModalOpen(!agentChatModalOpen); }
+              }}
               className={`p-2.5 rounded-full transition-colors ${
-                isMuted ? 'text-red-400 hover:bg-red-500/10' : 'hover:bg-clawd-border'
+                agentChatOpen || agentChatModalOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
               }`}
-              title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
+              title="Chat with Agent"
             >
-              {isMuted ? <MicOff size={16} /> : <Mic size={16} className="text-clawd-text-dim" />}
+              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-clawd-text-dim'} />
             </button>
 
-            {/* FEATURE 2: Agent call button — RED with line-through when active */}
+            {/* Primary: Call button (was where meeting button was) */}
             <button
-              onClick={() => { closeAllModals(); setAgentCallModalOpen(!agentCallModalOpen); }}
-              className={`p-2.5 rounded-full transition-colors relative ${
-                activeCall
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : agentCallModalOpen
-                    ? 'bg-clawd-accent text-white'
-                    : 'hover:bg-clawd-border'
-              }`}
-              title={activeCall ? `In call with ${activeCall.agentName} — click to manage` : 'Call an agent'}
-            >
-              <Phone size={16} className={!activeCall && !agentCallModalOpen ? 'text-clawd-text-dim' : ''} />
-              {/* FEATURE 5: Line-through indicator for active calls */}
-              {activeCall && (
-                <span
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <span className="w-5 h-0.5 bg-white rounded-full rotate-45" />
-                </span>
-              )}
-            </button>
-
-            {/* FEATURE 1: Meeting icon — replaces old Zap icon */}
-            <button
-              onClick={handleMeetingClick}
+              onClick={() => {
+                closeAllModals();
+                if (activeCall) { setCallDialogOpen(!callDialogOpen); }
+                else { setAgentCallModalOpen(!agentCallModalOpen); }
+              }}
               className={`p-2.5 rounded-full transition-colors ${
-                isMeetingActive
-                  ? 'bg-green-500 text-white hover:bg-green-600'
-                  : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+                callRinging ? 'bg-yellow-500 text-white animate-pulse'
+                : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
+                : agentCallModalOpen ? 'bg-clawd-accent text-white'
+                : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
               }`}
-              title={isMeetingActive ? 'Go to Meeting' : 'Start Meeting'}
+              title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
             >
-              <Video size={16} />
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
 
             <div className="w-px h-6 bg-clawd-border mx-0.5" />

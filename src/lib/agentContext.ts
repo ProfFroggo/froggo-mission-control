@@ -171,7 +171,7 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
   if (!exec) return {};
 
   // Non-froggo agents live at ~/clawd-<id>, froggo lives at ~/clawd
-  const base = agentId === 'froggo' ? '~/clawd' : `~/clawd-${agentId}`;
+  const base = (agentId === 'froggo' || agentId === 'main') ? '~/clawd' : `~/clawd-${agentId}`;
   const today = new Date().toISOString().split('T')[0];
 
   const fileSpecs = [
@@ -183,6 +183,7 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
     { key: 'platform_context', path: `${base}/PLATFORM_CONTEXT.md`, maxChars: 1500 },
     { key: 'memory_longterm', path: `${base}/MEMORY.md`, maxChars: 3000 },
     { key: 'memory_today', path: `${base}/memory/${today}.md`, maxChars: 2000 },
+    { key: 'state', path: `${base}/STATE.md`, maxChars: 3000 },
   ];
 
   const results = await Promise.all(
@@ -202,7 +203,7 @@ async function loadAgentMemory(agentId: string): Promise<string | null> {
     if ((window as any).clawdbot?.exec?.run) {
       // Try reading the agent's daily memory
       const today = new Date().toISOString().split('T')[0];
-      const memBase = agentId === 'froggo' ? '~/clawd' : `~/clawd-${agentId}`;
+      const memBase = (agentId === 'froggo' || agentId === 'main') ? '~/clawd' : `~/clawd-${agentId}`;
       const r = await (window as any).clawdbot.exec.run(
         `head -100 ${memBase}/memory/${today}.md 2>/dev/null || echo ""`
       );

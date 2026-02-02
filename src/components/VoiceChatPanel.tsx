@@ -170,17 +170,25 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }),
       geminiLive.on('disconnected', ({ code, reason }: { code?: number; reason?: string } = {}) => {
         const wasActive = callActiveRef.current;
-        setCallActive(false);
         setConnecting(false);
         setListening(false);
         setSpeaking(false);
         setVideoActive(false);
-        callActiveRef.current = false;
-        // If we were in an active call and got disconnected unexpectedly, show a message
+        // Don't clear callActive/ref yet — auto-reconnect may restore it
         if (wasActive) {
-          const reasonText = reason || (code ? `code ${code}` : 'unknown reason');
-          addSystemMessage(`⚠️ Connection lost (${reasonText}). Press call to reconnect.`);
+          // Auto-reconnect will handle it; only show message if user manually disconnected
+          if (code === 1000) {
+            setCallActive(false);
+            callActiveRef.current = false;
+          }
+        } else {
+          setCallActive(false);
+          callActiveRef.current = false;
         }
+      }),
+      geminiLive.on('reconnecting', ({ attempt, delayMs }: { attempt: number; delayMs: number }) => {
+        setConnecting(true);
+        addSystemMessage(`🔄 Reconnecting... (attempt ${attempt})`);
       }),
       geminiLive.on('listening-start', () => setListening(true)),
       geminiLive.on('listening-end', () => setListening(false)),

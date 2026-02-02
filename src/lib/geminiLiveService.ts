@@ -20,7 +20,9 @@ export type GeminiVoice =
   | 'Puck' | 'Charon' | 'Kore' | 'Fenrir'
   // Extended TTS voices
   | 'Zephyr' | 'Leda' | 'Orus' | 'Aoede' | 'Enceladus' | 'Umbriel' 
-  | 'Vindemiatrix' | 'Callirrhoe' | 'Despina' | 'Rasalgethi' | 'Zubenelgenubi';
+  | 'Vindemiatrix' | 'Callirrhoe' | 'Despina' | 'Rasalgethi' | 'Zubenelgenubi'
+  // Additional voices
+  | 'Lyra' | 'Nova' | 'Capella' | 'Vega';
 
 /**
  * Map agent voice profiles to Gemini Live voices
@@ -47,48 +49,49 @@ export type GeminiVoice =
  * - Rasalgethi: Informative and clear
  * - Zubenelgenubi: Deep, resonant, and serious
  */
+/**
+ * Direct agent → voice mapping.
+ * 
+ * Production / Execution:
+ *   Writer (f)          → Lyra     — Bright, higher pitch, articulate
+ *   Researcher (f)      → Nova     — Calm, mid-range, neutral
+ *   Designer (f)        → Leda     — Youthful, energetic
+ *   Coder (m)           → Orus     — Firm, neutral, precise
+ * 
+ * Support / Ops:
+ *   HR (f)              → Capella  — Higher pitch, formal, procedural
+ *   Clara (f)           → Vega     — Bright but controlled (QA/validation)
+ * 
+ * External / Comms:
+ *   Social Manager (m)  → Fenrir   — Excitable, warm, human
+ *   Voice / mascot (f)  → Aoede    — Breezy, light, interface-level
+ * 
+ * Others:
+ *   Froggo              → Puck     — Conversational, friendly
+ *   Chief               → Charon   — Deep, authoritative
+ *   Lead Engineer        → Orus     — Firm, professional
+ *   Growth Director      → Fenrir   — Warm, energetic
+ *   Ox                  → Zubenelgenubi — Deep, resonant
+ */
+const AGENT_VOICE_MAP: Record<string, GeminiVoice> = {
+  writer:           'Lyra',
+  researcher:       'Nova',
+  designer:         'Leda',
+  coder:            'Orus',
+  hr:               'Capella',
+  clara:            'Vega',
+  'social-manager': 'Fenrir',
+  voice:            'Aoede',
+  froggo:           'Puck',
+  main:             'Puck',
+  chief:            'Charon',
+  'lead-engineer':  'Orus',
+  'growth-director':'Fenrir',
+  ox:               'Zubenelgenubi',
+};
+
 export function getGeminiVoiceForAgent(agentId: string): GeminiVoice {
-  const profile = getVoiceProfile(agentId);
-  if (!profile) return 'Puck';
-
-  const { gender, age, qualities } = profile;
-
-  // Deep voice override
-  if (qualities?.includes('deep')) {
-    return 'Zubenelgenubi'; // ox - deep, resonant, and serious
-  }
-
-  // Female voices
-  if (gender === 'female') {
-    if (age === 'young') {
-      // clara, designer
-      return agentId === 'clara' ? 'Leda' : 'Aoede'; // Leda: youthful/friendly, Aoede: breezy/conversational
-    }
-    if (age === 'middle-aged') {
-      // hr, researcher
-      return agentId === 'researcher' ? 'Rasalgethi' : 'Despina'; // Rasalgethi: informative/clear, Despina: smooth/warm
-    }
-    if (age === 'older') {
-      return 'Vindemiatrix'; // chief - gentle, calm, and mature
-    }
-  }
-
-  // Male voices
-  if (gender === 'male') {
-    if (age === 'young') {
-      // growth-director, social-manager, voice
-      if (agentId === 'growth-director') return 'Zephyr'; // bright and energetic
-      return 'Puck'; // conversational, friendly, upbeat
-    }
-    if (age === 'middle-aged') {
-      // froggo, coder, lead-engineer, writer
-      if (agentId === 'lead-engineer') return 'Orus'; // firm and professional
-      if (agentId === 'writer') return 'Umbriel'; // easy-going, calm, trustworthy
-      return 'Charon'; // deep, authoritative, informative (froggo, coder)
-    }
-  }
-
-  return 'Puck'; // fallback
+  return AGENT_VOICE_MAP[agentId] || 'Puck';
 }
 
 export type GeminiLiveEvent = 
@@ -97,7 +100,7 @@ export type GeminiLiveEvent =
   | 'listening-start' | 'listening-end'
   | 'audio-level' | 'model-audio-level'
   | 'transcript' | 'interrupted' | 'model-thinking'
-  | 'video-frame' | 'tool-call';
+  | 'video-frame' | 'tool-call' | 'reconnecting';
 
 /** Tool declaration for Gemini Live function calling */
 export interface GeminiTool {
@@ -169,6 +172,13 @@ export class GeminiLiveService {
   private micAnalyser: AnalyserNode | null = null;
   private micLevelAnimFrame: number | null = null;
 
+  // Auto-reconnect
+  private lastConfig: GeminiLiveConfig | null = null;
+  private intentionalDisconnect = false;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
   get connected() { return this._connected; }
   get listening() { return this._listening; }
   get speaking() { return this._speaking; }
@@ -206,6 +216,8 @@ export class GeminiLiveService {
       this.ws = null;
     }
     this._connected = false;
+    this.intentionalDisconnect = false;
+    this.lastConfig = config;
 
     const { apiKey, voice = 'Zephyr', videoMode = 'none', systemInstruction, model, tools } = config;
     this._videoMode = videoMode;
@@ -289,6 +301,10 @@ export class GeminiLiveService {
         if (!wasConnected && this.pendingSetup) {
           this.pendingSetup.reject(new Error(`Connection closed: ${e.reason || e.code}`));
           this.pendingSetup = null;
+        }
+        // Auto-reconnect on unexpected disconnects
+        if (wasConnected && !this.intentionalDisconnect && this.lastConfig) {
+          this.scheduleReconnect();
         }
       };
     });
@@ -382,6 +398,12 @@ export class GeminiLiveService {
   }
 
   async disconnect(): Promise<void> {
+    this.intentionalDisconnect = true;
+    this.reconnectAttempts = 0;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     this.stopMic();
     this.stopVideo();
     this.clearPlayback();
@@ -392,6 +414,33 @@ export class GeminiLiveService {
     this._connected = false;
     this._listening = false;
     this._speaking = false;
+    this.lastConfig = null;
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.warn('[GeminiLive] Max reconnect attempts reached');
+      this.emit('error', { message: 'Auto-reconnect failed after multiple attempts. Press call to reconnect.' });
+      this.reconnectAttempts = 0;
+      return;
+    }
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
+    this.reconnectAttempts++;
+    console.log(`[GeminiLive] Auto-reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    this.emit('reconnecting', { attempt: this.reconnectAttempts, delayMs: delay });
+    this.reconnectTimer = setTimeout(async () => {
+      if (this.intentionalDisconnect || !this.lastConfig) return;
+      try {
+        await this.connect(this.lastConfig);
+        // Restore mic if it was active
+        await this.startMic();
+        this.reconnectAttempts = 0;
+        console.log('[GeminiLive] Auto-reconnected successfully');
+      } catch (err) {
+        console.error('[GeminiLive] Reconnect failed:', err);
+        if (!this.intentionalDisconnect) this.scheduleReconnect();
+      }
+    }, delay);
   }
 
   // ── Audio Input (Microphone) ──
