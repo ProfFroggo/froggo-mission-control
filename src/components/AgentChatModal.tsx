@@ -371,9 +371,12 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
         {/* Messages */}
         <div className={`flex-1 overflow-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
-          {messages.map((msg, i) => {
-            const showAvatar = i === 0 || messages[i - 1]?.role !== msg.role;
-            const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.role !== msg.role;
+          {messages.filter(msg => {
+            const t = msg.content?.trim();
+            return t !== 'NO_REPLY' && t !== 'HEARTBEAT_OK' && t !== 'NO_RE' && t !== 'NO_';
+          }).map((msg, i, arr) => {
+            const showAvatar = i === 0 || arr[i - 1]?.role !== msg.role;
+            const isLastInGroup = i === arr.length - 1 || arr[i + 1]?.role !== msg.role;
             
             return (
               <div

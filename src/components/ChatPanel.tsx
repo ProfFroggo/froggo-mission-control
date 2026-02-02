@@ -243,10 +243,17 @@ export default function ChatPanel() {
   };
 
   // Filter messages based on search query
+  // Filter out silent agent replies (NO_REPLY, HEARTBEAT_OK) from display
+  const isSystemReply = (content: string) => {
+    const trimmed = content?.trim();
+    return trimmed === 'NO_REPLY' || trimmed === 'HEARTBEAT_OK' || trimmed === 'NO_RE' || trimmed === 'NO_';
+  };
+
   const filteredMessages = useMemo(() => {
-    if (!searchQuery.trim()) return messages;
+    const visible = messages.filter(msg => !isSystemReply(msg.content));
+    if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
-    return messages.filter(msg => 
+    return visible.filter(msg => 
       msg.content.toLowerCase().includes(query) ||
       msg.role.toLowerCase().includes(query)
     );

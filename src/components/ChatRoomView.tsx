@@ -600,7 +600,11 @@ Respond as ${agentConfig?.name || forAgent} (text only, no tools):`;
             )}
           </div>
         ) : (
-          room.messages.filter(m => m.streaming || m.content?.trim()).map((msg, idx) => {
+          room.messages.filter(m => {
+            const t = m.content?.trim();
+            if (t === 'NO_REPLY' || t === 'HEARTBEAT_OK' || t === 'NO_RE' || t === 'NO_') return false;
+            return m.streaming || t;
+          }).map((msg, idx) => {
             const isUser = msg.role === 'user';
             const agentConfig = msg.agentId ? AGENTS[msg.agentId] : null;
             const theme = msg.agentId ? getAgentTheme(msg.agentId) : null;
