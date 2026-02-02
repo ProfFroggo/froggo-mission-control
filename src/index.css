@@ -580,3 +580,23 @@ mark {
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
 }
+
+/* react-grid-layout dark mode overrides */
+.react-grid-item.react-grid-placeholder {
+  background: rgba(99, 102, 241, 0.3) !important;
+  border-radius: 1rem;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  border-right-color: rgba(255, 255, 255, 0.3) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.react-resizable-handle {
+  background-image: none !important;
+}
+
+.react-grid-item {
+  border: none !important;
+  outline: none !important;
+}
