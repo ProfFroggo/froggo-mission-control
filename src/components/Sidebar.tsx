@@ -56,6 +56,7 @@ interface SystemStatus {
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange }: SidebarProps) {
   const [expanded, setExpanded] = useState(true); // Open by default
   const [inboxCount, setInboxCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
   const [sysStatus, setSysStatus] = useState<SystemStatus>({ watcherRunning: false, killSwitchOn: true });
   const { connected, tasks } = useStore();
   const { panels: panelConfig, openEditModal } = usePanelConfigStore();
@@ -100,9 +101,21 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     }
   };
   
+  // Load unread message count for comms inbox badge
+  const loadUnreadMsgCount = async () => {
+    try {
+      const result = await (window as any).clawdbot?.messages?.recent(50);
+      if (result?.success && result.chats) {
+        const unread = result.chats.filter((c: any) => !c.is_read).length;
+        setUnreadMsgCount(unread);
+      }
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     loadInboxCount();
-    const interval = setInterval(loadInboxCount, 5000); // Poll every 5s
+    loadUnreadMsgCount();
+    const interval = setInterval(() => { loadInboxCount(); loadUnreadMsgCount(); }, 15000); // Poll every 15s
     return () => clearInterval(interval);
   }, []);
 
@@ -158,7 +171,8 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             .map(({ id, icon: Icon, label, shortcut }: any) => {
             const isActive = currentView === id;
             let badge = 0;
-            if (id === 'inbox') badge = inboxCount;
+            if (id === 'inbox') badge = unreadMsgCount;
+            if (id === 'approvals') badge = inboxCount;
             if (id === 'kanban') badge = activeTasks;
             
             return (

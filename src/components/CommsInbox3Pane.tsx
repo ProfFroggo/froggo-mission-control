@@ -14,6 +14,7 @@ import {
   Reply, ReplyAll, Forward, MoreHorizontal,
   Sparkles, X, Paperclip, Eye
 } from 'lucide-react';
+import { showToast } from './Toast';
 
 // X logo
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -318,7 +319,7 @@ function CenterPane({
             <button
               key={conv.id}
               onClick={() => onSelect(conv)}
-              className={`w-full text-left px-4 py-3 border-b border-clawd-border/50 transition-colors ${
+              className={`group w-full text-left px-4 py-3 border-b border-clawd-border/50 transition-colors ${
                 selectedId === conv.id
                   ? 'bg-clawd-accent/10 border-l-2 border-l-clawd-accent'
                   : 'hover:bg-clawd-surface/50'
@@ -361,7 +362,7 @@ function CenterPane({
                         {conv.unread_count} unread
                       </span>
                     )}
-                    {(conv.unreplied_count && conv.unreplied_count > 0) || (conv.has_reply === false) && (
+                    {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
                       <span className="text-[10px] text-orange-400 bg-orange-500/20 rounded px-1 flex items-center gap-0.5 font-semibold" title="Awaiting reply">
                         <Reply size={8} />
                         reply
@@ -1043,10 +1044,10 @@ export default function CommsInbox3Pane() {
           fromMe: true,
         }]);
       } else {
-        alert(`❌ Failed to send: ${result?.error || 'Unknown error'}`);
+        showToast('error', 'Send failed', result?.error || 'Unknown error');
       }
     } catch (e: any) {
-      alert(`❌ Error: ${e.message}`);
+      showToast('error', 'Send failed', e.message);
     }
   };
 
