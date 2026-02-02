@@ -14,6 +14,7 @@ import {
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
+import DraggableVideoWindow from './DraggableVideoWindow';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
@@ -298,11 +299,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       if (videoMode === 'camera') {
         try {
           await geminiLive.startVideo('camera');
-          const stream = geminiLive.getVideoStream();
           setVideoActive(true);
-          requestAnimationFrame(() => {
-            if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
-          });
           addSystemMessage('📹 Camera active');
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         } catch (e: any) {
@@ -334,26 +331,24 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     else await geminiLive.startMic();
   };
   
+  const stopVideo = () => {
+    geminiLive.stopVideo();
+    if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
+    setVideoActive(false);
+    addSystemMessage('Video stopped');
+    geminiLive.sendText('[SYSTEM: Camera/screen sharing has stopped. You can no longer see the user.]');
+  };
+
   const toggleVideo = async () => {
     if (!callActive) return;
     if (videoActive) {
-      geminiLive.stopVideo();
-      if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
-      setVideoActive(false);
-      addSystemMessage('Video stopped');
-      geminiLive.sendText('[SYSTEM: Camera/screen sharing has stopped. You can no longer see the user.]');
+      stopVideo();
     } else {
       try {
         const mode = videoMode !== 'none' ? videoMode : 'camera';
         await geminiLive.startVideo(mode);
         const stream = geminiLive.getVideoStream();
         setVideoActive(true);
-        requestAnimationFrame(() => {
-          if (videoPreviewRef.current && stream) {
-            videoPreviewRef.current.srcObject = stream;
-            videoPreviewRef.current.play().catch(e => console.error('Video play failed:', e));
-          }
-        });
         addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
         if (mode === 'screen') {
           geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
@@ -386,15 +381,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       if (videoActive) geminiLive.stopVideo();
       const sourceId = source.id === '__browser_picker__' ? undefined : source.id;
       await geminiLive.startVideo('screen', sourceId);
-      const stream = geminiLive.getVideoStream();
       setVideoActive(true);
       setActiveSourceId(source.id);
-      requestAnimationFrame(() => {
-        if (videoPreviewRef.current && stream) {
-          videoPreviewRef.current.srcObject = stream;
-          videoPreviewRef.current.play().catch(e => console.error('Video play failed:', e));
-        }
-      });
       addSystemMessage(`🖥️ Sharing: ${source.name}`);
       geminiLive.sendText(`[SYSTEM: Screen sharing is now active. Sharing: ${source.name}. You can see the user's screen.]`);
     } catch (e: any) {
@@ -536,21 +524,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         />
       )}
       
-      {/* Video preview */}
+      {/* Draggable Video Window */}
       {videoActive && (
-        <div className="mx-4 mt-3 relative rounded-lg overflow-hidden bg-black border border-clawd-border max-h-48">
-          <video ref={videoPreviewRef} autoPlay muted playsInline className="w-full h-full object-contain"
-            style={geminiLive.videoMode === 'camera' ? { transform: 'scaleX(-1)' } : {}} />
-          <span className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
-            {geminiLive.videoMode === 'camera' ? '📹 Camera' : '🖥️ Screen'}
-          </span>
-          {geminiLive.videoMode === 'screen' && (
-            <button onClick={switchScreenSource}
-              className="absolute top-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors">
-              Switch Source
-            </button>
-          )}
-        </div>
+        <DraggableVideoWindow
+          videoRef={videoPreviewRef}
+          videoStream={geminiLive.getVideoStream()}
+          videoMode={geminiLive.videoMode as 'camera' | 'screen'}
+          onClose={stopVideo}
+          onSwitchSource={geminiLive.videoMode === 'screen' ? switchScreenSource : undefined}
+        />
       )}
       
       {/* Messages */}
