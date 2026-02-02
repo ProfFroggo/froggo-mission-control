@@ -155,6 +155,17 @@ export const AGENTS: Record<string, AgentConfig> = {
     capabilities: ['tts', 'voice', 'audio'],
     model: 'anthropic/claude-sonnet-4',
   },
+  designer: {
+    id: 'designer',
+    name: 'Designer',
+    emoji: '🎨',
+    description: 'UI/UX design and visual creativity',
+    workspace: '/Users/worker/clawd-designer',
+    workspaceFiles: workspaceFiles('/Users/worker/clawd-designer'),
+    systemPromptPath: '/Users/worker/clawd-designer/AGENTS.md',
+    capabilities: ['design', 'ui', 'ux', 'visual'],
+    model: 'anthropic/claude-sonnet-4',
+  },
   // chat-agent removed - use froggo instead
 };
 

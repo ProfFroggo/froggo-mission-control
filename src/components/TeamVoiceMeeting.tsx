@@ -159,48 +159,8 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     return () => { try { recognition.abort(); } catch {} };
   }, []);
 
-  // ── Gateway streaming listeners ──
-  useEffect(() => {
-    const handleDelta = (data: any) => {
-      if (pendingMsgIdRef.current && data.delta) {
-        pendingContentRef.current += data.delta;
-        updateMessage(roomId, pendingMsgIdRef.current, { content: pendingContentRef.current });
-      }
-    };
-
-    const handleChat = (data: any) => {
-      if (!pendingMsgIdRef.current) return;
-      const content = data.message?.content?.[0]?.text || data.content || '';
-      if (content && (data.state === 'final' || content.length > pendingContentRef.current.length)) {
-        pendingContentRef.current = content;
-        updateMessage(roomId, pendingMsgIdRef.current, { content });
-      }
-      if (data.state === 'final') {
-        finishCurrentAgent();
-      }
-    };
-
-    const handleEnd = () => {
-      if (pendingMsgIdRef.current) finishCurrentAgent();
-    };
-
-    const handleError = (data: any) => {
-      if (pendingMsgIdRef.current) {
-        updateMessage(roomId, pendingMsgIdRef.current, {
-          content: `Error: ${data.message || data.error || 'Unknown error'}`,
-          streaming: false,
-        });
-        clearPending();
-        processNextAgent();
-      }
-    };
-
-    const u1 = gateway.on('chat.delta', handleDelta);
-    const u2 = gateway.on('chat', handleChat);
-    const u3 = gateway.on('chat.end', handleEnd);
-    const u4 = gateway.on('chat.error', handleError);
-    return () => { u1(); u2(); u3(); u4(); };
-  }, [roomId]);
+  // Streaming events handled via per-runId callbacks in sendChatWithCallbacks
+  // No global event listeners needed — each sendToAgent call gets isolated callbacks
 
   const clearPending = () => {
     pendingAgentRef.current = null;
@@ -327,14 +287,29 @@ Respond as ${agentConfig?.name || agentId}:`;
     });
 
     try {
-      const sessionKey = `room:${roomId}:${agentId}`;
+      const sessionKey = `agent:${agentId}:room:${roomId}`;
       const prompt = buildContext(agentId, userText);
-      const idempotencyKey = `voice-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      await gateway.request('chat.send', {
-        message: prompt,
-        sessionKey,
-        idempotencyKey,
+      await gateway.sendChatWithCallbacks(prompt, sessionKey, {
+        onDelta: (delta) => {
+          pendingContentRef.current += delta;
+          updateMessage(roomId, msgId, { content: pendingContentRef.current });
+        },
+        onMessage: (content) => {
+          pendingContentRef.current = content;
+          updateMessage(roomId, msgId, { content });
+        },
+        onEnd: () => {
+          finishCurrentAgent();
+        },
+        onError: (error) => {
+          updateMessage(roomId, msgId, {
+            content: `Error: ${error}`,
+            streaming: false,
+          });
+          clearPending();
+          processNextAgent();
+        },
       });
 
       setSessionKey(roomId, agentId, sessionKey);

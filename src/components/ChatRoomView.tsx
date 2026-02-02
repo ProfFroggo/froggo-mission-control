@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Mic } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Mic, Square, Play, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
@@ -9,13 +9,21 @@ import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 // import { showToast } from './Toast';
 
+interface AttachedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl?: string;
+}
+
 interface ChatRoomViewProps {
   roomId: string;
   onBack: () => void;
 }
 
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
-  const { rooms, addMessage, updateMessage, setSessionKey } = useChatRoomStore();
+  const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents } = useChatRoomStore();
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,11 +31,17 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const [voiceMode, setVoiceMode] = useState(false);
+  const [showManageMembers, setShowManageMembers] = useState(false);
+  const [attachments, setAttachments] = useState<AttachedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const pendingAgentRef = useRef<string | null>(null);
   const pendingMsgIdRef = useRef<string | null>(null);
   const pendingContentRef = useRef<string>('');
+  const abortRef = useRef(false);
+  const [stopped, setStopped] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -42,49 +56,103 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     }
   }, [input]);
 
-  // Listen for streaming events from spawned agents
-  useEffect(() => {
-    const handleDelta = (data: any) => {
-      if (pendingMsgIdRef.current && data.delta) {
-        pendingContentRef.current += data.delta;
-        updateMessage(roomId, pendingMsgIdRef.current, { content: pendingContentRef.current });
-      }
-    };
-
-    const handleChat = (data: any) => {
-      if (!pendingMsgIdRef.current) return;
-      const content = data.message?.content?.[0]?.text || data.content || '';
-      if (content && (data.state === 'final' || content.length > pendingContentRef.current.length)) {
-        pendingContentRef.current = content;
-        updateMessage(roomId, pendingMsgIdRef.current, { content });
-      }
-      if (data.state === 'final') {
-        finishAgentResponse(pendingContentRef.current);
-      }
-    };
-
-    const handleEnd = () => {
-      if (pendingMsgIdRef.current) {
-        finishAgentResponse(pendingContentRef.current);
-      }
-    };
-
-    const handleError = (data: any) => {
-      if (pendingMsgIdRef.current) {
-        updateMessage(roomId, pendingMsgIdRef.current, {
-          content: `Error: ${data.message || data.error || 'Unknown error'}`,
-          streaming: false,
+  // File handling
+  const handleFiles = (files: File[]) => {
+    const newAttachments: AttachedFile[] = [];
+    let loaded = 0;
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) return; // 10MB limit
+      const reader = new FileReader();
+      reader.onload = () => {
+        newAttachments.push({
+          id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          dataUrl: reader.result as string,
         });
-        clearPending();
-      }
-    };
+        loaded++;
+        if (loaded === files.length) {
+          setAttachments(prev => [...prev, ...newAttachments]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
-    const u1 = gateway.on('chat.delta', handleDelta);
-    const u2 = gateway.on('chat', handleChat);
-    const u3 = gateway.on('chat.end', handleEnd);
-    const u4 = gateway.on('chat.error', handleError);
-    return () => { u1(); u2(); u3(); u4(); };
-  }, [roomId]);
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return Image;
+    if (type.includes('pdf') || type.includes('document')) return FileText;
+    return File;
+  };
+
+  /** Process attachments into text content for the agent prompt */
+  const processAttachments = async (): Promise<string> => {
+    const parts: string[] = [];
+    for (const att of attachments) {
+      if (!att.dataUrl) continue;
+      const textExtensions = ['.txt', '.md', '.json', '.csv', '.js', '.ts', '.py', '.jsx', '.tsx', '.html', '.css', '.yml', '.yaml', '.xml', '.sh', '.sql'];
+      const isTextFile = att.type.startsWith('text/') || textExtensions.some(ext => att.name.toLowerCase().endsWith(ext));
+
+      if (isTextFile) {
+        try {
+          const base64 = att.dataUrl.split(',')[1];
+          const decoded = atob(base64);
+          parts.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
+        } catch {
+          parts.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
+        }
+      } else if (att.type.startsWith('image/')) {
+        try {
+          const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
+          await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
+        } catch {
+          parts.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
+        }
+      } else if (att.type === 'application/pdf') {
+        try {
+          const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
+          await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          parts.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
+        } catch {
+          parts.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
+        }
+      } else {
+        try {
+          const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
+          await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
+        } catch {
+          parts.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+        }
+      }
+    }
+    return parts.join('');
+  };
+
+  // Streaming events are now handled via per-runId callbacks in sendChatWithCallbacks
+  // No global event listeners needed — each sendToAgent call gets its own isolated callbacks
+
+  const stopAll = useCallback(() => {
+    abortRef.current = true;
+    abortControllerRef.current?.abort();
+    // Clean up any streaming messages
+    if (pendingMsgIdRef.current && room) {
+      const content = pendingContentRef.current || '*(stopped)*';
+      updateMessage(roomId, pendingMsgIdRef.current, { streaming: false, content });
+    }
+    setTypingAgents(new Set());
+    pendingAgentRef.current = null;
+    pendingMsgIdRef.current = null;
+    pendingContentRef.current = '';
+    setLoading(false);
+    setStopped(true);
+  }, [roomId, room, updateMessage]);
 
   const clearPending = () => {
     if (pendingAgentRef.current) {
@@ -100,23 +168,16 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     setLoading(false);
   };
 
-  const finishAgentResponse = (content: string) => {
-    if (pendingMsgIdRef.current) {
-      updateMessage(roomId, pendingMsgIdRef.current, { streaming: false, content });
-    }
-    const respondedAgent = pendingAgentRef.current;
-    clearPending();
-
-    // Check for @mentions in the response to trigger agent-to-agent chat
-    if (content && room) {
-      const mentions = extractMentions(content, room.agents);
-      if (mentions.length > 0 && respondedAgent) {
-        // Delay slightly for natural feel
-        setTimeout(() => {
-          routeToAgents(mentions, content, respondedAgent);
-        }, 1500);
-      }
-    }
+  /** Resume agents — re-send the last user message to all room agents */
+  const resumeAgents = async () => {
+    if (!room) return;
+    const lastUserMsg = [...room.messages].reverse().find(m => m.role === 'user');
+    if (!lastUserMsg) return;
+    setStopped(false);
+    setLoading(true);
+    const mentioned = extractMentions(lastUserMsg.content, room.agents);
+    const targets = mentioned.length > 0 ? mentioned : room.agents;
+    await routeToAgents(targets, lastUserMsg.content);
   };
 
   /** Extract @AgentName mentions from text */
@@ -150,108 +211,161 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
 
     return `You are ${agentConfig?.name || forAgent} in a multi-agent chat room called "${room.name}".
 Other participants: Kevin (human), ${otherAgents.join(', ')}.
-You can address others with @Name. Keep responses focused and conversational.
-If someone addressed you directly, respond to their point. Be concise.
+
+IMPORTANT RULES:
+1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.
+2. Do NOT repeat, echo, or paraphrase what other agents said. Add YOUR OWN unique perspective only.
+3. If you have nothing new to add, just say so briefly.
+4. Do NOT copy another agent's message structure or content.
+5. You can address others with @Name. Be concise and original.
 
 ## Conversation so far:
 ${lines.join('\n')}
 
-Respond as ${agentConfig?.name || forAgent}:`;
+Respond as ${agentConfig?.name || forAgent} (text only, no tools):`;
   };
 
-  /** Send a message to a specific agent */
-  const sendToAgent = async (agentId: string, prompt: string): Promise<void> => {
-    const msgId = `rm-${Date.now()}-${agentId}`;
-    pendingAgentRef.current = agentId;
-    pendingMsgIdRef.current = msgId;
-    pendingContentRef.current = '';
+  /** Send a message to a specific agent using per-runId callbacks.
+   *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout). */
+  const sendToAgent = (agentId: string, prompt: string): Promise<void> => {
+    return new Promise<void>(async (resolve) => {
+      const msgId = `rm-${Date.now()}-${agentId}`;
+      let content = '';
+      let settled = false;
 
-    setTypingAgents(prev => new Set(prev).add(agentId));
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        setTypingAgents(prev => { const n = new Set(prev); n.delete(agentId); return n; });
+        // Clear shared refs only if they still belong to this agent
+        if (pendingAgentRef.current === agentId) {
+          pendingAgentRef.current = null;
+          pendingMsgIdRef.current = null;
+          pendingContentRef.current = '';
+        }
+        resolve();
+      };
 
-    // Add placeholder message
-    addMessage(roomId, {
-      id: msgId,
-      role: 'agent',
-      agentId,
-      content: '',
-      timestamp: Date.now(),
-      streaming: true,
+      pendingAgentRef.current = agentId;
+      pendingMsgIdRef.current = msgId;
+      pendingContentRef.current = '';
+
+      setTypingAgents(prev => new Set(prev).add(agentId));
+
+      // Add placeholder message
+      addMessage(roomId, {
+        id: msgId,
+        role: 'agent',
+        agentId,
+        content: '',
+        timestamp: Date.now(),
+        streaming: true,
+      });
+
+      // Safety timeout — 30s
+      const timer = setTimeout(() => {
+        if (!settled) {
+          console.warn(`[Room] Agent ${agentId} timed out after 30s`);
+          updateMessage(roomId, msgId, { content: content || '', streaming: false });
+          settle();
+        }
+      }, 30000);
+
+      try {
+        const sessionKey = `agent:${agentId}:room:${roomId}`;
+
+        await gateway.sendChatWithCallbacks(prompt, sessionKey, {
+          onDelta: (delta) => {
+            content += delta;
+            pendingContentRef.current = content;
+            updateMessage(roomId, msgId, { content });
+          },
+          onMessage: (msg) => {
+            content = msg;
+            pendingContentRef.current = content;
+            updateMessage(roomId, msgId, { content });
+          },
+          onEnd: () => {
+            clearTimeout(timer);
+            // Finalize message
+            if (!content || !content.trim()) {
+              updateMessage(roomId, msgId, { streaming: false, content: '' });
+            } else {
+              updateMessage(roomId, msgId, { streaming: false, content });
+            }
+            // NOTE: Do NOT auto-route @mentions from agent responses.
+            // This causes echo/parrot cascades where agents copy each other.
+            // Only the user's messages trigger agent responses.
+            settle();
+          },
+          onError: (error) => {
+            clearTimeout(timer);
+            updateMessage(roomId, msgId, {
+              content: `Error: ${error}`,
+              streaming: false,
+            });
+            settle();
+          },
+        });
+
+        setSessionKey(roomId, agentId, sessionKey);
+      } catch (e: any) {
+        clearTimeout(timer);
+        updateMessage(roomId, msgId, {
+          content: `Error: ${e.message || 'Failed to reach agent'}`,
+          streaming: false,
+        });
+        settle();
+      }
     });
-
-    try {
-      // Use the gateway's chat.send with a specific session key for this agent in this room
-      const sessionKey = `room:${roomId}:${agentId}`;
-      const idempotencyKey = `room-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      await gateway.request('chat.send', {
-        message: prompt,
-        sessionKey,
-        idempotencyKey,
-      });
-
-      // Store session key for future use
-      setSessionKey(roomId, agentId, sessionKey);
-    } catch (e: any) {
-      updateMessage(roomId, msgId, {
-        content: `Error: ${e.message || 'Failed to reach agent'}`,
-        streaming: false,
-      });
-      clearPending();
-    }
   };
 
   /** Route message to specified agents */
   const routeToAgents = async (agentIds: string[], content: string, fromAgent?: string) => {
+    abortRef.current = false;
     for (const agentId of agentIds) {
-      if (loading) {
-        // Queue — wait for current to finish
-        await new Promise(resolve => {
-          const check = setInterval(() => {
-            if (!pendingMsgIdRef.current) {
-              clearInterval(check);
-              resolve(true);
-            }
-          }, 500);
-        });
-      }
+      if (abortRef.current) break;
       const prompt = buildContext(agentId, content, fromAgent);
       setLoading(true);
       await sendToAgent(agentId, prompt);
-      // Wait for this agent to finish before sending to next
-      await new Promise<void>(resolve => {
-        const check = setInterval(() => {
-          if (!pendingMsgIdRef.current) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 500);
-      });
     }
+    setLoading(false);
   };
 
   /** Handle user sending a message */
   const handleSend = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text && attachments.length === 0) return;
 
     if (!room) return;
 
-    // Add user message
+    // Process attachments
+    const fileContent = attachments.length > 0 ? await processAttachments() : '';
+    const fullContent = text + fileContent;
+
+    // Display message (show attachment badges to user)
+    const displayContent = text + (attachments.length > 0 ? `\n\n📎 ${attachments.map(a => a.name).join(', ')}` : '');
+
+    // Show image thumbnails in user message
+    const imageAtts = attachments.filter(a => a.type.startsWith('image/'));
+
     const userMsg: RoomMessage = {
       id: `rm-${Date.now()}-user`,
       role: 'user',
-      content: text,
+      content: displayContent,
       timestamp: Date.now(),
     };
     addMessage(roomId, userMsg);
     setInput('');
+    setAttachments([]);
 
     // Determine which agents to address
     const mentioned = extractMentions(text, room.agents);
-    const targets = mentioned.length > 0 ? mentioned : room.agents; // If no mentions, all agents respond
+    const targets = mentioned.length > 0 ? mentioned : room.agents;
 
+    setStopped(false);
     setLoading(true);
-    await routeToAgents(targets, text);
+    await routeToAgents(targets, fullContent);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -321,7 +435,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
       {/* Header */}
       <div className={`p-4 border-b flex items-center gap-3 ${
         isTeamMeeting
-          ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30'
+          ? 'bg-amber-500/10 border-amber-500/30'
           : 'bg-clawd-surface border-clawd-border'
       }`}>
         <button
@@ -333,7 +447,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
         </button>
         <div className="flex items-center gap-2">
           {isTeamMeeting ? (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
               <UsersRound size={20} className="text-white" />
             </div>
           ) : (
@@ -372,6 +486,32 @@ Respond as ${agentConfig?.name || forAgent}:`;
         )}
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Stop / Resume toggle */}
+          {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
+            <button
+              onClick={stopAll}
+              className="w-8 h-8 rounded-lg border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
+              title="Stop all agents"
+            >
+              <Square size={14} fill="currentColor" />
+            </button>
+          ) : stopped ? (
+            <button
+              onClick={resumeAgents}
+              className="w-8 h-8 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center"
+              title="Resume agents"
+            >
+              <Square size={12} fill="white" />
+            </button>
+          ) : null}
+          {/* Manage members */}
+          <button
+            onClick={() => setShowManageMembers(true)}
+            className="p-2 rounded-lg text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
+            title="Manage members"
+          >
+            <UserPlus size={18} />
+          </button>
           {/* Voice meeting toggle */}
           <button
             onClick={() => setVoiceMode(!voiceMode)}
@@ -414,7 +554,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
           <div className="text-center py-16 text-clawd-text-dim">
             {isTeamMeeting ? (
               <>
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
                   <UsersRound size={40} className="text-amber-500" />
                 </div>
                 <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started 🏢</p>
@@ -460,7 +600,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
             )}
           </div>
         ) : (
-          room.messages.map((msg, idx) => {
+          room.messages.filter(m => m.streaming || m.content?.trim()).map((msg, idx) => {
             const isUser = msg.role === 'user';
             const agentConfig = msg.agentId ? AGENTS[msg.agentId] : null;
             const theme = msg.agentId ? getAgentTheme(msg.agentId) : null;
@@ -475,7 +615,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
                 {/* Avatar */}
                 <div className={`flex-shrink-0 w-9 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-sm font-semibold shadow-md">
+                    <div className="w-9 h-9 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold">
                       K
                     </div>
                   ) : msg.agentId ? (
@@ -495,7 +635,7 @@ Respond as ${agentConfig?.name || forAgent}:`;
                   <div
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
-                        ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white rounded-tr-md shadow-md'
+                        ? 'bg-clawd-accent text-white rounded-tr-md'
                         : `bg-clawd-surface border ${theme?.border || 'border-clawd-border'} rounded-tl-md shadow-sm`
                     }`}
                   >
@@ -545,7 +685,51 @@ Respond as ${agentConfig?.name || forAgent}:`;
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-clawd-border bg-clawd-surface relative">
+      <div
+        className="p-4 border-t border-clawd-border bg-clawd-surface relative"
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(Array.from(e.dataTransfer.files)); }}
+      >
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => { if (e.target.files) handleFiles(Array.from(e.target.files)); e.target.value = ''; }}
+        />
+
+        {/* Attachment preview */}
+        {attachments.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {attachments.map((att) => {
+              const Icon = getFileIcon(att.type);
+              const isImage = att.type.startsWith('image/');
+              return (
+                <div key={att.id} className="relative group">
+                  {isImage && att.dataUrl ? (
+                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-clawd-border">
+                      <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg">
+                      <Icon size={16} className="text-clawd-accent" />
+                      <span className="text-sm truncate max-w-32">{att.name}</span>
+                      <span className="text-xs text-clawd-text-dim">{(att.size / 1024).toFixed(1)}KB</span>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => removeAttachment(att.id)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* @ Mention autocomplete */}
         {showMentions && filteredAgents.length > 0 && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl overflow-hidden">
@@ -568,6 +752,13 @@ Respond as ${agentConfig?.name || forAgent}:`;
         )}
 
         <div className="flex items-end gap-3">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors"
+            title="Attach file"
+          >
+            <Paperclip size={20} />
+          </button>
           <button
             onClick={() => setShowMentions(!showMentions)}
             className={`p-3 rounded-xl transition-all ${
@@ -592,14 +783,57 @@ Respond as ${agentConfig?.name || forAgent}:`;
 
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() && attachments.length === 0}
             className="p-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
           >
-            {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+            <Send size={20} />
           </button>
         </div>
       </div>
       </>
+      )}
+      {/* Manage Members Modal */}
+      {showManageMembers && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowManageMembers(false)}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+              <h3 className="font-semibold">Manage Members</h3>
+              <button onClick={() => setShowManageMembers(false)} className="text-clawd-text-dim hover:text-clawd-text text-lg">✕</button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
+              {Object.entries(AGENTS).map(([id, agent]) => {
+                const inRoom = room.agents.includes(id);
+                const theme = getAgentTheme(id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      const updated = inRoom
+                        ? room.agents.filter(a => a !== id)
+                        : [...room.agents, id];
+                      if (updated.length > 0) updateRoomAgents(roomId, updated);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                      inRoom ? 'bg-clawd-accent/10 ring-1 ring-clawd-accent/30' : 'hover:bg-clawd-bg'
+                    }`}
+                  >
+                    <AgentAvatar agentId={id} size="sm" />
+                    <div className="flex-1 text-left">
+                      <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-clawd-text-dim'}`}>{agent.name}</span>
+                      <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-green-500/20 text-green-400' : 'bg-clawd-bg text-clawd-text-dim'}`}>
+                      {inRoom ? 'In room' : 'Add'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="p-3 border-t border-clawd-border text-center text-xs text-clawd-text-dim">
+              {room.agents.length} agent{room.agents.length !== 1 ? 's' : ''} in room
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

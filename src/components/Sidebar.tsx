@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal, Star, Users, Mic } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, Loader } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
+import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 
 // X logo as SVG component
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -45,7 +46,6 @@ const staticNavItems = [
   { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
   { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
   { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '' },
-  { id: 'starred' as View, icon: Star, label: 'Starred', shortcut: '⌘⇧S' },
 ];
 
 interface SystemStatus {
@@ -59,6 +59,9 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   const [sysStatus, setSysStatus] = useState<SystemStatus>({ watcherRunning: false, killSwitchOn: true });
   const { connected, tasks } = useStore();
   const { panels: panelConfig, openEditModal } = usePanelConfigStore();
+  const { focusMode, setFocusMode } = useFocusMode();
+  const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
+  const [inProgressTasks, setInProgressTasks] = useState(0);
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
 
@@ -108,7 +111,10 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     const check = async () => {
       try {
         const result = await (window as any).clawdbot?.system?.status();
-        if (result?.success) setSysStatus(result.status);
+        if (result?.success) {
+          setSysStatus(result.status);
+          setInProgressTasks(result.status.inProgressTasks || 0);
+        }
       } catch {}
     };
     check();
@@ -119,6 +125,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   const unreadNotifications = inboxCount;
 
   return (
+    <>
     <aside 
       className={`bg-clawd-surface border-r border-clawd-border flex flex-col transition-all duration-300 ease-in-out ${
         expanded ? 'w-52' : 'w-16'
@@ -276,6 +283,29 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           )}
         </div>
 
+        {/* Focus mode + counters */}
+        {expanded && (
+          <div className="flex items-center gap-2 px-2 py-1">
+            {focusMode && (
+              <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
+            )}
+            <div className="flex items-center gap-2 ml-auto">
+              {inboxCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-yellow-400" title={`${inboxCount} pending inbox items`}>
+                  <Inbox size={12} />
+                  <span className="tabular-nums">{inboxCount}</span>
+                </span>
+              )}
+              {inProgressTasks > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-400" title={`${inProgressTasks} tasks in progress`}>
+                  <Loader size={12} className="animate-spin" />
+                  <span className="tabular-nums">{inProgressTasks}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Line 2: Action icons in a compact horizontal row */}
         <div className={`flex items-center ${expanded ? 'justify-between' : 'justify-center'} gap-0.5 px-1`}>
           <button
@@ -328,5 +358,14 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         </div>
       </div>
     </aside>
+
+    {/* Focus Mode Selector */}
+    <FocusModeSelector
+      isOpen={focusSelectorOpen}
+      onClose={() => setFocusSelectorOpen(false)}
+      currentMode={focusMode}
+      onSelectMode={setFocusMode}
+    />
+    </>
   );
 }

@@ -10,8 +10,7 @@ interface CreateRoomModalProps {
   onCreate: (name: string, agents: string[]) => void;
 }
 
-// Agents available for rooms (exclude froggo — he's the orchestrator)
-const ROOM_AGENTS = Object.values(AGENTS).filter(a => a.id !== 'froggo');
+const ROOM_AGENTS = Object.values(AGENTS);
 
 export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoomModalProps) {
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
@@ -43,7 +42,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-clawd-border">
           <div className="flex items-center gap-3">
@@ -61,7 +60,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
         </div>
 
         {/* Body */}
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Room Name */}
           <div>
             <label className="block text-sm font-medium mb-2">Room Name (optional)</label>

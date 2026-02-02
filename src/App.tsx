@@ -294,7 +294,6 @@ function App() {
               setCurrentView('library');
               break;
             // Note: ⌘⇧D is now theme toggle
-            // Note: ⌘⇧S is now starred messages (handled above)
           }
         }
       }
@@ -315,13 +314,7 @@ function App() {
       <NetworkStatus />
 
       <div className="flex h-screen bg-clawd-bg">
-        {/* Top bar with call button */}
-        <ErrorBoundary panelName="Top Bar">
-          <TopBar 
-            onNavigate={setCurrentView} 
-            sidebarWidth={sidebarWidth}
-          />
-        </ErrorBoundary>
+        {/* TopBar removed */}
 
         {/* Sidebar */}
         <ErrorBoundary panelName="Sidebar">
@@ -336,7 +329,7 @@ function App() {
         {/* Main content - each panel already wrapped via ProtectedPanels */}
         <main 
           id="main-content"
-          className="flex-1 overflow-hidden pt-12 relative z-0"
+          className="flex-1 overflow-hidden relative z-0"
           role="main"
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
         >

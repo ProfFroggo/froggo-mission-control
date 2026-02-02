@@ -561,7 +561,7 @@ export const useStore = create<Store>()(
               status: t.status as TaskStatus,
               priority: t.priority as TaskPriority | undefined,
               project: t.project || 'General',
-              assignedTo: t.assigned_to,
+              assignedTo: t.assigned_to === 'main' ? 'froggo' : t.assigned_to,
               reviewerId: t.reviewerId || t.reviewer_id || undefined,
               reviewStatus: t.reviewStatus || t.review_status || undefined,
               planningNotes: t.planning_notes || t.planningNotes || undefined,
@@ -955,9 +955,7 @@ export const useStore = create<Store>()(
             ),
           }));
 
-          // Send execution trigger to Froggo (brain) in main session
-          const triggerMessage = `[TASK_START] taskId: ${taskId}`;
-          await gateway.sendToMain(triggerMessage);
+          // Task start is handled internally — no need to send to Discord
 
           get().addActivity({
             type: 'agent',
