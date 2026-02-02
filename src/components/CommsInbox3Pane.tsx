@@ -45,6 +45,7 @@ interface Folder {
 interface ConversationItem {
   id: string;
   platform: string;
+  account?: string; // email address for email messages
   from?: string;
   name?: string;
   subject?: string;
@@ -329,7 +330,7 @@ function CenterPane({
                   : 'border-l-transparent hover:bg-clawd-surface/50'
               } ${!conv.is_read ? 'bg-clawd-surface/30' : ''}`}
             >
-              <div className="flex items-start gap-2 overflow-hidden">
+              <div className="flex items-start gap-2 overflow-hidden w-full">
                 {/* Unread dot */}
                 <div className="mt-2 flex-shrink-0 w-2">
                   {!conv.is_read && <div className="w-2 h-2 bg-clawd-accent rounded-full" />}
@@ -846,10 +847,7 @@ export default function CommsInbox3Pane() {
     return account?.platform || null;
   };
 
-  // const getAccountAddress = (accountId: string | null): string | undefined => {
-  //   if (!accountId) return undefined;
-  //   return accounts.find(a => a.id === accountId)?.address;
-  // };
+  // getAccountAddress removed - address lookup done inline in filterMessages
 
   // Filter and sort messages for display
   const filterMessages = useCallback((
@@ -863,11 +861,13 @@ export default function CommsInbox3Pane() {
     // Account filter
     if (accountId) {
       const platform = getAccountPlatform(accountId);
-  //     const __address = getAccountAddress(accountId);
+      const address = accounts.find(a => a.id === accountId)?.address;
       filtered = filtered.filter(m => {
         if (m.platform !== platform) return false;
-        // For email, further filter by account address if possible
-        // (backend may tag messages with account info)
+        // For email, further filter by account address
+        if (platform === 'email' && address && m.account) {
+          return m.account === address;
+        }
         return true;
       });
     }
@@ -897,7 +897,7 @@ export default function CommsInbox3Pane() {
     });
 
     return filtered;
-  }, []);
+  }, [accounts]);
 
   // Compute counts
   const computeCounts = useCallback((msgs: ConversationItem[]) => {
@@ -906,7 +906,15 @@ export default function CommsInbox3Pane() {
 
     for (const account of accounts) {
       const platform = account.platform;
-      aCounts[account.id] = msgs.filter(m => m.platform === platform && !m.is_read).length;
+      aCounts[account.id] = msgs.filter(m => {
+        if (m.platform !== platform || m.is_read) return false;
+        // For email accounts, match by account address
+        if (platform === 'email' && account.address && m.account) {
+          return m.account === account.address;
+        }
+        // For non-email or if no account field, just match platform
+        return platform !== 'email' || !account.address;
+      }).length;
     }
 
     for (const folder of FOLDERS) {
@@ -919,7 +927,7 @@ export default function CommsInbox3Pane() {
 
     setAccountCounts(aCounts);
     setFolderCounts(fCounts);
-  }, []);
+  }, [accounts]);
 
   // Load messages from backend
   const loadMessages = useCallback(async (forceRefresh = false) => {

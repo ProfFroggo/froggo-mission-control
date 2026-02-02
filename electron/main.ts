@@ -4852,6 +4852,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
       return cached.map((m: any) => ({
         id: m.external_id,
         platform: m.platform,
+        account: m.account || (m.metadata && typeof m.metadata === 'object' ? m.metadata.account : undefined),
         name: m.sender_name || m.sender,
         from: m.sender,
         preview: m.preview,
@@ -4901,6 +4902,7 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
       preview: m.preview,
       timestamp: m.timestamp,
       is_urgent: m.isUrgent || false,
+      ...(m.account ? { metadata: JSON.stringify({ account: m.account }) } : {}),
     }));
     
     // Write via stdin to comms-bulk
@@ -5165,7 +5167,19 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     
     // ===== EMAIL (via gog gmail) =====
     safeLog.log('[Messages] Fetching emails...');
-    const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+    // Read email accounts from settings, fallback to defaults
+    let emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+    try {
+      const settingsPath = path.join(os.homedir(), 'clawd', 'config', 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        const settingsContent = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        if (settingsContent.emailAccounts && Array.isArray(settingsContent.emailAccounts)) {
+          emailAccounts = settingsContent.emailAccounts.map((a: any) => a.email || a.address);
+        }
+      }
+    } catch (e) {
+      safeLog.error('[Messages] Failed to read email accounts from settings:', e);
+    }
     for (const acct of emailAccounts) {
       const emailRaw = await runCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 5`, 15000);
       if (emailRaw) {
@@ -5177,6 +5191,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
             allMessages.push({
               id: `email-${email.id || email.ID}`,
               platform: 'email',
+              account: acct,
               name: email.from?.split('<')[0]?.trim() || email.From?.split('<')[0]?.trim() || 'Unknown',
               preview: email.subject || email.Subject || email.snippet || '',
               timestamp: email.date || email.Date || new Date().toISOString(),
@@ -5711,7 +5726,19 @@ async function runImportantEmailCheck() {
   const results: ImportantEmailResult[] = [];
   const newInboxItems: string[] = [];
   
-  const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+  // Read email accounts from settings, fallback to defaults
+  let emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+  try {
+    const settingsPath = path.join(os.homedir(), 'clawd', 'config', 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const sc = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      if (sc.emailAccounts && Array.isArray(sc.emailAccounts)) {
+        emailAccounts = sc.emailAccounts.map((a: any) => a.email || a.address);
+      }
+    }
+  } catch (e) {
+    safeLog.error('[Email] Failed to read email accounts from settings:', e);
+  }
   
   for (const acct of emailAccounts) {
     try {
