@@ -751,15 +751,35 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       return;
     }
 
-    this.ws.send(JSON.stringify({
-      toolResponse: {
-        functionResponses: functionResponses.map(r => ({
+    try {
+      // Gemini Live API expects functionResponses with 'response' as a Struct (plain object).
+      // Ensure all values are JSON-serializable and not circular/undefined.
+      const sanitized = functionResponses.map(r => {
+        let resp = r.response;
+        // Ensure response is a plain object - stringify and re-parse to strip non-serializable values
+        try {
+          resp = JSON.parse(JSON.stringify(resp ?? { result: 'ok' }));
+        } catch {
+          resp = { result: String(resp) };
+        }
+        return {
           id: r.id,
           name: r.name,
-          response: r.response,
-        })),
-      },
-    }));
+          response: resp,
+        };
+      });
+
+      const msg = JSON.stringify({
+        toolResponse: {
+          functionResponses: sanitized,
+        },
+      });
+      console.log('[GeminiLive] Sending tool response:', msg.slice(0, 500));
+      this.ws.send(msg);
+    } catch (err: any) {
+      console.error('[GeminiLive] Failed to send tool response:', err);
+      this.emit('error', { message: `Tool response failed: ${err.message}` });
+    }
   }
 
   // ── Text Input ──

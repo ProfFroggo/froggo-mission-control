@@ -13,7 +13,7 @@
         "main",
         "froggo"
       ],
-      "clawdAgentId": "main"
+      "clawdAgentId": "froggo"
     },
     "froggo": {
       "role": "Orchestrator",
@@ -28,7 +28,7 @@
         "main",
         "froggo"
       ],
-      "clawdAgentId": "main"
+      "clawdAgentId": "froggo"
     },
     "coder": {
       "role": "Software Engineer",
@@ -195,7 +195,7 @@
         "twitter",
         "social"
       ],
-      "clawdAgentId": "social_media_manager",
+      "clawdAgentId": "social-manager",
       "tools": [
         "bird",
         "web_search"
@@ -211,7 +211,7 @@
         "scheduling": 0.85
       },
       "escalation": {
-        "brand_crisis": "main",
+        "brand_crisis": "froggo",
         "technical_issues": "coder",
         "research_deep_dive": "researcher",
         "long_form_content": "writer"
