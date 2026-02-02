@@ -12,7 +12,7 @@ import {
   Inbox, Star, Archive, AlertTriangle,
   RefreshCw, ChevronRight, ChevronDown, Search,
   Reply, ReplyAll, Forward, MoreHorizontal,
-  Sparkles, X, Paperclip, Eye
+  Sparkles, X, Paperclip, Eye, Check, MailOpen
 } from 'lucide-react';
 import { showToast } from './Toast';
 
@@ -107,7 +107,7 @@ function buildAccounts(settingsEmailAccounts?: Array<{ id: string; label: string
 const ACCOUNTS: Account[] = buildAccounts();
 
 const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: (m) => !m.is_starred },
+  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: () => true },
   { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
   { id: 'unreplied', label: 'Unreplied', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
   { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
@@ -260,6 +260,8 @@ function CenterPane({
   selectedId,
   onSelect,
   onToggleStar,
+  onArchive,
+  onToggleRead,
   loading,
   searchQuery,
   onSearchChange,
@@ -271,6 +273,8 @@ function CenterPane({
   selectedId: string | null;
   onSelect: (c: ConversationItem) => void;
   onToggleStar: (id: string) => void;
+  onArchive: (c: ConversationItem) => void;
+  onToggleRead: (c: ConversationItem) => void;
   loading: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -375,15 +379,32 @@ function CenterPane({
                   </div>
                 </div>
 
-                {/* Star toggle */}
-                <button
-                  onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                  className={`p-1 rounded hover:bg-clawd-border flex-shrink-0 ${
-                    conv.is_starred ? 'text-yellow-400' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
-                  }`}
-                >
-                  <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
-                </button>
+                {/* Action buttons */}
+                <div className="flex flex-col gap-0.5 flex-shrink-0">
+                  <button
+                    onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
+                    className={`p-1 rounded hover:bg-clawd-border ${
+                      conv.is_starred ? 'text-yellow-400' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
+                    }`}
+                    title={conv.is_starred ? 'Unstar' : 'Star'}
+                  >
+                    <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); onArchive(conv); }}
+                    className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100"
+                    title="Archive"
+                  >
+                    <Archive size={14} />
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
+                    className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100"
+                    title={conv.is_read ? 'Mark unread' : 'Mark read'}
+                  >
+                    {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
+                  </button>
+                </div>
               </div>
             </button>
           ))
@@ -1012,6 +1033,34 @@ export default function CommsInbox3Pane() {
     loadDetail();
   }, [selectedConversation?.id]);
 
+  // Archive conversation
+  const handleArchive = async (conv: ConversationItem) => {
+    const sessionKey = `${conv.platform}:${conv.from || conv.name || ''}`;
+    try {
+      await (window as any).clawdbot?.conversations?.archive?.(sessionKey);
+      setAllMessages(prev => prev.filter(m => m.id !== conv.id));
+      if (selectedConversation?.id === conv.id) {
+        setSelectedConversation(null);
+      }
+      showToast('success', 'Archived', `${conv.name || conv.from || 'Conversation'} archived`);
+    } catch (e: any) {
+      showToast('error', 'Archive failed', e.message);
+    }
+  };
+
+  // Toggle read/unread
+  const handleToggleRead = async (conv: ConversationItem) => {
+    const newReadState = !conv.is_read;
+    try {
+      await (window as any).clawdbot?.inbox?.markRead?.(conv.id, newReadState);
+      setAllMessages(prev => prev.map(m =>
+        m.id === conv.id ? { ...m, is_read: newReadState } : m
+      ));
+    } catch (e) {
+      console.error('Failed to toggle read:', e);
+    }
+  };
+
   // Toggle star
   const handleToggleStar = async (id: string) => {
     try {
@@ -1043,6 +1092,7 @@ export default function CommsInbox3Pane() {
           timestamp: 'just now',
           fromMe: true,
         }]);
+        showToast('success', 'Sent', `Reply sent to ${recipient}`);
       } else {
         showToast('error', 'Send failed', result?.error || 'Unknown error');
       }
@@ -1074,6 +1124,8 @@ export default function CommsInbox3Pane() {
         selectedId={selectedConversation?.id || null}
         onSelect={setSelectedConversation}
         onToggleStar={handleToggleStar}
+        onArchive={handleArchive}
+        onToggleRead={handleToggleRead}
         loading={loading}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
