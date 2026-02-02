@@ -284,6 +284,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
     filter: (criteria: any) => ipcRenderer.invoke('inbox:filter', criteria),
     getSuggestions: (type: 'senders' | 'projects' | 'tags' | 'platforms') => 
       ipcRenderer.invoke('inbox:getSuggestions', type),
+    checkHistory: () => ipcRenderer.invoke('inbox:check-history'),
+    triggerBackfill: (days?: number) => ipcRenderer.invoke('inbox:trigger-backfill', days),
   },
   // VIP Sender Management
   vip: {
@@ -396,11 +398,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
     recent: (limit?: number, includeArchived?: boolean) => ipcRenderer.invoke('messages:recent', limit, includeArchived),
     context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
     send: (platform: string, to: string, message: string) => ipcRenderer.invoke('messages:send', { platform, to, message }),
-  },
-  // Inbox historical data
-  inbox: {
-    checkHistory: () => ipcRenderer.invoke('inbox:check-history'),
-    triggerBackfill: (days?: number) => ipcRenderer.invoke('inbox:trigger-backfill', days),
   },
   // Conversation management (archive/unarchive)
   conversations: {
