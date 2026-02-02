@@ -34,6 +34,7 @@ interface ChatRoomState {
   addMessage: (roomId: string, message: RoomMessage) => void;
   updateMessage: (roomId: string, messageId: string, updates: Partial<RoomMessage>) => void;
   setSessionKey: (roomId: string, agentId: string, sessionKey: string) => void;
+  updateRoomAgents: (roomId: string, agents: string[]) => void;
   getActiveRoom: () => ChatRoom | null;
 }
 
@@ -100,6 +101,14 @@ export const useChatRoomStore = create<ChatRoomState>()(
             r.id === roomId
               ? { ...r, sessionKeys: { ...r.sessionKeys, [agentId]: sessionKey } }
               : r
+          ),
+        }));
+      },
+
+      updateRoomAgents: (roomId: string, agents: string[]) => {
+        set(state => ({
+          rooms: state.rooms.map(r =>
+            r.id === roomId ? { ...r, agents, updatedAt: Date.now() } : r
           ),
         }));
       },

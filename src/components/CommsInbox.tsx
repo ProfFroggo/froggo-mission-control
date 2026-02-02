@@ -93,7 +93,7 @@ function BulkActionsToolbar({
 
 // Cache configuration
 const CACHE_KEY = 'comms-inbox-cache';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 20 * 1000; // 20 seconds - keep inbox live
 
 interface CacheData {
   timestamp: number;
@@ -811,8 +811,8 @@ export default function CommsInbox() {
       setFromCache(true);
       setLoading(false);
       
-      // Background refresh if local cache is older than 1 minute
-      if (Date.now() - localCache.timestamp > 60 * 1000) {
+      // Background refresh if local cache is older than 15 seconds
+      if (Date.now() - localCache.timestamp > 15 * 1000) {
         setRefreshing(true);
         const { messages, fromCache: backendCache } = await fetchMessages();
         if (messages && isMounted.current) {

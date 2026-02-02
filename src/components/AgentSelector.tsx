@@ -7,19 +7,23 @@ export interface ChatAgent {
   id: string;
   name: string;
   role: string;
-  sessionKey: string;
+  sessionKey: string; // Persistent session spawned by dashboard
   dbSessionKey: string; // for local DB storage
 }
 
 export const CHAT_AGENTS: ChatAgent[] = [
-  { id: 'froggo',   name: 'Froggo',       role: 'Main Assistant',        sessionKey: 'agent:froggo:dashboard',     dbSessionKey: 'chat:main' },
-  { id: 'coder',    name: 'Coder',         role: 'Software Engineer',     sessionKey: 'agent:coder:dashboard',      dbSessionKey: 'chat:coder' },
-  { id: 'researcher', name: 'Researcher',  role: 'Research Analyst',      sessionKey: 'agent:researcher:dashboard', dbSessionKey: 'chat:researcher' },
-  { id: 'writer',   name: 'Writer',        role: 'Content Writer',        sessionKey: 'agent:writer:dashboard',     dbSessionKey: 'chat:writer' },
-  { id: 'chief',    name: 'Chief',         role: 'Project Manager',       sessionKey: 'agent:chief:dashboard',      dbSessionKey: 'chat:chief' },
-  { id: 'hr',       name: 'HR',            role: 'Human Resources',       sessionKey: 'agent:hr:dashboard',         dbSessionKey: 'chat:hr' },
-  { id: 'clara',    name: 'Clara',         role: 'Personal Assistant',    sessionKey: 'agent:clara:dashboard',      dbSessionKey: 'chat:clara' },
-  { id: 'social_media_manager', name: 'Social Media', role: 'Social Media Manager', sessionKey: 'agent:social_media_manager:dashboard', dbSessionKey: 'chat:social_media_manager' },
+  { id: 'froggo',          name: 'Froggo',          role: 'Main Assistant',          sessionKey: 'agent:froggo:dashboard',          dbSessionKey: 'chat:main' },
+  { id: 'coder',           name: 'Coder',           role: 'Software Engineer',       sessionKey: 'agent:coder:dashboard',           dbSessionKey: 'chat:coder' },
+  { id: 'researcher',      name: 'Researcher',      role: 'Research Analyst',        sessionKey: 'agent:researcher:dashboard',      dbSessionKey: 'chat:researcher' },
+  { id: 'writer',          name: 'Writer',           role: 'Content Writer',          sessionKey: 'agent:writer:dashboard',          dbSessionKey: 'chat:writer' },
+  { id: 'chief',           name: 'Chief',            role: 'Project Manager',         sessionKey: 'agent:chief:dashboard',           dbSessionKey: 'chat:chief' },
+  { id: 'lead-engineer',   name: 'Lead Engineer',    role: 'Technical Co-founder',    sessionKey: 'agent:lead-engineer:dashboard',   dbSessionKey: 'chat:lead-engineer' },
+  { id: 'hr',              name: 'HR',               role: 'Agent Management',        sessionKey: 'agent:hr:dashboard',              dbSessionKey: 'chat:hr' },
+  { id: 'clara',           name: 'Clara',            role: 'Quality Auditor',         sessionKey: 'agent:clara:dashboard',           dbSessionKey: 'chat:clara' },
+  { id: 'designer',        name: 'Designer',         role: 'UI/Graphic Designer',     sessionKey: 'agent:designer:dashboard',        dbSessionKey: 'chat:designer' },
+  { id: 'growth-director', name: 'Growth Director',  role: 'Growth & Marketing',      sessionKey: 'agent:growth-director:dashboard', dbSessionKey: 'chat:growth-director' },
+  { id: 'social-manager',  name: 'Social Manager',   role: 'Social Media Manager',    sessionKey: 'agent:social-manager:dashboard',  dbSessionKey: 'chat:social-manager' },
+  { id: 'voice',           name: 'Voice',            role: 'Voice & Call Handler',     sessionKey: 'agent:voice:dashboard',           dbSessionKey: 'chat:voice' },
 ];
 
 interface AgentSelectorProps {

@@ -11,6 +11,7 @@ import { setupNotificationEvents } from './notification-events';
 import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
 import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
+import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 // const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
 
 // ============== AGENT REGISTRY ==============
@@ -588,6 +589,11 @@ app.whenReady().then(() => {
   if (mainWindow) {
     stopNotificationEvents = setupNotificationEvents(mainWindow);
   }
+  
+  // Initialize persistent dashboard agent sessions
+  initializeDashboardAgents().catch(err => {
+    safeLog.error('[Main] Failed to initialize dashboard agents:', err);
+  });
 });
 
 app.on('window-all-closed', () => {
@@ -614,6 +620,8 @@ app.on('will-quit', () => {
     stopNotificationEvents();
     stopNotificationEvents = null;
   }
+  // Clean up dashboard agents
+  shutdownDashboardAgents();
 });
 
 app.on('activate', () => {
@@ -4801,7 +4809,7 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
 // ============== MESSAGES IPC HANDLERS ==============
 
 // Comms cache configuration
-const COMMS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const COMMS_CACHE_TTL_MS = 30 * 1000; // 30 seconds - keep inbox live for ADHD-friendly real-time updates
 const FROGGO_DB_PATH = '/Users/worker/.local/bin/froggo-db';
 
 // Helper to run command and return promise (shared)
@@ -4963,17 +4971,17 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     // ===== WHATSAPP (direct DB query - wacli CLI has bugs) =====
     safeLog.log('[Messages] Fetching WhatsApp messages from DB...');
     const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
-    // Get recent INCOMING messages from DM chats (not groups)
+    // Get recent INCOMING messages from DM chats AND group chats
     const waQuery = `
       SELECT m.chat_jid, m.chat_name, m.text, m.ts, COALESCE(c.push_name, c.full_name, c.business_name) as contact_name
       FROM messages m
       LEFT JOIN contacts c ON m.chat_jid = c.jid
       WHERE m.from_me = 0 
-        AND m.chat_jid LIKE '%@s.whatsapp.net'
+        AND (m.chat_jid LIKE '%@s.whatsapp.net' OR m.chat_jid LIKE '%@g.us')
         AND m.text IS NOT NULL AND m.text != ''
       GROUP BY m.chat_jid
       ORDER BY m.ts DESC
-      LIMIT 10
+      LIMIT 15
     `;
     const waRaw = await runCmd(`sqlite3 "${waDbPath}" "${waQuery.replace(/\n/g, ' ')}" -json`, 10000);
     safeLog.log('[Messages] WhatsApp DB result:', waRaw ? `${waRaw.length} chars` : 'EMPTY');
@@ -5009,6 +5017,29 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     // ===== TELEGRAM (from cache - tgcli is slow) =====
     safeLog.log('[Messages] Fetching Telegram from cache...');
     const tgCachePath = path.join(os.homedir(), 'clawd', 'data', 'telegram-cache.json');
+    
+    // Filter out Telegram spam/noise groups - only show work-relevant chats
+    const TELEGRAM_SPAM_KEYWORDS = [
+      'bc.game', 'casino', 'betting', 'airdrop', 'giveaway',
+      'crypto wizard', 'alpha private', 'vip lounge', 'mystic dao',
+      'slerf', 'pepe', 'zeus community', 'zeus army', 'ponke',
+      'degen', 'memecoin', 'shitcoin', '$jug', '$sol',
+    ];
+    const TELEGRAM_SPAM_NAMES = new Set([
+      'BC.GAME Official', 'Mystic Dao', 'Crypto Wizards Lounge',
+      "Pepe's Dog Zeus Community #CC8", 'Alpha Private Vip Lounge 🐳 🌐',
+      'SlerfTheSloth', 'ZEUS Army (COORDINATION GROUP)',
+    ]);
+    
+    const isTelegramSpam = (chatName: string, preview: string): boolean => {
+      const nameLower = (chatName || '').toLowerCase();
+      const previewLower = (preview || '').toLowerCase();
+      // Exact name match
+      if (TELEGRAM_SPAM_NAMES.has(chatName)) return true;
+      // Keyword match in name or preview
+      return TELEGRAM_SPAM_KEYWORDS.some(kw => nameLower.includes(kw) || previewLower.includes(kw));
+    };
+    
     try {
       if (fs.existsSync(tgCachePath)) {
         const tgCacheRaw = fs.readFileSync(tgCachePath, 'utf-8');
@@ -5020,8 +5051,15 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
         
         safeLog.log(`[Messages] Telegram cache: ${tgCache.chats?.length || 0} chats, age: ${Math.round(cacheAge / 60000)}min${isStale ? ' (STALE)' : ''}`);
         
+        let spamFiltered = 0;
         for (const chat of (tgCache.chats || [])) {
           if (!chat.lastMessage?.text || chat.lastMessage.text === '(no recent messages)') continue;
+          
+          // Filter out spam groups
+          if (isTelegramSpam(chat.name || '', chat.lastMessage.text || '')) {
+            spamFiltered++;
+            continue;
+          }
           
           // Build timestamp
           let timestamp = chat.lastMessage.timestamp;
@@ -5040,6 +5078,9 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
             isStale: isStale,
             chatType: chat.type,
           });
+        }
+        if (spamFiltered > 0) {
+          safeLog.log(`[Messages] Filtered ${spamFiltered} Telegram spam groups`);
         }
       } else {
         safeLog.log('[Messages] Telegram cache not found, run telegram-cache.js to populate');
@@ -7340,5 +7381,16 @@ ipcMain.handle('exportBackup:stats', async () => {
   } catch (error: any) {
     safeLog.error('[ExportBackup] Stats error:', error);
     return { success: false, stats: null, error: error.message };
+  }
+});
+
+// Get dashboard agent sessions status
+ipcMain.handle('dashboardAgents:status', async () => {
+  try {
+    const status = getDashboardAgentsStatus();
+    return { success: true, agents: status };
+  } catch (error: any) {
+    safeLog.error('[DashboardAgents] Status error:', error);
+    return { success: false, agents: [], error: error.message };
   }
 });

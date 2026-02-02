@@ -15,6 +15,7 @@ import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
+import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
@@ -183,6 +184,17 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         if (!data.text?.trim()) return;
         const role = data.role === 'model' ? 'assistant' : 'user';
         const text = data.text.trim();
+        
+        // Log to gateway for session persistence
+        gateway.request('chat.inject', {
+          sessionKey: gateway.getSessionKey(),
+          role,
+          message: text,
+          label: 'voice'
+        }).catch(err => {
+          console.warn('[VoiceChat] Failed to log to gateway:', err);
+        });
+        
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last?.role === role && Date.now() - last.timestamp < 3000) {
@@ -375,6 +387,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const handleAgentSwitch = async (agent: ChatAgent) => {
     if (callActive) await endCall();
     setSelectedAgent(agent);
+    
+    // Update gateway session for persistence
+    gateway.setSessionKey(agent.sessionKey);
   };
   
   // ── Waveform ──

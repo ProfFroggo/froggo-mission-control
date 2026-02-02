@@ -61,6 +61,7 @@ export default function ChatPanel() {
   const recognitionRef = useRef<any>(null);
   const currentResponseRef = useRef<string>('');
   const currentMsgIdRef = useRef<string>('');
+  const currentRunIdRef = useRef<string>('');
 
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,7 +73,7 @@ export default function ChatPanel() {
     // Save current messages to cache
     messageCacheRef.current.set(selectedAgent.id, messages);
     
-    // Update gateway session key
+    // Switch to the persistent agent session
     gateway.setSessionKey(agent.sessionKey);
     setSelectedAgent(agent);
     setLoading(false);
@@ -398,7 +399,7 @@ export default function ChatPanel() {
         }
         
         setLoading(false);
-        currentMsgIdRef.current = '';
+        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         currentResponseRef.current = '';
       }
     };
@@ -478,7 +479,7 @@ export default function ChatPanel() {
         }
         
         setLoading(false);
-        currentMsgIdRef.current = '';
+        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         currentResponseRef.current = '';
       }
     };
@@ -496,7 +497,7 @@ export default function ChatPanel() {
             : m
         ));
         setLoading(false);
-        currentMsgIdRef.current = '';
+        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
       }
     };
 
@@ -645,8 +646,8 @@ export default function ChatPanel() {
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
           } catch (e) {
-            // Fallback: include base64 hint
-            fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Image data included - use vision to analyze]`);
+            // Fallback: include base64 data URL so agent can still see the image
+            fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
           }
         } else if (att.type === 'application/pdf') {
           // PDF: Save and suggest extraction
@@ -676,8 +677,15 @@ export default function ChatPanel() {
             fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Could not transcribe: ${e}]`);
           }
         } else {
-          // Other files: include metadata
-          fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+          // Other files: save and include path
+          try {
+            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            savedFiles.push(tempPath);
+            fileContents.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
+          } catch (e) {
+            fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+          }
         }
       }
     }
@@ -718,7 +726,9 @@ export default function ChatPanel() {
     try {
       // Use streaming send - events will update the message
       // Send full content including file contents
-      await gateway.sendChatStreaming(content);
+      // Gateway routes to the session set via setSessionKey()
+      const runId = await gateway.sendChatStreaming(content);
+      if (runId) currentRunIdRef.current = runId;
       
       // Timeout fallback
       setTimeout(() => {
@@ -730,7 +740,7 @@ export default function ChatPanel() {
               : m
           ));
           setLoading(false);
-          currentMsgIdRef.current = '';
+          currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         }
       }, 120000);
       
@@ -745,7 +755,7 @@ export default function ChatPanel() {
           : m
       ));
       setLoading(false);
-      currentMsgIdRef.current = '';
+      currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
     }
   };
 
@@ -895,7 +905,7 @@ export default function ChatPanel() {
           <div className="w-px h-5 bg-clawd-border mx-1" />
           <button
             onClick={startTeamMeeting}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
             title="Start Team Meeting — All agents join"
           >
             <UsersRound size={15} />
@@ -917,7 +927,7 @@ export default function ChatPanel() {
           </button>
           <button
             onClick={() => setShowCreateRoom(true)}
-            className="p-2 rounded-lg bg-gradient-to-r from-clawd-accent to-purple-500 text-white hover:opacity-90 transition-opacity"
+            className="p-2 rounded-lg bg-clawd-accent text-white hover:opacity-90 transition-opacity"
             title="Create Chat Room"
           >
             <MessageSquarePlus size={16} />
@@ -1057,7 +1067,7 @@ export default function ChatPanel() {
                 {/* Avatar column - consistent width */}
                 <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-sm font-semibold shadow-md ring-2 ring-white/20">
+                    <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/20">
                       K
                     </div>
                   ) : (
@@ -1112,7 +1122,7 @@ export default function ChatPanel() {
                     <div
                       className={`px-4 py-3 transition-all duration-150 ${
                         isUser
-                          ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white shadow-md'
+                          ? 'bg-clawd-accent text-white'
                           : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md'
                       } ${
                         isUser
@@ -1232,7 +1242,7 @@ export default function ChatPanel() {
                 <button
                   key={idx}
                   onClick={() => useSuggestion(suggestion)}
-                  className="px-3 py-2 bg-gradient-to-r from-clawd-accent/10 to-purple-500/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
+                  className="px-3 py-2 bg-clawd-accent/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
                   title="Click to use this reply"
                 >
                   {suggestion}
