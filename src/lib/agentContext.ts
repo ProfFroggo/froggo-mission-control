@@ -48,6 +48,7 @@ const AGENT_PERSONALITY_MAP: Record<string, string> = {
   clara: 'main', // Clara uses main personality with override
   social_media_manager: 'writer', // fallback
   designer: 'designer',
+  voice: 'voice',
 };
 
 let personalitiesData: Record<string, any> | null = null;
@@ -169,8 +170,8 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
   const exec = (window as any).clawdbot?.exec?.run;
   if (!exec) return {};
 
-  const agentDir = agentId === 'froggo' ? '.' : `clawd-${agentId}`;
-  const base = `~/clawd/${agentDir}`;
+  // Non-froggo agents live at ~/clawd-<id>, froggo lives at ~/clawd
+  const base = agentId === 'froggo' ? '~/clawd' : `~/clawd-${agentId}`;
   const today = new Date().toISOString().split('T')[0];
 
   const fileSpecs = [
@@ -201,9 +202,9 @@ async function loadAgentMemory(agentId: string): Promise<string | null> {
     if ((window as any).clawdbot?.exec?.run) {
       // Try reading the agent's daily memory
       const today = new Date().toISOString().split('T')[0];
-      const agentDir = agentId === 'froggo' ? '.' : `clawd-${agentId}`;
+      const memBase = agentId === 'froggo' ? '~/clawd' : `~/clawd-${agentId}`;
       const r = await (window as any).clawdbot.exec.run(
-        `head -100 ~/clawd/${agentDir}/memory/${today}.md 2>/dev/null || echo ""`
+        `head -100 ${memBase}/memory/${today}.md 2>/dev/null || echo ""`
       );
       if (r.success && r.stdout?.trim()) {
         return r.stdout.trim().slice(0, 2000); // Cap at 2000 chars

@@ -759,7 +759,7 @@ function buildAgentTools(): GeminiTool[] {
     },
     {
       name: 'run_command',
-      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git, clawdbot, date, echo, wc).',
+      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git, openclaw, date, echo, wc, which, node, npx, python3, curl, df, uptime, ps, who).',
       parameters: {
         type: 'object',
         properties: {
@@ -789,6 +789,73 @@ function buildAgentTools(): GeminiTool[] {
           query: { type: 'string', description: 'Text to search for' },
         },
         required: ['query'],
+      },
+    },
+    {
+      name: 'web_search',
+      description: 'Search the web for information.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query' },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'check_calendar',
+      description: 'Check upcoming calendar events.',
+      parameters: {
+        type: 'object',
+        properties: {
+          days: { type: 'number', description: 'Number of days ahead to check (default 1)' },
+        },
+      },
+    },
+    {
+      name: 'memory_search',
+      description: 'Search through agent memory files for context.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'What to search for in memory' },
+          agent_id: { type: 'string', description: 'Agent whose memory to search (default: froggo)' },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'write_memory',
+      description: 'Write a note to today\'s memory file.',
+      parameters: {
+        type: 'object',
+        properties: {
+          note: { type: 'string', description: 'Note to save' },
+          agent_id: { type: 'string', description: 'Agent whose memory to write to (default: voice)' },
+        },
+        required: ['note'],
+      },
+    },
+    {
+      name: 'send_whatsapp',
+      description: 'Send a WhatsApp message via the gateway.',
+      parameters: {
+        type: 'object',
+        properties: {
+          to: { type: 'string', description: 'Recipient (phone number or name)' },
+          message: { type: 'string', description: 'Message text' },
+        },
+        required: ['to', 'message'],
+      },
+    },
+    {
+      name: 'check_email',
+      description: 'Check recent emails.',
+      parameters: {
+        type: 'object',
+        properties: {
+          count: { type: 'number', description: 'Number of recent emails to check (default 5)' },
+        },
       },
     },
   ];
@@ -851,7 +918,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         return { content: r.stdout || r.stderr || 'File not found' };
       }
       case 'run_command': {
-        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'clawdbot', 'date', 'echo', 'wc'];
+        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'openclaw', 'date', 'echo', 'wc', 'which', 'node', 'npx', 'python3', 'curl', 'df', 'uptime', 'ps', 'who'];
         const cmd = args.command.trim().split(/\s+/)[0];
         if (!allowed.includes(cmd)) {
           return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
@@ -868,6 +935,43 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         const escapedQuery = args.query.replace(/"/g, '\\"');
         const r = await exec(`grep -rl "${escapedQuery}" ~/clawd/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
+      }
+      case 'web_search': {
+        const q = (args.query || '').replace(/"/g, '\\"');
+        const r = await exec(`openclaw agent --agent froggo --local --message "Search the web for: ${q}. Return only the top 3-5 results with titles and brief descriptions." --json 2>&1 || curl -s "https://api.duckduckgo.com/?q=${encodeURIComponent(args.query)}&format=json&no_html=1" 2>&1`);
+        return { output: r.stdout?.trim()?.slice(0, 2000) || r.stderr?.trim() };
+      }
+      case 'check_calendar': {
+        const days = args.days || 1;
+        const r = await exec(`openclaw agent --agent froggo --local --message "Check my calendar for the next ${days} day(s). List upcoming events with times." --json 2>&1`);
+        return { output: r.stdout?.trim()?.slice(0, 2000) || 'Calendar check failed' };
+      }
+      case 'memory_search': {
+        const agent = args.agent_id || 'froggo';
+        const memBase = agent === 'froggo' ? '~/clawd' : `~/clawd-${agent}`;
+        const q = (args.query || '').replace(/"/g, '\\"');
+        const r = await exec(`grep -rli "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
+        return { results: r.stdout?.trim() || 'No matches found' };
+      }
+      case 'write_memory': {
+        const agent = args.agent_id || 'voice';
+        const memBase = agent === 'froggo' ? '~/clawd' : `~/clawd-${agent}`;
+        const today = new Date().toISOString().split('T')[0];
+        const note = (args.note || '').replace(/"/g, '\\"');
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        await exec(`mkdir -p ${memBase}/memory && echo "\\n## ${time}\\n${note}" >> ${memBase}/memory/${today}.md`);
+        return { success: true, message: `Note saved to ${agent}'s memory` };
+      }
+      case 'send_whatsapp': {
+        const to = (args.to || '').replace(/"/g, '\\"');
+        const msg = (args.message || '').replace(/"/g, '\\"');
+        const r = await exec(`openclaw message --action send --channel whatsapp --target "${to}" --message "${msg}" 2>&1`);
+        return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
+      }
+      case 'check_email': {
+        const count = args.count || 5;
+        const r = await exec(`openclaw agent --agent froggo --local --message "Check my recent ${count} emails. List sender, subject, and brief preview." --json 2>&1`);
+        return { output: r.stdout?.trim()?.slice(0, 2000) || 'Email check failed' };
       }
       default:
         return { error: `Unknown tool: ${fnName}` };
@@ -938,15 +1042,21 @@ Don't narrate tool usage — just do it and report the result naturally.`);
 
   // Tool capability awareness
   parts.push(`\n## Your Capabilities
-You have access to powerful tools:
+You have access to powerful tools — use them proactively:
 - create_task, update_task, list_tasks — Manage tasks in Kanban
-- spawn_agent, get_agent_status — Work with other agents
+- spawn_agent, get_agent_status — Work with other agents (coder, writer, researcher, chief, etc.)
 - read_file — Read workspace files
-- run_command — Execute shell commands (cat, head, tail, ls, find, grep, froggo-db, git, clawdbot, date, echo, wc)
+- run_command — Execute shell commands (cat, head, tail, ls, find, grep, froggo-db, git, openclaw, date, echo, wc, node, npx, python3, curl, etc.)
 - send_message — Send messages to Discord
-- search_workspace — Search files
+- send_whatsapp — Send WhatsApp messages
+- search_workspace — Search workspace files
+- web_search — Search the internet
+- check_calendar — Check upcoming events
+- check_email — Check recent emails
+- memory_search — Search agent memory for context
+- write_memory — Save notes to memory for continuity
 
-Use these tools proactively when helpful.`);
+When Kevin asks you to do something, DO IT with tools. Don't just describe what you'd do.`);
 
   // Video/screen awareness
   if (currentVideoMode && currentVideoMode !== 'none') {
