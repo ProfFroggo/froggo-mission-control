@@ -699,10 +699,15 @@ export default function CommsInbox() {
 
   // Apply messages to state (shared between cache and fresh load)
   const applyMessages = useCallback((msgs: Message[]) => {
-    setAllMessages(msgs);
+    // Recalculate relativeTime from timestamps (cached values go stale)
+    const refreshed = msgs.map(m => ({
+      ...m,
+      relativeTime: m.timestamp ? formatRelativeTime(new Date(m.timestamp).getTime()) : m.relativeTime,
+    }));
+    setAllMessages(refreshed);
     
     // Apply current filters
-    let filtered = applyFilters(msgs, filterCriteria);
+    let filtered = applyFilters(refreshed, filterCriteria);
     
     // Sort by priority if enabled
     if (sortByPriority) {

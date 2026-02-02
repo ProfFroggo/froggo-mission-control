@@ -4856,7 +4856,21 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
         from: m.sender,
         preview: m.preview,
         timestamp: m.timestamp,
-        relativeTime: m.relativeTime || '',
+        relativeTime: (() => {
+          // Always recalculate relativeTime from timestamp (cached value goes stale)
+          if (!m.timestamp) return '';
+          const date = new Date(m.timestamp);
+          const now = new Date();
+          const diffMs = now.getTime() - date.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          if (diffMins < 1) return 'just now';
+          if (diffMins < 60) return `${diffMins}m ago`;
+          if (diffHours < 24) return `${diffHours}h ago`;
+          if (diffDays < 7) return `${diffDays}d ago`;
+          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        })(),
         hasReply: !!m.has_reply,
         has_reply: !!m.has_reply,
         isUrgent: !!m.is_urgent,
@@ -5089,42 +5103,64 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
       safeLog.error('[Messages] Telegram cache read error:', e);
     }
     
-    // ===== DISCORD DMs =====
+    // ===== DISCORD DMs (with overall timeout + parallel fetch) =====
     safeLog.log('[Messages] Fetching Discord DMs...');
     const DISCORDCLI_PATH = '/Users/worker/.local/bin/discordcli';
-    const discordDmsRaw = await runCmd(`${DISCORDCLI_PATH} dms`, 10000);
-    if (discordDmsRaw && !discordDmsRaw.includes('Invalid token')) {
-      const dmLines = discordDmsRaw.split('\n').filter(l => l.trim() && !l.startsWith('ID') && !l.startsWith('---'));
-      const dms = dmLines.slice(0, 5).map(line => {
-        const match = line.match(/^(\d+)\s+(.+)$/);
-        if (match) return { id: match[1], name: match[2].trim() };
-        return null;
-      }).filter(Boolean);
-      
-      for (const dm of dms as any[]) {
-        const msgRaw = await runCmd(`${DISCORDCLI_PATH} messages ${dm.id} --limit 5`, 5000);
-        if (msgRaw) {
-          // Parse: [2026-01-24 09:47] username: message
-          const msgLines = msgRaw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
-          // Find first message NOT from prof_froggo (Kevin's account)
-          for (const line of msgLines) {
-            const msgMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
-            if (msgMatch && msgMatch[2].trim() !== 'prof_froggo') {
-              const timestamp = new Date(msgMatch[1].replace(' ', 'T') + ':00Z');
-              allMessages.push({
-                id: `discord-${dm.id}`,
-                platform: 'discord',
-                name: dm.name.split(',')[0].trim(), // First username in the DM
-                preview: msgMatch[3].trim().slice(0, 100),
-                timestamp: timestamp.toISOString(),
-                relativeTime: relativeTime(timestamp.toISOString()),
-                fromMe: false,
-              });
-              break;
+    const DISCORD_OVERALL_TIMEOUT = 12000; // 12s max for all Discord ops
+    try {
+      const discordPromise = (async () => {
+        const discordDmsRaw = await runCmd(`${DISCORDCLI_PATH} dms`, 5000);
+        if (!discordDmsRaw || discordDmsRaw.includes('Invalid token')) return;
+        
+        const dmLines = discordDmsRaw.split('\n').filter(l => l.trim() && !l.startsWith('ID') && !l.startsWith('---'));
+        const dms = dmLines.slice(0, 5).map(line => {
+          const match = line.match(/^(\d+)\s+(.+)$/);
+          if (match) return { id: match[1], name: match[2].trim() };
+          return null;
+        }).filter(Boolean) as { id: string; name: string }[];
+        
+        // Fetch DM messages in parallel (not sequential)
+        const dmResults = await Promise.allSettled(
+          dms.map(async (dm) => {
+            const msgRaw = await runCmd(`${DISCORDCLI_PATH} messages ${dm.id} --limit 5`, 4000);
+            if (!msgRaw) return null;
+            const msgLines = msgRaw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
+            for (const line of msgLines) {
+              const msgMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
+              if (msgMatch && msgMatch[2].trim() !== 'prof_froggo') {
+                const timestamp = new Date(msgMatch[1].replace(' ', 'T') + ':00Z');
+                return {
+                  id: `discord-${dm.id}`,
+                  platform: 'discord',
+                  name: dm.name.split(',')[0].trim(),
+                  preview: msgMatch[3].trim().slice(0, 100),
+                  timestamp: timestamp.toISOString(),
+                  relativeTime: relativeTime(timestamp.toISOString()),
+                  fromMe: false,
+                };
+              }
             }
+            return null;
+          })
+        );
+        
+        for (const result of dmResults) {
+          if (result.status === 'fulfilled' && result.value) {
+            allMessages.push(result.value);
           }
         }
-      }
+      })();
+      
+      // Race Discord fetch against overall timeout
+      await Promise.race([
+        discordPromise,
+        new Promise<void>(resolve => setTimeout(() => {
+          safeLog.log('[Messages] Discord fetch timed out after ' + DISCORD_OVERALL_TIMEOUT + 'ms, continuing with cached data');
+          resolve();
+        }, DISCORD_OVERALL_TIMEOUT)),
+      ]);
+    } catch (e) {
+      safeLog.error('[Messages] Discord fetch error (non-fatal):', e);
     }
     
     // ===== EMAIL (via gog gmail) =====
