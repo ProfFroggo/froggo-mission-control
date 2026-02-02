@@ -629,7 +629,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 
   // ── Video Input ──
 
-  async startVideo(mode: VideoMode): Promise<void> {
+  async startVideo(mode: VideoMode, sourceId?: string): Promise<void> {
     if (mode === 'none') return;
     this._videoMode = mode;
 
@@ -646,9 +646,25 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
           video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
         });
       } else if (mode === 'screen') {
-        this.videoStream = await (navigator.mediaDevices as any).getDisplayMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-        });
+        if (sourceId) {
+          // Electron: use specific source from desktopCapturer
+          this.videoStream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sourceId,
+                maxWidth: 1280,
+                maxHeight: 720,
+              },
+            } as any,
+          });
+        } else {
+          // Browser fallback: use getDisplayMedia (shows browser picker)
+          this.videoStream = await (navigator.mediaDevices as any).getDisplayMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          });
+        }
       }
 
       if (!this.videoStream) return;
