@@ -911,7 +911,21 @@ export default function CommsInbox3Pane() {
     try {
       const result = await (window as any).clawdbot?.messages?.recent(50, showArchived);
       if (result?.success && result.chats && isMounted.current) {
-        const msgs = result.chats as ConversationItem[];
+        // Recalculate relativeTime from timestamp (cached values go stale)
+        const msgs = (result.chats as ConversationItem[]).map(m => {
+          if (!m.timestamp) return m;
+          const diffMs = Date.now() - new Date(m.timestamp).getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMins / 60);
+          const diffDays = Math.floor(diffHours / 24);
+          let relativeTime = m.relativeTime;
+          if (diffMins < 1) relativeTime = 'just now';
+          else if (diffMins < 60) relativeTime = `${diffMins}m ago`;
+          else if (diffHours < 24) relativeTime = `${diffHours}h ago`;
+          else if (diffDays < 7) relativeTime = `${diffDays}d ago`;
+          else relativeTime = new Date(m.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          return { ...m, relativeTime };
+        });
         setAllMessages(msgs);
         computeCounts(msgs);
       }
