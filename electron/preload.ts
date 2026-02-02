@@ -397,6 +397,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
     context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
     send: (platform: string, to: string, message: string) => ipcRenderer.invoke('messages:send', { platform, to, message }),
   },
+  // Inbox historical data
+  inbox: {
+    checkHistory: () => ipcRenderer.invoke('inbox:check-history'),
+    triggerBackfill: (days?: number) => ipcRenderer.invoke('inbox:trigger-backfill', days),
+  },
   // Conversation management (archive/unarchive)
   conversations: {
     archive: (sessionKey: string) => ipcRenderer.invoke('conversations:archive', sessionKey),

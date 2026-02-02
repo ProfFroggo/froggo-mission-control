@@ -4936,6 +4936,39 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
   }
 };
 
+// ============== INBOX HISTORICAL DATA CHECK ==============
+ipcMain.handle('inbox:check-history', async () => {
+  try {
+    const inboxLauncherPath = path.join(os.homedir(), 'clawd', 'tools', 'inbox-launcher.js');
+    const result = await runMsgCmd(`node "${inboxLauncherPath}" check`, 5000);
+    const status = JSON.parse(result);
+    safeLog.log('[Inbox] Historical data check:', status);
+    return { success: true, ...status };
+  } catch (e: any) {
+    safeLog.error('[Inbox] Historical data check failed:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('inbox:trigger-backfill', async (_, days = 60) => {
+  try {
+    const inboxLauncherPath = path.join(os.homedir(), 'clawd', 'tools', 'inbox-launcher.js');
+    // Trigger in background
+    safeLog.log('[Inbox] Triggering historical backfill:', days, 'days');
+    exec(`node "${inboxLauncherPath}" ensure`, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Inbox] Backfill trigger error:', error);
+      } else {
+        safeLog.log('[Inbox] Backfill triggered:', stdout);
+      }
+    });
+    return { success: true, message: 'Backfill started in background' };
+  } catch (e: any) {
+    safeLog.error('[Inbox] Backfill trigger failed:', e);
+    return { success: false, error: e.message };
+  }
+});
+
 ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = false) => {
   safeLog.log('[Messages] Handler called, limit:', limit, 'includeArchived:', includeArchived);
   const lim = limit || 10;
