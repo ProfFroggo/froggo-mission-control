@@ -6339,6 +6339,7 @@ ipcMain.handle('exec:run', async (_, command: string) => {
         maxBuffer: 1024 * 1024,
         timeout: 30000,
         cwd: workDir,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/Users/worker/.local/bin:${process.env.PATH || '/usr/bin:/bin'}` },
       });
     },
     'exec',

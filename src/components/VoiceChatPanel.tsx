@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
+import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
@@ -78,6 +79,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const [videoMode, setVideoMode] = useState<VideoMode>('none');
   const [videoActive, setVideoActive] = useState(false);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  
+  // Screen picker state
+  const [showScreenPicker, setShowScreenPicker] = useState(false);
+  const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
   
   // Audio context state
   const [audioState, setAudioState] = useState<'suspended' | 'running' | 'closed' | null>(null);
@@ -267,24 +272,22 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       await geminiLive.startMic();
       
       // Auto-start video if selected
-      if (videoMode !== 'none') {
+      if (videoMode === 'camera') {
         try {
-          await geminiLive.startVideo(videoMode);
+          await geminiLive.startVideo('camera');
           const stream = geminiLive.getVideoStream();
           setVideoActive(true);
           requestAnimationFrame(() => {
             if (videoPreviewRef.current && stream) videoPreviewRef.current.srcObject = stream;
           });
-          addSystemMessage(videoMode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
-          // Nudge Gemini about video becoming active
-          if (videoMode === 'screen') {
-            geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
-          } else if (videoMode === 'camera') {
-            geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
-          }
+          addSystemMessage('📹 Camera active');
+          geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         } catch (e: any) {
           console.warn('[VoiceChat] Video start failed:', e);
         }
+      } else if (videoMode === 'screen') {
+        // Show picker instead of auto-sharing
+        setShowScreenPicker(true);
       }
     } catch (err: any) {
       console.error('[VoiceChat] Connect failed:', err);
@@ -346,24 +349,39 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       geminiLive.stopVideo();
       if (videoPreviewRef.current) videoPreviewRef.current.srcObject = null;
       setVideoActive(false);
+      setActiveSourceId(null);
       geminiLive.sendText('[SYSTEM: Screen sharing has stopped. You can no longer see the screen.]');
     } else {
-      try {
-        if (videoActive) geminiLive.stopVideo();
-        await geminiLive.startVideo('screen');
-        const stream = geminiLive.getVideoStream();
-        setVideoActive(true);
-        requestAnimationFrame(() => {
-          if (videoPreviewRef.current && stream) {
-            videoPreviewRef.current.srcObject = stream;
-            videoPreviewRef.current.play().catch(e => console.error('Video play failed:', e));
-          }
-        });
-        addSystemMessage('🖥️ Screen sharing active');
-        geminiLive.sendText('[SYSTEM: Screen sharing is now active. You can see the user\'s screen.]');
-      } catch (e: any) {
-        addSystemMessage(`⚠️ Screen share failed: ${e.message}`);
-      }
+      // Show picker dialog
+      setShowScreenPicker(true);
+    }
+  };
+  
+  const handleScreenSourceSelected = async (source: ScreenSource) => {
+    setShowScreenPicker(false);
+    try {
+      if (videoActive) geminiLive.stopVideo();
+      const sourceId = source.id === '__browser_picker__' ? undefined : source.id;
+      await geminiLive.startVideo('screen', sourceId);
+      const stream = geminiLive.getVideoStream();
+      setVideoActive(true);
+      setActiveSourceId(source.id);
+      requestAnimationFrame(() => {
+        if (videoPreviewRef.current && stream) {
+          videoPreviewRef.current.srcObject = stream;
+          videoPreviewRef.current.play().catch(e => console.error('Video play failed:', e));
+        }
+      });
+      addSystemMessage(`🖥️ Sharing: ${source.name}`);
+      geminiLive.sendText(`[SYSTEM: Screen sharing is now active. Sharing: ${source.name}. You can see the user's screen.]`);
+    } catch (e: any) {
+      addSystemMessage(`⚠️ Screen share failed: ${e.message}`);
+    }
+  };
+  
+  const switchScreenSource = () => {
+    if (callActive && videoActive && geminiLive.videoMode === 'screen') {
+      setShowScreenPicker(true);
     }
   };
   
@@ -487,6 +505,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         </div>
       )}
       
+      {/* Screen Source Picker Modal */}
+      {showScreenPicker && (
+        <ScreenSourcePicker
+          onSelect={handleScreenSourceSelected}
+          onCancel={() => setShowScreenPicker(false)}
+        />
+      )}
+      
       {/* Video preview */}
       {videoActive && (
         <div className="mx-4 mt-3 relative rounded-lg overflow-hidden bg-black border border-clawd-border max-h-48">
@@ -495,6 +521,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           <span className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
             {geminiLive.videoMode === 'camera' ? '📹 Camera' : '🖥️ Screen'}
           </span>
+          {geminiLive.videoMode === 'screen' && (
+            <button onClick={switchScreenSource}
+              className="absolute top-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors">
+              Switch Source
+            </button>
+          )}
         </div>
       )}
       
@@ -727,7 +759,7 @@ function buildAgentTools(): GeminiTool[] {
     },
     {
       name: 'run_command',
-      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git).',
+      description: 'Execute a shell command (allowlist: cat, head, tail, ls, find, grep, froggo-db, git, clawdbot, date, echo, wc).',
       parameters: {
         type: 'object',
         properties: {
@@ -819,7 +851,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         return { content: r.stdout || r.stderr || 'File not found' };
       }
       case 'run_command': {
-        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git'];
+        const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'clawdbot', 'date', 'echo', 'wc'];
         const cmd = args.command.trim().split(/\s+/)[0];
         if (!allowed.includes(cmd)) {
           return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
@@ -874,6 +906,21 @@ function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null,
     parts.push(`\n## Identity Details\n${context.workspaceFiles.identity}`);
   }
 
+  // Agent instructions (AGENTS.md)
+  if (context?.workspaceFiles?.agents) {
+    parts.push(`\n## Agent Instructions (AGENTS.md)\n${context.workspaceFiles.agents}`);
+  }
+
+  // Tools reference (TOOLS.md)
+  if (context?.workspaceFiles?.tools) {
+    parts.push(`\n## Tools Reference (TOOLS.md)\n${context.workspaceFiles.tools}`);
+  }
+
+  // Platform context
+  if (context?.workspaceFiles?.platform_context) {
+    parts.push(`\n## Platform Context\n${context.workspaceFiles.platform_context}`);
+  }
+
   // Long-term curated memory
   if (context?.workspaceFiles?.memory_longterm) {
     parts.push(`\n## Long-term Memory\n${context.workspaceFiles.memory_longterm}`);
@@ -895,7 +942,7 @@ You have access to powerful tools:
 - create_task, update_task, list_tasks — Manage tasks in Kanban
 - spawn_agent, get_agent_status — Work with other agents
 - read_file — Read workspace files
-- run_command — Execute shell commands (cat, head, tail, ls, find, grep, froggo-db, git)
+- run_command — Execute shell commands (cat, head, tail, ls, find, grep, froggo-db, git, clawdbot, date, echo, wc)
 - send_message — Send messages to Discord
 - search_workspace — Search files
 

@@ -177,6 +177,9 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
     { key: 'soul', path: `${base}/SOUL.md`, maxChars: 2000 },
     { key: 'user', path: `${base}/USER.md`, maxChars: 1000 },
     { key: 'identity', path: `${base}/IDENTITY.md`, maxChars: 500 },
+    { key: 'agents', path: `${base}/AGENTS.md`, maxChars: 2000 },
+    { key: 'tools', path: `${base}/TOOLS.md`, maxChars: 1000 },
+    { key: 'platform_context', path: `${base}/PLATFORM_CONTEXT.md`, maxChars: 1500 },
     { key: 'memory_longterm', path: `${base}/MEMORY.md`, maxChars: 3000 },
     { key: 'memory_today', path: `${base}/memory/${today}.md`, maxChars: 2000 },
   ];
