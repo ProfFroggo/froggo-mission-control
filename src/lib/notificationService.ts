@@ -1,6 +1,7 @@
 /**
  * Notification Service
- * Manages system notifications, desktop notifications, and notification center
+ * Fetches real notifications from froggo-db (comms cache, tasks, read states)
+ * via the Electron bridge (window.clawdbot)
  */
 
 export interface Notification {
@@ -44,271 +45,377 @@ export interface NotificationStats {
   last_notification_at?: number;
 }
 
+// Platform icons for display
+const platformLabels: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  discord: 'Discord',
+  telegram: 'Telegram',
+  email: 'Email',
+};
+
 class NotificationService {
-  private ws: WebSocket | null = null;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
   private listeners: Set<(notification: Notification) => void> = new Set();
   private statsListeners: Set<(stats: NotificationStats) => void> = new Set();
-  private gatewayUrl: string;
-  private permissionRequested = false;
+  private cachedNotifications: Notification[] = [];
+  private cachedStats: NotificationStats = { total: 0, unread: 0, urgent: 0, actionable: 0 };
+  private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private dismissedIds: Set<string> = new Set();
+  private readIds: Set<string> = new Set();
+  private initialized = false;
 
   constructor() {
-    // Use dedicated notification API server (port 3105)
-    this.gatewayUrl = 'http://localhost:3105';
+    // Load dismissed/read state from localStorage
+    try {
+      const dismissed = localStorage.getItem('notif_dismissed');
+      if (dismissed) this.dismissedIds = new Set(JSON.parse(dismissed));
+      const read = localStorage.getItem('notif_read');
+      if (read) this.readIds = new Set(JSON.parse(read));
+    } catch { /* ignore */ }
+  }
+
+  private saveDismissedState() {
+    try {
+      localStorage.setItem('notif_dismissed', JSON.stringify([...this.dismissedIds]));
+      localStorage.setItem('notif_read', JSON.stringify([...this.readIds]));
+    } catch { /* ignore */ }
   }
 
   /**
-   * Initialize the service and connect to notification stream
+   * Initialize the service
    */
   async init() {
-    await this.requestNotificationPermission();
-    this.connectWebSocket();
-    this.startStatsPolling();
-  }
+    if (this.initialized) return;
+    this.initialized = true;
 
-  /**
-   * Request desktop notification permission
-   */
-  private async requestNotificationPermission() {
-    if (this.permissionRequested) return;
-    this.permissionRequested = true;
+    // Initial load
+    await this.refresh();
 
-    if (!('Notification' in window)) {
-      console.warn('[NotificationService] Desktop notifications not supported');
-      return;
-    }
+    // Poll every 30 seconds for new data
+    this.pollInterval = setInterval(() => this.refresh(), 30000);
 
-    if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      console.log('[NotificationService] Permission:', permission);
-    }
-  }
-
-  /**
-   * Connect to gateway WebSocket for real-time notifications
-   */
-  private connectWebSocket() {
-    try {
-      const wsUrl = this.gatewayUrl.replace('http://', 'ws://').replace('https://', 'wss://');
-      this.ws = new WebSocket(`${wsUrl}/notifications`);
-
-      this.ws.onopen = () => {
-        console.log('[NotificationService] WebSocket connected');
-        if (this.reconnectTimeout) {
-          clearTimeout(this.reconnectTimeout);
-          this.reconnectTimeout = null;
+    // Also listen for Electron notification events if available
+    if (window.clawdbot?.notifications?.onReceived) {
+      window.clawdbot.notifications.onReceived((notif: any) => {
+        const mapped = this.mapElectronNotification(notif);
+        if (mapped && !this.dismissedIds.has(mapped.id)) {
+          this.listeners.forEach(l => l(mapped));
+          this.refresh();
         }
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const notification: Notification = JSON.parse(event.data);
-          this.handleIncomingNotification(notification);
-        } catch (e) {
-          console.error('[NotificationService] Failed to parse notification:', e);
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('[NotificationService] WebSocket error:', error);
-      };
-
-      this.ws.onclose = () => {
-        console.log('[NotificationService] WebSocket closed, reconnecting...');
-        this.reconnectTimeout = setTimeout(() => this.connectWebSocket(), 5000);
-      };
-    } catch (e) {
-      console.error('[NotificationService] Failed to connect WebSocket:', e);
-    }
-  }
-
-  /**
-   * Handle incoming notification
-   */
-  private async handleIncomingNotification(notification: Notification) {
-    console.log('[NotificationService] New notification:', notification);
-
-    // Check preferences
-    const prefsResult = await this.getPreferences(notification.type);
-    const prefs = Array.isArray(prefsResult) ? prefsResult[0] : prefsResult;
-    if (!prefs?.enabled) return;
-
-    // Check quiet hours
-    if (this.isQuietHours(prefs)) {
-      console.log('[NotificationService] Quiet hours active, suppressing notification');
-      return;
-    }
-
-    // Check priority threshold
-    const priorityLevels = { low: 0, normal: 1, high: 2, urgent: 3 };
-    if (priorityLevels[notification.priority] < priorityLevels[prefs.min_priority]) {
-      return;
-    }
-
-    // Show desktop notification
-    if (prefs.show_desktop && !notification.desktop_shown) {
-      this.showDesktopNotification(notification);
-    }
-
-    // Play sound
-    if (prefs.play_sound) {
-      this.playNotificationSound(notification);
-    }
-
-    // Notify listeners
-    this.listeners.forEach(listener => listener(notification));
-    this.updateStats();
-  }
-
-  /**
-   * Show desktop notification
-   */
-  private async showDesktopNotification(notification: Notification) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') {
-      return;
-    }
-
-    try {
-      const desktopNotif = new Notification(notification.title, {
-        body: notification.message,
-        icon: this.getNotificationIcon(notification.type),
-        badge: '/froggo-badge.png',
-        tag: notification.group_key || notification.id,
-        requireInteraction: notification.priority === 'urgent',
-        silent: false,
       });
+    }
+  }
 
-      desktopNotif.onclick = () => {
-        window.focus();
-        if (notification.action_url) {
-          // Navigate to action URL
-          window.dispatchEvent(new CustomEvent('navigate', { detail: notification.action_url }));
+  /**
+   * Refresh all notification data from real sources
+   */
+  private async refresh() {
+    try {
+      const notifications: Notification[] = [];
+
+      // 1. Fetch unread messages from comms cache
+      const msgNotifs = await this.fetchUnreadMessages();
+      notifications.push(...msgNotifs);
+
+      // 2. Fetch task-related notifications (completions, deadlines, agent updates)
+      const taskNotifs = await this.fetchTaskNotifications();
+      notifications.push(...taskNotifs);
+
+      // 3. Fetch approval items
+      const approvalNotifs = await this.fetchApprovalNotifications();
+      notifications.push(...approvalNotifs);
+
+      // Filter out dismissed
+      const active = notifications.filter(n => !this.dismissedIds.has(n.id));
+
+      // Apply read state
+      for (const n of active) {
+        if (this.readIds.has(n.id)) n.read = true;
+      }
+
+      // Sort by created_at desc
+      active.sort((a, b) => b.created_at - a.created_at);
+
+      // Check for new notifications
+      const oldIds = new Set(this.cachedNotifications.map(n => n.id));
+      for (const n of active) {
+        if (!oldIds.has(n.id)) {
+          this.listeners.forEach(l => l(n));
         }
-        desktopNotif.close();
+      }
+
+      this.cachedNotifications = active;
+
+      // Compute stats
+      this.cachedStats = {
+        total: active.length,
+        unread: active.filter(n => !n.read).length,
+        urgent: active.filter(n => n.priority === 'urgent').length,
+        actionable: active.filter(n => n.actionable).length,
+        last_notification_at: active[0]?.created_at,
       };
 
-      // Mark as desktop shown
-      await this.markDesktopShown(notification.id);
+      this.statsListeners.forEach(l => l(this.cachedStats));
     } catch (e) {
-      console.error('[NotificationService] Failed to show desktop notification:', e);
+      console.error('[NotificationService] Refresh failed:', e);
     }
   }
 
   /**
-   * Play notification sound
+   * Fetch unread messages from comms_cache via froggo-db
    */
-  private playNotificationSound(notification: Notification) {
+  private async fetchUnreadMessages(): Promise<Notification[]> {
+    const notifications: Notification[] = [];
+
     try {
-      const audio = new Audio(this.getSoundForType(notification.type));
-      audio.volume = 0.5;
-      audio.play().catch(e => console.error('[NotificationService] Failed to play sound:', e));
+      // Try froggo.query for direct DB access
+      if (window.clawdbot?.froggo?.query) {
+        const result = await window.clawdbot.froggo.query(
+          `SELECT id, platform, external_id, sender, sender_name, preview, timestamp, is_urgent, is_read, metadata
+           FROM comms_cache
+           WHERE is_read = 0
+           ORDER BY timestamp DESC
+           LIMIT 50`
+        );
+        if (result.success && result.rows) {
+          for (const row of result.rows) {
+            const ts = new Date(row.timestamp).getTime();
+            const platform = row.platform || 'unknown';
+            const senderDisplay = row.sender_name || row.sender || 'Unknown';
+            const platformLabel = platformLabels[platform] || platform;
+
+            notifications.push({
+              id: `msg-${platform}-${row.id}`,
+              created_at: ts,
+              updated_at: ts,
+              type: 'message_arrival',
+              priority: row.is_urgent ? 'high' : 'normal',
+              title: `${senderDisplay}`,
+              message: row.preview || '(no preview)',
+              description: undefined,
+              source: 'message',
+              source_id: row.external_id,
+              channel: platformLabel,
+              read: false,
+              dismissed: false,
+              actionable: false,
+              action_url: undefined,
+              desktop_shown: false,
+              data: { platform, sender: row.sender, metadata: row.metadata },
+              group_key: `msg-${platform}-${row.external_id}`,
+            });
+          }
+        }
+      } else if (window.clawdbot?.messages?.recent) {
+        // Fallback: use messages.recent()
+        const result = await window.clawdbot.messages.recent(30);
+        if (result.success && result.chats) {
+          for (const chat of result.chats) {
+            const ts = chat.timestamp ? new Date(chat.timestamp).getTime() : Date.now();
+            notifications.push({
+              id: `msg-wa-${chat.id || ts}`,
+              created_at: ts,
+              updated_at: ts,
+              type: 'message_arrival',
+              priority: 'normal',
+              title: chat.name || chat.sender || 'WhatsApp',
+              message: chat.preview || chat.lastMessage || '(no preview)',
+              source: 'message',
+              source_id: chat.id,
+              channel: 'WhatsApp',
+              read: false,
+              dismissed: false,
+              actionable: false,
+              desktop_shown: false,
+            });
+          }
+        }
+      }
     } catch (e) {
-      console.error('[NotificationService] Sound error:', e);
+      console.error('[NotificationService] Failed to fetch messages:', e);
     }
+
+    return notifications;
   }
 
   /**
-   * Get notification icon for type
+   * Fetch task-related notifications from froggo-db
    */
-  private getNotificationIcon(type: string): string {
-    const icons: Record<string, string> = {
-      task_complete: '/icons/check-circle.png',
-      task_deadline: '/icons/clock.png',
-      agent_update: '/icons/bot.png',
-      message_arrival: '/icons/message.png',
-      approval_pending: '/icons/alert.png',
-      calendar_event: '/icons/calendar.png',
-      system_alert: '/icons/warning.png',
-      skill_learned: '/icons/star.png',
-      error: '/icons/error.png',
-    };
-    return icons[type] || '/froggo-icon.png';
-  }
+  private async fetchTaskNotifications(): Promise<Notification[]> {
+    const notifications: Notification[] = [];
 
-  /**
-   * Get sound file for type
-   */
-  private getSoundForType(type: string): string {
-    const sounds: Record<string, string> = {
-      task_complete: '/sounds/success.mp3',
-      task_deadline: '/sounds/urgent.mp3',
-      message_arrival: '/sounds/message.mp3',
-      approval_pending: '/sounds/alert.mp3',
-      calendar_event: '/sounds/reminder.mp3',
-      system_alert: '/sounds/warning.mp3',
-      error: '/sounds/error.mp3',
-    };
-    return sounds[type] || '/sounds/notification.mp3';
-  }
+    try {
+      if (!window.clawdbot?.froggo?.query) return notifications;
 
-  /**
-   * Check if current time is in quiet hours
-   */
-  private isQuietHours(prefs: NotificationPreferences): boolean {
-    if (!prefs.quiet_hours_start || !prefs.quiet_hours_end) return false;
+      // Recent task activity (completions, agent updates, etc.)
+      const result = await window.clawdbot.froggo.query(
+        `SELECT ta.id, ta.task_id, ta.action, ta.message, ta.agent_id, ta.timestamp, t.title as task_title, t.status
+         FROM task_activity ta
+         LEFT JOIN tasks t ON t.id = ta.task_id
+         WHERE ta.timestamp > ?
+         ORDER BY ta.timestamp DESC
+         LIMIT 30`,
+        [Date.now() - 86400000 * 2] // Last 2 days
+      );
 
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    
-    const [startHour, startMin] = prefs.quiet_hours_start.split(':').map(Number);
-    const [endHour, endMin] = prefs.quiet_hours_end.split(':').map(Number);
-    
-    const startTime = startHour * 60 + startMin;
-    const endTime = endHour * 60 + endMin;
+      if (result.success && result.rows) {
+        for (const row of result.rows) {
+          const ts = typeof row.timestamp === 'number' ? row.timestamp : new Date(row.timestamp).getTime();
+          let type: Notification['type'] = 'agent_update';
+          let priority: Notification['priority'] = 'normal';
 
-    if (startTime < endTime) {
-      return currentTime >= startTime && currentTime < endTime;
-    } else {
-      // Handles overnight quiet hours (e.g., 22:00 - 08:00)
-      return currentTime >= startTime || currentTime < endTime;
+          if (row.action === 'completed' || row.status === 'done') {
+            type = 'task_complete';
+          } else if (row.action === 'error' || row.action === 'failed') {
+            type = 'error';
+            priority = 'high';
+          } else if (row.action === 'review' || row.action === 'approval') {
+            type = 'approval_pending';
+            priority = 'high';
+          }
+
+          notifications.push({
+            id: `task-act-${row.id}`,
+            created_at: ts,
+            updated_at: ts,
+            type,
+            priority,
+            title: row.task_title || `Task ${row.task_id}`,
+            message: row.message || `${row.action} by ${row.agent_id || 'system'}`,
+            source: row.agent_id ? 'agent' : 'task',
+            source_id: row.task_id,
+            channel: row.agent_id || undefined,
+            read: false,
+            dismissed: false,
+            actionable: type === 'approval_pending',
+            action_url: type === 'approval_pending' ? `kanban?task=${row.task_id}` : undefined,
+            desktop_shown: false,
+            data: { taskId: row.task_id, action: row.action, agent: row.agent_id },
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[NotificationService] Failed to fetch task notifications:', e);
     }
+
+    return notifications;
+  }
+
+  /**
+   * Fetch approval notifications
+   */
+  private async fetchApprovalNotifications(): Promise<Notification[]> {
+    const notifications: Notification[] = [];
+
+    try {
+      if (!window.clawdbot?.approvals?.read) return notifications;
+
+      const result = await window.clawdbot.approvals.read();
+      if (result.items) {
+        for (const item of result.items) {
+          const ts = item.timestamp ? new Date(item.timestamp).getTime() : Date.now();
+          notifications.push({
+            id: `approval-${item.id || ts}`,
+            created_at: ts,
+            updated_at: ts,
+            type: 'approval_pending',
+            priority: 'high',
+            title: item.title || 'Approval Required',
+            message: item.content || item.description || 'Pending your review',
+            source: 'inbox',
+            source_id: item.id,
+            channel: item.channel || undefined,
+            read: false,
+            dismissed: false,
+            actionable: true,
+            action_url: 'approvals',
+            desktop_shown: false,
+            data: item,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[NotificationService] Failed to fetch approvals:', e);
+    }
+
+    return notifications;
+  }
+
+  /**
+   * Map Electron notification event to our format
+   */
+  private mapElectronNotification(notif: any): Notification | null {
+    if (!notif) return null;
+    const ts = notif.timestamp ? new Date(notif.timestamp).getTime() : Date.now();
+    return {
+      id: `electron-${notif.id || ts}`,
+      created_at: ts,
+      updated_at: ts,
+      type: notif.type || 'system_alert',
+      priority: notif.priority || 'normal',
+      title: notif.title || 'System Notification',
+      message: notif.body || notif.message || '',
+      source: 'system',
+      read: false,
+      dismissed: false,
+      actionable: false,
+      desktop_shown: false,
+    };
   }
 
   /**
    * Get all active notifications
    */
   async getActive(): Promise<Notification[]> {
-    try {
-      const response = await fetch(`${this.gatewayUrl}/api/notifications/active`);
-      return await response.json();
-    } catch (e) {
-      console.error('[NotificationService] Failed to fetch active notifications:', e);
-      return [];
+    if (this.cachedNotifications.length === 0 && this.initialized) {
+      await this.refresh();
     }
+    return this.cachedNotifications;
   }
 
   /**
    * Get notification stats
    */
   async getStats(): Promise<NotificationStats> {
-    try {
-      const response = await fetch(`${this.gatewayUrl}/api/notifications/stats`);
-      return await response.json();
-    } catch (e) {
-      console.error('[NotificationService] Failed to fetch stats:', e);
-      return { total: 0, unread: 0, urgent: 0, actionable: 0 };
-    }
+    return this.cachedStats;
   }
 
   /**
    * Get notification preferences
    */
   async getPreferences(type?: string): Promise<NotificationPreferences | NotificationPreferences[]> {
-    try {
-      const url = type 
-        ? `${this.gatewayUrl}/api/notifications/preferences/${type}`
-        : `${this.gatewayUrl}/api/notifications/preferences`;
-      const response = await fetch(url);
-      return await response.json();
-    } catch (e) {
-      console.error('[NotificationService] Failed to fetch preferences:', e);
-      return type ? {
+    // Return sensible defaults; preferences are stored in localStorage
+    const allTypes = [
+      'task_complete', 'task_deadline', 'agent_update', 'message_arrival',
+      'approval_pending', 'calendar_event', 'system_alert', 'skill_learned', 'error'
+    ];
+
+    const stored = this.loadPreferences();
+
+    if (type) {
+      return stored[type] || {
         type,
         enabled: true,
         show_desktop: true,
         play_sound: false,
-        min_priority: 'normal',
-      } : [];
+        min_priority: 'normal' as const,
+      };
+    }
+
+    return allTypes.map(t => stored[t] || {
+      type: t,
+      enabled: true,
+      show_desktop: true,
+      play_sound: false,
+      min_priority: 'normal' as const,
+    });
+  }
+
+  private loadPreferences(): Record<string, NotificationPreferences> {
+    try {
+      const raw = localStorage.getItem('notif_preferences');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
     }
   }
 
@@ -316,81 +423,95 @@ class NotificationService {
    * Update notification preferences
    */
   async updatePreferences(type: string, prefs: Partial<NotificationPreferences>): Promise<void> {
-    try {
-      await fetch(`${this.gatewayUrl}/api/notifications/preferences/${type}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(prefs),
-      });
-    } catch (e) {
-      console.error('[NotificationService] Failed to update preferences:', e);
-    }
+    const all = this.loadPreferences();
+    all[type] = { ...(all[type] || { type, enabled: true, show_desktop: true, play_sound: false, min_priority: 'normal' }), ...prefs } as NotificationPreferences;
+    localStorage.setItem('notif_preferences', JSON.stringify(all));
   }
 
   /**
    * Mark notification as read
    */
   async markRead(id: string): Promise<void> {
-    try {
-      await fetch(`${this.gatewayUrl}/api/notifications/${id}/read`, { method: 'POST' });
-      this.updateStats();
-    } catch (e) {
-      console.error('[NotificationService] Failed to mark as read:', e);
+    this.readIds.add(id);
+    this.saveDismissedState();
+
+    // If it's a message notification, also mark read in DB
+    const notif = this.cachedNotifications.find(n => n.id === id);
+    if (notif?.data?.platform && window.clawdbot?.froggo?.query) {
+      const dbId = id.replace(/^msg-\w+-/, '');
+      try {
+        await window.clawdbot.froggo.query(
+          'UPDATE comms_cache SET is_read = 1 WHERE id = ?',
+          [parseInt(dbId) || 0]
+        );
+      } catch { /* best effort */ }
     }
+
+    this.cachedNotifications = this.cachedNotifications.map(n =>
+      n.id === id ? { ...n, read: true } : n
+    );
+    this.recalcStats();
   }
 
   /**
    * Mark all as read
    */
   async markAllRead(): Promise<void> {
-    try {
-      await fetch(`${this.gatewayUrl}/api/notifications/read-all`, { method: 'POST' });
-      this.updateStats();
-    } catch (e) {
-      console.error('[NotificationService] Failed to mark all as read:', e);
+    for (const n of this.cachedNotifications) {
+      this.readIds.add(n.id);
     }
+    this.saveDismissedState();
+    this.cachedNotifications = this.cachedNotifications.map(n => ({ ...n, read: true }));
+    this.recalcStats();
   }
 
   /**
    * Dismiss notification
    */
   async dismiss(id: string): Promise<void> {
-    try {
-      await fetch(`${this.gatewayUrl}/api/notifications/${id}/dismiss`, { method: 'POST' });
-      this.updateStats();
-    } catch (e) {
-      console.error('[NotificationService] Failed to dismiss:', e);
-    }
+    this.dismissedIds.add(id);
+    this.saveDismissedState();
+    this.cachedNotifications = this.cachedNotifications.filter(n => n.id !== id);
+    this.recalcStats();
+  }
+
+  private recalcStats() {
+    const active = this.cachedNotifications;
+    this.cachedStats = {
+      total: active.length,
+      unread: active.filter(n => !n.read).length,
+      urgent: active.filter(n => n.priority === 'urgent').length,
+      actionable: active.filter(n => n.actionable).length,
+      last_notification_at: active[0]?.created_at,
+    };
+    this.statsListeners.forEach(l => l(this.cachedStats));
   }
 
   /**
-   * Mark as desktop shown (internal)
-   */
-  private async markDesktopShown(id: string): Promise<void> {
-    try {
-      await fetch(`${this.gatewayUrl}/api/notifications/${id}/desktop-shown`, { method: 'POST' });
-    } catch (e) {
-      console.error('[NotificationService] Failed to mark desktop shown:', e);
-    }
-  }
-
-  /**
-   * Create a new notification
+   * Create a new notification (local only)
    */
   async create(data: Partial<Notification>): Promise<string> {
-    try {
-      const response = await fetch(`${this.gatewayUrl}/api/notifications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      this.updateStats();
-      return result.id;
-    } catch (e) {
-      console.error('[NotificationService] Failed to create notification:', e);
-      throw e;
-    }
+    const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const notification: Notification = {
+      id,
+      created_at: Date.now(),
+      updated_at: Date.now(),
+      type: 'system_alert',
+      priority: 'normal',
+      title: 'Notification',
+      message: '',
+      source: 'system',
+      read: false,
+      dismissed: false,
+      actionable: false,
+      desktop_shown: false,
+      ...data,
+    } as Notification;
+
+    this.cachedNotifications.unshift(notification);
+    this.listeners.forEach(l => l(notification));
+    this.recalcStats();
+    return id;
   }
 
   /**
@@ -410,39 +531,16 @@ class NotificationService {
   }
 
   /**
-   * Poll stats and notify listeners
-   */
-  private async updateStats() {
-    try {
-      const stats = await this.getStats();
-      this.statsListeners.forEach(listener => listener(stats));
-    } catch (e) {
-      console.error('[NotificationService] Failed to update stats:', e);
-    }
-  }
-
-  /**
-   * Start polling stats
-   */
-  private startStatsPolling() {
-    this.updateStats();
-    setInterval(() => this.updateStats(), 30000); // Every 30 seconds
-  }
-
-  /**
    * Cleanup
    */
   destroy() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
     }
     this.listeners.clear();
     this.statsListeners.clear();
+    this.initialized = false;
   }
 }
 

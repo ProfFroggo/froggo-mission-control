@@ -380,7 +380,13 @@ export default function NotificationsPanelV2() {
                         </span>
                         <Clock size={10} />
                         <span>{formatTimeAgo(notif.created_at)}</span>
-                        {notif.source_id && (
+                        {notif.channel && (
+                          <>
+                            <span>•</span>
+                            <span className="text-xs opacity-75">{notif.channel}</span>
+                          </>
+                        )}
+                        {notif.source_id && !notif.channel && (
                           <>
                             <span>•</span>
                             <span className="font-mono text-xs opacity-50">{notif.source_id}</span>
