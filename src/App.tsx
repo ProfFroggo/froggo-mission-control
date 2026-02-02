@@ -434,6 +434,8 @@ function App() {
             onNewTask={() => setCurrentView('kanban')}
             onAddContact={() => setContactModalOpen(true)}
             onAddSkill={() => setSkillModalOpen(true)}
+            onNavigate={(view) => setCurrentView(view as any)}
+            currentView={currentView}
             onApproveAll={async () => {
               try {
                 const result = await (window as any).clawdbot?.inbox?.approveAll();

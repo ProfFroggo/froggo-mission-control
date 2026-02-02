@@ -863,6 +863,25 @@ export default function CommsInbox() {
     loadMessages(true);
   }, [loadMessages]);
 
+  // Check for historical data on first mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const historyCheck = await (window as any).clawdbot?.inbox?.checkHistory?.();
+        if (historyCheck?.needsBackfill) {
+          console.log('[CommsInbox] First launch detected - triggering historical backfill...');
+          await (window as any).clawdbot?.inbox?.triggerBackfill?.(60);
+          // Show a notification that backfill is running
+          console.log('[CommsInbox] Historical backfill started in background');
+        } else {
+          console.log('[CommsInbox] Historical data already loaded:', historyCheck);
+        }
+      } catch (e) {
+        console.error('[CommsInbox] Failed to check historical data:', e);
+      }
+    })();
+  }, []); // Run only once on mount
+
   useEffect(() => {
     isMounted.current = true;
     loadMessages();
