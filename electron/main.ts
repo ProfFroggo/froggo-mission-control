@@ -1294,11 +1294,44 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
 });
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
-  const statusArg = status ? `--status ${status}` : '';
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) ${status ? `AND status='${status}'` : ''} ORDER BY created_at DESC" -json`;
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  // Only select needed columns, exclude large progress blob for list view
+  const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
+  // Exclude cancelled AND archived tasks from main view
+  const whereClause = `(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0) ${status ? `AND status='${status}'` : ''}`;
+  const cmd = `sqlite3 "${dbPath}" "SELECT ${columns} FROM tasks WHERE ${whereClause} ORDER BY created_at DESC LIMIT 500" -json`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+    exec(cmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout) => {
+      if (error) {
+        console.error('[tasks:list] Error:', error.message);
+        resolve({ success: false, tasks: [] });
+      } else {
+        try {
+          const tasks = JSON.parse(stdout || '[]');
+          // Get total done count (including archived) for display
+          exec(`sqlite3 "${dbPath}" "SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)"`, (err, countOut) => {
+            const totalDone = parseInt(countOut?.trim() || '0', 10);
+            const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
+            resolve({ success: true, tasks, totalDone, totalArchived });
+          });
+        } catch {
+          resolve({ success: false, tasks: [] });
+        }
+      }
+    });
+  });
+});
+
+// Search archived tasks (for audit trail - includes all tasks)
+ipcMain.handle('tasks:search', async (_, query: string, includeArchived = true) => {
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const escaped = query.replace(/'/g, "''");
+  const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
+  const cmd = `sqlite3 "${dbPath}" "SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE '%${escaped}%' OR description LIKE '%${escaped}%' OR id LIKE '%${escaped}%') ${archiveFilter} ORDER BY updated_at DESC LIMIT 100" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 10000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, tasks: [] });
       } else {
@@ -1307,6 +1340,27 @@ ipcMain.handle('tasks:list', async (_, status?: string) => {
           resolve({ success: true, tasks });
         } catch {
           resolve({ success: false, tasks: [] });
+        }
+      }
+    });
+  });
+});
+
+// Get task with full details including progress (for audit)
+ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const cmd = `sqlite3 "${dbPath}" "SELECT * FROM tasks WHERE id='${taskId}'" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000, maxBuffer: 2 * 1024 * 1024 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, task: null });
+      } else {
+        try {
+          const tasks = JSON.parse(stdout || '[]');
+          resolve({ success: true, task: tasks[0] || null });
+        } catch {
+          resolve({ success: false, task: null });
         }
       }
     });
@@ -1448,20 +1502,7 @@ ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
 ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) => {
   safeLog.log(`[Tasks] Internal Poke: ${taskId} - ${title}`);
   
-  const pokePrompt = `You are Froggo responding to a poke/nudge about a task. Be casual, direct, bit of humor - like texting a mate about work.
-Task: "${title}" (ID: ${taskId})
-The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
-Examples of your vibe:
-- "Oi why you poking me? 😂 Working on X, nearly done"
-- "Getting there boss, just dealing with Y"
-- "Almost cracked it, give me 5 more min"
-Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
-  
   try {
-    // Spawn a chat session scoped to this task poke
-    const sessionKey = `poke-${taskId}-${Date.now()}`;
-    const sessions = (global as any)._agentChatSessions = (global as any)._agentChatSessions || {};
-    
     // Determine which agent to use based on task assignment
     const taskAgent = await new Promise<string>((resolve) => {
       exec(
@@ -1482,42 +1523,43 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
       );
     });
 
-    sessions[sessionKey] = {
-      agentId: taskAgent,
-      messages: [{ role: 'system', content: pokePrompt }],
-      systemPrompt: pokePrompt,
-      taskId,
-      taskTitle: title,
-      createdAt: Date.now(),
-    };
+    const pokePrompt = `You are ${taskAgent} responding to a poke/nudge about a task. Be casual, direct, bit of humor - like texting a mate about work.
+Task: "${title}" (ID: ${taskId})
+The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
+Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 
-    // Get initial response via agent CLI
-    const escapedPrompt = pokePrompt.replace(/'/g, "'\\''");
+    // Use openclaw agent with --local --json for reliable response capture
+    const escapedPrompt = pokePrompt.replace(/"/g, '\\"');
     const response = await new Promise<string>((resolve, reject) => {
       exec(
-        `clawdbot agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent ${taskAgent}`,
-        { encoding: 'utf-8', timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+        `openclaw agent --message "${escapedPrompt}" --agent ${taskAgent} --local --json --timeout 20`,
+        { 
+          encoding: 'utf-8', 
+          timeout: 25000, 
+          maxBuffer: 5 * 1024 * 1024,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } 
+        },
         (error, stdout, stderr) => {
           if (error) {
             reject(new Error(stderr || error.message));
-          } else {
+            return;
+          }
+          try {
+            const result = JSON.parse(stdout);
+            const text = result.payloads?.[0]?.text || result.text || stdout;
+            resolve(text);
+          } catch {
+            // If not JSON, use raw output
             resolve(stdout.trim());
           }
         }
       );
     });
     
-    // Store the response in session history
-    sessions[sessionKey].messages.push(
-      { role: 'user', content: `What's the status of "${title}"?` },
-      { role: 'assistant', content: response }
-    );
-    
-    safeLog.log(`[Tasks] Internal poke response (${response.length} chars): ${response.slice(0, 100)}...`);
-    return { success: true, sessionKey, response };
+    safeLog.log(`[Tasks] Internal poke response from ${taskAgent}: ${response.slice(0, 100)}...`);
+    return { success: true, agentId: taskAgent, response };
   } catch (e: any) {
     safeLog.error(`[Tasks] Internal poke error: ${e.message}`);
-    // Fallback: return a fun error message instead of boring error
     return { 
       success: true, 
       sessionKey: null, 
@@ -6327,47 +6369,117 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 });
 
 // ============== SESSIONS IPC HANDLERS ==============
+// Session list with rate limiting and caching to prevent runaway process storms
+let sessionsCache: { data: any; timestamp: number } = { data: null, timestamp: 0 };
+let sessionsFailCount = 0;
+let sessionsLastFailTime = 0;
+let gatewayLastHealthy = 0; // Track last successful gateway connection
+const SESSIONS_CACHE_TTL = 5000; // 5 seconds cache
+const SESSIONS_BACKOFF_BASE = 2000; // 2 second base backoff
+const SESSIONS_MAX_BACKOFF = 60000; // Max 1 minute backoff
+const GATEWAY_HEALTH_THRESHOLD = 60000; // Skip CLI if gateway down > 60s
+
 ipcMain.handle('sessions:list', async () => {
-  try {
-    // Query centralized session store instead of gateway API
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
-    if (!fs.existsSync(sessionsDbPath)) {
-      return { success: false, sessions: [] };
+  const now = Date.now();
+  
+  // Return cached data if still fresh
+  if (sessionsCache.data && (now - sessionsCache.timestamp) < SESSIONS_CACHE_TTL) {
+    return sessionsCache.data;
+  }
+  
+  // Exponential backoff on repeated failures
+  if (sessionsFailCount > 0) {
+    const backoffTime = Math.min(SESSIONS_BACKOFF_BASE * Math.pow(2, sessionsFailCount - 1), SESSIONS_MAX_BACKOFF);
+    if ((now - sessionsLastFailTime) < backoffTime) {
+      // Still in backoff period, return cached or empty
+      return sessionsCache.data || { success: false, sessions: [], backoff: true };
     }
+  }
+  
+  try {
+    // Try Gateway API first (faster, no process spawn)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    
+    try {
+      const response = await fetch('http://localhost:18789/api/sessions', { 
+        signal: controller.signal 
+      });
+      clearTimeout(timeout);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const sessions = (data.sessions || []).map((s: any) => ({
+          key: s.key || s.sessionKey || '',
+          agent: s.agentId || '',
+          agentId: s.agentId || '',
+          kind: s.kind || 'direct',
+          label: s.label,
+          updatedAt: s.updatedAt || 0,
+          ageMs: s.ageMs || (s.updatedAt ? now - s.updatedAt : 0),
+          sessionId: s.sessionId || '',
+          channel: s.channel,
+          model: s.model,
+          totalTokens: s.totalTokens || 0,
+          contextTokens: s.contextTokens || 0,
+        }));
+        
+        sessionsFailCount = 0; // Reset on success
+        gatewayLastHealthy = now; // Track last successful gateway connection
+        sessionsCache = { data: { success: true, sessions }, timestamp: now };
+        return sessionsCache.data;
+      }
+    } catch (apiErr) {
+      clearTimeout(timeout);
+      // API failed, check if we should skip CLI fallback
+    }
+    
+    // Skip CLI fallback if gateway has been down for > 60s
+    // (CLI will also try to connect to gateway internally, causing more hangs)
+    if (gatewayLastHealthy > 0 && (now - gatewayLastHealthy) > GATEWAY_HEALTH_THRESHOLD) {
+      safeLog.warn(`[Sessions] Skipping CLI fallback - gateway down for ${Math.round((now - gatewayLastHealthy) / 1000)}s`);
+      sessionsFailCount++;
+      sessionsLastFailTime = now;
+      return sessionsCache.data || { success: false, sessions: [], gatewayDown: true };
+    }
+    
+    // CLI fallback - but with rate limiting
     const { promisify } = require('util');
     const execAsync = promisify(exec);
-    const query = `SELECT agent_id, session_key, session_id, updated_at, model, input_tokens, output_tokens, total_tokens, context_tokens, channel, system_sent, extra FROM sessions ORDER BY updated_at DESC LIMIT 200`;
-    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
-    let rows: any[] = [];
-    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
-
-    const now = Date.now();
-    const sessions = rows.map((r: any) => {
-      const key = r.session_key || '';
-      let label: string | undefined;
-      try { if (r.extra) { label = JSON.parse(r.extra).label; } } catch {}
-      return {
-        key,
-        agent: r.agent_id || '',
-        agentId: r.agent_id || '',
-        kind: key.includes(':subagent:') ? 'subagent' : 'direct',
-        label,
-        updatedAt: r.updated_at || 0,
-        ageMs: r.updated_at ? now - r.updated_at : 0,
-        sessionId: r.session_id || '',
-        channel: r.channel || undefined,
-        model: r.model || undefined,
-        totalTokens: r.total_tokens || 0,
-        inputTokens: r.input_tokens || 0,
-        outputTokens: r.output_tokens || 0,
-        contextTokens: r.context_tokens || 0,
-      };
+    const { stdout } = await execAsync('openclaw sessions list --json', { 
+      timeout: 8000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
     });
-
-    return { success: true, sessions };
+    
+    let sessions: any[] = [];
+    try { sessions = JSON.parse(stdout || '[]'); } catch { sessions = []; }
+    
+    const result = { 
+      success: true, 
+      sessions: sessions.map((s: any) => ({
+        key: s.key || '',
+        agent: s.agentId || '',
+        agentId: s.agentId || '',
+        kind: s.kind || 'direct',
+        label: s.label,
+        updatedAt: s.updatedAt || 0,
+        ageMs: s.ageMs || 0,
+        sessionId: s.sessionId || '',
+        channel: s.channel,
+        model: s.model,
+        totalTokens: s.totalTokens || 0,
+        contextTokens: s.contextTokens || 0,
+      }))
+    };
+    
+    sessionsFailCount = 0; // Reset on success
+    sessionsCache = { data: result, timestamp: now };
+    return result;
   } catch (error) {
-    safeLog.error('[Sessions] List error:', error);
-    return { success: false, sessions: [] };
+    sessionsFailCount++;
+    sessionsLastFailTime = now;
+    safeLog.warn(`[Sessions] List error (fail #${sessionsFailCount}, backoff ${Math.min(SESSIONS_BACKOFF_BASE * Math.pow(2, sessionsFailCount - 1), SESSIONS_MAX_BACKOFF)}ms):`, (error as Error).message);
+    return sessionsCache.data || { success: false, sessions: [] };
   }
 });
 
@@ -7509,5 +7621,49 @@ ipcMain.handle('dashboardAgents:status', async () => {
   } catch (error: any) {
     safeLog.error('[DashboardAgents] Status error:', error);
     return { success: false, agents: [], error: error.message };
+  }
+});
+
+// ============== HR REPORTS ==============
+ipcMain.handle('hrReports:list', async () => {
+  try {
+    const reportsDir = path.join(os.homedir(), 'clawd', 'reports', 'hr');
+    if (!fs.existsSync(reportsDir)) {
+      return { success: true, reports: [] };
+    }
+    const files = fs.readdirSync(reportsDir);
+    const reports = files
+      .filter(f => f.endsWith('.md') && f !== 'README.md')
+      .map(f => {
+        const filePath = path.join(reportsDir, f);
+        const stat = fs.statSync(filePath);
+        return {
+          name: f,
+          path: filePath,
+          size: stat.size,
+          createdAt: stat.birthtime.getTime(),
+          modifiedAt: stat.mtime.getTime(),
+        };
+      })
+      .sort((a, b) => b.createdAt - a.createdAt); // Newest first
+    return { success: true, reports };
+  } catch (error: any) {
+    console.error('[HRReports] List error:', error);
+    return { success: false, reports: [], error: error.message };
+  }
+});
+
+ipcMain.handle('hrReports:read', async (_, filename: string) => {
+  try {
+    const reportsDir = path.join(os.homedir(), 'clawd', 'reports', 'hr');
+    const filePath = path.join(reportsDir, path.basename(filename)); // Security: basename only
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'Report not found' };
+    }
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { success: true, content };
+  } catch (error: any) {
+    console.error('[HRReports] Read error:', error);
+    return { success: false, error: error.message };
   }
 });
