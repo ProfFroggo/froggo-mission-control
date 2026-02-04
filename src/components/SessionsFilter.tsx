@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
 import FolderSelector from './FolderSelector';
@@ -76,6 +76,10 @@ export default function SessionsFilter() {
   const [showSnoozeModal, setShowSnoozeModal] = useState<{ key: string; name: string } | null>(null);
   const [showSnoozed, setShowSnoozed] = useState(true);
 
+  // Request deduplication and backoff state
+  const fetchingRef = useRef(false);
+  const [failCount, setFailCount] = useState(0);
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -87,21 +91,43 @@ export default function SessionsFilter() {
 
   useEffect(() => {
     if (connected) {
-      fetchSessions();
-      loadFolders();
-      loadNotificationSettings();
-      loadPinnedSessions();
-      loadSnoozedSessions();
-      const interval = setInterval(() => {
-        fetchSessions();
-        loadFolders();
-        loadNotificationSettings();
-        loadPinnedSessions();
-        loadSnoozedSessions();
-      }, 30000);
-      return () => clearInterval(interval);
+      // Initial load
+      const poll = async () => {
+        // Skip if already fetching (request deduplication)
+        if (fetchingRef.current) {
+          console.log('[SessionsFilter] Skipping poll - request already in flight');
+          return;
+        }
+        
+        fetchingRef.current = true;
+        try {
+          await fetchSessions();
+          await loadFolders();
+          await loadNotificationSettings();
+          await loadPinnedSessions();
+          await loadSnoozedSessions();
+          // Reset fail count on success
+          setFailCount(0);
+        } catch (error) {
+          console.error('[SessionsFilter] Poll failed:', error);
+          // Increment fail count for exponential backoff
+          setFailCount(f => Math.min(f + 1, 6)); // Max 6 = 64x backoff
+        } finally {
+          fetchingRef.current = false;
+        }
+      };
+
+      // Initial poll
+      poll();
+
+      // Calculate interval with exponential backoff: 30s, 60s, 120s, 240s, 480s, 960s max
+      const interval = 30000 * Math.pow(2, failCount);
+      console.log(`[SessionsFilter] Setting poll interval to ${interval}ms (failCount=${failCount})`);
+      
+      const timer = setInterval(poll, interval);
+      return () => clearInterval(timer);
     }
-  }, [connected, fetchSessions]);
+  }, [connected, fetchSessions, failCount]);
 
   const loadFolders = async () => {
     try {
