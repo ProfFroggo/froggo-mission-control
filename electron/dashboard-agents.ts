@@ -66,7 +66,7 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
  */
 async function checkAgentHealth(agent: DashboardAgent): Promise<boolean> {
   try {
-    const cmd = `clawdbot sessions list --format json`;
+    const cmd = `openclaw sessions list --json`;
     const { stdout } = await execAsync(cmd, {
       timeout: 10000,
       env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
