@@ -12,6 +12,7 @@ import {
   Target,
   Download,
   RefreshCw,
+  Zap,
 } from 'lucide-react';
 import AnalyticsOverview from './AnalyticsOverview';
 import SessionsFilter from './SessionsFilter';
@@ -24,11 +25,13 @@ import UsageStatsPanel from './UsageStatsPanel';
 import AdvancedAgentComparison from './AdvancedAgentComparison';
 import PerformanceBenchmarks from './PerformanceBenchmarks';
 import RealTimeAnalytics from './RealTimeAnalytics';
+import TokenUsageWidget from './TokenUsageWidget';
 import { DateRange } from './DateRangePicker';
 
 type Tab =
   | 'overview'
   | 'realtime'
+  | 'tokens'
   | 'trends'
   | 'agents'
   | 'usage'
@@ -50,6 +53,12 @@ const TABS: { id: Tab; label: string; icon: any; description: string }[] = [
     label: 'Real-Time',
     icon: Activity,
     description: 'Live analytics feed',
+  },
+  {
+    id: 'tokens',
+    label: 'Token Usage',
+    icon: Zap,
+    description: 'Token burn rate & budgets',
   },
   {
     id: 'trends',
@@ -213,6 +222,7 @@ export default function AnalyticsDashboard() {
       <div className="flex-1 overflow-hidden p-6" key={refreshKey}>
         {activeTab === 'overview' && <AnalyticsOverview />}
         {activeTab === 'realtime' && <RealTimeAnalytics />}
+        {activeTab === 'tokens' && <TokenUsageWidget />}
         {activeTab === 'trends' && <TaskTrendsChart />}
         {activeTab === 'agents' && <AgentUtilizationChart />}
         {activeTab === 'usage' && <UsageStatsPanel />}
