@@ -219,6 +219,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getData: (timeRange: string) => ipcRenderer.invoke('analytics:getData', timeRange),
     subtaskStats: () => ipcRenderer.invoke('analytics:subtaskStats'),
     heatmap: (days: number) => ipcRenderer.invoke('analytics:heatmap', days),
+    timeTracking: (projectFilter?: string) => ipcRenderer.invoke('analytics:timeTracking', projectFilter),
+  },
+  // Token tracking and budgets
+  tokens: {
+    summary: (args?: { agent?: string; period?: string }) => ipcRenderer.invoke('tokens:summary', args),
+    log: (args?: { agent?: string; limit?: number; since?: number }) => ipcRenderer.invoke('tokens:log', args),
+    budget: (agent: string) => ipcRenderer.invoke('tokens:budget', agent),
   },
   // Rejection logging
   rejections: {
@@ -329,6 +336,17 @@ contextBridge.exposeInMainWorld('clawdbot', {
     upload: () => ipcRenderer.invoke('library:upload'),
     delete: (fileId: string) => ipcRenderer.invoke('library:delete', fileId),
     link: (fileId: string, taskId: string) => ipcRenderer.invoke('library:link', fileId, taskId),
+    view: (fileId: string) => ipcRenderer.invoke('library:view', fileId),
+    download: (fileId: string) => ipcRenderer.invoke('library:download', fileId),
+  },
+  // Shell
+  shell: {
+    openPath: (path: string) => ipcRenderer.invoke('shell:openPath', path),
+  },
+  // Skills
+  skills: {
+    list: () => ipcRenderer.invoke('skills:list'),
+    agentList: (agentId?: string) => ipcRenderer.invoke('skills:agent-list', agentId),
   },
   // Screenshot
   screenshot: {
@@ -377,15 +395,21 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // AI Content Generation
   ai: {
-    generateContent: (prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => 
+    generateContent: (prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') =>
       ipcRenderer.invoke('ai:generate-content', prompt, type),
     generateReply: (context: {
       threadMessages: Array<{role: string, content: string}>,
       platform?: string,
       recipientName?: string,
       subject?: string,
-      tone?: 'formal' | 'casual' | 'auto'
+      tone?: 'formal' | 'casual' | 'auto',
+      calendarContext?: string,
+      taskContext?: string,
     }) => ipcRenderer.invoke('ai:generateReply', context),
+    analyzeMessages: (ids: string[]) => ipcRenderer.invoke('ai:analyzeMessages', ids),
+    getAnalysis: (id: string, platform: string) => ipcRenderer.invoke('ai:getAnalysis', id, platform),
+    createDetectedTask: (task: { title: string; description?: string }) => ipcRenderer.invoke('ai:createDetectedTask', task),
+    createDetectedEvent: (event: { title: string; date: string; time?: string; duration?: string; location?: string; description?: string }) => ipcRenderer.invoke('ai:createDetectedEvent', event),
   },
   // Twitter (bird CLI)
   twitter: {
@@ -398,6 +422,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
     recent: (limit?: number, includeArchived?: boolean) => ipcRenderer.invoke('messages:recent', limit, includeArchived),
     context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
     send: (platform: string, to: string, message: string) => ipcRenderer.invoke('messages:send', { platform, to, message }),
+    onUpdate: (cb: (data: any) => void) => {
+      const handler = (_: any, data: any) => cb(data);
+      ipcRenderer.on('comms-updated', handler);
+      return () => ipcRenderer.removeListener('comms-updated', handler);
+    },
   },
   // Conversation management (archive/unarchive)
   conversations: {
@@ -410,6 +439,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // Email (gog CLI)
   email: {
+    accounts: () => ipcRenderer.invoke('email:accounts'),
     unread: (account?: string) => ipcRenderer.invoke('email:unread', account),
     search: (query: string, account?: string) => ipcRenderer.invoke('email:search', query, account),
     body: (emailId: string, account?: string) => ipcRenderer.invoke('email:body', emailId, account),
@@ -471,6 +501,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Chat message persistence (froggo-db backed)
   agents: {
     list: () => ipcRenderer.invoke('agents:list'), // Fetch agents from gateway via 'clawdbot agents list'
+    create: (config: { id: string; name: string; role: string; emoji: string; color: string; personality: string; voice?: string }) =>
+      ipcRenderer.invoke('agents:create', config),
     getRegistry: () => ipcRenderer.invoke('agents:getRegistry'),
     getMetrics: () => ipcRenderer.invoke('agents:getMetrics'),
     getDetails: (agentId: string) => ipcRenderer.invoke('agents:getDetails', agentId),
@@ -480,6 +512,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
     search: (query: string) => ipcRenderer.invoke('agents:search', query),
     spawnChat: (agentId: string) => ipcRenderer.invoke('agents:spawnChat', agentId),
     chat: (sessionKey: string, message: string) => ipcRenderer.invoke('agents:chat', sessionKey, message),
+    getActiveSessions: () => ipcRenderer.invoke('agents:getActiveSessions'),
+    spawnForTask: (taskId: string, agentId: string) => ipcRenderer.invoke('agents:spawnForTask', taskId, agentId),
   },
   chat: {
     saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) =>
@@ -541,6 +575,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.invoke('starred:stats'),
     check: (messageId: number) =>
       ipcRenderer.invoke('starred:check', messageId),
+  },
+  // HR Reports
+  hrReports: {
+    list: () => ipcRenderer.invoke('hrReports:list'),
+    read: (filename: string) => ipcRenderer.invoke('hrReports:read', filename),
   },
   // X Automations
   xAutomations: {
