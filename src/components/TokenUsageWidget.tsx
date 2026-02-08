@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { Zap, DollarSign, TrendingUp, Shield } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
+import AgentTokenDetailModal from './AgentTokenDetailModal';
 
 interface TokenSummaryResponse {
   by_agent: Array<{
@@ -54,6 +55,7 @@ export default function TokenUsageWidget() {
   const [summaryData, setSummaryData] = useState<TokenSummaryResponse | null>(null);
   const [budgetData, setBudgetData] = useState<Map<string, BudgetResponse>>(new Map());
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -229,12 +231,24 @@ export default function TokenUsageWidget() {
             <YAxis stroke="#9CA3AF" />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar dataKey="inputTokens" name="Input Tokens" stackId="a">
+            <Bar
+              dataKey="inputTokens"
+              name="Input Tokens"
+              stackId="a"
+              onClick={(data: any) => setSelectedAgent(data.agent)}
+              cursor="pointer"
+            >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-input-${index}`} fill={getAgentTheme(entry.agent).color} />
               ))}
             </Bar>
-            <Bar dataKey="outputTokens" name="Output Tokens" stackId="a">
+            <Bar
+              dataKey="outputTokens"
+              name="Output Tokens"
+              stackId="a"
+              onClick={(data: any) => setSelectedAgent(data.agent)}
+              cursor="pointer"
+            >
               {chartData.map((entry, index) => {
                 // Use a slightly darker/lighter variant for output
                 const baseColor = getAgentTheme(entry.agent).color;
@@ -264,7 +278,12 @@ export default function TokenUsageWidget() {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: getAgentTheme(agent.agent).color }}
                       />
-                      <span className="text-sm font-medium">{agent.agent}</span>
+                      <span
+                        className="text-sm font-medium cursor-pointer hover:underline"
+                        onClick={() => setSelectedAgent(agent.agent)}
+                      >
+                        {agent.agent}
+                      </span>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm text-clawd-text-dim">No budget set</div>
@@ -290,7 +309,12 @@ export default function TokenUsageWidget() {
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: getAgentTheme(agent.agent).color }}
                       />
-                      <span className="text-sm font-medium">{agent.agent}</span>
+                      <span
+                        className="text-sm font-medium cursor-pointer hover:underline"
+                        onClick={() => setSelectedAgent(agent.agent)}
+                      >
+                        {agent.agent}
+                      </span>
                       {budget.over_budget && (
                         <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full font-medium">
                           OVER BUDGET
@@ -316,6 +340,13 @@ export default function TokenUsageWidget() {
             })}
         </div>
       </div>
+
+      {/* Agent Token Detail Modal */}
+      <AgentTokenDetailModal
+        isOpen={selectedAgent !== null}
+        onClose={() => setSelectedAgent(null)}
+        agent={selectedAgent}
+      />
     </div>
   );
 }
