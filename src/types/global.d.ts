@@ -321,6 +321,17 @@ declare global {
         stats: () => Promise<{ success: boolean; stats: { total: number; byCategory?: any[] } }>;
         check: (messageId: number) => Promise<{ success: boolean; isStarred: boolean }>;
       };
+      // Agent registry (dynamic agent loading)
+      getAgentRegistry: () => Promise<Array<{
+        id: string;
+        name: string;
+        role: string;
+        description: string;
+        color: string;
+        image_path: string;
+        status: string;
+        trust_tier: string;
+      }>>;
     };
   }
 }
