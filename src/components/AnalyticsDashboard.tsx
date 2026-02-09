@@ -26,6 +26,7 @@ import AdvancedAgentComparison from './AdvancedAgentComparison';
 import PerformanceBenchmarks from './PerformanceBenchmarks';
 import RealTimeAnalytics from './RealTimeAnalytics';
 import TokenUsageWidget from './TokenUsageWidget';
+import PerformanceTable from './PerformanceTable';
 import { DateRange } from './DateRangePicker';
 
 type Tab =
@@ -224,7 +225,7 @@ export default function AnalyticsDashboard() {
         {activeTab === 'realtime' && <RealTimeAnalytics />}
         {activeTab === 'tokens' && <TokenUsageWidget />}
         {activeTab === 'trends' && <TaskTrendsChart />}
-        {activeTab === 'agents' && <AgentUtilizationChart />}
+        {activeTab === 'agents' && <PerformanceTable />}
         {activeTab === 'usage' && <UsageStatsPanel />}
         {activeTab === 'benchmarks' && <PerformanceBenchmarks />}
         {activeTab === 'time' && <TimeTrackingPanel />}

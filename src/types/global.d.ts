@@ -332,6 +332,39 @@ declare global {
         status: string;
         trust_tier: string;
       }>>;
+      // Agent performance & governance
+      getPerformanceReport: (days: number) => Promise<{
+        days: number;
+        agents: Array<{
+          agent_id: string;
+          status: string;
+          success_rate: number;
+          avg_completion_hours: number;
+          clara_approval_rate: number;
+          tokens_per_task: number;
+          total_tasks: number;
+          total_cost: number;
+        }>;
+        error?: string;
+      }>;
+      getAgentAudit: (agentId: string, days: number) => Promise<{
+        agent_id: string;
+        days: number;
+        timeline: Array<{
+          timestamp: string;
+          type: 'lifecycle' | 'activity';
+          action: string;
+          task_id?: string;
+          message?: string;
+          outcome?: string;
+          field?: string;
+          from_value?: string;
+          to_value?: string;
+          changed_by?: string;
+          reason?: string;
+        }>;
+        error?: string;
+      }>;
     };
   }
 }

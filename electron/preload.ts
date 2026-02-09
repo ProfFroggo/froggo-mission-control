@@ -516,6 +516,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
     spawnForTask: (taskId: string, agentId: string) => ipcRenderer.invoke('agents:spawnForTask', taskId, agentId),
   },
   getAgentRegistry: () => ipcRenderer.invoke('get-agent-registry'),
+  getPerformanceReport: (days: number) => ipcRenderer.invoke('get-performance-report', { days }),
+  getAgentAudit: (agentId: string, days: number) => ipcRenderer.invoke('get-agent-audit', { agentId, days }),
   chat: {
     saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) =>
       ipcRenderer.invoke('chat:saveMessage', msg),
