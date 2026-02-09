@@ -64,8 +64,9 @@ export default function TokenUsageWidget() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Fetch token summary
-      const summary = await (window as any).clawdbot.tokens.summary({ period });
+      // Map UI period names to froggo-db period names
+      const periodMap: Record<string, string> = { 'today': 'day', '7d': 'week', '30d': 'month' };
+      const summary = await (window as any).clawdbot.tokens.summary({ period: periodMap[period] || period });
       setSummaryData(summary);
 
       if (!summary.error && summary.by_agent) {
@@ -292,10 +293,11 @@ export default function TokenUsageWidget() {
                 );
               }
 
-              const percentage = budget.percentage_used;
-              const threshold = budget.alert_threshold || 0.9;
+              const pctRaw = budget.percent_used ?? budget.percentage_used ?? 0;
+              const percentage = pctRaw > 1 ? pctRaw : pctRaw * 100; // normalize to 0-100
+              const threshold = (budget.alert_threshold || 0.9) * 100;
               let barColor = getAgentTheme(agent.agent).color; // Green (< 70%)
-              if (percentage >= threshold * 100) {
+              if (percentage >= threshold) {
                 barColor = '#EF4444'; // Red (>= alert threshold)
               } else if (percentage >= 70) {
                 barColor = '#F59E0B'; // Yellow (70-90%)
