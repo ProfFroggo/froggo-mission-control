@@ -385,6 +385,22 @@ declare global {
         }>;
         error?: string;
       }>;
+      // Widget API - dynamic agent widget loading
+      widgetAPI?: {
+        scanManifest: (agentId: string) => Promise<{
+          version?: string;
+          widgets?: Array<{
+            id: string;
+            name: string;
+            component: string;
+            permissions: string[];
+            panelType: 'dashboard' | 'sidebar' | 'modal';
+            icon: string;
+            description: string;
+          }>;
+          error?: string;
+        }>;
+      };
     };
   }
 }

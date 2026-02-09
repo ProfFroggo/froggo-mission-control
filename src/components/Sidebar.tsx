@@ -140,7 +140,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   return (
     <>
     <aside 
-      className={`bg-clawd-surface border-r border-clawd-border flex flex-col transition-all duration-300 ease-in-out ${
+      className={`bg-clawd-surface border-r border-clawd-border flex flex-col transition-all duration-300 ease-in-out z-0 ${
         expanded ? 'w-52' : 'w-16'
       }`}
       role="navigation"

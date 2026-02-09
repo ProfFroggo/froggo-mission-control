@@ -133,17 +133,6 @@ export const AGENTS: Record<string, AgentConfig> = {
     capabilities: ['social', 'content', 'scheduling'],
     model: 'anthropic/claude-sonnet-4',
   },
-  'lead-engineer': {
-    id: 'lead-engineer',
-    name: 'Lead Engineer',
-    emoji: '🔧',
-    description: 'Lead Engineer / Technical Co-founder',
-    workspace: '/Users/worker/clawd-lead-engineer',
-    workspaceFiles: workspaceFiles('/Users/worker/clawd-lead-engineer'),
-    systemPromptPath: '/Users/worker/clawd-lead-engineer/AGENTS.md',
-    capabilities: ['engineering', 'architecture', 'gsd'],
-    model: 'anthropic/claude-sonnet-4',
-  },
   voice: {
     id: 'voice',
     name: 'Voice',

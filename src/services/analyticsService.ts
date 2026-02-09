@@ -196,13 +196,27 @@ export async function getAgentUtilization(): Promise<AgentUtilization[]> {
 
 /**
  * Get time tracking data for all tasks
- * Note: The IPC handler doesn't provide per-task time data,
- * so we return an empty array. The TimeTrackingPanel will show
- * a "no data" state gracefully.
  */
 export async function getTimeTrackingData(
-  _projectFilter?: string
+  projectFilter?: string
 ): Promise<TimeTrackingData[]> {
+  try {
+    const result = await (window as any).clawdbot?.analytics?.timeTracking(projectFilter);
+    if (result?.success && result.data) {
+      return result.data.map((row: any) => ({
+        taskId: row.taskId,
+        taskTitle: row.taskTitle,
+        project: row.project,
+        agent: row.agent,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        duration: row.duration,
+        status: row.status,
+      }));
+    }
+  } catch (err) {
+    console.error('analytics:timeTracking IPC failed:', err);
+  }
   return [];
 }
 

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle } from 'lucide-react';
+import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
 import AgentSkillsModal from './AgentSkillsModal';
+import HRReportsModal from './HRReportsModal';
 
 interface TeamHealth {
   totalAgents: number;
@@ -16,6 +17,7 @@ export default function HRSection() {
   const [showCreate, setShowCreate] = useState(false);
   const [showTrainingLog, setShowTrainingLog] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
+  const [showReports, setShowReports] = useState(false);
   const [teamHealth, setTeamHealth] = useState<TeamHealth | null>(null);
   const [, setLoading] = useState(true);
 
@@ -129,6 +131,12 @@ export default function HRSection() {
               <UserPlus size={16} /> Create New Agent
             </button>
             <button
+              onClick={() => setShowReports(true)}
+              className="flex items-center gap-2 px-4 py-2.5 border border-teal-500/30 text-teal-400 rounded-xl hover:bg-teal-500/10 transition-colors text-sm"
+            >
+              <FileText size={16} /> Reports
+            </button>
+            <button
               onClick={() => setShowTrainingLog(true)}
               className="flex items-center gap-2 px-4 py-2.5 border border-teal-500/30 text-teal-400 rounded-xl hover:bg-teal-500/10 transition-colors text-sm"
             >
@@ -168,6 +176,7 @@ export default function HRSection() {
       )}
       {showTrainingLog && <TrainingLogModal onClose={() => setShowTrainingLog(false)} />}
       {showSkills && <AgentSkillsModal onClose={() => setShowSkills(false)} />}
+      {showReports && <HRReportsModal onClose={() => setShowReports(false)} />}
     </>
   );
 }

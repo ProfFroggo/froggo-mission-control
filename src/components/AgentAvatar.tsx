@@ -8,6 +8,8 @@ interface AgentAvatarProps {
   className?: string;
   /** Show colored ring around avatar */
   ring?: boolean;
+  /** Agent status: active (green pulse), paused (orange pulse), blocked (red), idle (grey) */
+  status?: 'active' | 'paused' | 'blocked' | 'idle';
 }
 
 const sizeMap = {
@@ -19,14 +21,30 @@ const sizeMap = {
   '2xl': { container: 'w-20 h-20', text: 'text-5xl', ring: 'ring-3' },
 };
 
-export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', className = '', ring = false }: AgentAvatarProps) {
+export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', className = '', ring = false, status }: AgentAvatarProps) {
   const [imgError, setImgError] = useState(false);
   const theme = getAgentTheme(agentId);
   const s = sizeMap[size];
   const hasPic = theme.pic && !imgError;
 
+  // Status-based ring styles
+  const statusRing = status ? (() => {
+    switch (status) {
+      case 'active':
+        return `ring-2 ring-green-400 animate-pulse`;
+      case 'paused':
+        return `ring-2 ring-orange-400 animate-pulse`;
+      case 'blocked':
+        return `ring-2 ring-red-400`;
+      case 'idle':
+        return `ring-1 ring-gray-600`;
+      default:
+        return '';
+    }
+  })() : '';
+
   return (
-    <div className={`${s.container} relative rounded-full overflow-hidden flex-shrink-0 ${ring ? `ring ${s.ring} ${theme.ring}` : ''} ${className}`}>
+    <div className={`${s.container} relative rounded-full overflow-hidden flex-shrink-0 ${ring ? `ring ${s.ring} ${theme.ring}` : statusRing} ${className}`}>
       {hasPic ? (
         <img
           src={`./agent-profiles/${theme.pic}`}

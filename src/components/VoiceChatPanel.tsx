@@ -205,15 +205,23 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         const role = data.role === 'model' ? 'assistant' : 'user';
         const text = data.text.trim();
         
-        // Log to gateway for session persistence
-        gateway.request('chat.inject', {
-          sessionKey: gateway.getSessionKey(),
-          role,
-          message: text,
-          label: 'voice'
-        }).catch(err => {
-          console.warn('[VoiceChat] Failed to log to gateway:', err);
-        });
+        // Debounced gateway logging — batch transcript fragments into complete messages
+        const bufKey = role === 'user' ? '_userTranscriptBuf' : '_modelTranscriptBuf';
+        const timerKey = role === 'user' ? '_userTranscriptTimer' : '_modelTranscriptTimer';
+        const w = window as any;
+        w[bufKey] = (w[bufKey] || '') + ' ' + text;
+        if (w[timerKey]) clearTimeout(w[timerKey]);
+        w[timerKey] = setTimeout(() => {
+          const batch = (w[bufKey] || '').trim();
+          w[bufKey] = '';
+          if (batch) {
+            gateway.request('chat.inject', {
+              sessionKey: gateway.getSessionKey(),
+              message: role === 'user' ? `[user] ${batch}` : batch,
+              // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
+            }).catch(err => console.warn('[VoiceChat] Failed to log to gateway:', err));
+          }
+        }, 2000); // Wait 2s of silence before flushing
         
         setMessages(prev => {
           const last = prev[prev.length - 1];
@@ -232,6 +240,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
         try {
           if (!toolCall?.functionCalls?.length) return;
+          // Keep WebSocket alive while executing tools
+          geminiLive.startToolCallKeepalive();
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
             console.log(`[VoiceChat] Tool: ${fc.name}`, fc.args);
@@ -257,6 +267,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             addSystemMessage(`⚠️ Tool response send failed: ${sendErr.message}`);
           }
         } catch (outerErr: any) {
+          geminiLive.stopToolCallKeepalive();
           console.error('[VoiceChat] Unexpected error in tool-call handler:', outerErr);
           addSystemMessage(`⚠️ Tool call error: ${outerErr.message}`);
         }
@@ -874,6 +885,15 @@ function buildAgentTools(): GeminiTool[] {
   ];
 }
 
+// ── Input sanitization helpers ──
+function shellSafe(input: unknown): string {
+  return String(input ?? '').replace(/[^a-zA-Z0-9 _.,@:/#=+\-\n]/g, '');
+}
+
+function isCleanId(id: unknown): boolean {
+  return typeof id === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(id);
+}
+
 // ── Tool call executor ──
 async function executeToolCall(fnName: string, args: Record<string, any>, currentAgent: ChatAgent): Promise<any> {
   const exec = (window as any).clawdbot?.exec?.run;
@@ -882,41 +902,46 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
   try {
     switch (fnName) {
       case 'create_task': {
-        const title = args.title || 'Untitled task';
-        const assignee = args.assigned_to || currentAgent.id;
-        const priority = args.priority || 'medium';
-        const status = args.status || 'todo';
-        const desc = args.description || '';
-        const r = await exec(`froggo-db task-add "${title.replace(/"/g, '\\"')}" --priority ${priority} --assign ${assignee} --status ${status} ${desc ? `--desc "${desc.replace(/"/g, '\\"')}"` : ''} 2>&1`);
+        const title = shellSafe(args.title || 'Untitled task');
+        const assignee = isCleanId(args.assigned_to) ? args.assigned_to : currentAgent.id;
+        const priority = isCleanId(args.priority) ? args.priority : 'medium';
+        const status = isCleanId(args.status) ? args.status : 'todo';
+        const desc = shellSafe(args.description || '');
+        const r = await exec(`froggo-db task-add "${title}" --priority ${priority} --assign ${assignee} --status ${status} ${desc ? `--desc "${desc}"` : ''} 2>&1`);
         invalidateAgentContext(assignee);
         return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim(), task_created: title };
       }
       case 'update_task': {
+        if (!isCleanId(args.task_id)) return { error: 'Invalid task ID' };
         const parts = [`froggo-db task-update ${args.task_id}`];
-        if (args.status) parts.push(`--status ${args.status}`);
-        if (args.priority) parts.push(`--priority ${args.priority}`);
-        if (args.assigned_to) parts.push(`--assign ${args.assigned_to}`);
+        if (args.status && isCleanId(args.status)) parts.push(`--status ${args.status}`);
+        if (args.priority && isCleanId(args.priority)) parts.push(`--priority ${args.priority}`);
+        if (args.assigned_to && isCleanId(args.assigned_to)) parts.push(`--assign ${args.assigned_to}`);
         const r = await exec(parts.join(' ') + ' 2>&1');
         invalidateAgentContext();
         return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
       }
       case 'list_tasks': {
         const where = [];
-        if (args.agent_id) where.push(`assigned_to='${args.agent_id}'`);
-        if (args.status && args.status !== 'all') where.push(`status='${args.status}'`);
+        if (args.agent_id && isCleanId(args.agent_id)) where.push(`assigned_to='${args.agent_id}'`);
+        if (args.status && args.status !== 'all' && isCleanId(args.status)) where.push(`status='${args.status}'`);
         const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
         const r = await exec(`froggo-db query "SELECT id, title, status, priority, assigned_to FROM tasks ${whereClause} ORDER BY created_at DESC LIMIT 15" --json 2>&1`);
         try { return { tasks: JSON.parse(r.stdout) }; } catch { return { tasks: [], raw: r.stdout?.trim() }; }
       }
       case 'spawn_agent': {
+        if (!isCleanId(args.agent_id)) return { error: 'Invalid agent ID' };
         if (args.task_title) {
-          await exec(`froggo-db task-add "${args.task_title.replace(/"/g, '\\"')}" --assign ${args.agent_id} --priority high --status todo 2>&1`);
+          const safeTitle = shellSafe(args.task_title);
+          await exec(`froggo-db task-add "${safeTitle}" --assign ${args.agent_id} --priority high --status todo 2>&1`);
         }
-        const r = await exec(`clawdbot gateway sessions-send --target "agent:${args.agent_id}:main" --message "${args.message.replace(/"/g, '\\"')}" 2>&1`);
+        const safeMsg = shellSafe(args.message);
+        const r = await exec(`clawdbot gateway sessions-send --target "agent:${args.agent_id}:main" --message "${safeMsg}" 2>&1`);
         invalidateAgentContext(args.agent_id);
         return { success: r.success, output: r.stdout?.trim(), agent_spawned: args.agent_id };
       }
       case 'get_agent_status': {
+        if (!isCleanId(args.agent_id)) return { error: 'Invalid agent ID' };
         const ctx = await loadAgentContext(args.agent_id);
         return {
           agent: args.agent_id,
@@ -926,32 +951,35 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         };
       }
       case 'read_file': {
-        const maxLines = args.max_lines || 100;
-        const r = await exec(`head -n ${maxLines} ${args.path} 2>&1`);
+        const maxLines = Math.min(Math.max(parseInt(args.max_lines) || 100, 1), 500);
+        const safePath = shellSafe(args.path);
+        if (safePath.includes('..')) return { error: 'Path traversal not allowed' };
+        const r = await exec(`head -n ${maxLines} ${safePath} 2>&1`);
         return { content: r.stdout || r.stderr || 'File not found' };
       }
       case 'run_command': {
         const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'openclaw', 'date', 'echo', 'wc', 'which', 'node', 'npx', 'python3', 'curl', 'df', 'uptime', 'ps', 'who'];
-        const cmd = args.command.trim().split(/\s+/)[0];
-        if (!allowed.includes(cmd)) {
+        const safeCmd = shellSafe(args.command);
+        const firstWord = safeCmd.trim().split(/\s+/)[0];
+        if (!allowed.includes(firstWord)) {
           return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
         }
-        const r = await exec(args.command + ' 2>&1');
+        const r = await exec(safeCmd + ' 2>&1');
         return { stdout: r.stdout, stderr: r.stderr };
       }
       case 'send_message': {
-        const escapedMsg = args.message.replace(/"/g, '\\"');
-        const r = await exec(`clawdbot gateway sessions-send --label discord --message "${escapedMsg}" 2>&1`);
+        const safeMsg = shellSafe(args.message);
+        const r = await exec(`clawdbot gateway sessions-send --label discord --message "${safeMsg}" 2>&1`);
         return { success: r.success, output: r.stdout?.trim() };
       }
       case 'search_workspace': {
-        const escapedQuery = args.query.replace(/"/g, '\\"');
-        const r = await exec(`grep -rl "${escapedQuery}" ~/clawd/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
+        const safeQuery = shellSafe(args.query);
+        const r = await exec(`grep -rl "${safeQuery}" ~/clawd/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
       }
       case 'web_search': {
-        const q = (args.query || '').replace(/"/g, '\\"');
-        const r = await exec(`openclaw agent --agent froggo --local --message "Search the web for: ${q}. Return only the top 3-5 results with titles and brief descriptions." --json 2>&1 || curl -s "https://api.duckduckgo.com/?q=${encodeURIComponent(args.query)}&format=json&no_html=1" 2>&1`);
+        const safeQ = shellSafe(args.query || '');
+        const r = await exec(`openclaw agent --agent froggo --local --message "Search the web for: ${safeQ}. Return only the top 3-5 results with titles and brief descriptions." --json 2>&1 || curl -s "https://api.duckduckgo.com/?q=${encodeURIComponent(safeQ)}&format=json&no_html=1" 2>&1`);
         return { output: r.stdout?.trim()?.slice(0, 2000) || r.stderr?.trim() };
       }
       case 'check_calendar': {
@@ -960,10 +988,10 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         return { output: r.stdout?.trim()?.slice(0, 2000) || 'Calendar check failed' };
       }
       case 'memory_search': {
-        const agent = args.agent_id || 'froggo';
+        const agent = isCleanId(args.agent_id) ? args.agent_id : 'froggo';
         const memBase = agent === 'froggo' ? '~/clawd' : `~/clawd-${agent}`;
-        const q = (args.query || '').replace(/"/g, '\\"');
-        const r = await exec(`grep -rli "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
+        const safeQ = shellSafe(args.query || '');
+        const r = await exec(`grep -rli "${safeQ}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${safeQ}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
         return { results: r.stdout?.trim() || 'No matches found' };
       }
       case 'write_memory': {
@@ -998,78 +1026,55 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
 function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null, currentVideoMode?: VideoMode): string {
   const parts: string[] = [];
 
+  // VOICE-OPTIMIZED: Minimal core identity only (~200 tokens)
   if (context?.personality) {
     const p = context.personality;
-    parts.push(`You are ${p.name} (${p.emoji}), ${p.role}. ${p.personality}. ${p.vibe}`);
-    if (p.bio) parts.push(`Bio: ${p.bio}`);
+    parts.push(`You are ${p.name} (${p.emoji}), ${p.role}. ${p.personality}.`);
   } else {
     parts.push(`You are ${agent.name}, ${agent.role || 'an AI assistant'}.`);
   }
 
-  parts.push(`\nCurrent date: ${new Date().toLocaleString()}`);
+  // Essential facts only (~150 tokens)
+  parts.push(`Current date: ${new Date().toLocaleString()}`);
+  parts.push(`Your human: Kevin MacArthur (Europe/Gibraltar, wife Melanie, daughters Willow 5 & Aeyva 3).`);
+  
+  // Team roster (one-liners only, ~150 tokens)
+  parts.push(`Your team: Coder 💻 (code/builds), Writer ✍️ (content), Researcher 🔍 (analysis), Chief 👨‍💻 (complex projects), Clara 🔍 (quality review), Designer 🎨 (UI/UX), HR 🎓 (agent management), Jess 🤖 (psychology/therapy).`);
 
-  // Core identity from SOUL.md
-  if (context?.workspaceFiles?.soul) {
-    parts.push(`\n## Your Core Identity (SOUL.md)\n${context.workspaceFiles.soul}`);
-  }
+  // Voice behavior (~100 tokens)
+  parts.push(`\nVoice chat mode: Be conversational and concise (1-3 sentences). Natural speech, no markdown. Use tools proactively — don't ask permission, just do it.`);
 
-  // User context from USER.md
-  if (context?.workspaceFiles?.user) {
-    parts.push(`\n## About Your Human (USER.md)\n${context.workspaceFiles.user}`);
-  }
+  // Tool awareness with memory/database emphasis (~400 tokens)
+  parts.push(`\n## Your Tools
+Use these proactively when needed:
 
-  // Identity details
-  if (context?.workspaceFiles?.identity) {
-    parts.push(`\n## Identity Details\n${context.workspaceFiles.identity}`);
-  }
+**Memory & Database:**
+- memory_search — Search your memory files for context, past work, decisions
+- read_file — Read SOUL.md, AGENTS.md, MEMORY.md, or any workspace file
+- run_command — Execute froggo-db for tasks (task-list, task-get, task-add, subtask-list, etc.)
 
-  // Agent instructions (AGENTS.md)
-  if (context?.workspaceFiles?.agents) {
-    parts.push(`\n## Agent Instructions (AGENTS.md)\n${context.workspaceFiles.agents}`);
-  }
+**Task Management:**
+- create_task, update_task, list_tasks — Manage Kanban tasks
+- spawn_agent, get_agent_status — Work with other agents
 
-  // Tools reference (TOOLS.md)
-  if (context?.workspaceFiles?.tools) {
-    parts.push(`\n## Tools Reference (TOOLS.md)\n${context.workspaceFiles.tools}`);
-  }
+**Communication:**
+- send_message — Discord messages
+- send_whatsapp — WhatsApp messages
 
-  // Platform context
-  if (context?.workspaceFiles?.platform_context) {
-    parts.push(`\n## Platform Context\n${context.workspaceFiles.platform_context}`);
-  }
+**System:**
+- search_workspace — Find files in workspace
+- check_calendar, check_email — Check schedule/inbox
+- web_search — Search internet
+- write_memory — Save notes for later
 
-  // Long-term curated memory
-  if (context?.workspaceFiles?.memory_longterm) {
-    parts.push(`\n## Long-term Memory\n${context.workspaceFiles.memory_longterm}`);
-  }
+**CRITICAL:** When you don't know something (agent details, past work, workflow rules), USE TOOLS to look it up:
+- memory_search for "what did I do with [topic]"
+- read_file ~/clawd/SOUL.md for your full personality
+- read_file ~/clawd/AGENTS.md for workflow rules
+- run_command froggo-db task-list for current work
+- read_file ~/clawd-{agent}/SOUL.md for other agents' details
 
-  // Today's memory
-  if (context?.memory) {
-    parts.push(`\n## Recent Memory (Today)\n${context.memory.slice(0, 1000)}`);
-  }
-
-  parts.push(`
-You are speaking to your human via voice chat. Be conversational, concise, and natural.
-Keep responses to 1-3 sentences unless asked for detail.
-Don't narrate tool usage — just do it and report the result naturally.`);
-
-  // Tool capability awareness
-  parts.push(`\n## Your Capabilities
-You have access to powerful tools — use them proactively:
-- create_task, update_task, list_tasks — Manage tasks in Kanban
-- spawn_agent, get_agent_status — Work with other agents (coder, writer, researcher, chief, etc.)
-- read_file — Read workspace files
-- run_command — Execute shell commands (cat, head, tail, ls, find, grep, froggo-db, git, openclaw, date, echo, wc, node, npx, python3, curl, etc.)
-- send_message — Send messages to Discord
-- send_whatsapp — Send WhatsApp messages
-- search_workspace — Search workspace files
-- web_search — Search the internet
-- check_calendar — Check upcoming events
-- check_email — Check recent emails
-- memory_search — Search agent memory for context
-- write_memory — Save notes to memory for continuity
-
-When Kevin asks you to do something, DO IT with tools. Don't just describe what you'd do.`);
+Don't say "I don't have access to that info" — use tools to GET the info.`);
 
   // Video/screen awareness
   if (currentVideoMode && currentVideoMode !== 'none') {

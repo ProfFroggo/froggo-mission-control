@@ -2,16 +2,16 @@ import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
 import PokeModal from './PokeModal';
-import TaskStatusIndicator from './TaskStatusIndicator';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import HealthCheckModal from './HealthCheckModal';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
@@ -51,14 +51,12 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
-  { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-clawd-bg0/10', emoji: '📋' },
   { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10', emoji: '📝' },
   { id: 'internal-review', title: 'Internal Review', color: 'border-l-cyan-500', bg: 'bg-cyan-500/10', emoji: '🔍' },
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
   { id: 'review', title: 'Agent Review', color: 'border-l-purple-500', bg: 'bg-purple-500/10', emoji: '🤖' },
   { id: 'human-review', title: 'Human Review', color: 'border-l-orange-500', bg: 'bg-orange-500/10', emoji: '👤' },
   { id: 'done', title: 'Done', color: 'border-l-green-500', bg: 'bg-green-500/10', emoji: '✅' },
-  { id: 'failed', title: 'Failed', color: 'border-l-red-500', bg: 'bg-red-500/10', emoji: '❌' },
 ];
 
 interface Filters {
@@ -71,13 +69,16 @@ interface Filters {
 }
 
 export default function Kanban() {
-  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading } = useStore();
+  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading, taskCounts } = useStore();
   
   // Local loading states for operations
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletingTasks, setDeletingTasks] = useState<Set<string>>(new Set());
   const [spawningTasks, setSpawningTasks] = useState<Set<string>>(new Set());
   const [movingTasks, setMovingTasks] = useState<Set<string>>(new Set());
+  
+  // Active agent sessions (for real-time activity indicators)
+  const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
   
   // Load tasks from froggo-db on mount and poll (only when visible)
   useEffect(() => {
@@ -113,6 +114,29 @@ export default function Kanban() {
     };
   }, [loadTasksFromDB]);
   
+  // Poll active agent sessions for activity indicators
+  useEffect(() => {
+    const pollActiveSessions = async () => {
+      try {
+        const result = await (window as any).clawdbot?.agents?.getActiveSessions();
+        if (result?.success && result.sessions) {
+          const activeMap: Record<string, boolean> = {};
+          result.sessions.forEach((s: any) => {
+            activeMap[s.agentId] = true;
+          });
+          setActiveSessions(activeMap);
+        }
+      } catch (err) {
+        console.error('Failed to poll active sessions:', err);
+      }
+    };
+    
+    pollActiveSessions(); // Initial poll
+    const interval = setInterval(pollActiveSessions, 30000); // Poll every 30s
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -121,6 +145,7 @@ export default function Kanban() {
   const [pokeTask, setPokeTask] = useState<Task | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showHealthCheck, setShowHealthCheck] = useState(false);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -292,46 +317,6 @@ export default function Kanban() {
       return;
     }
 
-    // PLANNING PHASE VALIDATION: backlog → todo requires planning
-    if (task.status === 'backlog' && status === 'todo') {
-      const errors: string[] = [];
-      
-      // Check 1: Subtasks
-      const subtaskCount = (task.subtasks || []).length;
-      if (subtaskCount === 0) {
-        errors.push('❌ No subtasks - break down the work first');
-      }
-      
-      // Check 2: Worker assigned
-      if (!task.assignedTo || task.assignedTo === '') {
-        errors.push('❌ No worker assigned');
-      } else if (['main', 'froggo'].includes(task.assignedTo)) {
-        errors.push('❌ Assigned to main/froggo - use coder/researcher/writer/chief');
-      }
-      
-      // Check 3: Planning notes (detailed)
-      if (!task.planningNotes || task.planningNotes.trim().length < 50) {
-        errors.push('❌ No planning notes (min 50 chars)');
-      }
-      
-      // Check 4: Effort estimate in planning notes
-      if (task.planningNotes) {
-        const hasEffort = /effort|estimate|complexity|hours|days|easy|medium|hard|simple|complex/i.test(task.planningNotes);
-        if (!hasEffort) {
-          errors.push('❌ No effort estimate in planning notes');
-        }
-      } else {
-        errors.push('❌ Document effort/complexity');
-      }
-      
-      if (errors.length > 0) {
-        showToast('error', 'Planning incomplete', errors.join('\n'));
-        setDraggedTask(null);
-        setDragOverColumn(null);
-        return;
-      }
-    }
-
     // All validations passed - move the task
     handleMoveTask(draggedTask, status);
     setDraggedTask(null);
@@ -361,6 +346,10 @@ export default function Kanban() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const handleHealthCheck = () => {
+    setShowHealthCheck(true);
   };
 
   const handleDeleteTask = async (taskId: string) => {
@@ -485,6 +474,16 @@ export default function Kanban() {
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
+
+            {/* Health Check */}
+            <button
+              onClick={handleHealthCheck}
+              className="icon-text px-3 py-2 border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/10 transition-all"
+              title="Request Froggo to review board health, merge redundant tasks, and verify workflow"
+            >
+              <Stethoscope size={16} className="flex-shrink-0" />
+              Health Check
+            </button>
             
             {/* New Task */}
             <button 
@@ -598,8 +597,10 @@ export default function Kanban() {
                   <div className="icon-text">
                     <span>{column.emoji}</span>
                     <h3 className="font-semibold text-sm">{column.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`}>
-                      {columnTasks.length}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
+                      {column.id === 'done' && taskCounts.totalDone > columnTasks.length 
+                        ? `${columnTasks.length}/${taskCounts.totalDone}`
+                        : columnTasks.length}
                     </span>
                   </div>
                   <button
@@ -626,6 +627,7 @@ export default function Kanban() {
                       key={task.id}
                       task={task}
                       agents={agents}
+                      activeSessions={activeSessions}
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onDragEnd={handleDragEnd}
                       onDelete={() => handleDeleteTask(task.id)}
@@ -696,6 +698,19 @@ export default function Kanban() {
           onClose={() => setPokeTask(null)}
         />
       )}
+
+      {showHealthCheck && (
+        <HealthCheckModal
+          onClose={() => setShowHealthCheck(false)}
+          stats={{
+            totalTasks: tasks.length,
+            inProgress: stats.inProgress,
+            urgent: stats.urgent,
+            overdue: stats.overdue,
+            unassigned: stats.unassigned,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -703,6 +718,7 @@ export default function Kanban() {
 interface TaskCardProps {
   task: Task;
   agents: { id: string; name: string; avatar?: string; status?: string; currentTaskId?: string }[];
+  activeSessions: Record<string, boolean>;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onDelete: () => void;
@@ -717,7 +733,7 @@ interface TaskCardProps {
   isMoving?: boolean;
 }
 
-const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
@@ -732,6 +748,25 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
   const assignedAgent = task.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
   const canStart = assignedAgent && !isAgentWorking && task.status !== 'done' && task.status !== 'in-progress';
+  
+  // Agent status indicator
+  const getAgentStatus = (): 'active' | 'paused' | 'blocked' | 'idle' | undefined => {
+    if (!task.assignedTo) return undefined;
+    
+    // Active: agent has recent session activity (within last 2 min)
+    if (activeSessions[task.assignedTo]) return 'active';
+    
+    // Blocked: task status is review or internal-review (waiting on someone else)
+    if (task.status === 'review' || task.status === 'internal-review') return 'blocked';
+    
+    // Paused: task is in-progress but agent not active
+    if (task.status === 'in-progress') return 'paused';
+    
+    // Idle: task assigned but not started (todo status)
+    if (task.status === 'todo') return 'idle';
+    
+    return undefined;
+  };
   
   // Subtask progress
   const subtaskCount = task.subtasks?.length || 0;
@@ -761,7 +796,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
       } hover:shadow-md hover:-translate-y-0.5`}
     >
       {/* Top row: Priority + Title + Menu */}
-      <div className="flex items-start gap-2 mb-2">
+      <div className="flex items-start gap-1.5 mb-2">
         {/* Priority indicator */}
         {priorityConfig && (
           <div className="relative flex-shrink-0">
@@ -775,7 +810,7 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                 }
                 setShowPriority(!showPriority); 
               }}
-              className={`p-1 rounded ${priorityConfig.bg} ${priorityConfig.color}`}
+              className={`p-0.5 rounded ${priorityConfig.bg} ${priorityConfig.color}`}
               title={priorityConfig.label}
             >
               {priorityConfig.icon}
@@ -812,16 +847,15 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
           </div>
         )}
         
-        {/* Active agent indicator + Title */}
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          <TaskStatusIndicator taskId={task.id} taskStatus={task.status} assignedTo={task.assignedTo} size="sm" />
+        {/* Title */}
+        <div className="flex items-start gap-1 flex-1 min-w-0">
           <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
         </div>
         
         <div className="relative flex-shrink-0">
           <button 
             ref={menuBtnRef}
-            className="icon-btn-sm text-clawd-text-dim opacity-0 group-hover:opacity-100"
+            className="icon-btn-sm text-clawd-text-dim opacity-60 hover:opacity-100"
             onClick={(e) => { 
               e.stopPropagation(); 
               if (!showMenu && menuBtnRef.current) {
@@ -960,7 +994,12 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                   setShowAssign(true); 
                 }}
               >
-                <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="xs" />
+                <AgentAvatar 
+                  agentId={assignedAgent.id} 
+                  fallbackEmoji={assignedAgent.avatar} 
+                  size="xs"
+                  status={getAgentStatus()}
+                />
               </button>
             </div>
           ) : (

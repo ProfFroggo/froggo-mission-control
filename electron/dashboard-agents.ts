@@ -12,19 +12,25 @@ interface DashboardAgent {
   id: string;
   name: string;
   sessionKey: string;
-  agentId: string; // The clawdbot agent ID from config
+  agentId: string; // The openclaw agent ID from config
   spawned: boolean;
   lastHealthCheck?: number;
 }
 
 const DASHBOARD_AGENTS: DashboardAgent[] = [
+  { id: 'froggo', name: 'Froggo', sessionKey: 'agent:froggo:dashboard', agentId: 'froggo', spawned: false },
   { id: 'coder', name: 'Coder', sessionKey: 'agent:coder:dashboard', agentId: 'coder', spawned: false },
-  { id: 'chief', name: 'Chief', sessionKey: 'agent:chief:dashboard', agentId: 'chief', spawned: false },
   { id: 'clara', name: 'Clara', sessionKey: 'agent:clara:dashboard', agentId: 'clara', spawned: false },
-  { id: 'researcher', name: 'Researcher', sessionKey: 'agent:researcher:dashboard', agentId: 'researcher', spawned: false },
+  { id: 'chief', name: 'Chief', sessionKey: 'agent:chief:dashboard', agentId: 'chief', spawned: false },
   { id: 'writer', name: 'Writer', sessionKey: 'agent:writer:dashboard', agentId: 'writer', spawned: false },
+  { id: 'researcher', name: 'Researcher', sessionKey: 'agent:researcher:dashboard', agentId: 'researcher', spawned: false },
   { id: 'hr', name: 'HR', sessionKey: 'agent:hr:dashboard', agentId: 'hr', spawned: false },
+  { id: 'designer', name: 'Designer', sessionKey: 'agent:designer:dashboard', agentId: 'designer', spawned: false },
+  { id: 'voice', name: 'Voice', sessionKey: 'agent:voice:dashboard', agentId: 'voice', spawned: false },
   { id: 'social-manager', name: 'Social Manager', sessionKey: 'agent:social-manager:dashboard', agentId: 'social-manager', spawned: false },
+  { id: 'growth-director', name: 'Growth Director', sessionKey: 'agent:growth-director:dashboard', agentId: 'growth-director', spawned: false },
+  { id: 'lead-engineer', name: 'Lead Engineer', sessionKey: 'agent:lead-engineer:dashboard', agentId: 'lead-engineer', spawned: false },
+  { id: 'degen-frog', name: 'Degen Frog', sessionKey: 'agent:degen-frog:dashboard', agentId: 'degen-frog', spawned: false },
 ];
 
 const HEALTH_CHECK_INTERVAL = 60000; // 1 minute
@@ -37,9 +43,9 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
   try {
     console.log(`[DashboardAgents] Spawning ${agent.name} at ${agent.sessionKey}...`);
     
-    // Use clawdbot CLI to spawn an isolated agent session
+    // Use openclaw CLI to spawn an isolated agent session
     // This creates a persistent session that stays alive
-    const cmd = `clawdbot agent --agent-id ${agent.agentId} --session-key ${agent.sessionKey} --message "You are now connected to the dashboard chat. Read your SOUL.md and be ready. Do NOT run onboarding or BOOTSTRAP.md — you are already set up. Reply with a single word: ready" --no-deliver`;
+    const cmd = `openclaw agent --agent-id ${agent.agentId} --session-key ${agent.sessionKey} --message "You are now connected to the dashboard chat. Read your SOUL.md and be ready. Do NOT run onboarding or BOOTSTRAP.md — you are already set up. Reply with a single word: ready" --no-deliver`;
     
     const { stdout, stderr } = await execAsync(cmd, {
       timeout: 30000,

@@ -137,14 +137,38 @@ function determineStatus(
     }
   }
 
-  // No active session found
-  if (assignedTo && (taskStatus === 'todo' || taskStatus === 'backlog')) {
+  // No task-specific session found - check agent's main session
+  if (assignedTo) {
+    const agentMainSession = sessions.find((s: any) => {
+      const key = s.key || s.sessionKey || '';
+      return key.includes(`agent:${assignedTo}:main`) || key.includes(`${assignedTo}:main`);
+    });
+    
+    if (agentMainSession) {
+      const ageMs = Date.now() - (agentMainSession.updatedAt || 0);
+      if (ageMs < 10 * 60 * 1000) {
+        // Agent's main session active within 10 min - assume working
+        return { status: 'active', agentName: assignedTo, lastActivity: agentMainSession.updatedAt };
+      } else if (ageMs < 60 * 60 * 1000) {
+        // Agent idle 10-60 min
+        return { status: 'paused', agentName: assignedTo, lastActivity: agentMainSession.updatedAt };
+      }
+    }
+  }
+
+  // Ready state for todo with assigned agent
+  if (assignedTo && taskStatus === 'todo') {
     return { status: 'ready', agentName: assignedTo, lastActivity: null };
   }
 
-  // In-progress but no session found - might be stuck
-  if (taskStatus === 'in-progress' && assignedTo) {
-    return { status: 'stuck', agentName: assignedTo, lastActivity: null };
+  // In-progress: default to paused (yellow) not stuck (red)
+  // Only show stuck if explicitly no agent or agent confirmed idle >1hr
+  if (taskStatus === 'in-progress') {
+    if (assignedTo) {
+      return { status: 'paused', agentName: assignedTo, lastActivity: null };
+    }
+    // No agent assigned to in-progress task - this IS a problem
+    return { status: 'stuck', agentName: null, lastActivity: null };
   }
 
   return { status: 'none', agentName: null, lastActivity: null };

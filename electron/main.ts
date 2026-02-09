@@ -112,6 +112,59 @@ ipcMain.handle('get-agent-registry', async () => {
   }
 });
 
+// ============== WIDGET MANIFEST SCANNER ==============
+ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
+  try {
+    // Validate agentId to prevent path traversal
+    if (!agentId || agentId.includes('..') || agentId.includes('/') || agentId.includes('\\')) {
+      safeLog.warn('[WidgetManifest] Invalid agentId:', agentId);
+      return { error: 'Invalid agent ID' };
+    }
+
+    // Construct path to widget manifest
+    const manifestPath = path.join(os.homedir(), '.openclaw', 'agents', agentId, 'widgets', 'widget-manifest.json');
+
+    // Check if file exists
+    if (!fs.existsSync(manifestPath)) {
+      // Not an error - many agents won't have widgets
+      return { error: 'Manifest not found' };
+    }
+
+    // Validate the path is within .openclaw/agents/ (defense in depth)
+    const allowedDir = path.join(os.homedir(), '.openclaw', 'agents');
+    const resolvedPath = path.resolve(manifestPath);
+    if (!resolvedPath.startsWith(allowedDir)) {
+      safeLog.error('[WidgetManifest] Path traversal attempt:', manifestPath);
+      return { error: 'Invalid manifest path' };
+    }
+
+    // Read and parse manifest
+    const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+    const manifest = JSON.parse(manifestContent);
+
+    // Validate component paths don't escape widget directory
+    const widgetDir = path.dirname(manifestPath);
+    if (manifest.widgets && Array.isArray(manifest.widgets)) {
+      for (const widget of manifest.widgets) {
+        if (widget.component) {
+          const componentPath = path.resolve(widgetDir, widget.component);
+          if (!componentPath.startsWith(widgetDir)) {
+            safeLog.error('[WidgetManifest] Component path escapes directory:', widget.component);
+            return { error: 'Invalid component path' };
+          }
+        }
+      }
+    }
+
+    safeLog.log(`[WidgetManifest] Loaded manifest for ${agentId}`);
+    return manifest;
+
+  } catch (err: any) {
+    safeLog.error('[WidgetManifest] Error reading manifest:', err.message);
+    return { error: err.message };
+  }
+});
+
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
 // Debug file logger for agent issues

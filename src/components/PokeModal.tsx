@@ -142,7 +142,8 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         streamCleanupRef.current?.();
 
         const unsub = gateway.on('chat', (data: any) => {
-          if (data.sessionKey && data.sessionKey !== sessionKey) return;
+          // STRICT session matching - only accept events for THIS session
+          if (!data.sessionKey || data.sessionKey !== sessionKey) return;
 
           if (data.state === 'streaming' && data.chunk) {
             fullResponse += data.chunk;

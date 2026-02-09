@@ -25,7 +25,7 @@
 :root {
   --clawd-bg: #0a0a0a;
   --clawd-surface: #141414;
-  --clawd-border: #262626;
+  --clawd-border: #2a2a2a; /* Pure gray, no purple/blue tint */
   --clawd-text: #fafafa;
   --clawd-text-dim: #a1a1aa;
   --clawd-accent: #22c55e;
@@ -367,7 +367,6 @@ body {
   }
   
   /* Kanban column accents */
-  .kanban-backlog { @apply border-l-gray-500; }
   .kanban-todo { @apply border-l-blue-500; }
   .kanban-in-progress { @apply border-l-yellow-500; }
   .kanban-needs-approval { @apply border-l-orange-500; }

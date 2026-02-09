@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List } from 'lucide-react';
+import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, Eye, X, ExternalLink } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';
 
-type FileCategory = 'draft' | 'document' | 'media' | 'other';
+type FileCategory = 'draft' | 'document' | 'media' | 'strategy' | 'research' | 'other';
 type ViewMode = 'grid' | 'list';
 
 interface LibraryFile {
   id: string;
   name: string;
   path: string;
-  category: FileCategory;
+  category: string; // Allow any category from database
   size: number;
   mimeType?: string;
   createdAt: string;
@@ -20,10 +20,12 @@ interface LibraryFile {
   tags?: string[];
 }
 
-const categoryConfig: Record<FileCategory, { icon: any; color: string; label: string }> = {
+const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
   draft: { icon: FileText, color: 'text-blue-400 bg-blue-500/10', label: 'Drafts' },
   document: { icon: FileText, color: 'text-green-400 bg-green-500/10', label: 'Documents' },
   media: { icon: Image, color: 'text-purple-400 bg-purple-500/10', label: 'Media' },
+  strategy: { icon: FileText, color: 'text-amber-400 bg-amber-500/10', label: 'Strategy' },
+  research: { icon: FileText, color: 'text-cyan-400 bg-cyan-500/10', label: 'Research' },
   other: { icon: File, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
 };
 
@@ -42,14 +44,28 @@ const formatSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-export default function LibraryFilesTab() {
+interface LibraryFilesTabProps {
+  initialPath?: string | null;
+}
+
+export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = {}) {
   const [files, setFiles] = useState<LibraryFile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialPath || '');
   const [selectedCategory, setSelectedCategory] = useState<FileCategory | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedFile, setSelectedFile] = useState<LibraryFile | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerContent, setViewerContent] = useState<any>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
+
+  // Apply initial path filter when provided
+  useEffect(() => {
+    if (initialPath) {
+      setSearchQuery(initialPath);
+    }
+  }, [initialPath]);
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -111,6 +127,46 @@ export default function LibraryFilesTab() {
     }
   };
 
+  const handleViewFile = async (file: LibraryFile) => {
+    setSelectedFile(file);
+    setViewerOpen(true);
+    setViewerLoading(true);
+    
+    try {
+      const result = await (window as any).clawdbot?.library?.view(file.id);
+      if (result?.success) {
+        setViewerContent(result);
+      } else {
+        showToast('error', 'View failed', result?.error || 'Unknown error');
+        setViewerOpen(false);
+      }
+    } catch (error) {
+      showToast('error', 'View failed', String(error));
+      setViewerOpen(false);
+    } finally {
+      setViewerLoading(false);
+    }
+  };
+
+  const handleDownloadFile = async (file: LibraryFile) => {
+    try {
+      const result = await (window as any).clawdbot?.library?.download(file.id);
+      if (result?.success) {
+        showToast('success', 'File saved', result.path);
+      } else if (result?.error !== 'Cancelled') {
+        showToast('error', 'Download failed', result?.error || 'Unknown error');
+      }
+    } catch (error) {
+      showToast('error', 'Download failed', String(error));
+    }
+  };
+
+  const openInDefaultApp = () => {
+    if (viewerContent?.path) {
+      (window as any).clawdbot?.shell?.openPath(viewerContent.path);
+    }
+  };
+
   const filteredFiles = files.filter(f => 
     f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -121,6 +177,8 @@ export default function LibraryFilesTab() {
     draft: files.filter(f => f.category === 'draft').length,
     document: files.filter(f => f.category === 'document').length,
     media: files.filter(f => f.category === 'media').length,
+    strategy: files.filter(f => f.category === 'strategy').length,
+    research: files.filter(f => f.category === 'research').length,
     other: files.filter(f => f.category === 'other').length,
   };
 
@@ -280,12 +338,12 @@ export default function LibraryFilesTab() {
           <div className="space-y-2">
             {filteredFiles.map((file) => {
               const FileIcon = getFileIcon(file.mimeType);
-              const config = categoryConfig[file.category];
+              const config = categoryConfig[file.category] || categoryConfig.other;
               
               return (
                 <div
                   key={file.id}
-                  onClick={() => setSelectedFile(file)}
+                  onClick={() => handleViewFile(file)}
                   className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 cursor-pointer transition-colors ${
                     selectedFile?.id === file.id ? 'border-clawd-accent' : ''
                   }`}
@@ -336,12 +394,12 @@ export default function LibraryFilesTab() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredFiles.map((file) => {
               const FileIcon = getFileIcon(file.mimeType);
-              const config = categoryConfig[file.category];
+              const config = categoryConfig[file.category] || categoryConfig.other;
               
               return (
                 <div
                   key={file.id}
-                  onClick={() => setSelectedFile(file)}
+                  onClick={() => handleViewFile(file)}
                   className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 cursor-pointer transition-colors ${
                     selectedFile?.id === file.id ? 'border-clawd-accent' : ''
                   }`}
@@ -357,6 +415,102 @@ export default function LibraryFilesTab() {
           </div>
         )}
       </div>
+
+      {/* File Viewer Modal */}
+      {viewerOpen && selectedFile && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-glow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+              <div className="flex-1 min-w-0 mr-4">
+                <h3 className="font-bold text-lg truncate">{selectedFile.name}</h3>
+                <p className="text-sm text-clawd-text-dim mt-1">
+                  {formatSize(selectedFile.size)} • {selectedFile.mimeType || 'Unknown type'}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={openInDefaultApp}
+                  className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                  title="Open in default app"
+                >
+                  <ExternalLink size={20} className="text-clawd-text-dim" />
+                </button>
+                <button
+                  onClick={() => handleDownloadFile(selectedFile)}
+                  className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 transition-colors"
+                >
+                  <Download size={16} />
+                  Download
+                </button>
+                <button
+                  onClick={() => setViewerOpen(false)}
+                  className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto p-6">
+              {viewerLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <RefreshCw size={32} className="text-clawd-text-dim animate-spin" />
+                </div>
+              ) : viewerContent?.viewType === 'text' ? (
+                <pre className="text-sm bg-clawd-bg p-4 rounded-lg overflow-auto whitespace-pre-wrap font-mono">
+                  {viewerContent.content}
+                </pre>
+              ) : viewerContent?.viewType === 'image' ? (
+                <div className="flex items-center justify-center">
+                  <img 
+                    src={viewerContent.content} 
+                    alt={selectedFile.name}
+                    className="max-w-full max-h-[60vh] object-contain rounded-lg"
+                  />
+                </div>
+              ) : viewerContent?.viewType === 'binary' ? (
+                <div className="text-center py-12">
+                  <File size={64} className="text-clawd-text-dim mx-auto mb-4" />
+                  <p className="text-clawd-text-dim mb-6">
+                    This file type cannot be previewed.<br />
+                    Click Download to save it.
+                  </p>
+                  <button
+                    onClick={() => handleDownloadFile(selectedFile)}
+                    className="flex items-center gap-2 px-6 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent/90 transition-colors mx-auto"
+                  >
+                    <Download size={20} />
+                    Download File
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-clawd-text-dim">
+                  Failed to load file content
+                </div>
+              )}
+            </div>
+
+            {/* Footer with metadata */}
+            {selectedFile.linkedTasks && selectedFile.linkedTasks.length > 0 && (
+              <div className="p-4 border-t border-clawd-border bg-clawd-bg/50">
+                <p className="text-sm text-clawd-text-dim mb-2">Linked to tasks:</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedFile.linkedTasks.map(taskId => (
+                    <span 
+                      key={taskId}
+                      className="px-2 py-1 bg-clawd-border rounded text-xs font-mono"
+                    >
+                      {taskId}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

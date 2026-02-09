@@ -11,56 +11,61 @@ import { getVoiceProfile } from '../config/agent-voices';
 const SEND_SAMPLE_RATE = 16000;
 const RECEIVE_SAMPLE_RATE = 24000;
 const CHANNELS = 1;
-const MODEL = 'models/gemini-2.5-flash-native-audio-preview-12-2025';
+const MODEL = 'models/gemini-2.5-flash-native-audio-latest'; // ONLY native-audio models support bidiGenerateContent
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
 export type VideoMode = 'camera' | 'screen' | 'none';
 export type GeminiVoice = 
-  // Core voices
-  | 'Puck' | 'Charon' | 'Kore' | 'Fenrir'
-  // Extended TTS voices
-  | 'Zephyr' | 'Leda' | 'Orus' | 'Aoede' | 'Enceladus' | 'Umbriel' 
-  | 'Vindemiatrix' | 'Callirrhoe' | 'Despina' | 'Rasalgethi' | 'Zubenelgenubi'
-  // Additional voices
-  | 'Lyra' | 'Nova' | 'Capella' | 'Vega';
+  // Chirp 3 HD voices (30 total) - used by gemini-2.5-flash-native-audio
+  // Female voices
+  | 'Achernar' | 'Aoede' | 'Autonoe' | 'Callirrhoe' | 'Despina' | 'Erinome'
+  | 'Gacrux' | 'Kore' | 'Laomedeia' | 'Leda' | 'Pulcherrima' | 'Sulafat'
+  | 'Vindemiatrix' | 'Zephyr'
+  // Male voices
+  | 'Achird' | 'Algenib' | 'Algieba' | 'Alnilam' | 'Charon' | 'Enceladus'
+  | 'Fenrir' | 'Iapetus' | 'Orus' | 'Puck' | 'Rasalgethi' | 'Sadachbia'
+  | 'Sadaltager' | 'Schedar' | 'Umbriel' | 'Zubenelgenubi';
 
 /**
- * Map agent voice profiles to Gemini Live voices
+ * Map agent voice profiles to Gemini Live voices (Chirp 3 HD)
  * 
- * Based on official Gemini Live API voice characteristics:
- * https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_LiveAPI.py
+ * All 30 Chirp 3 HD voices available for gemini-2.5-flash-native-audio:
  * 
- * Core voices:
- * - Puck: Conversational, friendly, and upbeat
- * - Charon: Deep, authoritative, and informative
- * - Kore: Neutral, firm, and professional
- * - Fenrir: Warm, approachable, and excitable
+ * Female voices:
+ *   Achernar, Aoede, Autonoe, Callirrhoe, Despina, Erinome, Gacrux,
+ *   Kore, Laomedeia, Leda, Pulcherrima, Sulafat, Vindemiatrix, Zephyr
  * 
- * Extended TTS voices:
- * - Zephyr: Bright and energetic
- * - Leda: Youthful and friendly
- * - Orus: Firm and professional
- * - Aoede: Breezy and conversational
- * - Enceladus: Breathy and soft
- * - Umbriel: Easy-going, calm, and trustworthy
- * - Vindemiatrix: Gentle, calm, and mature
- * - Callirrhoe: Easy-going and accessible
- * - Despina: Smooth and warm
- * - Rasalgethi: Informative and clear
- * - Zubenelgenubi: Deep, resonant, and serious
+ * Male voices:
+ *   Achird, Algenib, Algieba, Alnilam, Charon, Enceladus, Fenrir,
+ *   Iapetus, Orus, Puck, Rasalgethi, Sadachbia, Sadaltager, Schedar,
+ *   Umbriel, Zubenelgenubi
+ * 
+ * Voice characteristics:
+ * - Puck: Conversational, friendly, upbeat
+ * - Charon: Deep, authoritative, informative
+ * - Kore: Neutral, firm, professional
+ * - Fenrir: Warm, approachable, excitable
+ * - Zephyr: Bright, energetic
+ * - Leda: Youthful, friendly
+ * - Orus: Firm, professional
+ * - Aoede: Breezy, conversational
+ * - Vindemiatrix: Gentle, calm, mature
+ * - Callirrhoe: Easy-going, accessible
+ * - Despina: Smooth, warm
+ * - Zubenelgenubi: Deep, resonant, serious
  */
 /**
  * Direct agent → voice mapping.
  * 
  * Production / Execution:
- *   Writer (f)          → Lyra     — Bright, higher pitch, articulate
- *   Researcher (f)      → Nova     — Calm, mid-range, neutral
+ *   Writer (f)          → Zephyr   — Bright, energetic, articulate
+ *   Researcher (f)      → Kore     — Neutral, firm, professional
  *   Designer (f)        → Leda     — Youthful, energetic
  *   Coder (m)           → Orus     — Firm, neutral, precise
  * 
  * Support / Ops:
- *   HR (f)              → Capella  — Higher pitch, formal, procedural
- *   Clara (f)           → Vega     — Bright but controlled (QA/validation)
+ *   HR (f)              → Despina  — Smooth, warm, approachable
+ *   Clara (f)           → Callirrhoe — Easy-going, accessible
  * 
  * External / Comms:
  *   Social Manager (m)  → Fenrir   — Excitable, warm, human
@@ -69,24 +74,24 @@ export type GeminiVoice =
  * Others:
  *   Froggo              → Puck     — Conversational, friendly
  *   Chief               → Charon   — Deep, authoritative
- *   Lead Engineer        → Orus     — Firm, professional
- *   Growth Director      → Fenrir   — Warm, energetic
+ *   Growth Director     → Fenrir   — Warm, energetic
  *   Ox                  → Zubenelgenubi — Deep, resonant
  */
 const AGENT_VOICE_MAP: Record<string, GeminiVoice> = {
-  writer:           'Lyra',
-  researcher:       'Nova',
+  writer:           'Zephyr',
+  researcher:       'Kore',
   designer:         'Leda',
   coder:            'Orus',
-  hr:               'Capella',
-  clara:            'Vega',
+  hr:               'Despina',
+  clara:            'Callirrhoe',
   'social-manager': 'Fenrir',
   voice:            'Aoede',
+  jess:             'Leda',  // Same as Designer - youthful, friendly
   froggo:           'Puck',
   main:             'Puck',
   chief:            'Charon',
-  'lead-engineer':  'Orus',
   'growth-director':'Fenrir',
+  'degen-frog':     'Fenrir',
   ox:               'Zubenelgenubi',
 };
 
@@ -179,6 +184,22 @@ export class GeminiLiveService {
   private maxReconnectAttempts = 5;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Tool call keepalive — send silent audio frames while tools are executing
+  private toolCallKeepaliveTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Session resumption — allows reconnecting without losing context
+  private sessionHandle: string | null = null;
+  
+  // Context replay buffer - store recent conversation for reconnect
+  private conversationHistory: Array<{role: 'user' | 'model', text: string}> = [];
+  private maxHistoryItems = 10;
+
+  // Diagnostics
+  private connectTime: number = 0;
+  private messageCount: number = 0;
+  private lastMessageTime: number = 0;
+  private toolCallPending: boolean = false;
+
   get connected() { return this._connected; }
   get listening() { return this._listening; }
   get speaking() { return this._speaking; }
@@ -253,7 +274,6 @@ export class GeminiLiveService {
                 },
               },
             },
-            // Enable transcription of user speech and model speech
             inputAudioTranscription: {},
             outputAudioTranscription: {},
           },
@@ -276,6 +296,11 @@ export class GeminiLiveService {
             })),
           }];
         }
+        
+        // Session resumption — only send if we already have a handle from a previous session
+        // Note: not all models support this (e.g. preview models return 1008)
+        // TODO: re-enable when using gemini-live-2.5-flash-native-audio (GA model)
+        
         console.log('[GeminiLive] Sending setup:', JSON.stringify(setupMsg, null, 2));
         ws.send(JSON.stringify(setupMsg));
         this.pendingSetup = { resolve, reject };
@@ -297,6 +322,9 @@ export class GeminiLiveService {
         this.stopMic();
         this.stopVideo();
         this.clearPlayback();
+        const sessionDurationMs = this.connectTime ? Date.now() - this.connectTime : 0;
+        const msSinceLastMsg = this.lastMessageTime ? Date.now() - this.lastMessageTime : 0;
+        console.warn(`[GeminiLive] WS closed: code=${e.code} reason="${e.reason}" wasClean=${e.wasClean} sessionDuration=${(sessionDurationMs/1000).toFixed(1)}s msgs=${this.messageCount} msSinceLastMsg=${msSinceLastMsg} toolCallPending=${this.toolCallPending} keepaliveActive=${!!this.toolCallKeepaliveTimer}`);
         this.emit('disconnected', { code: e.code, reason: e.reason });
         if (!wasConnected && this.pendingSetup) {
           this.pendingSetup.reject(new Error(`Connection closed: ${e.reason || e.code}`));
@@ -318,6 +346,29 @@ export class GeminiLiveService {
       }
       const msg = JSON.parse(raw);
 
+      // Track message stats
+      this.messageCount++;
+      this.lastMessageTime = Date.now();
+      
+      // Log ALL message types for debugging disconnects
+      const msgKeys = Object.keys(msg).join(', ');
+      if (!msg.serverContent?.modelTurn?.parts?.some((p: any) => p.inlineData)) {
+        // Log everything except raw audio chunks (too noisy)
+        console.log(`[GeminiLive] MSG keys=[${msgKeys}]`, 
+          msg.toolCall ? `toolCall: ${JSON.stringify(msg.toolCall).slice(0, 200)}` :
+          msg.toolCallCancellation ? `CANCELLATION: ${JSON.stringify(msg.toolCallCancellation)}` :
+          msg.goAway ? `GO_AWAY: ${JSON.stringify(msg.goAway)}` :
+          msg.usageMetadata ? `usage: ${JSON.stringify(msg.usageMetadata)}` :
+          msg.serverContent?.turnComplete ? 'turnComplete' :
+          msg.serverContent?.interrupted ? 'INTERRUPTED' :
+          msg.serverContent?.inputTranscription ? `userSaid: "${msg.serverContent.inputTranscription.text}"` :
+          msg.serverContent?.outputTranscription ? `modelSaid: "${msg.serverContent.outputTranscription.text}"` :
+          msg.setupComplete ? 'SETUP_OK' :
+          msg.sessionResumptionUpdate ? `resumption: ${JSON.stringify(msg.sessionResumptionUpdate)}` :
+          ''
+        );
+      }
+
       // Setup complete response
       if (msg.setupComplete) {
         this._connected = true;
@@ -329,6 +380,9 @@ export class GeminiLiveService {
           console.log('[GeminiLive] Playback AudioContext created, state:', this.playbackCtx.state);
         }
         
+        this.connectTime = Date.now();
+        this.messageCount = 0;
+        this.toolCallPending = false;
         this.emit('connected');
         if (this.pendingSetup) {
           this.pendingSetup.resolve();
@@ -365,11 +419,21 @@ export class GeminiLiveService {
         // Input transcription (what the user said)
         if (sc.inputTranscription?.text) {
           this.emit('transcript', { text: sc.inputTranscription.text, role: 'user' });
+          // Store in history for context replay
+          this.conversationHistory.push({ role: 'user', text: sc.inputTranscription.text });
+          if (this.conversationHistory.length > this.maxHistoryItems) {
+            this.conversationHistory.shift();
+          }
         }
 
         // Output transcription (what the model actually spoke)
         if (sc.outputTranscription?.text) {
           this.emit('transcript', { text: sc.outputTranscription.text, role: 'model' });
+          // Store in history for context replay
+          this.conversationHistory.push({ role: 'model', text: sc.outputTranscription.text });
+          if (this.conversationHistory.length > this.maxHistoryItems) {
+            this.conversationHistory.shift();
+          }
         }
 
         // Turn complete - model finished speaking
@@ -389,8 +453,30 @@ export class GeminiLiveService {
 
       // Tool calls - emit for external handling
       if (msg.toolCall) {
-        console.log('[GeminiLive] Tool call:', JSON.stringify(msg.toolCall));
+        this.toolCallPending = true;
+        console.log('[GeminiLive] Tool call received, marking pending:', JSON.stringify(msg.toolCall).slice(0, 300));
         this.emit('tool-call', msg.toolCall as GeminiToolCall);
+      }
+
+      // Tool call cancellation
+      if (msg.toolCallCancellation) {
+        this.toolCallPending = false;
+        console.warn('[GeminiLive] Tool call CANCELLED by server:', JSON.stringify(msg.toolCallCancellation));
+      }
+
+      // Session resumption updates — store handle for reconnect
+      if (msg.sessionResumptionUpdate) {
+        const update = msg.sessionResumptionUpdate;
+        if (update.resumable && update.newHandle) {
+          this.sessionHandle = update.newHandle;
+          console.log('[GeminiLive] Session resumption handle updated');
+        }
+      }
+
+      // GoAway — server is about to close, proactively reconnect
+      if (msg.goAway) {
+        console.log('[GeminiLive] GoAway received, time left:', msg.goAway.timeLeft);
+        // Let the auto-reconnect handle this via onclose
       }
     } catch (err) {
       console.error('[GeminiLive] Parse error:', err);
@@ -407,6 +493,8 @@ export class GeminiLiveService {
     this.stopMic();
     this.stopVideo();
     this.clearPlayback();
+    this.stopToolCallKeepalive();
+    this.sessionHandle = null; // Clear handle on intentional disconnect
     if (this.ws) {
       this.ws.close(1000, 'User disconnected');
       this.ws = null;
@@ -432,10 +520,32 @@ export class GeminiLiveService {
       if (this.intentionalDisconnect || !this.lastConfig) return;
       try {
         await this.connect(this.lastConfig);
+        
+        // Replay conversation context to restore state
+        if (this.conversationHistory.length > 0) {
+          console.log(`[GeminiLive] Replaying ${this.conversationHistory.length} conversation items`);
+          const contextSummary = this.conversationHistory.map(item => 
+            `${item.role === 'user' ? 'User' : 'Assistant'}: ${item.text}`
+          ).join('\n');
+          
+          // Send context as a system message
+          this.ws.send(JSON.stringify({
+            clientContent: {
+              turns: [{
+                role: 'user',
+                parts: [{
+                  text: `[Reconnected - Recent context]\n${contextSummary}\n\n[Continue from where we left off]`
+                }]
+              }],
+              turnComplete: true
+            }
+          }));
+        }
+        
         // Restore mic if it was active
         await this.startMic();
         this.reconnectAttempts = 0;
-        console.log('[GeminiLive] Auto-reconnected successfully');
+        console.log('[GeminiLive] Auto-reconnected successfully with context replay');
       } catch (err) {
         console.error('[GeminiLive] Reconnect failed:', err);
         if (!this.intentionalDisconnect) this.scheduleReconnect();
@@ -792,9 +902,46 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
     return this.videoStream;
   }
 
+  // ── Tool Call Keepalive ──
+  // Send silent audio frames to prevent Gemini from closing the WebSocket during tool execution
+
+  startToolCallKeepalive(): void {
+    this.stopToolCallKeepalive();
+    console.log('[GeminiLive] Starting tool call keepalive (every 2s)');
+    let keepaliveCount = 0;
+    this.toolCallKeepaliveTimer = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        keepaliveCount++;
+        if (keepaliveCount % 5 === 1) console.log(`[GeminiLive] Keepalive #${keepaliveCount} sent`);
+        // Send a small silent PCM frame (160 samples = 10ms at 16kHz)
+        const silence = new Int16Array(160);
+        const base64 = this.arrayBufferToBase64(silence.buffer as ArrayBuffer);
+        this.ws.send(JSON.stringify({
+          realtimeInput: {
+            mediaChunks: [{
+              mimeType: 'audio/pcm',
+              data: base64,
+            }],
+          },
+        }));
+      }
+    }, 2000); // Every 2 seconds
+  }
+
+  stopToolCallKeepalive(): void {
+    if (this.toolCallKeepaliveTimer) {
+      clearInterval(this.toolCallKeepaliveTimer);
+      this.toolCallKeepaliveTimer = null;
+      console.log('[GeminiLive] Stopped tool call keepalive');
+    }
+  }
+
   // ── Tool Response ──
 
   async sendToolResponse(functionResponses: Array<{ id: string; name: string; response: any }>): Promise<void> {
+    this.stopToolCallKeepalive();
+    this.toolCallPending = false;
+    console.log(`[GeminiLive] Sending tool response for: ${functionResponses.map(r => r.name).join(', ')} wsState=${this.ws?.readyState}`);
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       this.emit('error', { message: 'Not connected' });
       return;
