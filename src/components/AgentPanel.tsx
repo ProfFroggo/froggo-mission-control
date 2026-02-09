@@ -55,10 +55,13 @@ export default function AgentPanel() {
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
-    active:  { color: 'bg-green-400',  label: 'Active', pulse: true },
-    busy:    { color: 'bg-green-400',  label: 'Working…', pulse: true },
-    idle:    { color: 'bg-yellow-400', label: 'Idle' },
-    offline: { color: 'bg-gray-500',   label: 'Offline', hideDot: true },
+    active:     { color: 'bg-green-400',  label: 'Active', pulse: true },
+    busy:       { color: 'bg-green-400',  label: 'Working…', pulse: true },
+    idle:       { color: 'bg-yellow-400', label: 'Idle' },
+    offline:    { color: 'bg-gray-500',   label: 'Offline', hideDot: true },
+    suspended:  { color: 'bg-red-500',    label: 'Suspended', hideDot: true },
+    archived:   { color: 'bg-gray-500',   label: 'Archived', hideDot: true },
+    draft:      { color: 'bg-yellow-500', label: 'Draft', hideDot: true },
   };
 
   const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
@@ -74,24 +77,9 @@ export default function AgentPanel() {
     else if (compareAgents.length < 3) setCompareAgents([...compareAgents, agentId]);
   };
 
-  // Real gateway agents only (from 'clawdbot agents list')
-  const REAL_GATEWAY_AGENTS = [
-    'froggo',
-    'writer',
-    'researcher',
-    'coder',
-    'chief',
-    'lead-engineer',
-    'hr',
-    'clara',
-    'designer',
-    'growth-director',
-    'social-manager',
-    'voice',
-  ];
-
-  // Filter agents: ONLY real gateway agents (no duplicates, no phantom agents)
-  const realAgents = agents.filter(a => REAL_GATEWAY_AGENTS.includes(a.id));
+  // Skip phantom/legacy agents — use exclusion so new agents auto-appear
+  const PHANTOM_AGENTS = ['main', 'chat-agent'];
+  const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
   
   // Remove duplicates by ID (in case store has dupes)
   const uniqueAgents = Array.from(new Map(realAgents.map(a => [a.id, a])).values());
@@ -217,11 +205,41 @@ export default function AgentPanel() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-lg leading-tight">{agent.name}</h3>
                           <span className={`text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded ${theme.bg} ${theme.text}`}>
                             {sc.label}
                           </span>
+                          {/* Trust tier badge */}
+                          {agent.trust_tier && (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              agent.trust_tier === 'master' ? 'bg-purple-500/20 text-purple-400' :
+                              agent.trust_tier === 'expert' ? 'bg-amber-500/20 text-amber-400' :
+                              agent.trust_tier === 'journeyman' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {agent.trust_tier === 'master' ? 'Master' :
+                               agent.trust_tier === 'expert' ? 'Expert' :
+                               agent.trust_tier === 'journeyman' ? 'Journeyman' :
+                               'Apprentice'}
+                            </span>
+                          )}
+                          {/* Lifecycle status badges for non-active agents */}
+                          {agent.status === 'suspended' && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-500/20 text-red-400">
+                              Suspended
+                            </span>
+                          )}
+                          {agent.status === 'archived' && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-500/20 text-gray-400">
+                              Archived
+                            </span>
+                          )}
+                          {agent.status === 'draft' && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-yellow-500/20 text-yellow-400">
+                              Draft
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-clawd-text-dim mt-1 line-clamp-2">{agent.description}</p>
                       </div>
