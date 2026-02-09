@@ -11,6 +11,7 @@ import { InlineLoader } from './LoadingStates';
 import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 
 import { getAgentTheme } from '../utils/agentThemes';
+import WidgetLoader from './WidgetLoader';
 
 const getTheme = getAgentTheme;
 
@@ -349,6 +350,9 @@ export default function AgentPanel() {
                             <MessageSquare size={14} /> Chat
                           </button>
                         </div>
+
+                        {/* Agent-specific widgets */}
+                        <WidgetLoader agentId={agent.id} trustTier={agent.trust_tier} />
                       </div>
                     )}
                   </div>
