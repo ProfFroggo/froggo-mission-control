@@ -395,20 +395,24 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
         return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
       }
       case 'list_tasks': {
-        const where = [];
-        if (args.agent_id) where.push(`assigned_to='${args.agent_id}'`);
-        if (args.status && args.status !== 'all') where.push(`status='${args.status}'`);
-        const whereClause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
-        const r = await exec(`froggo-db query "SELECT id, title, status, priority, assigned_to FROM tasks ${whereClause} ORDER BY created_at DESC LIMIT 15" --json 2>&1`);
-        try { return { tasks: JSON.parse(r.stdout) }; } catch { return { tasks: [], raw: r.stdout?.trim() }; }
+        const parts = ['froggo-db task-list'];
+        if (args.status && args.status !== 'all') parts.push(`--status ${args.status}`);
+        if (args.agent_id) parts.push(`--agent ${args.agent_id}`);
+        const r = await exec(parts.join(' ') + ' 2>&1');
+        return { tasks: r.stdout?.trim() || 'No tasks found' };
       }
       case 'spawn_agent': {
+        // Sanitize: Gemini sometimes swaps arg order
+        const agentId = (args.agent_id || '').trim();
+        const msg = (args.message || '').replace(/"/g, '\\"').replace(/\n/g, ' ');
+        if (!agentId) return { error: 'Missing agent_id' };
         if (args.task_title) {
-          await exec(`froggo-db task-add "${args.task_title.replace(/"/g, '\\"')}" --assign ${args.agent_id} --priority high --status todo 2>&1`);
+          await exec(`froggo-db task-add "${args.task_title.replace(/"/g, '\\"')}" --assign ${agentId} --priority high --status todo 2>&1`);
         }
-        const r = await exec(`clawdbot gateway sessions-send --target "agent:${args.agent_id}:main" --message "${args.message.replace(/"/g, '\\"')}" 2>&1`);
-        invalidateAgentContext(args.agent_id);
-        return { success: r.success, output: r.stdout?.trim(), agent_spawned: args.agent_id };
+        // Fire-and-forget: send message to agent without waiting for full turn (avoids 30s timeout)
+        const r = await exec(`nohup openclaw agent --agent ${agentId} --message "${msg}" >/dev/null 2>&1 &`);
+        invalidateAgentContext(agentId);
+        return { success: true, output: `Message sent to ${agentId}`, agent_spawned: agentId };
       }
       case 'get_agent_status': {
         const ctx = await loadAgentContext(args.agent_id);
@@ -444,9 +448,13 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
       }
       case 'web_search': {
-        const q = (args.query || '').replace(/"/g, '\\"');
-        const r = await exec(`openclaw agent --agent froggo --local --message "Search the web for: ${q}. Return only the top 3-5 results with titles and brief descriptions." --json 2>&1 || curl -s "https://api.duckduckgo.com/?q=${encodeURIComponent(args.query)}&format=json&no_html=1" 2>&1`);
-        return { output: r.stdout?.trim()?.slice(0, 2000) || r.stderr?.trim() };
+        const q = encodeURIComponent(args.query || '');
+        const r = await exec(`curl -s "https://api.duckduckgo.com/?q=${q}&format=json&no_html=1&t=froggo" 2>&1`);
+        try {
+          const data = JSON.parse(r.stdout || '{}');
+          const results = (data.RelatedTopics || []).slice(0, 5).map((t: any) => t.Text || t.FirstURL).filter(Boolean);
+          return { query: args.query, results: results.length ? results : [data.Abstract || 'No results found'] };
+        } catch { return { query: args.query, raw: r.stdout?.trim()?.slice(0, 1500) || 'Search failed' }; }
       }
       case 'check_calendar': {
         const days = args.days || 1;

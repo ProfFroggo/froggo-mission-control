@@ -139,8 +139,9 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       streamCleanupRef.current?.();
 
       const unsub = gateway.on('chat', (data: any) => {
-        // Match events to our session
-        if (data.sessionKey && data.sessionKey !== sessionKey) return;
+        // STRICT session matching - only accept events for THIS session
+        // Prevents bleed between multiple open chat modals
+        if (!data.sessionKey || data.sessionKey !== sessionKey) return;
 
         if (data.state === 'streaming' && data.chunk) {
           fullResponse += data.chunk;

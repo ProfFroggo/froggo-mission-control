@@ -518,6 +518,7 @@ class Gateway {
       const finish = (content: string) => {
         if (!resolved) {
           resolved = true;
+          clearTimeout(timeout);
           cleanup();
           resolve({ content });
         }
@@ -526,6 +527,7 @@ class Gateway {
       const fail = (err: Error) => {
         if (!resolved) {
           resolved = true;
+          clearTimeout(timeout);
           cleanup();
           reject(err);
         }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Loader2, Check } from 'lucide-react';
-import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import { useStore } from '../store/store';
 
 interface HRAgentCreationModalProps {
   onClose: () => void;
@@ -263,86 +263,61 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
   const createAgent = async () => {
     setStage('creating');
-    addSystemMessage('🔨 Creating agent...');
+    addSystemMessage('🔨 Running full onboarding script...');
 
     try {
       const agentId = agentData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const personality = agentData.personality || `${agentData.style}. Specializes in ${agentData.role}. Focused and reliable.`;
 
-      // 1. Write to agent_registry DB
-      const capabilitiesJson = JSON.stringify(agentData.skills);
-      
-      // Use gateway to execute DB insert via shell (since we can't do direct SQLite from frontend)
-      // Instead, we'll write the profile files and let the backend pick them up
-      
-      // 2. Write profile JSON
-      const profileData = {
+      const config = {
         id: agentId,
         name: agentData.name,
         role: agentData.role,
         emoji: agentData.emoji,
-        personality,
-        vibe: agentData.style,
-        bio: `${agentData.role} specialist. ${personality}`,
-        image_prompt: `Pixar style headshot portrait of a ${agentData.role.toLowerCase()} character. ${agentData.style}. Solid color background.`,
         color: agentData.color,
-        capabilities: agentData.skills,
+        personality,
+        voice: 'Puck',
       };
 
-      // Use spawn to execute the creation via an agent
-      const createTask = `Create a new agent with the following configuration. Write the necessary files and database entries:
-      
-Agent ID: ${agentId}
-Name: ${agentData.name}
-Emoji: ${agentData.emoji}
-Role: ${agentData.role}
-Color: ${agentData.color}
-Personality: ${personality}
-Style: ${agentData.style}
-Skills: ${agentData.skills.join(', ')}
-Capabilities JSON: ${capabilitiesJson}
+      addSystemMessage('⚙️ Creating workspace, DB entries, auth profiles, patching dashboard...');
 
-Steps:
-1. Write profile to /Users/worker/clawd/data/agent-profiles/${agentId}.json
-2. Insert into agent_registry table in /Users/worker/clawd/data/froggo.db
-3. Insert initial skills into agent_skills table (proficiency 5 for each)
-4. Update index.json to include the new agent
-5. Update personalities.json to include the new agent
-6. Create workspace at /Users/worker/clawd-${agentId}/ with: SOUL.md, AGENTS.md, TOOLS.md, USER.md, MEMORY.md, IDENTITY.md
-7. Add '${agentId}' to REAL_GATEWAY_AGENTS array in ~/clawd/clawd-dashboard/src/components/AgentPanel.tsx so it appears in the dashboard
+      const result = await (window as any).clawdbot.agents.create(config);
 
-Profile JSON: ${JSON.stringify(profileData, null, 2)}`;
+      if (!result.success) {
+        throw new Error(result.error || 'Onboarding script failed');
+      }
 
-      // Send request to Froggo to create the agent
-      await gateway.sendChat(`@Froggo ${createTask}`);
-      
-      addSystemMessage('✅ Agent creation request sent to Froggo!');
+      addSystemMessage('✅ Onboarding script completed!');
 
-      setTimeout(() => {
-        const createdAgent: CreatedAgent = {
-          id: agentId,
-          name: agentData.name,
-          emoji: agentData.emoji,
-          role: agentData.role,
-          color: agentData.color,
-          capabilities: agentData.skills,
-          personality,
-        };
+      // Refresh agent list from gateway
+      useStore.getState().fetchAgents();
 
-        setStage('done');
-        addHRMessage(
-          `🎉 **Welcome to the team, ${agentData.name}!**\n\n` +
-          `${agentData.emoji} ${agentData.name} is being set up now. They'll be ready shortly with:\n` +
-          `• Profile & personality configured\n` +
-          `• Skills initialized: ${agentData.skills.join(', ')}\n` +
-          `• Workspace created\n\n` +
-          `I'll schedule their first training session to get them up to speed. ` +
-          `You can close this and find them in the Agents panel!`
-        );
+      const createdAgent: CreatedAgent = {
+        id: agentId,
+        name: agentData.name,
+        emoji: agentData.emoji,
+        role: agentData.role,
+        color: agentData.color,
+        capabilities: agentData.skills,
+        personality,
+      };
 
-        onAgentCreated?.(createdAgent);
-        showToast(`${agentData.emoji} ${agentData.name} created!`, 'success');
-      }, 2000);
+      setStage('done');
+      addHRMessage(
+        `🎉 **Welcome to the team, ${agentData.name}!**\n\n` +
+        `${agentData.emoji} ${agentData.name} has been fully onboarded:\n` +
+        `• Workspace created at ~/clawd-${agentId}/\n` +
+        `• Registered in openclaw.json + froggo.db\n` +
+        `• Auth profiles & model config set up\n` +
+        `• Dashboard patched (themes, selector, voices)\n` +
+        `• Gateway restarted\n` +
+        `• Onboarding task created with subtask checklist\n\n` +
+        `Remaining: headshot generation + first training session.\n` +
+        `You can close this and find them in the Agents panel!`
+      );
+
+      onAgentCreated?.(createdAgent);
+      showToast(`${agentData.emoji} ${agentData.name} created!`, 'success');
 
     } catch (err: any) {
       setStage('review');

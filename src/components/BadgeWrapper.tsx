@@ -57,12 +57,10 @@ export default function BadgeWrapper({
         ${sizeClasses[size]}
         inline-flex items-center justify-center
         rounded-full font-bold shadow-md
-        z-10 flex-shrink-0
+        flex-shrink-0
         ${className}
       `}
       style={{
-        // Ensure badge is always on top and doesn't cause layout shift
-        isolation: 'isolate',
         lineHeight: '1'
       }}
     >
@@ -145,13 +143,9 @@ export function DotBadge({
         ${positionClasses[position]}
         ${variantClasses[variant]}
         w-2.5 h-2.5 rounded-full
-        z-10
         ${pulse ? 'animate-pulse' : ''}
         ${className}
       `}
-      style={{
-        isolation: 'isolate'
-      }}
     />
   );
 }

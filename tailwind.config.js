@@ -12,13 +12,13 @@ export default {
       },
       colors: {
         'clawd': {
-          bg: 'var(--clawd-bg, #0f0f0f)',
-          surface: 'var(--clawd-surface, #1a1a1a)',
-          border: 'var(--clawd-border, #2a2a2a)',
+          bg: 'var(--clawd-bg, #0a0a0a)',
+          surface: 'var(--clawd-surface, #141414)',
+          border: 'var(--clawd-border, #2a2a2a)', /* Pure neutral gray */
           accent: 'var(--clawd-accent, #22c55e)',
           'accent-dim': 'var(--clawd-accent-dim, #16a34a)',
           text: 'var(--clawd-text, #fafafa)',
-          'text-dim': 'var(--clawd-text-dim, #a3a3a3)',
+          'text-dim': 'var(--clawd-text-dim, #a1a1aa)',
         },
         // ── Design Token Bridge ──────────────────────────────────
         // Maps CSS custom property tokens → Tailwind utilities.

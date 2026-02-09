@@ -82,9 +82,9 @@ const DEFAULT_STATE: ToolbarState = {
 const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
   analytics: ['coder', 'researcher', 'chief'],
   kanban: ['chief', 'coder', 'clara'],
-  agents: ['hr', 'chief', 'lead-engineer'],
+  agents: ['hr', 'chief', 'coder'],
   dashboard: ['froggo', 'chief', 'coder'],
-  settings: ['coder', 'lead-engineer', 'froggo'],
+  settings: ['coder', 'chief', 'froggo'],
   twitter: ['social-manager', 'growth-director', 'writer'],
   inbox: ['froggo', 'chief', 'writer'],
   meetings: ['froggo', 'voice', 'chief'],
@@ -92,7 +92,7 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
   accounts: ['froggo', 'chief', 'hr'],
   approvals: ['clara', 'chief', 'hr'],
   library: ['researcher', 'writer', 'coder'],
-  context: ['coder', 'lead-engineer', 'researcher'],
+  context: ['coder', 'chief', 'researcher'],
 };
 
 // Task quick-status options
@@ -526,7 +526,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         if (gateway?.request) {
           gateway.request('chat.inject', {
             sessionKey: gateway.getSessionKey?.() || 'web:dashboard',
-            role, message: text, label: 'voice',
+            role, message: text,
+            // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
           }).catch(() => {});
         }
       } catch {}
@@ -549,22 +550,32 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       }),
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
         try {
-          if (!toolCall?.functionCalls?.length) return;
+          console.log('[QuickActions] Tool call received:', toolCall);
+          if (!toolCall?.functionCalls?.length) {
+            console.warn('[QuickActions] No function calls in tool-call event');
+            return;
+          }
           const agent = activeCallAgentRef.current;
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
-            addTx('system', `🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
+            addTx('system', `🔧 ${fc.name}(${JSON.stringify(fc.args || {}).slice(0, 100)})`);
+            console.log(`[QuickActions] Executing tool: ${fc.name}`);
             let result: any;
             try {
               result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
+              console.log(`[QuickActions] Tool ${fc.name} result:`, result);
             } catch (err: any) {
+              console.error(`[QuickActions] Tool ${fc.name} error:`, err);
               result = { error: err.message || 'Tool execution failed' };
               addTx('system', `⚠️ ${fc.name} failed: ${err.message}`);
             }
             responses.push({ id: fc.id, name: fc.name, response: result });
           }
+          console.log('[QuickActions] Sending tool responses:', responses.length);
           await geminiLive.sendToolResponse(responses);
+          console.log('[QuickActions] Tool responses sent');
         } catch (err: any) {
+          console.error('[QuickActions] Tool handler error:', err);
           addTx('system', `⚠️ Tool error: ${err.message}`);
         }
       }),

@@ -95,42 +95,51 @@ function DashboardWidget({
   removable = true 
 }: DashboardWidgetProps) {
   return (
-    <div className="h-full bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl flex flex-col">
-      {/* Title bar with drag handle */}
-      <div className={`widget-drag-handle flex items-center justify-between px-4 py-3 border-b border-clawd-border/50 bg-gradient-to-r from-clawd-surface to-clawd-bg ${editMode ? 'cursor-move' : ''}`}>
-        <div className="flex items-center gap-3">
-          {editMode && <GripVertical size={16} className="text-clawd-text-dim" />}
-          <Icon size={18} className="text-clawd-accent" />
-          <h3 className="text-sm font-semibold">{title}</h3>
+    <div className="h-full bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border overflow-hidden shadow-xl flex flex-col relative">
+      {/* Minimal drag handle - only visible in edit mode */}
+      {editMode && (
+        <div className="widget-drag-handle absolute top-2 left-1/2 -translate-x-1/2 z-10 cursor-move">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-clawd-bg/80 backdrop-blur-sm border border-clawd-border/50">
+            <div className="w-1 h-1 rounded-full bg-clawd-text-dim/50"></div>
+            <div className="w-1 h-1 rounded-full bg-clawd-text-dim/50"></div>
+            <div className="w-1 h-1 rounded-full bg-clawd-text-dim/50"></div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+      )}
+      
+      {/* Control buttons - only in edit mode */}
+      {editMode && (
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
           <button
             onClick={onToggleMinimize}
-            className="p-1.5 hover:bg-clawd-border/50 rounded-lg transition-colors"
+            className="p-1.5 bg-clawd-bg/80 backdrop-blur-sm hover:bg-clawd-border/80 rounded-lg transition-colors border border-clawd-border/50"
             title={minimized ? "Maximize" : "Minimize"}
           >
             {minimized ? <Maximize2 size={14} className="text-clawd-text-dim" /> : <Minus size={14} className="text-clawd-text-dim" />}
           </button>
-          {removable && editMode && onRemove && (
+          {removable && onRemove && (
             <button
               onClick={onRemove}
-              className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors"
+              className="p-1.5 bg-clawd-bg/80 backdrop-blur-sm hover:bg-red-500/20 rounded-lg transition-colors border border-clawd-border/50"
               title="Remove widget"
             >
               <X size={14} className="text-red-400" />
             </button>
           )}
         </div>
-      </div>
+      )}
       
-      {/* Content */}
-      <div className={`flex-1 overflow-auto ${minimized ? 'hidden' : ''}`}>
+      {/* Content - no header bar, full height */}
+      <div className={`flex-1 overflow-auto ${minimized ? 'hidden' : ''} ${editMode ? 'pt-2' : ''}`}>
         {children}
       </div>
       
       {minimized && (
         <div className="flex-1 flex items-center justify-center text-clawd-text-dim text-sm">
-          Widget minimized
+          <div className="flex items-center gap-2">
+            <Icon size={16} className="text-clawd-text-dim/50" />
+            <span>{title} (minimized)</span>
+          </div>
         </div>
       )}
     </div>
@@ -369,60 +378,75 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                       </div>
                     </div>
 
-                    {/* Edit layout controls */}
+                    {/* Edit layout controls - compact floating panel */}
                     <div className="flex items-center gap-2">
-                      {editMode && (
-                        <>
-                          {/* Add Widget */}
-                          <div className="relative">
-                            <button
-                              onClick={() => setShowAddWidget(!showAddWidget)}
-                              className="flex items-center gap-2 px-3 py-1.5 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent/30 transition-colors text-sm font-medium"
-                            >
-                              <Plus size={16} />
-                              Add Widget
-                            </button>
+                      <div className="relative">
+                        {/* Single compact button to toggle edit mode */}
+                        <button
+                          onClick={() => setEditMode(!editMode)}
+                          className={`p-2 rounded-lg transition-all ${
+                            editMode 
+                              ? 'bg-clawd-accent text-white shadow-lg' 
+                              : 'bg-clawd-surface/50 text-clawd-text-dim hover:bg-clawd-surface border border-clawd-border'
+                          }`}
+                          title={editMode ? 'Exit edit mode' : 'Edit layout'}
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                        
+                        {/* Floating panel with edit tools - only shown in edit mode */}
+                        {editMode && (
+                          <div className="absolute right-0 top-full mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl z-50 p-3 min-w-[200px]">
+                            <div className="space-y-2">
+                              {/* Add Widget */}
+                              <button
+                                onClick={() => setShowAddWidget(!showAddWidget)}
+                                className="w-full flex items-center gap-2 px-3 py-2 bg-clawd-accent/20 text-clawd-accent rounded-lg hover:bg-clawd-accent/30 transition-colors text-sm font-medium"
+                              >
+                                <Plus size={16} />
+                                Add Widget
+                              </button>
+                              
+                              {/* Reset Layout */}
+                              <button
+                                onClick={handleResetLayout}
+                                className="w-full flex items-center gap-2 px-3 py-2 bg-clawd-bg text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors text-sm font-medium"
+                                title="Reset to default layout"
+                              >
+                                <RotateCcw size={16} />
+                                Reset Layout
+                              </button>
+                              
+                              {/* Done button */}
+                              <button
+                                onClick={() => setEditMode(false)}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors text-sm font-medium"
+                              >
+                                Done Editing
+                              </button>
+                            </div>
+                            
+                            {/* Add widget dropdown */}
                             {showAddWidget && (
-                              <div className="absolute right-0 top-full mt-2 w-56 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto">
-                                {WIDGET_REGISTRY.filter(w => hiddenWidgets.has(w.id)).map(w => (
+                              <div className="mt-2 pt-2 border-t border-clawd-border max-h-48 overflow-y-auto">
+                                {WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable).map(w => (
                                   <button
                                     key={w.id}
                                     onClick={() => { handleAddWidget(w.id); setShowAddWidget(false); }}
-                                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-clawd-border/50 transition-colors text-left"
+                                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-clawd-border/50 rounded-lg transition-colors text-left"
                                   >
                                     <w.icon size={16} className="text-clawd-accent" />
                                     <span className="text-sm">{w.title}</span>
                                   </button>
                                 ))}
-                                {WIDGET_REGISTRY.filter(w => hiddenWidgets.has(w.id)).length === 0 && (
-                                  <div className="px-4 py-3 text-sm text-clawd-text-dim text-center">All widgets visible</div>
+                                {WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable).length === 0 && (
+                                  <div className="px-3 py-2 text-xs text-clawd-text-dim text-center">All widgets visible</div>
                                 )}
                               </div>
                             )}
                           </div>
-
-                          {/* Reset Layout */}
-                          <button
-                            onClick={handleResetLayout}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border/50 text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors text-sm font-medium"
-                            title="Reset to default layout"
-                          >
-                            <RotateCcw size={16} />
-                          </button>
-                        </>
-                      )}
-
-                      <button
-                        onClick={() => setEditMode(!editMode)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium ${
-                          editMode 
-                            ? 'bg-clawd-accent text-white' 
-                            : 'bg-clawd-border/50 text-clawd-text-dim hover:bg-clawd-border'
-                        }`}
-                      >
-                        <Edit3 size={16} />
-                        {editMode ? 'Done' : 'Edit Layout'}
-                      </button>
+                        )}
+                      </div>
                     </div>
                   </div>
               </div>

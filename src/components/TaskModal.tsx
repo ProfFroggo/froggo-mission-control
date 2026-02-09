@@ -644,7 +644,6 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     onChange={e => setStatus(e.target.value as TaskStatus)}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   >
-                    <option value="backlog">📋 Backlog</option>
                     <option value="todo">📝 To Do</option>
                     <option value="in-progress">⚡ In Progress</option>
                     <option value="review">👀 Review</option>

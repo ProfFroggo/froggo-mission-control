@@ -93,7 +93,12 @@ async function loadPersonalities(): Promise<Record<string, any>> {
   return {};
 }
 
+function isCleanAgentId(id: string): boolean {
+  return /^[a-zA-Z0-9_-]{1,64}$/.test(id);
+}
+
 async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
+  if (!isCleanAgentId(agentId)) return [];
   try {
     if ((window as any).clawdbot?.exec?.run) {
       const r = await (window as any).clawdbot.exec.run(
@@ -168,7 +173,7 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
 
 async function loadWorkspaceFiles(agentId: string): Promise<Record<string, string | null>> {
   const exec = (window as any).clawdbot?.exec?.run;
-  if (!exec) return {};
+  if (!exec || !isCleanAgentId(agentId)) return {};
 
   // Non-froggo agents live at ~/clawd-<id>, froggo lives at ~/clawd
   const base = (agentId === 'froggo' || agentId === 'main') ? '~/clawd' : `~/clawd-${agentId}`;
@@ -199,6 +204,7 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
 }
 
 async function loadAgentMemory(agentId: string): Promise<string | null> {
+  if (!isCleanAgentId(agentId)) return null;
   try {
     if ((window as any).clawdbot?.exec?.run) {
       // Try reading the agent's daily memory

@@ -176,7 +176,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     setStopped(false);
     setLoading(true);
     const mentioned = extractMentions(lastUserMsg.content, room.agents);
-    const targets = mentioned.length > 0 ? mentioned : room.agents;
+    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('froggo') ? ['froggo'] : room.agents);
     await routeToAgents(targets, lastUserMsg.content);
   };
 
@@ -209,11 +209,18 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     const agentConfig = AGENTS[forAgent];
     const otherAgents = room.agents.filter(a => a !== forAgent).map(a => AGENTS[a]?.name || a);
 
+    // Allow orchestrators (Froggo, Chief) to use tools in group chats
+    const allowTools = ['froggo', 'chief'].includes(forAgent);
+
+    const toolRule = allowTools
+      ? "1. You can use tools when needed, but keep explanations brief (1-3 sentences)."
+      : "1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.";
+
     return `You are ${agentConfig?.name || forAgent} in a multi-agent chat room called "${room.name}".
 Other participants: Kevin (human), ${otherAgents.join(', ')}.
 
 IMPORTANT RULES:
-1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.
+${toolRule}
 2. Do NOT repeat, echo, or paraphrase what other agents said. Add YOUR OWN unique perspective only.
 3. If you have nothing new to add, just say so briefly.
 4. Do NOT copy another agent's message structure or content.
@@ -222,7 +229,7 @@ IMPORTANT RULES:
 ## Conversation so far:
 ${lines.join('\n')}
 
-Respond as ${agentConfig?.name || forAgent} (text only, no tools):`;
+Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no tools)'}:`;
   };
 
   /** Send a message to a specific agent using per-runId callbacks.
@@ -360,8 +367,9 @@ Respond as ${agentConfig?.name || forAgent} (text only, no tools):`;
     setAttachments([]);
 
     // Determine which agents to address
+    // When no @mention, only route to froggo (orchestrator) to avoid waking all agents
     const mentioned = extractMentions(text, room.agents);
-    const targets = mentioned.length > 0 ? mentioned : room.agents;
+    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('froggo') ? ['froggo'] : room.agents);
 
     setStopped(false);
     setLoading(true);

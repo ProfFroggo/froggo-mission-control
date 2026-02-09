@@ -68,7 +68,7 @@ const CAUTION_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\bkill\b/i, reason: 'Process kill' },
   { pattern: /\bpkill\b/i, reason: 'Process kill by name' },
   { pattern: /\blaunchctl\b/i, reason: 'System service management' },
-  { pattern: />\s*\//i, reason: 'Redirect to absolute path' },
+  { pattern: /(?<!2)>\s*\/(?!Users\/worker\/clawd|tmp\/)/i, reason: 'Redirect to absolute path outside workspace' },
   { pattern: /\benv\b.*\bPATH=/i, reason: 'PATH modification' },
 ];
 
@@ -78,8 +78,10 @@ const SAFE_PREFIXES = [
   'grep', 'find', 'which', 'type', 'file', 'stat', 'du', 'df',
   'git status', 'git log', 'git diff', 'git branch', 'git show',
   'node --version', 'npm --version', 'npm list', 'npm ls',
-  'clawdbot', 'froggo-db',
-  'sqlite3',
+  'clawdbot', 'openclaw', 'froggo-db',
+  'sqlite3', 'mkdir',
+  'bash ~/clawd', 'bash /Users/worker/clawd',
+  '(cat ~/clawd', '(cat /Users/worker/clawd',
 ];
 
 /** Paths that should never be written to */

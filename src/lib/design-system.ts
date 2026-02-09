@@ -208,12 +208,6 @@ export const PRIORITY_COLORS = {
  * Visual treatment for task statuses
  */
 export const STATUS_COLORS = {
-  backlog: {
-    text: 'text-gray-400',
-    bg: 'bg-gray-500/10',
-    border: 'border-l-gray-500',
-    emoji: '📋',
-  },
   todo: {
     text: 'text-blue-400',
     bg: 'bg-blue-500/10',
