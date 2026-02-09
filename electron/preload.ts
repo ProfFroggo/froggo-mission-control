@@ -507,7 +507,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getMetrics: () => ipcRenderer.invoke('agents:getMetrics'),
     getDetails: (agentId: string) => ipcRenderer.invoke('agents:getDetails', agentId),
     addSkill: (agentId: string, skill: string) => ipcRenderer.invoke('agents:addSkill', agentId, skill),
-    updateSkill: (agentId: string, skillName: string, proficiency: number) => 
+    updateSkill: (agentId: string, skillName: string, proficiency: number) =>
       ipcRenderer.invoke('agents:updateSkill', agentId, skillName, proficiency),
     search: (query: string) => ipcRenderer.invoke('agents:search', query),
     spawnChat: (agentId: string) => ipcRenderer.invoke('agents:spawnChat', agentId),
@@ -515,6 +515,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getActiveSessions: () => ipcRenderer.invoke('agents:getActiveSessions'),
     spawnForTask: (taskId: string, agentId: string) => ipcRenderer.invoke('agents:spawnForTask', taskId, agentId),
   },
+  getAgentRegistry: () => ipcRenderer.invoke('get-agent-registry'),
   chat: {
     saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) =>
       ipcRenderer.invoke('chat:saveMessage', msg),
