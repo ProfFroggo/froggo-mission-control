@@ -4,7 +4,7 @@ import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { matchTaskToAgent } from '../lib/agents';
 
-export type TaskStatus = 'backlog' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
+export type TaskStatus = 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
 
 export interface TaskLabel {
@@ -66,11 +66,12 @@ export interface Agent {
   name: string;
   avatar?: string;
   description?: string;
-  status: 'active' | 'busy' | 'idle' | 'offline';
+  status: 'active' | 'busy' | 'idle' | 'offline' | 'suspended' | 'archived' | 'draft';
   capabilities?: string[];
   sessionKey?: string;
   currentTaskId?: string;
   lastActivity?: number;
+  trust_tier?: 'apprentice' | 'journeyman' | 'expert' | 'master';
 }
 
 export interface Session {
@@ -178,6 +179,7 @@ interface Store {
 
   // Tasks (local)
   tasks: Task[];
+  taskCounts: { totalDone: number; totalArchived: number };
   loadTasksFromDB: () => Promise<void>;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -315,7 +317,6 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 // Avatar mapping - only real gateway agents (from 'clawdbot agents list')
 const AGENT_AVATARS: Record<string, string> = {
   froggo: '🐸',
-  'froggo': '💬',
   coder: '💻',
   researcher: '🔍',
   writer: '✍️',
@@ -330,7 +331,6 @@ const AGENT_AVATARS: Record<string, string> = {
 // Display name overrides - only real gateway agents
 const AGENT_DISPLAY_NAMES: Record<string, string> = {
   froggo: 'Froggo',
-  'froggo': 'Chat Agent',
   coder: 'Coder',
   researcher: 'Researcher',
   writer: 'Writer',
@@ -501,19 +501,15 @@ export const useStore = create<Store>()(
               subagentCounts.set(agentId, (subagentCounts.get(agentId) || 0) + (s.isActive ? 1 : 0));
             }
 
-            // Real gateway agents only (no phantom agents)
-            // Only real gateway agents (from 'clawdbot agents list')
-            const REAL_GATEWAY_AGENTS = [
-              'froggo', 'writer', 'researcher', 'coder', 'chief',
-              'hr', 'clara'
-            ];
+            // Skip phantom agents — use exclusion instead of inclusion
+            const PHANTOM_AGENTS = ['main', 'chat-agent'];
 
             set((state: Store) => ({
               gatewaySessions: processed,
               agents: state.agents.map((agent: Agent) => {
-                // Only enrich status for real gateway agents
-                if (!REAL_GATEWAY_AGENTS.includes(agent.id) && !agent.id.startsWith('worker-')) {
-                  return agent; // Skip phantom/legacy agents
+                // Skip phantom/legacy agents
+                if (PHANTOM_AGENTS.includes(agent.id)) {
+                  return agent;
                 }
 
                 const activity = agentActivity.get(agent.id);
@@ -546,14 +542,13 @@ export const useStore = create<Store>()(
       },
 
       tasks: [], // Empty - loaded from froggo-db only
+      taskCounts: { totalDone: 0, totalArchived: 0 },
       loadTasksFromDB: async () => {
         try {
           get().setLoading('tasks', true);
-          // Load tasks with limit for better performance
-          // Get all non-done tasks + last 50 completed tasks
           const result = await (window as any).clawdbot?.tasks?.list();
           if (result?.success && Array.isArray(result.tasks)) {
-            // Convert froggo-db tasks to store format
+            // Convert froggo-db tasks to store format (backend already filters archived/cancelled)
             const tasksWithoutSubtasks = result.tasks.map((t: any) => ({
               id: t.id,
               title: t.title,
@@ -572,20 +567,12 @@ export const useStore = create<Store>()(
               subtasks: [] as Subtask[],
             }));
             
-            // Filter: keep all active tasks + last 50 completed
-            const activeTasks = tasksWithoutSubtasks.filter((t: Task) => t.status !== 'done' && t.status !== 'cancelled');
-            const completedTasks = tasksWithoutSubtasks
-              .filter((t: Task) => t.status === 'done')
-              .sort((a: Task, b: Task) => (b.updatedAt || 0) - (a.updatedAt || 0))
-              .slice(0, 50);
-            const filteredTasks = [...activeTasks, ...completedTasks];
-            
             // Load subtasks in parallel with batching (10 at a time)
             const BATCH_SIZE = 10;
             const tasksWithSubtasks: Task[] = [];
             
-            for (let i = 0; i < filteredTasks.length; i += BATCH_SIZE) {
-              const batch = filteredTasks.slice(i, i + BATCH_SIZE);
+            for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
+              const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
               const batchResults = await Promise.all(
                 batch.map(async (task: Task) => {
                   try {
@@ -600,7 +587,14 @@ export const useStore = create<Store>()(
               tasksWithSubtasks.push(...batchResults);
             }
             
-            set({ tasks: tasksWithSubtasks });
+            // Update tasks and counts
+            set({ 
+              tasks: tasksWithSubtasks,
+              taskCounts: { 
+                totalDone: result.totalDone || 0, 
+                totalArchived: result.totalArchived || 0 
+              }
+            });
           }
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
@@ -623,35 +617,38 @@ export const useStore = create<Store>()(
       },
       updateTask: (id: string, updates: Partial<Task>) => {
         console.log('[Store] updateTask called:', id, updates);
+        // Snapshot original values for rollback
+        const original = get().tasks.find((t: Task) => t.id === id);
+        const rollbackValues = original
+          ? Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: (original as any)[key] }), {} as Partial<Task>)
+          : null;
         // Optimistically update UI
         set((s: Store) => ({
           tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
         }));
-        
+
         console.log('[Store] Calling clawdbot.tasks.update via IPC');
         // Persist to database via IPC
         (window as any).clawdbot?.tasks?.update(id, updates)
           .then((result: any) => {
             if (!result?.success) {
               console.error('[Store] Task update failed:', result?.error);
-              // Rollback optimistic update
-              set((s: Store) => ({
-                tasks: s.tasks.map((t: Task) => 
-                  t.id === id ? { ...t, ...Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: undefined }), {}) } : t
-                )
-              }));
+              if (rollbackValues) {
+                set((s: Store) => ({
+                  tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
+                }));
+              }
             } else {
               console.log('[Store] Task update persisted:', id, updates);
             }
           })
           .catch((err: any) => {
             console.error('[Store] Task update exception:', err);
-            // Rollback optimistic update
-            set((s: Store) => ({
-              tasks: s.tasks.map((t: Task) => 
-                t.id === id ? { ...t, ...Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: undefined }), {}) } : t
-              )
-            }));
+            if (rollbackValues) {
+              set((s: Store) => ({
+                tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
+              }));
+            }
           });
       },
       moveTask: (id: string, status: TaskStatus) => {
@@ -955,7 +952,12 @@ export const useStore = create<Store>()(
             ),
           }));
 
-          // Task start is handled internally — no need to send to Discord
+          // IMMEDIATELY spawn agent via spawn-agent-with-retry (don't wait for DB triggers)
+          try {
+            await (window as any).clawdbot?.agents?.spawnForTask?.(taskId, agentId);
+          } catch (spawnErr) {
+            console.warn('Direct spawn failed, relying on DB triggers:', spawnErr);
+          }
 
           get().addActivity({
             type: 'agent',
@@ -1050,64 +1052,7 @@ Start now.`;
       })),
       clearActivities: () => set({ activities: [] }),
 
-      // Approvals - seed with some examples
-      approvals: [
-        {
-          id: 'appr-seed-1',
-          type: 'tweet' as ApprovalType,
-          title: 'Weekly Thread Draft',
-          content: `Thread: Why your AI agent is probably trash 🧵
-
-1/ Everyone's building AI agents rn but most miss the point entirely.
-
-They focus on the tech stack when they should focus on the workflow.
-
-2/ The best AI agents aren't the smartest. They're the most predictable.
-
-Users need to trust what it will do. Surprises = churn.
-
-3/ Here's what actually matters:
-- Clear scope (what it does AND doesn't do)
-- Consistent behavior  
-- Graceful failures
-- Human escalation path
-
-4/ Stop building "autonomous" agents. Build collaborative ones.
-
-The goal isn't to replace humans. It's to amplify them.`,
-          context: 'Drafted based on your X growth strategy - thought leadership content',
-          metadata: { platform: 'X', scheduledFor: 'Tomorrow 9am' },
-          status: 'pending' as ApprovalStatus,
-          createdAt: Date.now() - 1800000,
-        },
-        {
-          id: 'appr-seed-2',
-          type: 'reply' as ApprovalType,
-          title: 'Reply to @cobie',
-          content: `This. The best products feel inevitable in hindsight but impossible to predict beforehand.
-
-The pattern I've seen: founders who deeply understand one specific user segment always beat generalists trying to "disrupt an industry."`,
-          context: 'Replying to thread about product-market fit',
-          metadata: { platform: 'X', replyTo: '@cobie: "PMF isn\'t about TAM..."' },
-          status: 'pending' as ApprovalStatus,
-          createdAt: Date.now() - 3600000,
-        },
-        {
-          id: 'appr-seed-3',
-          type: 'action' as ApprovalType,
-          title: 'Schedule Team Sync',
-          content: `Create recurring meeting:
-- Title: "Weekly Team Sync"
-- When: Every Monday 10:00 AM
-- Duration: 30 min
-- Attendees: Alberto, Maria, Dev team
-- Location: Google Meet`,
-          context: 'You mentioned wanting to set up regular syncs',
-          metadata: { platform: 'Google Calendar' },
-          status: 'pending' as ApprovalStatus,
-          createdAt: Date.now() - 900000,
-        },
-      ],
+      approvals: [],
       addApproval: (a: Omit<ApprovalItem, 'id' | 'status' | 'createdAt'>) => {
         // Notify user
         notifyNewApproval(a.title);
