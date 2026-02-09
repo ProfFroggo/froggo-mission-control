@@ -7907,6 +7907,41 @@ ipcMain.handle('tokens:budget', async (_, agent: string) => {
   }
 });
 
+// ============== GOVERNANCE/PERFORMANCE IPC HANDLERS ==============
+ipcMain.handle('get-performance-report', async (_, args?: { days?: number }) => {
+  try {
+    const days = args?.days || 30;
+    const result = execSync(
+      `/Users/worker/.local/bin/froggo-db performance-report --days ${days} --json`,
+      {
+        encoding: 'utf-8',
+        timeout: 10000,
+        env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
+      }
+    );
+    return JSON.parse(result);
+  } catch (err: any) {
+    return { error: err.message, agents: [] };
+  }
+});
+
+ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: number }) => {
+  try {
+    const days = args.days || 30;
+    const result = execSync(
+      `/Users/worker/.local/bin/froggo-db agent-audit ${args.agentId} --days ${days} --json`,
+      {
+        encoding: 'utf-8',
+        timeout: 10000,
+        env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
+      }
+    );
+    return JSON.parse(result);
+  } catch (err: any) {
+    return { error: err.message, timeline: [] };
+  }
+});
+
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
 ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => {
   const session = msg.sessionKey || 'dashboard';
