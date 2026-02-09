@@ -13,6 +13,7 @@ import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLo
 import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
+import * as xApi from './x-api-client';
 // const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
 
 // ============== AGENT REGISTRY ==============
@@ -429,8 +430,21 @@ async function processScheduledItems() {
       
       // Build command based on type
       if (item.type === 'tweet') {
-        const escapedContent = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        execCmd = `bird tweet "${escapedContent}"`;
+        // Post via X API directly
+        try {
+          const result = await xApi.postTweet(item.content);
+          if (result.success) {
+            safeLog.log(`[ScheduleProcessor] Tweet posted: ${result.id}`);
+            exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='completed' WHERE id='${item.id}'"`, () => {});
+          } else {
+            safeLog.error(`[ScheduleProcessor] Tweet failed: ${result.error}`);
+            exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${(result.error || '').replace(/'/g, "''")}' WHERE id='${item.id}'"`, () => {});
+          }
+          continue;
+        } catch (e: any) {
+          safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
+        }
+        execCmd = ''; // fallback cleared
       } else if (item.type === 'email') {
         const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
         const account = metadata.account || '';
@@ -3237,34 +3251,34 @@ ipcMain.handle('calendar:events:delete', async (_, eventId: string) => {
 });
 // ============== EXECUTION HANDLERS ==============
 ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
-  // Actually post the tweet via bird CLI
-  const escapedContent = content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-  const cmd = `bird tweet "${escapedContent}"`;
-  
-  // Log progress if taskId provided
   if (taskId) {
-    exec(`froggo-db task-progress "${taskId}" "Posting tweet via bird CLI..." --step "Execution"`, () => {});
+    exec(`froggo-db task-progress "${taskId}" "Posting tweet via X API..." --step "Execution"`, () => {});
   }
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
-      if (error) {
-        safeLog.error('[Execute] Tweet error:', error.message, stderr);
-        if (taskId) {
-          exec(`froggo-db task-progress "${taskId}" "Failed: ${error.message}" --step "Error"`, () => {});
-          exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
-        }
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Execute] Tweet posted:', stdout);
-        if (taskId) {
-          exec(`froggo-db task-progress "${taskId}" "Tweet posted successfully" --step "Complete"`, () => {});
-          exec(`froggo-db task-complete "${taskId}" --outcome success`, () => {});
-        }
-        resolve({ success: true, output: stdout });
+
+  try {
+    const result = await xApi.postTweet(content);
+    if (result.success) {
+      safeLog.log('[Execute] Tweet posted:', result.id);
+      if (taskId) {
+        exec(`froggo-db task-progress "${taskId}" "Tweet posted successfully" --step "Complete"`, () => {});
+        exec(`froggo-db task-complete "${taskId}" --outcome success`, () => {});
       }
-    });
-  });
+      return { success: true, id: result.id };
+    } else {
+      safeLog.error('[Execute] Tweet error:', result.error);
+      if (taskId) {
+        exec(`froggo-db task-progress "${taskId}" "Failed: ${result.error}" --step "Error"`, () => {});
+        exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
+      }
+      return { success: false, error: result.error };
+    }
+  } catch (e: any) {
+    safeLog.error('[Execute] Tweet exception:', e.message);
+    if (taskId) {
+      exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
+    }
+    return { success: false, error: e.message };
+  }
 });
 
 // ============== EMAIL IPC HANDLERS ==============
@@ -4132,7 +4146,19 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
         // Execute immediately based on type
         let execCmd = '';
         if (item.type === 'tweet') {
-          execCmd = `bird tweet "${item.content.replace(/"/g, '\\"')}"`;
+          // Post via X API directly
+          try {
+            const result = await xApi.postTweet(item.content);
+            if (result.success) {
+              exec(`sqlite3 "${scheduleDbPath}" "UPDATE schedule SET status='completed' WHERE id='${id}'"`, () => {});
+              resolve({ success: true, id: result.id });
+            } else {
+              resolve({ success: false, error: result.error });
+            }
+          } catch (e: any) {
+            resolve({ success: false, error: e.message });
+          }
+          return;
         } else if (item.type === 'email') {
           const meta = item.metadata ? JSON.parse(item.metadata) : {};
           const recipient = meta.recipient || meta.to || '';
@@ -5454,85 +5480,30 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
   }
 });
 
-// ============== TWITTER IPC HANDLERS ==============
-const BIRD_PATH = '/opt/homebrew/bin/bird';
-const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
-
-// Startup test: verify bird CLI is available
-exec(`${BIRD_PATH} --version`, { timeout: 5000, env: execEnv }, (error, stdout, stderr) => {
-  if (error) {
-    safeLog.error('[Twitter] STARTUP TEST FAILED: bird CLI not available!', error.message);
-    safeLog.error('[Twitter] stderr:', stderr);
-  } else {
-    safeLog.log('[Twitter] STARTUP TEST OK: bird version:', stdout.trim());
-  }
-});
+// ============== TWITTER IPC HANDLERS (X API v2) ==============
 
 ipcMain.handle('twitter:mentions', async () => {
   safeLog.log('[Twitter] Mentions handler called');
-  
-  return new Promise((resolve) => {
-    try {
-      // Use JSON output from bird with full path and extended PATH
-      exec(`${BIRD_PATH} mentions --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
-        safeLog.log('[Twitter] exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
-        
-        if (error) {
-          safeLog.error('[Twitter] Mentions error:', error.message);
-          safeLog.error('[Twitter] stderr:', stderr);
-          // Return error immediately instead of fallback to avoid double-exec issues
-          resolve({ success: false, mentions: [], error: error.message, stderr });
-          return;
-        }
-        
-        try {
-          const mentions = JSON.parse(stdout || '[]');
-          safeLog.log('[Twitter] Parsed', Array.isArray(mentions) ? mentions.length : 0, 'mentions');
-          resolve({ success: true, mentions: Array.isArray(mentions) ? mentions : [] });
-        } catch (e: any) {
-          safeLog.error('[Twitter] JSON parse error:', e.message);
-          safeLog.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
-          resolve({ success: true, mentions: [], raw: stdout || '', parseError: e.message });
-        }
-      });
-    } catch (e: any) {
-      safeLog.error('[Twitter] Handler exception:', e);
-      resolve({ success: false, mentions: [], error: e.message });
-    }
-  });
+  try {
+    const mentions = await xApi.getMentions(20);
+    safeLog.log('[Twitter] Got', mentions.length, 'mentions');
+    return { success: true, mentions };
+  } catch (e: any) {
+    safeLog.error('[Twitter] Mentions error:', e.message);
+    return { success: false, mentions: [], error: e.message };
+  }
 });
 
 ipcMain.handle('twitter:home', async (_, limit?: number) => {
   safeLog.log('[Twitter] Home handler called, limit:', limit);
-  const countArg = limit ? `--count ${limit}` : '--count 20';
-  
-  return new Promise((resolve) => {
-    try {
-      exec(`${BIRD_PATH} home ${countArg} --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
-        safeLog.log('[Twitter] Home exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
-        
-        if (error) {
-          safeLog.error('[Twitter] Home error:', error.message);
-          safeLog.error('[Twitter] stderr:', stderr);
-          resolve({ success: false, tweets: [], error: error.message, stderr });
-          return;
-        }
-        
-        try {
-          const tweets = JSON.parse(stdout || '[]');
-          safeLog.log('[Twitter] Parsed', Array.isArray(tweets) ? tweets.length : 0, 'home tweets');
-          resolve({ success: true, tweets: Array.isArray(tweets) ? tweets : [] });
-        } catch (e: any) {
-          safeLog.error('[Twitter] Home JSON parse error:', e.message);
-          safeLog.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
-          resolve({ success: true, tweets: [], raw: stdout || '', parseError: e.message });
-        }
-      });
-    } catch (e: any) {
-      safeLog.error('[Twitter] Home handler exception:', e);
-      resolve({ success: false, tweets: [], error: e.message });
-    }
-  });
+  try {
+    const tweets = await xApi.getHomeTimeline(limit || 20);
+    safeLog.log('[Twitter] Got', tweets.length, 'home tweets');
+    return { success: true, tweets };
+  } catch (e: any) {
+    safeLog.error('[Twitter] Home error:', e.message);
+    return { success: false, tweets: [], error: e.message };
+  }
 });
 
 ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) => {
@@ -7939,6 +7910,30 @@ ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: numb
     return JSON.parse(result);
   } catch (err: any) {
     return { error: err.message, timeline: [] };
+  }
+});
+
+// ============== DM FEED & CIRCUIT BREAKER IPC HANDLERS ==============
+ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: string }) => {
+  try {
+    const limit = args?.limit || 50;
+    const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
+    const query = `SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages WHERE status != 'expired' ORDER BY created_at DESC LIMIT ${limit}`;
+    const result = execSync(`sqlite3 -json "${dbPath}" "${query}"`, { encoding: 'utf-8', timeout: 5000 });
+    return JSON.parse(result || '[]');
+  } catch (e: any) {
+    console.error('get-dm-history error:', e);
+    return [];
+  }
+});
+
+ipcMain.handle('get-circuit-status', async () => {
+  try {
+    const stateFile = path.join(os.homedir(), '.openclaw', 'dispatcher-state.json');
+    const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    return state.circuit_breakers || {};
+  } catch (e) {
+    return {};
   }
 });
 

@@ -8,6 +8,7 @@ import AgentChatModal from './AgentChatModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import { InlineLoader } from './LoadingStates';
+import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 
 import { getAgentTheme } from '../utils/agentThemes';
 
@@ -147,6 +148,11 @@ export default function AgentPanel() {
             </div>
           </div>
         )}
+
+        {/* Circuit Breaker Status */}
+        <div className="mb-8">
+          <CircuitBreakerStatus />
+        </div>
 
         {/* HR Agent Section */}
         <HRSection />

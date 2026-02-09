@@ -332,6 +332,26 @@ declare global {
         status: string;
         trust_tier: string;
       }>>;
+      // DM Feed & Circuit Breakers
+      getDMHistory: (args?: { limit?: number; agent?: string }) => Promise<Array<{
+        id: number;
+        correlation_id: string;
+        from_agent: string;
+        to_agent: string;
+        message_type: string;
+        subject: string;
+        body: string;
+        status: string;
+        created_at: number;
+        read_at: number | null;
+      }>>;
+      getCircuitStatus: () => Promise<Record<string, {
+        state: 'closed' | 'open' | 'half_open';
+        consecutive_failures: number;
+        last_failure_time: number | null;
+        suspended_until: number | null;
+        last_state_change: number;
+      }>>;
       // Agent performance & governance
       getPerformanceReport: (days: number) => Promise<{
         days: number;

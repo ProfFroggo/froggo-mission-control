@@ -42,8 +42,9 @@ import HelpPanel from './components/HelpPanel';
 import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
+import { DMFeed } from './components/DMFeed';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'mictest' | 'error-test';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'mictest' | 'error-test' | 'agentdms';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -126,6 +127,20 @@ function App() {
         console.error('[App] Failed to apply saved theme:', e);
       }
     }
+  }, []);
+
+  // Listen for navigate-library event from HRSection
+  useEffect(() => {
+    const handleNavigateLibrary = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setCurrentView('library');
+      // Store the path for LibraryPanel to consume
+      if (customEvent.detail?.path) {
+        sessionStorage.setItem('library-navigate-path', customEvent.detail.path);
+      }
+    };
+    window.addEventListener('navigate-library', handleNavigateLibrary);
+    return () => window.removeEventListener('navigate-library', handleNavigateLibrary);
   }, []);
 
   // Global keyboard shortcuts
@@ -339,6 +354,7 @@ function App() {
               {currentView === 'kanban' && <Kanban />}
               {currentView === 'agents' && <AgentPanel />}
               {currentView === 'chat' && <ChatPanel />}
+              {currentView === 'agentdms' && <DMFeed />}
               {currentView === 'meetings' && <MeetingsPanel />}
               {currentView === 'voicechat' && <VoiceChatPanel />}
               {currentView === 'mictest' && <MicTestPanel />}
