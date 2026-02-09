@@ -411,7 +411,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     createDetectedTask: (task: { title: string; description?: string }) => ipcRenderer.invoke('ai:createDetectedTask', task),
     createDetectedEvent: (event: { title: string; date: string; time?: string; duration?: string; location?: string; description?: string }) => ipcRenderer.invoke('ai:createDetectedEvent', event),
   },
-  // Twitter (bird CLI)
+  // Twitter (X API v2)
   twitter: {
     mentions: () => ipcRenderer.invoke('twitter:mentions'),
     home: (limit?: number) => ipcRenderer.invoke('twitter:home', limit),
@@ -518,6 +518,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
   getAgentRegistry: () => ipcRenderer.invoke('get-agent-registry'),
   getPerformanceReport: (days: number) => ipcRenderer.invoke('get-performance-report', { days }),
   getAgentAudit: (agentId: string, days: number) => ipcRenderer.invoke('get-agent-audit', { agentId, days }),
+  getDMHistory: (args?: { limit?: number; agent?: string }) => ipcRenderer.invoke('get-dm-history', args),
+  getCircuitStatus: () => ipcRenderer.invoke('get-circuit-status'),
   chat: {
     saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) =>
       ipcRenderer.invoke('chat:saveMessage', msg),
