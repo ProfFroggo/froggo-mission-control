@@ -23,13 +23,99 @@ export const agentThemes: Record<string, AgentTheme> = {
   clara:    { color: '#6B46C1', border: 'border-violet-500/40', bg: 'bg-violet-500/8', text: 'text-violet-400', ring: 'ring-violet-500/50', dot: 'bg-violet-400', pic: 'clara.png' },
   'growth-director': { color: '#E65100', border: 'border-amber-600/40', bg: 'bg-amber-600/8', text: 'text-amber-400', ring: 'ring-amber-600/50', dot: 'bg-amber-400', pic: 'growth-director.png' },
   'social-manager': { color: '#1DA1F2', border: 'border-sky-500/40', bg: 'bg-sky-500/8', text: 'text-sky-400', ring: 'ring-sky-500/50', dot: 'bg-sky-400', pic: 'social-manager.png' },
-  'lead-engineer': { color: '#795548', border: 'border-amber-700/40', bg: 'bg-amber-700/8', text: 'text-amber-300', ring: 'ring-amber-700/50', dot: 'bg-amber-300', pic: 'lead-engineer.png' },
   voice: { color: '#E91E63', border: 'border-rose-500/40', bg: 'bg-rose-500/8', text: 'text-rose-400', ring: 'ring-rose-500/50', dot: 'bg-rose-400', pic: 'voice.png' },
-  'froggo': { color: '#4CAF50', border: 'border-green-500/40', bg: 'bg-green-500/8', text: 'text-green-400', ring: 'ring-green-500/50', dot: 'bg-green-400', pic: 'froggo.png' },
+  'degen-frog': { color: '#00BCD4', border: 'border-cyan-500/40', bg: 'bg-cyan-500/8', text: 'text-cyan-400', ring: 'ring-cyan-500/50', dot: 'bg-cyan-400', pic: 'degen-frog.png' },
+  jess: { color: '#8B5CF6', border: 'border-indigo-500/40', bg: 'bg-indigo-500/8', text: 'text-indigo-400', ring: 'ring-indigo-500/50', dot: 'bg-indigo-400', pic: 'jess.png' },
 };
 
-export const defaultTheme: AgentTheme = { color: '#666', border: 'border-clawd-border', bg: 'bg-clawd-surface', text: 'text-clawd-text-dim', ring: 'ring-clawd-border', dot: 'bg-gray-400', pic: '' };
+export const defaultTheme: AgentTheme = {
+  color: '#666',
+  border: 'border-clawd-border',
+  bg: 'bg-clawd-surface',
+  text: 'text-clawd-text-dim',
+  ring: 'ring-clawd-border',
+  dot: 'bg-gray-400',
+  pic: ''
+};
 
+// Runtime theme generation from hex color
+const dynamicThemeCache: Record<string, AgentTheme> = {};
+
+/**
+ * Generate agent theme from hex color
+ * Creates Tailwind-compatible inline styles for unknown agents
+ */
+export function generateThemeFromColor(hex: string, pic?: string): AgentTheme {
+  // Cache to avoid redundant conversions
+  if (dynamicThemeCache[hex]) {
+    return dynamicThemeCache[hex];
+  }
+
+  // Parse hex color to RGB
+  const hexMatch = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!hexMatch) {
+    return defaultTheme;
+  }
+
+  const r = parseInt(hexMatch[1], 16);
+  const g = parseInt(hexMatch[2], 16);
+  const b = parseInt(hexMatch[3], 16);
+
+  // Generate theme with varying opacity levels
+  const theme: AgentTheme = {
+    color: hex,
+    // Using inline style approach since Tailwind can't generate dynamic classes at runtime
+    border: `border-[${hex}40]`, // 40 = 25% opacity
+    bg: `bg-[${hex}14]`,          // 14 = ~8% opacity
+    text: `text-[${hex}]`,
+    ring: `ring-[${hex}80]`,      // 80 = 50% opacity
+    dot: `bg-[${hex}]`,
+    pic: pic || '',
+  };
+
+  dynamicThemeCache[hex] = theme;
+  return theme;
+}
+
+/**
+ * Register runtime theme for an agent
+ * Called when new agent is loaded from DB with color field
+ */
+export function registerAgentTheme(id: string, color: string, pic?: string) {
+  if (!agentThemes[id.toLowerCase()]) {
+    const theme = generateThemeFromColor(color, pic);
+    dynamicThemeCache[id.toLowerCase()] = theme;
+  }
+}
+
+/**
+ * Get agent theme with fallback chain:
+ * 1. Hardcoded theme (known agents)
+ * 2. Runtime cache (newly registered agents)
+ * 3. Default theme
+ */
 export function getAgentTheme(id: string): AgentTheme {
-  return agentThemes[id.toLowerCase()] || defaultTheme;
+  const normalizedId = id.toLowerCase();
+
+  // Check hardcoded themes first
+  if (agentThemes[normalizedId]) {
+    return agentThemes[normalizedId];
+  }
+
+  // Check runtime cache
+  if (dynamicThemeCache[normalizedId]) {
+    return dynamicThemeCache[normalizedId];
+  }
+
+  // Default fallback
+  return defaultTheme;
+}
+
+/**
+ * Get agent color hex value
+ * Useful for components that need raw color value
+ */
+export function getAgentColor(id: string): string {
+  const theme = getAgentTheme(id);
+  return theme.color;
 }

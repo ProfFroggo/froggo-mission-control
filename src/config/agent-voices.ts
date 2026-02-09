@@ -7,6 +7,12 @@ export interface VoiceProfile {
   qualities?: string[]; // Additional voice qualities (e.g., 'deep')
 }
 
+// Default voice profile for unknown agents
+export const defaultVoiceProfile: VoiceProfile = {
+  gender: 'male',
+  age: 'middle-aged',
+};
+
 export const agentVoices: Record<string, VoiceProfile> = {
   chief: {
     gender: 'female',
@@ -40,9 +46,10 @@ export const agentVoices: Record<string, VoiceProfile> = {
     gender: 'female',
     age: 'middle-aged',
   },
-  'lead-engineer': {
-    gender: 'male',
-    age: 'middle-aged',
+  jess: {
+    gender: 'female',
+    age: 'young',
+    qualities: ['calm', 'warm'],
   },
   ox: {
     gender: 'male',
@@ -69,10 +76,15 @@ export const agentVoices: Record<string, VoiceProfile> = {
     gender: 'male',
     age: 'middle-aged',
   },
+  'degen-frog': {
+    gender: 'male',
+    age: 'young',
+    qualities: ['cocky', 'fast'],
+  },
 };
 
-export function getVoiceProfile(agentId: string): VoiceProfile | undefined {
-  return agentVoices[agentId.toLowerCase()];
+export function getVoiceProfile(agentId: string): VoiceProfile {
+  return agentVoices[agentId.toLowerCase()] || defaultVoiceProfile;
 }
 
 // Helper to get a voice description string
