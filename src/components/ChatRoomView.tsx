@@ -7,7 +7,6 @@ import { gateway } from '../lib/gateway';
 import { AGENTS } from '../lib/agents';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
-// import { showToast } from './Toast';
 
 interface AttachedFile {
   id: string;
