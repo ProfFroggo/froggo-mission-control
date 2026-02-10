@@ -12,7 +12,7 @@ import {
   Send, Settings,
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
-import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
+import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
 import DraggableVideoWindow from './DraggableVideoWindow';
 import MarkdownMessage from './MarkdownMessage';
@@ -62,10 +62,11 @@ function saveHistory(agentId: string, msgs: VoiceChatMessage[]) {
 
 export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {
   const { addActivity } = useStore();
-  
-  const initialAgent = agentId 
-    ? CHAT_AGENTS.find(a => a.id === agentId) || CHAT_AGENTS[0]
-    : CHAT_AGENTS[0];
+
+  const chatAgents = fetchAgentList();
+  const initialAgent = agentId
+    ? chatAgents.find(a => a.id === agentId) || chatAgents[0]
+    : chatAgents[0];
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent>(initialAgent);
   
   // Connection state
@@ -113,7 +114,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // Sync agentId prop
   useEffect(() => {
     if (agentId) {
-      const agent = CHAT_AGENTS.find(a => a.id === agentId);
+      const agent = chatAgents.find(a => a.id === agentId);
       if (agent && agent.id !== selectedAgent.id) setSelectedAgent(agent);
     }
   }, [agentId]);

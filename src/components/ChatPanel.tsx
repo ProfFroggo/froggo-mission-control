@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
-import AgentSelector, { CHAT_AGENTS, ChatAgent } from './AgentSelector';
-import { AGENTS } from '../lib/agents';
+import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
 import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
@@ -50,8 +49,17 @@ export default function ChatPanel() {
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
-  const [selectedAgent, setSelectedAgent] = useState<ChatAgent>(CHAT_AGENTS[0]);
+  const agents = useStore(s => s.agents);
+  const chatAgents = fetchAgentList();
+  const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(chatAgents.length > 0 ? chatAgents[0] : null);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+
+  // Update selectedAgent when agents load if not set
+  useEffect(() => {
+    if (!selectedAgent && chatAgents.length > 0) {
+      setSelectedAgent(chatAgents[0]);
+    }
+  }, [chatAgents.length, selectedAgent]);
   
   // Cache messages per agent so switching is instant
   const messageCacheRef = useRef<Map<string, Message[]>>(new Map());
@@ -840,8 +848,20 @@ export default function ChatPanel() {
     );
   }
 
+  // Guard against null selectedAgent (agents still loading)
+  if (!selectedAgent) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={48} className="mx-auto mb-4 animate-spin text-clawd-accent" />
+          <p className="text-lg font-medium">Loading agents...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
+    <div
       className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-clawd-accent ring-inset' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}

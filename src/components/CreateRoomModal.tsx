@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { X, Users, MessageSquarePlus } from 'lucide-react';
-import { AGENTS } from '../lib/agents';
 import AgentAvatar from './AgentAvatar';
 import { getAgentTheme } from '../utils/agentThemes';
+import { useStore } from '../store/store';
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -10,9 +10,8 @@ interface CreateRoomModalProps {
   onCreate: (name: string, agents: string[]) => void;
 }
 
-const ROOM_AGENTS = Object.values(AGENTS);
-
 export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoomModalProps) {
+  const agents = useStore(s => s.agents);
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [roomName, setRoomName] = useState('');
 
@@ -27,8 +26,9 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
     });
   };
 
+  const agentName = (id: string) => agents.find(a => a.id === id)?.name || id;
   const defaultName = selectedAgents.size > 0
-    ? `Room with ${[...selectedAgents].map(id => AGENTS[id]?.name || id).join(', ')}`
+    ? `Room with ${[...selectedAgents].map(id => agentName(id)).join(', ')}`
     : '';
 
   const handleCreate = () => {
@@ -79,7 +79,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
               Invite Agents <span className="text-clawd-text-dim">({selectedAgents.size} selected)</span>
             </label>
             <div className="space-y-2">
-              {ROOM_AGENTS.map(agent => {
+              {agents.map(agent => {
                 const theme = getAgentTheme(agent.id);
                 const selected = selectedAgents.has(agent.id);
                 return (
