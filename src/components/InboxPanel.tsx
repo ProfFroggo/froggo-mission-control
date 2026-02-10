@@ -143,23 +143,25 @@ export default function InboxPanel() {
       const result = await window.clawdbot?.inbox.list();
       let allItems = result.success ? (result.items || []) : [];
       
-      // Also load tasks in "review" status
+      // Also load tasks in "review" status that haven't been reviewed yet
       try {
         const tasksResult = await window.clawdbot?.tasks.list('review');
         if (tasksResult?.success && tasksResult.tasks?.length > 0) {
           // Convert tasks to inbox item format
+          // ONLY show tasks with reviewStatus='pending' (not yet reviewed)
           const taskItems = tasksResult.tasks
             .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
+            .filter((t: any) => t.reviewStatus === 'pending') // FIX: Only show pending reviews
             .map((t: any) => ({
               id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
               type: 'task' as const,
               title: `✅ Review: ${t.title}`,
               content: t.description || t.last_agent_update || 'Task completed, ready for review',
               context: `Project: ${t.project || 'General'}`,
-              status: 'pending',
+              status: 'pending', // Review inbox item status (not task status)
               source_channel: 'kanban',
               created: new Date(t.created_at || Date.now()).toISOString(),
-              metadata: JSON.stringify({ taskId: t.id, project: t.project }),
+              metadata: JSON.stringify({ taskId: t.id, project: t.project, taskStatus: t.status }),
               isTask: true, // Flag to handle differently
             }));
           allItems = [...taskItems, ...allItems];
@@ -595,15 +597,16 @@ export default function InboxPanel() {
     try {
       // Check if this is a task review (not a regular inbox item)
       if ((item as any).isTask && item.metadata) {
-        // This is a task in review status - approve and move to in-progress
+        // This is a task in review status - approve and move to done
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
           console.log('[Inbox] Approving task:', meta.taskId);
-          // ATOMIC UPDATE: Set both reviewStatus and status together
+          // FIX: Update BOTH reviewStatus (to mark as reviewed) AND status (to move to done)
           await window.clawdbot?.tasks.update(meta.taskId, { 
-            status: 'in-progress' 
+            reviewStatus: 'approved',
+            status: 'done'
           } as any);
-          console.log('[Inbox] Task approved and moved to in-progress:', meta.taskId);
+          console.log('[Inbox] Task approved and marked as done:', meta.taskId);
           return;
         }
       }
@@ -687,20 +690,27 @@ export default function InboxPanel() {
       const isTaskItem = (item as any).isTask || String(item.id).startsWith('task-review-');
       
       if (isTaskItem && item.metadata) {
-        // For task items, update the task status back to in-progress
+        // For task items, update the task status back to in-progress and mark review as rejected
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
           // Prevent poll from re-adding this task while status update propagates
           recentlyRejectedTaskIds.current.add(meta.taskId);
           setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
           try {
-            await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+            // FIX: Update BOTH reviewStatus (mark as rejected) AND status (send back to in-progress)
+            await window.clawdbot?.tasks.update(meta.taskId, { 
+              reviewStatus: 'rejected',
+              status: 'in-progress' 
+            });
           } catch (updateErr) {
             console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
             // Retry once after a short delay
             setTimeout(async () => {
               try {
-                await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+                await window.clawdbot?.tasks.update(meta.taskId, { 
+                  reviewStatus: 'rejected',
+                  status: 'in-progress' 
+                });
                 console.log('[Inbox] Retry succeeded for task:', meta.taskId);
               } catch (retryErr) {
                 console.error('[Inbox] Retry also failed:', retryErr);
