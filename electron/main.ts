@@ -14,6 +14,7 @@ import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
+import { db, prepare, getScheduleDb, closeDb } from './database';
 // const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
 
 // ============== AGENT REGISTRY ==============
@@ -273,7 +274,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: false,
+      webSecurity: true,
     },
   });
 
@@ -688,6 +689,8 @@ app.on('will-quit', () => {
   }
   // Clean up dashboard agents
   shutdownDashboardAgents();
+  // Close database connections
+  closeDb();
 });
 
 app.on('activate', () => {
