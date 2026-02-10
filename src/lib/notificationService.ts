@@ -434,9 +434,9 @@ class NotificationService {
     try {
       if (!window.clawdbot?.inbox?.list) return notifications;
 
-      const items = await window.clawdbot.inbox.list();
-      if (items) {
-        for (const item of items) {
+      const result = await window.clawdbot.inbox.list();
+      if (result?.items) {
+        for (const item of result.items) {
           // Only include pending items
           if (item.status !== 'pending') continue;
 
