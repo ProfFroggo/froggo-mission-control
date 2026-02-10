@@ -40,6 +40,7 @@ const CACHE_TTL = 60000; // 1 minute
 // Agent ID mapping (dashboard id → personality key)
 const AGENT_PERSONALITY_MAP: Record<string, string> = {
   froggo: 'main',
+  'senior-coder': 'coder', // Senior Coder uses coder personality (promoted from coder)
   coder: 'coder',
   researcher: 'researcher',
   writer: 'writer',

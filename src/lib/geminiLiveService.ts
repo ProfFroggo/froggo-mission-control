@@ -81,6 +81,7 @@ const AGENT_VOICE_MAP: Record<string, GeminiVoice> = {
   writer:           'Zephyr',
   researcher:       'Kore',
   designer:         'Leda',
+  'senior-coder':   'Charon',  // Deep, authoritative - lead engineer
   coder:            'Orus',
   hr:               'Despina',
   clara:            'Callirrhoe',
