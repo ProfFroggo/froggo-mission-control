@@ -235,11 +235,11 @@ export const optimizedQueries = {
     ]);
 
     // Search sessions (in-memory)
-    const sessions = await window.clawdbot!.gateway.sessions() as any;
-    const filteredSessions = sessions.success
-      ? sessions.sessions
+    const { sessions } = await gateway.getSessions();
+    const filteredSessions = sessions
+      ? sessions
           .filter((s: any) =>
-            s.displayName.toLowerCase().includes(query.toLowerCase())
+            s.displayName?.toLowerCase().includes(query.toLowerCase())
           )
           .slice(0, limit)
       : [];
