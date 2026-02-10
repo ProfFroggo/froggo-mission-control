@@ -15,7 +15,6 @@ import { registerXAutomationsHandlers } from './x-automations-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
 import { db, prepare, getScheduleDb, closeDb } from './database';
-// const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
 
 // ============== AGENT REGISTRY ==============
 interface AgentRegistryEntry {
@@ -263,9 +262,6 @@ function createWindow() {
   // Setup notification handlers
   setupNotificationHandlers(mainWindow);
 
-  // Setup threading handlers
-  // registerThreadingHandlers(ipcMain); // DISABLED - incomplete implementation
-  
   // Register X Automations handlers
   registerXAutomationsHandlers();
 

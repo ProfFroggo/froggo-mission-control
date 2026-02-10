@@ -225,11 +225,6 @@ interface Store {
   deleteXDraft: (id: string) => void;
   markXDraftPosted: (id: string) => void;
 
-  // Orchestration - Froggo management
-  autoAssignTask: (taskId: string) => void;
-  processAgentOutput: (agentId: string, output: string, taskId: string) => void;
-  getUnassignedTasks: () => Task[];
-  getTasksNeedingReview: () => Task[];
 }
 
 // Execute approved items via direct IPC calls
