@@ -813,23 +813,23 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               <button onClick={() => setShowManageMembers(false)} className="text-clawd-text-dim hover:text-clawd-text text-lg">✕</button>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
-              {Object.entries(AGENTS).map(([id, agent]) => {
-                const inRoom = room.agents.includes(id);
-                const theme = getAgentTheme(id);
+              {agents.map((agent) => {
+                const inRoom = room.agents.includes(agent.id);
+                const theme = getAgentTheme(agent.id);
                 return (
                   <button
-                    key={id}
+                    key={agent.id}
                     onClick={() => {
                       const updated = inRoom
-                        ? room.agents.filter(a => a !== id)
-                        : [...room.agents, id];
+                        ? room.agents.filter(a => a !== agent.id)
+                        : [...room.agents, agent.id];
                       if (updated.length > 0) updateRoomAgents(roomId, updated);
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                       inRoom ? 'bg-clawd-accent/10 ring-1 ring-clawd-accent/30' : 'hover:bg-clawd-bg'
                     }`}
                   >
-                    <AgentAvatar agentId={id} size="sm" />
+                    <AgentAvatar agentId={agent.id} size="sm" />
                     <div className="flex-1 text-left">
                       <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-clawd-text-dim'}`}>{agent.name}</span>
                       <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>

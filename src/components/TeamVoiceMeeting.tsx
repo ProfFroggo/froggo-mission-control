@@ -659,7 +659,7 @@ Respond as ${agentName(agentId)}:`;
               )}
               <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%]`}>
                 <span className={`text-[10px] font-medium mb-0.5 px-1 ${isUser ? 'text-clawd-accent' : (theme?.text || 'text-clawd-text-dim')}`}>
-                  {isUser ? 'Kevin' : (agentConfig?.name || entry.speaker)}
+                  {isUser ? 'Kevin' : (agent?.name || entry.speaker)}
                   {entry.type === 'voice' && ' 🎤'}
                 </span>
                 <div className={`px-3 py-2 rounded-2xl ${
