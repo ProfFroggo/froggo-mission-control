@@ -356,8 +356,8 @@ export const useStore = create<Store>()(
       gatewaySessions: [],
       loadGatewaySessions: async () => {
         try {
-          const result = await (window as any).clawdbot?.gateway?.sessionsList();
-          if (result?.success && Array.isArray(result.sessions)) {
+          const result = await gateway.getSessions();
+          if (result?.sessions && Array.isArray(result.sessions)) {
             const now = Date.now();
             const fiveMinutes = 5 * 60 * 1000;
             

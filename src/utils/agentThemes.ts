@@ -26,6 +26,8 @@ export const agentThemes: Record<string, AgentTheme> = {
   voice: { color: '#E91E63', border: 'border-rose-500/40', bg: 'bg-rose-500/8', text: 'text-rose-400', ring: 'ring-rose-500/50', dot: 'bg-rose-400', pic: 'voice.png' },
   'degen-frog': { color: '#00BCD4', border: 'border-cyan-500/40', bg: 'bg-cyan-500/8', text: 'text-cyan-400', ring: 'ring-cyan-500/50', dot: 'bg-cyan-400', pic: 'degen-frog.png' },
   jess: { color: '#8B5CF6', border: 'border-indigo-500/40', bg: 'bg-indigo-500/8', text: 'text-indigo-400', ring: 'ring-indigo-500/50', dot: 'bg-indigo-400', pic: 'jess.png' },
+  'senior-coder': { color: '#1565C0', border: 'border-blue-700/40', bg: 'bg-blue-700/8', text: 'text-blue-300', ring: 'ring-blue-700/50', dot: 'bg-blue-300', pic: 'senior-coder.png' },
+  'finance-manager': { color: '#F9A825', border: 'border-yellow-600/40', bg: 'bg-yellow-600/8', text: 'text-yellow-400', ring: 'ring-yellow-600/50', dot: 'bg-yellow-400', pic: 'finance-manager.png' },
 };
 
 export const defaultTheme: AgentTheme = {
