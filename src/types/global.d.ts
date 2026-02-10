@@ -48,12 +48,6 @@ declare global {
         status: () => Promise<unknown>;
         sessions: () => Promise<unknown>;
       };
-      approvals: {
-        read: () => Promise<{ items: any[] }>;
-        clear: () => Promise<{ success: boolean }>;
-        remove: (id: string) => Promise<{ success: boolean }>;
-        onUpdate: (callback: (items: any[]) => void) => () => void;
-      };
       // Vosk real-time streaming API
       vosk: {
         check: () => Promise<{ available: boolean; modelPath: string; modelExists: boolean }>;
