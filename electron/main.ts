@@ -5074,7 +5074,7 @@ const getCommsCacheAge = async (): Promise<number> => {
 // Get messages from froggo-db cache
 const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
   try {
-    const raw = await runMsgCmd(`${FROGGO_DB_PATH} comms-recent --limit ${limit}`, 3000);
+    const raw = await runMsgCmd(`${FROGGO_DB_PATH} comms-recent --limit ${limit} --max-age-hours 2160`, 3000);
     if (raw && raw.trim().startsWith('[')) {
       const cached = JSON.parse(raw);
       // Transform to match expected format

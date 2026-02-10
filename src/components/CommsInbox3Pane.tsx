@@ -510,6 +510,7 @@ function CenterPane({
   selectedPlatform,
   hasMore,
   onLoadMore,
+  onLoadAll,
   aiAnalyses,
 }: {
   conversations: ConversationItem[];
@@ -527,6 +528,7 @@ function CenterPane({
   selectedPlatform?: string;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
 }) {
   // Platform-specific empty states
@@ -672,13 +674,23 @@ function CenterPane({
               </button>
             ))}
             {hasMore && onLoadMore && (
-              <button
-                onClick={onLoadMore}
-                className="w-full py-3 text-sm text-clawd-accent hover:bg-clawd-surface/50 transition-colors flex items-center justify-center gap-1"
-              >
-                <ChevronDown size={14} />
-                Load more
-              </button>
+              <div className="flex gap-2 px-2 py-2">
+                <button
+                  onClick={onLoadMore}
+                  className="flex-1 py-2 text-sm text-clawd-accent hover:bg-clawd-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                >
+                  <ChevronDown size={14} />
+                  Load more (+50)
+                </button>
+                {onLoadAll && (
+                  <button
+                    onClick={onLoadAll}
+                    className="flex-1 py-2 text-sm text-clawd-accent hover:bg-clawd-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                  >
+                    Load All
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}
@@ -1479,7 +1491,7 @@ export default function CommsInbox3Pane() {
   const [loadingBody, setLoadingBody] = useState(false);
   const [accountCounts, setAccountCounts] = useState<Record<string, number>>({});
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
-  const [messageLimit, setMessageLimit] = useState(50);
+  const [messageLimit, setMessageLimit] = useState(500); // Show more history by default
   const isMounted = useRef(true);
   const [aiAnalyses, setAiAnalyses] = useState<Map<string, AIAnalysis>>(new Map());
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -1556,11 +1568,12 @@ export default function CommsInbox3Pane() {
       );
     }
 
-    // Sort: unread first, then by timestamp
+    // Sort: unread first, then by timestamp (oldest first, like WhatsApp)
     filtered.sort((a, b) => {
       if (!a.is_read && b.is_read) return -1;
       if (a.is_read && !b.is_read) return 1;
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      // Oldest messages first (WhatsApp-style: new messages at bottom)
+      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 
     return filtered;
@@ -1930,6 +1943,9 @@ export default function CommsInbox3Pane() {
   const handleLoadMore = () => {
     setMessageLimit(prev => prev + 50);
   };
+  const handleLoadAll = () => {
+    setMessageLimit(99999); // Load all messages
+  };
   useEffect(() => {
     if (messageLimit > 50) loadMessages(true);
   }, [messageLimit]);
@@ -1969,6 +1985,7 @@ export default function CommsInbox3Pane() {
         selectedPlatform={selectedPlatform}
         hasMore={displayMessages.length >= messageLimit}
         onLoadMore={handleLoadMore}
+        onLoadAll={handleLoadAll}
         aiAnalyses={aiAnalyses}
       />
       <RightPane
