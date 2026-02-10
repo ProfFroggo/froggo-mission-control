@@ -1394,9 +1394,11 @@ gateway.on('task.created', (payload: any) => {
 
 gateway.on('task.updated', (payload: any) => {
   console.log('[Store] Task updated event received:', payload);
-  // Don't reload all tasks - that causes race conditions with optimistic updates
-  // The optimistic update already handled the UI change
-  // Just log for debugging
+  // Refresh tasks on status changes (covers [TASK_START] pattern from catch-all)
+  clearTimeout((window as any).__taskRefreshTimer);
+  (window as any).__taskRefreshTimer = setTimeout(() => {
+    useStore.getState().loadTasksFromDB();
+  }, 500);
 });
 
 gateway.on('tasks.refresh', () => {
@@ -1404,27 +1406,12 @@ gateway.on('tasks.refresh', () => {
   useStore.getState().loadTasksFromDB();
 });
 
-// Catch-all listener for task-related patterns in any event
-gateway.on('*', (msg: any) => {
-  // Check if this is a task-related event we should handle
-  const content = msg?.payload?.message?.content?.[0]?.text || 
-                  msg?.payload?.content || 
-                  msg?.content || '';
-  
-  // Detect task creation patterns from main agent
-  if (typeof content === 'string' && (
-    content.includes('[TASK_CREATED]') ||
-    content.includes('[TASK_START]') ||
-    content.includes('{"detected":true')
-  )) {
-    console.log('[Store] Task pattern detected in event, refreshing tasks');
-    // Debounce to avoid multiple rapid refreshes
-    clearTimeout((window as any).__taskRefreshTimer);
-    (window as any).__taskRefreshTimer = setTimeout(() => {
-      useStore.getState().loadTasksFromDB();
-    }, 500);
-  }
-});
+// NOTE: Previous gateway.on('*') catch-all removed in Phase 08-03.
+// All task/chat events now handled by explicit listeners above:
+// - task.created: handles [TASK_CREATED] pattern
+// - task.updated: handles [TASK_START] pattern and status changes
+// - chat.message: handles {"detected":true} task detection from AI
+// If events are missed, add specific gateway.on('event.name') listener.
 
 // Listen for direct gateway broadcasts from main process (real-time task updates)
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
@@ -1445,7 +1432,16 @@ if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadc
 // Also check for approval patterns in chat messages
 gateway.on('chat.message', (payload: any) => {
   const content = payload?.content || '';
-  
+
+  // Detect task creation patterns from AI analysis
+  if (typeof content === 'string' && content.includes('{"detected":true')) {
+    console.log('[Store] Task detection pattern in chat message, refreshing tasks');
+    clearTimeout((window as any).__taskRefreshTimer);
+    (window as any).__taskRefreshTimer = setTimeout(() => {
+      useStore.getState().loadTasksFromDB();
+    }, 500);
+  }
+
   // Detect approval request patterns
   if (content.includes('[NEEDS_APPROVAL]') || content.includes('[DRAFT]')) {
     // Parse the approval from the message
