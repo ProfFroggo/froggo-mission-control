@@ -12,9 +12,20 @@ import { gateway } from '@/lib/gateway';
 export interface AgentInfo {
   id: string;
   name: string;
+  role?: string;
   status: 'active' | 'idle' | 'busy' | 'offline';
   totalSessions?: number;
   activeTasks?: number;
+  currentTask?: {
+    id: string;
+    title: string;
+  };
+  stats?: {
+    tasksCompleted: number;
+    tasksInProgress: number;
+    avgCompletionMinutes?: number | null;
+  };
+  lastSeen?: string;
 }
 
 const api = () => (window as any).clawdbot;
@@ -206,8 +217,7 @@ async function fetchAgents(): Promise<AgentInfo[]> {
       // Map metric agent IDs to session agent names (and vice versa)
       const agentIdAliases: Record<string, string[]> = {
         main: ['main', 'froggo'],
-        'froggo': ['main', 'froggo'],
-        froggo: ['main', 'froggo', 'froggo'],
+        froggo: ['main', 'froggo'],
       };
 
       for (const [agentId, data] of Object.entries(metrics)) {
@@ -222,9 +232,9 @@ async function fetchAgents(): Promise<AgentInfo[]> {
         if (existing) {
           // Merge metrics into existing entry
           existing.stats = {
-            tasksCompleted: completedCount || existing.stats.tasksCompleted,
-            tasksInProgress: inProgressCount || existing.stats.tasksInProgress,
-            avgCompletionMinutes: avgMins ?? existing.stats.avgCompletionMinutes,
+            tasksCompleted: completedCount || existing.stats?.tasksCompleted || 0,
+            tasksInProgress: inProgressCount || existing.stats?.tasksInProgress || 0,
+            avgCompletionMinutes: avgMins ?? existing.stats?.avgCompletionMinutes,
           };
         } else {
           // New agent from metrics only
