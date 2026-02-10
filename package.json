@@ -35,6 +35,7 @@
     "react-markdown": "^10.1.0",
     "recharts": "^3.7.0",
     "remark-gfm": "^4.0.1",
+    "better-sqlite3": "^12.6.2",
     "sqlite3": "^5.1.7",
     "vosk-browser": "^0.0.8",
     "zod": "^4.3.6",
@@ -52,7 +53,6 @@
     "@vitejs/plugin-react": "^4.2.1",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.16",
-    "better-sqlite3": "^12.6.2",
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.13.3",
@@ -73,7 +73,7 @@
   "build": {
     "appId": "com.clawdbot.froggo",
     "productName": "Froggo",
-    "npmRebuild": false,
+    "npmRebuild": true,
     "directories": {
       "output": "release"
     },
