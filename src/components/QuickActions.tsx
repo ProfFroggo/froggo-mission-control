@@ -780,7 +780,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       const res = await fetch('http://localhost:18789/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, sessionKey: `agent:${chatAgent.id}` }),
+        body: JSON.stringify({ message: msg, sessionKey: `agent:${chatAgent.id}:main` }),
       });
       if (res.ok) {
         const data = await res.json();
