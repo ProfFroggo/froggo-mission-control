@@ -12,9 +12,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     },
   },
   gateway: {
-    sessions: () => ipcRenderer.invoke('gateway:sessions'),
-    // Get real sessions from Clawdbot CLI (includes sub-agents)
-    sessionsList: () => ipcRenderer.invoke('gateway:sessions:list'),
+    // sessions, sessionsList removed - renderer uses gateway.ts WebSocket directly
     // Listen for broadcast events from main process (for real-time task updates)
     onBroadcast: (callback: (event: { type: string; event: string; payload: any }) => void) => {
       const handler = (_: any, data: any) => callback(data);
@@ -471,11 +469,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     // Legacy methods (old service)
     test: (accountId: string) => ipcRenderer.invoke('accounts:test', accountId),
   },
-  // Sessions management
-  sessions: {
-    list: () => ipcRenderer.invoke('sessions:list'),
-    send: (sessionKey: string, message: string) => ipcRenderer.invoke('sessions:send', sessionKey, message),
-  },
+  // Sessions management - removed, renderer uses gateway.ts WebSocket directly
   // Shell execution (for Code Agent Dashboard, Context Control Board)
   exec: {
     run: (command: string) => ipcRenderer.invoke('exec:run', command),
