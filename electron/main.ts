@@ -1450,6 +1450,30 @@ ipcMain.handle('tasks:delete', async (_, taskId: string) => {
   });
 });
 
+// Archive all done tasks - bulk operation for cleaning up Kanban board
+ipcMain.handle('tasks:archiveDone', async () => {
+  const froggoDbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
+  const now = Date.now();
+  // Set archived=1 for all done tasks (excludes already cancelled tasks)
+  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE tasks SET archived = 1, updated_at = ${now} WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)"`;
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 10000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Tasks] Archive done error:', error.message);
+        resolve({ success: false, error: error.message });
+      } else {
+        // Get count of archived tasks from changes
+        const countCmd = `sqlite3 "${froggoDbPath}" "SELECT changes()"`;
+        exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
+          const count = countError ? 0 : parseInt(countStdout.trim() || '0', 10);
+          safeLog.log(`[Tasks] Archived ${count} done tasks`);
+          resolve({ success: true, count });
+        });
+      }
+    });
+  });
+});
+
 // Poke a task - INTERNAL: spawn agent chat session for status update (no Discord posting)
 ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
   // Legacy handler kept for backwards compat - just logs internally now
