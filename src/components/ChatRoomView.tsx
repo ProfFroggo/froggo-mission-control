@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Mic, Square, Play, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
+import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, Play, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
@@ -531,7 +531,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             }`}
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
           >
-            <Mic size={16} />
+            <Phone size={16} />
           </button>
           <button
             onClick={() => {
