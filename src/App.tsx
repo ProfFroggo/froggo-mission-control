@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { initApprovalQueue } from './lib/approvalQueue';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -72,12 +71,9 @@ function App() {
   const [showMorningBrief, setShowMorningBrief] = useState(false);
   const { toggleMuted, loadApprovals } = useStore();
 
-  // Initialize approval queue file watcher and load approvals from DB
+  // Load approvals from inbox database
   useEffect(() => {
-    const cleanup = initApprovalQueue();
-    // Load real approvals from inbox database
     loadApprovals();
-    return cleanup;
   }, [loadApprovals]);
 
   // Apply saved theme and accent color on startup

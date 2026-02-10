@@ -426,18 +426,21 @@ class NotificationService {
   }
 
   /**
-   * Fetch approval notifications
+   * Fetch approval notifications from froggo.db inbox
    */
   private async fetchApprovalNotifications(): Promise<Notification[]> {
     const notifications: Notification[] = [];
 
     try {
-      if (!window.clawdbot?.approvals?.read) return notifications;
+      if (!window.clawdbot?.inbox?.list) return notifications;
 
-      const result = await window.clawdbot.approvals.read();
-      if (result.items) {
-        for (const item of result.items) {
-          const ts = item.timestamp ? new Date(item.timestamp).getTime() : Date.now();
+      const items = await window.clawdbot.inbox.list();
+      if (items) {
+        for (const item of items) {
+          // Only include pending items
+          if (item.status !== 'pending') continue;
+
+          const ts = item.created_at ? new Date(item.created_at).getTime() : Date.now();
           notifications.push({
             id: `approval-${item.id || ts}`,
             created_at: ts,
@@ -445,7 +448,7 @@ class NotificationService {
             type: 'approval_pending',
             priority: 'high',
             title: item.title || 'Approval Required',
-            message: item.content || item.description || 'Pending your review',
+            message: item.content || 'Pending your review',
             source: 'inbox',
             source_id: item.id,
             channel: item.channel || undefined,
