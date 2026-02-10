@@ -61,11 +61,12 @@ export type GeminiVoice =
  *   Writer (f)          → Zephyr   — Bright, energetic, articulate
  *   Researcher (f)      → Kore     — Neutral, firm, professional
  *   Designer (f)        → Leda     — Youthful, energetic
- *   Coder (m)           → Orus     — Firm, neutral, precise
+ *   Coder (m)           → Puck     — Conversational, friendly, eager
  * 
  * Support / Ops:
  *   HR (f)              → Despina  — Smooth, warm, approachable
  *   Clara (f)           → Callirrhoe — Easy-going, accessible
+ *   Finance Manager (m) → Orus     — Firm, analytical, professional
  * 
  * External / Comms:
  *   Social Manager (m)  → Fenrir   — Excitable, warm, human
@@ -82,9 +83,10 @@ const AGENT_VOICE_MAP: Record<string, GeminiVoice> = {
   researcher:       'Kore',
   designer:         'Leda',
   'senior-coder':   'Charon',  // Deep, authoritative - lead engineer
-  coder:            'Orus',
+  coder:            'Puck',    // Conversational, friendly, eager
   hr:               'Despina',
   clara:            'Callirrhoe',
+  'finance-manager': 'Orus',    // Firm, analytical, professional CFO
   'social-manager': 'Fenrir',
   voice:            'Aoede',
   jess:             'Leda',  // Same as Designer - youthful, friendly
