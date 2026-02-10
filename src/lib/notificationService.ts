@@ -4,6 +4,8 @@
  * via the Electron bridge (window.clawdbot)
  */
 
+import { gateway } from './gateway';
+
 export interface Notification {
   id: string;
   created_at: number;
@@ -58,7 +60,8 @@ class NotificationService {
   private statsListeners: Set<(stats: NotificationStats) => void> = new Set();
   private cachedNotifications: Notification[] = [];
   private cachedStats: NotificationStats = { total: 0, unread: 0, urgent: 0, actionable: 0 };
-  private pollInterval: ReturnType<typeof setInterval> | null = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private safetyInterval: ReturnType<typeof setInterval> | null = null;
   private dismissedIds: Set<string> = new Set();
   private readIds: Set<string> = new Set();
   private initialized = false;
@@ -87,11 +90,30 @@ class NotificationService {
     if (this.initialized) return;
     this.initialized = true;
 
-    // Initial load
+    // Initial load for immediate data display
     await this.refresh();
 
-    // Poll every 30 seconds for new data
-    this.pollInterval = setInterval(() => this.refresh(), 30000);
+    // Subscribe to gateway events for real-time updates (replaces 30s polling)
+    gateway.on('task.created', () => this.handleTaskEvent());
+    gateway.on('task.updated', () => this.handleTaskEvent());
+    gateway.on('approval.request', () => this.handleApprovalEvent());
+    gateway.on('chat.message', () => this.handleMessageEvent());
+    gateway.on('tasks.refresh', () => this.handleTaskEvent());
+
+    // Full refresh on gateway reconnect to catch missed events
+    gateway.on('stateChange', ({ state, oldState }: { state: string; oldState: string }) => {
+      if (state === 'connected' && oldState !== 'connected') {
+        console.log('[NotificationService] Gateway reconnected, refreshing all');
+        this.refresh();
+      }
+    });
+
+    // Safety net: slow background refresh in case gateway events are missed
+    // This is 10x slower than the old polling (5min vs 30s) — events are the primary path
+    this.safetyInterval = setInterval(() => {
+      console.log('[NotificationService] Safety net refresh');
+      this.refresh();
+    }, 300000); // 5 minutes
 
     // Also listen for Electron notification events if available
     if (window.clawdbot?.notifications?.onReceived) {
@@ -158,6 +180,109 @@ class NotificationService {
     } catch (e) {
       console.error('[NotificationService] Refresh failed:', e);
     }
+  }
+
+  /**
+   * Event handler for task events (created, updated, refresh)
+   * Debounced to handle rapid-fire events
+   */
+  private handleTaskEvent() {
+    clearTimeout(this.refreshTimer!);
+    this.refreshTimer = setTimeout(() => this.refreshTasks(), 300);
+  }
+
+  /**
+   * Event handler for approval events
+   * Debounced to handle rapid-fire events
+   */
+  private handleApprovalEvent() {
+    clearTimeout(this.refreshTimer!);
+    this.refreshTimer = setTimeout(() => this.refreshApprovals(), 300);
+  }
+
+  /**
+   * Event handler for message events
+   * Debounced to handle rapid-fire events
+   */
+  private handleMessageEvent() {
+    clearTimeout(this.refreshTimer!);
+    this.refreshTimer = setTimeout(() => this.refreshMessages(), 300);
+  }
+
+  /**
+   * Targeted refresh for task notifications only
+   */
+  private async refreshTasks() {
+    try {
+      const taskNotifs = await this.fetchTaskNotifications();
+      this.mergeNotifications('task', taskNotifs);
+    } catch (e) {
+      console.error('[NotificationService] Task refresh failed:', e);
+    }
+  }
+
+  /**
+   * Targeted refresh for approval notifications only
+   */
+  private async refreshApprovals() {
+    try {
+      const approvalNotifs = await this.fetchApprovalNotifications();
+      this.mergeNotifications('approval', approvalNotifs);
+    } catch (e) {
+      console.error('[NotificationService] Approval refresh failed:', e);
+    }
+  }
+
+  /**
+   * Targeted refresh for message notifications only
+   */
+  private async refreshMessages() {
+    try {
+      const msgNotifs = await this.fetchUnreadMessages();
+      this.mergeNotifications('message', msgNotifs);
+    } catch (e) {
+      console.error('[NotificationService] Message refresh failed:', e);
+    }
+  }
+
+  /**
+   * Merge new notifications of a specific type, preserving others
+   */
+  private mergeNotifications(type: 'task' | 'approval' | 'message', newNotifs: Notification[]) {
+    // Determine ID prefix based on type
+    let idPrefix: string;
+    if (type === 'task') {
+      idPrefix = 'task-act-';
+    } else if (type === 'approval') {
+      idPrefix = 'approval-';
+    } else {
+      idPrefix = 'msg-';
+    }
+
+    // Remove old notifications of this type
+    const kept = this.cachedNotifications.filter(n => !n.id.startsWith(idPrefix));
+
+    // Add new, filtering dismissed
+    const active = newNotifs.filter(n => !this.dismissedIds.has(n.id));
+
+    // Apply read state
+    for (const n of active) {
+      if (this.readIds.has(n.id)) n.read = true;
+    }
+
+    // Merge and sort
+    const merged = [...kept, ...active].sort((a, b) => b.created_at - a.created_at);
+
+    // Detect new notifications
+    const oldIds = new Set(this.cachedNotifications.map(n => n.id));
+    for (const n of merged) {
+      if (!oldIds.has(n.id)) {
+        this.listeners.forEach(l => l(n));
+      }
+    }
+
+    this.cachedNotifications = merged;
+    this.recalcStats();
   }
 
   /**
@@ -534,9 +659,13 @@ class NotificationService {
    * Cleanup
    */
   destroy() {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
+    if (this.safetyInterval) {
+      clearInterval(this.safetyInterval);
+      this.safetyInterval = null;
+    }
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
     }
     this.listeners.clear();
     this.statsListeners.clear();
