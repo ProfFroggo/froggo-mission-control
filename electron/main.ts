@@ -1385,14 +1385,21 @@ ipcMain.handle('tasks:list', async (_, status?: string) => {
     // Only select needed columns, exclude large progress blob for list view
     const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
     // Exclude cancelled AND archived tasks from main view
-    let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
+    let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR cancelled = 0)';
     const params: any[] = [];
     if (status) {
       whereClause += ' AND status = ?';
       params.push(status);
     }
 
-    const tasks = prepare(`SELECT ${columns} FROM tasks WHERE ${whereClause} ORDER BY created_at DESC LIMIT 500`).all(...params);
+    const tasks = prepare(`
+      SELECT ${columns}, 
+        (SELECT MAX(timestamp) FROM task_activity WHERE task_id = tasks.id) as last_activity_at
+      FROM tasks 
+      WHERE ${whereClause} 
+      ORDER BY created_at DESC 
+      LIMIT 500
+    `).all(...params);
 
     // Get total done count (including archived) for display
     const { 'COUNT(*)': totalDone } = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as any;
