@@ -86,29 +86,11 @@ ipcMain.handle('agents:list', async () => {
 // ============== AGENT REGISTRY FROM DB ==============
 ipcMain.handle('get-agent-registry', async () => {
   try {
-    const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
-    const cmd = `sqlite3 "${dbPath}" "SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name" -json`;
-
-    return new Promise<any[]>((resolve) => {
-      exec(cmd, { timeout: 10000 }, (error, stdout, stderr) => {
-        if (error) {
-          safeLog.error('[AgentRegistry] Failed to query agent_registry:', error.message);
-          resolve([]);
-          return;
-        }
-
-        try {
-          const agents = JSON.parse(stdout || '[]');
-          safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
-          resolve(agents);
-        } catch (parseError) {
-          safeLog.error('[AgentRegistry] Failed to parse agent registry:', parseError);
-          resolve([]);
-        }
-      });
-    });
-  } catch (err) {
-    safeLog.error('[AgentRegistry] Error:', err);
+    const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all();
+    safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
+    return agents;
+  } catch (error: any) {
+    safeLog.error('[AgentRegistry] Error:', error.message);
     return [];
   }
 });
@@ -1463,131 +1445,86 @@ ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
 
 // ============== ANALYTICS DATA HANDLER ==============
 ipcMain.handle('analytics:getData', async (_, timeRange: string) => {
-  const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  try {
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
 
-  return new Promise((resolve) => {
     // Query 1: Daily task completions
-    const completionsQuery = `SELECT date(updated_at/1000, 'unixepoch') as date, COUNT(*) as tasks_completed FROM tasks WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND updated_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`;
+    const completions = prepare(`SELECT date(updated_at/1000, 'unixepoch') as date, COUNT(*) as tasks_completed FROM tasks WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND updated_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`).all();
 
     // Query 2: Daily task creation (as proxy for activity)
-    const createdQuery = `SELECT date(created_at/1000, 'unixepoch') as date, COUNT(*) as tasks_created FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`;
+    const created = prepare(`SELECT date(created_at/1000, 'unixepoch') as date, COUNT(*) as tasks_created FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`).all();
 
     // Query 3: Agent activity
-    const agentQuery = `SELECT assigned_to as agent, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND assigned_to IS NOT NULL AND assigned_to != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY assigned_to ORDER BY total DESC`;
+    const agents = prepare(`SELECT assigned_to as agent, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND assigned_to IS NOT NULL AND assigned_to != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY assigned_to ORDER BY total DESC`).all();
 
     // Query 4: Project progress
-    const projectQuery = `SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`;
+    const projects = prepare(`SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`).all();
 
-    const results: any = { completions: [], created: [], agents: [], projects: [] };
-    let pending = 4;
-
-    const done = () => {
-      pending--;
-      if (pending === 0) resolve({ success: true, ...results, days });
-    };
-
-    exec(`sqlite3 "${dbPath}" "${completionsQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { results.completions = JSON.parse(stdout); } catch {}
-      }
-      done();
-    });
-
-    exec(`sqlite3 "${dbPath}" "${createdQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { results.created = JSON.parse(stdout); } catch {}
-      }
-      done();
-    });
-
-    exec(`sqlite3 "${dbPath}" "${agentQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { results.agents = JSON.parse(stdout); } catch {}
-      }
-      done();
-    });
-
-    exec(`sqlite3 "${dbPath}" "${projectQuery}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { results.projects = JSON.parse(stdout); } catch {}
-      }
-      done();
-    });
-  });
+    return { success: true, completions, created, agents, projects, days };
+  } catch (error: any) {
+    safeLog.error('[analytics:getData] Error:', error.message);
+    return { success: true, completions: [], created: [], agents: [], projects: [], days: 0 };
+  }
 });
 
 ipcMain.handle('analytics:subtaskStats', async () => {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const query = `SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`;
-
-  return new Promise((resolve) => {
-    exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { resolve({ success: true, data: JSON.parse(stdout) }); return; } catch {}
-      }
-      resolve({ success: true, data: [] });
-    });
-  });
+  try {
+    const data = prepare(`SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`).all();
+    return { success: true, data };
+  } catch (error: any) {
+    safeLog.error('[analytics:subtaskStats] Error:', error.message);
+    return { success: true, data: [] };
+  }
 });
 
 ipcMain.handle('analytics:heatmap', async (_, days: number = 30) => {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const query = `SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`;
-
-  return new Promise((resolve) => {
-    exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { resolve({ success: true, data: JSON.parse(stdout) }); return; } catch {}
-      }
-      resolve({ success: true, data: [] });
-    });
-  });
+  try {
+    const data = prepare(`SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`).all();
+    return { success: true, data };
+  } catch (error: any) {
+    safeLog.error('[analytics:heatmap] Error:', error.message);
+    return { success: true, data: [] };
+  }
 });
 
 ipcMain.handle('analytics:timeTracking', async (_, projectFilter?: string) => {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  
-  // Build query with optional project filter
-  let query = `
-    SELECT 
-      id as taskId,
-      title as taskTitle,
-      COALESCE(project, 'Uncategorized') as project,
-      COALESCE(assigned_to, 'Unassigned') as agent,
-      started_at as startTime,
-      completed_at as endTime,
-      CASE 
-        WHEN completed_at IS NOT NULL AND started_at IS NOT NULL 
-          THEN completed_at - started_at
-        WHEN started_at IS NOT NULL AND status = 'in-progress'
-          THEN (strftime('%s','now') * 1000) - started_at
-        ELSE NULL
-      END as duration,
-      status
-    FROM tasks
-    WHERE (cancelled IS NULL OR cancelled = 0)
-      AND started_at IS NOT NULL
-  `;
-  
-  if (projectFilter && projectFilter !== 'all') {
-    const escapedProject = projectFilter.replace(/'/g, "''");
-    query += ` AND project = '${escapedProject}'`;
-  }
-  
-  query += ` ORDER BY started_at DESC`;
+  try {
+    // Build query with optional project filter
+    let query = `
+      SELECT
+        id as taskId,
+        title as taskTitle,
+        COALESCE(project, 'Uncategorized') as project,
+        COALESCE(assigned_to, 'Unassigned') as agent,
+        started_at as startTime,
+        completed_at as endTime,
+        CASE
+          WHEN completed_at IS NOT NULL AND started_at IS NOT NULL
+            THEN completed_at - started_at
+          WHEN started_at IS NOT NULL AND status = 'in-progress'
+            THEN (strftime('%s','now') * 1000) - started_at
+          ELSE NULL
+        END as duration,
+        status
+      FROM tasks
+      WHERE (cancelled IS NULL OR cancelled = 0)
+        AND started_at IS NOT NULL
+    `;
 
-  return new Promise((resolve) => {
-    exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, (err, stdout) => {
-      if (!err && stdout?.trim()) {
-        try { 
-          resolve({ success: true, data: JSON.parse(stdout) }); 
-          return; 
-        } catch {}
-      }
-      resolve({ success: true, data: [] });
-    });
-  });
+    if (projectFilter && projectFilter !== 'all') {
+      query += ` AND project = ?`;
+      query += ` ORDER BY started_at DESC`;
+      const data = prepare(query).all(projectFilter);
+      return { success: true, data };
+    } else {
+      query += ` ORDER BY started_at DESC`;
+      const data = prepare(query).all();
+      return { success: true, data };
+    }
+  } catch (error: any) {
+    safeLog.error('[analytics:timeTracking] Error:', error.message);
+    return { success: true, data: [] };
+  }
 });
 
 ipcMain.handle('tasks:start', async (_, taskId: string) => {
