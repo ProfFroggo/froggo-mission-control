@@ -6,6 +6,7 @@ import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
 import AgentAvatar from './AgentAvatar';
 import PokeModal from './PokeModal';
+import { gateway } from '@/lib/gateway';
 
 interface TaskAttachment {
   id: number;
@@ -312,10 +313,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Check if agent is still active on this task
   const checkForActiveAgent = async () => {
     if (!task) return null;
-    
+
     try {
-      const result = await (window as any).clawdbot.sessions.list();
-      if (result.success && result.sessions) {
+      const result = await gateway.getSessions();
+      if (result.sessions) {
         // Find session with label matching task ID
         const activeSession = result.sessions.find((s: any) => {
           // Session is active if updated within last 5 minutes
@@ -324,8 +325,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           const matchesTask = s.label && s.label.includes(task.id);
           return isActive && matchesTask;
         });
-        
-        return activeSession || null;
+
+        if (activeSession) {
+          // Map sessionKey to key for component compatibility
+          return {
+            ...activeSession,
+            key: activeSession.sessionKey || activeSession.key,
+          };
+        }
       }
     } catch (err) {
       console.error('Failed to check for active agent:', err);

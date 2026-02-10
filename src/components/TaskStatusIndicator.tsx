@@ -1,6 +1,6 @@
 /**
  * TaskStatusIndicator - Shows real-time visual status of a task's agent
- * 
+ *
  * 🟢 Active  - Agent is actively working (session active within 5 min)
  * 🟡 Paused  - Agent has a session but idle (5-30 min since last activity)
  * 🔴 Stuck   - Agent blocked/errored (>30 min idle or error state)
@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useState, memo } from 'react';
+import { gateway } from '@/lib/gateway';
 
 export type AgentStatus = 'active' | 'paused' | 'stuck' | 'ready' | 'none';
 
@@ -87,8 +88,8 @@ async function fetchSessions(): Promise<any[]> {
     return sessionCache.sessions;
   }
   try {
-    const result = await (window as any).clawdbot.sessions.list();
-    if (result.success && result.sessions) {
+    const result = await gateway.getSessions();
+    if (result.sessions) {
       sessionCache = { sessions: result.sessions, timestamp: now };
       return result.sessions;
     }

@@ -986,9 +986,66 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
       }
       case 'web_search': {
-        const safeQ = shellSafe(args.query || '');
-        const r = await exec(`openclaw agent --agent froggo --local --message "Search the web for: ${safeQ}. Return only the top 3-5 results with titles and brief descriptions." --json 2>&1 || curl -s "https://api.duckduckgo.com/?q=${encodeURIComponent(safeQ)}&format=json&no_html=1" 2>&1`);
-        return { output: r.stdout?.trim()?.slice(0, 2000) || r.stderr?.trim() };
+        const query = args.query || '';
+        const encodedQuery = encodeURIComponent(query);
+        
+        try {
+          // Use DuckDuckGo Instant Answer API directly (no agent dependency)
+          const r = await exec(`curl -s "https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1"`);
+          
+          if (!r.stdout) {
+            return { output: 'Search failed - no response from DuckDuckGo' };
+          }
+          
+          // Parse JSON response
+          let data;
+          try {
+            data = JSON.parse(r.stdout);
+          } catch (e) {
+            return { output: 'Search failed - invalid response format' };
+          }
+          
+          // Build voice-friendly output
+          let output = '';
+          
+          // Check for Abstract (direct answer)
+          if (data.AbstractText) {
+            output = `${data.AbstractText}\n\nSource: ${data.AbstractSource || 'DuckDuckGo'}`;
+            if (data.AbstractURL) {
+              output += `\nMore info: ${data.AbstractURL}`;
+            }
+          }
+          // Check for Answer (instant answer)
+          else if (data.Answer) {
+            output = data.Answer;
+          }
+          // Check for RelatedTopics (search results)
+          else if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+            output = 'Top results:\n\n';
+            const topics = data.RelatedTopics.slice(0, 5);
+            topics.forEach((topic: any, idx: number) => {
+              if (topic.Text) {
+                // Remove HTML tags from text
+                const cleanText = topic.Text.replace(/<[^>]*>/g, '');
+                output += `${idx + 1}. ${cleanText}\n`;
+                if (topic.FirstURL) {
+                  output += `   ${topic.FirstURL}\n`;
+                }
+                output += '\n';
+              }
+            });
+          }
+          // No results found
+          else {
+            output = `No direct results found for "${query}". Try rephrasing your search.`;
+          }
+          
+          // Limit length for voice (2000 chars)
+          return { output: output.slice(0, 2000) };
+          
+        } catch (error) {
+          return { output: `Search error: ${error instanceof Error ? error.message : 'Unknown error'}` };
+        }
       }
       case 'check_calendar': {
         const days = args.days || 1;
