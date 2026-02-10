@@ -83,6 +83,8 @@ function ShortcutRow({ keys, description }: { keys: string[]; description: strin
   );
 }
 
+type TabType = 'all' | 'approvals' | 'reviews';
+
 export default function InboxPanel() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,7 @@ export default function InboxPanel() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [feedbackId, setFeedbackId] = useState<number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   const [filter, setFilter] = useState<ApprovalType | 'all'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
   const [rejectDialogItem, setRejectDialogItem] = useState<InboxItem | null>(null);
@@ -185,10 +188,38 @@ export default function InboxPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  // Helper to determine if an item is a review vs approval
+  const isReviewItem = (item: InboxItem): boolean => {
+    // Task items are reviews (completed work)
+    if ((item as any).isTask) return true;
+    
+    // Check metadata for review flag
+    if (item.metadata) {
+      try {
+        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (meta.isReview) return true;
+      } catch {}
+    }
+    
+    // Everything else is an approval (blocking decision)
+    return false;
+  };
+
   // Derive filtered lists from items (must be before useEffect that uses them!)
   const pendingItems = items.filter(i => i.status === 'pending');
   const completedItems = items.filter(i => i.status !== 'pending');
-  let filteredPending = filter === 'all' ? pendingItems : pendingItems.filter(i => i.type === filter);
+  
+  // Apply tab filter first
+  let tabFiltered = pendingItems;
+  if (activeTab === 'approvals') {
+    tabFiltered = pendingItems.filter(i => !isReviewItem(i));
+  } else if (activeTab === 'reviews') {
+    tabFiltered = pendingItems.filter(i => isReviewItem(i));
+  }
+  // 'all' shows everything
+  
+  // Then apply type filter
+  let filteredPending = filter === 'all' ? tabFiltered : tabFiltered.filter(i => i.type === filter);
   
   // Calculate priority scores if not present and sort
   filteredPending = filteredPending.map(item => {
@@ -1025,6 +1056,58 @@ export default function InboxPanel() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => { setActiveTab('all'); setFocusedIndex(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'all'
+                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+            }`}
+          >
+            <Inbox size={16} className="flex-shrink-0" />
+            All
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === 'all' ? 'bg-white/20' : 'bg-clawd-bg'
+            }`}>
+              {pendingItems.length}
+            </span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('approvals'); setFocusedIndex(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'approvals'
+                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+            }`}
+          >
+            <ShieldAlert size={16} className="flex-shrink-0" />
+            Approvals
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === 'approvals' ? 'bg-white/20' : 'bg-clawd-bg'
+            }`}>
+              {pendingItems.filter(i => !isReviewItem(i)).length}
+            </span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('reviews'); setFocusedIndex(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'reviews'
+                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+            }`}
+          >
+            <CheckCircle size={16} className="flex-shrink-0" />
+            Reviews
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === 'reviews' ? 'bg-white/20' : 'bg-clawd-bg'
+            }`}>
+              {pendingItems.filter(i => isReviewItem(i)).length}
+            </span>
+          </button>
         </div>
 
         {/* Sort Controls */}
