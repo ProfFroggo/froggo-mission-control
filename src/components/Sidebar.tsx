@@ -251,7 +251,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         <div className="space-y-1" role="group" aria-label="Secondary navigation">
           <button
             onClick={() => onNavigate('notifications')}
-            className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative ${
+            className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
               currentView === 'notifications'
                 ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
                 : 'text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
@@ -261,13 +261,29 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             aria-current={currentView === 'notifications' ? 'page' : undefined}
           >
             <Bell size={20} className="flex-shrink-0" aria-hidden="true" />
-            {expanded && <span className="text-sm font-medium flex-1 text-left">Notifications</span>}
-            {unreadNotifications > 0 && (
+            
+            {expanded && (
+              <>
+                <span className="text-sm font-medium flex-1 text-left truncate">Notifications</span>
+                {unreadNotifications > 0 && (
+                  <NumberBadge
+                    count={unreadNotifications}
+                    maxCount={99}
+                    position="inline"
+                    variant={currentView === 'notifications' ? 'secondary' : 'primary'}
+                    size="sm"
+                    className={currentView === 'notifications' ? 'bg-white/20 text-white' : 'bg-clawd-accent/20 text-clawd-accent'}
+                  />
+                )}
+              </>
+            )}
+            
+            {!expanded && unreadNotifications > 0 && (
               <NumberBadge
                 count={unreadNotifications}
                 maxCount={99}
-                position={expanded ? 'inline' : 'absolute-top-right'}
-                variant="danger"
+                position="absolute-top-right"
+                variant="primary"
                 size="sm"
               />
             )}
