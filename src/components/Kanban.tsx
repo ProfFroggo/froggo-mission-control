@@ -749,23 +749,58 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
   const canStart = assignedAgent && !isAgentWorking && task.status !== 'done' && task.status !== 'in-progress';
   
-  // Agent status indicator
+  // Agent status indicator - based on actual task activity, not just session
   const getAgentStatus = (): 'active' | 'paused' | 'blocked' | 'idle' | undefined => {
     if (!task.assignedTo) return undefined;
-    
-    // Active: agent has recent session activity (within last 2 min)
-    if (activeSessions[task.assignedTo]) return 'active';
     
     // Blocked: task status is review or internal-review (waiting on someone else)
     if (task.status === 'review' || task.status === 'internal-review') return 'blocked';
     
-    // Paused: task is in-progress but agent not active
-    if (task.status === 'in-progress') return 'paused';
-    
     // Idle: task assigned but not started (todo status)
     if (task.status === 'todo') return 'idle';
     
+    // For in-progress tasks, check ACTUAL task activity (not just session status)
+    if (task.status === 'in-progress' && (task as any).last_activity_at) {
+      const now = Date.now();
+      const lastActivity = (task as any).last_activity_at;
+      const minutesSinceActivity = (now - lastActivity) / (1000 * 60);
+      
+      // Active: activity in last 15 minutes
+      if (minutesSinceActivity < 15) return 'active';
+      
+      // Paused: no activity in 15+ minutes (yellow/red indicators will show in UI)
+      return 'paused';
+    }
+    
+    // Fallback: in-progress with no activity tracking
+    if (task.status === 'in-progress') return 'paused';
+    
     return undefined;
+  };
+
+  // Activity indicator color - shows real-time task activity
+  const getActivityIndicator = (): { color: string; description: string } | null => {
+    // Only show for in-progress tasks with assigned agents
+    if (task.status !== 'in-progress' || !task.assignedTo) return null;
+    
+    const lastActivity = (task as any).last_activity_at;
+    if (!lastActivity) return null;
+    
+    const now = Date.now();
+    const minutesSinceActivity = (now - lastActivity) / (1000 * 60);
+    
+    // 🟢 Green: Active work in last 15 minutes
+    if (minutesSinceActivity < 15) {
+      return { color: 'border-green-500/70', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
+    }
+    
+    // 🟡 Yellow: Stale, no activity in 15-30 minutes
+    if (minutesSinceActivity < 30) {
+      return { color: 'border-yellow-500/70', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
+    }
+    
+    // 🔴 Red: Stuck/abandoned, no activity in 30+ minutes
+    return { color: 'border-red-500/70', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
   };
   
   // Subtask progress
@@ -779,21 +814,26 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
   // Priority info
   const priorityConfig = task.priority ? PRIORITIES.find(p => p.id === task.priority) : null;
 
+  // Activity indicator (takes precedence for in-progress tasks)
+  const activityIndicator = getActivityIndicator();
+
   return (
     <div
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`bg-clawd-bg rounded-xl p-3 border transition-all cursor-pointer group relative ${
+      className={`bg-clawd-bg rounded-xl p-3 border-2 transition-all cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
+        activityIndicator ? activityIndicator.color :
         dueInfo?.isOverdue ? 'border-red-500/50 bg-red-500/5' :
         task.priority === 'p0' ? 'border-red-500/30' :
         'border-clawd-border hover:border-clawd-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
+      title={activityIndicator?.description}
     >
       {/* Top row: Priority + Title + Menu */}
       <div className="flex items-start gap-1.5 mb-2">
