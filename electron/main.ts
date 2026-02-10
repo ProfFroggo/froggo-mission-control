@@ -7274,34 +7274,124 @@ ipcMain.handle('agents:create', async (_, config: { id: string; name: string; ro
 // ============== TOKEN TRACKING IPC HANDLERS ==============
 ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: string }) => {
   try {
-    const cmdParts = ['/Users/worker/.local/bin/froggo-db', 'token-summary'];
-    if (args?.agent) cmdParts.push(args.agent);
-    if (args?.period) cmdParts.push('--period', args.period);
-    cmdParts.push('--json');
-    const result = execSync(cmdParts.join(' '), {
-      encoding: 'utf-8',
-      timeout: 10000,
-      env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
-    });
-    return JSON.parse(result);
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    if (!fs.existsSync(sessionsDbPath)) {
+      return { error: 'sessions.db not found', by_agent: [] };
+    }
+
+    // Calculate time range based on period
+    const now = Date.now();
+    let minTimestamp = 0;
+    if (args?.period === 'day') {
+      minTimestamp = now - (24 * 60 * 60 * 1000);
+    } else if (args?.period === 'week') {
+      minTimestamp = now - (7 * 24 * 60 * 60 * 1000);
+    } else if (args?.period === 'month') {
+      minTimestamp = now - (30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Query sessions from gateway database
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    let query = `SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions`;
+    if (minTimestamp > 0) {
+      query += ` WHERE created_at >= ${minTimestamp}`;
+    }
+    if (args?.agent) {
+      query += minTimestamp > 0 ? ' AND' : ' WHERE';
+      query += ` agent_id = '${args.agent}'`;
+    }
+    
+    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
+    let rows: any[] = [];
+    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+
+    // Model pricing (input/output per 1M tokens)
+    const pricing: Record<string, { input: number; output: number }> = {
+      'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
+      'claude-opus-4': { input: 15.0, output: 75.0 },
+      'gemini-2.0-flash-exp': { input: 0.0, output: 0.0 },
+      'o1-preview': { input: 15.0, output: 60.0 },
+      'o1-mini': { input: 3.0, output: 12.0 },
+      'gpt-4o': { input: 2.5, output: 10.0 },
+      'gpt-4o-mini': { input: 0.15, output: 0.6 },
+    };
+
+    // Aggregate by agent
+    const agentStats = new Map<string, { input: number; output: number; total: number; cost: number; calls: number }>();
+    for (const row of rows) {
+      const agent = row.agent_id || 'unknown';
+      const inputTokens = row.input_tokens || 0;
+      const outputTokens = row.output_tokens || 0;
+      const totalTokens = row.total_tokens || 0;
+
+      // Calculate cost based on model
+      const modelKey = row.model || 'claude-sonnet-4-5';
+      const modelPricing = pricing[modelKey] || pricing['claude-sonnet-4-5'];
+      const cost = (inputTokens / 1000000) * modelPricing.input + (outputTokens / 1000000) * modelPricing.output;
+
+      const stats = agentStats.get(agent) || { input: 0, output: 0, total: 0, cost: 0, calls: 0 };
+      stats.input += inputTokens;
+      stats.output += outputTokens;
+      stats.total += totalTokens;
+      stats.cost += cost;
+      stats.calls += 1;
+      agentStats.set(agent, stats);
+    }
+
+    // Convert to response format
+    const by_agent = Array.from(agentStats.entries()).map(([agent, stats]) => ({
+      agent,
+      total_input: stats.input,
+      total_output: stats.output,
+      total_all: stats.total,
+      total_cost: stats.cost,
+      calls: stats.calls,
+    })).sort((a, b) => b.total_all - a.total_all);
+
+    return { by_agent, period: args?.period || 'all' };
   } catch (err: any) {
-    return { error: err.message, agents: [], models: [] };
+    return { error: err.message, by_agent: [] };
   }
 });
 
 ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; since?: number }) => {
   try {
-    const cmdParts = ['/Users/worker/.local/bin/froggo-db', 'token-log'];
-    if (args?.agent) cmdParts.push('--agent', args.agent);
-    if (args?.limit) cmdParts.push('--limit', String(args.limit));
-    if (args?.since) cmdParts.push('--since', String(args.since));
-    cmdParts.push('--json');
-    const result = execSync(cmdParts.join(' '), {
-      encoding: 'utf-8',
-      timeout: 10000,
-      env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
-    });
-    return JSON.parse(result);
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    if (!fs.existsSync(sessionsDbPath)) {
+      return { error: 'sessions.db not found', entries: [] };
+    }
+
+    // Build query with filters
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const limit = args?.limit || 100;
+    const since = args?.since || 0;
+    
+    let query = `SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions`;
+    const whereClauses = [];
+    if (args?.agent) whereClauses.push(`agent_id = '${args.agent}'`);
+    if (since > 0) whereClauses.push(`created_at >= ${since}`);
+    if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
+    query += ` ORDER BY created_at DESC LIMIT ${limit}`;
+
+    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
+    let rows: any[] = [];
+    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+
+    // Transform to expected format
+    const entries = rows.map(row => ({
+      id: row.session_id,
+      timestamp: row.created_at,
+      agent: row.agent_id || 'unknown',
+      session_id: row.session_id,
+      model: row.model || 'unknown',
+      input_tokens: row.input_tokens || 0,
+      output_tokens: row.output_tokens || 0,
+      total_tokens: row.total_tokens || 0,
+    }));
+
+    return { entries };
   } catch (err: any) {
     return { error: err.message, entries: [] };
   }
@@ -7309,15 +7399,55 @@ ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; 
 
 ipcMain.handle('tokens:budget', async (_, agent: string) => {
   try {
-    const result = execSync(
-      `/Users/worker/.local/bin/froggo-db token-budget-check ${agent} --json`,
-      {
-        encoding: 'utf-8',
-        timeout: 10000,
-        env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
-      }
-    );
-    return JSON.parse(result);
+    // Get budget settings from froggo.db
+    const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent);
+    if (!budgetRow) {
+      return {
+        agent,
+        daily_limit: 0,
+        used_today: 0,
+        remaining: 0,
+        percentage_used: 0,
+        percent_used: 0,
+        alert_threshold: 0.9,
+        over_budget: false,
+        hard_limit: false,
+      };
+    }
+
+    // Get today's usage from gateway sessions.db
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    const startOfDay = new Date().setHours(0, 0, 0, 0);
+    
+    let usedToday = 0;
+    if (fs.existsSync(sessionsDbPath)) {
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      const query = `SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = '${agent}' AND created_at >= ${startOfDay}`;
+      const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 5000 });
+      try {
+        const rows = JSON.parse(stdout || '[{"total":0}]');
+        usedToday = rows[0]?.total || 0;
+      } catch { usedToday = 0; }
+    }
+
+    const dailyLimit = budgetRow.daily_token_limit || 0;
+    const remaining = Math.max(0, dailyLimit - usedToday);
+    const percentageUsed = dailyLimit > 0 ? usedToday / dailyLimit : 0;
+    const alertThreshold = budgetRow.alert_threshold || 0.9;
+    const overBudget = usedToday > dailyLimit && budgetRow.hard_limit === 1;
+
+    return {
+      agent,
+      daily_limit: dailyLimit,
+      used_today: usedToday,
+      remaining,
+      percentage_used: percentageUsed,
+      percent_used: percentageUsed,
+      alert_threshold: alertThreshold,
+      over_budget: overBudget,
+      hard_limit: budgetRow.hard_limit === 1,
+    };
   } catch (err: any) {
     return { error: err.message };
   }
