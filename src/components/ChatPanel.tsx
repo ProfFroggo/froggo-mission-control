@@ -76,8 +76,8 @@ export default function ChatPanel() {
 
   // Agent switching handler
   const handleAgentSwitch = useCallback(async (agent: ChatAgent) => {
-    if (agent.id === selectedAgent.id) return;
-    
+    if (!selectedAgent || agent.id === selectedAgent.id) return;
+
     // Save current messages to cache
     messageCacheRef.current.set(selectedAgent.id, messages);
     
@@ -112,16 +112,15 @@ export default function ChatPanel() {
   // Load starred message IDs
   useEffect(() => {
     const loadStarredIds = async () => {
-      if (window.clawdbot?.starred?.list) {
-        const result = await window.clawdbot?.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
-        if (result?.success && result.starred) {
-          const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
-          setStarredMessageIds(ids);
-        }
+      if (!selectedAgent || !window.clawdbot?.starred?.list) return;
+      const result = await window.clawdbot?.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
+      if (result?.success && result.starred) {
+        const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
+        setStarredMessageIds(ids);
       }
     };
     loadStarredIds();
-  }, [messages.length, selectedAgent.id]);
+  }, [messages.length, selectedAgent?.id]);
 
   // Toggle star on a message
   const handleToggleStar = async (msg: Message, e: React.MouseEvent) => {
@@ -168,10 +167,11 @@ export default function ChatPanel() {
   // Load messages from database on mount (and when agent changes) - this is the source of truth
   useEffect(() => {
     const loadFromDb = async () => {
+      if (!selectedAgent) return;
       console.log('[Chat] Loading from froggo.db for agent:', selectedAgent.id);
       // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
       setHistoryLoaded(true);
-      
+
       if (window.clawdbot?.chat?.loadMessages) {
         const result = await window.clawdbot?.chat.loadMessages(50, selectedAgent.dbSessionKey);
         console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
@@ -189,17 +189,16 @@ export default function ChatPanel() {
 
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
-    if (window.clawdbot?.chat?.saveMessage) {
-      try {
-        const result = await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
-        if (result?.success) {
-          console.log(`[Chat] ${role} message saved to DB`);
-        } else {
-          console.error(`[Chat] Failed to save ${role} message:`, result);
-        }
-      } catch (err) {
-        console.error(`[Chat] Error saving ${role} message:`, err);
+    if (!selectedAgent || !window.clawdbot?.chat?.saveMessage) return;
+    try {
+      const result = await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
+      if (result?.success) {
+        console.log(`[Chat] ${role} message saved to DB`);
+      } else {
+        console.error(`[Chat] Failed to save ${role} message:`, result);
       }
+    } catch (err) {
+      console.error(`[Chat] Error saving ${role} message:`, err);
     }
   };
 
@@ -383,10 +382,10 @@ export default function ChatPanel() {
         ));
         
         // Save assistant message to database
-        if (finalContent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot?.chat.saveMessage({ 
-            role: 'assistant', 
-            content: finalContent, 
+        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          window.clawdbot?.chat.saveMessage({
+            role: 'assistant',
+            content: finalContent,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
@@ -455,10 +454,10 @@ export default function ChatPanel() {
         ));
         
         // Save assistant message to database
-        if (finalContent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot?.chat.saveMessage({ 
-            role: 'assistant', 
-            content: finalContent, 
+        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          window.clawdbot?.chat.saveMessage({
+            role: 'assistant',
+            content: finalContent,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
@@ -523,7 +522,7 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [speakResponses, selectedAgent.dbSessionKey]);
+  }, [speakResponses, selectedAgent?.dbSessionKey]);
 
   // Setup voice recognition
   useEffect(() => {
@@ -784,6 +783,7 @@ export default function ChatPanel() {
   };
 
   const clearChat = async () => {
+    if (!selectedAgent) return;
     setMessages([]);
     messageCacheRef.current.delete(selectedAgent.id);
     window.speechSynthesis.cancel();
@@ -824,7 +824,7 @@ export default function ChatPanel() {
   };
 
   const startTeamMeeting = () => {
-    const allAgentIds = Object.keys(AGENTS);
+    const allAgentIds = agents.map(a => a.id);
     const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     createRoom(`Team Meeting — ${timestamp}`, allAgentIds);
     setShowRoomList(false);
@@ -1364,3 +1364,4 @@ export default function ChatPanel() {
     </div>
   );
 }
+

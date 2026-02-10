@@ -39,7 +39,7 @@ export async function spawnAgent(
   const result = await gateway.spawnAgent(
     `${systemPrompt}\n\n## YOUR TASK\n${task}`,
     label,
-    options?.model || agent.model
+    options?.model // Use provided model or gateway default
   );
 
   return {

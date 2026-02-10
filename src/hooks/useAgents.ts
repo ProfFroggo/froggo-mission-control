@@ -6,8 +6,16 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { AgentInfo } from '../components/AgentPanel';
 import { gateway } from '@/lib/gateway';
+
+// AgentInfo type for legacy useAgents hook (being deprecated)
+export interface AgentInfo {
+  id: string;
+  name: string;
+  status: 'active' | 'idle' | 'busy' | 'offline';
+  totalSessions?: number;
+  activeTasks?: number;
+}
 
 const api = () => (window as any).clawdbot;
 
@@ -197,8 +205,8 @@ async function fetchAgents(): Promise<AgentInfo[]> {
       const metrics: Record<string, any> = metricsRes?.metrics ?? metricsRes ?? {};
       // Map metric agent IDs to session agent names (and vice versa)
       const agentIdAliases: Record<string, string[]> = {
-        main: ['main', 'froggo', 'froggo'],
-        'froggo': ['main', 'froggo', 'froggo'],
+        main: ['main', 'froggo'],
+        'froggo': ['main', 'froggo'],
         froggo: ['main', 'froggo', 'froggo'],
       };
 
