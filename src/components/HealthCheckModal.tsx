@@ -27,9 +27,8 @@ interface Issue {
 
 type Phase = 'scanning' | 'proposing' | 'executing' | 'done';
 
-const VALID_AGENTS = ['chief', 'coder', 'researcher', 'writer', 'designer', 'hr', 'clara', 'growth-director', 'social-manager', 'voice', 'degen-frog', 'ox'];
-
 export default function HealthCheckModal({ onClose, stats }: HealthCheckModalProps) {
+  const agents = useStore(s => s.agents);
   const [phase, setPhase] = useState<Phase>('scanning');
   const [scanProgress, setScanProgress] = useState(0);
   const [issues, setIssues] = useState<Issue[]>([]);
@@ -39,6 +38,9 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const didExecute = useRef(false);
+
+  // Dynamic valid agents from store (exclude froggo, main, clara - orchestrators)
+  const VALID_AGENTS = agents.filter(a => !['froggo', 'main', 'clara'].includes(a.id)).map(a => a.id);
 
   const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 

@@ -7,7 +7,7 @@ import {
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import AgentAvatar from './AgentAvatar';
-import { CHAT_AGENTS, ChatAgent } from './AgentSelector';
+import { ChatAgent, fetchAgentList } from './AgentSelector';
 import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext } from '../lib/agentContext';
 import { buildSystemInstruction, buildAgentTools, executeToolCall, loadRecentChatHistory, type AgentContext } from '../lib/voiceCallShared';
@@ -186,7 +186,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
         </div>
       )}
       <div className="space-y-1">
-        {CHAT_AGENTS.filter(a => a.id !== 'voice').map(agent => (
+        {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
           <button
             key={agent.id}
             onClick={() => onSelect(agent)}
@@ -221,7 +221,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
   const [message, setMessage] = useState('');
   const suggestedAgentIds = VIEW_AGENT_SUGGESTIONS[currentView] || ['froggo', 'chief', 'coder'];
   const suggestedAgents = suggestedAgentIds
-    .map(id => CHAT_AGENTS.find(a => a.id === id))
+    .map(id => fetchAgentList().find(a => a.id === id))
     .filter(Boolean) as ChatAgent[];
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent>(suggestedAgents[0]);
   const [showAllAgents, setShowAllAgents] = useState(false);
@@ -275,7 +275,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
         </div>
         {showAllAgents && (
           <div className="flex gap-1.5 flex-wrap mt-1.5">
-            {CHAT_AGENTS.filter(a => !suggestedAgentIds.includes(a.id)).map(agent => (
+            {fetchAgentList().filter(a => !suggestedAgentIds.includes(a.id)).map(agent => (
               <button
                 key={agent.id}
                 onClick={() => { setSelectedAgent(agent); setShowAllAgents(false); }}
@@ -1065,7 +1065,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
           </div>
           <div className="space-y-1">
-            {CHAT_AGENTS.filter(a => a.id !== 'voice').map(agent => (
+            {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
               <button
                 key={agent.id}
                 onClick={() => handleStartAgentChat(agent)}

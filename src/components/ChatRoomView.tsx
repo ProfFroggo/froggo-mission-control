@@ -4,9 +4,9 @@ import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
 import { gateway } from '../lib/gateway';
-import { AGENTS } from '../lib/agents';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
+import { useStore } from '../store/store';
 
 interface AttachedFile {
   id: string;
@@ -23,9 +23,14 @@ interface ChatRoomViewProps {
 
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents } = useChatRoomStore();
+  const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Helper to get agent name/emoji from store
+  const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
+  const agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
@@ -183,9 +188,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const extractMentions = (text: string, agentIds: string[]): string[] => {
     const mentioned: string[] = [];
     for (const id of agentIds) {
-      const agent = AGENTS[id];
-      if (!agent) continue;
-      const pattern = new RegExp(`@${agent.name}\\b`, 'i');
+      const name = agentName(id);
+      const pattern = new RegExp(`@${name}\\b`, 'i');
       if (pattern.test(text)) {
         mentioned.push(id);
       }
@@ -199,14 +203,13 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     // Include last 15 messages as context
     const recent = room.messages.slice(-15);
     const lines = recent.map(m => {
-      const sender = m.role === 'user' ? 'Kevin' : (AGENTS[m.agentId || '']?.name || 'Unknown');
+      const sender = m.role === 'user' ? 'Kevin' : (m.agentId ? agentName(m.agentId) : 'Unknown');
       return `[${sender}]: ${m.content}`;
     });
-    const fromName = fromAgent ? (AGENTS[fromAgent]?.name || fromAgent) : 'Kevin';
+    const fromName = fromAgent ? (agentName(fromAgent)) : 'Kevin';
     lines.push(`[${fromName}]: ${triggerContent}`);
 
-    const agentConfig = AGENTS[forAgent];
-    const otherAgents = room.agents.filter(a => a !== forAgent).map(a => AGENTS[a]?.name || a);
+    const otherAgents = room.agents.filter(a => a !== forAgent).map(a => agentName(a));
 
     // Allow orchestrators (Froggo, Chief) to use tools in group chats
     const allowTools = ['froggo', 'chief'].includes(forAgent);
@@ -215,7 +218,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       ? "1. You can use tools when needed, but keep explanations brief (1-3 sentences)."
       : "1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.";
 
-    return `You are ${agentConfig?.name || forAgent} in a multi-agent chat room called "${room.name}".
+    return `You are ${agentName(forAgent)} in a multi-agent chat room called "${room.name}".
 Other participants: Kevin (human), ${otherAgents.join(', ')}.
 
 IMPORTANT RULES:
@@ -228,7 +231,7 @@ ${toolRule}
 ## Conversation so far:
 ${lines.join('\n')}
 
-Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no tools)'}:`;
+Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`;
   };
 
   /** Send a message to a specific agent using per-runId callbacks.
@@ -408,11 +411,10 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
   };
 
   const insertMention = (agentId: string) => {
-    const agent = AGENTS[agentId];
-    if (!agent) return;
+    const name = agentName(agentId);
     const lastAt = input.lastIndexOf('@');
     const before = input.slice(0, lastAt);
-    setInput(`${before}@${agent.name} `);
+    setInput(`${before}@${name} `);
     setShowMentions(false);
     setMentionFilter('');
     inputRef.current?.focus();
@@ -427,14 +429,14 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
   }
 
   const filteredAgents = room.agents.filter(id => {
-    const agent = AGENTS[id];
-    return agent && agent.name.toLowerCase().includes(mentionFilter);
+    const name = agentName(id);
+    return name.toLowerCase().includes(mentionFilter);
   });
 
   const { deleteRoom } = useChatRoomStore();
 
   // Detect if this is a team meeting (has all or nearly all agents)
-  const totalAgents = Object.keys(AGENTS).length;
+  const totalAgents = agents.length;
   const isTeamMeeting = room.agents.length >= totalAgents - 1 || room.name.toLowerCase().includes('team meeting');
 
   return (
@@ -471,7 +473,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
             <p className="text-xs text-clawd-text-dim">
               {isTeamMeeting
                 ? `All ${room.agents.length} agents present`
-                : `You + ${room.agents.map(id => AGENTS[id]?.name || id).join(', ')}`
+                : `You + ${room.agents.map(id => agentName(id)).join(', ')}`
               }
             </p>
           </div>
@@ -485,7 +487,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
                 <AgentAvatar agentId={id} size="xs" />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                  {AGENTS[id]?.name || id}
+                  {agentName(id)}
                 </div>
               </div>
             ))}
@@ -572,7 +574,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
                   {room.agents.map(id => (
                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-clawd-surface border border-clawd-border rounded-full text-xs">
                       <AgentAvatar agentId={id} size="xs" />
-                      <span>{AGENTS[id]?.name || id}</span>
+                      <span>{agentName(id)}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
                     </div>
                   ))}
@@ -597,7 +599,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
                 <Users size={48} className="mx-auto mb-4 opacity-30" />
                 <p className="text-lg font-medium mb-2">Room Created!</p>
                 <p className="text-sm mb-4">
-                  Start a conversation with {room.agents.map(id => AGENTS[id]?.name || id).join(' and ')}.
+                  Start a conversation with {room.agents.map(id => agentName(id)).join(' and ')}.
                 </p>
                 <p className="text-xs">
                   Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> to address specific agents,
@@ -613,7 +615,6 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
             return m.streaming || t;
           }).map((msg, idx) => {
             const isUser = msg.role === 'user';
-            const agentConfig = msg.agentId ? AGENTS[msg.agentId] : null;
             const theme = msg.agentId ? getAgentTheme(msg.agentId) : null;
             const showAvatar = idx === 0 || room.messages[idx - 1]?.agentId !== msg.agentId || room.messages[idx - 1]?.role !== msg.role;
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -640,7 +641,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
                     <div className={`text-xs font-medium mb-1 px-1 ${
                       isUser ? 'text-clawd-accent' : (theme?.text || 'text-clawd-text-dim')
                     }`}>
-                      {isUser ? 'Kevin' : (agentConfig?.name || 'Agent')}
+                      {isUser ? 'Kevin' : (msg.agentId ? agentName(msg.agentId) : 'Agent')}
                     </div>
                   )}
                   <div
@@ -658,7 +659,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
                           <div className="w-2 h-2 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
                         <span className="text-sm text-clawd-text-dim">
-                          {agentConfig?.name || 'Agent'} is thinking...
+                          {msg.agentId ? agentName(msg.agentId) : 'Agent'} is thinking...
                         </span>
                       </div>
                     ) : !isUser ? (
@@ -688,7 +689,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
               <div className="w-1.5 h-1.5 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-1.5 h-1.5 rounded-full bg-clawd-accent animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
-            {[...typingAgents].map(id => AGENTS[id]?.name || id).join(', ')} typing...
+            {[...typingAgents].map(id => agentName(id)).join(', ')} typing...
           </div>
         )}
 
@@ -745,7 +746,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
         {showMentions && filteredAgents.length > 0 && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl overflow-hidden">
             {filteredAgents.map(id => {
-              const agent = AGENTS[id];
+              const agent = agents.find(a => a.id === id);
               const theme = getAgentTheme(id);
               return (
                 <button
@@ -754,7 +755,7 @@ Respond as ${agentConfig?.name || forAgent}${allowTools ? '' : ' (text only, no 
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-clawd-bg transition-colors"
                 >
                   <AgentAvatar agentId={id} size="sm" />
-                  <span className={`font-medium text-sm ${theme.text}`}>{agent?.name}</span>
+                  <span className={`font-medium text-sm ${theme.text}`}>{agent?.name || id}</span>
                   <span className="text-xs text-clawd-text-dim">{agent?.description}</span>
                 </button>
               );

@@ -5,9 +5,9 @@ import {
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
-import { AGENTS } from '../lib/agents';
 import { getAgentTheme } from '../utils/agentThemes';
 import { gateway } from '../lib/gateway';
+import { useStore } from '../store/store';
 // Browser speech synthesis helpers (replaced googleTTS)
 function speakBrowser(text: string): Promise<void> {
   return new Promise((resolve) => {
@@ -37,7 +37,12 @@ type TurnMode = 'sequential' | 'addressed';
 
 export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetingProps) {
   const { rooms, addMessage, updateMessage, setSessionKey } = useChatRoomStore();
+  const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
+
+  // Helper functions for agent data
+  const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
+  const agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
 
   // Voice state
   const [isActive, setIsActive] = useState(false);
@@ -174,15 +179,14 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     if (!room) return userText;
     const recent = room.messages.slice(-15);
     const lines = recent.map(m => {
-      const sender = m.role === 'user' ? 'Kevin' : (AGENTS[m.agentId || '']?.name || 'Unknown');
+      const sender = m.role === 'user' ? 'Kevin' : (m.agentId ? agentName(m.agentId) : 'Unknown');
       return `[${sender}]: ${m.content}`;
     });
     lines.push(`[Kevin]: ${userText}`);
 
-    const agentConfig = AGENTS[agentId];
-    const otherAgents = room.agents.filter(a => a !== agentId).map(a => AGENTS[a]?.name || a);
+    const otherAgents = room.agents.filter(a => a !== agentId).map(a => agentName(a));
 
-    return `You are ${agentConfig?.name || agentId} in a voice team meeting called "${room.name}".
+    return `You are ${agentName(agentId)} in a voice team meeting called "${room.name}".
 Other participants: Kevin (human), ${otherAgents.join(', ')}.
 This is a VOICE meeting — keep responses concise and conversational (2-4 sentences).
 You can address others with @Name. Be direct and natural.
@@ -190,7 +194,7 @@ You can address others with @Name. Be direct and natural.
 ## Conversation so far:
 ${lines.join('\n')}
 
-Respond as ${agentConfig?.name || agentId}:`;
+Respond as ${agentName(agentId)}:`;
   }, [room]);
 
   // ── Extract @mentions from user text ──
@@ -198,14 +202,13 @@ Respond as ${agentConfig?.name || agentId}:`;
     if (!room) return [];
     const mentioned: string[] = [];
     for (const id of room.agents) {
-      const agent = AGENTS[id];
-      if (!agent) continue;
-      if (new RegExp(`@${agent.name}\\b`, 'i').test(text)) {
+      const name = agentName(id);
+      if (new RegExp(`@${name}\\b`, 'i').test(text)) {
         mentioned.push(id);
       }
     }
     return mentioned;
-  }, [room]);
+  }, [room, agentName]);
 
   // ── Handle user speech ──
   const handleUserSpeech = useCallback((text: string) => {
@@ -438,14 +441,14 @@ Respond as ${agentConfig?.name || agentId}:`;
     if (!room) return;
     let content = `# Voice Meeting Transcript: ${room.name}\n`;
     content += `Date: ${new Date().toLocaleString()}\n`;
-    content += `Participants: Kevin, ${room.agents.map(id => AGENTS[id]?.name || id).join(', ')}\n\n`;
+    content += `Participants: Kevin, ${room.agents.map(id => agentName(id)).join(', ')}\n\n`;
     content += `---\n\n`;
 
     for (const entry of transcript) {
       const time = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const speaker = entry.speaker === 'user' ? 'Kevin'
         : entry.speaker === 'system' ? '📋 System'
-        : (AGENTS[entry.speaker]?.name || entry.speaker);
+        : (agentName(entry.speaker));
       content += `**[${time}] ${speaker}:** ${entry.content}\n\n`;
     }
 
@@ -562,7 +565,7 @@ Respond as ${agentConfig?.name || agentId}:`;
         </div>
 
         {room.agents.map(id => {
-          const agent = AGENTS[id];
+          const agent = agents.find(a => a.id === id);
           const theme = getAgentTheme(id);
           const isSpeaking = speakingAgent === id;
           const isProcessing = processingAgent === id;
@@ -599,7 +602,7 @@ Respond as ${agentConfig?.name || agentId}:`;
           <div className="ml-auto flex items-center gap-2">
             <Waveform level={speakLevel} color={getAgentTheme(speakingAgent).color} bars={6} height={24} />
             <span className={`text-xs font-medium ${getAgentTheme(speakingAgent).text}`}>
-              {AGENTS[speakingAgent]?.name} speaking
+              {agentName(speakingAgent)} speaking
             </span>
           </div>
         )}
@@ -616,7 +619,7 @@ Respond as ${agentConfig?.name || agentId}:`;
             </div>
             <p className="text-lg font-medium text-clawd-text mb-1">Voice Team Meeting</p>
             <p className="text-sm text-center max-w-xs mb-2">
-              Start a voice meeting with {room.agents.map(id => AGENTS[id]?.name || id).join(', ')}
+              Start a voice meeting with {room.agents.map(id => agentName(id)).join(', ')}
             </p>
             <p className="text-xs opacity-70">
               Use @AgentName to address specific agents, or speak to everyone
@@ -637,7 +640,7 @@ Respond as ${agentConfig?.name || agentId}:`;
 
           const isUser = entry.speaker === 'user';
           const theme = !isUser ? getAgentTheme(entry.speaker) : null;
-          const agentConfig = !isUser ? AGENTS[entry.speaker] : null;
+          const agent = !isUser ? agents.find(a => a.id === entry.speaker) : null;
           const isCurrSpeaking = speakingAgent === entry.speaker;
 
           return (
@@ -693,7 +696,7 @@ Respond as ${agentConfig?.name || agentId}:`;
             <AgentAvatar agentId={processingAgent} size="xs" />
             <div className="bg-clawd-surface border border-clawd-border rounded-2xl px-4 py-2 flex items-center gap-2">
               <Loader2 size={14} className="animate-spin text-clawd-accent" />
-              <span className="text-xs text-clawd-text-dim">{AGENTS[processingAgent]?.name} is thinking…</span>
+              <span className="text-xs text-clawd-text-dim">{agentName(processingAgent)} is thinking…</span>
             </div>
           </div>
         )}
@@ -716,11 +719,11 @@ Respond as ${agentConfig?.name || agentId}:`;
               <div className="flex items-center gap-3">
                 <Waveform level={speakLevel} color={getAgentTheme(speakingAgent).color} bars={10} height={32} />
                 <span className={`text-xs ${getAgentTheme(speakingAgent).text}`}>
-                  {AGENTS[speakingAgent]?.name} speaking
+                  {agentName(speakingAgent)} speaking
                 </span>
                 {speakQueue.length > 0 && (
                   <span className="text-xs text-clawd-text-dim">
-                    → {speakQueue.map(id => AGENTS[id]?.name || id).join(', ')} next
+                    → {speakQueue.map(id => agentName(id)).join(', ')} next
                   </span>
                 )}
               </div>
@@ -728,7 +731,7 @@ Respond as ${agentConfig?.name || agentId}:`;
             {processingAgent && !speakingAgent && (
               <div className="flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin text-clawd-accent" />
-                <span className="text-xs text-clawd-text-dim">{AGENTS[processingAgent]?.name} thinking…</span>
+                <span className="text-xs text-clawd-text-dim">{agentName(processingAgent)} thinking…</span>
               </div>
             )}
             {!listening && !speakingAgent && !processingAgent && (

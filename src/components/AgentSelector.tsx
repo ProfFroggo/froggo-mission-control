@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { getAgentTheme } from '../utils/agentThemes';
+import { useStore } from '../store/store';
 
 export interface ChatAgent {
   id: string;
@@ -14,84 +15,53 @@ export interface ChatAgent {
   status?: string;
 }
 
-// Fallback agents for when DB query fails
-const FALLBACK_AGENTS: ChatAgent[] = [
-  { id: 'froggo',          name: 'Froggo',          role: 'Main Assistant',          sessionKey: 'agent:froggo:dashboard',          dbSessionKey: 'chat:main' },
-  { id: 'coder',           name: 'Coder',           role: 'Software Engineer',       sessionKey: 'agent:coder:dashboard',           dbSessionKey: 'chat:coder' },
-  { id: 'researcher',      name: 'Researcher',      role: 'Research Analyst',        sessionKey: 'agent:researcher:dashboard',      dbSessionKey: 'chat:researcher' },
-  { id: 'writer',          name: 'Writer',           role: 'Content Writer',          sessionKey: 'agent:writer:dashboard',          dbSessionKey: 'chat:writer' },
-  { id: 'chief',           name: 'Chief',            role: 'Project Manager',         sessionKey: 'agent:chief:dashboard',           dbSessionKey: 'chat:chief' },
-  { id: 'hr',              name: 'HR',               role: 'Agent Management',        sessionKey: 'agent:hr:dashboard',              dbSessionKey: 'chat:hr' },
-  { id: 'clara',           name: 'Clara',            role: 'Quality Auditor',         sessionKey: 'agent:clara:dashboard',           dbSessionKey: 'chat:clara' },
-  { id: 'designer',        name: 'Designer',         role: 'UI/Graphic Designer',     sessionKey: 'agent:designer:dashboard',        dbSessionKey: 'chat:designer' },
-  { id: 'jess',            name: 'Jess',             role: 'Psychology & Therapy',    sessionKey: 'agent:jess:dashboard',            dbSessionKey: 'chat:jess' },
-  { id: 'growth-director', name: 'Growth Director',  role: 'Growth & Marketing',      sessionKey: 'agent:growth-director:dashboard', dbSessionKey: 'chat:growth-director' },
-  { id: 'social-manager',  name: 'Social Manager',   role: 'Social Media Manager',    sessionKey: 'agent:social-manager:dashboard',  dbSessionKey: 'chat:social-manager' },
-  { id: 'voice',           name: 'Voice',            role: 'Voice & Call Handler',     sessionKey: 'agent:voice:dashboard',           dbSessionKey: 'chat:voice' },
-  { id: 'degen-frog',      name: 'Degen Frog',       role: 'Crypto Trading',          sessionKey: 'agent:degen-frog:dashboard',      dbSessionKey: 'chat:degen-frog' },
-];
-
-// Legacy export for backward compatibility
-export const CHAT_AGENTS = FALLBACK_AGENTS;
-
 /**
- * Fetch agent list from agent_registry via IPC
- * Maps DB rows to ChatAgent interface with generated sessionKeys
+ * Fetch agent list from store (already loaded from CLI via fetchAgents)
+ * Maps store Agent[] to ChatAgent interface with generated sessionKeys
  */
-export async function fetchAgentList(): Promise<ChatAgent[]> {
-  try {
-    if (!window.clawdbot?.getAgentRegistry) {
-      console.warn('[AgentSelector] IPC not available, using fallback agents');
-      return FALLBACK_AGENTS;
-    }
-
-    const dbAgents = await window.clawdbot.getAgentRegistry();
-
-    if (!dbAgents || dbAgents.length === 0) {
-      console.warn('[AgentSelector] No agents in DB, using fallback');
-      return FALLBACK_AGENTS;
-    }
-
-    const agents: ChatAgent[] = dbAgents.map((agent: any) => ({
-      id: agent.id,
-      name: agent.name,
-      role: agent.role || agent.description || 'Assistant',
-      sessionKey: `agent:${agent.id}:dashboard`,
-      dbSessionKey: `chat:${agent.id}`,
-      color: agent.color,
-      trustTier: agent.trust_tier,
-      status: agent.status,
-    }));
-
-    console.log(`[AgentSelector] Loaded ${agents.length} agents from DB`);
-    return agents;
-  } catch (err) {
-    console.error('[AgentSelector] Failed to load agents:', err);
-    return FALLBACK_AGENTS;
+export function fetchAgentList(): ChatAgent[] {
+  const storeAgents = useStore.getState().agents;
+  if (storeAgents.length === 0) {
+    console.warn('[AgentSelector] No agents in store, list will be empty until gateway loads');
+    return [];
   }
+
+  const agents: ChatAgent[] = storeAgents.map(a => ({
+    id: a.id,
+    name: a.name,
+    role: a.description || a.name,
+    sessionKey: `agent:${a.id}:dashboard`,
+    dbSessionKey: `chat:${a.id}`,
+    color: undefined,
+    trustTier: a.trust_tier,
+    status: a.status,
+  }));
+
+  return agents;
 }
 
 /**
- * React hook to load agent list dynamically
+ * React hook to load agent list dynamically from store
  */
 export function useAgentList() {
-  const [agents, setAgents] = useState<ChatAgent[]>(FALLBACK_AGENTS);
+  const storeAgents = useStore(s => s.agents);
+  const [agents, setAgents] = useState<ChatAgent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-
-    fetchAgentList().then((fetchedAgents) => {
-      if (mounted) {
-        setAgents(fetchedAgents);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    const chatAgents = storeAgents.map(a => ({
+      id: a.id,
+      name: a.name,
+      role: a.description || a.name,
+      sessionKey: `agent:${a.id}:dashboard`,
+      dbSessionKey: `chat:${a.id}`,
+      color: undefined,
+      trustTier: a.trust_tier,
+      status: a.status,
+    }));
+    setAgents(chatAgents);
+    setLoading(storeAgents.length === 0);
+  }, [storeAgents]);
 
   return { agents, loading };
 }
