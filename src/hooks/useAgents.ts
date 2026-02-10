@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AgentInfo } from '../components/AgentPanel';
+import { gateway } from '@/lib/gateway';
 
 const api = () => (window as any).clawdbot;
 
@@ -93,8 +94,8 @@ async function fetchAgents(): Promise<AgentInfo[]> {
   // 1. Gateway sessions — live agent sessions from ALL workspaces
   //    sessions.db is global (~/.clawdbot/sessions.db), so all agents are included.
   try {
-    const res = await clawdbot.gateway.sessionsList();
-    const sessions: any[] = (res as any)?.sessions ?? (res as any)?.data ?? [];
+    const res = await gateway.getSessions();
+    const sessions: any[] = res?.sessions ?? [];
     if (Array.isArray(sessions)) {
       // Group sessions by agent name to aggregate stats
       const agentSessions = new Map<string, any[]>();

@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { gateway } from '@/lib/gateway';
 
 interface ActiveAgentIndicatorProps {
   taskId: string;
@@ -23,18 +24,18 @@ export default function ActiveAgentIndicator({
   useEffect(() => {
     const checkActiveAgent = async () => {
       try {
-        const result = await (window as any).clawdbot.sessions.list();
-        if (result.success && result.sessions) {
+        const result = await gateway.getSessions();
+        if (result.sessions) {
           // Find session with label matching task ID and recent activity
           const activeSession = result.sessions.find((s: any) => {
             const isRecent = (Date.now() - s.updatedAt) < 5 * 60 * 1000; // Active within 5 mins
             const matchesTask = s.label && (
-              s.label.includes(taskId) || 
+              s.label.includes(taskId) ||
               s.label.includes(`task-${taskId}`)
             );
             return isRecent && matchesTask;
           });
-          
+
           if (activeSession) {
             setIsActive(true);
             // Extract agent name from label (e.g., "coder-task-123" -> "coder")
@@ -54,10 +55,10 @@ export default function ActiveAgentIndicator({
 
     // Check immediately
     checkActiveAgent();
-    
+
     // Poll every 10 seconds
     const interval = setInterval(checkActiveAgent, 10000);
-    
+
     return () => clearInterval(interval);
   }, [taskId]);
 

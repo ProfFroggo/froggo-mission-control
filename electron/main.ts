@@ -707,15 +707,6 @@ ipcMain.handle('media:requestPermission', async (_, mediaType: 'camera' | 'micro
 });
 
 // ============== GATEWAY IPC HANDLERS ==============
-ipcMain.handle('gateway:status', async () => {
-  try {
-    const response = await fetch('http://localhost:18789/api/status');
-    return await response.json();
-  } catch (error) {
-    return { error: 'Gateway not reachable' };
-  }
-});
-
 ipcMain.handle('gateway:sessions', async () => {
   try {
     const response = await fetch('http://localhost:18789/api/sessions');
@@ -4725,66 +4716,6 @@ ipcMain.handle('shell:openPath', async (_, filePath: string) => {
   }
 });
 
-// ============== SKILLS IPC HANDLERS ==============
-ipcMain.handle('skills:list', async () => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT skill_name as name, proficiency, last_used as lastUsed, success_count + failure_count as usageCount, notes as description FROM skill_evolution ORDER BY proficiency DESC, usageCount DESC" -json`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: true, skills: [] });
-        return;
-      }
-      try {
-        const rawSkills = JSON.parse(stdout || '[]');
-        // Transform for frontend
-        const skills = rawSkills.map((s: any, idx: number) => ({
-          id: `skill-${idx}`,
-          name: s.name,
-          description: s.description || '',
-          proficiency: s.proficiency || 0.5,
-          lastUsed: s.lastUsed ? new Date(s.lastUsed).getTime() : undefined,
-          usageCount: s.usageCount || 0,
-        }));
-        resolve({ success: true, skills });
-      } catch {
-        resolve({ success: true, skills: [] });
-      }
-    });
-  });
-});
-
-ipcMain.handle('skills:agent-list', async (_, agentId?: string) => {
-  return new Promise((resolve) => {
-    const filter = agentId ? `WHERE agent_id='${agentId}'` : '';
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT agent_id as agentId, skill_name as name, proficiency, last_used as lastUsed, success_count + failure_count as usageCount, notes as description FROM agent_skills ${filter} ORDER BY proficiency DESC" -json`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: true, skills: [] });
-        return;
-      }
-      try {
-        const rawSkills = JSON.parse(stdout || '[]');
-        const skills = rawSkills.map((s: any, idx: number) => ({
-          id: `agent-skill-${idx}`,
-          agentId: s.agentId,
-          name: s.name,
-          description: s.description || '',
-          proficiency: s.proficiency / 10, // Convert 1-10 to 0-1
-          lastUsed: s.lastUsed,
-          usageCount: s.usageCount || 0,
-        }));
-        resolve({ success: true, skills });
-      } catch {
-        resolve({ success: true, skills: [] });
-      }
-    });
-  });
-});
-
-
-
 // ============== SEARCH IPC HANDLERS ==============
 ipcMain.handle('search:local', async (_, query: string) => {
   const escapedQuery = query.replace(/'/g, "''");
@@ -4836,76 +4767,6 @@ ipcMain.handle('search:local', async (_, query: string) => {
       }
     });
   });
-});
-
-// ============== SYSTEM STATUS IPC HANDLERS ==============
-ipcMain.handle('system:status', async () => {
-  return new Promise((resolve) => {
-    // Check watcher status
-    exec('pgrep -f task-watcher.sh', (watcherErr) => {
-      const watcherRunning = !watcherErr;
-      
-      // Check kill switch from env file
-      exec('grep EXTERNAL_ACTIONS_ENABLED ~/clawd/config/env.sh 2>/dev/null || echo "false"', (_, envOut) => {
-        const killSwitchOn = !envOut?.includes('true');
-        
-        // Count pending inbox items
-        exec('froggo-db inbox-list 2>/dev/null | grep -c "pending" || echo 0', (_, inboxOut) => {
-          const pendingInbox = parseInt(inboxOut?.trim() || '0', 10);
-          
-          // Count in-progress tasks
-          exec('froggo-db task-list --status in-progress 2>/dev/null | wc -l || echo 0', (_, taskOut) => {
-            const inProgressTasks = parseInt(taskOut?.trim() || '0', 10);
-            
-            resolve({
-              success: true,
-              status: {
-                watcherRunning,
-                killSwitchOn,
-                pendingInbox,
-                inProgressTasks,
-              }
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-// ============== SETTINGS IPC HANDLERS ==============
-ipcMain.handle('settings:get', async () => {
-  const configPath = path.join(os.homedir(), 'clawd', 'config', 'settings.json');
-  try {
-    const content = fs.readFileSync(configPath, 'utf-8');
-    return { success: true, settings: JSON.parse(content) };
-  } catch {
-    return { success: true, settings: {} };
-  }
-});
-
-ipcMain.handle('settings:save', async (_, settings: any) => {
-  const configDir = path.join(os.homedir(), 'clawd', 'config');
-  const configPath = path.join(configDir, 'settings.json');
-  
-  try {
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
-    }
-    fs.writeFileSync(configPath, JSON.stringify(settings, null, 2));
-    
-    // Also update environment for task-helpers.sh
-    const envLine = settings.externalActionsEnabled 
-      ? 'export EXTERNAL_ACTIONS_ENABLED=true'
-      : 'export EXTERNAL_ACTIONS_ENABLED=false';
-    const envPath = path.join(os.homedir(), 'clawd', 'config', 'env.sh');
-    fs.writeFileSync(envPath, `# Auto-generated by Froggo Dashboard\n${envLine}\nexport RATE_LIMIT_TWEETS=${settings.rateLimitTweets || 10}\nexport RATE_LIMIT_EMAILS=${settings.rateLimitEmails || 20}\n`);
-    
-    return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Settings] Save error:', error);
-    return { success: false, error: error.message };
-  }
 });
 
 // ============== AI CONTENT GENERATION ==============
@@ -6720,18 +6581,6 @@ ipcMain.handle('sessions:list', async () => {
   }
 });
 
-ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number) => {
-  try {
-    const limitParam = limit ? `?limit=${limit}` : '';
-    const response = await fetch(`http://localhost:18789/api/sessions/${sessionKey}/history${limitParam}`);
-    const data = await response.json();
-    return { success: true, messages: data.messages || [] };
-  } catch (error) {
-    safeLog.error('[Sessions] History error:', error);
-    return { success: false, messages: [] };
-  }
-});
-
 ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) => {
   try {
     safeLog.log(`[Sessions] Sending to ${sessionKey}:`, message.slice(0, 100));
@@ -7407,7 +7256,7 @@ ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; 
 ipcMain.handle('tokens:budget', async (_, agent: string) => {
   try {
     // Get budget settings from froggo.db
-    const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent);
+    const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent) as any;
     if (!budgetRow) {
       return {
         agent,

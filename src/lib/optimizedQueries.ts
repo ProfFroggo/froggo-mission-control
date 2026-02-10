@@ -1,12 +1,13 @@
 /**
  * Optimized Queries - Database query optimization layer
- * 
+ *
  * Provides optimized, cached database queries with batching support.
  * All queries go through queryCache for performance.
  */
 
 import { queryCache, cacheKeys } from './queryCache';
 import type { Task, TaskStatus, TaskPriority } from '../store/store';
+import { gateway } from './gateway';
 
 interface TaskFilters {
   status?: TaskStatus;
@@ -96,12 +97,12 @@ export const optimizedQueries = {
     const cacheKey = cacheKeys.sessions();
 
     return queryCache.get(cacheKey, async () => {
-      // Get all sessions
-      const sessions = await window.clawdbot!.gateway.sessions() as any;
-      if (!sessions.success) return [];
+      // Get all sessions via gateway WebSocket
+      const { sessions } = await gateway.getSessions();
+      if (!sessions) return [];
 
       // Batch-load folder assignments
-      const sessionKeys = sessions.sessions.map((s: any) => s.key);
+      const sessionKeys = sessions.map((s: any) => s.sessionKey || s.key);
       const folderAssignments = await Promise.all(
         sessionKeys.map(async (key: string) => {
           const result = await window.clawdbot!.folders.forConversation(key);
@@ -117,15 +118,18 @@ export const optimizedQueries = {
         folderAssignments.map(f => [f.key, f.folders])
       );
 
-      // Merge data
-      return sessions.sessions.map((session: any) => ({
-        key: session.key,
-        type: session.type,
-        displayName: session.displayName,
-        folders: folderMap.get(session.key) || [],
-        lastActivity: session.updatedAt,
-        messageCount: session.messageCount || 0,
-      }));
+      // Merge data (map sessionKey to key for compatibility)
+      return sessions.map((session: any) => {
+        const key = session.sessionKey || session.key;
+        return {
+          key,
+          type: session.type,
+          displayName: session.displayName,
+          folders: folderMap.get(key) || [],
+          lastActivity: session.updatedAt,
+          messageCount: session.messageCount || 0,
+        };
+      });
     }, 10000); // 10s cache for sessions
   },
 

@@ -12,7 +12,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
     },
   },
   gateway: {
-    status: () => ipcRenderer.invoke('gateway:status'),
     sessions: () => ipcRenderer.invoke('gateway:sessions'),
     // Get real sessions from Clawdbot CLI (includes sub-agents)
     sessionsList: () => ipcRenderer.invoke('gateway:sessions:list'),
@@ -343,11 +342,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
   shell: {
     openPath: (path: string) => ipcRenderer.invoke('shell:openPath', path),
   },
-  // Skills
-  skills: {
-    list: () => ipcRenderer.invoke('skills:list'),
-    agentList: (agentId?: string) => ipcRenderer.invoke('skills:agent-list', agentId),
-  },
   // Screenshot
   screenshot: {
     capture: (outputPath: string) => ipcRenderer.invoke('screenshot:capture', outputPath),
@@ -379,15 +373,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
   mediaPermissions: {
     check: () => ipcRenderer.invoke('media:checkPermissions'),
     request: (mediaType: 'camera' | 'microphone') => ipcRenderer.invoke('media:requestPermission', mediaType),
-  },
-  // System status
-  system: {
-    status: () => ipcRenderer.invoke('system:status'),
-  },
-  // Settings
-  settings: {
-    get: () => ipcRenderer.invoke('settings:get'),
-    save: (settings: any) => ipcRenderer.invoke('settings:save', settings),
   },
   // Execution
   execute: {
@@ -489,7 +474,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Sessions management
   sessions: {
     list: () => ipcRenderer.invoke('sessions:list'),
-    history: (sessionKey: string, limit?: number) => ipcRenderer.invoke('sessions:history', sessionKey, limit),
     send: (sessionKey: string, message: string) => ipcRenderer.invoke('sessions:send', sessionKey, message),
   },
   // Shell execution (for Code Agent Dashboard, Context Control Board)
