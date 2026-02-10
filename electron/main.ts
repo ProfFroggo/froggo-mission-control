@@ -4094,16 +4094,16 @@ ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; c
 ipcMain.handle('schedule:sendNow', async (_, id: string) => {
   return new Promise((resolve) => {
     // Get the scheduled item
-    exec(`sqlite3 ${scheduleDbPath} "SELECT * FROM schedule WHERE id='${id}'" -json`, (_, stdout) => {
+    exec(`sqlite3 ${scheduleDbPath} "SELECT * FROM schedule WHERE id='${id}'" -json`, async (_, stdout) => {
       try {
         const items = JSON.parse(stdout || '[]');
         if (items.length === 0) {
           resolve({ success: false, error: 'Item not found' });
           return;
         }
-        
+
         const item = items[0];
-        
+
         // Execute immediately based on type
         let execCmd = '';
         if (item.type === 'tweet') {
@@ -4960,30 +4960,6 @@ try {
 // Expose OpenAI API key to renderer (for Whisper transcription)
 ipcMain.handle('get-openai-key', async () => {
   return openaiApiKey;
-});
-
-
-
-      const rows = JSON.parse(raw);
-      if (rows.length > 0) {
-        const r = rows[0];
-        return {
-          success: true,
-          analysis: {
-            triage: r.triage,
-            summary: r.summary,
-            tasks: r.tasks ? JSON.parse(r.tasks) : [],
-            events: r.events ? JSON.parse(r.events) : [],
-            reply_draft: r.reply_draft,
-            reply_needed: !!r.reply_needed,
-          },
-        };
-      }
-    }
-    return { success: true, analysis: null };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
 });
 
 ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; description?: string }) => {
@@ -6649,24 +6625,21 @@ ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number)
 ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) => {
   try {
     safeLog.log(`[Sessions] Sending to ${sessionKey}:`, message.slice(0, 100));
-  setTimeout(startQueueWatcher, 1000);
-  
-  // Self-test: verify agent DB queries work on startup
-  setTimeout(() => {
-    debugLog('[SELF-TEST] Testing agents:getDetails DB queries...');
-    const testDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-    try {
-      const testCmd = `sqlite3 "${testDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN ('coder') AND (cancelled IS NULL OR cancelled = 0)" -json`;
-      debugLog('[SELF-TEST] Running:', testCmd);
-      const testResult = execSync(testCmd, { encoding: 'utf-8', timeout: 5000 });
-      debugLog('[SELF-TEST] Result:', testResult.trim());
-      const parsed = JSON.parse(testResult);
-      debugLog('[SELF-TEST] Parsed:', JSON.stringify(parsed));
-      debugLog('[SELF-TEST] ✅ DB queries work! total=' + parsed[0]?.total + ' completed=' + parsed[0]?.completed);
-    } catch (e: any) {
-      debugLog('[SELF-TEST] ❌ FAILED:', e.message);
-    }
-  }, 3000);
+    const response = await fetch('http://localhost:18789/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        sessionKey,
+        source: 'dashboard-chat-agent'
+      }),
+    });
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    safeLog.error('[Sessions] Send error:', error);
+    return { success: false, error: String(error) };
+  }
 });
 
 // ============== AGENTS API IPC HANDLERS ==============

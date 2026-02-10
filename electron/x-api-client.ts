@@ -77,7 +77,7 @@ export async function getUserId(): Promise<string> {
   // Fallback: look up via API
   const data = await bearerFetch('/users/me');
   cachedUserId = data.data.id;
-  return cachedUserId;
+  return cachedUserId || '';
 }
 
 // --- Tweet helpers for mapping response data ---

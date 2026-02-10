@@ -65,24 +65,24 @@ function createTaskActivityWatcher(mainWindow: BrowserWindow): EventWatcher {
       lastCheck = Date.now();
 
       for (const activity of activities) {
-        const notifKey = `activity-${activity.id}`;
+        const notifKey = `activity-${(activity as any).id}`;
         if (notifiedItems.has(notifKey)) continue;
         notifiedItems.add(notifKey);
 
         // Task completed
-        if (activity.action === 'completed' || activity.action === 'task_completed') {
-          const taskTitle = activity.task_title || activity.message || 'Unknown task';
+        if ((activity as any).action === 'completed' || (activity as any).action === 'task_completed') {
+          const taskTitle = (activity as any).task_title || (activity as any).message || 'Unknown task';
           safeLog.log('[NotifEvents] Task completed:', taskTitle);
-          notificationService.taskCompleted(taskTitle, activity.task_id);
+          notificationService.taskCompleted(taskTitle, (activity as any).task_id);
         }
 
         // Agent blocked/failed
-        if (activity.action === 'blocked' || activity.action === 'failed') {
-          const agentName = activity.agent_id || 'Agent';
-          const taskTitle = activity.task_title || 'Unknown task';
-          const reason = activity.message || activity.details || 'Unknown reason';
+        if ((activity as any).action === 'blocked' || (activity as any).action === 'failed') {
+          const agentName = (activity as any).agent_id || 'Agent';
+          const taskTitle = (activity as any).task_title || 'Unknown task';
+          const reason = (activity as any).message || (activity as any).details || 'Unknown reason';
           safeLog.log('[NotifEvents] Agent failure:', agentName, taskTitle);
-          notificationService.agentFailed(agentName, taskTitle, reason, activity.task_id);
+          notificationService.agentFailed(agentName, taskTitle, reason, (activity as any).task_id);
         }
       }
     } catch (error: any) {
@@ -208,19 +208,19 @@ function createMessageWatcher(mainWindow: BrowserWindow): EventWatcher {
       lastMessageCheck = Date.now();
 
       for (const msg of messages) {
-        const notifKey = `message-${msg.id}`;
+        const notifKey = `message-${(msg as any).id}`;
         if (notifiedItems.has(notifKey)) continue;
         notifiedItems.add(notifKey);
 
-        const from = msg.sender_name || 'Someone';
-        const preview = (msg.content || '').slice(0, 100);
-        const sessionName = msg.session_name || 'Chat';
+        const from = (msg as any).sender_name || 'Someone';
+        const preview = ((msg as any).content || '').slice(0, 100);
+        const sessionName = (msg as any).session_name || 'Chat';
 
         safeLog.log('[NotifEvents] New mention from', from);
         notificationService.chatMention(
           `${from} (${sessionName})`,
           preview,
-          msg.session_key
+          (msg as any).session_key
         );
       }
     } catch (error: any) {
@@ -266,14 +266,14 @@ function createReviewWatcher(mainWindow: BrowserWindow): EventWatcher {
       lastCheck = Date.now();
 
       for (const task of tasks) {
-        const notifKey = `review-${task.id}`;
+        const notifKey = `review-${(task as any).id}`;
         if (notifiedItems.has(notifKey)) continue;
         notifiedItems.add(notifKey);
 
-        safeLog.log('[NotifEvents] Task ready for review:', task.title);
+        safeLog.log('[NotifEvents] Task ready for review:', (task as any).title);
         notificationService.approvalNeeded(
-          `Review: ${task.title}`,
-          task.id
+          `Review: ${(task as any).title}`,
+          (task as any).id
         );
       }
     } catch (error: any) {
