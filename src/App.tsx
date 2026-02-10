@@ -28,7 +28,6 @@ import {
   ConnectedAccountsPanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
-import { MicTestPanel } from './components/MicTestPanel';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
@@ -37,14 +36,13 @@ import MorningBrief from './components/MorningBrief';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
-import ErrorBoundaryTest from './components/ErrorBoundaryTest';
 import HelpPanel from './components/HelpPanel';
 import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 import { DMFeed } from './components/DMFeed';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'mictest' | 'error-test' | 'agentdms';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -357,7 +355,6 @@ function App() {
               {currentView === 'agentdms' && <DMFeed />}
               {currentView === 'meetings' && <MeetingsPanel />}
               {currentView === 'voicechat' && <VoiceChatPanel />}
-              {currentView === 'mictest' && <MicTestPanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}
@@ -371,7 +368,6 @@ function App() {
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
               {currentView === 'contacts' && <ContactModal isOpen={true} onClose={() => setCurrentView('dashboard')} />}
-              {currentView === 'error-test' && import.meta.env.DEV && <ErrorBoundaryTest />}
             </Suspense>
           </PerformanceProfiler>
         </main>
