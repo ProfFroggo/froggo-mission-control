@@ -6609,6 +6609,109 @@ const SESSIONS_BACKOFF_BASE = 2000; // 2 second base backoff
 const SESSIONS_MAX_BACKOFF = 60000; // Max 1 minute backoff
 const GATEWAY_HEALTH_THRESHOLD = 60000; // Skip CLI if gateway down > 60s
 
+ipcMain.handle('sessions:list', async () => {
+  const now = Date.now();
+
+  // Return cached data if still fresh
+  if (sessionsCache.data && (now - sessionsCache.timestamp) < SESSIONS_CACHE_TTL) {
+    return sessionsCache.data;
+  }
+
+  // Exponential backoff on repeated failures
+  if (sessionsFailCount > 0) {
+    const backoffTime = Math.min(SESSIONS_BACKOFF_BASE * Math.pow(2, sessionsFailCount - 1), SESSIONS_MAX_BACKOFF);
+    if ((now - sessionsLastFailTime) < backoffTime) {
+      // Still in backoff period, return cached or empty
+      return sessionsCache.data || { success: false, sessions: [], backoff: true };
+    }
+  }
+
+  try {
+    // Try Gateway API first (faster, no process spawn)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch('http://localhost:18789/api/sessions', {
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = await response.json();
+        const sessions = (data.sessions || []).map((s: any) => ({
+          key: s.key || s.sessionKey || '',
+          agent: s.agentId || '',
+          agentId: s.agentId || '',
+          kind: s.kind || 'direct',
+          label: s.label,
+          updatedAt: s.updatedAt || 0,
+          ageMs: s.ageMs || (s.updatedAt ? now - s.updatedAt : 0),
+          sessionId: s.sessionId || '',
+          channel: s.channel,
+          model: s.model,
+          totalTokens: s.totalTokens || 0,
+          contextTokens: s.contextTokens || 0,
+        }));
+
+        sessionsFailCount = 0; // Reset on success
+        gatewayLastHealthy = now; // Track last successful gateway connection
+        sessionsCache = { data: { success: true, sessions }, timestamp: now };
+        return sessionsCache.data;
+      }
+    } catch (apiErr) {
+      clearTimeout(timeout);
+      // API failed, check if we should skip CLI fallback
+    }
+
+    // Skip CLI fallback if gateway has been down for > 60s
+    // (CLI will also try to connect to gateway internally, causing more hangs)
+    if (gatewayLastHealthy > 0 && (now - gatewayLastHealthy) > GATEWAY_HEALTH_THRESHOLD) {
+      safeLog.warn(`[Sessions] Skipping CLI fallback - gateway down for ${Math.round((now - gatewayLastHealthy) / 1000)}s`);
+      sessionsFailCount++;
+      sessionsLastFailTime = now;
+      return sessionsCache.data || { success: false, sessions: [], gatewayDown: true };
+    }
+
+    // CLI fallback - but with rate limiting
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const { stdout } = await execAsync('openclaw sessions list --json', {
+      timeout: 8000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
+    });
+
+    let sessions: any[] = [];
+    try { sessions = JSON.parse(stdout || '[]'); } catch { sessions = []; }
+
+    const result = {
+      success: true,
+      sessions: sessions.map((s: any) => ({
+        key: s.key || '',
+        agent: s.agentId || '',
+        agentId: s.agentId || '',
+        kind: s.kind || 'direct',
+        label: s.label,
+        updatedAt: s.updatedAt || 0,
+        ageMs: s.ageMs || 0,
+        sessionId: s.sessionId || '',
+        channel: s.channel,
+        model: s.model,
+        totalTokens: s.totalTokens || 0,
+        contextTokens: s.contextTokens || 0,
+      }))
+    };
+
+    sessionsFailCount = 0; // Reset on success
+    sessionsCache = { data: result, timestamp: now };
+    return result;
+  } catch (error) {
+    sessionsFailCount++;
+    sessionsLastFailTime = now;
+    safeLog.warn(`[Sessions] List error (fail #${sessionsFailCount}, backoff ${Math.min(SESSIONS_BACKOFF_BASE * Math.pow(2, sessionsFailCount - 1), SESSIONS_MAX_BACKOFF)}ms):`, (error as Error).message);
+    return sessionsCache.data || { success: false, sessions: [] };
+  }
+});
 
 ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number) => {
   try {
@@ -6640,6 +6743,45 @@ ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) =
     safeLog.error('[Sessions] Send error:', error);
     return { success: false, error: String(error) };
   }
+});
+
+// Shell execution for Code Agent Dashboard, Context Control Board
+ipcMain.handle('exec:run', async (_, command: string) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+
+  // Use the clawd workspace as default cwd for git commands
+  const workDir = path.join(process.env.HOME || '', 'clawd');
+
+  const result = await secureExec(
+    command,
+    async (cmd: string) => {
+      return await execAsync(cmd, {
+        maxBuffer: 1024 * 1024,
+        timeout: 30000,
+        cwd: workDir,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/Users/worker/.local/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+      });
+    },
+    'exec',
+  );
+
+  if (!result.success && result.blocked) {
+    safeLog.warn(`[Exec] Blocked: ${result.reason}`);
+  }
+
+  return result;
+});
+
+// Shell security audit log endpoint
+ipcMain.handle('exec:audit', async (_, limit?: number) => {
+  return getAuditLog(limit || 100);
+});
+
+// Shell security validate endpoint (for UI preview)
+ipcMain.handle('exec:validate', async (_, command: string) => {
+  return validateCommand(command);
 });
 
 // ============== AGENTS API IPC HANDLERS ==============
