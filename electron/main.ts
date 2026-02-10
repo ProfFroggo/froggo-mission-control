@@ -358,53 +358,43 @@ let lastTaskNotifyMtime = 0;
 // Helper function to emit task events for real-time Dashboard updates
 function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
   // Get task data from database for the event payload
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const query = `SELECT id, title, description, status, project, assigned_to, reviewerId as reviewer_id, priority, due_date, updated_at FROM tasks WHERE id='${taskId}'`;
-  
-  exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 1000 }, (error, stdout) => {
-    if (error) {
-      safeLog.error('[TaskEvents] Failed to get task data:', error.message);
+  try {
+    const task = prepare(`SELECT id, title, description, status, project, assigned_to, reviewerId as reviewer_id, priority, due_date, updated_at FROM tasks WHERE id = ?`).get(taskId) as any;
+
+    if (!task) {
+      safeLog.error('[TaskEvents] Task not found:', taskId);
       return;
     }
-    
+
+    const fullPayload = { ...task, ...payload };
+
+    // Write to notification file for file watcher (backup method)
+    const notifyFile = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
+    const notification = {
+      event: eventType,
+      task: fullPayload,
+      timestamp: Date.now()
+    };
+
     try {
-      const tasks = JSON.parse(stdout);
-      if (tasks.length === 0) {
-        safeLog.error('[TaskEvents] Task not found:', taskId);
-        return;
-      }
-      
-      const task = tasks[0];
-      const fullPayload = { ...task, ...payload };
-      
-      // Write to notification file for file watcher (backup method)
-      const notifyFile = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
-      const notification = {
-        event: eventType,
-        task: fullPayload,
-        timestamp: Date.now()
-      };
-      
-      try {
-        fs.mkdirSync(path.dirname(notifyFile), { recursive: true });
-        fs.writeFileSync(notifyFile, JSON.stringify(notification));
-      } catch (writeError) {
-        safeLog.error('[TaskEvents] Failed to write notification file:', writeError);
-      }
-      
-      // DIRECT WebSocket broadcast via renderer
-      // This is the PRIMARY method for real-time updates
-      safeSend('gateway-broadcast', {
-        type: 'event',
-        event: eventType,
-        payload: fullPayload
-      });
-      
-      safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
-    } catch (parseError) {
-      safeLog.error('[TaskEvents] Failed to parse task data:', parseError);
+      fs.mkdirSync(path.dirname(notifyFile), { recursive: true });
+      fs.writeFileSync(notifyFile, JSON.stringify(notification));
+    } catch (writeError) {
+      safeLog.error('[TaskEvents] Failed to write notification file:', writeError);
     }
-  });
+
+    // DIRECT WebSocket broadcast via renderer
+    // This is the PRIMARY method for real-time updates
+    safeSend('gateway-broadcast', {
+      type: 'event',
+      event: eventType,
+      payload: fullPayload
+    });
+
+    safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
+  } catch (error: any) {
+    safeLog.error('[TaskEvents] Failed to get task data:', error.message);
+  }
 }
 
 // Schedule processor interval
