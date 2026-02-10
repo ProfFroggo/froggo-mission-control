@@ -1347,10 +1347,9 @@ gateway.on('chat.message', (payload: any) => {
   // Detect approval request patterns
   if (content.includes('[NEEDS_APPROVAL]') || content.includes('[DRAFT]')) {
     // Parse the approval from the message
-  //   const __lines = content.split('\n');
     const typeMatch = content.match(/\[TYPE:(\w+)\]/);
     const titleMatch = content.match(/\[TITLE:([^\]]+)\]/);
-    
+
     if (typeMatch && titleMatch) {
       const type = typeMatch[1].toLowerCase() as ApprovalType;
       const title = titleMatch[1];
