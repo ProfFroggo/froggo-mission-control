@@ -764,46 +764,6 @@ ipcMain.handle('whisper:check', async () => {
   return { available, path: WHISPER_PATH };
 });
 
-// ============== APPROVAL QUEUE ==============
-const APPROVAL_QUEUE_PATH = path.join(process.env.HOME || '', 'clawd', 'approvals', 'queue.json');
-
-ipcMain.handle('approvals:read', async () => {
-  try {
-    if (!fs.existsSync(APPROVAL_QUEUE_PATH)) {
-      return { items: [] };
-    }
-    const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-    return data;
-  } catch (error) {
-    safeLog.error('Failed to read approval queue:', error);
-    return { items: [] };
-  }
-});
-
-ipcMain.handle('approvals:clear', async () => {
-  try {
-    const data = { description: "Approval queue - Froggo adds items here, dashboard picks them up", items: [] };
-    fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(data, null, 2));
-    return { success: true };
-  } catch (error) {
-    safeLog.error('Failed to clear approval queue:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-ipcMain.handle('approvals:remove', async (_, itemId: string) => {
-  try {
-    if (!fs.existsSync(APPROVAL_QUEUE_PATH)) return { success: true };
-    const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-    data.items = (data.items || []).filter((i: any) => i.id !== itemId);
-    fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(data, null, 2));
-    return { success: true };
-  } catch (error) {
-    safeLog.error('Failed to remove approval item:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
 // ============== VOICE IPC HANDLERS ==============
 ipcMain.handle('voice:getModelUrl', async () => {
   const url = isDev 
@@ -3931,37 +3891,7 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
         resolve({ success: false, error: error.message });
         return;
       }
-      
-      // ADD TO APPROVAL QUEUE
-      try {
-        let queueData: { description: string; items: any[] } = { 
-          description: "Approval queue - Froggo adds items here, dashboard picks them up", 
-          items: [] 
-        };
-        if (fs.existsSync(APPROVAL_QUEUE_PATH)) {
-          queueData = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-        }
-        
-        const approvalEntry = {
-          id: `approval-${id}`,
-          type: 'scheduled-post',
-          platform: item.type,
-          content: item.content,
-          scheduledFor: item.scheduledFor,
-          createdAt: new Date().toISOString(),
-          status: 'pending',
-          scheduleId: id,
-          metadata: item.metadata || {}
-        };
-        
-        queueData.items.push(approvalEntry);
-        fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(queueData, null, 2));
-        safeLog.log('[Schedule:add] Added to approval queue:', approvalEntry.id);
-      } catch (queueError) {
-        safeLog.error('[Schedule:add] Failed to add to approval queue:', queueError);
-        // Non-fatal, continue with scheduling
-      }
-      
+
       // Create cron job to execute at scheduled time
       const cronTime = new Date(item.scheduledFor);
       const cronText = item.type === 'tweet' 

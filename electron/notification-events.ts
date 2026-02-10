@@ -27,7 +27,6 @@ const safeLog = {
   },
 };
 const SESSION_DIR = path.join(os.homedir(), '.clawdbot', 'sessions');
-const APPROVAL_QUEUE_PATH = path.join(os.homedir(), 'clawd', 'approvals', 'queue.json');
 
 interface EventWatcher {
   start: () => void;
@@ -100,78 +99,6 @@ function createTaskActivityWatcher(mainWindow: BrowserWindow): EventWatcher {
       if (interval) {
         clearInterval(interval);
         interval = null;
-      }
-    },
-  };
-}
-
-/**
- * Watch approval queue for new items
- */
-function createApprovalWatcher(mainWindow: BrowserWindow): EventWatcher {
-  let lastApprovalIds = new Set<string>();
-  let watcher: fs.FSWatcher | null = null;
-
-  // Load initial state
-  const loadInitialState = () => {
-    try {
-      if (fs.existsSync(APPROVAL_QUEUE_PATH)) {
-        const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-        lastApprovalIds = new Set((data.items || []).map((i: any) => i.id as string));
-        safeLog.log('[NotifEvents] Loaded', lastApprovalIds.size, 'existing approvals');
-      }
-    } catch (e) {
-      safeLog.error('[NotifEvents] Failed to load approval queue:', e);
-    }
-  };
-
-  const checkNewApprovals = () => {
-    try {
-      if (!fs.existsSync(APPROVAL_QUEUE_PATH)) return;
-
-      const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-      const items = data.items || [];
-
-      for (const item of items) {
-        if (!lastApprovalIds.has(item.id)) {
-          const notifKey = `approval-${item.id}`;
-          if (notifiedItems.has(notifKey)) continue;
-          notifiedItems.add(notifKey);
-
-          safeLog.log('[NotifEvents] New approval needed:', item.title);
-          notificationService.approvalNeeded(
-            item.title || 'New approval request',
-            item.id
-          );
-        }
-      }
-
-      lastApprovalIds = new Set(items.map((i: any) => i.id));
-    } catch (e) {
-      safeLog.error('[NotifEvents] Failed to check approvals:', e);
-    }
-  };
-
-  return {
-    start: () => {
-      safeLog.log('[NotifEvents] Starting approval watcher');
-      loadInitialState();
-
-      const dir = path.dirname(APPROVAL_QUEUE_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-
-      watcher = fs.watch(dir, (eventType, filename) => {
-        if (filename === 'queue.json') {
-          checkNewApprovals();
-        }
-      });
-    },
-    stop: () => {
-      if (watcher) {
-        watcher.close();
-        watcher = null;
       }
     },
   };
@@ -302,7 +229,6 @@ function createReviewWatcher(mainWindow: BrowserWindow): EventWatcher {
 export function setupNotificationEvents(mainWindow: BrowserWindow) {
   const watchers: EventWatcher[] = [
     createTaskActivityWatcher(mainWindow),
-    createApprovalWatcher(mainWindow),
     createMessageWatcher(mainWindow),
     createReviewWatcher(mainWindow),
   ];

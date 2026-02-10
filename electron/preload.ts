@@ -20,15 +20,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
       return () => ipcRenderer.removeListener('gateway-broadcast', handler);
     },
   },
-  approvals: {
-    read: () => ipcRenderer.invoke('approvals:read'),
-    clear: () => ipcRenderer.invoke('approvals:clear'),
-    remove: (id: string) => ipcRenderer.invoke('approvals:remove', id),
-    onUpdate: (callback: (items: any[]) => void) => {
-      ipcRenderer.on('approvals:updated', (_, items) => callback(items));
-      return () => ipcRenderer.removeAllListeners('approvals:updated');
-    },
-  },
   // Whisper (legacy/fallback)
   whisper: {
     check: () => ipcRenderer.invoke('whisper:check'),
