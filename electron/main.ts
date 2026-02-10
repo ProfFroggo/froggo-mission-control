@@ -1413,77 +1413,52 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
 });
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  // Only select needed columns, exclude large progress blob for list view
-  const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
-  // Exclude cancelled AND archived tasks from main view
-  const whereClause = `(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0) ${status ? `AND status='${status}'` : ''}`;
-  const cmd = `sqlite3 "${dbPath}" "SELECT ${columns} FROM tasks WHERE ${whereClause} ORDER BY created_at DESC LIMIT 500" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 15000, maxBuffer: 10 * 1024 * 1024 }, (error, stdout) => {
-      if (error) {
-        console.error('[tasks:list] Error:', error.message);
-        resolve({ success: false, tasks: [] });
-      } else {
-        try {
-          const tasks = JSON.parse(stdout || '[]');
-          // Get total done count (including archived) for display
-          exec(`sqlite3 "${dbPath}" "SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)"`, (err, countOut) => {
-            const totalDone = parseInt(countOut?.trim() || '0', 10);
-            const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
-            resolve({ success: true, tasks, totalDone, totalArchived });
-          });
-        } catch {
-          resolve({ success: false, tasks: [] });
-        }
-      }
-    });
-  });
+  try {
+    // Only select needed columns, exclude large progress blob for list view
+    const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
+    // Exclude cancelled AND archived tasks from main view
+    let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
+    const params: any[] = [];
+    if (status) {
+      whereClause += ' AND status = ?';
+      params.push(status);
+    }
+
+    const tasks = prepare(`SELECT ${columns} FROM tasks WHERE ${whereClause} ORDER BY created_at DESC LIMIT 500`).all(...params);
+
+    // Get total done count (including archived) for display
+    const { 'COUNT(*)': totalDone } = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as any;
+    const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
+
+    return { success: true, tasks, totalDone, totalArchived };
+  } catch (error: any) {
+    safeLog.error('[tasks:list] Error:', error.message);
+    return { success: false, tasks: [] };
+  }
 });
 
 // Search archived tasks (for audit trail - includes all tasks)
 ipcMain.handle('tasks:search', async (_, query: string, includeArchived = true) => {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const escaped = query.replace(/'/g, "''");
-  const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
-  const cmd = `sqlite3 "${dbPath}" "SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE '%${escaped}%' OR description LIKE '%${escaped}%' OR id LIKE '%${escaped}%') ${archiveFilter} ORDER BY updated_at DESC LIMIT 100" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, tasks: [] });
-      } else {
-        try {
-          const tasks = JSON.parse(stdout || '[]');
-          resolve({ success: true, tasks });
-        } catch {
-          resolve({ success: false, tasks: [] });
-        }
-      }
-    });
-  });
+  try {
+    const pattern = `%${query}%`;
+    const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
+    const tasks = prepare(`SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE ? OR description LIKE ? OR id LIKE ?) ${archiveFilter} ORDER BY updated_at DESC LIMIT 100`).all(pattern, pattern, pattern);
+    return { success: true, tasks };
+  } catch (error: any) {
+    safeLog.error('[tasks:search] Error:', error.message);
+    return { success: false, tasks: [] };
+  }
 });
 
 // Get task with full details including progress (for audit)
 ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const cmd = `sqlite3 "${dbPath}" "SELECT * FROM tasks WHERE id='${taskId}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000, maxBuffer: 2 * 1024 * 1024 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, task: null });
-      } else {
-        try {
-          const tasks = JSON.parse(stdout || '[]');
-          resolve({ success: true, task: tasks[0] || null });
-        } catch {
-          resolve({ success: false, task: null });
-        }
-      }
-    });
-  });
+  try {
+    const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+    return { success: true, task: task || null };
+  } catch (error: any) {
+    safeLog.error('[tasks:getWithProgress] Error:', error.message);
+    return { success: false, task: null };
+  }
 });
 
 // ============== ANALYTICS DATA HANDLER ==============
@@ -1762,214 +1737,221 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('subtasks:list', async (_, taskId: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM subtasks WHERE task_id='${taskId}' ORDER BY position, created_at" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Subtasks] List error:', error);
-        resolve({ success: false, subtasks: [] });
-        return;
-      }
-      try {
-        const subtasks = JSON.parse(stdout || '[]').map((st: any) => ({
-          id: st.id,
-          taskId: st.task_id,
-          title: st.title,
-          description: st.description,
-          completed: st.completed === 1,
-          completedAt: st.completed_at,
-          completedBy: st.completed_by,
-          assignedTo: st.assigned_to,
-          position: st.position,
-          createdAt: st.created_at,
-        }));
-        resolve({ success: true, subtasks });
-      } catch {
-        resolve({ success: true, subtasks: [] });
-      }
-    });
-  });
+  try {
+    const rows = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY position, created_at').all(taskId);
+    const subtasks = rows.map((st: any) => ({
+      id: st.id,
+      taskId: st.task_id,
+      title: st.title,
+      description: st.description,
+      completed: st.completed === 1,
+      completedAt: st.completed_at,
+      completedBy: st.completed_by,
+      assignedTo: st.assigned_to,
+      position: st.position,
+      createdAt: st.created_at,
+    }));
+    return { success: true, subtasks };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] List error:', error);
+    return { success: false, subtasks: [] };
+  }
 });
 
 ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; title: string; description?: string; assignedTo?: string }) => {
   safeLog.log('[Subtasks] Add called:', { taskId, subtask });
-  
+
   // Validate inputs
   if (!taskId || !subtask?.id || !subtask?.title) {
     safeLog.error('[Subtasks] Invalid input:', { taskId, subtask });
     return { success: false, error: 'Invalid input: taskId, subtask.id, and subtask.title are required' };
   }
-  
-  const now = Date.now();
-  const escapedTitle = subtask.title.replace(/'/g, "''");
-  const escapedDesc = (subtask.description || '').replace(/'/g, "''");
-  
-  // Get next position
-  return new Promise((resolve) => {
-    exec(`sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(position), -1) + 1 FROM subtasks WHERE task_id='${taskId}'"`, (posError, posOut, posStderr) => {
-      if (posError) {
-        safeLog.error('[Subtasks] Position query error:', posError.message, posStderr);
-        // Continue with position 0 even if query fails
-      }
-      const position = parseInt(posOut?.trim() || '0', 10) || 0;
-      safeLog.log('[Subtasks] Position:', position);
-      
-      const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES ('${subtask.id}', '${taskId}', '${escapedTitle}', '${escapedDesc}', ${subtask.assignedTo ? "'" + subtask.assignedTo + "'" : 'NULL'}, ${position}, ${now}, ${now})"`;
-      safeLog.log('[Subtasks] Insert command:', cmd.slice(0, 200) + '...');
-      
-      exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-        if (error) {
-          safeLog.error('[Subtasks] Add error:', error.message);
-          safeLog.error('[Subtasks] stderr:', stderr);
-          resolve({ success: false, error: error.message });
-        } else {
-          safeLog.log('[Subtasks] Insert success:', subtask.id);
-          // Also log activity (fire and forget)
-          exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_added', 'Added subtask: ${escapedTitle}', ${now})"`, () => {});
-          // Emit task update event for real-time Dashboard refresh
-          emitTaskEvent('task.updated', taskId);
-          resolve({ success: true, id: subtask.id });
-        }
-      });
-    });
-  });
+
+  try {
+    const now = Date.now();
+
+    // Get next position
+    const posResult = prepare('SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM subtasks WHERE task_id = ?').get(taskId) as any;
+    const position = posResult?.next_pos || 0;
+    safeLog.log('[Subtasks] Position:', position);
+
+    // Insert subtask
+    prepare('INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      subtask.id,
+      taskId,
+      subtask.title,
+      subtask.description || null,
+      subtask.assignedTo || null,
+      position,
+      now,
+      now
+    );
+
+    safeLog.log('[Subtasks] Insert success:', subtask.id);
+
+    // Log activity
+    prepare('INSERT INTO task_activity (task_id, action, message, timestamp) VALUES (?, ?, ?, ?)').run(
+      taskId,
+      'subtask_added',
+      `Added subtask: ${subtask.title}`,
+      now
+    );
+
+    // Emit task update event for real-time Dashboard refresh
+    emitTaskEvent('task.updated', taskId);
+
+    return { success: true, id: subtask.id };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Add error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
-  const now = Date.now();
-  const sets: string[] = [`updated_at=${now}`];
-  
-  if (updates.completed !== undefined) {
-    sets.push(`completed=${updates.completed ? 1 : 0}`);
-    if (updates.completed) {
-      sets.push(`completed_at=${now}`);
-      if (updates.completedBy) sets.push(`completed_by='${updates.completedBy}'`);
-    } else {
-      sets.push(`completed_at=NULL`);
-      sets.push(`completed_by=NULL`);
-    }
-  }
-  if (updates.title) sets.push(`title='${updates.title.replace(/'/g, "''")}'`);
-  if (updates.assignedTo !== undefined) {
-    sets.push(updates.assignedTo ? `assigned_to='${updates.assignedTo}'` : `assigned_to=NULL`);
-  }
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE subtasks SET ${sets.join(', ')} WHERE id='${subtaskId}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Subtasks] Update error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        // Log activity for completion changes
-        if (updates.completed !== undefined) {
-          exec(`sqlite3 "${froggoDbPath}" "SELECT task_id, title FROM subtasks WHERE id='${subtaskId}'"`, (_, stOut) => {
-            try {
-              const [taskId, title] = stOut?.trim().split('|') || [];
-              if (taskId) {
-                const action = updates.completed ? 'subtask_completed' : 'subtask_uncompleted';
-                const message = updates.completed 
-                  ? `Completed: ${title}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
-                  : `Reopened: ${title}`;
-                exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, agent_id, timestamp) VALUES ('${taskId}', '${action}', '${message.replace(/'/g, "''")}', ${updates.completedBy ? "'" + updates.completedBy + "'" : 'NULL'}, ${now})"`, () => {});
-                // Emit task update event for real-time Dashboard refresh
-                emitTaskEvent('task.updated', taskId);
-              }
-            } catch {}
-          });
+  try {
+    const now = Date.now();
+    const sets: string[] = ['updated_at = ?'];
+    const params: any[] = [now];
+
+    if (updates.completed !== undefined) {
+      sets.push('completed = ?');
+      params.push(updates.completed ? 1 : 0);
+      if (updates.completed) {
+        sets.push('completed_at = ?');
+        params.push(now);
+        if (updates.completedBy) {
+          sets.push('completed_by = ?');
+          params.push(updates.completedBy);
         }
-        resolve({ success: true });
+      } else {
+        sets.push('completed_at = NULL');
+        sets.push('completed_by = NULL');
       }
-    });
-  });
+    }
+    if (updates.title) {
+      sets.push('title = ?');
+      params.push(updates.title);
+    }
+    if (updates.assignedTo !== undefined) {
+      sets.push('assigned_to = ?');
+      params.push(updates.assignedTo || null);
+    }
+
+    params.push(subtaskId);
+    prepare(`UPDATE subtasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    // Log activity for completion changes
+    if (updates.completed !== undefined) {
+      const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as any;
+      if (subtask?.task_id) {
+        const action = updates.completed ? 'subtask_completed' : 'subtask_uncompleted';
+        const message = updates.completed
+          ? `Completed: ${subtask.title}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
+          : `Reopened: ${subtask.title}`;
+        prepare('INSERT INTO task_activity (task_id, action, message, agent_id, timestamp) VALUES (?, ?, ?, ?, ?)').run(
+          subtask.task_id,
+          action,
+          message,
+          updates.completedBy || null,
+          now
+        );
+        // Emit task update event for real-time Dashboard refresh
+        emitTaskEvent('task.updated', subtask.task_id);
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Update error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('subtasks:delete', async (_, subtaskId: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get task_id and title first for activity log
-    exec(`sqlite3 "${froggoDbPath}" "SELECT task_id, title FROM subtasks WHERE id='${subtaskId}'"`, (_, stOut) => {
-      const [taskId, title] = stOut?.trim().split('|') || [];
-      
-      const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM subtasks WHERE id='${subtaskId}'"`;
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          resolve({ success: false, error: error.message });
-        } else {
-          if (taskId) {
-            exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_deleted', 'Deleted subtask: ${(title || '').replace(/'/g, "''")}', ${Date.now()})"`, () => {});
-            // Emit task update event for real-time Dashboard refresh
-            emitTaskEvent('task.updated', taskId);
-          }
-          resolve({ success: true });
-        }
-      });
-    });
-  });
+    const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as any;
+
+    // Delete subtask
+    prepare('DELETE FROM subtasks WHERE id = ?').run(subtaskId);
+
+    // Log activity
+    if (subtask?.task_id) {
+      const now = Date.now();
+      prepare('INSERT INTO task_activity (task_id, action, message, timestamp) VALUES (?, ?, ?, ?)').run(
+        subtask.task_id,
+        'subtask_deleted',
+        `Deleted subtask: ${subtask.title || ''}`,
+        now
+      );
+      // Emit task update event for real-time Dashboard refresh
+      emitTaskEvent('task.updated', subtask.task_id);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Delete error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
-  const now = Date.now();
-  const updates = subtaskIds.map((id, idx) => 
-    `UPDATE subtasks SET position=${idx}, updated_at=${now} WHERE id='${id}';`
-  ).join(' ');
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "${updates}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error });
+  try {
+    const now = Date.now();
+    const stmt = prepare('UPDATE subtasks SET position = ?, updated_at = ? WHERE id = ?');
+
+    subtaskIds.forEach((id, idx) => {
+      stmt.run(idx, now, id);
     });
-  });
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Reorder error:', error.message);
+    return { success: false };
+  }
 });
 
 // ============== TASK ACTIVITY IPC HANDLERS ==============
 ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
-  const lim = limit || 50;
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM task_activity WHERE task_id='${taskId}' ORDER BY timestamp DESC LIMIT ${lim}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Activity] List error:', error);
-        resolve({ success: false, activities: [] });
-        return;
-      }
-      try {
-        const activities = JSON.parse(stdout || '[]').map((a: any) => ({
-          id: a.id,
-          taskId: a.task_id,
-          agentId: a.agent_id,
-          action: a.action,
-          message: a.message,
-          details: a.details,
-          timestamp: a.timestamp,
-        }));
-        resolve({ success: true, activities });
-      } catch {
-        resolve({ success: true, activities: [] });
-      }
-    });
-  });
+  try {
+    const lim = limit || 50;
+    const rows = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?').all(taskId, lim);
+    const activities = rows.map((a: any) => ({
+      id: a.id,
+      taskId: a.task_id,
+      agentId: a.agent_id,
+      action: a.action,
+      message: a.message,
+      details: a.details,
+      timestamp: a.timestamp,
+    }));
+    return { success: true, activities };
+  } catch (error: any) {
+    safeLog.error('[Activity] List error:', error);
+    return { success: false, activities: [] };
+  }
 });
 
 ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string; message: string; agentId?: string; details?: string }) => {
-  const now = Date.now();
-  const escapedMessage = entry.message.replace(/'/g, "''");
-  const escapedDetails = entry.details ? entry.details.replace(/'/g, "''") : null;
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, agent_id, action, message, details, timestamp) VALUES ('${taskId}', ${entry.agentId ? "'" + entry.agentId + "'" : 'NULL'}, '${entry.action}', '${escapedMessage}', ${escapedDetails ? "'" + escapedDetails + "'" : 'NULL'}, ${now})"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (!error) {
-        // Emit task update event for real-time Dashboard refresh
-        emitTaskEvent('task.updated', taskId);
-      }
-      resolve({ success: !error });
-    });
-  });
+  try {
+    const now = Date.now();
+    prepare('INSERT INTO task_activity (task_id, agent_id, action, message, details, timestamp) VALUES (?, ?, ?, ?, ?, ?)').run(
+      taskId,
+      entry.agentId || null,
+      entry.action,
+      entry.message,
+      entry.details || null,
+      now
+    );
+
+    // Emit task update event for real-time Dashboard refresh
+    emitTaskEvent('task.updated', taskId);
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Activity] Add error:', error.message);
+    return { success: false };
+  }
 });
 
 // ============== TASK ATTACHMENTS IPC HANDLERS ==============
