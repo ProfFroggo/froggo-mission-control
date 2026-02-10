@@ -214,12 +214,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         w[timerKey] = setTimeout(() => {
           const batch = (w[bufKey] || '').trim();
           w[bufKey] = '';
-          if (batch) {
+          const sessionKey = gateway.getSessionKey();
+          if (batch && sessionKey) {
             gateway.request('chat.inject', {
-              sessionKey: gateway.getSessionKey(),
+              sessionKey,
               message: role === 'user' ? `[user] ${batch}` : batch,
-              // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
-            }).catch(err => console.warn('[VoiceChat] Failed to log to gateway:', err));
+            }).catch(() => { /* session may not exist — voice transcripts are optional */ });
           }
         }, 2000); // Wait 2s of silence before flushing
         
@@ -293,7 +293,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     
     setConnecting(true);
     callActiveRef.current = true;
-    
+
+    // Ensure gateway session exists for transcript logging
+    gateway.setSessionKey(selectedAgent.sessionKey);
+    gateway.request('chat.send', {
+      message: `[Voice call started with ${selectedAgent.name}]`,
+      sessionKey: selectedAgent.sessionKey,
+      idempotencyKey: `voice-init-${Date.now()}`,
+    }).catch(() => {}); // Session creation is best-effort
+
     // Refresh agent context
     invalidateAgentContext(selectedAgent.id);
     loadAgentContext(selectedAgent.id).then(ctx => {
