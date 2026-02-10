@@ -4,11 +4,11 @@
  */
 
 import { BrowserWindow } from 'electron';
-import { exec } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { notificationService } from './notification-service';
+import { prepare } from './database';
 
 const safeLog = {
   log: (...args: any[]) => {
@@ -26,8 +26,6 @@ const safeLog = {
     } catch {}
   },
 };
-
-const DB_PATH = path.join(os.homedir(), 'Froggo', 'clawd', 'data', 'froggo.db');
 const SESSION_DIR = path.join(os.homedir(), '.clawdbot', 'sessions');
 const APPROVAL_QUEUE_PATH = path.join(os.homedir(), 'clawd', 'approvals', 'queue.json');
 
@@ -47,57 +45,49 @@ function createTaskActivityWatcher(mainWindow: BrowserWindow): EventWatcher {
   let interval: NodeJS.Timeout | null = null;
 
   const check = () => {
-    const query = `
-      SELECT 
-        a.id,
-        a.task_id,
-        a.action,
-        a.message,
-        a.details,
-        a.agent_id,
-        a.timestamp,
-        t.title as task_title
-      FROM task_activity a
-      JOIN tasks t ON a.task_id = t.id
-      WHERE a.timestamp > ${lastCheck}
-      ORDER BY a.timestamp ASC
-    `;
+    try {
+      const activities = prepare(`
+        SELECT
+          a.id,
+          a.task_id,
+          a.action,
+          a.message,
+          a.details,
+          a.agent_id,
+          a.timestamp,
+          t.title as task_title
+        FROM task_activity a
+        JOIN tasks t ON a.task_id = t.id
+        WHERE a.timestamp > ?
+        ORDER BY a.timestamp ASC
+      `).all(lastCheck);
 
-    exec(`sqlite3 "${DB_PATH}" "${query}" -json`, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotifEvents] Task activity query error:', error.message);
-        return;
-      }
+      lastCheck = Date.now();
 
-      try {
-        const activities = JSON.parse(stdout || '[]');
-        lastCheck = Date.now();
+      for (const activity of activities) {
+        const notifKey = `activity-${activity.id}`;
+        if (notifiedItems.has(notifKey)) continue;
+        notifiedItems.add(notifKey);
 
-        for (const activity of activities) {
-          const notifKey = `activity-${activity.id}`;
-          if (notifiedItems.has(notifKey)) continue;
-          notifiedItems.add(notifKey);
-
-          // Task completed
-          if (activity.action === 'completed' || activity.action === 'task_completed') {
-            const taskTitle = activity.task_title || activity.message || 'Unknown task';
-            safeLog.log('[NotifEvents] Task completed:', taskTitle);
-            notificationService.taskCompleted(taskTitle, activity.task_id);
-          }
-
-          // Agent blocked/failed
-          if (activity.action === 'blocked' || activity.action === 'failed') {
-            const agentName = activity.agent_id || 'Agent';
-            const taskTitle = activity.task_title || 'Unknown task';
-            const reason = activity.message || activity.details || 'Unknown reason';
-            safeLog.log('[NotifEvents] Agent failure:', agentName, taskTitle);
-            notificationService.agentFailed(agentName, taskTitle, reason, activity.task_id);
-          }
+        // Task completed
+        if (activity.action === 'completed' || activity.action === 'task_completed') {
+          const taskTitle = activity.task_title || activity.message || 'Unknown task';
+          safeLog.log('[NotifEvents] Task completed:', taskTitle);
+          notificationService.taskCompleted(taskTitle, activity.task_id);
         }
-      } catch (e) {
-        safeLog.error('[NotifEvents] Parse error:', e);
+
+        // Agent blocked/failed
+        if (activity.action === 'blocked' || activity.action === 'failed') {
+          const agentName = activity.agent_id || 'Agent';
+          const taskTitle = activity.task_title || 'Unknown task';
+          const reason = activity.message || activity.details || 'Unknown reason';
+          safeLog.log('[NotifEvents] Agent failure:', agentName, taskTitle);
+          notificationService.agentFailed(agentName, taskTitle, reason, activity.task_id);
+        }
       }
-    });
+    } catch (error: any) {
+      safeLog.error('[NotifEvents] Task activity query error:', error.message);
+    }
   };
 
   return {
@@ -195,55 +185,47 @@ function createMessageWatcher(mainWindow: BrowserWindow): EventWatcher {
   let lastMessageCheck = Date.now();
 
   const checkNewMessages = () => {
-    // Query recent messages from the database
-    const query = `
-      SELECT 
-        m.id,
-        m.session_key,
-        m.content,
-        m.sender_name,
-        m.timestamp,
-        s.name as session_name
-      FROM messages m
-      LEFT JOIN conversations s ON m.session_key = s.session_key
-      WHERE m.timestamp > ${lastMessageCheck}
-        AND m.sender_name != 'Froggo'
-        AND m.sender_name != 'Assistant'
-        AND (m.content LIKE '%@froggo%' OR m.content LIKE '%froggo%' OR m.content LIKE '%@kevin%' OR m.content LIKE '%kevin%')
-      ORDER BY m.timestamp ASC
-      LIMIT 10
-    `;
+    try {
+      // Query recent messages from the database
+      const messages = prepare(`
+        SELECT
+          m.id,
+          m.session_key,
+          m.content,
+          m.sender_name,
+          m.timestamp,
+          s.name as session_name
+        FROM messages m
+        LEFT JOIN conversations s ON m.session_key = s.session_key
+        WHERE m.timestamp > ?
+          AND m.sender_name != 'Froggo'
+          AND m.sender_name != 'Assistant'
+          AND (m.content LIKE '%@froggo%' OR m.content LIKE '%froggo%' OR m.content LIKE '%@kevin%' OR m.content LIKE '%kevin%')
+        ORDER BY m.timestamp ASC
+        LIMIT 10
+      `).all(lastMessageCheck);
 
-    exec(`sqlite3 "${DB_PATH}" "${query}" -json`, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        // Messages table might not exist in all setups, that's ok
-        return;
+      lastMessageCheck = Date.now();
+
+      for (const msg of messages) {
+        const notifKey = `message-${msg.id}`;
+        if (notifiedItems.has(notifKey)) continue;
+        notifiedItems.add(notifKey);
+
+        const from = msg.sender_name || 'Someone';
+        const preview = (msg.content || '').slice(0, 100);
+        const sessionName = msg.session_name || 'Chat';
+
+        safeLog.log('[NotifEvents] New mention from', from);
+        notificationService.chatMention(
+          `${from} (${sessionName})`,
+          preview,
+          msg.session_key
+        );
       }
-
-      try {
-        const messages = JSON.parse(stdout || '[]');
-        lastMessageCheck = Date.now();
-
-        for (const msg of messages) {
-          const notifKey = `message-${msg.id}`;
-          if (notifiedItems.has(notifKey)) continue;
-          notifiedItems.add(notifKey);
-
-          const from = msg.sender_name || 'Someone';
-          const preview = (msg.content || '').slice(0, 100);
-          const sessionName = msg.session_name || 'Chat';
-
-          safeLog.log('[NotifEvents] New mention from', from);
-          notificationService.chatMention(
-            `${from} (${sessionName})`,
-            preview,
-            msg.session_key
-          );
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-    });
+    } catch (error: any) {
+      // Messages table might not exist in all setups, that's ok
+    }
   };
 
   return {
@@ -269,39 +251,34 @@ function createReviewWatcher(mainWindow: BrowserWindow): EventWatcher {
   let interval: NodeJS.Timeout | null = null;
 
   const check = () => {
-    const query = `
-      SELECT 
-        id,
-        title,
-        updated_at
-      FROM tasks
-      WHERE status = 'review'
-        AND updated_at > ${lastCheck}
-      ORDER BY updated_at ASC
-    `;
+    try {
+      const tasks = prepare(`
+        SELECT
+          id,
+          title,
+          updated_at
+        FROM tasks
+        WHERE status = 'review'
+          AND updated_at > ?
+        ORDER BY updated_at ASC
+      `).all(lastCheck);
 
-    exec(`sqlite3 "${DB_PATH}" "${query}" -json`, { timeout: 5000 }, (error, stdout) => {
-      if (error) return;
+      lastCheck = Date.now();
 
-      try {
-        const tasks = JSON.parse(stdout || '[]');
-        lastCheck = Date.now();
+      for (const task of tasks) {
+        const notifKey = `review-${task.id}`;
+        if (notifiedItems.has(notifKey)) continue;
+        notifiedItems.add(notifKey);
 
-        for (const task of tasks) {
-          const notifKey = `review-${task.id}`;
-          if (notifiedItems.has(notifKey)) continue;
-          notifiedItems.add(notifKey);
-
-          safeLog.log('[NotifEvents] Task ready for review:', task.title);
-          notificationService.approvalNeeded(
-            `Review: ${task.title}`,
-            task.id
-          );
-        }
-      } catch (e) {
-        // Ignore
+        safeLog.log('[NotifEvents] Task ready for review:', task.title);
+        notificationService.approvalNeeded(
+          `Review: ${task.title}`,
+          task.id
+        );
       }
-    });
+    } catch (error: any) {
+      // Ignore - table might not exist
+    }
   };
 
   return {
