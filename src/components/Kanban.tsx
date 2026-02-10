@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
@@ -76,6 +76,8 @@ export default function Kanban() {
   const [deletingTasks, setDeletingTasks] = useState<Set<string>>(new Set());
   const [spawningTasks, setSpawningTasks] = useState<Set<string>>(new Set());
   const [movingTasks, setMovingTasks] = useState<Set<string>>(new Set());
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   
   // Active agent sessions (for real-time activity indicators)
   const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
@@ -368,6 +370,24 @@ export default function Kanban() {
     }
   };
 
+  const handleArchiveDone = async () => {
+    setShowArchiveConfirm(false);
+    setIsArchiving(true);
+    try {
+      const result = await (window as any).clawdbot?.tasks?.archiveDone();
+      if (result?.success) {
+        showToast('success', `Archived ${result.count || 0} done tasks`);
+        await loadTasksFromDB(); // Refresh to remove archived tasks
+      } else {
+        showToast('error', 'Failed to archive tasks');
+      }
+    } catch (error) {
+      showToast('error', 'Failed to archive tasks');
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   const handleSpawnAgent = async (taskId: string) => {
     setSpawningTasks(prev => new Set(prev).add(taskId));
     try {
@@ -603,12 +623,23 @@ export default function Kanban() {
                         : columnTasks.length}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleAddTask(column.id)}
-                    className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text"
-                  >
-                    <Plus size={16} className="flex-shrink-0" />
-                  </button>
+                  {column.id === 'done' ? (
+                    <button
+                      onClick={() => setShowArchiveConfirm(true)}
+                      disabled={isArchiving || columnTasks.length === 0}
+                      className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text disabled:opacity-50"
+                      title="Archive all done tasks"
+                    >
+                      <Archive size={16} className="flex-shrink-0" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAddTask(column.id)}
+                      className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text"
+                    >
+                      <Plus size={16} className="flex-shrink-0" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -710,6 +741,33 @@ export default function Kanban() {
             unassigned: stats.unassigned,
           }}
         />
+      )}
+
+      {/* Archive Confirmation Dialog */}
+      {showArchiveConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-clawd-bg1 rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
+            <h3 className="text-lg font-semibold mb-2">Archive Done Tasks</h3>
+            <p className="text-clawd-text-dim mb-4">
+              Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
+              They will be removed from the board but can still be accessed in the archive.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowArchiveConfirm(false)}
+                className="px-4 py-2 rounded-lg bg-clawd-bg2 hover:bg-clawd-border transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleArchiveDone}
+                className="px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors"
+              >
+                Archive
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
