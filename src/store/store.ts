@@ -308,44 +308,6 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
   }
 }
 
-// Avatar mapping for agents (registry doesn't store avatars since they're UI-only)
-// Avatar mapping - only real gateway agents (from 'clawdbot agents list')
-const AGENT_AVATARS: Record<string, string> = {
-  froggo: '🐸',
-  coder: '💻',
-  researcher: '🔍',
-  writer: '✍️',
-  chief: '👨‍💻',
-  hr: '🎓',
-  clara: '👁️',
-  // Alias for main session
-  main: '🐸',
-};
-
-// Display name overrides (registry uses role, but some need friendlier names)
-// Display name overrides - only real gateway agents
-const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  froggo: 'Froggo',
-  coder: 'Coder',
-  researcher: 'Researcher',
-  writer: 'Writer',
-  chief: 'Chief',
-  hr: 'HR',
-  clara: 'Clara',
-  main: 'Froggo',
-};
-
-/** Convert agent-registry.json data to Agent[] for the dashboard */
-function registryToAgents(registry: Record<string, { role: string; description: string; capabilities: string[]; aliases: string[]; clawdAgentId: string }>): Agent[] {
-  return Object.entries(registry).map(([id, entry]) => ({
-    id,
-    name: AGENT_DISPLAY_NAMES[id] || entry.role || id,
-    avatar: AGENT_AVATARS[id] || AGENT_AVATARS[entry.clawdAgentId] || '🤖',
-    description: entry.description || '',
-    status: (id === 'froggo' || id === 'main' ? 'active' : 'idle') as Agent['status'],
-    capabilities: entry.capabilities || [],
-  }));
-}
 
 // No fallback agents - agents are loaded exclusively from the gateway registry
 // This prevents phantom/duplicate agents from appearing in the UI
@@ -891,15 +853,28 @@ export const useStore = create<Store>()(
           // Fetch agents from gateway using the new IPC handler
           const result = await (window as any).clawdbot?.agents?.list();
           if (result?.success && Array.isArray(result.agents) && result.agents.length > 0) {
-            // Preserve runtime state (status/sessionKey) from current agents
+            // Map CLI fields (identityName, identityEmoji) to store fields (name, avatar)
+            const agents: Agent[] = result.agents.map((cliAgent: any) => ({
+              id: cliAgent.id,
+              name: cliAgent.identityName || cliAgent.id,
+              avatar: cliAgent.identityEmoji || '🤖',
+              description: cliAgent.description || '',
+              status: 'idle' as Agent['status'],
+              capabilities: cliAgent.capabilities || [],
+              workspace: cliAgent.workspace,
+              model: cliAgent.model,
+            }));
+
+            // Preserve runtime state (status/sessionKey/currentTaskId/lastActivity) from current agents
             const current = get().agents;
-            const fresh = result.agents.map((ra: Agent) => {
-              const existing = current.find((a: Agent) => a.id === ra.id);
+            const fresh = agents.map((agent: Agent) => {
+              const existing = current.find((a: Agent) => a.id === agent.id);
               // If agent exists, keep its runtime state, otherwise use fresh state
-              return existing 
-                ? { ...ra, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity }
-                : ra;
+              return existing
+                ? { ...agent, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity }
+                : agent;
             });
+
             // Set agents to ONLY gateway agents (no fallback, no phantom agents)
             set({ agents: fresh });
             console.log(`[Store] Loaded ${fresh.length} agents from gateway:`, fresh.map((a: Agent) => `${a.avatar} ${a.name} (${a.id})`).join(', '));
