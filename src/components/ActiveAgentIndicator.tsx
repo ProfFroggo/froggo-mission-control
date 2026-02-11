@@ -56,10 +56,39 @@ export default function ActiveAgentIndicator({
     // Check immediately
     checkActiveAgent();
 
-    // Poll every 10 seconds
-    const interval = setInterval(checkActiveAgent, 10000);
+    // Set up event-based updates for real-time status changes
+    const unsubscribeTaskUpdated = gateway.on('task.updated', (payload: any) => {
+      // Refresh when task is updated (covers task progress and status changes)
+      if (payload?.id === taskId || payload?.taskId === taskId) {
+        checkActiveAgent();
+      }
+    });
 
-    return () => clearInterval(interval);
+    const unsubscribeStateChange = gateway.on('stateChange', ({ state }: { state: string }) => {
+      // Refresh when gateway connection state changes
+      if (state === 'connected') {
+        checkActiveAgent();
+      }
+    });
+
+    // Also listen for generic chat events that might indicate agent activity
+    const unsubscribeChat = gateway.on('chat', (payload: any) => {
+      // If chat event mentions this task, refresh indicator
+      const content = payload?.content || payload?.message?.content?.[0]?.text || '';
+      if (typeof content === 'string' && (content.includes(taskId) || content.includes(`task-${taskId}`))) {
+        checkActiveAgent();
+      }
+    });
+
+    // Fallback polling at longer interval (30s) for cases where events might be missed
+    const interval = setInterval(checkActiveAgent, 30000);
+
+    return () => {
+      clearInterval(interval);
+      unsubscribeTaskUpdated();
+      unsubscribeStateChange();
+      unsubscribeChat();
+    };
   }, [taskId]);
 
   if (!isActive) return null;

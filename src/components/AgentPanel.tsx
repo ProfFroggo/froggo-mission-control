@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3 } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
+import { gateway } from '../lib/gateway';
 import WorkerModal from './WorkerModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
@@ -32,8 +33,44 @@ export default function AgentPanel() {
     fetchAgents(); // Load agents from registry
     loadGatewaySessions();
     loadTasksFromDB(); // Ensure tasks are loaded for agent detail modals
-    const interval = setInterval(loadGatewaySessions, 5000);
-    return () => clearInterval(interval);
+    
+    // Set up event-based updates for real-time status changes
+    const unsubscribeTaskUpdated = gateway.on('task.updated', () => {
+      // Refresh sessions when tasks are updated (agents might change status)
+      loadGatewaySessions();
+      loadTasksFromDB();
+    });
+
+    const unsubscribeTaskCreated = gateway.on('task.created', () => {
+      // Refresh when new tasks are created
+      loadGatewaySessions();
+      loadTasksFromDB();
+    });
+
+    const unsubscribeStateChange = gateway.on('stateChange', ({ state }: { state: string }) => {
+      // Refresh when gateway connection state changes
+      if (state === 'connected') {
+        loadGatewaySessions();
+        loadTasksFromDB();
+      }
+    });
+
+    // Listen for chat events that might indicate agent activity changes
+    const unsubscribeChat = gateway.on('chat', () => {
+      // Chat activity suggests agents are working
+      loadGatewaySessions();
+    });
+
+    // Fallback polling at longer interval (30s) for cases where events might be missed
+    const interval = setInterval(loadGatewaySessions, 30000);
+
+    return () => {
+      clearInterval(interval);
+      unsubscribeTaskUpdated();
+      unsubscribeTaskCreated();
+      unsubscribeStateChange();
+      unsubscribeChat();
+    };
   }, [fetchAgents, loadGatewaySessions, loadTasksFromDB]);
 
   useEffect(() => { loadAgentMetrics(); }, []);
