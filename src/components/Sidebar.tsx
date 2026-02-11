@@ -266,15 +266,19 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
 
         {/* Line 2: Action icons in a compact horizontal row */}
         <div className={`flex items-center ${expanded ? 'justify-between' : 'justify-center'} gap-0.5 px-1`}>
-          <button
-            onClick={openEditModal}
-            className="no-drag p-1.5 rounded-lg transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
-            title="Edit Panels (⌘⇧E)"
-            aria-label="Edit Panels"
-          >
-            <SlidersHorizontal size={16} aria-hidden="true" />
-          </button>
-          {onOpenHelp && (
+          {/* Edit Panels - only visible when expanded */}
+          {expanded && (
+            <button
+              onClick={openEditModal}
+              className="no-drag p-1.5 rounded-lg transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
+              title="Edit Panels (⌘⇧E)"
+              aria-label="Edit Panels"
+            >
+              <SlidersHorizontal size={16} aria-hidden="true" />
+            </button>
+          )}
+          {/* Help - only visible when expanded */}
+          {expanded && onOpenHelp && (
             <button 
               onClick={onOpenHelp}
               className="no-drag p-1.5 rounded-lg transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
@@ -284,6 +288,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               <HelpCircle size={16} aria-hidden="true" />
             </button>
           )}
+          {/* Settings - always visible */}
           <button 
             onClick={() => onNavigate('settings')}
             className={`no-drag p-1.5 rounded-lg transition-all duration-200 ${
@@ -297,6 +302,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           >
             <Settings size={16} aria-hidden="true" />
           </button>
+          {/* Expand/Collapse - always visible */}
           <button
             onClick={() => setExpanded(!expanded)}
             className="no-drag p-1.5 rounded-lg text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text transition-all duration-200"
