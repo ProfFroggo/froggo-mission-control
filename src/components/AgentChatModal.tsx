@@ -1,6 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Send, Bot, User, Lightbulb, Code, FileText, Sparkles, Loader2, Mic, MessageSquare } from 'lucide-react';
+import MarkdownMessage from './MarkdownMessage';
+import VoiceChatPanel from './VoiceChatPanel';
 import { useStore } from '../store/store';
+import { gateway } from '../lib/gateway';
+import { getAgentTheme } from '../utils/agentThemes';
 
 interface AgentChatModalProps {
   agentId: string;
@@ -13,6 +17,15 @@ interface Message {
   timestamp: number;
 }
 
+// Map agent IDs to descriptive task prompts for spawning
+const agentSystemPrompts: Record<string, string> = {
+  main: 'You are Froggo, the main orchestrator agent. Help the user with any task.',
+  coder: 'You are Coder, a software engineering agent. Help with code, debugging, architecture, and technical problems.',
+  researcher: 'You are Researcher, a research and analysis agent. Help with research, data gathering, and analysis.',
+  writer: 'You are Writer, a content creation agent. Help with writing, editing, and content strategy.',
+  chief: 'You are Chief, the executive oversight agent. Help with planning, prioritization, and strategic decisions.',
+};
+
 export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps) {
   const { agents } = useStore();
   const [isClosing, setIsClosing] = useState(false);
@@ -20,11 +33,17 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
+  const [spawning, setSpawning] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamCleanupRef = useRef<(() => void) | null>(null);
 
   const agent = agents.find(a => a.id === agentId);
 
   const handleClose = () => {
+    // Clean up stream listener
+    streamCleanupRef.current?.();
     setIsClosing(true);
     setTimeout(() => {
       onClose();
@@ -34,11 +53,14 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
   useEffect(() => {
     initChat();
+    return () => {
+      streamCleanupRef.current?.();
+    };
   }, [agentId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   // ESC key to close
   useEffect(() => {
@@ -53,55 +75,177 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   }, []);
 
   const initChat = async () => {
-    // Add system message
+    console.log('[AgentChat] ===== initChat START for', agentId, '=====');
+    setSpawning(true);
     setMessages([{
       role: 'system',
-      content: `You're now chatting with ${agent?.name}. This is a collaborative session to improve the agent's performance, skills, and understanding.`,
+      content: `Connecting to ${agent?.name || agentId}...`,
       timestamp: Date.now(),
     }]);
 
-    // Spawn agent session for chat
     try {
-      const data = await (window as any).clawdbot.agents.spawnChat(agentId);
-      setSessionKey(data.sessionKey);
-    } catch (e) {
-      console.error('Failed to spawn chat session:', e);
+      // Spawn a real agent session via IPC
+      const ipc = (window as any).clawdbot?.agents;
+      console.log('[AgentChat] IPC available:', !!ipc, 'spawnChat:', typeof ipc?.spawnChat, 'chat:', typeof ipc?.chat);
+      if (!ipc?.spawnChat) {
+        throw new Error('Agent chat IPC not available — are you running in the Electron app?');
+      }
+
+      console.log('[AgentChat] Calling ipc.spawnChat(' + agentId + ')...');
+      const result = await ipc.spawnChat(agentId);
+      console.log('[AgentChat] spawnChat result:', JSON.stringify(result));
+      // Handle both formats: string key (legacy) or { success, sessionKey } (new)
+      const key = typeof result === 'string' ? result : result?.sessionKey;
+      console.log('[AgentChat] Extracted sessionKey:', key);
+      if (key) {
+        setSessionKey(key);
+        setMessages([{
+          role: 'system',
+          content: `✅ Connected to ${agent?.name || agentId}. Session active — you're chatting with a real LLM.`,
+          timestamp: Date.now(),
+        }]);
+      } else {
+        throw new Error(result?.error || 'No session key returned');
+      }
+    } catch (e: any) {
+      console.error('[AgentChat] Failed to spawn chat session:', e?.message, e?.stack);
+      setMessages([{
+        role: 'system',
+        content: `❌ Failed to connect: ${e.message || 'Unknown error'}. The gateway may not support agent spawning, or the session limit was reached.`,
+        timestamp: Date.now(),
+      }]);
     }
+    setSpawning(false);
   };
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionKey || sending) return;
 
+    const userText = input.trim();
     const userMessage: Message = {
       role: 'user',
-      content: input,
+      content: userText,
       timestamp: Date.now(),
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setSending(true);
+    setStreamingContent('');
 
     try {
-      const data = await (window as any).clawdbot.agents.chat(sessionKey, input);
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.response,
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (e) {
-      console.error('Failed to send message:', e);
-      const errorMessage: Message = {
-        role: 'system',
-        content: 'Failed to send message. Please try again.',
-        timestamp: Date.now(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    }
+      // Listen for streaming chunks
+      let fullResponse = '';
+      streamCleanupRef.current?.();
 
-    setSending(false);
-  };
+      const unsub = gateway.on('chat', (data: any) => {
+        // STRICT session matching - only accept events for THIS session
+        // Prevents bleed between multiple open chat modals
+        if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+
+        if (data.state === 'streaming' && data.chunk) {
+          fullResponse += data.chunk;
+          setStreamingContent(fullResponse);
+        }
+        if (data.state === 'done' || data.state === 'complete') {
+          const finalContent = data.content || data.response || fullResponse;
+          if (finalContent) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: finalContent,
+              timestamp: Date.now(),
+            }]);
+          }
+          setStreamingContent('');
+          setSending(false);
+          unsub();
+          streamCleanupRef.current = null;
+        }
+        if (data.state === 'error') {
+          setMessages(prev => [...prev, {
+            role: 'system',
+            content: `⚠️ Error: ${data.error || 'Unknown error'}`,
+            timestamp: Date.now(),
+          }]);
+          setStreamingContent('');
+          setSending(false);
+          unsub();
+          streamCleanupRef.current = null;
+        }
+      });
+      streamCleanupRef.current = unsub;
+
+      // Send the message to the real session via IPC
+      const ipc = (window as any).clawdbot?.agents;
+      console.log('[AgentChat] Sending message via', ipc?.chat ? 'IPC agents:chat' : 'gateway.sendToSession');
+      console.log('[AgentChat] sessionKey:', sessionKey, 'message:', userText.slice(0, 100));
+      const result = ipc?.chat
+        ? await ipc.chat(sessionKey, userText)
+        : await gateway.sendToSession(sessionKey, userText);
+      console.log('[AgentChat] Send result type:', typeof result, 'result:', JSON.stringify(result)?.slice(0, 500));
+
+      // If we get a direct response (non-streaming), use it
+      const responseText = typeof result === 'string' ? result : (result as any)?.response;
+      console.log('[AgentChat] responseText:', responseText?.slice(0, 200));
+      if (responseText) {
+        // Clean up stream listener since we got a direct response
+        unsub();
+        streamCleanupRef.current = null;
+        setStreamingContent('');
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: responseText,
+          timestamp: Date.now(),
+        }]);
+        setSending(false);
+      } else if (result && !(result as any).success && (result as any).error) {
+        // Handle error response
+        unsub();
+        streamCleanupRef.current = null;
+        setStreamingContent('');
+        setMessages(prev => [...prev, {
+          role: 'system',
+          content: `⚠️ Error: ${(result as any).error}`,
+          timestamp: Date.now(),
+        }]);
+        setSending(false);
+      }
+
+      // Set a timeout in case streaming never completes
+      setTimeout(() => {
+        if (sending) {
+          // If still sending after 2 minutes, finalize what we have
+          if (fullResponse) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: fullResponse,
+              timestamp: Date.now(),
+            }]);
+          } else {
+            setMessages(prev => [...prev, {
+              role: 'system',
+              content: '⏱️ Response timed out. The agent may still be processing.',
+              timestamp: Date.now(),
+            }]);
+          }
+          setStreamingContent('');
+          setSending(false);
+          unsub();
+          streamCleanupRef.current = null;
+        }
+      }, 120000);
+
+    } catch (e: any) {
+      console.error('Failed to send message:', e);
+      setStreamingContent('');
+      setMessages(prev => [...prev, {
+        role: 'system',
+        content: `❌ Failed to send: ${e.message || 'Unknown error'}`,
+        timestamp: Date.now(),
+      }]);
+      setSending(false);
+    }
+  }, [input, sessionKey, sending]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -135,30 +279,76 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         {/* Header */}
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">{agent.avatar}</span>
+            {(() => {
+              const theme = getAgentTheme(agent.id);
+              return theme.pic ? (
+                <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-clawd-bg`}>
+                  <img src={`./agent-profiles/${theme.pic}`} alt={agent.name} className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }} />
+                  <span className="hidden absolute inset-0 flex items-center justify-center text-2xl">{agent.avatar}</span>
+                </div>
+              ) : (
+                <span className="text-3xl">{agent.avatar}</span>
+              );
+            })()}
             <div>
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 Chat with {agent.name}
-                <span className="text-sm px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">
-                  Collaborative Mode
-                </span>
+                {sessionKey ? (
+                  <span className="text-sm px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                    🟢 Live LLM
+                  </span>
+                ) : spawning ? (
+                  <span className="text-sm px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" /> Connecting...
+                  </span>
+                ) : (
+                  <span className="text-sm px-2 py-0.5 bg-red-500/20 text-red-400 rounded">
+                    Disconnected
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-clawd-text-dim">
-                Improve performance through conversation
+                {sessionKey ? 'Real-time conversation with agent LLM' : 'Establishing connection...'}
               </p>
             </div>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
-            aria-label="Close modal"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            {sessionKey && (
+              <button
+                onClick={() => setIsVoiceMode(!isVoiceMode)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isVoiceMode
+                    ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                    : 'hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+                }`}
+                title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+              >
+                {isVoiceMode ? <MessageSquare size={16} /> : <Mic size={16} />}
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              aria-label="Close modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
+        {/* Voice Mode */}
+        {isVoiceMode && sessionKey && (
+          <VoiceChatPanel
+            agentId={agentId}
+            sessionKey={sessionKey}
+            onSwitchToText={() => setIsVoiceMode(false)}
+            embedded={true}
+          />
+        )}
+
         {/* Quick Prompts */}
-        {messages.length <= 1 && (
+        {!isVoiceMode && messages.length <= 1 && !spawning && sessionKey && (
           <div className="p-4 border-b border-clawd-border">
             <h3 className="text-xs font-semibold text-clawd-text-dim uppercase mb-2">
               Quick Prompts
@@ -181,10 +371,13 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-auto p-4 space-y-4">
-          {messages.map((msg, i) => {
-            const showAvatar = i === 0 || messages[i - 1]?.role !== msg.role;
-            const isLastInGroup = i === messages.length - 1 || messages[i + 1]?.role !== msg.role;
+        <div className={`flex-1 overflow-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
+          {messages.filter(msg => {
+            const t = msg.content?.trim();
+            return t !== 'NO_REPLY' && t !== 'HEARTBEAT_OK' && t !== 'NO' && t !== 'NO_RE' && t !== 'NO_';
+          }).map((msg, i, arr) => {
+            const showAvatar = i === 0 || arr[i - 1]?.role !== msg.role;
+            const isLastInGroup = i === arr.length - 1 || arr[i + 1]?.role !== msg.role;
             
             return (
               <div
@@ -221,7 +414,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                         ? 'text-blue-400' 
                         : msg.role === 'assistant' 
                           ? 'text-emerald-500' 
-                          : 'text-gray-400'
+                          : 'text-clawd-text-dim'
                     }`}>
                       {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? agent?.name : 'System'}
                     </div>
@@ -232,7 +425,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                     msg.role === 'user' 
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md' 
                       : msg.role === 'assistant' 
-                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md' 
+                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md' 
                         : 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400'
                   } ${
                     msg.role === 'user'
@@ -247,11 +440,11 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                           ? 'rounded-2xl rounded-tl-sm' 
                           : 'rounded-2xl rounded-tl-md'
                   }`}>
-                    <p className={`whitespace-pre-wrap leading-relaxed ${
-                      msg.role === 'system' ? 'text-sm' : ''
-                    }`}>
-                      {msg.content}
-                    </p>
+                    {msg.role === 'user' ? (
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    ) : (
+                      <MarkdownMessage content={msg.content} />
+                    )}
                   </div>
 
                   {/* Timestamp */}
@@ -267,7 +460,27 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
             );
           })}
 
-          {sending && (
+          {/* Streaming content */}
+          {streamingContent && (
+            <div className="flex gap-3 mt-6">
+              <div className="flex-shrink-0 w-10">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/20">
+                  <Bot size={16} />
+                </div>
+              </div>
+              <div className="flex flex-col items-start max-w-[70%] min-w-[120px]">
+                <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
+                  {agent?.name}
+                </div>
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                  <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Thinking indicator (when sending but no streaming content yet) */}
+          {sending && !streamingContent && (
             <div className="flex gap-3 mt-6">
               <div className="flex-shrink-0 w-10">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/20">
@@ -278,7 +491,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -296,27 +509,37 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-clawd-border">
+        <div className={`p-4 border-t border-clawd-border ${isVoiceMode ? 'hidden' : ''}`}>
           <div className="flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your message... (Shift+Enter for new line)"
+              placeholder={sessionKey ? "Type your message... (Shift+Enter for new line)" : "Waiting for connection..."}
               className="flex-1 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent resize-none"
               rows={2}
-              disabled={sending}
+              disabled={sending || !sessionKey}
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || sending}
+              disabled={!input.trim() || sending || !sessionKey}
               className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={16} />
             </button>
           </div>
-          <div className="mt-2 text-xs text-clawd-text-dim">
-            💡 Ask about performance, suggest improvements, add skills, or discuss task strategies
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-clawd-text-dim">
+              💡 You're talking to a real LLM — ask anything relevant to this agent's role
+            </span>
+            {!sessionKey && !spawning && (
+              <button
+                onClick={initChat}
+                className="text-xs text-clawd-accent hover:underline"
+              >
+                Retry connection
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, AlertCircle, CheckCircle, RefreshCw, Filter, Inbox } from 'lucide-react';
+import { Bell, Check, X, Clock, MessageSquare, Calendar, Mail, RefreshCw, Inbox } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
+import IconBadge from './IconBadge';
 
 interface UnifiedNotification {
   id: string;
@@ -23,7 +24,7 @@ const sourceConfig: Record<string, { icon: any; color: string; label: string }> 
   discord: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/10', label: 'Discord' },
   email: { icon: Mail, color: 'text-red-400 bg-red-500/10', label: 'Email' },
   calendar: { icon: Calendar, color: 'text-orange-400 bg-orange-500/10', label: 'Calendar' },
-  system: { icon: Bell, color: 'text-gray-400 bg-gray-500/10', label: 'System' },
+  system: { icon: Bell, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'System' },
 };
 
 export default function NotificationsPanel() {
@@ -204,9 +205,7 @@ export default function NotificationsPanel() {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config.color} flex-shrink-0 flex items-center justify-center`}>
-                      <Icon size={16} />
-                    </div>
+                    <IconBadge icon={Icon} size={16} color={config.color} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">

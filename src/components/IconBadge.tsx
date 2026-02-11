@@ -16,7 +16,7 @@ interface IconBadgeProps {
 export default function IconBadge({ 
   icon: Icon, 
   size = 18, 
-  color = 'bg-gray-500/10 text-gray-400',
+  color = 'bg-clawd-bg0/10 text-clawd-text-dim',
   rounded = 'lg',
   className = ''
 }: IconBadgeProps) {
@@ -67,7 +67,7 @@ export const BadgePresets = {
   email: { color: 'text-green-400 bg-green-500/20' },
   message: { color: 'text-purple-400 bg-purple-500/20' },
   task: { color: 'text-yellow-400 bg-yellow-500/20' },
-  action: { color: 'text-orange-400 bg-orange-500/20' },
+  action: { color: 'text-green-400 bg-green-500/20' },
   
   // Channels
   discord: { color: 'text-[#5865F2] bg-[#5865F2]/20' },

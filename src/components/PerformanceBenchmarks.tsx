@@ -51,8 +51,8 @@ export default function PerformanceBenchmarks() {
   const loadBenchmarks = async () => {
     setLoading(true);
     try {
-      const db = await (window as any).clawdbot?.db?.connect();
-      if (!db) throw new Error('Database not available');
+      const dbExec = (window as any).clawdbot?.db?.exec;
+      if (!dbExec) throw new Error('Database not available');
 
       let periods: BenchmarkData[] = [];
 
@@ -64,7 +64,7 @@ export default function PerformanceBenchmarks() {
           const weekStart = new Date(weekEnd);
           weekStart.setDate(weekEnd.getDate() - 6);
 
-          const data = await getPeriodData(db, weekStart.getTime(), weekEnd.getTime());
+          const data = await getPeriodData(dbExec, weekStart.getTime(), weekEnd.getTime());
           periods.push({
             period: `W${8 - i}`,
             ...data,
@@ -78,7 +78,7 @@ export default function PerformanceBenchmarks() {
           monthEnd.setDate(0); // Last day of previous month
           const monthStart = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), 1);
 
-          const data = await getPeriodData(db, monthStart.getTime(), monthEnd.getTime());
+          const data = await getPeriodData(dbExec, monthStart.getTime(), monthEnd.getTime());
           periods.push({
             period: monthStart.toLocaleDateString('en-US', { month: 'short' }),
             ...data,
@@ -91,15 +91,13 @@ export default function PerformanceBenchmarks() {
           const yearStart = new Date(year, 0, 1).getTime();
           const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
 
-          const data = await getPeriodData(db, yearStart, yearEnd);
+          const data = await getPeriodData(dbExec, yearStart, yearEnd);
           periods.push({
             period: year.toString(),
             ...data,
           });
         }
       }
-
-      await db.close();
 
       setBenchmarks(periods);
 
@@ -180,7 +178,7 @@ export default function PerformanceBenchmarks() {
   };
 
   const getPeriodData = async (
-    db: any,
+    dbExec: (query: string, params?: any[]) => Promise<any>,
     startTime: number,
     endTime: number
   ): Promise<Omit<BenchmarkData, 'period'>> => {
@@ -213,8 +211,8 @@ export default function PerformanceBenchmarks() {
       WHERE created_at BETWEEN ? AND ?
     `;
 
-    const result = await db.query(statsQuery, [startTime, endTime]);
-    const row = result.rows[0];
+    const result = await dbExec(statsQuery, [startTime, endTime]);
+    const row = result?.result?.[0] || {};
 
     return {
       tasksCompleted: row.completed || 0,
@@ -239,7 +237,7 @@ export default function PerformanceBenchmarks() {
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable', positive: boolean) => {
     if (trend === 'stable')
-      return <Minus size={16} className="text-gray-400" />;
+      return <Minus size={16} className="text-clawd-text-dim" />;
     if (trend === 'up')
       return (
         <ArrowUp
@@ -337,7 +335,7 @@ export default function PerformanceBenchmarks() {
                     ? metric.positive
                       ? 'text-red-400'
                       : 'text-green-400'
-                    : 'text-gray-400'
+                    : 'text-clawd-text-dim'
                 }`}
               >
                 {metric.change > 0 ? '+' : ''}
@@ -503,7 +501,7 @@ export default function PerformanceBenchmarks() {
                           ? 'text-green-400'
                           : isNegative
                           ? 'text-red-400'
-                          : 'text-gray-400'
+                          : 'text-clawd-text-dim'
                       }
                     >
                       {metric.trend === 'up'

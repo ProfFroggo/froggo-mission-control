@@ -7,7 +7,7 @@ interface MarkdownMessageProps {
 
 export default function MarkdownMessage({ content }: MarkdownMessageProps) {
   return (
-    <div className="prose prose-invert prose-sm max-w-none leading-relaxed">
+    <div className="max-w-none leading-relaxed text-left text-sm">
       {parseMarkdown(content)}
     </div>
   );
@@ -105,9 +105,8 @@ function parseMarkdown(text: string): React.ReactNode[] {
 
 function formatInline(text: string): React.ReactNode {
   // Simple inline formatting
-  const parts: React.ReactNode[] = [];
+  // const parts: React.ReactNode[] = [];
   let remaining = text;
-  let key = 0;
 
   // Bold **text**
   remaining = remaining.replace(/\*\*(.+?)\*\*/g, (_, content) => {

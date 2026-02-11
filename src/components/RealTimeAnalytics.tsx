@@ -40,8 +40,8 @@ export default function RealTimeAnalytics() {
 
     const updateMetrics = async () => {
       try {
-        const db = await (window as any).clawdbot?.db?.connect();
-        if (!db) return;
+        const dbExec = (window as any).clawdbot?.db?.exec;
+        if (!dbExec) return;
 
         // Get real-time counts
         const now = Date.now();
@@ -50,31 +50,29 @@ export default function RealTimeAnalytics() {
         const last1Hour = now - 60 * 60 * 1000;
 
         // Messages in last 5 minutes
-        const msgResult = await db.query(
+        const msgResult = await dbExec(
           'SELECT COUNT(*) as count FROM messages WHERE timestamp >= ?',
           [last5Min]
         );
 
         // Tasks updated in last 30 minutes
-        const tasksResult = await db.query(
+        const tasksResult = await dbExec(
           'SELECT COUNT(*) as count FROM tasks WHERE updated_at >= ?',
           [last30Min]
         );
 
         // Task completions in last hour
-        const completionsResult = await db.query(
-          'SELECT COUNT(*) as count FROM tasks WHERE completed_at >= ? AND status = "done"',
+        const completionsResult = await dbExec(
+          'SELECT COUNT(*) as count FROM tasks WHERE completed_at >= ? AND status = \'done\'',
           [last1Hour]
         );
 
         // Active sessions
-        const sessionsResult = await db.query(`
+        const sessionsResult = await dbExec(`
           SELECT COUNT(DISTINCT session_key) as count
           FROM messages
           WHERE timestamp >= ?
         `, [last30Min]);
-
-        await db.close();
 
         // Generate sparkline data (last 10 intervals)
         const generateSparkline = (current: number) => {
@@ -84,35 +82,35 @@ export default function RealTimeAnalytics() {
         setMetrics([
           {
             label: 'Messages/5min',
-            value: msgResult.rows[0]?.count || 0,
+            value: msgResult?.result?.[0]?.count || 0,
             unit: 'msg',
             icon: MessageCircle,
             color: 'text-blue-400',
-            sparkline: generateSparkline(msgResult.rows[0]?.count || 0),
+            sparkline: generateSparkline(msgResult?.result?.[0]?.count || 0),
           },
           {
             label: 'Active Tasks',
-            value: tasksResult.rows[0]?.count || 0,
+            value: tasksResult?.result?.[0]?.count || 0,
             unit: 'tasks',
             icon: Activity,
             color: 'text-purple-400',
-            sparkline: generateSparkline(tasksResult.rows[0]?.count || 0),
+            sparkline: generateSparkline(tasksResult?.result?.[0]?.count || 0),
           },
           {
             label: 'Completions/hour',
-            value: completionsResult.rows[0]?.count || 0,
+            value: completionsResult?.result?.[0]?.count || 0,
             unit: 'done',
             icon: CheckCircle,
             color: 'text-green-400',
-            sparkline: generateSparkline(completionsResult.rows[0]?.count || 0),
+            sparkline: generateSparkline(completionsResult?.result?.[0]?.count || 0),
           },
           {
             label: 'Active Sessions',
-            value: sessionsResult.rows[0]?.count || 0,
+            value: sessionsResult?.result?.[0]?.count || 0,
             unit: 'sessions',
             icon: Zap,
             color: 'text-yellow-400',
-            sparkline: generateSparkline(sessionsResult.rows[0]?.count || 0),
+            sparkline: generateSparkline(sessionsResult?.result?.[0]?.count || 0),
           },
         ]);
 

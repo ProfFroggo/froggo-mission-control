@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Calendar, Plus, Trash2, RefreshCw, CheckCircle, XCircle, AlertTriangle, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
+import { Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, RefreshCw, Shield, Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor, Database } from 'lucide-react';
 import { useStore } from '../store/store';
+import { useUserSettings } from '../store/userSettings';
 import { reconnectGateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import SecuritySettings from './SecuritySettings';
@@ -62,7 +63,7 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
   { id: 'kanban', name: 'Tasks', description: 'Navigate to Kanban', defaultKey: '5', currentKey: '5', modifiers: ['cmd'] },
   { id: 'agents', name: 'Agents', description: 'Navigate to Agents', defaultKey: '6', currentKey: '6', modifiers: ['cmd'] },
   { id: 'twitter', name: 'Twitter', description: 'Navigate to Twitter', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
-  { id: 'voice', name: 'Voice', description: 'Navigate to Voice', defaultKey: '8', currentKey: '8', modifiers: ['cmd'] },
+  { id: 'meetings', name: 'Meetings', description: 'Navigate to Meetings', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
   { id: 'chat', name: 'Chat', description: 'Navigate to Chat', defaultKey: '9', currentKey: '9', modifiers: ['cmd'] },
   { id: 'settings', name: 'Settings', description: 'Open Settings', defaultKey: ',', currentKey: ',', modifiers: ['cmd'] },
   { id: 'commandPalette', name: 'Command Palette', description: 'Open command palette', defaultKey: 'k', currentKey: 'k', modifiers: ['cmd'] },
@@ -98,8 +99,8 @@ const defaultSettings: Settings = {
   externalActionsEnabled: false,
   rateLimitTweets: 10,
   rateLimitEmails: 20,
-  defaultEmailAccount: 'kevin@carbium.io',
-  defaultCalendarAccount: 'kevin.macarthur@bitso.com',
+  defaultEmailAccount: useUserSettings.getState().email,
+  defaultCalendarAccount: useUserSettings.getState().emailAccounts[0]?.email || '',
 };
 
 // Apply theme and accent color to document
@@ -152,7 +153,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', accentColor: string, fon
   root.style.setProperty('--clawd-font-size', `${fontSize}px`);
 }
 
-type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs';
+type Tab = 'general' | 'appearance' | 'accessibility' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'exportBackup';
 
 export default function SettingsPanel() {
   const { connected } = useStore();
@@ -164,7 +165,7 @@ export default function SettingsPanel() {
   const [saved, setSaved] = useState(false);
   
   // Notification preferences state
-  const [notifPrefs, setNotifPrefs] = useState({
+  const [_notifPrefs, setNotifPrefs] = useState({
     enabled: true,
     taskCompletions: true,
     agentFailures: true,
@@ -287,7 +288,7 @@ export default function SettingsPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
@@ -1063,8 +1064,8 @@ export default function SettingsPanel() {
                       <div className="text-sm text-blue-300 space-y-2">
                         <p>No default accounts! Froggo intelligently chooses which account to use based on context:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Email to kevin@carbium.io → Reply from kevin@carbium.io</li>
-                          <li>Email to kevin.macarthur@bitso.com → Reply from kevin.macarthur@bitso.com</li>
+                          <li>Email to your address → Reply from that same address</li>
+                          <li>Email to work address → Reply from work address</li>
                           <li>Calendar invite on iCloud → Use iCloud calendar</li>
                           <li>Reply-to address matching for email threads</li>
                         </ul>

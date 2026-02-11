@@ -65,17 +65,17 @@ const TRIGGER_ICONS = {
   dm: Mail,
 };
 
-const ACTION_ICONS = {
-  reply: MessageCircle,
-  like: '❤️',
-  retweet: '🔁',
-  dm: Mail,
-  add_to_list: '📋',
-};
+// const ACTION_ICONS = {
+//   reply: MessageCircle,
+//   like: '❤️',
+//   retweet: '🔁',
+//   dm: Mail,
+//   add_to_list: '📋',
+// };
 
 export default function XAutomationsPanel() {
   const [automations, setAutomations] = useState<XAutomation[]>([]);
-  const [executions, setExecutions] = useState<XAutomationExecution[]>([]);
+  const [_executions, _setExecutions] = useState<XAutomationExecution[]>([]);
   const [loading, setLoading] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<XAutomation | null>(null);
@@ -182,7 +182,7 @@ export default function XAutomationsPanel() {
             </button>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-4">
+          <div className="max-w-8xl mx-auto space-y-4">
             {automations.map((automation) => {
               const trigger = parseJSON(automation.trigger_config);
               const actions = parseJSON(automation.actions);

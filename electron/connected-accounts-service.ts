@@ -16,18 +16,15 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import * as crypto from 'crypto';
+import { safeStorage } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
 const execAsync = promisify(exec);
 
-// Database path
+// Database path (fixed: was incorrectly pointing to ~/Froggo/clawd/data)
 const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-
-// Encryption key (should be stored securely, using env var or keychain)
-const ENCRYPTION_KEY = process.env.FROGGO_ENCRYPTION_KEY || 'default-key-change-me-in-production';
 
 export interface ConnectedAccount {
   id: string;
@@ -65,31 +62,21 @@ export interface AccountTypeInfo {
   available: boolean;
 }
 
-// Encryption utilities
+// Encryption utilities — uses Electron safeStorage (OS keychain)
 function encrypt(text: string): string {
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(
-    'aes-256-cbc',
-    Buffer.from(ENCRYPTION_KEY).slice(0, 32),
-    iv
-  );
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return iv.toString('hex') + ':' + encrypted;
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('safeStorage encryption not available');
+  }
+  const encrypted = safeStorage.encryptString(text);
+  return encrypted.toString('base64');
 }
 
 function decrypt(text: string): string {
-  const parts = text.split(':');
-  const iv = Buffer.from(parts[0], 'hex');
-  const encrypted = parts[1];
-  const decipher = crypto.createDecipheriv(
-    'aes-256-cbc',
-    Buffer.from(ENCRYPTION_KEY).slice(0, 32),
-    iv
-  );
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new Error('safeStorage encryption not available');
+  }
+  const buffer = Buffer.from(text, 'base64');
+  return safeStorage.decryptString(buffer);
 }
 
 // SQLite helpers
@@ -120,11 +107,9 @@ async function dbRun(query: string, params: any[] = []): Promise<void> {
 }
 
 class ConnectedAccountsService {
-  private readonly GOG_ACCOUNTS = [
-    'kevin.macarthur@bitso.com',
-    'kevin@carbium.io',
-    'kmacarthur.gpt@gmail.com'
-  ];
+  // Google accounts — populated dynamically from connected_accounts DB table
+  // Previously hardcoded; now empty default so new installs don't assume specific accounts
+  private readonly GOG_ACCOUNTS: string[] = [];
 
   /**
    * Get all connected accounts

@@ -1,21 +1,31 @@
-import { useState, useEffect } from 'react';
-import ChannelsTab from './ChannelsTab';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   Mail, Calendar, HardDrive, Users, Plus, RefreshCw, 
   CheckCircle, XCircle, AlertTriangle, Trash2, X, ChevronRight,
-  Key, Clock, Shield, Database, Link as LinkIcon
+  Key, Clock, Shield, Database, Link as LinkIcon, HelpCircle
 } from 'lucide-react';
 import { showToast } from './Toast';
 
+// Lazy load ChannelsTab to avoid import-time errors breaking the whole panel
+const ChannelsTab = lazy(() => import('./ChannelsTab').catch(() => ({
+  default: () => <div className="text-center py-8 text-clawd-text-dim">Failed to load Channels tab</div>
+})));
+
 interface ConnectedAccount {
   id: string;
-  accountType: 'google' | 'icloud' | 'microsoft' | 'outlook';
+  // Support both old (provider) and new (accountType) field names
+  accountType?: 'google' | 'icloud' | 'microsoft' | 'outlook';
+  provider?: string;
   email: string;
   displayName?: string;
-  authStatus: 'connected' | 'expired' | 'error' | 'revoked';
+  // Support both old (status) and new (authStatus) field names
+  authStatus?: 'connected' | 'expired' | 'error' | 'revoked';
+  status?: string;
   grantedScopes?: string[];
-  dataTypes: Array<'email' | 'calendar' | 'drive' | 'contacts' | 'tasks'>;
+  scopes?: Array<{ type: string; permission: string; description: string }>;
+  dataTypes?: Array<'email' | 'calendar' | 'drive' | 'contacts' | 'tasks'>;
   lastSyncTime?: number;
+  lastChecked?: number;
   lastSyncStatus?: 'success' | 'error' | 'partial';
   profilePictureUrl?: string;
   skillName?: string;
@@ -68,6 +78,25 @@ const ACCOUNT_TYPE_ICONS: Record<string, string> = {
   outlook: '📨',
 };
 
+// Normalize account data to handle both old and new service formats
+function normalizeAccount(account: any): ConnectedAccount {
+  return {
+    ...account,
+    accountType: account.accountType || account.provider || 'google',
+    authStatus: account.authStatus || account.status || 'error',
+    dataTypes: Array.isArray(account.dataTypes) ? account.dataTypes : [],
+    grantedScopes: account.grantedScopes || (Array.isArray(account.scopes) ? account.scopes.map((s: any) => s?.description || s?.type || '') : []),
+    lastSyncTime: account.lastSyncTime || account.lastChecked,
+    createdAt: account.createdAt || Date.now(),
+    updatedAt: account.updatedAt || Date.now(),
+  };
+}
+
+// Safe icon lookup - returns a fallback if icon not found
+function getDataTypeIcon(type: string) {
+  return DATA_TYPE_ICONS[type] || HelpCircle;
+}
+
 export default function ConnectedAccountsPanel() {
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [availableTypes, setAvailableTypes] = useState<AccountTypeInfo[]>([]);
@@ -89,13 +118,20 @@ export default function ConnectedAccountsPanel() {
   const loadAccounts = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.list();
+      if (!(window as any).clawdbot?.accounts?.list) {
+        // APIs not available (web mode) - show empty state instead of error
+        setAccounts([]);
+        return;
+      }
+      const result = await (window as any).clawdbot.accounts.list();
       if (result?.success) {
-        setAccounts(result.accounts || []);
-      } else {
-        showToast('error', 'Failed to load accounts', result?.error || 'Unknown error');
+        const normalized = (result.accounts || []).map(normalizeAccount);
+        setAccounts(normalized);
+      } else if (result?.error) {
+        showToast('error', 'Failed to load accounts', result.error);
       }
     } catch (err: any) {
+      console.error('[ConnectedAccounts] Failed to load accounts:', err);
       showToast('error', 'Failed to load accounts', err.message);
     } finally {
       setLoading(false);
@@ -104,7 +140,7 @@ export default function ConnectedAccountsPanel() {
 
   const loadAvailableTypes = async () => {
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.getAvailableTypes();
+      const result = await (window as any).clawdbot?.accounts?.getAvailableTypes();
       if (result?.success) {
         setAvailableTypes(result.types || []);
       }
@@ -118,7 +154,7 @@ export default function ConnectedAccountsPanel() {
     
     // Load permissions
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.getPermissions(account.id);
+      const result = await (window as any).clawdbot?.accounts?.getPermissions(account.id);
       if (result?.success) {
         setSelectedAccountPermissions(result.permissions || []);
       }
@@ -131,7 +167,7 @@ export default function ConnectedAccountsPanel() {
 
   const handleRefresh = async (accountId: string) => {
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.refresh(accountId);
+      const result = await (window as any).clawdbot?.accounts?.refresh(accountId);
       if (result?.success) {
         showToast('success', 'Account refreshed', 'Connection verified successfully');
         loadAccounts();
@@ -152,7 +188,7 @@ export default function ConnectedAccountsPanel() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.remove(accountId);
+      const result = await (window as any).clawdbot?.accounts?.remove(accountId);
       if (result?.success) {
         showToast('success', 'Account removed', `${account.email} has been removed`);
         loadAccounts();
@@ -170,7 +206,7 @@ export default function ConnectedAccountsPanel() {
   const handleImportGoogle = async () => {
     setImportingGoogle(true);
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.importGoogle();
+      const result = await (window as any).clawdbot?.accounts?.importGoogle();
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
@@ -195,7 +231,7 @@ export default function ConnectedAccountsPanel() {
 
     setAddingAccount(true);
     try {
-      const result = await (window as any).clawdbot?.connectedAccounts?.add(selectedType, {
+      const result = await (window as any).clawdbot?.accounts?.add(selectedType, {
         conversational: true
       });
       
@@ -242,7 +278,7 @@ export default function ConnectedAccountsPanel() {
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
@@ -268,7 +304,11 @@ export default function ConnectedAccountsPanel() {
           </div>
         </div>
 
-        {panelTab === 'channels' && <ChannelsTab />}
+        {panelTab === 'channels' && (
+          <Suspense fallback={<div className="text-center py-8 text-clawd-text-dim"><RefreshCw size={24} className="mx-auto animate-spin mb-2" />Loading channels...</div>}>
+            <ChannelsTab />
+          </Suspense>
+        )}
 
         {panelTab === 'accounts' && <>
 
@@ -291,11 +331,11 @@ export default function ConnectedAccountsPanel() {
             </summary>
             <div className="mt-3 space-y-2">
               {[
-                { priority: 1, rule: 'Exact Address Match', description: 'Email received at kevin@carbium.io → Reply from kevin@carbium.io', example: 'Highest priority - ensures replies come from the right address' },
+                { priority: 1, rule: 'Exact Address Match', description: 'Email received at your address → Reply from that same address', example: 'Highest priority - ensures replies come from the right address' },
                 { priority: 2, rule: 'Reply-To Header', description: 'Uses reply-to address from original message', example: 'Respects email threading and conversation flow' },
                 { priority: 3, rule: 'Conversation Continuity', description: 'Continues thread with same account used previously', example: 'Keeps multi-message conversations consistent' },
                 { priority: 4, rule: 'Calendar Source', description: 'Invite on iCloud calendar → Uses iCloud account', example: 'Matches calendar events to their source' },
-                { priority: 5, rule: 'Domain Match', description: '@bitso.com email → kevin.macarthur@bitso.com', example: 'Uses company email for company communications' },
+                { priority: 5, rule: 'Domain Match', description: '@company.com email → user@company.com', example: 'Uses company email for company communications' },
                 { priority: 6, rule: 'Capability Match', description: 'Uses accounts with required data type (email, calendar, etc)', example: 'Ensures account can handle the action' },
                 { priority: 7, rule: 'Context-Free', description: 'No context available - suggests adding more info', example: 'Last resort - indicates missing context' },
               ].map((rule) => (
@@ -373,7 +413,7 @@ export default function ConnectedAccountsPanel() {
                   <div className="flex items-start gap-4 flex-1">
                     {/* Account Icon */}
                     <div className="text-3xl">
-                      {ACCOUNT_TYPE_ICONS[account.accountType] || '📧'}
+                      {ACCOUNT_TYPE_ICONS[account.accountType || ''] || '📧'}
                     </div>
 
                     {/* Account Info */}
@@ -391,12 +431,12 @@ export default function ConnectedAccountsPanel() {
 
                       {/* Data Types */}
                       <div className="flex flex-wrap gap-1.5 mb-2">
-                        {account.dataTypes.map((type) => {
-                          const Icon = DATA_TYPE_ICONS[type];
+                        {(account.dataTypes || []).map((type) => {
+                          const Icon = getDataTypeIcon(type);
                           return (
                             <span
                               key={type}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type]}`}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${DATA_TYPE_COLORS[type] || 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30'}`}
                             >
                               <Icon size={14} />
                               {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -464,12 +504,12 @@ export default function ConnectedAccountsPanel() {
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="text-4xl">
-                  {ACCOUNT_TYPE_ICONS[selectedAccount.accountType] || '📧'}
+                  {ACCOUNT_TYPE_ICONS[selectedAccount.accountType || ''] || '📧'}
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">{selectedAccount.email}</h2>
                   <p className="text-sm text-clawd-text-dim">
-                    {selectedAccount.accountType.charAt(0).toUpperCase() + selectedAccount.accountType.slice(1)} Account
+                    {(selectedAccount.accountType || 'Unknown').charAt(0).toUpperCase() + (selectedAccount.accountType || 'unknown').slice(1)} Account
                   </p>
                 </div>
               </div>
@@ -514,12 +554,12 @@ export default function ConnectedAccountsPanel() {
                 <h3 className="font-medium">Data Types Accessed</h3>
               </div>
               <div className="flex flex-wrap gap-2">
-                {selectedAccount.dataTypes.map((type) => {
-                  const Icon = DATA_TYPE_ICONS[type];
+                {(selectedAccount.dataTypes || []).map((type) => {
+                  const Icon = getDataTypeIcon(type);
                   return (
                     <div
                       key={type}
-                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type]}`}
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${DATA_TYPE_COLORS[type] || 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30'}`}
                     >
                       <Icon size={16} />
                       <span className="capitalize">{type}</span>

@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
@@ -33,10 +34,10 @@ interface CalendarEvent {
   account?: string;
 }
 
-interface EventsData {
-  events: CalendarEvent[];
-  account: string;
-}
+// interface EventsData {
+//   events: CalendarEvent[];
+//   account: string;
+// }
 
 interface EventFormData {
   summary: string;
@@ -67,7 +68,8 @@ export default function EpicCalendar() {
   const [showRescheduleConfirm, setShowRescheduleConfirm] = useState(false);
   const [pendingReschedule, setPendingReschedule] = useState<{ event: CalendarEvent; newStart: Date; newEnd: Date } | null>(null);
 
-  const accounts = ['kevin@carbium.io', 'kevin.macarthur@bitso.com', 'kmacarthur.gpt@gmail.com'];
+  const { emailAccounts } = useUserSettings();
+  const accounts = emailAccounts.map(a => a.email);
 
   // Open create event modal
   const handleCreateEvent = () => {
@@ -86,7 +88,7 @@ export default function EpicCalendar() {
   // Create new event via gog CLI
   const createEvent = async (formData: EventFormData): Promise<boolean> => {
     try {
-      const { summary, start, end, description, location, account, isAllDay } = formData;
+      const { summary, start, end, description, location, isAllDay } = formData;
       
       // Convert datetime-local format to ISO format for gog CLI
       const startISO = isAllDay 
@@ -96,7 +98,8 @@ export default function EpicCalendar() {
         ? new Date(end).toISOString().split('T')[0]
         : new Date(end).toISOString();
 
-      let command = `GOG_ACCOUNT=${account} gog calendar events create --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      const gogAccount = formData.account || accounts[0] || '';
+      let command = `GOG_ACCOUNT=${gogAccount} gog calendar events create --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
       
       if (description) {
         command += ` --description "${description.replace(/"/g, '\\"')}"`;
@@ -125,7 +128,7 @@ export default function EpicCalendar() {
   // Update existing event via gog CLI
   const updateEvent = async (eventId: string, formData: EventFormData): Promise<boolean> => {
     try {
-      const { summary, start, end, description, location, account, isAllDay } = formData;
+      const { summary, start, end, description, location, isAllDay } = formData;
       
       // Convert datetime-local format to ISO format
       const startISO = isAllDay 
@@ -135,7 +138,8 @@ export default function EpicCalendar() {
         ? new Date(end).toISOString().split('T')[0]
         : new Date(end).toISOString();
 
-      let command = `GOG_ACCOUNT=${account} gog calendar events update --event-id "${eventId}" --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
+      const gogAccount = formData.account || accounts[0] || '';
+      let command = `GOG_ACCOUNT=${gogAccount} gog calendar events update --event-id "${eventId}" --summary "${summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
       
       if (description) {
         command += ` --description "${description.replace(/"/g, '\\"')}"`;
@@ -232,7 +236,6 @@ export default function EpicCalendar() {
     if (!draggedEvent) return;
 
     const { start, end, isAllDay } = getEventTime(draggedEvent);
-    const eventDuration = end.getTime() - start.getTime();
 
     // Calculate new start time
     let newStart: Date;
@@ -250,7 +253,7 @@ export default function EpicCalendar() {
       newStart.setHours(start.getHours(), start.getMinutes(), 0, 0);
     }
 
-    // Calculate new end time (preserve duration)
+    const eventDuration = end.getTime() - start.getTime();
     const newEnd = new Date(newStart.getTime() + eventDuration);
 
     // Show confirmation dialog
@@ -327,7 +330,10 @@ export default function EpicCalendar() {
       console.log('[EpicCalendar] Fetching aggregated events...');
       
       // Use the new calendar aggregation service
-      const response = await window.clawdbot.calendar.aggregate({
+      if (!window.clawdbot?.calendar?.aggregate) {
+        throw new Error('Calendar service not available — running outside Electron?');
+      }
+      const response = await window.clawdbot?.calendar?.aggregate({
         days: 30,
         includeGoogle: true,
         includeMissionControl: true,
@@ -480,7 +486,7 @@ export default function EpicCalendar() {
           onClose={() => setShowEventModal(false)}
           onCreate={createEvent}
           onUpdate={updateEvent}
-          onDelete={(eventId, account) => {
+          onDelete={(_eventId, _account) => {
             setShowDeleteConfirm(true);
           }}
         />
@@ -630,7 +636,8 @@ function EventCard({
 }) {
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
-  const accountColor = event.account === 'kevin@carbium.io' ? 'bg-blue-500' : 'bg-purple-500';
+  const primaryEmail = useUserSettings.getState().email;
+  const accountColor = event.account === primaryEmail ? 'bg-blue-500' : 'bg-purple-500';
 
   if (compact) {
     return (
@@ -736,7 +743,7 @@ function MonthView({
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
 }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  // const __lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = getWeekStart(firstDay);
   
   const weeks: Date[][] = [];
@@ -1123,7 +1130,7 @@ function AgendaView({ currentDate, events, onEventClick }: { currentDate: Date; 
 
   return (
     <div className="h-full overflow-auto p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-8xl mx-auto space-y-6">
         {Object.entries(eventsByDate).map(([dateStr, dateEvents]) => {
           const eventDate = getEventTime(dateEvents[0]).start;
           const isToday = isSameDay(eventDate, today);
@@ -1497,7 +1504,6 @@ function DeleteConfirmDialog({
 function RescheduleConfirmDialog({
   event,
   newStart,
-  newEnd,
   onConfirm,
   onCancel
 }: {

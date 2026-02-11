@@ -1,8 +1,16 @@
 // Gateway WebSocket Client - connects to Clawdbot gateway
 
 const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
-const DEFAULT_TOKEN = '968e93dd5cd18c59199922186dc437b908af96ff6374aca0';
-const SESSION_KEY = 'chat-agent'; // Chat agent session (Sonnet, reports to Brain)
+const DEFAULT_TOKEN = '';
+const DEFAULT_SESSION_KEY = 'agent:froggo:dashboard'; // Default session key (overridable via setSessionKey)
+
+/** Callback interface for per-runId event handling */
+export interface RunCallback {
+  onDelta?: (delta: string, payload: any) => void;
+  onMessage?: (content: string, payload: any) => void;
+  onEnd?: (payload: any) => void;
+  onError?: (error: string, payload: any) => void;
+}
 
 // Load settings from localStorage
 function getSettings(): { gatewayUrl: string; gatewayToken: string } {
@@ -33,14 +41,18 @@ class Gateway {
   private reconnectAttempts = 0;
   private maxReconnectDelay = 30000;
   private baseReconnectDelay = 1000;
-  private sessionKey = SESSION_KEY;
+  private sessionKey = DEFAULT_SESSION_KEY;
   private gatewayUrl = DEFAULT_GATEWAY_WS;
   private token = DEFAULT_TOKEN;
+  private activeRunIds = new Set<string>();
+  // Per-runId callback system — components register handlers keyed by runId
+  // so multiple concurrent requests (e.g. multi-agent rooms) each get their own events
+  private runCallbacks = new Map<string, RunCallback>();
   
   // Heartbeat
   private heartbeatInterval: number | null = null;
   private heartbeatTimeout: number | null = null;
-  private lastPong = 0;
+  // private lastPong = 0;
   private readonly HEARTBEAT_INTERVAL = 30000;
   private readonly HEARTBEAT_TIMEOUT = 10000;
   private readonly CONNECT_TIMEOUT = 15000;
@@ -108,7 +120,7 @@ class Gateway {
     this.ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
-        this.lastPong = Date.now();
+        // this.lastPong = Date.now();
         
         if (msg.type !== 'event' || !msg.event?.startsWith('chat.')) {
           console.log('[Gateway] Received:', msg.type, msg.event || msg.method || '');
@@ -147,13 +159,64 @@ class Gateway {
         if (msg.type === 'event') {
           const payload = msg.payload || {};
           const eventSessionKey = payload?.sessionKey || '';
-          const isOurSession = !eventSessionKey || eventSessionKey === this.sessionKey;
+          // Accept events that match our current session key OR have a tracked runId.
+          // If no routing info is present, REJECT the event to prevent cross-session bleed.
+          const matchesSession = eventSessionKey && eventSessionKey === this.sessionKey;
+          const matchesRunId = payload?.runId && this.activeRunIds.has(payload.runId);
+          const isOurSession = matchesSession || matchesRunId;
           
           // Debug log for chat-related events
           if (msg.event?.startsWith('chat')) {
-            console.log('[Gateway] Chat event:', msg.event, 'isOurSession:', isOurSession, 'payload:', JSON.stringify(payload).slice(0, 200));
+            console.log('[Gateway] Chat event:', msg.event, 'isOurSession:', isOurSession, 'runId:', payload?.runId, 'payload:', JSON.stringify(payload).slice(0, 200));
           }
-          
+
+          // Per-runId callback dispatch — fires BEFORE session-based filtering
+          // so components that registered for a specific runId always get their events
+          const eventRunId = payload?.runId;
+          if (eventRunId && this.runCallbacks.has(eventRunId)) {
+            const cb = this.runCallbacks.get(eventRunId)!;
+            const content = payload?.message?.content?.[0]?.text || payload?.content || '';
+            if (msg.event === 'chat.delta' || (msg.event === 'chat' && payload?._event === 'delta')) {
+              const delta = payload?.delta || '';
+              if (delta && cb.onDelta) cb.onDelta(delta, payload);
+            }
+            if (msg.event === 'chat.message' || (msg.event === 'chat' && payload?.state === 'final')) {
+              if (content && cb.onMessage) cb.onMessage(content, payload);
+              if (cb.onEnd) cb.onEnd(payload);
+              this.runCallbacks.delete(eventRunId);
+              this.activeRunIds.delete(eventRunId);
+            }
+            if (msg.event === 'chat.end') {
+              if (cb.onEnd) cb.onEnd(payload);
+              this.runCallbacks.delete(eventRunId);
+              this.activeRunIds.delete(eventRunId);
+            }
+            if (msg.event === 'chat.error') {
+              const errMsg = payload?.message || payload?.error || 'Unknown error';
+              if (cb.onError) cb.onError(errMsg, payload);
+              this.runCallbacks.delete(eventRunId);
+              this.activeRunIds.delete(eventRunId);
+            }
+            // Also handle the unified 'chat' event with state field
+            if (msg.event === 'chat') {
+              if (payload?.state === 'final') {
+                if (content && cb.onMessage) cb.onMessage(content, payload);
+                if (cb.onEnd) cb.onEnd(payload);
+                this.runCallbacks.delete(eventRunId);
+                this.activeRunIds.delete(eventRunId);
+              } else if (payload?.state === 'delta') {
+                // Delta: payload.delta has incremental text, content has full accumulated text
+                const deltaText = payload?.delta;
+                if (deltaText && cb.onDelta) {
+                  cb.onDelta(deltaText, payload);
+                } else if (content && cb.onMessage) {
+                  // No incremental delta available — send full content as message update
+                  cb.onMessage(content, payload);
+                }
+              }
+            }
+          }
+
           if (msg.event === 'chat.delta' && isOurSession) {
             this.emit('chat.delta', payload);
             this.emit('chat', { ...payload, _event: 'delta' });
@@ -168,8 +231,13 @@ class Gateway {
             this.emit('chat', { ...payload, _event: 'error', error: true });
           }
           
-          this.emit(msg.event, payload);
-          this.emit('*', msg);
+          // Only emit session-routed events if they belong to our session
+          // Global events (no routing info) are still emitted to allow system-wide notifications
+          const hasRoutingInfo = eventSessionKey || payload?.runId;
+          if (!hasRoutingInfo || isOurSession) {
+            this.emit(msg.event, payload);
+            this.emit('*', msg);
+          }
         }
       } catch (err) {
         console.error('[Gateway] Parse error:', err);
@@ -230,7 +298,7 @@ class Gateway {
     }
     this.stopHeartbeat();
     
-    for (const [id, p] of this.pending) {
+    for (const [_id, p] of this.pending) {
       clearTimeout(p.timer);
       p.reject(new Error('Connection closed'));
     }
@@ -249,7 +317,7 @@ class Gateway {
 
   private startHeartbeat() {
     this.stopHeartbeat();
-    this.lastPong = Date.now();
+    // this.lastPong = Date.now();
     
     this.heartbeatInterval = window.setInterval(() => {
       this.sendHeartbeat();
@@ -391,9 +459,26 @@ class Gateway {
 
   getState(): ConnectionState { return this.state; }
   getSessionKey(): string { return this.sessionKey; }
+  
+  setSessionKey(key: string) {
+    this.sessionKey = key;
+    this.activeRunIds.clear();
+    console.log('[Gateway] Session key changed to:', key);
+  }
 
   // High-level methods
   async getSessions() {
+    if (!this.connected) {
+      console.warn('[Gateway] getSessions called before connected, waiting...');
+      // Wait up to 5 seconds for connection
+      for (let i = 0; i < 50; i++) {
+        if (this.connected) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (!this.connected) {
+        throw new Error('Not connected');
+      }
+    }
     return this.request<{ sessions: any[] }>('sessions.list', {});
   }
 
@@ -448,6 +533,7 @@ class Gateway {
       const finish = (content: string) => {
         if (!resolved) {
           resolved = true;
+          clearTimeout(timeout);
           cleanup();
           resolve({ content });
         }
@@ -456,6 +542,7 @@ class Gateway {
       const fail = (err: Error) => {
         if (!resolved) {
           resolved = true;
+          clearTimeout(timeout);
           cleanup();
           reject(err);
         }
@@ -541,14 +628,59 @@ class Gateway {
     });
   }
 
-  // Fire-and-forget send for streaming UI
-  async sendChatStreaming(message: string): Promise<void> {
+  // Fire-and-forget send for streaming UI — returns runId for event filtering
+  async sendChatStreaming(message: string): Promise<string | undefined> {
     const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    await this.request('chat.send', { 
+    const result = await this.request('chat.send', { 
       message, 
       sessionKey: this.sessionKey, 
       idempotencyKey,
     });
+    const runId = result?.runId;
+    if (runId) {
+      this.activeRunIds.add(runId);
+    }
+    return runId;
+  }
+
+  /** Remove a tracked runId (call when response is complete) */
+  clearRunId(runId: string) {
+    this.activeRunIds.delete(runId);
+    this.runCallbacks.delete(runId);
+  }
+
+  /**
+   * Send a chat message to ANY session key with per-request callbacks.
+   * Does NOT require setSessionKey() — each request is self-contained.
+   * Perfect for multi-agent rooms where multiple agents respond concurrently.
+   */
+  async sendChatWithCallbacks(
+    message: string,
+    sessionKey: string,
+    callbacks: RunCallback,
+  ): Promise<string | undefined> {
+    const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const result = await this.request('chat.send', {
+      message,
+      sessionKey,
+      idempotencyKey,
+    });
+    const runId = result?.runId;
+    if (runId) {
+      this.activeRunIds.add(runId);
+      this.runCallbacks.set(runId, callbacks);
+      // Safety timeout — clean up after 3 minutes if no response
+      setTimeout(() => {
+        if (this.runCallbacks.has(runId)) {
+          console.warn('[Gateway] RunId timeout, cleaning up:', runId);
+          const cb = this.runCallbacks.get(runId);
+          if (cb?.onError) cb.onError('Response timeout', {});
+          this.runCallbacks.delete(runId);
+          this.activeRunIds.delete(runId);
+        }
+      }, 180000);
+    }
+    return runId;
   }
 
   async abortChat() {

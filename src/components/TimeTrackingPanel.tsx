@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Filter, Download } from 'lucide-react';
+import { Clock, Filter } from 'lucide-react';
 import { getTimeTrackingData, getProjectStats, TimeTrackingData, ProjectStats } from '../services/analyticsService';
 
 export default function TimeTrackingPanel() {

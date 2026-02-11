@@ -139,7 +139,7 @@ export default function ChannelsTab() {
                   <div className="flex items-center gap-2">
                     {hasError && <span className="w-2 h-2 rounded-full bg-red-400" title="Has errors" />}
                     <span className={`px-2 py-0.5 rounded text-xs ${
-                      connectedCount > 0 ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                      connectedCount > 0 ? 'bg-green-500/20 text-green-400' : 'bg-clawd-bg0/20 text-clawd-text-dim'
                     }`}>
                       {connectedCount > 0 ? 'Online' : 'Offline'}
                     </span>
@@ -154,14 +154,14 @@ export default function ChannelsTab() {
                     ) : channel.accounts.map((account, i) => (
                       <div key={i} className="p-4 border-b border-clawd-border last:border-b-0 hover:bg-clawd-bg/30">
                         <div className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded ${account.connected ? 'bg-green-500/20' : 'bg-gray-500/20'}`}>
-                            {account.connected ? <Wifi size={14} className="text-green-400" /> : <WifiOff size={14} className="text-gray-400" />}
+                          <div className={`p-1.5 rounded ${account.connected ? 'bg-green-500/20' : 'bg-clawd-bg0/20'}`}>
+                            {account.connected ? <Wifi size={14} className="text-green-400" /> : <WifiOff size={14} className="text-clawd-text-dim" />}
                           </div>
                           <div className="flex-1">
                             <div className="text-sm font-medium">{account.name || account.accountId}</div>
                             <div className="text-xs text-clawd-text-dim flex flex-wrap gap-x-3 gap-y-0.5">
                               {account.enabled !== undefined && (
-                                <span className={account.enabled ? 'text-green-400' : 'text-gray-400'}>
+                                <span className={account.enabled ? 'text-green-400' : 'text-clawd-text-dim'}>
                                   {account.enabled ? 'Enabled' : 'Disabled'}
                                 </span>
                               )}

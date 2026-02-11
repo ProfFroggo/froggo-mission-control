@@ -9,7 +9,7 @@ import {
   MessageCircle,
   RefreshCw,
 } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface UsageStats {
   totalMessages: number;
@@ -34,19 +34,19 @@ export default function UsageStatsPanel() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const db = await (window as any).clawdbot?.db?.connect();
-      if (!db) throw new Error('Database not available');
+      const dbExec = (window as any).clawdbot?.db?.exec;
+      if (!dbExec) throw new Error('Database not available');
 
       const cutoffDate = Date.now() - timeRange * 24 * 60 * 60 * 1000;
 
       // Total messages
-      const msgResult = await db.query(
+      const msgResult = await dbExec(
         'SELECT COUNT(*) as count FROM messages WHERE timestamp >= ?',
         [cutoffDate]
       );
 
       // Messages per day
-      const dailyResult = await db.query(`
+      const dailyResult = await dbExec(`
         SELECT 
           date(timestamp / 1000, 'unixepoch') as date,
           COUNT(*) as count
@@ -57,7 +57,7 @@ export default function UsageStatsPanel() {
       `, [cutoffDate]);
 
       // Channel breakdown
-      const channelResult = await db.query(`
+      const channelResult = await dbExec(`
         SELECT 
           CASE 
             WHEN session_key LIKE '%whatsapp%' THEN 'WhatsApp'
@@ -73,7 +73,7 @@ export default function UsageStatsPanel() {
       `, [cutoffDate]);
 
       // Peak hours
-      const hoursResult = await db.query(`
+      const hoursResult = await dbExec(`
         SELECT 
           CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour,
           COUNT(*) as count
@@ -84,13 +84,13 @@ export default function UsageStatsPanel() {
       `, [cutoffDate]);
 
       // Total sessions
-      const sessionsResult = await db.query(
+      const sessionsResult = await dbExec(
         'SELECT COUNT(DISTINCT session_key) as count FROM messages WHERE timestamp >= ?',
         [cutoffDate]
       );
 
       // Active channels
-      const activeChannelsResult = await db.query(`
+      const activeChannelsResult = await dbExec(`
         SELECT COUNT(DISTINCT 
           CASE 
             WHEN session_key LIKE '%whatsapp%' THEN 'WhatsApp'
@@ -105,7 +105,7 @@ export default function UsageStatsPanel() {
       `, [cutoffDate]);
 
       // Avg response time (simplified - time between consecutive messages)
-      const responseTimeResult = await db.query(`
+      const responseTimeResult = await dbExec(`
         SELECT AVG(time_diff) as avg
         FROM (
           SELECT 
@@ -116,17 +116,15 @@ export default function UsageStatsPanel() {
         WHERE time_diff IS NOT NULL AND time_diff < 60
       `, [cutoffDate]);
 
-      await db.close();
-
       setStats({
-        totalMessages: msgResult.rows[0]?.count || 0,
-        totalSessions: sessionsResult.rows[0]?.count || 0,
-        activeChannels: activeChannelsResult.rows[0]?.count || 0,
-        messagesPerDay: dailyResult.rows || [],
-        channelBreakdown: channelResult.rows || [],
-        peakHours: hoursResult.rows || [],
-        avgResponseTime: responseTimeResult.rows[0]?.avg || 0,
-        totalConversations: sessionsResult.rows[0]?.count || 0,
+        totalMessages: msgResult?.result?.[0]?.count || 0,
+        totalSessions: sessionsResult?.result?.[0]?.count || 0,
+        activeChannels: activeChannelsResult?.result?.[0]?.count || 0,
+        messagesPerDay: dailyResult?.result || [],
+        channelBreakdown: channelResult?.result || [],
+        peakHours: hoursResult?.result || [],
+        avgResponseTime: responseTimeResult?.result?.[0]?.avg || 0,
+        totalConversations: sessionsResult?.result?.[0]?.count || 0,
       });
     } catch (error) {
       console.error('Failed to load usage stats:', error);

@@ -1,19 +1,242 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer, shell, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec, execSync } from 'child_process';
+import { exec, execSync, execFile } from 'child_process';
 import * as os from 'os';
+import * as crypto from 'crypto';
 import * as http from 'http';
 import { calendarService } from './calendar-service';
 import { accountsService } from './accounts-service';
+import { accountsServiceV2 } from './accounts-service-v2';
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
+import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
 import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
-// const { registerThreadingHandlers } = require('./threading-handler'); // DISABLED - incomplete implementation
+import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
+import * as xApi from './x-api-client';
+import { initXApiTokens } from './x-api-client';
+import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
+import { db, prepare, getScheduleDb, getSecurityDb, closeDb } from './database';
+import { validateFsPath } from './fs-validation';
+
+// ============== AGENT REGISTRY ==============
+interface AgentRegistryEntry {
+  role: string;
+  description: string;
+  capabilities: string[];
+  prompt: string;
+  aliases: string[];
+  clawdAgentId: string;
+}
+
+function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
+  const registryPath = path.join(__dirname, 'agent-registry.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+    return data.agents || {};
+  } catch (err) {
+    console.error('Failed to load agent registry, using empty:', err);
+    return {};
+  }
+}
+
+function getAgentRegistry(): Record<string, AgentRegistryEntry> {
+  // Cache with 60s TTL so file changes are picked up without restart
+  const now = Date.now();
+  if (!(global as any)._agentRegistryCache || now - ((global as any)._agentRegistryCacheTime || 0) > 60000) {
+    (global as any)._agentRegistryCache = loadAgentRegistry();
+    (global as any)._agentRegistryCacheTime = now;
+  }
+  return (global as any)._agentRegistryCache;
+}
+
+// ============== DEFAULT EMAIL ACCOUNT ==============
+/**
+ * Get first authenticated Google email from gog CLI.
+ * Returns empty string if no account is available (no hardcoded fallback).
+ */
+function getDefaultGogEmail(): string {
+  try {
+    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
+      timeout: 5000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+    }).toString();
+    const gogData = JSON.parse(gogList);
+    const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
+    return accounts[0]?.email || '';
+  } catch {
+    return '';
+  }
+}
+
+// ============== AGENTS LIST FROM GATEWAY ==============
+function getAgentsFromDB(): any[] {
+  try {
+    const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all() as any[];
+    return rows.map((r: any) => ({
+      id: r.id,
+      identityName: r.name || r.id,
+      identityEmoji: '🤖',
+      description: r.role || r.description || '',
+      workspace: `~/clawd-${r.id}`,
+      model: '',
+      isDefault: r.id === 'froggo',
+    }));
+  } catch (e: any) {
+    safeLog.error('[Agents] DB fallback failed:', e.message);
+    return [];
+  }
+}
+
+ipcMain.handle('agents:list', async () => {
+  return new Promise((resolve) => {
+    exec('openclaw agents list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout, stderr) => {
+      if (error) {
+        safeLog.warn('[Agents] CLI failed, falling back to DB:', error.message);
+        const agents = getAgentsFromDB();
+        safeLog.log(`[Agents] Loaded ${agents.length} agents from DB fallback`);
+        resolve({ success: agents.length > 0, agents });
+        return;
+      }
+
+      try {
+        // Parse JSON output from CLI
+        const rawAgents = JSON.parse(stdout || '[]');
+        if (rawAgents.length === 0) {
+          safeLog.warn('[Agents] CLI returned empty, falling back to DB');
+          const agents = getAgentsFromDB();
+          resolve({ success: agents.length > 0, agents });
+          return;
+        }
+
+        safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
+        resolve({ success: true, agents: rawAgents });
+      } catch (parseError: any) {
+        safeLog.warn('[Agents] Parse failed, falling back to DB:', (parseError as any).message);
+        const agents = getAgentsFromDB();
+        resolve({ success: agents.length > 0, agents });
+      }
+    });
+  });
+});
+
+// ============== SESSIONS LIST ==============
+ipcMain.handle('sessions:list', async (_, activeMinutes?: number) => {
+  return new Promise((resolve) => {
+    const args = ['sessions', 'list', '--json'];
+    if (activeMinutes) {
+      args.push('--active', String(activeMinutes));
+    }
+    
+    exec(
+      `openclaw ${args.join(' ')}`,
+      { 
+        timeout: 10000, 
+        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } 
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          safeLog.warn('[Sessions] CLI failed:', error.message);
+          resolve({ success: false, error: error.message, sessions: [] });
+          return;
+        }
+
+        try {
+          const data = JSON.parse(stdout || '{}');
+          safeLog.log(`[Sessions] Loaded ${data.sessions?.length || 0} sessions from gateway`);
+          resolve({ 
+            success: true, 
+            sessions: data.sessions || [],
+            count: data.count || 0,
+            path: data.path
+          });
+        } catch (parseError: any) {
+          safeLog.warn('[Sessions] Parse failed:', parseError.message);
+          resolve({ success: false, error: parseError.message, sessions: [] });
+        }
+      }
+    );
+  });
+});
+
+// ============== AGENT REGISTRY FROM DB ==============
+ipcMain.handle('get-agent-registry', async () => {
+  try {
+    const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all();
+    safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
+    return agents;
+  } catch (error: any) {
+    safeLog.error('[AgentRegistry] Error:', error.message);
+    return [];
+  }
+});
+
+// ============== WIDGET MANIFEST SCANNER ==============
+ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
+  try {
+    // Validate agentId to prevent path traversal
+    if (!agentId || agentId.includes('..') || agentId.includes('/') || agentId.includes('\\')) {
+      safeLog.warn('[WidgetManifest] Invalid agentId:', agentId);
+      return { error: 'Invalid agent ID' };
+    }
+
+    // Construct path to widget manifest
+    const manifestPath = path.join(os.homedir(), '.openclaw', 'agents', agentId, 'widgets', 'widget-manifest.json');
+
+    // Check if file exists
+    if (!fs.existsSync(manifestPath)) {
+      // Not an error - many agents won't have widgets
+      return { error: 'Manifest not found' };
+    }
+
+    // Validate the path is within .openclaw/agents/ (defense in depth)
+    const allowedDir = path.join(os.homedir(), '.openclaw', 'agents');
+    const resolvedPath = path.resolve(manifestPath);
+    if (!resolvedPath.startsWith(allowedDir)) {
+      safeLog.error('[WidgetManifest] Path traversal attempt:', manifestPath);
+      return { error: 'Invalid manifest path' };
+    }
+
+    // Read and parse manifest
+    const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+    const manifest = JSON.parse(manifestContent);
+
+    // Validate component paths don't escape widget directory
+    const widgetDir = path.dirname(manifestPath);
+    if (manifest.widgets && Array.isArray(manifest.widgets)) {
+      for (const widget of manifest.widgets) {
+        if (widget.component) {
+          const componentPath = path.resolve(widgetDir, widget.component);
+          if (!componentPath.startsWith(widgetDir)) {
+            safeLog.error('[WidgetManifest] Component path escapes directory:', widget.component);
+            return { error: 'Invalid component path' };
+          }
+        }
+      }
+    }
+
+    safeLog.log(`[WidgetManifest] Loaded manifest for ${agentId}`);
+    return manifest;
+
+  } catch (err: any) {
+    safeLog.error('[WidgetManifest] Error reading manifest:', err.message);
+    return { error: err.message };
+  }
+});
 
 // ============== SAFE LOGGER (EPIPE-proof) ==============
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
+// Debug file logger for agent issues
+const debugLogPath = '/tmp/clawd-dashboard-debug.log';
+function debugLog(...args: any[]) {
+  try {
+    const ts = new Date().toISOString();
+    const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+    require('fs').appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
+  } catch (e) { /* ignore */ }
+}
+
 const safeLog = {
   log: (...args: any[]) => {
     try {
@@ -22,14 +245,6 @@ const safeLog = {
       }
     } catch (e: any) {
       // Silently ignore EPIPE and other stream errors
-      if (e.code !== 'EPIPE' && e.code !== 'ERR_STREAM_DESTROYED') {
-        // Only report unexpected errors to stderr (if writable)
-        try {
-          if (process.stderr.writable) {
-            console.error('[SafeLog] Unexpected error:', e);
-          }
-        } catch {}
-      }
     }
   },
   error: (...args: any[]) => {
@@ -86,10 +301,13 @@ let modelServerPort = 18799;
 
 let mainWindow: BrowserWindow | null = null;
 
-// Request microphone access on macOS
+// Request microphone AND camera access on macOS
 if (process.platform === 'darwin') {
   systemPreferences.askForMediaAccess('microphone').then(granted => {
     safeLog.log('Microphone access:', granted ? 'granted' : 'denied');
+  });
+  systemPreferences.askForMediaAccess('camera').then(granted => {
+    safeLog.log('Camera access:', granted ? 'granted' : 'denied');
   });
 }
 
@@ -115,30 +333,36 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: true,
     },
   });
 
   // Setup notification handlers
   setupNotificationHandlers(mainWindow);
 
-  // Setup threading handlers
-  // registerThreadingHandlers(ipcMain); // DISABLED - incomplete implementation
-  
   // Register X Automations handlers
   registerXAutomationsHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
-    mainWindow.loadURL('http://localhost:5174');
+    mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
     safeLog.log('Running in production mode, loading from dist');
     mainWindow.loadFile(distPath);
   }
 
-  // Handle permission requests (microphone for voice)
+  // Handle permission requests (microphone, camera, screen capture)
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
-    const allowedPermissions = ['media', 'microphone', 'audioCapture'];
+    const allowedPermissions = [
+      'media',           // Generic media access
+      'microphone',      // Microphone
+      'camera',          // Camera
+      'audioCapture',    // Audio capture
+      'videoCapture',    // Video capture (camera)
+      'display-capture', // Screen sharing / getDisplayMedia
+      'screen',          // Screen access
+    ];
     if (allowedPermissions.includes(permission)) {
       safeLog.log('Permission granted:', permission);
       callback(true);
@@ -146,6 +370,27 @@ function createWindow() {
       safeLog.log('Permission denied:', permission);
       callback(false);
     }
+  });
+
+  // Handle permission checks (Electron checks permissions before requesting them)
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    const allowedPermissions = [
+      'media', 'microphone', 'camera', 'audioCapture',
+      'videoCapture', 'display-capture', 'screen',
+    ];
+    if (allowedPermissions.includes(permission)) {
+      return true;
+    }
+    safeLog.log('Permission check denied:', permission, 'from', requestingOrigin);
+    return false;
+  });
+
+  // Catch renderer crashes to diagnose issues
+  mainWindow.webContents.on('render-process-gone', (event, details) => {
+    safeLog.log('[Main] RENDERER CRASHED:', details.reason, details.exitCode);
+  });
+  mainWindow.webContents.on('crashed', () => {
+    safeLog.log('[Main] RENDERER CRASHED (legacy event)');
   });
 
   // SAFEGUARD: Send cleanup signal before window closes
@@ -185,53 +430,43 @@ let lastTaskNotifyMtime = 0;
 // Helper function to emit task events for real-time Dashboard updates
 function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
   // Get task data from database for the event payload
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const query = `SELECT id, title, description, status, project, assigned_to, reviewerId as reviewer_id, priority, due_date, updated_at FROM tasks WHERE id='${taskId}'`;
-  
-  exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 1000 }, (error, stdout) => {
-    if (error) {
-      safeLog.error('[TaskEvents] Failed to get task data:', error.message);
+  try {
+    const task = prepare(`SELECT id, title, description, status, project, assigned_to, reviewerId as reviewer_id, priority, due_date, updated_at FROM tasks WHERE id = ?`).get(taskId) as any;
+
+    if (!task) {
+      safeLog.error('[TaskEvents] Task not found:', taskId);
       return;
     }
-    
+
+    const fullPayload = { ...task, ...payload };
+
+    // Write to notification file for file watcher (backup method)
+    const notifyFile = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
+    const notification = {
+      event: eventType,
+      task: fullPayload,
+      timestamp: Date.now()
+    };
+
     try {
-      const tasks = JSON.parse(stdout);
-      if (tasks.length === 0) {
-        safeLog.error('[TaskEvents] Task not found:', taskId);
-        return;
-      }
-      
-      const task = tasks[0];
-      const fullPayload = { ...task, ...payload };
-      
-      // Write to notification file for file watcher (backup method)
-      const notifyFile = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
-      const notification = {
-        event: eventType,
-        task: fullPayload,
-        timestamp: Date.now()
-      };
-      
-      try {
-        fs.mkdirSync(path.dirname(notifyFile), { recursive: true });
-        fs.writeFileSync(notifyFile, JSON.stringify(notification));
-      } catch (writeError) {
-        safeLog.error('[TaskEvents] Failed to write notification file:', writeError);
-      }
-      
-      // DIRECT WebSocket broadcast via renderer
-      // This is the PRIMARY method for real-time updates
-      safeSend('gateway-broadcast', {
-        type: 'event',
-        event: eventType,
-        payload: fullPayload
-      });
-      
-      safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
-    } catch (parseError) {
-      safeLog.error('[TaskEvents] Failed to parse task data:', parseError);
+      fs.mkdirSync(path.dirname(notifyFile), { recursive: true });
+      fs.writeFileSync(notifyFile, JSON.stringify(notification));
+    } catch (writeError) {
+      safeLog.error('[TaskEvents] Failed to write notification file:', writeError);
     }
-  });
+
+    // DIRECT WebSocket broadcast via renderer
+    // This is the PRIMARY method for real-time updates
+    safeSend('gateway-broadcast', {
+      type: 'event',
+      event: eventType,
+      payload: fullPayload
+    });
+
+    safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
+  } catch (error: any) {
+    safeLog.error('[TaskEvents] Failed to get task data:', error.message);
+  }
 }
 
 // Schedule processor interval
@@ -240,117 +475,122 @@ const SCHEDULE_CHECK_INTERVAL = 30000; // 30 seconds
 
 // Process scheduled items that are overdue
 async function processScheduledItems() {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  
-  // Query for pending items where scheduled_for <= now
-  // Fetch all pending and filter in JS (handles various datetime formats)
-  const query = `SELECT * FROM schedule WHERE status='pending'`;
-  
-  exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, async (error, stdout) => {
-    if (error) {
-      safeLog.error('[ScheduleProcessor] Query error:', error.message);
-      return;
-    }
-    
-    let items: any[] = [];
+  // Query for pending items and filter in JS (handles various datetime formats)
+  let items: any[] = [];
+  try {
+    items = prepare("SELECT * FROM schedule WHERE status = 'pending'").all() as any[];
+  } catch (e: any) {
+    safeLog.error('[ScheduleProcessor] Query error:', e.message);
+    return;
+  }
+
+  if (items.length === 0) return;
+
+  // Filter for overdue items (scheduled_for <= now)
+  const now = new Date();
+  items = items.filter(item => {
+    if (!item.scheduled_for) return false;
+    const scheduledTime = new Date(item.scheduled_for);
+    return scheduledTime <= now;
+  });
+
+  if (items.length === 0) return;
+
+  safeLog.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
+
+  // Helper to update schedule status via parameterized query
+  const updateScheduleStatus = (itemId: string, status: string, error?: string | null) => {
     try {
-      const trimmed = stdout.trim();
-      if (trimmed && trimmed !== '[]') {
-        items = JSON.parse(trimmed);
+      prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(status, error || null, itemId);
+    } catch (dbErr: any) {
+      safeLog.error('[ScheduleProcessor] DB update error:', dbErr);
+    }
+  };
+
+  for (const item of items) {
+    safeLog.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
+
+    let execCmd = '';
+    let metadata: any = {};
+
+    try {
+      if (item.metadata) {
+        metadata = JSON.parse(item.metadata);
       }
     } catch (e) {
-      // No items or parse error - that's fine
-      return;
+      safeLog.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
     }
-    
-    if (items.length === 0) return;
-    
-    // Filter for overdue items (scheduled_for <= now) handling various datetime formats
-    const now = new Date();
-    items = items.filter(item => {
-      if (!item.scheduled_for) return false;
-      const scheduledTime = new Date(item.scheduled_for);
-      return scheduledTime <= now;
-    });
-    
-    if (items.length === 0) return;
-    
-    safeLog.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
-    
-    for (const item of items) {
-      safeLog.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
-      
-      let execCmd = '';
-      let metadata: any = {};
-      
+
+    // Build command based on type
+    if (item.type === 'tweet') {
+      // Post via X API directly
       try {
-        if (item.metadata) {
-          metadata = JSON.parse(item.metadata);
+        const result = await xApi.postTweet(item.content);
+        if (result.success) {
+          safeLog.log(`[ScheduleProcessor] Tweet posted: ${result.id}`);
+          updateScheduleStatus(item.id, 'completed');
+        } else {
+          safeLog.error(`[ScheduleProcessor] Tweet failed: ${result.error}`);
+          updateScheduleStatus(item.id, 'failed', result.error || 'Unknown tweet error');
         }
-      } catch (e) {
-        safeLog.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
+        continue;
+      } catch (e: any) {
+        safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
       }
-      
-      // Build command based on type
-      if (item.type === 'tweet') {
-        const escapedContent = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        execCmd = `bird tweet "${escapedContent}"`;
-      } else if (item.type === 'email') {
-        const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
-        const account = metadata.account || '';
-        
-        // GUARD: Skip emails with missing recipient or account (prevents gog auth loops)
-        if (!recipient || !recipient.trim()) {
-          safeLog.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing recipient' WHERE id='${item.id}'"`, () => {});
-          continue;
-        }
-        if (!account || !account.trim()) {
-          safeLog.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing GOG account' WHERE id='${item.id}'"`, () => {});
-          continue;
-        }
-        
-        const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
-        const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
-      } else {
-        safeLog.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
-        // Mark as failed with unknown type error
-        exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Unknown type: ${item.type}' WHERE id='${item.id}'"`, () => {});
+      execCmd = ''; // fallback cleared
+    } else if (item.type === 'email') {
+      const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
+      const account = metadata.account || '';
+
+      // GUARD: Skip emails with missing recipient or account (prevents gog auth loops)
+      if (!recipient || !recipient.trim()) {
+        safeLog.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
+        updateScheduleStatus(item.id, 'failed', 'Missing recipient');
         continue;
       }
-      
-      safeLog.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
-      
-      // Execute the command
-      exec(execCmd, { timeout: 60000 }, (execError, execStdout, execStderr) => {
-        if (execError) {
-          safeLog.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
-          const errorMsg = (execError.message || '').replace(/'/g, "''").slice(0, 500);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${errorMsg}' WHERE id='${item.id}'"`, () => {});
-          
-          // Notify renderer of failure
-          safeSend('schedule-processed', { 
-            id: item.id, 
-            type: item.type, 
-            success: false, 
-            error: execError.message 
-          });
-        } else {
-          safeLog.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='sent', sent_at=datetime('now') WHERE id='${item.id}'"`, () => {});
-          
-          // Notify renderer of success
-          safeSend('schedule-processed', { 
-            id: item.id, 
-            type: item.type, 
-            success: true 
-          });
-        }
-      });
+      if (!account || !account.trim()) {
+        safeLog.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
+        updateScheduleStatus(item.id, 'failed', 'Missing GOG account');
+        continue;
+      }
+
+      const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
+      const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+      execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
+    } else {
+      safeLog.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
+      updateScheduleStatus(item.id, 'failed', `Unknown type: ${item.type}`);
+      continue;
     }
-  });
+
+    safeLog.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
+
+    // Execute the command
+    exec(execCmd, { timeout: 60000 }, (execError) => {
+      if (execError) {
+        safeLog.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
+        updateScheduleStatus(item.id, 'failed', (execError.message || '').slice(0, 500));
+
+        // Notify renderer of failure
+        safeSend('schedule-processed', {
+          id: item.id,
+          type: item.type,
+          success: false,
+          error: execError.message
+        });
+      } else {
+        safeLog.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
+        updateScheduleStatus(item.id, 'sent');
+
+        // Notify renderer of success
+        safeSend('schedule-processed', {
+          id: item.id,
+          type: item.type,
+          success: true
+        });
+      }
+    });
+  }
 }
 
 function startScheduleProcessor() {
@@ -439,6 +679,13 @@ app.whenReady().then(() => {
     });
   }
   
+  // Initialize X API tokens from secret store
+  try {
+    initXApiTokens();
+  } catch (err) {
+    safeLog.error('[Main] Failed to initialize X API tokens:', err);
+  }
+
   // Start task notification watcher
   startTaskNotifyWatcher();
   
@@ -452,6 +699,11 @@ app.whenReady().then(() => {
   if (mainWindow) {
     stopNotificationEvents = setupNotificationEvents(mainWindow);
   }
+  
+  // Initialize persistent dashboard agent sessions
+  initializeDashboardAgents().catch(err => {
+    safeLog.error('[Main] Failed to initialize dashboard agents:', err);
+  });
 });
 
 app.on('window-all-closed', () => {
@@ -478,6 +730,10 @@ app.on('will-quit', () => {
     stopNotificationEvents();
     stopNotificationEvents = null;
   }
+  // Clean up dashboard agents
+  shutdownDashboardAgents();
+  // Close database connections
+  closeDb();
 });
 
 app.on('activate', () => {
@@ -486,44 +742,88 @@ app.on('activate', () => {
   }
 });
 
-// ============== GATEWAY IPC HANDLERS ==============
-ipcMain.handle('gateway:status', async () => {
+// ============== SECRET STORE / API KEY IPC HANDLERS ==============
+// These use Electron safeStorage which is available after app.ready
+
+ipcMain.handle('settings:getApiKey', async (_, keyName: string) => {
   try {
-    const response = await fetch('http://localhost:18789/api/status');
-    return await response.json();
-  } catch (error) {
-    return { error: 'Gateway not reachable' };
+    return getSecret(keyName);
+  } catch (err: any) {
+    console.error('[Settings] getApiKey error:', err.message);
+    return null;
   }
 });
 
-ipcMain.handle('gateway:sessions', async () => {
+ipcMain.handle('settings:storeApiKey', async (_, keyName: string, value: string) => {
   try {
-    const response = await fetch('http://localhost:18789/api/sessions');
-    return await response.json();
-  } catch (error) {
-    return { error: 'Gateway not reachable' };
+    storeSecret(keyName, value);
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Settings] storeApiKey error:', err.message);
+    return { success: false, error: err.message };
   }
 });
 
-// Get real sessions from Clawdbot CLI (more reliable than HTTP API)
-ipcMain.handle('gateway:sessions:list', async () => {
-  return new Promise((resolve) => {
-    exec('clawdbot sessions list --json', { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Gateway] Sessions list error:', error);
-        resolve({ success: false, sessions: [], error: error.message });
-        return;
-      }
-      try {
-        const data = JSON.parse(stdout);
-        resolve({ success: true, sessions: data.sessions || [], count: data.count || 0 });
-      } catch (e) {
-        safeLog.error('[Gateway] Sessions parse error:', e);
-        resolve({ success: false, sessions: [], error: 'Parse error' });
-      }
+ipcMain.handle('settings:hasApiKey', async (_, keyName: string) => {
+  try {
+    return hasSecret(keyName);
+  } catch (err: any) {
+    console.error('[Settings] hasApiKey error:', err.message);
+    return false;
+  }
+});
+
+ipcMain.handle('settings:deleteApiKey', async (_, keyName: string) => {
+  try {
+    deleteSecret(keyName);
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Settings] deleteApiKey error:', err.message);
+    return { success: false, error: err.message };
+  }
+});
+
+// ============== SCREEN CAPTURE IPC HANDLER ==============
+ipcMain.handle('screen:getSources', async (_, opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }) => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: (opts?.types as any) || ['window', 'screen'],
+      thumbnailSize: opts?.thumbnailSize || { width: 320, height: 180 },
     });
-  });
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL(),
+      display_id: source.display_id,
+      appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
+    }));
+  } catch (error: any) {
+    safeLog.error('[ScreenCapture] Failed to get sources:', error);
+    return [];
+  }
 });
+
+// ============== MEDIA PERMISSIONS CHECK ==============
+ipcMain.handle('media:checkPermissions', async () => {
+  if (process.platform === 'darwin') {
+    const camera = systemPreferences.getMediaAccessStatus('camera');
+    const microphone = systemPreferences.getMediaAccessStatus('microphone');
+    const screen = systemPreferences.getMediaAccessStatus('screen');
+    return { camera, microphone, screen };
+  }
+  return { camera: 'granted', microphone: 'granted', screen: 'granted' };
+});
+
+ipcMain.handle('media:requestPermission', async (_, mediaType: 'camera' | 'microphone') => {
+  if (process.platform === 'darwin') {
+    const granted = await systemPreferences.askForMediaAccess(mediaType);
+    return granted;
+  }
+  return true;
+});
+
+// ============== GATEWAY IPC HANDLERS ==============
+// gateway:sessions, gateway:sessions:list removed - renderer uses gateway.ts WebSocket directly
 
 // ============== WHISPER (Legacy - keeping for fallback) ==============
 const WHISPER_PATH = '/opt/homebrew/bin/whisper';
@@ -580,46 +880,6 @@ ipcMain.handle('whisper:check', async () => {
   return { available, path: WHISPER_PATH };
 });
 
-// ============== APPROVAL QUEUE ==============
-const APPROVAL_QUEUE_PATH = path.join(process.env.HOME || '', 'clawd', 'approvals', 'queue.json');
-
-ipcMain.handle('approvals:read', async () => {
-  try {
-    if (!fs.existsSync(APPROVAL_QUEUE_PATH)) {
-      return { items: [] };
-    }
-    const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-    return data;
-  } catch (error) {
-    safeLog.error('Failed to read approval queue:', error);
-    return { items: [] };
-  }
-});
-
-ipcMain.handle('approvals:clear', async () => {
-  try {
-    const data = { description: "Approval queue - Froggo adds items here, dashboard picks them up", items: [] };
-    fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(data, null, 2));
-    return { success: true };
-  } catch (error) {
-    safeLog.error('Failed to clear approval queue:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
-ipcMain.handle('approvals:remove', async (_, itemId: string) => {
-  try {
-    if (!fs.existsSync(APPROVAL_QUEUE_PATH)) return { success: true };
-    const data = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-    data.items = (data.items || []).filter((i: any) => i.id !== itemId);
-    fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(data, null, 2));
-    return { success: true };
-  } catch (error) {
-    safeLog.error('Failed to remove approval item:', error);
-    return { success: false, error: String(error) };
-  }
-});
-
 // ============== VOICE IPC HANDLERS ==============
 ipcMain.handle('voice:getModelUrl', async () => {
   const url = isDev 
@@ -669,6 +929,56 @@ ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
 });
 
 // froggo-db task sync
+// Get active agent sessions (for real-time task activity indicators)
+ipcMain.handle('agents:getActiveSessions', async () => {
+  try {
+    const result = await new Promise<string>((resolve, reject) => {
+      exec(
+        'openclaw sessions list --kinds agent --limit 50 --json',
+        { 
+          encoding: 'utf-8', 
+          timeout: 5000,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(stderr || error.message));
+          } else {
+            resolve(stdout.trim());
+          }
+        }
+      );
+    });
+
+    const data = JSON.parse(result);
+    const sessions = data.sessions || [];
+    
+    // Filter to recently active sessions (updated within last 2 minutes)
+    const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
+    const activeSessions = sessions
+      .filter((s: any) => s.updatedAt && s.updatedAt > twoMinutesAgo)
+      .map((s: any) => {
+        // Extract agent ID from session key (format: agent:agentId:...)
+        const parts = s.key.split(':');
+        const agentId = parts[1];
+        const sessionType = parts[2] || 'main'; // main, room:xxx, cron:xxx, etc
+        
+        return {
+          agentId,
+          sessionKey: s.key,
+          sessionType,
+          updatedAt: s.updatedAt,
+          totalTokens: s.totalTokens || 0,
+          isActive: true
+        };
+      });
+
+    return { success: true, sessions: activeSessions };
+  } catch (error: any) {
+    console.error('[agents:getActiveSessions] Error:', error.message);
+    return { success: false, sessions: [], error: error.message };
+  }
+});
 ipcMain.handle('tasks:sync', async (_, task: { 
   id: string; 
   title: string; 
@@ -948,140 +1258,258 @@ ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: stri
 
 // Quick mute conversation
 ipcMain.handle('notification-settings:mute', async (_, sessionKey: string, duration?: string) => {
-  let muteUntil = 'NULL';
-  
-  if (duration) {
-    muteUntil = `'${duration}'`;
-  } else {
-    // Default: mute for 24 hours
-    const tomorrow = new Date();
-    tomorrow.setHours(tomorrow.getHours() + 24);
-    muteUntil = `'${tomorrow.toISOString()}'`;
+  try {
+    let muteUntil: string | null = null;
+
+    if (duration) {
+      muteUntil = duration;
+    } else {
+      // Default: mute for 24 hours
+      const tomorrow = new Date();
+      tomorrow.setHours(tomorrow.getHours() + 24);
+      muteUntil = tomorrow.toISOString();
+    }
+
+    // Check if settings exist
+    const existing = prepare('SELECT id FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+
+    if (existing) {
+      prepare("UPDATE conversation_notification_settings SET mute_until = ?, notification_level = 'none' WHERE session_key = ?").run(muteUntil, sessionKey);
+    } else {
+      prepare("INSERT INTO conversation_notification_settings (session_key, notification_level, mute_until) VALUES (?, 'none', ?)").run(sessionKey, muteUntil);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Mute error:', error);
+    return { success: false, error: error.message };
   }
-  
-  // Check if settings exist
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Mute check error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      const existing = JSON.parse(stdout || '[]');
-      let cmd: string;
-      
-      if (existing.length > 0) {
-        // UPDATE existing
-        cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET mute_until = ${muteUntil}, notification_level = 'none' WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-      } else {
-        // INSERT new
-        cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_notification_settings (session_key, notification_level, mute_until) VALUES ('${sessionKey.replace(/'/g, "''")}', 'none', ${muteUntil})"`;
-      }
-      
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error('[NotificationSettings] Mute error:', error);
-          resolve({ success: false, error: error.message });
-          return;
-        }
-        
-        resolve({ success: true });
-      });
-    });
-  });
 });
 
 // Unmute conversation
 ipcMain.handle('notification-settings:unmute', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Unmute error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare("UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = ?").run(sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Unmute error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: string; content?: string; reason?: string }) => {
-  const escapedTitle = rejection.title.replace(/"/g, '\\"');
-  const escapedReason = (rejection.reason || '').replace(/"/g, '\\"');
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO rejected_decisions (type, title, content, reason) VALUES ('${rejection.type}', '${escapedTitle}', '', '${escapedReason}')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error });
-    });
-  });
+  try {
+    prepare('INSERT INTO rejected_decisions (type, title, content, reason) VALUES (?, ?, ?, ?)').run(
+      rejection.type,
+      rejection.title,
+      rejection.content || '',
+      rejection.reason || ''
+    );
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Rejections] Log error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
-ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string }) => {
-  // Handle planningNotes directly via SQL since froggo-db CLI doesn't support it yet
-  if (updates.planningNotes !== undefined) {
-    const escapedNotes = updates.planningNotes.replace(/'/g, "''"); // SQL escape
-    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET planning_notes='${escapedNotes}', updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
+ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string; reviewStatus?: string; reviewerId?: string }) => {
+  try {
+    const sqlFields: string[] = [];
+    const params: any[] = [];
     
-    return new Promise((resolve) => {
-      exec(sqlCmd, { timeout: 10000 }, (error) => {
-        if (error) {
-          resolve({ success: false, error: error.message });
-        } else {
-          // Emit task update event for real-time Dashboard refresh
-          emitTaskEvent('task.updated', taskId);
-          resolve({ success: true });
-        }
-      });
-    });
-  }
-  
-  // For other fields, use froggo-db CLI
-  const args = [
-    updates.status ? `--status ${updates.status}` : '',
-    updates.assignedTo ? `--assign ${updates.assignedTo}` : ''
-  ].filter(Boolean).join(' ');
-  
-  const cmd = `froggo-db task-update "${taskId}" ${args}`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
+    if (updates.planningNotes !== undefined) {
+      sqlFields.push('planning_notes = ?');
+      params.push(updates.planningNotes);
+    }
+    
+    if (updates.reviewStatus !== undefined) {
+      sqlFields.push('reviewStatus = ?');
+      params.push(updates.reviewStatus);
+    }
+    
+    if (updates.reviewerId !== undefined) {
+      sqlFields.push('reviewerId = ?');
+      params.push(updates.reviewerId);
+    }
+    
+    if (updates.status !== undefined) {
+      sqlFields.push('status = ?');
+      params.push(updates.status);
+    }
+    
+    if (updates.assignedTo !== undefined) {
+      sqlFields.push('assigned_to = ?');
+      params.push(updates.assignedTo);
+    }
+    
+    // Execute SQL update if we have any fields
+    if (sqlFields.length > 0) {
+      const now = Date.now();
+      sqlFields.push('updated_at = ?');
+      params.push(now);
+      params.push(taskId);
+      
+      const result = prepare(
+        `UPDATE tasks SET ${sqlFields.join(', ')} WHERE id = ?`
+      ).run(...params);
+      
+      if (result.changes > 0) {
+        safeLog.log('[Tasks] Updated via prepared statement:', taskId, updates);
+        // Emit task update event for real-time Dashboard refresh
+        emitTaskEvent('task.updated', taskId);
+        return { success: true };
       } else {
-        resolve({ success: true });
+        safeLog.warn('[Tasks] Update: task not found:', taskId);
+        return { success: false, error: 'Task not found' };
       }
-    });
-  });
+    }
+    
+    // If no updates provided, return success
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Tasks] Update error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
-  // OX LITE: Filter to only tasks assigned to Ox (worker/onchain_worker)
-  const oxFilter = "assigned_to IN ('worker', 'onchain_worker', 'ox')";
-  const statusFilter = status ? `status='${status}'` : '';
-  const whereClause = statusFilter ? `WHERE ${oxFilter} AND ${statusFilter}` : `WHERE ${oxFilter}`;
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM tasks ${whereClause} ORDER BY created_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, tasks: [] });
-      } else {
-        try {
-          const tasks = JSON.parse(stdout || '[]');
-          resolve({ success: true, tasks });
-        } catch {
-          resolve({ success: false, tasks: [] });
-        }
-      }
-    });
-  });
+  try {
+    // Only select needed columns, exclude large progress blob for list view
+    const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
+    // Exclude cancelled AND archived tasks from main view
+    let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
+    const params: any[] = [];
+    if (status) {
+      whereClause += ' AND status = ?';
+      params.push(status);
+    }
+
+    const tasks = prepare(`
+      SELECT ${columns}, 
+        (SELECT MAX(timestamp) FROM task_activity WHERE task_id = tasks.id) as last_activity_at
+      FROM tasks 
+      WHERE ${whereClause} 
+      ORDER BY created_at DESC 
+      LIMIT 500
+    `).all(...params);
+
+    // Get total done count (including archived) for display
+    const { 'COUNT(*)': totalDone } = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as any;
+    const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
+
+    return { success: true, tasks, totalDone, totalArchived };
+  } catch (error: any) {
+    safeLog.error('[tasks:list] Error:', error.message);
+    return { success: false, tasks: [] };
+  }
+});
+
+// Search archived tasks (for audit trail - includes all tasks)
+ipcMain.handle('tasks:search', async (_, query: string, includeArchived = true) => {
+  try {
+    const pattern = `%${query}%`;
+    const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
+    const tasks = prepare(`SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE ? OR description LIKE ? OR id LIKE ?) ${archiveFilter} ORDER BY updated_at DESC LIMIT 100`).all(pattern, pattern, pattern);
+    return { success: true, tasks };
+  } catch (error: any) {
+    safeLog.error('[tasks:search] Error:', error.message);
+    return { success: false, tasks: [] };
+  }
+});
+
+// Get task with full details including progress (for audit)
+ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
+  try {
+    const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+    return { success: true, task: task || null };
+  } catch (error: any) {
+    safeLog.error('[tasks:getWithProgress] Error:', error.message);
+    return { success: false, task: null };
+  }
+});
+
+// ============== ANALYTICS DATA HANDLER ==============
+ipcMain.handle('analytics:getData', async (_, timeRange: string) => {
+  try {
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+
+    // Query 1: Daily task completions
+    const completions = prepare(`SELECT date(updated_at/1000, 'unixepoch') as date, COUNT(*) as tasks_completed FROM tasks WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND updated_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`).all();
+
+    // Query 2: Daily task creation (as proxy for activity)
+    const created = prepare(`SELECT date(created_at/1000, 'unixepoch') as date, COUNT(*) as tasks_created FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`).all();
+
+    // Query 3: Agent activity
+    const agents = prepare(`SELECT assigned_to as agent, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND assigned_to IS NOT NULL AND assigned_to != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY assigned_to ORDER BY total DESC`).all();
+
+    // Query 4: Project progress
+    const projects = prepare(`SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`).all();
+
+    return { success: true, completions, created, agents, projects, days };
+  } catch (error: any) {
+    safeLog.error('[analytics:getData] Error:', error.message);
+    return { success: true, completions: [], created: [], agents: [], projects: [], days: 0 };
+  }
+});
+
+ipcMain.handle('analytics:subtaskStats', async () => {
+  try {
+    const data = prepare(`SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`).all();
+    return { success: true, data };
+  } catch (error: any) {
+    safeLog.error('[analytics:subtaskStats] Error:', error.message);
+    return { success: true, data: [] };
+  }
+});
+
+ipcMain.handle('analytics:heatmap', async (_, days: number = 30) => {
+  try {
+    const data = prepare(`SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`).all();
+    return { success: true, data };
+  } catch (error: any) {
+    safeLog.error('[analytics:heatmap] Error:', error.message);
+    return { success: true, data: [] };
+  }
+});
+
+ipcMain.handle('analytics:timeTracking', async (_, projectFilter?: string) => {
+  try {
+    // Build query with optional project filter
+    let query = `
+      SELECT
+        id as taskId,
+        title as taskTitle,
+        COALESCE(project, 'Uncategorized') as project,
+        COALESCE(assigned_to, 'Unassigned') as agent,
+        started_at as startTime,
+        completed_at as endTime,
+        CASE
+          WHEN completed_at IS NOT NULL AND started_at IS NOT NULL
+            THEN completed_at - started_at
+          WHEN started_at IS NOT NULL AND status = 'in-progress'
+            THEN (strftime('%s','now') * 1000) - started_at
+          ELSE NULL
+        END as duration,
+        status
+      FROM tasks
+      WHERE (cancelled IS NULL OR cancelled = 0)
+        AND started_at IS NOT NULL
+    `;
+
+    if (projectFilter && projectFilter !== 'all') {
+      query += ` AND project = ?`;
+      query += ` ORDER BY started_at DESC`;
+      const data = prepare(query).all(projectFilter);
+      return { success: true, data };
+    } else {
+      query += ` ORDER BY started_at DESC`;
+      const data = prepare(query).all();
+      return { success: true, data };
+    }
+  } catch (error: any) {
+    safeLog.error('[analytics:timeTracking] Error:', error.message);
+    return { success: true, data: [] };
+  }
 });
 
 ipcMain.handle('tasks:start', async (_, taskId: string) => {
@@ -1105,244 +1533,373 @@ ipcMain.handle('tasks:complete', async (_, taskId: string, outcome?: string) => 
   });
 });
 
-// Poke a task - send message to Gateway main session asking for status update
-ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
-  safeLog.log(`[Tasks] Poke: ${taskId} - ${title}`);
-  
-  const pokeMessage = `🫵 Poke: What's the status of "${title}"? (${taskId})`;
-  
-  return new Promise((resolve) => {
-    // Send poke message to Discord channel where Brain listens
-    // Using clawdbot message send which is quick and async
-    const escapedMessage = pokeMessage.replace(/"/g, '\\"').replace(/`/g, '\\`');
-    const discordChannelId = '1465351776759975977';  // #get_shit_done channel
-    const cmd = `/opt/homebrew/bin/clawdbot message send --target ${discordChannelId} --message "${escapedMessage}" --channel discord`;
+ipcMain.handle('tasks:delete', async (_, taskId: string) => {
+  // Direct SQL: set cancelled=1 to soft-delete. Can't use froggo-db task-update --status cancelled
+  // because the enforce_valid_state_transitions trigger blocks 'cancelled' as a status value.
+  // The cancelled column is the proper soft-delete mechanism (froggo-db task-list already filters it).
+  try {
+    const now = Date.now();
+    const result = prepare('UPDATE tasks SET cancelled = 1, updated_at = ? WHERE id = ?').run(now, taskId);
     
-    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
-      if (error) {
-        safeLog.error('[Tasks] Poke error:', error.message, stderr);
-        resolve({ success: false, error: error.message });
-        return;
-      }
+    if (result.changes > 0) {
+      safeLog.log('[Tasks] Soft-deleted (cancelled=1):', taskId);
+      return { success: true };
+    } else {
+      safeLog.warn('[Tasks] Delete: task not found:', taskId);
+      return { success: false, error: 'Task not found' };
+    }
+  } catch (error: any) {
+    safeLog.error('[Tasks] Delete error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// Archive all done tasks - bulk operation for cleaning up Kanban board
+ipcMain.handle('tasks:archiveDone', async () => {
+  try {
+    const now = Date.now();
+    
+    // Use transaction for atomic bulk operation
+    const archive = db.transaction(() => {
+      // Set archived=1 for all done tasks (excludes already cancelled tasks)
+      const result = prepare(
+        'UPDATE tasks SET archived = 1, updated_at = ? WHERE status = ? AND (cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)'
+      ).run(now, 'done');
       
-      safeLog.log('[Tasks] Poke sent to Discord:', stdout.trim());
-      resolve({ success: true, message: pokeMessage });
+      return result.changes;
     });
-  });
+    
+    const count = archive();
+    safeLog.log(`[Tasks] Archived ${count} done tasks`);
+    return { success: true, count };
+  } catch (error: any) {
+    safeLog.error('[Tasks] Archive done error:', error.message);
+    return { success: false, error: error.message, count: 0 };
+  }
+});
+
+// Poke a task - INTERNAL: spawn agent chat session for status update (no Discord posting)
+ipcMain.handle('tasks:poke', async (_, taskId: string, title: string) => {
+  // Legacy handler kept for backwards compat - just logs internally now
+  safeLog.log(`[Tasks] Poke (legacy): ${taskId} - ${title}`);
+  return { success: true, message: `Poke registered for "${title}"` };
+});
+
+// Internal poke - spawns agent session and gets personality-driven status response
+ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) => {
+  safeLog.log(`[Tasks] Internal Poke: ${taskId} - ${title}`);
+  
+  try {
+    // Determine which agent to use based on task assignment
+    const taskAgent = await new Promise<string>((resolve) => {
+      exec(
+        `froggo-db task-get ${taskId} 2>/dev/null`,
+        { encoding: 'utf-8', timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+        (error, stdout) => {
+          if (!error && stdout) {
+            try {
+              const taskData = JSON.parse(stdout);
+              if (taskData.assigned_to) {
+                resolve(taskData.assigned_to);
+                return;
+              }
+            } catch {}
+          }
+          resolve('froggo'); // Default to froggo
+        }
+      );
+    });
+
+    const pokePrompt = `You are ${taskAgent} responding to a poke/nudge about a task. Be casual, direct, bit of humor - like texting a mate about work.
+Task: "${title}" (ID: ${taskId})
+The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
+Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
+
+    // Use openclaw agent with --local --json for reliable response capture
+    const escapedPrompt = pokePrompt.replace(/"/g, '\\"');
+    const response = await new Promise<string>((resolve, reject) => {
+      exec(
+        `openclaw agent --message "${escapedPrompt}" --agent ${taskAgent} --local --json --timeout 20`,
+        { 
+          encoding: 'utf-8', 
+          timeout: 25000, 
+          maxBuffer: 5 * 1024 * 1024,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } 
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(stderr || error.message));
+            return;
+          }
+          
+          safeLog.log(`[Tasks] Raw poke stdout length: ${stdout.length}`);
+          
+          try {
+            // openclaw agent --json may print debug lines before JSON
+            // Find the JSON object (starts with { and ends with })
+            const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+            const jsonStr = jsonMatch ? jsonMatch[0] : stdout;
+            
+            const result = JSON.parse(jsonStr);
+            
+            // Extract text from various possible formats
+            let text = '';
+            if (result.payloads && Array.isArray(result.payloads) && result.payloads[0]?.text) {
+              text = result.payloads[0].text;
+            } else if (result.text) {
+              text = result.text;
+            } else if (typeof result === 'string') {
+              text = result;
+            } else {
+              // JSON parsed but no text found - use first payload text or fail
+              safeLog.warn('[Tasks] Could not extract text from JSON response');
+              text = 'No response text';
+            }
+            
+            resolve(text);
+          } catch (parseError) {
+            // If not JSON, use raw output (strip debug lines)
+            safeLog.log('[Tasks] Not JSON, using raw output');
+            const lines = stdout.trim().split('\n');
+            // Skip lines that look like debug output (start with [ or contain 'plugins')
+            const cleanLines = lines.filter(l => !l.startsWith('[') && !l.includes('plugins'));
+            resolve(cleanLines.join('\n').trim() || stdout.trim());
+          }
+        }
+      );
+    });
+    
+    safeLog.log(`[Tasks] Internal poke response from ${taskAgent}: ${response.slice(0, 100)}...`);
+    return { success: true, agentId: taskAgent, response };
+  } catch (e: any) {
+    safeLog.error(`[Tasks] Internal poke error: ${e.message}`);
+    return { 
+      success: true, 
+      sessionKey: null, 
+      response: `😅 Couldn't reach the agent right now - they might be deep in something. Try again in a sec? (Error: ${e.message})` 
+    };
+  }
 });
 
 // ============== SUBTASKS IPC HANDLERS ==============
 const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('subtasks:list', async (_, taskId: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM subtasks WHERE task_id='${taskId}' ORDER BY position, created_at" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Subtasks] List error:', error);
-        resolve({ success: false, subtasks: [] });
-        return;
-      }
-      try {
-        const subtasks = JSON.parse(stdout || '[]').map((st: any) => ({
-          id: st.id,
-          taskId: st.task_id,
-          title: st.title,
-          description: st.description,
-          completed: st.completed === 1,
-          completedAt: st.completed_at,
-          completedBy: st.completed_by,
-          assignedTo: st.assigned_to,
-          position: st.position,
-          createdAt: st.created_at,
-        }));
-        resolve({ success: true, subtasks });
-      } catch {
-        resolve({ success: true, subtasks: [] });
-      }
-    });
-  });
+  try {
+    const rows = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY position, created_at').all(taskId);
+    const subtasks = rows.map((st: any) => ({
+      id: st.id,
+      taskId: st.task_id,
+      title: st.title,
+      description: st.description,
+      completed: st.completed === 1,
+      completedAt: st.completed_at,
+      completedBy: st.completed_by,
+      assignedTo: st.assigned_to,
+      position: st.position,
+      createdAt: st.created_at,
+    }));
+    return { success: true, subtasks };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] List error:', error);
+    return { success: false, subtasks: [] };
+  }
 });
 
 ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; title: string; description?: string; assignedTo?: string }) => {
   safeLog.log('[Subtasks] Add called:', { taskId, subtask });
-  
+
   // Validate inputs
   if (!taskId || !subtask?.id || !subtask?.title) {
     safeLog.error('[Subtasks] Invalid input:', { taskId, subtask });
     return { success: false, error: 'Invalid input: taskId, subtask.id, and subtask.title are required' };
   }
-  
-  const now = Date.now();
-  const escapedTitle = subtask.title.replace(/'/g, "''");
-  const escapedDesc = (subtask.description || '').replace(/'/g, "''");
-  
-  // Get next position
-  return new Promise((resolve) => {
-    exec(`sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(position), -1) + 1 FROM subtasks WHERE task_id='${taskId}'"`, (posError, posOut, posStderr) => {
-      if (posError) {
-        safeLog.error('[Subtasks] Position query error:', posError.message, posStderr);
-        // Continue with position 0 even if query fails
-      }
-      const position = parseInt(posOut?.trim() || '0', 10) || 0;
-      safeLog.log('[Subtasks] Position:', position);
-      
-      const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES ('${subtask.id}', '${taskId}', '${escapedTitle}', '${escapedDesc}', ${subtask.assignedTo ? "'" + subtask.assignedTo + "'" : 'NULL'}, ${position}, ${now}, ${now})"`;
-      safeLog.log('[Subtasks] Insert command:', cmd.slice(0, 200) + '...');
-      
-      exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-        if (error) {
-          safeLog.error('[Subtasks] Add error:', error.message);
-          safeLog.error('[Subtasks] stderr:', stderr);
-          resolve({ success: false, error: error.message });
-        } else {
-          safeLog.log('[Subtasks] Insert success:', subtask.id);
-          // Also log activity (fire and forget)
-          exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_added', 'Added subtask: ${escapedTitle}', ${now})"`, () => {});
-          // Emit task update event for real-time Dashboard refresh
-          emitTaskEvent('task.updated', taskId);
-          resolve({ success: true, id: subtask.id });
-        }
-      });
-    });
-  });
+
+  try {
+    const now = Date.now();
+
+    // Get next position
+    const posResult = prepare('SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM subtasks WHERE task_id = ?').get(taskId) as any;
+    const position = posResult?.next_pos || 0;
+    safeLog.log('[Subtasks] Position:', position);
+
+    // Insert subtask
+    prepare('INSERT INTO subtasks (id, task_id, title, description, assigned_to, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      subtask.id,
+      taskId,
+      subtask.title,
+      subtask.description || null,
+      subtask.assignedTo || null,
+      position,
+      now,
+      now
+    );
+
+    safeLog.log('[Subtasks] Insert success:', subtask.id);
+
+    // Log activity
+    prepare('INSERT INTO task_activity (task_id, action, message, timestamp) VALUES (?, ?, ?, ?)').run(
+      taskId,
+      'subtask_added',
+      `Added subtask: ${subtask.title}`,
+      now
+    );
+
+    // Emit task update event for real-time Dashboard refresh
+    emitTaskEvent('task.updated', taskId);
+
+    return { success: true, id: subtask.id };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Add error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
-  const now = Date.now();
-  const sets: string[] = [`updated_at=${now}`];
-  
-  if (updates.completed !== undefined) {
-    sets.push(`completed=${updates.completed ? 1 : 0}`);
-    if (updates.completed) {
-      sets.push(`completed_at=${now}`);
-      if (updates.completedBy) sets.push(`completed_by='${updates.completedBy}'`);
-    } else {
-      sets.push(`completed_at=NULL`);
-      sets.push(`completed_by=NULL`);
-    }
-  }
-  if (updates.title) sets.push(`title='${updates.title.replace(/'/g, "''")}'`);
-  if (updates.assignedTo !== undefined) {
-    sets.push(updates.assignedTo ? `assigned_to='${updates.assignedTo}'` : `assigned_to=NULL`);
-  }
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE subtasks SET ${sets.join(', ')} WHERE id='${subtaskId}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Subtasks] Update error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        // Log activity for completion changes
-        if (updates.completed !== undefined) {
-          exec(`sqlite3 "${froggoDbPath}" "SELECT task_id, title FROM subtasks WHERE id='${subtaskId}'"`, (_, stOut) => {
-            try {
-              const [taskId, title] = stOut?.trim().split('|') || [];
-              if (taskId) {
-                const action = updates.completed ? 'subtask_completed' : 'subtask_uncompleted';
-                const message = updates.completed 
-                  ? `Completed: ${title}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
-                  : `Reopened: ${title}`;
-                exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, agent_id, timestamp) VALUES ('${taskId}', '${action}', '${message.replace(/'/g, "''")}', ${updates.completedBy ? "'" + updates.completedBy + "'" : 'NULL'}, ${now})"`, () => {});
-                // Emit task update event for real-time Dashboard refresh
-                emitTaskEvent('task.updated', taskId);
-              }
-            } catch {}
-          });
+  try {
+    const now = Date.now();
+    const sets: string[] = ['updated_at = ?'];
+    const params: any[] = [now];
+
+    if (updates.completed !== undefined) {
+      sets.push('completed = ?');
+      params.push(updates.completed ? 1 : 0);
+      if (updates.completed) {
+        sets.push('completed_at = ?');
+        params.push(now);
+        if (updates.completedBy) {
+          sets.push('completed_by = ?');
+          params.push(updates.completedBy);
         }
-        resolve({ success: true });
+      } else {
+        sets.push('completed_at = NULL');
+        sets.push('completed_by = NULL');
       }
-    });
-  });
+    }
+    if (updates.title) {
+      sets.push('title = ?');
+      params.push(updates.title);
+    }
+    if (updates.assignedTo !== undefined) {
+      sets.push('assigned_to = ?');
+      params.push(updates.assignedTo || null);
+    }
+
+    params.push(subtaskId);
+    prepare(`UPDATE subtasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+    // Log activity for completion changes
+    if (updates.completed !== undefined) {
+      const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as any;
+      if (subtask?.task_id) {
+        const action = updates.completed ? 'subtask_completed' : 'subtask_uncompleted';
+        const message = updates.completed
+          ? `Completed: ${subtask.title}${updates.completedBy ? ' by ' + updates.completedBy : ''}`
+          : `Reopened: ${subtask.title}`;
+        prepare('INSERT INTO task_activity (task_id, action, message, agent_id, timestamp) VALUES (?, ?, ?, ?, ?)').run(
+          subtask.task_id,
+          action,
+          message,
+          updates.completedBy || null,
+          now
+        );
+        // Emit task update event for real-time Dashboard refresh
+        emitTaskEvent('task.updated', subtask.task_id);
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Update error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('subtasks:delete', async (_, subtaskId: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get task_id and title first for activity log
-    exec(`sqlite3 "${froggoDbPath}" "SELECT task_id, title FROM subtasks WHERE id='${subtaskId}'"`, (_, stOut) => {
-      const [taskId, title] = stOut?.trim().split('|') || [];
-      
-      const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM subtasks WHERE id='${subtaskId}'"`;
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          resolve({ success: false, error: error.message });
-        } else {
-          if (taskId) {
-            exec(`sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, action, message, timestamp) VALUES ('${taskId}', 'subtask_deleted', 'Deleted subtask: ${(title || '').replace(/'/g, "''")}', ${Date.now()})"`, () => {});
-            // Emit task update event for real-time Dashboard refresh
-            emitTaskEvent('task.updated', taskId);
-          }
-          resolve({ success: true });
-        }
-      });
-    });
-  });
+    const subtask = prepare('SELECT task_id, title FROM subtasks WHERE id = ?').get(subtaskId) as any;
+
+    // Delete subtask
+    prepare('DELETE FROM subtasks WHERE id = ?').run(subtaskId);
+
+    // Log activity
+    if (subtask?.task_id) {
+      const now = Date.now();
+      prepare('INSERT INTO task_activity (task_id, action, message, timestamp) VALUES (?, ?, ?, ?)').run(
+        subtask.task_id,
+        'subtask_deleted',
+        `Deleted subtask: ${subtask.title || ''}`,
+        now
+      );
+      // Emit task update event for real-time Dashboard refresh
+      emitTaskEvent('task.updated', subtask.task_id);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Delete error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
-  const now = Date.now();
-  const updates = subtaskIds.map((id, idx) => 
-    `UPDATE subtasks SET position=${idx}, updated_at=${now} WHERE id='${id}';`
-  ).join(' ');
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "${updates}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error });
+  try {
+    const now = Date.now();
+    const stmt = prepare('UPDATE subtasks SET position = ?, updated_at = ? WHERE id = ?');
+
+    subtaskIds.forEach((id, idx) => {
+      stmt.run(idx, now, id);
     });
-  });
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Subtasks] Reorder error:', error.message);
+    return { success: false };
+  }
 });
 
 // ============== TASK ACTIVITY IPC HANDLERS ==============
 ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
-  const lim = limit || 50;
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM task_activity WHERE task_id='${taskId}' ORDER BY timestamp DESC LIMIT ${lim}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Activity] List error:', error);
-        resolve({ success: false, activities: [] });
-        return;
-      }
-      try {
-        const activities = JSON.parse(stdout || '[]').map((a: any) => ({
-          id: a.id,
-          taskId: a.task_id,
-          agentId: a.agent_id,
-          action: a.action,
-          message: a.message,
-          details: a.details,
-          timestamp: a.timestamp,
-        }));
-        resolve({ success: true, activities });
-      } catch {
-        resolve({ success: true, activities: [] });
-      }
-    });
-  });
+  try {
+    const lim = limit || 50;
+    const rows = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?').all(taskId, lim);
+    const activities = rows.map((a: any) => ({
+      id: a.id,
+      taskId: a.task_id,
+      agentId: a.agent_id,
+      action: a.action,
+      message: a.message,
+      details: a.details,
+      timestamp: a.timestamp,
+    }));
+    return { success: true, activities };
+  } catch (error: any) {
+    safeLog.error('[Activity] List error:', error);
+    return { success: false, activities: [] };
+  }
 });
 
 ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string; message: string; agentId?: string; details?: string }) => {
-  const now = Date.now();
-  const escapedMessage = entry.message.replace(/'/g, "''");
-  const escapedDetails = entry.details ? entry.details.replace(/'/g, "''") : null;
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO task_activity (task_id, agent_id, action, message, details, timestamp) VALUES ('${taskId}', ${entry.agentId ? "'" + entry.agentId + "'" : 'NULL'}, '${entry.action}', '${escapedMessage}', ${escapedDetails ? "'" + escapedDetails + "'" : 'NULL'}, ${now})"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (!error) {
-        // Emit task update event for real-time Dashboard refresh
-        emitTaskEvent('task.updated', taskId);
-      }
-      resolve({ success: !error });
-    });
-  });
+  try {
+    const now = Date.now();
+    prepare('INSERT INTO task_activity (task_id, agent_id, action, message, details, timestamp) VALUES (?, ?, ?, ?, ?, ?)').run(
+      taskId,
+      entry.agentId || null,
+      entry.action,
+      entry.message,
+      entry.details || null,
+      now
+    );
+
+    // Emit task update event for real-time Dashboard refresh
+    emitTaskEvent('task.updated', taskId);
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Activity] Add error:', error.message);
+    return { success: false };
+  }
 });
 
 // ============== TASK ATTACHMENTS IPC HANDLERS ==============
@@ -1353,6 +1910,28 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         safeLog.error('[Attachments] List error:', error);
+        resolve({ success: false, attachments: [] });
+        return;
+      }
+      try {
+        const attachments = JSON.parse(stdout || '[]');
+        resolve({ success: true, attachments });
+      } catch (e) {
+        safeLog.error('[Attachments] Parse error:', e);
+        resolve({ success: false, attachments: [] });
+      }
+    });
+  });
+});
+
+// List ALL task attachments (for Files view)
+ipcMain.handle('attachments:listAll', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Attachments] ListAll error:', error);
         resolve({ success: false, attachments: [] });
         return;
       }
@@ -2680,34 +3259,34 @@ ipcMain.handle('calendar:events:delete', async (_, eventId: string) => {
 });
 // ============== EXECUTION HANDLERS ==============
 ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
-  // Actually post the tweet via bird CLI
-  const escapedContent = content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-  const cmd = `bird tweet "${escapedContent}"`;
-  
-  // Log progress if taskId provided
   if (taskId) {
-    exec(`froggo-db task-progress "${taskId}" "Posting tweet via bird CLI..." --step "Execution"`, () => {});
+    exec(`froggo-db task-progress "${taskId}" "Posting tweet via X API..." --step "Execution"`, () => {});
   }
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
-      if (error) {
-        safeLog.error('[Execute] Tweet error:', error.message, stderr);
-        if (taskId) {
-          exec(`froggo-db task-progress "${taskId}" "Failed: ${error.message}" --step "Error"`, () => {});
-          exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
-        }
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Execute] Tweet posted:', stdout);
-        if (taskId) {
-          exec(`froggo-db task-progress "${taskId}" "Tweet posted successfully" --step "Complete"`, () => {});
-          exec(`froggo-db task-complete "${taskId}" --outcome success`, () => {});
-        }
-        resolve({ success: true, output: stdout });
+
+  try {
+    const result = await xApi.postTweet(content);
+    if (result.success) {
+      safeLog.log('[Execute] Tweet posted:', result.id);
+      if (taskId) {
+        exec(`froggo-db task-progress "${taskId}" "Tweet posted successfully" --step "Complete"`, () => {});
+        exec(`froggo-db task-complete "${taskId}" --outcome success`, () => {});
       }
-    });
-  });
+      return { success: true, id: result.id };
+    } else {
+      safeLog.error('[Execute] Tweet error:', result.error);
+      if (taskId) {
+        exec(`froggo-db task-progress "${taskId}" "Failed: ${result.error}" --step "Error"`, () => {});
+        exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
+      }
+      return { success: false, error: result.error };
+    }
+  } catch (e: any) {
+    safeLog.error('[Execute] Tweet exception:', e.message);
+    if (taskId) {
+      exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
+    }
+    return { success: false, error: e.message };
+  }
 });
 
 // ============== EMAIL IPC HANDLERS ==============
@@ -2812,22 +3391,17 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
 });
 
 ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; content: string; context?: string; channel?: string }) => {
-  const escapedTitle = item.title.replace(/"/g, '\\"');
-  const escapedContent = item.content.replace(/"/g, '\\"');
-  const contextArg = item.context ? `--context "${item.context.replace(/"/g, '\\"')}"` : '';
-  const channelArg = item.channel ? `--channel ${item.channel}` : '';
-  
   // Run injection detection on content
   const injectionScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'injection-detect.sh');
-  
+
   return new Promise((resolve) => {
     // Escape content for shell - use base64 to avoid shell injection issues
     const contentBase64 = Buffer.from(item.content).toString('base64');
     const detectCmd = `echo "${contentBase64}" | base64 -d | ${injectionScriptPath}`;
-    
+
     exec(detectCmd, { timeout: 5000 }, (detectError, detectStdout) => {
       let injectionResult = null;
-      
+
       try {
         if (detectStdout) {
           injectionResult = JSON.parse(detectStdout.trim());
@@ -2836,7 +3410,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       } catch (e) {
         safeLog.error('[Inbox] Failed to parse injection detection result:', e);
       }
-      
+
       // Build metadata with injection detection result
       let metadata: any = {};
       if (injectionResult && injectionResult.detected) {
@@ -2846,100 +3420,92 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
           pattern: injectionResult.pattern,
           risk: injectionResult.risk,
         };
-        safeLog.log(`[Inbox] ⚠️ INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
+        safeLog.log(`[Inbox] INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
       }
-      
-      // Add to inbox via direct SQL to include metadata
-      const now = Date.now();
-      const metadataJson = JSON.stringify(metadata).replace(/'/g, "''");
-      const escapedTitleSql = item.title.replace(/'/g, "''");
-      const escapedContentSql = item.content.replace(/'/g, "''");
-      const escapedContextSql = (item.context || '').replace(/'/g, "''");
-      
-      const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitleSql}', '${escapedContentSql}', '${escapedContextSql}', 'pending', '${item.channel || 'unknown'}', '${metadataJson}', datetime('now'))"`;
-      
-      exec(sqlCmd, { timeout: 10000 }, (error) => {
-        if (error) {
-          safeLog.error('[Inbox] Add error:', error);
-          resolve({ success: false, error: error.message });
-        } else {
-          resolve({ 
-            success: true, 
-            injectionWarning: injectionResult?.detected ? injectionResult : null 
-          });
-        }
-      });
+
+      // Add to inbox via parameterized query
+      try {
+        prepare(
+          "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES (?, ?, ?, ?, 'pending', ?, ?, datetime('now'))"
+        ).run(
+          item.type,
+          item.title,
+          item.content,
+          item.context || '',
+          item.channel || 'unknown',
+          JSON.stringify(metadata)
+        );
+        resolve({
+          success: true,
+          injectionWarning: injectionResult?.detected ? injectionResult : null
+        });
+      } catch (error: any) {
+        safeLog.error('[Inbox] Add error:', error);
+        resolve({ success: false, error: error.message });
+      }
     });
   });
 });
 
 ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?: string; feedback?: string }) => {
   safeLog.log('[Inbox:update] Called with id:', id, 'type:', typeof id, 'updates:', updates);
-  
+
   // Skip if it's a task-review item (those should go through tasks:update)
   if (typeof id === 'string' && id.startsWith('task-review-')) {
     safeLog.log('[Inbox:update] Skipping task-review item');
     return { success: true, skipped: true };
   }
-  
-  const sets: string[] = [];
-  if (updates.status) sets.push(`status='${updates.status}'`);
-  if (updates.feedback) sets.push(`feedback='${updates.feedback.replace(/'/g, "''")}'`);
-  if (updates.status) sets.push(`reviewed_at=datetime('now')`);
-  
-  if (sets.length === 0) return { success: false };
-  
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET ${sets.join(', ')} WHERE id=${id}"`;
-  safeLog.log('[Inbox:update] Running:', cmd);
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-      safeLog.log('[Inbox:update] Result - error:', error, 'stdout:', stdout, 'stderr:', stderr);
-      resolve({ success: !error });
-    });
-  });
+
+  try {
+    const setClauses: string[] = [];
+    const params: any[] = [];
+
+    if (updates.status) {
+      setClauses.push('status = ?');
+      params.push(updates.status);
+    }
+    if (updates.feedback) {
+      setClauses.push('feedback = ?');
+      params.push(updates.feedback);
+    }
+    if (updates.status) {
+      setClauses.push("reviewed_at = datetime('now')");
+    }
+
+    if (setClauses.length === 0) return { success: false };
+
+    params.push(id);
+    prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Inbox:update] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('inbox:approveAll', async () => {
-  return new Promise((resolve) => {
-    // Count pending items first
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) FROM inbox WHERE status='pending'"`, (_, countOut) => {
-      const count = parseInt(countOut?.trim() || '0', 10);
-      
-      // Approve all pending
-      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='approved', reviewed_at=datetime('now') WHERE status='pending'"`;
-      
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          resolve({ success: false, error: error.message });
-        } else {
-          resolve({ success: true, count });
-        }
-      });
-    });
-  });
+  try {
+    const countRow = prepare("SELECT COUNT(*) as cnt FROM inbox WHERE status = 'pending'").get() as any;
+    const count = countRow?.cnt || 0;
+
+    prepare("UPDATE inbox SET status = 'approved', reviewed_at = datetime('now') WHERE status = 'pending'").run();
+    return { success: true, count };
+  } catch (error: any) {
+    safeLog.error('[Inbox:approveAll] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== INBOX REVISION HANDLERS ==============
 // List items that need revision (for agents to process)
 ipcMain.handle('inbox:listRevisions', async () => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='needs-revision' ORDER BY created DESC" -json`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Inbox] List revisions error:', error);
-        resolve({ success: false, items: [] });
-        return;
-      }
-      try {
-        const items = JSON.parse(stdout || '[]');
-        resolve({ success: true, items });
-      } catch {
-        resolve({ success: true, items: [] });
-      }
-    });
-  });
+  try {
+    const items = prepare("SELECT * FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
+    return { success: true, items };
+  } catch (error: any) {
+    safeLog.error('[Inbox] List revisions error:', error);
+    return { success: false, items: [] };
+  }
 });
 
 // Submit revised content for an inbox item
@@ -3062,6 +3628,11 @@ ipcMain.handle('inbox:toggleStar', async (_, messageId: string) => {
 });
 
 ipcMain.handle('inbox:markRead', async (_, messageId: string, isRead: boolean = true) => {
+  // Also update comms_cache directly for consistency
+  const escapedId = messageId.replace(/'/g, "''");
+  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  runMsgCmd(`sqlite3 "${dbPath}" "UPDATE comms_cache SET is_read=${isRead ? 1 : 0} WHERE external_id='${escapedId}'"`, 2000).catch(() => {});
+
   return new Promise((resolve) => {
     const cmd = `~/clawd/scripts/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
@@ -3358,8 +3929,9 @@ const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('schedule:list', async () => {
   safeLog.log('[Schedule:list] Called');
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ${scheduleDbPath} "
+  try {
+    // Ensure schedule table exists
+    db.exec(`
       CREATE TABLE IF NOT EXISTS schedule (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -3370,54 +3942,37 @@ ipcMain.handle('schedule:list', async () => {
         sent_at TEXT,
         error TEXT,
         metadata TEXT
-      );
-      SELECT * FROM schedule ORDER BY scheduled_for ASC;
-    " -json 2>/dev/null || echo '[]'`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      safeLog.log('[Schedule:list] Raw output:', stdout?.slice(0, 200));
-      try {
-        // JSON output may span multiple lines - find [ and take everything from there
-        const trimmed = stdout.trim();
-        const jsonStart = trimmed.indexOf('[');
-        const jsonStr = jsonStart >= 0 ? trimmed.slice(jsonStart) : '[]';
-        safeLog.log('[Schedule:list] JSON extracted, length:', jsonStr.length);
-        const items = JSON.parse(jsonStr).map((row: any) => ({
-          id: row.id,
-          type: row.type,
-          content: row.content,
-          scheduledFor: row.scheduled_for,
-          status: row.status,
-          createdAt: row.created_at,
-          sentAt: row.sent_at,
-          error: row.error,
-          metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-        }));
-        safeLog.log('[Schedule:list] Parsed', items.length, 'items');
-        resolve({ success: true, items });
-      } catch (e) {
-        safeLog.error('[Schedule:list] Error:', e);
-        resolve({ success: true, items: [] });
-      }
-    });
-  });
+      )
+    `);
+
+    const rows = prepare('SELECT * FROM schedule ORDER BY scheduled_for ASC').all() as any[];
+    const items = rows.map((row: any) => ({
+      id: row.id,
+      type: row.type,
+      content: row.content,
+      scheduledFor: row.scheduled_for,
+      status: row.status,
+      createdAt: row.created_at,
+      sentAt: row.sent_at,
+      error: row.error,
+      metadata: row.metadata ? (() => { try { return JSON.parse(row.metadata); } catch { return undefined; } })() : undefined,
+    }));
+    safeLog.log('[Schedule:list] Parsed', items.length, 'items');
+    return { success: true, items };
+  } catch (e: any) {
+    safeLog.error('[Schedule:list] Error:', e);
+    return { success: true, items: [] };
+  }
 });
 
 ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: any }) => {
   safeLog.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
-  
+
   const id = `sched-${Date.now()}`;
-  // Escape for SQL single-quoted strings: double the single quotes
-  const escapedContent = item.content.replace(/'/g, "''");
-  const escapedMetadata = item.metadata 
-    ? JSON.stringify(item.metadata).replace(/'/g, "''")
-    : null;
-  
-  safeLog.log('[Schedule:add] Escaped metadata:', escapedMetadata);
-  
-  return new Promise((resolve) => {
-    // First ensure the schedule table exists
-    const createTableSql = `
+
+  try {
+    // Ensure schedule table exists
+    db.exec(`
       CREATE TABLE IF NOT EXISTS schedule (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -3428,74 +3983,26 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
         sent_at TEXT,
         error TEXT,
         metadata TEXT
-      );
-    `;
-    
-    exec(`sqlite3 "${scheduleDbPath}" "${createTableSql}"`, { timeout: 5000 }, (createError) => {
-      if (createError) {
-        safeLog.error('[Schedule:add] Failed to create table:', createError.message);
-        resolve({ success: false, error: 'Failed to initialize schedule table: ' + createError.message });
-        return;
-      }
-      
-      // Build SQL and write to temp file to avoid shell escaping nightmares
-      const metadataVal = escapedMetadata ? `'${escapedMetadata}'` : 'NULL';
-      const sql = `INSERT INTO schedule (id, type, content, scheduled_for, metadata) VALUES ('${id}', '${item.type}', '${escapedContent}', '${item.scheduledFor}', ${metadataVal});`;
-      const tmpFile = `/tmp/schedule-${id}.sql`;
-      
-      safeLog.log('[Schedule:add] SQL:', sql);
-      safeLog.log('[Schedule:add] Writing to:', tmpFile);
-      
-      fs.writeFileSync(tmpFile, sql);
-      const insertCmd = `sqlite3 "${scheduleDbPath}" < "${tmpFile}"`;
-      
-      exec(insertCmd, { timeout: 5000 }, (error) => {
-      // Clean up temp file
-      try { fs.unlinkSync(tmpFile); } catch {}
-      
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      // ADD TO APPROVAL QUEUE
-      try {
-        let queueData: { description: string; items: any[] } = { 
-          description: "Approval queue - Froggo adds items here, dashboard picks them up", 
-          items: [] 
-        };
-        if (fs.existsSync(APPROVAL_QUEUE_PATH)) {
-          queueData = JSON.parse(fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8'));
-        }
-        
-        const approvalEntry = {
-          id: `approval-${id}`,
-          type: 'scheduled-post',
-          platform: item.type,
-          content: item.content,
-          scheduledFor: item.scheduledFor,
-          createdAt: new Date().toISOString(),
-          status: 'pending',
-          scheduleId: id,
-          metadata: item.metadata || {}
-        };
-        
-        queueData.items.push(approvalEntry);
-        fs.writeFileSync(APPROVAL_QUEUE_PATH, JSON.stringify(queueData, null, 2));
-        safeLog.log('[Schedule:add] Added to approval queue:', approvalEntry.id);
-      } catch (queueError) {
-        safeLog.error('[Schedule:add] Failed to add to approval queue:', queueError);
-        // Non-fatal, continue with scheduling
-      }
-      
-      // Create cron job to execute at scheduled time
-      const cronTime = new Date(item.scheduledFor);
-      const cronText = item.type === 'tweet' 
-        ? `Execute scheduled tweet: ${item.content.slice(0, 50)}...`
-        : `Execute scheduled email to ${item.metadata?.recipient}: ${item.content.slice(0, 50)}...`;
-      
-      // Use Clawdbot cron API
-      fetch('http://localhost:18789/api/cron', {
+      )
+    `);
+
+    prepare('INSERT INTO schedule (id, type, content, scheduled_for, metadata) VALUES (?, ?, ?, ?, ?)').run(
+      id,
+      item.type,
+      item.content,
+      item.scheduledFor,
+      item.metadata ? JSON.stringify(item.metadata) : null
+    );
+
+    // Create cron job to execute at scheduled time
+    const cronTime = new Date(item.scheduledFor);
+    const cronText = item.type === 'tweet'
+      ? `Execute scheduled tweet: ${item.content.slice(0, 50)}...`
+      : `Execute scheduled email to ${item.metadata?.recipient}: ${item.content.slice(0, 50)}...`;
+
+    // Use Clawdbot cron API
+    try {
+      await fetch('http://localhost:18789/api/cron', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3507,108 +4014,121 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
             enabled: true,
           }
         })
-      }).then(() => {
-        resolve({ success: true, id });
-      }).catch((e) => {
-        // Cron failed but item is in DB
-        resolve({ success: true, id, warning: 'Cron job creation failed' });
       });
-    });
-    }); // Close createTableSql exec callback
-  });
+    } catch {
+      // Cron failed but item is in DB
+      return { success: true, id, warning: 'Cron job creation failed' };
+    }
+
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[Schedule:add] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('schedule:cancel', async (_, id: string) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ${scheduleDbPath} "UPDATE schedule SET status='cancelled' WHERE id='${id}'"`;
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-      } else {
-        // Also remove cron job
-        fetch('http://localhost:18789/api/cron', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'remove', jobId: id })
-        }).catch(() => {});
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare("UPDATE schedule SET status = 'cancelled' WHERE id = ?").run(id);
+    // Also remove cron job
+    fetch('http://localhost:18789/api/cron', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remove', jobId: id })
+    }).catch(() => {});
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => {
-  const sets: string[] = [];
-  if (item.type) sets.push(`type='${item.type}'`);
-  if (item.content) sets.push(`content='${item.content.replace(/'/g, "''")}'`);
-  if (item.scheduledFor) sets.push(`scheduled_for='${item.scheduledFor}'`);
-  if (item.metadata) sets.push(`metadata='${JSON.stringify(item.metadata).replace(/'/g, "''")}'`);
-  
-  if (sets.length === 0) return { success: false, error: 'No updates provided' };
-  
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ${scheduleDbPath} "UPDATE schedule SET ${sets.join(', ')} WHERE id='${id}'"`;
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    const setClauses: string[] = [];
+    const params: any[] = [];
+
+    if (item.type) {
+      setClauses.push('type = ?');
+      params.push(item.type);
+    }
+    if (item.content) {
+      setClauses.push('content = ?');
+      params.push(item.content);
+    }
+    if (item.scheduledFor) {
+      setClauses.push('scheduled_for = ?');
+      params.push(item.scheduledFor);
+    }
+    if (item.metadata) {
+      setClauses.push('metadata = ?');
+      params.push(JSON.stringify(item.metadata));
+    }
+
+    if (setClauses.length === 0) return { success: false, error: 'No updates provided' };
+
+    params.push(id);
+    prepare(`UPDATE schedule SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('schedule:sendNow', async (_, id: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get the scheduled item
-    exec(`sqlite3 ${scheduleDbPath} "SELECT * FROM schedule WHERE id='${id}'" -json`, (_, stdout) => {
-      try {
-        const items = JSON.parse(stdout || '[]');
-        if (items.length === 0) {
-          resolve({ success: false, error: 'Item not found' });
-          return;
-        }
-        
-        const item = items[0];
-        
-        // Execute immediately based on type
-        let execCmd = '';
-        if (item.type === 'tweet') {
-          execCmd = `bird tweet "${item.content.replace(/"/g, '\\"')}"`;
-        } else if (item.type === 'email') {
-          const meta = item.metadata ? JSON.parse(item.metadata) : {};
-          const recipient = meta.recipient || meta.to || '';
-          const account = meta.account || '';
-          
-          // GUARD: Require recipient and account for email sends
-          if (!recipient || !recipient.trim()) {
-            resolve({ success: false, error: 'Missing email recipient' });
-            return;
-          }
-          if (!account || !account.trim()) {
-            resolve({ success: false, error: 'Missing GOG account - cannot send email without account' });
-            return;
-          }
-          
-          // Create draft instead of sending directly (requires approval)
-          execCmd = `GOG_ACCOUNT="${account}" gog gmail drafts create --to "${recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
-        }
-        
-        if (!execCmd) {
-          resolve({ success: false, error: 'Unknown item type' });
-          return;
-        }
-        
-        exec(execCmd, { timeout: 30000 }, (execError) => {
-          // Update status
-          const status = execError ? 'failed' : 'sent';
-          const errorMsg = execError ? execError.message.replace(/'/g, "''") : null;
-          
-          exec(`sqlite3 ${scheduleDbPath} "UPDATE schedule SET status='${status}', sent_at=datetime('now')${errorMsg ? ", error='" + errorMsg + "'" : ''} WHERE id='${id}'"`, () => {
-            resolve({ success: !execError, error: execError?.message });
-          });
-        });
-      } catch (e) {
-        resolve({ success: false, error: String(e) });
+    const item = prepare('SELECT * FROM schedule WHERE id = ?').get(id) as any;
+    if (!item) {
+      return { success: false, error: 'Item not found' };
+    }
+
+    // Execute immediately based on type
+    if (item.type === 'tweet') {
+      // Post via X API directly
+      const result = await xApi.postTweet(item.content);
+      if (result.success) {
+        prepare("UPDATE schedule SET status = 'completed' WHERE id = ?").run(id);
+        return { success: true, id: result.id };
+      } else {
+        return { success: false, error: result.error };
       }
-    });
-  });
+    } else if (item.type === 'email') {
+      const meta = item.metadata ? JSON.parse(item.metadata) : {};
+      const recipient = meta.recipient || meta.to || '';
+      const account = meta.account || '';
+
+      // GUARD: Require recipient and account for email sends
+      if (!recipient || !recipient.trim()) {
+        return { success: false, error: 'Missing email recipient' };
+      }
+      if (!account || !account.trim()) {
+        return { success: false, error: 'Missing GOG account - cannot send email without account' };
+      }
+
+      // Create draft instead of sending directly (requires approval)
+      const execCmd = `GOG_ACCOUNT="${account}" gog gmail drafts create --to "${recipient}" --subject "${(meta.subject || 'No subject').replace(/"/g, '\\"')}" --body "${item.content.replace(/"/g, '\\"')}"`;
+
+      return new Promise((resolve) => {
+        exec(execCmd, { timeout: 30000 }, (execError) => {
+          const status = execError ? 'failed' : 'sent';
+          try {
+            prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(
+              status,
+              execError ? execError.message.slice(0, 500) : null,
+              id
+            );
+          } catch (dbErr: any) {
+            safeLog.error('[Schedule:sendNow] DB update error:', dbErr);
+          }
+          resolve({ success: !execError, error: execError?.message });
+        });
+      });
+    }
+
+    return { success: false, error: 'Unknown item type' };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
 });
 
 // ============== MESSAGING SEARCH IPC HANDLERS ==============
@@ -3688,9 +4208,14 @@ ipcMain.handle('search:whatsapp', async (_, query: string) => {
 // ============== FILESYSTEM IPC HANDLERS ==============
 ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string) => {
   try {
+    const check = validateFsPath(filePath);
+    if (!check.valid) {
+      safeLog.error('[FS] Write blocked:', check.error);
+      return { success: false, error: check.error };
+    }
     const buffer = Buffer.from(base64Data, 'base64');
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, path: filePath };
+    fs.writeFileSync(check.resolved, buffer);
+    return { success: true, path: check.resolved };
   } catch (error: any) {
     safeLog.error('[FS] Write error:', error);
     return { success: false, error: error.message };
@@ -3699,7 +4224,12 @@ ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string)
 
 ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => {
   try {
-    const content = fs.readFileSync(filePath, encoding as BufferEncoding || 'utf8');
+    const check = validateFsPath(filePath);
+    if (!check.valid) {
+      safeLog.error('[FS] Read blocked:', check.error);
+      return { success: false, error: check.error };
+    }
+    const content = fs.readFileSync(check.resolved, encoding as BufferEncoding || 'utf8');
     return { success: true, content };
   } catch (error: any) {
     safeLog.error('[FS] Read error:', error);
@@ -3710,70 +4240,49 @@ ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => 
 // Append to file
 ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
   try {
-    // Resolve ~ to home directory if present
-    const resolvedPath = filePath.startsWith('~') 
-      ? path.join(os.homedir(), filePath.slice(1))
-      : filePath;
-    
+    const check = validateFsPath(filePath);
+    if (!check.valid) {
+      safeLog.error('[FS] Append blocked:', check.error);
+      return { success: false, error: check.error };
+    }
+
     // Ensure directory exists
-    const dir = path.dirname(resolvedPath);
+    const dir = path.dirname(check.resolved);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
-    fs.appendFileSync(resolvedPath, content);
-    return { success: true, path: resolvedPath };
+
+    fs.appendFileSync(check.resolved, content);
+    return { success: true, path: check.resolved };
   } catch (error: any) {
     safeLog.error('[FS] Append error:', error);
     return { success: false, error: error.message };
   }
 });
 
-// Execute SQL against froggo.db
+// Execute SQL against froggo.db (parameterized via better-sqlite3)
 ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
-  return new Promise((resolve) => {
-    const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-    
+  try {
     // For safety, only allow SELECT and INSERT statements from the renderer
     const queryLower = query.trim().toLowerCase();
     if (!queryLower.startsWith('select') && !queryLower.startsWith('insert')) {
-      resolve({ success: false, error: 'Only SELECT and INSERT queries are allowed from renderer' });
-      return;
+      return { success: false, error: 'Only SELECT and INSERT queries are allowed from renderer' };
     }
-    
-    // Escape params and build command
-    let finalQuery = query;
-    if (params && params.length > 0) {
-      // Simple param substitution (replace ? with escaped values)
-      params.forEach(param => {
-        const escaped = String(param).replace(/'/g, "''");
-        finalQuery = finalQuery.replace('?', `'${escaped}'`);
-      });
+
+    const stmt = prepare(query);
+    const bindParams = params && params.length > 0 ? params : [];
+
+    if (queryLower.startsWith('insert')) {
+      stmt.run(...bindParams);
+      return { success: true, result: [] };
+    } else {
+      const result = stmt.all(...bindParams);
+      return { success: true, result };
     }
-    
-    const cmd = `sqlite3 "${dbPath}" "${finalQuery.replace(/"/g, '\\"')}" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-      if (error) {
-        safeLog.error('[DB] Exec error:', error, stderr);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      try {
-        // For INSERT, stdout might be empty
-        if (queryLower.startsWith('insert')) {
-          resolve({ success: true, result: [] });
-        } else {
-          const result = JSON.parse(stdout || '[]');
-          resolve({ success: true, result });
-        }
-      } catch (parseError: any) {
-        safeLog.error('[DB] Parse error:', parseError);
-        resolve({ success: false, error: 'Failed to parse database result' });
-      }
-    });
-  });
+  } catch (error: any) {
+    safeLog.error('[DB] Exec error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== MEDIA UPLOAD IPC HANDLERS ==============
@@ -3865,24 +4374,53 @@ ipcMain.handle('library:list', async (_, category?: string) => {
   if (!fs.existsSync(libraryDir)) {
     fs.mkdirSync(libraryDir, { recursive: true });
   }
-  
-  return new Promise((resolve) => {
-    const categoryFilter = category ? `WHERE category='${category}'` : '';
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM library ${categoryFilter} ORDER BY updated_at DESC" -json 2>/dev/null || echo '[]'`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: true, files: [] });
-        return;
-      }
+
+  try {
+    let rawFiles: any[];
+    if (category) {
+      rawFiles = prepare('SELECT * FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as any[];
+    } else {
+      rawFiles = prepare('SELECT * FROM library ORDER BY updated_at DESC').all() as any[];
+    }
+
+    // Transform snake_case to camelCase for frontend
+    const files = rawFiles.map((f: any) => {
+      // Safely parse JSON fields
+      let linkedTasks: string[] = [];
+      let tags: string[] = [];
+
       try {
-        const files = JSON.parse(stdout || '[]');
-        resolve({ success: true, files });
-      } catch {
-        resolve({ success: true, files: [] });
+        linkedTasks = f.linked_tasks ? JSON.parse(f.linked_tasks) : [];
+      } catch (e) {
+        safeLog.warn('[library:list] Failed to parse linked_tasks for', f.id, ':', e);
       }
+
+      try {
+        tags = f.tags ? JSON.parse(f.tags) : [];
+      } catch (e) {
+        safeLog.warn('[library:list] Failed to parse tags for', f.id, ':', e);
+      }
+
+      return {
+        id: f.id || '',
+        name: f.name || 'Unnamed',
+        path: f.path || '',
+        category: f.category || 'other',
+        size: f.size || 0,
+        mimeType: f.mime_type || null,
+        createdAt: f.created_at || new Date().toISOString(),
+        updatedAt: f.updated_at || new Date().toISOString(),
+        linkedTasks,
+        tags,
+      };
     });
-  });
+
+    safeLog.log(`[library:list] Returning ${files.length} files`);
+    return { success: true, files };
+  } catch (error: any) {
+    safeLog.error('[library:list] Error:', error);
+    return { success: true, files: [] };
+  }
 });
 
 ipcMain.handle('library:upload', async () => {
@@ -3994,6 +4532,147 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
   });
 });
 
+ipcMain.handle('library:view', async (_, fileId: string) => {
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path, mime_type, name FROM library WHERE id='${fileId}'" -json`;
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      try {
+        const rows = JSON.parse(stdout.trim() || '[]');
+        if (rows.length === 0) {
+          resolve({ success: false, error: 'File not found' });
+          return;
+        }
+        
+        const file = rows[0];
+        const filePath = file.path.replace('~', process.env.HOME || '');
+        
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+          resolve({ success: false, error: 'File does not exist on disk' });
+          return;
+        }
+        
+        // For text files, read content
+        const mimeType = file.mime_type || '';
+        if (mimeType.includes('text/') || mimeType.includes('markdown') || mimeType.includes('json')) {
+          const content = fs.readFileSync(filePath, 'utf-8');
+          resolve({ 
+            success: true, 
+            content, 
+            mimeType,
+            name: file.name,
+            path: filePath,
+            viewType: 'text'
+          });
+        } else if (mimeType.startsWith('image/')) {
+          // For images, return base64
+          const buffer = fs.readFileSync(filePath);
+          const base64 = buffer.toString('base64');
+          resolve({ 
+            success: true, 
+            content: `data:${mimeType};base64,${base64}`,
+            mimeType,
+            name: file.name,
+            path: filePath,
+            viewType: 'image'
+          });
+        } else {
+          // For other files, just return metadata
+          resolve({ 
+            success: true, 
+            mimeType,
+            name: file.name,
+            path: filePath,
+            viewType: 'binary'
+          });
+        }
+      } catch (parseError: any) {
+        resolve({ success: false, error: parseError.message });
+      }
+    });
+  });
+});
+
+ipcMain.handle('library:download', async (_, fileId: string) => {
+  return new Promise((resolve) => {
+    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path, name FROM library WHERE id='${fileId}'" -json`;
+    
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+        return;
+      }
+      
+      try {
+        const rows = JSON.parse(stdout.trim() || '[]');
+        if (rows.length === 0) {
+          resolve({ success: false, error: 'File not found' });
+          return;
+        }
+        
+        const file = rows[0];
+        const sourcePath = file.path.replace('~', process.env.HOME || '');
+        
+        // Check if file exists
+        if (!fs.existsSync(sourcePath)) {
+          resolve({ success: false, error: 'File does not exist on disk' });
+          return;
+        }
+        
+        // Show save dialog
+        dialog.showSaveDialog({
+          title: 'Save File',
+          defaultPath: file.name,
+        }).then((result) => {
+          if (result.canceled || !result.filePath) {
+            resolve({ success: false, error: 'Cancelled' });
+            return;
+          }
+          
+          // Copy file to chosen location
+          fs.copyFileSync(sourcePath, result.filePath);
+          resolve({ success: true, path: result.filePath });
+        }).catch((dialogError) => {
+          resolve({ success: false, error: dialogError.message });
+        });
+      } catch (parseError: any) {
+        resolve({ success: false, error: parseError.message });
+      }
+    });
+  });
+});
+
+// ============== SHELL IPC HANDLERS ==============
+ipcMain.handle('shell:openPath', async (_, filePath: string) => {
+  try {
+    // Expand ~ to home directory
+    const expandedPath = filePath.replace('~', process.env.HOME || '');
+    
+    // Check if file/directory exists
+    if (!fs.existsSync(expandedPath)) {
+      return { success: false, error: 'Path does not exist' };
+    }
+    
+    // Open with default application
+    const result = await shell.openPath(expandedPath);
+    
+    // openPath returns empty string on success, error message on failure
+    if (result === '') {
+      return { success: true };
+    } else {
+      return { success: false, error: result };
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
 // ============== SEARCH IPC HANDLERS ==============
 ipcMain.handle('search:local', async (_, query: string) => {
   const escapedQuery = query.replace(/'/g, "''");
@@ -4047,78 +4726,8 @@ ipcMain.handle('search:local', async (_, query: string) => {
   });
 });
 
-// ============== SYSTEM STATUS IPC HANDLERS ==============
-ipcMain.handle('system:status', async () => {
-  return new Promise((resolve) => {
-    // Check watcher status
-    exec('pgrep -f task-watcher.sh', (watcherErr) => {
-      const watcherRunning = !watcherErr;
-      
-      // Check kill switch from env file
-      exec('grep EXTERNAL_ACTIONS_ENABLED ~/clawd/config/env.sh 2>/dev/null || echo "false"', (_, envOut) => {
-        const killSwitchOn = !envOut?.includes('true');
-        
-        // Count pending inbox items
-        exec('froggo-db inbox-list 2>/dev/null | grep -c "pending" || echo 0', (_, inboxOut) => {
-          const pendingInbox = parseInt(inboxOut?.trim() || '0', 10);
-          
-          // Count in-progress tasks
-          exec('froggo-db task-list --status in-progress 2>/dev/null | wc -l || echo 0', (_, taskOut) => {
-            const inProgressTasks = parseInt(taskOut?.trim() || '0', 10);
-            
-            resolve({
-              success: true,
-              status: {
-                watcherRunning,
-                killSwitchOn,
-                pendingInbox,
-                inProgressTasks,
-              }
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-// ============== SETTINGS IPC HANDLERS ==============
-ipcMain.handle('settings:get', async () => {
-  const configPath = path.join(os.homedir(), 'clawd', 'config', 'settings.json');
-  try {
-    const content = fs.readFileSync(configPath, 'utf-8');
-    return { success: true, settings: JSON.parse(content) };
-  } catch {
-    return { success: true, settings: {} };
-  }
-});
-
-ipcMain.handle('settings:save', async (_, settings: any) => {
-  const configDir = path.join(os.homedir(), 'clawd', 'config');
-  const configPath = path.join(configDir, 'settings.json');
-  
-  try {
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true });
-    }
-    fs.writeFileSync(configPath, JSON.stringify(settings, null, 2));
-    
-    // Also update environment for task-helpers.sh
-    const envLine = settings.externalActionsEnabled 
-      ? 'export EXTERNAL_ACTIONS_ENABLED=true'
-      : 'export EXTERNAL_ACTIONS_ENABLED=false';
-    const envPath = path.join(os.homedir(), 'clawd', 'config', 'env.sh');
-    fs.writeFileSync(envPath, `# Auto-generated by Froggo Dashboard\n${envLine}\nexport RATE_LIMIT_TWEETS=${settings.rateLimitTweets || 10}\nexport RATE_LIMIT_EMAILS=${settings.rateLimitEmails || 20}\n`);
-    
-    return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Settings] Save error:', error);
-    return { success: false, error: error.message };
-  }
-});
-
 // ============== AI CONTENT GENERATION ==============
-// Load Anthropic API key from environment or config
+// Load Anthropic API key from environment, key file, or openclaw config
 let anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
 try {
   const keyPath = path.join(os.homedir(), '.clawdbot', 'anthropic.key');
@@ -4126,6 +4735,43 @@ try {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
 } catch {}
+// Fallback: read from openclaw.json config
+if (!anthropicApiKey) {
+  try {
+    const ocConfigs = [
+      path.join(os.homedir(), '.openclaw', 'openclaw.json'),
+      path.join(os.homedir(), '.clawdbot', 'openclaw.json'),
+    ];
+    for (const cfgPath of ocConfigs) {
+      if (!anthropicApiKey && fs.existsSync(cfgPath)) {
+        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+        // Check models.providers.*.apiKey, providers.*, and plugins.entries.smartrouter.config
+        const providerSources = [
+          cfg.models?.providers || {},
+          cfg.providers || {},
+        ];
+        for (const providers of providerSources) {
+          for (const prov of Object.values(providers) as any[]) {
+            if (prov?.apiKey?.startsWith('sk-ant')) { anthropicApiKey = prov.apiKey; break; }
+            if (prov?.anthropicApiKey?.startsWith('sk-ant')) { anthropicApiKey = prov.anthropicApiKey; break; }
+            if (prov?.config?.apiKey?.startsWith('sk-ant')) { anthropicApiKey = prov.config.apiKey; break; }
+            if (prov?.config?.anthropicApiKey?.startsWith('sk-ant')) { anthropicApiKey = prov.config.anthropicApiKey; break; }
+          }
+          if (anthropicApiKey) break;
+        }
+        // Also check smartrouter plugin config
+        if (!anthropicApiKey) {
+          const srKey = cfg.plugins?.entries?.smartrouter?.config?.anthropicApiKey;
+          if (srKey?.startsWith('sk-ant')) anthropicApiKey = srKey;
+        }
+        if (anthropicApiKey) break;
+      }
+    }
+    if (anthropicApiKey) safeLog.log('[AI] Loaded API key from openclaw config');
+  } catch (e) {
+    safeLog.error('[AI] Failed to read openclaw config for API key:', e);
+  }
+}
 
 // Load OpenAI API key from environment or config (for Whisper transcription)
 let openaiApiKey = process.env.OPENAI_API_KEY || '';
@@ -4141,188 +4787,180 @@ ipcMain.handle('get-openai-key', async () => {
   return openaiApiKey;
 });
 
-ipcMain.handle('ai:generate-content', async (_, prompt: string, type: 'ideas' | 'draft' | 'cleanup' | 'chat') => {
-  safeLog.log('[AI] Generate content called:', { type, promptLength: prompt.length, hasKey: !!anthropicApiKey });
-  
-  if (!anthropicApiKey) {
-    safeLog.error('[AI] No Anthropic API key configured!');
-    return { success: false, error: 'No API key' };
-  }
-  
-  let systemPrompt: string;
-  let maxTokens = 1024;
-  
-  if (type === 'cleanup') {
-    // Fast cleanup for transcription errors - very concise prompt
-    systemPrompt = `Fix transcription errors in the text. Only correct obvious mistakes, preserve meaning. Return ONLY the corrected text.`;
-    maxTokens = 256;
-  } else if (type === 'chat') {
-    // Chat mode for research/planning agents
-    systemPrompt = prompt.includes('[RESEARCH]') 
-      ? `You are an X/Twitter research agent. Help research trends, competitors, topics, and content strategies. Be concise and actionable.`
-      : `You are an X/Twitter content planning agent. Help plan, strategize, and create engaging content. Be concise and actionable.`;
-  } else if (type === 'ideas') {
-    systemPrompt = `You are a social media content strategist for X (Twitter). Generate 5 unique post ideas/angles based on the given topic. Each idea should:
-- Be engaging and suitable for X/Twitter
-- Have a different angle or approach
-- Be concise (can fit in 280 characters)
-- Include relevant hashtag suggestions where appropriate
+ipcMain.handle('ai:analyzeMessages', async (_, ids: string[]) => {
+  safeLog.log('[AI:Analyze] Stub handler called for', ids?.length || 0, 'messages');
+  return { success: false, error: 'Analysis not available' };
+});
 
-Format your response as a JSON array of objects with "idea" and "hook" fields. Example:
-[{"idea": "Post idea text here", "hook": "Why this works: explanation"}]`;
-  } else {
-    systemPrompt = `You are a social media copywriter for X (Twitter). Write a compelling post draft based on the given topic. The post should:
-- Be under 280 characters
-- Be engaging and shareable
-- Include relevant hashtags if appropriate
-- Have a strong hook
-
-Return just the tweet text, nothing else.`;
-  }
-
-  // Use Anthropic API directly via fetch
+ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; description?: string }) => {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [
-          { role: 'user', content: prompt }
-        ]
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      safeLog.error('[AI] API error:', response.status, errText);
-      return { success: false, error: `API error: ${response.status}` };
+    // SECURITY: Use execFile with args array to prevent command injection
+    // No shell escaping needed - args passed directly to process
+    const args = ['task-add', task.title || ''];
+    if (task.description) {
+      args.push('--desc', task.description);
     }
-
-    const data = await response.json();
-    const content = data.content?.[0]?.text || '';
     
-    safeLog.log('[AI] Response length:', content.length);
-
-    if (type === 'cleanup') {
-      // Return cleaned text directly
-      return { success: true, cleaned: content.trim() };
-    } else if (type === 'chat') {
-      // Return chat response
-      return { success: true, response: content.trim() };
-    } else if (type === 'ideas') {
-      try {
-        // Try to parse JSON from the response
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const ideas = JSON.parse(jsonMatch[0]);
-          return { success: true, ideas };
+    const result = await new Promise<string>((resolve, reject) => {
+      execFile('/Users/worker/.local/bin/froggo-db', args, {
+        timeout: 5000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
+      }, (error, stdout, stderr) => {
+        if (error) {
+          safeLog.error('[AI:Task] Error:', error.message, stderr);
+          reject(error);
         } else {
-          // Fallback: split by newlines
-          const ideas = content.trim().split('\n').filter((l: string) => l.trim()).map((line: string) => ({
-            idea: line.replace(/^\d+\.\s*/, '').trim(),
-            hook: ''
-          }));
-          return { success: true, ideas };
+          resolve(stdout);
         }
-      } catch (e) {
-        safeLog.error('[AI] Parse error:', e);
-        return { success: true, ideas: [{ idea: content.trim(), hook: '' }] };
-      }
-    } else {
-      return { success: true, draft: content.trim() };
-    }
+      });
+    });
+    
+    safeLog.log('[AI:Task] Created task:', task.title, result.trim());
+    return { success: true, result: result.trim() };
   } catch (e: any) {
-    safeLog.error('[AI] Error:', e.message);
+    safeLog.error('[AI:Task] Error:', e);
     return { success: false, error: e.message };
   }
 });
 
-// ============== TWITTER IPC HANDLERS ==============
-const BIRD_PATH = '/opt/homebrew/bin/bird';
-const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
-
-// Startup test: verify bird CLI is available
-exec(`${BIRD_PATH} --version`, { timeout: 5000, env: execEnv }, (error, stdout, stderr) => {
-  if (error) {
-    safeLog.error('[Twitter] STARTUP TEST FAILED: bird CLI not available!', error.message);
-    safeLog.error('[Twitter] stderr:', stderr);
-  } else {
-    safeLog.log('[Twitter] STARTUP TEST OK: bird version:', stdout.trim());
+ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date: string; time?: string; duration?: string; location?: string; description?: string }) => {
+  try {
+    const start = event.time ? `${event.date}T${event.time}` : `${event.date}T09:00:00`;
+    // Default 1h duration
+    const startDate = new Date(start);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    // SECURITY: Use execFile with args array to prevent command injection
+    // No shell escaping needed - args passed directly to process
+    const args = [
+      'calendar', 'create',
+      '--title', event.title || '',
+      '--start', start,
+      '--end', endDate.toISOString()
+    ];
+    
+    if (event.location) {
+      args.push('--location', event.location);
+    }
+    
+    const result = await new Promise<string>((resolve, reject) => {
+      execFile('/opt/homebrew/bin/gog', args, {
+        timeout: 10000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
+      }, (error, stdout, stderr) => {
+        if (error) {
+          safeLog.error('[AI:Event] Error:', error.message, stderr);
+          reject(error);
+        } else {
+          resolve(stdout);
+        }
+      });
+    });
+    
+    safeLog.log('[AI:Event] Created event:', event.title, result.trim());
+    return { success: true, result: result.trim() };
+  } catch (e: any) {
+    safeLog.error('[AI:Event] Error:', e);
+    return { success: false, error: e.message };
   }
 });
 
+ipcMain.handle('ai:generateContent', async (_, prompt: string, type: string, options?: { agent?: string }) => {
+  safeLog.log('[AI:Generate] Called with type:', type, 'agent:', options?.agent || 'default');
+  try {
+    // Determine which agent to use
+    const agentId = options?.agent || 'social-manager';
+    
+    // Create session key for this agent
+    const sessionKey = `agent:${agentId}:xpanel-ai`;
+    
+    // Build appropriate prompt based on type
+    let fullPrompt: string;
+    if (type === 'ideas') {
+      fullPrompt = `Generate 5 engaging X/Twitter content ideas about: ${prompt}\n\nFor each idea, provide:\n1. The main idea/angle\n2. A compelling hook/opening line\n\nReturn as JSON array: [{ "idea": "...", "hook": "..." }]`;
+    } else if (type === 'chat') {
+      fullPrompt = prompt;
+    } else {
+      fullPrompt = prompt;
+    }
+    
+    // Escape single quotes for shell
+    const escapedPrompt = fullPrompt.replace(/'/g, "'\\''");
+    
+    // Send to agent via openclaw CLI
+    const response = await new Promise<string>((resolve, reject) => {
+      exec(
+        `openclaw agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent ${agentId}`,
+        {
+          encoding: 'utf-8',
+          timeout: 60000,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            safeLog.error('[AI:Generate] CLI error:', error.message);
+            reject(error);
+            return;
+          }
+          
+          const output = stdout.trim();
+          safeLog.log('[AI:Generate] Got response, length:', output.length);
+          resolve(output);
+        }
+      );
+    });
+    
+    // Parse response based on type
+    if (type === 'ideas') {
+      try {
+        // Try to extract JSON array from response
+        const jsonMatch = response.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const ideas = JSON.parse(jsonMatch[0]);
+          return { success: true, ideas };
+        } else {
+          // Fallback: parse manually
+          safeLog.warn('[AI:Generate] Could not find JSON in response, using raw text');
+          return { success: true, ideas: [{ idea: response, hook: '' }] };
+        }
+      } catch (parseError: any) {
+        safeLog.error('[AI:Generate] JSON parse error:', parseError.message);
+        return { success: true, ideas: [{ idea: response, hook: '' }] };
+      }
+    } else {
+      // For chat type, return raw response
+      return { success: true, response };
+    }
+  } catch (e: any) {
+    safeLog.error('[AI:Generate] Error:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+// ============== TWITTER IPC HANDLERS (X API v2) ==============
+
 ipcMain.handle('twitter:mentions', async () => {
   safeLog.log('[Twitter] Mentions handler called');
-  
-  return new Promise((resolve) => {
-    try {
-      // Use JSON output from bird with full path and extended PATH
-      exec(`${BIRD_PATH} mentions --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
-        safeLog.log('[Twitter] exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
-        
-        if (error) {
-          safeLog.error('[Twitter] Mentions error:', error.message);
-          safeLog.error('[Twitter] stderr:', stderr);
-          // Return error immediately instead of fallback to avoid double-exec issues
-          resolve({ success: false, mentions: [], error: error.message, stderr });
-          return;
-        }
-        
-        try {
-          const mentions = JSON.parse(stdout || '[]');
-          safeLog.log('[Twitter] Parsed', Array.isArray(mentions) ? mentions.length : 0, 'mentions');
-          resolve({ success: true, mentions: Array.isArray(mentions) ? mentions : [] });
-        } catch (e: any) {
-          safeLog.error('[Twitter] JSON parse error:', e.message);
-          safeLog.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
-          resolve({ success: true, mentions: [], raw: stdout || '', parseError: e.message });
-        }
-      });
-    } catch (e: any) {
-      safeLog.error('[Twitter] Handler exception:', e);
-      resolve({ success: false, mentions: [], error: e.message });
-    }
-  });
+  try {
+    const mentions = await xApi.getMentions(20);
+    safeLog.log('[Twitter] Got', mentions.length, 'mentions');
+    return { success: true, mentions };
+  } catch (e: any) {
+    safeLog.error('[Twitter] Mentions error:', e.message);
+    return { success: false, mentions: [], error: e.message };
+  }
 });
 
 ipcMain.handle('twitter:home', async (_, limit?: number) => {
   safeLog.log('[Twitter] Home handler called, limit:', limit);
-  const countArg = limit ? `--count ${limit}` : '--count 20';
-  
-  return new Promise((resolve) => {
-    try {
-      exec(`${BIRD_PATH} home ${countArg} --json`, { timeout: 30000, maxBuffer: 10 * 1024 * 1024, env: execEnv }, (error, stdout, stderr) => {
-        safeLog.log('[Twitter] Home exec completed, error:', !!error, 'stdout length:', stdout?.length || 0);
-        
-        if (error) {
-          safeLog.error('[Twitter] Home error:', error.message);
-          safeLog.error('[Twitter] stderr:', stderr);
-          resolve({ success: false, tweets: [], error: error.message, stderr });
-          return;
-        }
-        
-        try {
-          const tweets = JSON.parse(stdout || '[]');
-          safeLog.log('[Twitter] Parsed', Array.isArray(tweets) ? tweets.length : 0, 'home tweets');
-          resolve({ success: true, tweets: Array.isArray(tweets) ? tweets : [] });
-        } catch (e: any) {
-          safeLog.error('[Twitter] Home JSON parse error:', e.message);
-          safeLog.error('[Twitter] Raw stdout:', stdout?.slice(0, 200));
-          resolve({ success: true, tweets: [], raw: stdout || '', parseError: e.message });
-        }
-      });
-    } catch (e: any) {
-      safeLog.error('[Twitter] Home handler exception:', e);
-      resolve({ success: false, tweets: [], error: e.message });
-    }
-  });
+  try {
+    const tweets = await xApi.getHomeTimeline(limit || 20);
+    safeLog.log('[Twitter] Got', tweets.length, 'home tweets');
+    return { success: true, tweets };
+  } catch (e: any) {
+    safeLog.error('[Twitter] Home error:', e.message);
+    return { success: false, tweets: [], error: e.message };
+  }
 });
 
 ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) => {
@@ -4345,7 +4983,7 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
 // ============== MESSAGES IPC HANDLERS ==============
 
 // Comms cache configuration
-const COMMS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const COMMS_CACHE_TTL_MS = 30 * 1000; // 30 seconds - keep inbox live for ADHD-friendly real-time updates
 const FROGGO_DB_PATH = '/Users/worker/.local/bin/froggo-db';
 
 // Helper to run command and return promise (shared)
@@ -4381,18 +5019,43 @@ const getCommsCacheAge = async (): Promise<number> => {
 // Get messages from froggo-db cache
 const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
   try {
-    const raw = await runMsgCmd(`${FROGGO_DB_PATH} comms-recent --limit ${limit}`, 3000);
+    const raw = await runMsgCmd(`${FROGGO_DB_PATH} comms-recent --limit ${limit} --max-age-hours 2160`, 3000);
     if (raw && raw.trim().startsWith('[')) {
       const cached = JSON.parse(raw);
       // Transform to match expected format
-      return cached.map((m: any) => ({
+      return cached.map((m: any) => {
+        // Parse metadata — may be string, double-quoted string, or object
+        let meta: any = {};
+        if (m.metadata) {
+          try {
+            meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : m.metadata;
+            // Handle double-encoded JSON
+            if (typeof meta === 'string') meta = JSON.parse(meta);
+          } catch { meta = {}; }
+        }
+        return {
         id: m.external_id,
         platform: m.platform,
+        account: m.account || meta.account || undefined,
         name: m.sender_name || m.sender,
         from: m.sender,
         preview: m.preview,
         timestamp: m.timestamp,
-        relativeTime: m.relativeTime || '',
+        relativeTime: (() => {
+          // Always recalculate relativeTime from timestamp (cached value goes stale)
+          if (!m.timestamp) return '';
+          const date = new Date(m.timestamp);
+          const now = new Date();
+          const diffMs = now.getTime() - date.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          if (diffMins < 1) return 'just now';
+          if (diffMins < 60) return `${diffMins}m ago`;
+          if (diffHours < 24) return `${diffHours}h ago`;
+          if (diffDays < 7) return `${diffDays}d ago`;
+          return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        })(),
         hasReply: !!m.has_reply,
         has_reply: !!m.has_reply,
         isUrgent: !!m.is_urgent,
@@ -4403,7 +5066,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
         message_count: m.thread_message_count || 1,
         unread_count: m.thread_message_count && !m.is_read ? m.thread_message_count : 0,
         unreplied_count: !m.has_reply ? 1 : 0,
-      }));
+      };});
     }
   } catch (e) {
     safeLog.error('[Messages] Cache read error:', e);
@@ -4423,6 +5086,7 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
       preview: m.preview,
       timestamp: m.timestamp,
       is_urgent: m.isUrgent || false,
+      ...(m.account ? { metadata: JSON.stringify({ account: m.account }) } : {}),
     }));
     
     // Write via stdin to comms-bulk
@@ -4435,6 +5099,299 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
     safeLog.error('[Messages] Cache write error:', e);
   }
 };
+
+// ============== COMMS DB INIT: Create tables for incremental fetch & AI analysis ==============
+const initCommsDbTables = async () => {
+  const db = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const tables = [
+    `CREATE TABLE IF NOT EXISTS comms_fetch_state (
+      platform TEXT NOT NULL,
+      account TEXT DEFAULT '',
+      last_fetch_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_message_ts TEXT,
+      PRIMARY KEY (platform, account)
+    )`,
+    `CREATE TABLE IF NOT EXISTS comms_ai_analysis (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      external_id TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      content_hash TEXT NOT NULL,
+      triage TEXT,
+      summary TEXT,
+      tasks TEXT,
+      events TEXT,
+      reply_draft TEXT,
+      reply_needed INTEGER DEFAULT 1,
+      analyzed_at TEXT DEFAULT (datetime('now')),
+      tokens_used INTEGER DEFAULT 0,
+      UNIQUE(external_id, platform)
+    )`,
+  ];
+  for (const sql of tables) {
+    try {
+      await runMsgCmd(`sqlite3 "${db}" "${sql.replace(/\n/g, ' ')}"`, 5000);
+    } catch (e) {
+      safeLog.error('[CommsDB] Table creation error:', e);
+    }
+  }
+  safeLog.log('[CommsDB] Tables initialized');
+};
+
+// Run DB init on next tick (after app ready)
+setTimeout(initCommsDbTables, 2000);
+
+// ============== BACKGROUND COMMS POLLING ==============
+let commsPollTimer: NodeJS.Timeout | null = null;
+let commsRefreshInProgress = false;
+
+async function refreshCommsBackground() {
+  if (commsRefreshInProgress) return;
+  commsRefreshInProgress = true;
+  safeLog.log('[CommsPolling] Background refresh starting...');
+
+  const allMessages: any[] = [];
+  const db = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const WACLI_PATH = '/opt/homebrew/bin/wacli';
+  const DISCORDCLI_PATH = '/Users/worker/.local/bin/discordcli';
+
+  const relativeTime = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  // Helper to get last fetch state
+  const getFetchState = async (platform: string, account = ''): Promise<string | null> => {
+    try {
+      const raw = await runMsgCmd(`sqlite3 "${db}" "SELECT last_message_ts FROM comms_fetch_state WHERE platform='${platform}' AND account='${account.replace(/'/g, "''")}'"`  , 2000);
+      return raw?.trim() || null;
+    } catch { return null; }
+  };
+
+  // Helper to update fetch state
+  const updateFetchState = async (platform: string, account: string, lastTs: string) => {
+    try {
+      const escaped = account.replace(/'/g, "''");
+      await runMsgCmd(`sqlite3 "${db}" "INSERT OR REPLACE INTO comms_fetch_state (platform, account, last_fetch_at, last_message_ts) VALUES ('${platform}', '${escaped}', datetime('now'), '${lastTs}')"`, 2000);
+    } catch (e) {
+      safeLog.error(`[CommsPolling] Failed to update fetch state for ${platform}:${account}`, e);
+    }
+  };
+
+  try {
+    // ===== WHATSAPP =====
+    const waLastTs = await getFetchState('whatsapp');
+    const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
+    const waFilter = waLastTs ? `AND m.ts > ${Math.floor(new Date(waLastTs).getTime() / 1000)}` : '';
+    const waQuery = `
+      SELECT m.chat_jid, m.chat_name, m.text, m.ts, COALESCE(c.push_name, c.full_name, c.business_name) as contact_name
+      FROM messages m
+      LEFT JOIN contacts c ON m.chat_jid = c.jid
+      WHERE m.from_me = 0
+        AND (m.chat_jid LIKE '%@s.whatsapp.net' OR m.chat_jid LIKE '%@g.us')
+        AND m.text IS NOT NULL AND m.text != ''
+        ${waFilter}
+      GROUP BY m.chat_jid
+      ORDER BY m.ts DESC
+      LIMIT 50
+    `;
+    try {
+      const waRaw = await runMsgCmd(`sqlite3 "${waDbPath}" "${waQuery.replace(/\n/g, ' ')}" -json`, 10000);
+      if (waRaw && waRaw.length > 10) {
+        const waMessages = JSON.parse(waRaw);
+        let maxTs = '';
+        for (const msg of waMessages) {
+          let name = msg.contact_name || msg.chat_name || msg.chat_jid || 'Unknown';
+          if (name.includes('@')) name = name.split('@')[0];
+          if (/^\d+$/.test(name)) name = `+${name}`;
+          const timestamp = new Date(msg.ts * 1000).toISOString();
+          if (!maxTs || timestamp > maxTs) maxTs = timestamp;
+          allMessages.push({
+            id: `wa-${msg.chat_jid}`, platform: 'whatsapp', name,
+            preview: (msg.text || '').slice(0, 100), timestamp,
+            relativeTime: relativeTime(timestamp), fromMe: false,
+          });
+        }
+        if (maxTs) await updateFetchState('whatsapp', '', maxTs);
+      }
+    } catch (e) { safeLog.error('[CommsPolling] WhatsApp error:', e); }
+
+    // ===== TELEGRAM (from cache) =====
+    const tgCachePath = path.join(os.homedir(), 'clawd', 'data', 'telegram-cache.json');
+    const TELEGRAM_SPAM_KEYWORDS = [
+      'bc.game', 'casino', 'betting', 'airdrop', 'giveaway',
+      'crypto wizard', 'alpha private', 'vip lounge', 'mystic dao',
+      'slerf', 'pepe', 'zeus community', 'zeus army', 'ponke',
+      'degen', 'memecoin', 'shitcoin', '$jug', '$sol',
+    ];
+    const TELEGRAM_SPAM_NAMES = new Set([
+      'BC.GAME Official', 'Mystic Dao', 'Crypto Wizards Lounge',
+      "Pepe's Dog Zeus Community #CC8", 'Alpha Private Vip Lounge 🐳 🌐',
+      'SlerfTheSloth', 'ZEUS Army (COORDINATION GROUP)',
+    ]);
+    try {
+      if (fs.existsSync(tgCachePath)) {
+        const tgCache = JSON.parse(fs.readFileSync(tgCachePath, 'utf-8'));
+        for (const chat of (tgCache.chats || []).slice(0, 50)) {
+          if (!chat.lastMessage?.text || chat.lastMessage.text === '(no recent messages)') continue;
+          const nameLower = (chat.name || '').toLowerCase();
+          const previewLower = (chat.lastMessage.text || '').toLowerCase();
+          if (TELEGRAM_SPAM_NAMES.has(chat.name)) continue;
+          if (TELEGRAM_SPAM_KEYWORDS.some(kw => nameLower.includes(kw) || previewLower.includes(kw))) continue;
+          let timestamp = chat.lastMessage.timestamp;
+          if (timestamp && !timestamp.includes('Z')) timestamp += 'Z';
+          allMessages.push({
+            id: `tg-${chat.id}`, platform: 'telegram', name: chat.name || 'Unknown',
+            preview: (chat.lastMessage.text || '').slice(0, 100), timestamp,
+            relativeTime: relativeTime(timestamp), fromMe: false, chatType: chat.type,
+          });
+        }
+      }
+    } catch (e) { safeLog.error('[CommsPolling] Telegram error:', e); }
+
+    // ===== DISCORD DMs =====
+    try {
+      const discordDmsRaw = await runMsgCmd(`${DISCORDCLI_PATH} dms`, 5000);
+      if (discordDmsRaw && !discordDmsRaw.includes('Invalid token')) {
+        const dmLines = discordDmsRaw.split('\n').filter((l: string) => l.trim() && !l.startsWith('ID') && !l.startsWith('---'));
+        const dms = dmLines.slice(0, 15).map((line: string) => {
+          const match = line.match(/^(\d+)\s+(.+)$/);
+          if (match) return { id: match[1], name: match[2].trim() };
+          return null;
+        }).filter(Boolean) as { id: string; name: string }[];
+        const dmResults = await Promise.allSettled(
+          dms.map(async (dm) => {
+            const msgRaw = await runMsgCmd(`${DISCORDCLI_PATH} messages ${dm.id} --limit 15`, 4000);
+            if (!msgRaw) return null;
+            const msgLines = msgRaw.split('\n').filter((l: string) => l.match(/^\[\d{4}-\d{2}-\d{2}/));
+            for (const line of msgLines) {
+              const msgMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
+              if (msgMatch && msgMatch[2].trim() !== 'prof_froggo') {
+                const timestamp = new Date(msgMatch[1].replace(' ', 'T') + ':00Z');
+                return {
+                  id: `discord-${dm.id}`, platform: 'discord',
+                  name: dm.name.split(',')[0].trim(),
+                  preview: msgMatch[3].trim().slice(0, 100),
+                  timestamp: timestamp.toISOString(),
+                  relativeTime: relativeTime(timestamp.toISOString()), fromMe: false,
+                };
+              }
+            }
+            return null;
+          })
+        );
+        for (const result of dmResults) {
+          if (result.status === 'fulfilled' && result.value) allMessages.push(result.value);
+        }
+      }
+    } catch (e) { safeLog.error('[CommsPolling] Discord error:', e); }
+
+    // ===== EMAIL =====
+    let emailAccounts: string[] = [];
+    try {
+      const gogAuthRaw = await runMsgCmd('/opt/homebrew/bin/gog auth list --json', 10000);
+      if (gogAuthRaw) {
+        const gogData = JSON.parse(gogAuthRaw);
+        const gmailAccts = (gogData.accounts || [])
+          .filter((a: any) => a.services?.includes('gmail'))
+          .map((a: any) => a.email);
+        if (gmailAccts.length > 0) emailAccounts = gmailAccts;
+      }
+    } catch {}
+    for (const acct of emailAccounts) {
+      try {
+        const lastTs = await getFetchState('email', acct);
+        const timeFilter = lastTs ? `newer_than:30m` : 'newer_than:30d';
+        const emailRaw = await runMsgCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${timeFilter}" --json --limit 50`, 30000);
+        if (emailRaw) {
+          const emailData = JSON.parse(emailRaw);
+          const emails = emailData.threads || emailData || [];
+          for (const email of emails) {
+            const ts = email.date || email.Date || new Date().toISOString();
+            allMessages.push({
+              id: `email-${email.id || email.ID}`, platform: 'email', account: acct,
+              name: email.from?.split('<')[0]?.trim() || email.From?.split('<')[0]?.trim() || 'Unknown',
+              preview: email.subject || email.Subject || email.snippet || '',
+              timestamp: ts, relativeTime: relativeTime(ts), fromMe: false,
+            });
+          }
+          await updateFetchState('email', acct, new Date().toISOString());
+        }
+      } catch (e) { safeLog.error(`[CommsPolling] Email ${acct} error:`, e); }
+    }
+
+    // Sort and cache
+    allMessages.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+    await writeCommsToCache(allMessages).catch(e => safeLog.error('[CommsPolling] Cache write failed:', e));
+    safeLog.log(`[CommsPolling] Refreshed ${allMessages.length} messages`);
+  } catch (e) {
+    safeLog.error('[CommsPolling] Background refresh error:', e);
+  } finally {
+    commsRefreshInProgress = false;
+  }
+}
+
+function startCommsPolling() {
+  // Initial background refresh after 10s
+  setTimeout(() => {
+    refreshCommsBackground().then(() => {
+      safeSend('comms-updated', { ts: Date.now() });
+    });
+  }, 10000);
+
+  // Then every 60s
+  commsPollTimer = setInterval(async () => {
+    await refreshCommsBackground();
+    safeSend('comms-updated', { ts: Date.now() });
+  }, 60000);
+  safeLog.log('[CommsPolling] Started (60s interval)');
+}
+
+app.on('ready', () => {
+  setTimeout(startCommsPolling, 8000);
+});
+
+// ============== INBOX HISTORICAL DATA CHECK ==============
+ipcMain.handle('inbox:check-history', async () => {
+  try {
+    const inboxLauncherPath = path.join(os.homedir(), 'clawd', 'tools', 'inbox-launcher.js');
+    const result = await runMsgCmd(`node "${inboxLauncherPath}" check`, 5000);
+    const status = JSON.parse(result);
+    safeLog.log('[Inbox] Historical data check:', status);
+    return { success: true, ...status };
+  } catch (e: any) {
+    safeLog.error('[Inbox] Historical data check failed:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('inbox:trigger-backfill', async (_, days = 60) => {
+  try {
+    const inboxLauncherPath = path.join(os.homedir(), 'clawd', 'tools', 'inbox-launcher.js');
+    // Trigger in background
+    safeLog.log('[Inbox] Triggering historical backfill:', days, 'days');
+    exec(`node "${inboxLauncherPath}" ensure`, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Inbox] Backfill trigger error:', error);
+      } else {
+        safeLog.log('[Inbox] Backfill triggered:', stdout);
+      }
+    });
+    return { success: true, message: 'Backfill started in background' };
+  } catch (e: any) {
+    safeLog.error('[Inbox] Backfill trigger failed:', e);
+    return { success: false, error: e.message };
+  }
+});
 
 ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = false) => {
   safeLog.log('[Messages] Handler called, limit:', limit, 'includeArchived:', includeArchived);
@@ -4474,287 +5431,28 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     }
   }
   
-  // Cache miss or stale - fetch fresh data
-  const allMessages: any[] = [];
-  
-  // Full paths for CLIs (Electron GUI apps don't inherit terminal PATH)
-  const WACLI_PATH = '/opt/homebrew/bin/wacli';
-  const TGCLI_PATH = '/Users/worker/.local/bin/tgcli';
-  
-  // Helper to run command and return promise
-  const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
-    return runMsgCmd(cmd, timeout);
-  };
-  
-  // Helper to format relative time
-  const relativeTime = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'now';
-    if (diffMins < 60) return `${diffMins}m`;
-    if (diffHours < 24) return `${diffHours}h`;
-    
-    // For yesterday
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    }
-    
-    // For this week (show day name)
-    if (diffDays < 7) {
-      return date.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, etc.
-    }
-    
-    // For this year (show "Jan 28")
-    if (date.getFullYear() === now.getFullYear()) {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-    
-    // For older messages (show "Jan 28, 2023")
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-  
-  try {
-    // ===== WHATSAPP (direct DB query - wacli CLI has bugs) =====
-    safeLog.log('[Messages] Fetching WhatsApp messages from DB...');
-    const waDbPath = path.join(os.homedir(), '.wacli', 'wacli.db');
-    // Get recent INCOMING messages from DM chats (not groups)
-    const waQuery = `
-      SELECT m.chat_jid, m.chat_name, m.text, m.ts, COALESCE(c.push_name, c.full_name, c.business_name) as contact_name
-      FROM messages m
-      LEFT JOIN contacts c ON m.chat_jid = c.jid
-      WHERE m.from_me = 0 
-        AND m.chat_jid LIKE '%@s.whatsapp.net'
-        AND m.text IS NOT NULL AND m.text != ''
-      GROUP BY m.chat_jid
-      ORDER BY m.ts DESC
-      LIMIT 10
-    `;
-    const waRaw = await runCmd(`sqlite3 "${waDbPath}" "${waQuery.replace(/\n/g, ' ')}" -json`, 10000);
-    safeLog.log('[Messages] WhatsApp DB result:', waRaw ? `${waRaw.length} chars` : 'EMPTY');
-    if (waRaw && waRaw.length > 10) {
-      try {
-        const waMessages = JSON.parse(waRaw);
-        for (const msg of waMessages) {
-          let name = msg.contact_name || msg.chat_name || msg.chat_jid || 'Unknown';
-          // Clean up JID-style names
-          if (name.includes('@')) {
-            name = name.split('@')[0];
-          }
-          if (/^\d+$/.test(name)) {
-            name = `+${name}`;
-          }
-          
-          const timestamp = new Date(msg.ts * 1000).toISOString(); // Convert seconds to ms
-          allMessages.push({
-            id: `wa-${msg.chat_jid}`,
-            platform: 'whatsapp',
-            name: name,
-            preview: (msg.text || '').slice(0, 100),
-            timestamp: timestamp,
-            relativeTime: relativeTime(timestamp),
-            fromMe: false,
-          });
-        }
-      } catch (e) {
-        safeLog.error('[Messages] WhatsApp DB parse error:', e);
-      }
-    }
-    
-    // ===== TELEGRAM (from cache - tgcli is slow) =====
-    safeLog.log('[Messages] Fetching Telegram from cache...');
-    const tgCachePath = path.join(os.homedir(), 'clawd', 'data', 'telegram-cache.json');
-    try {
-      if (fs.existsSync(tgCachePath)) {
-        const tgCacheRaw = fs.readFileSync(tgCachePath, 'utf-8');
-        const tgCache = JSON.parse(tgCacheRaw);
-        
-        // Check staleness (warn if > 15 min old)
-        const cacheAge = Date.now() - new Date(tgCache.lastUpdated).getTime();
-        const isStale = cacheAge > 15 * 60 * 1000;
-        
-        safeLog.log(`[Messages] Telegram cache: ${tgCache.chats?.length || 0} chats, age: ${Math.round(cacheAge / 60000)}min${isStale ? ' (STALE)' : ''}`);
-        
-        for (const chat of (tgCache.chats || [])) {
-          if (!chat.lastMessage?.text || chat.lastMessage.text === '(no recent messages)') continue;
-          
-          // Build timestamp
-          let timestamp = chat.lastMessage.timestamp;
-          if (timestamp && !timestamp.includes('Z')) {
-            timestamp = timestamp + 'Z'; // Assume UTC if no timezone
-          }
-          
-          allMessages.push({
-            id: `tg-${chat.id}`,
-            platform: 'telegram',
-            name: chat.name || 'Unknown',
-            preview: (chat.lastMessage.text || '').slice(0, 100),
-            timestamp: timestamp,
-            relativeTime: relativeTime(timestamp),
-            fromMe: false,
-            isStale: isStale,
-            chatType: chat.type,
-          });
-        }
-      } else {
-        safeLog.log('[Messages] Telegram cache not found, run telegram-cache.js to populate');
-      }
-    } catch (e) {
-      safeLog.error('[Messages] Telegram cache read error:', e);
-    }
-    
-    // ===== DISCORD DMs =====
-    safeLog.log('[Messages] Fetching Discord DMs...');
-    const DISCORDCLI_PATH = '/Users/worker/.local/bin/discordcli';
-    const discordDmsRaw = await runCmd(`${DISCORDCLI_PATH} dms`, 10000);
-    if (discordDmsRaw && !discordDmsRaw.includes('Invalid token')) {
-      const dmLines = discordDmsRaw.split('\n').filter(l => l.trim() && !l.startsWith('ID') && !l.startsWith('---'));
-      const dms = dmLines.slice(0, 5).map(line => {
-        const match = line.match(/^(\d+)\s+(.+)$/);
-        if (match) return { id: match[1], name: match[2].trim() };
-        return null;
-      }).filter(Boolean);
-      
-      for (const dm of dms as any[]) {
-        const msgRaw = await runCmd(`${DISCORDCLI_PATH} messages ${dm.id} --limit 5`, 5000);
-        if (msgRaw) {
-          // Parse: [2026-01-24 09:47] username: message
-          const msgLines = msgRaw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
-          // Find first message NOT from prof_froggo (Kevin's account)
-          for (const line of msgLines) {
-            const msgMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
-            if (msgMatch && msgMatch[2].trim() !== 'prof_froggo') {
-              const timestamp = new Date(msgMatch[1].replace(' ', 'T') + ':00Z');
-              allMessages.push({
-                id: `discord-${dm.id}`,
-                platform: 'discord',
-                name: dm.name.split(',')[0].trim(), // First username in the DM
-                preview: msgMatch[3].trim().slice(0, 100),
-                timestamp: timestamp.toISOString(),
-                relativeTime: relativeTime(timestamp.toISOString()),
-                fromMe: false,
-              });
-              break;
-            }
-          }
-        }
-      }
-    }
-    
-    // ===== EMAIL (via gog gmail) =====
-    safeLog.log('[Messages] Fetching emails...');
-    const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
-    for (const acct of emailAccounts) {
-      // FIXED: Increased limit from 5 to 500, removed "is:unread" filter to show ALL emails
-      // Search in all mail (in:all = all messages from all folders including archived/sent)
-      const emailRaw = await runCmd(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "in:all" --json --max 500`, 30000);
-      if (emailRaw) {
-        try {
-          const emailData = JSON.parse(emailRaw);
-          const emails = emailData.threads || emailData || [];
-          safeLog.log(`[Messages] Email account ${acct}: ${emails.length} threads`);
-          // FIXED: Removed .slice(0, 3) to show all fetched emails
-          for (const email of emails) {
-            // Extract sender name and email address
-            const fromField = email.from || email.From || '';
-            const fromMatch = fromField.match(/^(.*?)\s*<(.+?)>$/);
-            let senderName = fromMatch ? fromMatch[1].trim() : fromField.split('<')[0].trim() || 'Unknown';
-            const senderEmail = fromMatch ? fromMatch[2].trim() : fromField;
-            
-            // Clean up redundant names like "Name from Name" or "Name via Name"
-            if (senderName.includes(' from ')) {
-              const parts = senderName.split(' from ');
-              if (parts.length === 2 && parts[0].trim() === parts[1].trim()) {
-                senderName = parts[0].trim();
-              }
-            }
-            if (senderName.includes(' via ')) {
-              const parts = senderName.split(' via ');
-              if (parts.length === 2 && parts[0].trim() === parts[1].trim()) {
-                senderName = parts[0].trim();
-              }
-            }
-            
-            // Get subject and snippet
-            const subject = email.subject || email.Subject || '(No Subject)';
-            const snippet = email.snippet || email.body || '';
-            
-            // Extract preview text (first ~150 chars of body/snippet, cleaned)
-            let preview = snippet
-              .replace(/<[^>]+>/g, '') // Remove HTML tags
-              .replace(/\s+/g, ' ')     // Normalize whitespace
-              .trim()
-              .slice(0, 150);
-            if (snippet.length > 150) preview += '...';
-            
-            // Detect attachments from labels
-            const labels = email.labels || email.Labels || [];
-            const hasAttachment = labels.some((l: string) => l.toLowerCase().includes('attachment'));
-            
-            // Detect read status from labels (UNREAD label = unread)
-            const isRead = !labels.some((l: string) => l === 'UNREAD' || l === 'unread');
-            
-            allMessages.push({
-              id: `email-${email.id || email.ID}`,
-              platform: 'email',
-              name: senderName,
-              from: senderEmail,
-              subject: subject,
-              preview: preview || subject, // Fallback to subject if no preview
-              timestamp: email.date || email.Date || new Date().toISOString(),
-              relativeTime: relativeTime(email.date || email.Date || new Date().toISOString()),
-              has_attachment: hasAttachment,
-              is_read: isRead,
-              is_starred: false, // TODO: Detect starred status from labels
-              fromMe: false,
-            });
-          }
-        } catch (e) {
-          safeLog.error('[Messages] Email parse error:', e);
-        }
-      }
-    }
-    
-    // ===== X/Twitter DMs (via bird) =====
-    // bird doesn't have DM support yet - skip for now
-    
-    // Sort by timestamp (most recent first)
-    allMessages.sort((a, b) => {
-      const ta = new Date(a.timestamp || 0).getTime();
-      const tb = new Date(b.timestamp || 0).getTime();
-      return tb - ta;
-    });
-    
-    // Filter out archived conversations (unless includeArchived is true)
-    const filteredMessages = allMessages.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
-    safeLog.log(`[Messages] Filtered ${allMessages.length - filteredMessages.length} archived messages`);
-    
-    const result = filteredMessages.slice(0, lim);
-    
-    // Write to froggo-db cache (async, don't wait)
-    writeCommsToCache(result).catch(e => safeLog.error('[Messages] Cache write failed:', e));
-    
-    return { success: true, chats: result, fromCache: false };
-  } catch (e: any) {
-    safeLog.error('[Messages] Error:', e);
-    
-    // On error, try to return stale cache if available
-    const staleCache = await getCommsFromCache(lim);
-    if (staleCache && staleCache.length > 0) {
-      const filtered = staleCache.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
-      safeLog.log('[Messages] Returning stale cache due to fetch error');
-      return { success: true, chats: filtered, fromCache: true, stale: true, error: e.message };
-    }
-    
-    return { success: false, chats: [], error: e.message };
+  // Cache stale — return cache immediately, trigger background refresh
+  const staleCache = await getCommsFromCache(lim);
+  if (staleCache && staleCache.length > 0) {
+    const filtered = staleCache.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
+    safeLog.log(`[Messages] Returning ${filtered.length} from stale cache, triggering background refresh`);
+    // Trigger background refresh (non-blocking)
+    // NOTE: Do NOT send comms-updated here — that causes a recursive loop:
+    // comms-updated → loadMessages → messages:recent → refreshCommsBackground → comms-updated → ...
+    // The periodic timer (startCommsPolling) already handles sending comms-updated.
+    refreshCommsBackground().catch(e => safeLog.error('[Messages] Background refresh failed:', e));
+    return { success: true, chats: filtered, fromCache: true, refreshing: true };
   }
+
+  // No cache at all — do synchronous fetch (first load)
+  safeLog.log('[Messages] No cache, doing synchronous fetch...');
+  await refreshCommsBackground();
+  const freshCache = await getCommsFromCache(lim);
+  if (freshCache && freshCache.length > 0) {
+    const filtered = freshCache.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
+    return { success: true, chats: filtered, fromCache: false };
+  }
+  return { success: true, chats: [], fromCache: false };
 });
 
 // ============== MESSAGE CONTEXT HANDLER ==============
@@ -4796,7 +5494,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       }
     } else if (platform === 'telegram') {
       const chatId = messageId.replace('tg-', '');
-      const raw = await runCmd(`/opt/homebrew/bin/tgcli messages ${chatId} --limit ${lim}`, 5000);
+      const raw = await runCmd(`/Users/worker/.local/bin/tgcli messages ${chatId} --limit ${lim}`, 5000);
       if (raw) {
         const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
         for (const line of lines.reverse()) {
@@ -4862,8 +5560,8 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
         result = execSync(`${PATHS.gog} gmail send --to ${escapeShell(to)} --body ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
         break;
       case 'discord':
-        // Use clawdbot message tool
-        result = execSync(`clawdbot message send --channel discord --to ${escapeShell(to)} --message ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+        // Use openclaw message tool
+        result = execSync(`openclaw message send --channel discord --to ${escapeShell(to)} --message ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
         break;
       default:
         return { success: false, error: `Unknown platform: ${platform}` };
@@ -5024,10 +5722,36 @@ ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
 });
 
 // ============== EMAIL IPC HANDLERS ==============
+
+// Discover all email accounts from gog auth (gmail-enabled accounts)
+ipcMain.handle('email:accounts', async () => {
+  return new Promise((resolve) => {
+    exec('/opt/homebrew/bin/gog auth list --json', { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+      if (error || !stdout) {
+        // No hardcoded fallback — return empty if gog auth not available
+        resolve({ success: true, accounts: [] });
+        return;
+      }
+      try {
+        const data = JSON.parse(stdout);
+        const gmailAccounts = (data.accounts || [])
+          .filter((a: any) => a.services?.includes('gmail'))
+          .map((a: any) => ({
+            email: a.email,
+            label: a.email.split('@')[0],
+          }));
+        resolve({ success: true, accounts: gmailAccounts });
+      } catch {
+        resolve({ success: true, accounts: [] });
+      }
+    });
+  });
+});
+
 ipcMain.handle('email:unread', async (_, account?: string) => {
-  const acct = account || 'kevin@carbium.io';
-  // FIXED: Increased limit from 20 to 500
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --max 500`;
+  if (!account) return { success: false, emails: [], error: 'No email account specified' };
+  const acct = account;
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --limit 20`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
@@ -5047,26 +5771,48 @@ ipcMain.handle('email:unread', async (_, account?: string) => {
 });
 
 ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
-  const acct = account || 'kevin@carbium.io';
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail read ${emailId}`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Email] Body error:', error);
-        resolve({ success: false, body: '', error: error.message });
-        return;
+  const envPath = `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}`;
+
+  // Try to read with specified account, or try all known accounts
+  // Get account list dynamically from gog CLI if no specific account given
+  let tryAccounts: string[] = account ? [account] : [];
+  if (!account) {
+    try {
+      const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
+      const gogData = JSON.parse(gogList);
+      tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
+    } catch {}
+  }
+
+  for (const acct of tryAccounts) {
+    // Try 'gog gmail read' first (more reliable), fallback to 'thread get'
+    for (const subcmd of [`gmail read ${emailId}`, `gmail thread get ${emailId}`]) {
+      try {
+        const stdout = await new Promise<string>((resolve, reject) => {
+          exec(`GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog ${subcmd}`, { timeout: 30000, env: { ...process.env, PATH: envPath } }, (error, stdout) => {
+            if (error) reject(error);
+            else resolve(stdout);
+          });
+        });
+        if (stdout && stdout.length > 10) {
+          safeLog.log(`[Email] Body loaded for ${emailId} via ${subcmd} (${acct})`);
+          return { success: true, body: stdout, emailId };
+        }
+      } catch (e) {
+        // try next
       }
-      resolve({ success: true, body: stdout, emailId });
-    });
-  });
+    }
+  }
+
+  safeLog.error(`[Email] Body failed for ${emailId}, tried ${tryAccounts.length} accounts`);
+  return { success: false, body: '', error: 'Could not load email body from any account' };
 });
 
 ipcMain.handle('email:search', async (_, query: string, account?: string) => {
-  const acct = account || 'kevin@carbium.io';
+  if (!account) return { success: false, emails: [], error: 'No email account specified' };
+  const acct = account;
   const escapedQuery = query.replace(/"/g, '\\"');
-  // FIXED: Increased limit from 20 to 500
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${escapedQuery}" --json --max 500`;
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "${escapedQuery}" --json --limit 20`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
@@ -5086,7 +5832,7 @@ ipcMain.handle('email:search', async (_, query: string, account?: string) => {
 });
 
 ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: string, account?: string) => {
-  const acct = account || 'kevin@carbium.io';
+  const acct = account || getDefaultGogEmail();
   const title = `Email to ${to}: ${subject.slice(0, 30)}`;
   const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
   const cmd = `/opt/homebrew/bin/froggo-db inbox-add --type email --title "${title.replace(/"/g, '\\"')}" --content "${content.replace(/"/g, '\\"')}" --channel dashboard`;
@@ -5245,14 +5991,30 @@ async function runImportantEmailCheck() {
   const results: ImportantEmailResult[] = [];
   const newInboxItems: string[] = [];
   
-  const emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+  // Discover email accounts from gog auth, fallback to defaults
+  let emailAccounts: string[] = [];
+  try {
+    const gogAuthRaw = await new Promise<string>((resolve) => {
+      exec('/opt/homebrew/bin/gog auth list --json', { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout) => {
+        resolve(error ? '' : stdout);
+      });
+    });
+    if (gogAuthRaw) {
+      const gogData = JSON.parse(gogAuthRaw);
+      const gmailAccts = (gogData.accounts || [])
+        .filter((a: any) => a.services?.includes('gmail'))
+        .map((a: any) => a.email);
+      if (gmailAccts.length > 0) emailAccounts = gmailAccts;
+    }
+  } catch (e) {
+    safeLog.error('[Email] Failed to discover email accounts from gog, using defaults:', e);
+  }
   
   for (const acct of emailAccounts) {
     try {
       const output = await new Promise<string>((resolve) => {
         exec(
-          // FIXED: Increased limit from 20 to 500, removed newer_than:1d to check all unread emails
-          `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread" --json --max 500`,
+          `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread newer_than:1d" --json --limit 20`,
           { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } },
           (error, stdout) => {
             if (error) resolve('[]');
@@ -5331,7 +6093,7 @@ app.on('ready', () => {
 
 // ============== CALENDAR IPC HANDLERS ==============
 ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => {
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const daysArg = days ? `--days ${days}` : '--days 7';
   const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar events ${daysArg} --json`;
   
@@ -5354,7 +6116,7 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
 
 ipcMain.handle('calendar:createEvent', async (_, params: any) => {
   const { account, title, start, end, location, description, attendees, isAllDay, recurrence, timeZone } = params;
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const calendarId = 'primary'; // Use primary calendar
   
   // Build gog calendar create command
@@ -5403,7 +6165,7 @@ ipcMain.handle('calendar:createEvent', async (_, params: any) => {
 
 ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
   const { account, eventId, title, start, end, location, description, attendees, isAllDay, timeZone } = params;
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
   
   // Build gog calendar update command
@@ -5447,7 +6209,7 @@ ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
 
 ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
   const { account, eventId } = params;
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
   
   const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar delete ${calendarId} "${eventId}"`;
@@ -5492,11 +6254,18 @@ ipcMain.handle('calendar:listCalendars', async (_, account: string) => {
 
 // List authenticated accounts (check which accounts have valid credentials)
 ipcMain.handle('calendar:listAccounts', async () => {
-  const knownAccounts = [
-    'kevin.macarthur@bitso.com',
-    'kevin@carbium.io',
-    'kmacarthur.gpt@gmail.com'
-  ];
+  // Dynamically discover accounts from gog CLI instead of hardcoding
+  let knownAccounts: string[] = [];
+  try {
+    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
+      timeout: 5000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+    }).toString();
+    const gogData = JSON.parse(gogList);
+    knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
+  } catch {
+    safeLog.warn('[Calendar] Failed to discover gog accounts for listAccounts');
+  }
   
   // Test each account to see if it's authenticated
   const accountPromises = knownAccounts.map(async (email) => {
@@ -5599,7 +6368,8 @@ ipcMain.handle('calendar:testConnection', async (_, account: string) => {
 // List all connected accounts
 ipcMain.handle('accounts:list', async () => {
   try {
-    const result = await accountsService.listAccounts();
+    // Use V2 service for OAuth status detection
+    const result = await accountsServiceV2.listAccounts();
     return result;
   } catch (error: any) {
     safeLog.error('[Accounts] List error:', error);
@@ -5625,7 +6395,7 @@ ipcMain.handle('accounts:add', async (_, request: {
   }
 });
 
-// Test account connection
+// Test account connection (kept for backward compatibility)
 ipcMain.handle('accounts:test', async (_, accountId: string) => {
   try {
     const result = await accountsService.testAccount(accountId);
@@ -5636,11 +6406,23 @@ ipcMain.handle('accounts:test', async (_, accountId: string) => {
   }
 });
 
+// Refresh/renew account OAuth
+ipcMain.handle('accounts:refresh', async (_, accountId: string) => {
+  try {
+    safeLog.log('[Accounts] Refreshing OAuth for:', accountId);
+    const result = await accountsServiceV2.refreshAccount(accountId);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[Accounts] Refresh error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Remove account
 ipcMain.handle('accounts:remove', async (_, accountId: string) => {
   try {
     safeLog.log('[Accounts] Removing account:', accountId);
-    const result = await accountsService.removeAccount(accountId);
+    const result = await accountsServiceV2.removeAccount(accountId);
     return result;
   } catch (error: any) {
     safeLog.error('[Accounts] Remove error:', error);
@@ -5693,8 +6475,9 @@ import { connectedAccountsService } from './connected-accounts-service';
 
 ipcMain.handle('connectedAccounts:list', async () => {
   try {
-    const accounts = await connectedAccountsService.listAccounts();
-    return { success: true, accounts };
+    // Use V2 service for real gog accounts with OAuth status
+    const result = await accountsServiceV2.listAccounts();
+    return result;
   } catch (error: any) {
     safeLog.error('[ConnectedAccounts] List error:', error);
     return { success: false, accounts: [], error: error.message };
@@ -5753,7 +6536,9 @@ ipcMain.handle('connectedAccounts:remove', async (_, accountId: string) => {
 
 ipcMain.handle('connectedAccounts:refresh', async (_, accountId: string) => {
   try {
-    const result = await connectedAccountsService.refreshAccount(accountId);
+    // Use V2 service for OAuth renewal (opens browser)
+    safeLog.log('[ConnectedAccounts] Refreshing OAuth for:', accountId);
+    const result = await accountsServiceV2.refreshAccount(accountId);
     return result;
   } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Refresh error:', error);
@@ -5782,124 +6567,70 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 });
 
 // ============== SESSIONS IPC HANDLERS ==============
-ipcMain.handle('sessions:list', async () => {
-  try {
-    const response = await fetch('http://localhost:18789/api/sessions');
-    const data = await response.json();
-    return { success: true, sessions: data.sessions || [] };
-  } catch (error) {
-    safeLog.error('[Sessions] List error:', error);
-    return { success: false, sessions: [] };
-  }
-});
-
-ipcMain.handle('sessions:history', async (_, sessionKey: string, limit?: number) => {
-  try {
-    const limitParam = limit ? `?limit=${limit}` : '';
-    const response = await fetch(`http://localhost:18789/api/sessions/${sessionKey}/history${limitParam}`);
-    const data = await response.json();
-    return { success: true, messages: data.messages || [] };
-  } catch (error) {
-    safeLog.error('[Sessions] History error:', error);
-    return { success: false, messages: [] };
-  }
-});
-
-ipcMain.handle('sessions:send', async (_, sessionKey: string, message: string) => {
-  try {
-    safeLog.log(`[Sessions] Sending to ${sessionKey}:`, message.slice(0, 100));
-    const response = await fetch('http://localhost:18789/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        message, 
-        sessionKey,
-        source: 'dashboard-chat-agent'
-      }),
-    });
-    const data = await response.json();
-    return { success: true, data };
-  } catch (error) {
-    safeLog.error('[Sessions] Send error:', error);
-    return { success: false, error: String(error) };
-  }
-});
+// Session list with rate limiting and caching to prevent runaway process storms
+// sessions:list, sessions:send removed - renderer uses gateway.ts WebSocket directly
 
 // Shell execution for Code Agent Dashboard, Context Control Board
 ipcMain.handle('exec:run', async (_, command: string) => {
   const { exec } = require('child_process');
   const { promisify } = require('util');
   const execAsync = promisify(exec);
-  
+
   // Use the clawd workspace as default cwd for git commands
   const workDir = path.join(process.env.HOME || '', 'clawd');
-  
-  try {
-    const { stdout, stderr } = await execAsync(command, {
-      maxBuffer: 1024 * 1024, // 1MB buffer
-      timeout: 30000, // 30s timeout
-      cwd: workDir,
-    });
-    return { success: true, stdout: stdout || '', stderr: stderr || '' };
-  } catch (error: any) {
-    safeLog.error('[Exec] Run error:', error.message);
-    return { success: false, stdout: error.stdout || '', stderr: error.stderr || error.message };
+
+  const result = await secureExec(
+    command,
+    async (cmd: string) => {
+      return await execAsync(cmd, {
+        maxBuffer: 1024 * 1024,
+        timeout: 30000,
+        cwd: workDir,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/Users/worker/.local/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+      });
+    },
+    'exec',
+  );
+
+  if (!result.success && result.blocked) {
+    safeLog.warn(`[Exec] Blocked: ${result.reason}`);
   }
+
+  return result;
 });
 
-// Watch for changes to the approval queue
-let queueWatcher: fs.FSWatcher | null = null;
-let lastQueueContent = '';
+// Shell security audit log endpoint
+ipcMain.handle('exec:audit', async (_, limit?: number) => {
+  return getAuditLog(limit || 100);
+});
 
-function startQueueWatcher() {
-  if (queueWatcher) return;
-  
-  const queueDir = path.dirname(APPROVAL_QUEUE_PATH);
-  if (!fs.existsSync(queueDir)) {
-    fs.mkdirSync(queueDir, { recursive: true });
-  }
-  
-  // Initial content
-  try {
-    if (fs.existsSync(APPROVAL_QUEUE_PATH)) {
-      lastQueueContent = fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8');
-    }
-  } catch {}
-  
-  // Watch for changes
-  queueWatcher = fs.watch(queueDir, (eventType, filename) => {
-    if (filename !== 'queue.json') return;
-    
-    try {
-      const newContent = fs.existsSync(APPROVAL_QUEUE_PATH) 
-        ? fs.readFileSync(APPROVAL_QUEUE_PATH, 'utf-8')
-        : '';
-      
-      if (newContent !== lastQueueContent) {
-        lastQueueContent = newContent;
-        const data = newContent ? JSON.parse(newContent) : { items: [] };
-        
-        // Notify renderer of new items
-        if (data.items?.length > 0) {
-          safeSend('approvals:updated', data.items);
-        }
-      }
-    } catch (error) {
-      safeLog.error('Error watching queue:', error);
-    }
-  });
-  
-  safeLog.log('Approval queue watcher started:', APPROVAL_QUEUE_PATH);
-}
-
-// Start watcher after window is created
-app.whenReady().then(() => {
-  setTimeout(startQueueWatcher, 1000);
+// Shell security validate endpoint (for UI preview)
+ipcMain.handle('exec:validate', async (_, command: string) => {
+  return validateCommand(command);
 });
 
 // ============== AGENTS API IPC HANDLERS ==============
+
+// Return the full agent registry so the dashboard can show all configured agents
+ipcMain.handle('agents:getRegistry', async () => {
+  const registry = getAgentRegistry();
+  const result: Record<string, { role: string; description: string; capabilities: string[]; aliases: string[]; clawdAgentId: string }> = {};
+  for (const [id, entry] of Object.entries(registry)) {
+    if (id === 'froggo') continue; // skip alias duplicate
+    result[id] = {
+      role: entry.role || 'Agent',
+      description: (entry as any).description || '',
+      capabilities: entry.capabilities || [],
+      aliases: entry.aliases || [],
+      clawdAgentId: entry.clawdAgentId || id,
+    };
+  }
+  return result;
+});
+
 ipcMain.handle('agents:getMetrics', async () => {
-  const agents = ['main', 'coder', 'researcher', 'writer', 'chief', 'onchain_worker'];
+  const registry = getAgentRegistry();
+  const agents = Object.keys(registry).filter(id => id !== 'froggo'); // skip alias duplicate
   const metrics: Record<string, any> = {};
   const metricsScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'agent-metrics.sh');
 
@@ -5974,18 +6705,46 @@ ipcMain.handle('agents:getMetrics', async () => {
 });
 
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
+  safeLog.log(`[agents:getDetails] Called with agentId: ${agentId}`);
+  debugLog(`[agents:getDetails] Called with agentId: ${agentId}`);
   const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
   
+  // Agent ID aliases - some agents have multiple IDs that map to the same DB records
+  const agentAliases: Record<string, string[]> = {
+    main: ['main', 'froggo'],
+    froggo: ['main', 'froggo'],
+    coder: ['coder'],
+    researcher: ['researcher'],
+    writer: ['writer'],
+    chief: ['chief'],
+    onchain_worker: ['onchain_worker'],
+  };
+  const dbIds = agentAliases[agentId] || [agentId];
+  const dbIdsSql = dbIds.map(id => `'${id}'`).join(',');
+  
+  // Each query is independently try/caught so one failure doesn't kill all data
+  let taskStats = { total: 0, completed: 0 };
+  let recentTasks: any[] = [];
+  let skills: any[] = [];
+  let brainNotes: string[] = [];
+  let agentRules = 'AGENT.md not found';
+
+  // Get task stats
   try {
-    // Get task stats
-    const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to = '${agentId}'" -json`;
+    const taskStatsCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0)" -json`;
     const taskStatsResult = execSync(taskStatsCmd, { encoding: 'utf-8' });
-    const taskStats = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
-    
-    // Get recent tasks
-    const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to = '${agentId}' ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
+    const parsed = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
+    taskStats = { total: parsed.total || 0, completed: parsed.completed || 0 };
+    safeLog.log(`[agents:getDetails] taskStats for ${agentId}: total=${taskStats.total}, completed=${taskStats.completed}`);
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] taskStats query failed for ${agentId}:`, e.message);
+  }
+
+  // Get recent tasks
+  try {
+    const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
     const recentTasksResult = execSync(recentTasksCmd, { encoding: 'utf-8' });
-    const recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
+    recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
       let outcome = 'unknown';
       try {
         const metadata = task.metadata ? JSON.parse(task.metadata) : {};
@@ -5995,74 +6754,74 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       }
       return { ...task, outcome, completedAt: task.completed_at };
     });
-    
-    // Get skills
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] recentTasks query failed for ${agentId}:`, e.message);
+  }
+
+  // Get skills
+  try {
     const skillsCmd = `sqlite3 "${froggoDbPath}" "SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC" -json`;
     const skillsResult = execSync(skillsCmd, { encoding: 'utf-8' });
-    const skills = JSON.parse(skillsResult || '[]').map((s: any) => ({
+    skills = JSON.parse(skillsResult || '[]').map((s: any) => ({
       name: s.name,
       proficiency: s.proficiency,
       lastUsed: s.last_used,
       successCount: s.success_count,
       failureCount: s.failure_count,
     }));
-    
-    // Get brain notes
-    const brainNotesCmd = `sqlite3 "${froggoDbPath}" "SELECT content FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`;
-    const brainNotesResult = execSync(brainNotesCmd, { encoding: 'utf-8' });
-    const brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.content);
-    
-    // Load AGENT.md
-    let agentRules = 'AGENT.md not found';
-    try {
-      const agentMdPath = path.join(os.homedir(), 'clawd', 'agents', agentId, 'AGENT.md');
-      agentRules = fs.readFileSync(agentMdPath, 'utf-8');
-    } catch (e) {
-      // Try alternative paths
-      try {
-        const altPaths = [
-          path.join(os.homedir(), 'clawd', 'agents', agentId.toLowerCase(), 'AGENT.md'),
-          path.join(os.homedir(), 'clawd', 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
-        ];
-        
-        for (const altPath of altPaths) {
-          if (fs.existsSync(altPath)) {
-            agentRules = fs.readFileSync(altPath, 'utf-8');
-            break;
-          }
-        }
-      } catch (e2) {
-        // Keep default message
-      }
-    }
-    
-    const successRate = taskStats.total > 0 ? taskStats.completed / taskStats.total : 0;
-    
-    return {
-      successRate,
-      avgTime: '2.5h',
-      totalTasks: taskStats.total,
-      successfulTasks: taskStats.completed,
-      failedTasks: taskStats.total - taskStats.completed,
-      skills,
-      recentTasks,
-      brainNotes,
-      agentRules,
-    };
-  } catch (error: any) {
-    safeLog.error(`Failed to get details for ${agentId}:`, error);
-    return {
-      successRate: 0,
-      avgTime: 'N/A',
-      totalTasks: 0,
-      successfulTasks: 0,
-      failedTasks: 0,
-      skills: [],
-      recentTasks: [],
-      brainNotes: [],
-      agentRules: 'Error loading agent details',
-    };
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] skills query failed for ${agentId}:`, e.message);
   }
+
+  // Get brain notes (column is 'description', not 'content')
+  try {
+    const brainNotesCmd = `sqlite3 "${froggoDbPath}" "SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`;
+    const brainNotesResult = execSync(brainNotesCmd, { encoding: 'utf-8' });
+    brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.description);
+  } catch (e: any) {
+    safeLog.error(`[agents:getDetails] brainNotes query failed for ${agentId}:`, e.message);
+  }
+
+  // Load AGENT.md
+  try {
+    const agentMdPath = path.join(os.homedir(), 'clawd', 'agents', agentId, 'AGENT.md');
+    agentRules = fs.readFileSync(agentMdPath, 'utf-8');
+  } catch (e) {
+    try {
+      const altPaths = [
+        path.join(os.homedir(), 'clawd', 'agents', agentId.toLowerCase(), 'AGENT.md'),
+        path.join(os.homedir(), 'clawd', 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
+        // Try all aliases (e.g. froggo -> main)
+        ...dbIds.filter(id => id !== agentId).map(id => path.join(os.homedir(), 'clawd', 'agents', id, 'AGENT.md')),
+      ];
+      for (const altPath of altPaths) {
+        if (fs.existsSync(altPath)) {
+          agentRules = fs.readFileSync(altPath, 'utf-8');
+          break;
+        }
+      }
+    } catch (e2) {
+      // Keep default message
+    }
+  }
+
+  const successRate = taskStats.total > 0 ? taskStats.completed / taskStats.total : 0;
+
+  const result = {
+    success: true,
+    successRate,
+    avgTime: '2.5h',
+    totalTasks: taskStats.total,
+    successfulTasks: taskStats.completed || 0,
+    failedTasks: taskStats.total - (taskStats.completed || 0),
+    skills,
+    recentTasks,
+    brainNotes,
+    agentRules,
+  };
+  safeLog.log(`[agents:getDetails] Returning for ${agentId}: totalTasks=${result.totalTasks}, success=${result.successfulTasks}, recentTasks=${recentTasks.length}, skills=${skills.length}`);
+  debugLog(`[agents:getDetails] Returning for ${agentId}: totalTasks=${result.totalTasks}, success=${result.successfulTasks}, recentTasks=${recentTasks.length}, skills=${skills.length}, fullResult=`, JSON.stringify(result).slice(0, 500));
+  return result;
 });
 
 ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
@@ -6091,25 +6850,492 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
   });
 });
 
+ipcMain.handle('agents:search', async (_, query: string) => {
+  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  
+  const registry = getAgentRegistry();
+  const agentDefinitions: Record<string, { role: string; description: string; capabilities: string[] }> = {};
+  for (const [id, entry] of Object.entries(registry)) {
+    agentDefinitions[id] = { role: entry.role, description: entry.description, capabilities: entry.capabilities };
+  }
+
+  const q = query.toLowerCase();
+  const results: any[] = [];
+
+  for (const [agentId, def] of Object.entries(agentDefinitions)) {
+    const searchable = `${agentId} ${def.role} ${def.description} ${def.capabilities.join(' ')}`.toLowerCase();
+    if (searchable.includes(q)) {
+      // Get task stats from DB
+      let taskCount = 0;
+      let recentTask = '';
+      let status = 'idle';
+      try {
+        const agentEntry = registry[agentId];
+        const dbIds = (agentEntry?.aliases || [agentId]).map(id => `'${id}'`).join(',');
+        
+        const countResult = execSync(
+          `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds})" -json`,
+          { encoding: 'utf-8', timeout: 3000 }
+        );
+        taskCount = JSON.parse(countResult)?.[0]?.cnt || 0;
+
+        const activeResult = execSync(
+          `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as cnt FROM tasks WHERE assigned_to IN (${dbIds}) AND status IN ('in-progress','todo')" -json`,
+          { encoding: 'utf-8', timeout: 3000 }
+        );
+        const activeCount = JSON.parse(activeResult)?.[0]?.cnt || 0;
+        status = activeCount > 0 ? 'active' : 'idle';
+
+        const recentResult = execSync(
+          `sqlite3 "${froggoDbPath}" "SELECT title FROM tasks WHERE assigned_to IN (${dbIds}) ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1" -json`,
+          { encoding: 'utf-8', timeout: 3000 }
+        );
+        const recent = JSON.parse(recentResult || '[]');
+        recentTask = recent[0]?.title || '';
+      } catch (e) {
+        // DB query failed, continue with defaults
+      }
+
+      results.push({
+        id: agentId,
+        name: agentId.charAt(0).toUpperCase() + agentId.slice(1).replace(/_/g, ' '),
+        role: def.role,
+        description: def.description,
+        capabilities: def.capabilities,
+        taskCount,
+        recentTask,
+        status,
+      });
+    }
+  }
+
+  return { success: true, agents: results };
+});
+
+// Immediately spawn agent for a task (called by play button)
+ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string) => {
+  try {
+    const result = await new Promise<string>((resolve, reject) => {
+      exec(
+        `/opt/homebrew/bin/spawn-agent-with-retry.py notify "${agentId}" "Task assigned: ${taskId}"`,
+        { 
+          encoding: 'utf-8', 
+          timeout: 10000,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(stderr || error.message));
+          } else {
+            resolve(stdout.trim());
+          }
+        }
+      );
+    });
+
+    return { success: true, output: result };
+  } catch (error: any) {
+    console.error('[agents:spawnForTask] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
-  // For now, return a mock session key
-  // In production, this would spawn via gateway
-  const sessionKey = `chat-${agentId}-${Date.now()}`;
-  return { sessionKey };
+  safeLog.log(`[agents:spawnChat] Called with agentId: ${agentId}`);
+  debugLog(`[agents:spawnChat] Called with agentId: ${agentId}`);
+  try {
+    // Use the REAL session key format from dashboard-agents system
+    const sessionKey = `agent:${agentId}:dashboard`;
+    
+    safeLog.log(`[agents:spawnChat] Using real gateway sessionKey: ${sessionKey}`);
+    debugLog(`[agents:spawnChat] Using real gateway sessionKey: ${sessionKey}`);
+    
+    // Verify the session exists in the gateway (the dashboard-agents system should have created it)
+    // If it doesn't exist, the dashboard-agents health check will spawn it, or we spawn it here
+    try {
+      await new Promise<void>((resolve, reject) => {
+        exec('openclaw sessions list --json', {
+          timeout: 10000,
+          env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
+        }, (error, stdout) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          
+          try {
+            const sessions = JSON.parse(stdout);
+            const sessionExists = sessions.sessions?.some((s: any) => s.key === sessionKey);
+            
+            if (!sessionExists) {
+              safeLog.log(`[agents:spawnChat] Session ${sessionKey} not found, spawning...`);
+              debugLog(`[agents:spawnChat] Session ${sessionKey} not found, spawning...`);
+              
+              // Spawn the session on-demand
+              const chatRegistry = getAgentRegistry();
+              const systemPrompt = chatRegistry[agentId]?.prompt || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
+              
+              const spawnCmd = `openclaw agent --agent-id ${agentId} --session-key ${sessionKey} --message "${systemPrompt.replace(/"/g, '\\"')}\n\nYou are now connected to the dashboard chat. Reply with: ready" --no-deliver`;
+              
+              exec(spawnCmd, {
+                timeout: 30000,
+                env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
+              }, (spawnError) => {
+                if (spawnError) {
+                  safeLog.error(`[agents:spawnChat] Spawn failed:`, spawnError.message);
+                  reject(spawnError);
+                } else {
+                  safeLog.log(`[agents:spawnChat] ✅ Session ${sessionKey} spawned successfully`);
+                  debugLog(`[agents:spawnChat] ✅ Session ${sessionKey} spawned successfully`);
+                  resolve();
+                }
+              });
+            } else {
+              safeLog.log(`[agents:spawnChat] ✅ Session ${sessionKey} already exists`);
+              debugLog(`[agents:spawnChat] ✅ Session ${sessionKey} already exists`);
+              resolve();
+            }
+          } catch (parseError) {
+            reject(parseError);
+          }
+        });
+      });
+    } catch (checkError: any) {
+      safeLog.warn(`[agents:spawnChat] Session check failed, continuing anyway:`, checkError.message);
+      debugLog(`[agents:spawnChat] Session check failed:`, checkError.message);
+    }
+    
+    return { success: true, sessionKey };
+  } catch (error: any) {
+    safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
+    debugLog(`Failed to spawn chat for ${agentId}:`, error.message, error.stack);
+    return { success: false, error: error.message || 'Failed to spawn chat session' };
+  }
 });
 
 ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => {
-  // Mock response for now
-  const responses = [
-    "That's a great suggestion! I'll focus on improving that area.",
-    "I've been working on that skill. Let me know if you see improvements.",
-    "Thanks for the feedback. I'll incorporate that into my workflow.",
-    "I need more practice with that. Can you assign me some tasks to learn?",
-    "Let me analyze my recent performance and get back to you.",
-  ];
-  
-  const response = responses[Math.floor(Math.random() * responses.length)];
-  return { response };
+  safeLog.log(`[agents:chat] Called with sessionKey: ${sessionKey}, message length: ${message.length}`);
+  debugLog(`[agents:chat] Called with sessionKey: ${sessionKey}, message length: ${message.length}`);
+  try {
+    // Extract agentId from sessionKey (format: agent:agentId:dashboard)
+    const agentId = sessionKey.split(':')[1];
+    
+    if (!agentId) {
+      return { success: false, error: `Invalid sessionKey format: ${sessionKey}` };
+    }
+    
+    // Send message directly to the gateway session via CLI
+    // The gateway maintains the conversation history, so we just send the user's message
+    const escapedMsg = message.replace(/'/g, "'\\''");
+    
+    let response: string;
+    
+    try {
+      const cliResult = await new Promise<string>((resolve, reject) => {
+        exec(
+          `openclaw agent --message '${escapedMsg}' --session-id '${sessionKey}' --agent ${agentId}`,
+          { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
+          (error, stdout, stderr) => {
+            if (error) {
+              reject(new Error(stderr || error.message));
+            } else {
+              resolve(stdout.trim());
+            }
+          }
+        );
+      });
+      response = cliResult || 'No response from agent';
+      safeLog.log(`[agents:chat] CLI success, response length: ${response.length}`);
+      debugLog(`[agents:chat] CLI success, response length: ${response.length}, preview: ${response.slice(0, 200)}`);
+    } catch (cliErr: any) {
+      safeLog.error(`[agents:chat] CLI agent failed: ${cliErr.message}`);
+      debugLog(`[agents:chat] CLI agent error:`, cliErr.message, cliErr.stack);
+      
+      // No fallback - require gateway to be running
+      // The gateway manages conversation history, so we can't do direct API calls
+      response = `⚠️ Agent unavailable: ${cliErr.message}. Ensure openclaw gateway is running and the agent session is active.`;
+    }
+    
+    return { success: true, response };
+  } catch (error: any) {
+    safeLog.error('Agent chat error:', error);
+    return { success: false, error: error.message || 'Unknown error', response: `❌ Error: ${error.message || 'Unknown error'}` };
+  }
+});
+
+// ============== AGENT CREATION (full onboarding) ==============
+ipcMain.handle('agents:create', async (_, config: { id: string; name: string; role: string; emoji: string; color: string; personality: string; voice?: string }) => {
+  const script = path.join(os.homedir(), 'clawd', 'scripts', 'agent-onboard-full.sh');
+
+  // Sanitize inputs — shell-safe single-quote escaping
+  const esc = (s: string) => s.replace(/'/g, "'\\''");
+  const args = [config.id, config.name, config.role, config.emoji, config.color, config.personality, config.voice || 'Puck']
+    .map(a => `'${esc(a)}'`).join(' ');
+
+  safeLog.log(`[agents:create] Creating agent: ${config.id} (${config.name})`);
+
+  return new Promise((resolve) => {
+    exec(
+      `bash ${script} ${args}`,
+      {
+        encoding: 'utf-8',
+        timeout: 120000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` },
+        maxBuffer: 10 * 1024 * 1024,
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          safeLog.error(`[agents:create] Failed: ${error.message}`);
+          resolve({ success: false, error: error.message, output: stdout || '', stderr: stderr || '' });
+        } else {
+          safeLog.log(`[agents:create] Success for ${config.id}`);
+          resolve({ success: true, output: stdout || '' });
+        }
+      }
+    );
+  });
+});
+
+// ============== TOKEN TRACKING IPC HANDLERS ==============
+ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: string }) => {
+  try {
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    if (!fs.existsSync(sessionsDbPath)) {
+      return { error: 'sessions.db not found', by_agent: [] };
+    }
+
+    // Calculate time range based on period
+    const now = Date.now();
+    let minTimestamp = 0;
+    if (args?.period === 'day') {
+      minTimestamp = now - (24 * 60 * 60 * 1000);
+    } else if (args?.period === 'week') {
+      minTimestamp = now - (7 * 24 * 60 * 60 * 1000);
+    } else if (args?.period === 'month') {
+      minTimestamp = now - (30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Query sessions from gateway database
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    let query = `SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions`;
+    if (minTimestamp > 0) {
+      query += ` WHERE created_at >= ${minTimestamp}`;
+    }
+    if (args?.agent) {
+      query += minTimestamp > 0 ? ' AND' : ' WHERE';
+      query += ` agent_id = '${args.agent}'`;
+    }
+    
+    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
+    let rows: any[] = [];
+    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+
+    // Model pricing (input/output per 1M tokens)
+    const pricing: Record<string, { input: number; output: number }> = {
+      'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
+      'claude-opus-4': { input: 15.0, output: 75.0 },
+      'gemini-2.0-flash-exp': { input: 0.0, output: 0.0 },
+      'o1-preview': { input: 15.0, output: 60.0 },
+      'o1-mini': { input: 3.0, output: 12.0 },
+      'gpt-4o': { input: 2.5, output: 10.0 },
+      'gpt-4o-mini': { input: 0.15, output: 0.6 },
+    };
+
+    // Aggregate by agent
+    const agentStats = new Map<string, { input: number; output: number; total: number; cost: number; calls: number }>();
+    for (const row of rows) {
+      const agent = row.agent_id || 'unknown';
+      const inputTokens = row.input_tokens || 0;
+      const outputTokens = row.output_tokens || 0;
+      const totalTokens = row.total_tokens || 0;
+
+      // Calculate cost based on model
+      const modelKey = row.model || 'claude-sonnet-4-5';
+      const modelPricing = pricing[modelKey] || pricing['claude-sonnet-4-5'];
+      const cost = (inputTokens / 1000000) * modelPricing.input + (outputTokens / 1000000) * modelPricing.output;
+
+      const stats = agentStats.get(agent) || { input: 0, output: 0, total: 0, cost: 0, calls: 0 };
+      stats.input += inputTokens;
+      stats.output += outputTokens;
+      stats.total += totalTokens;
+      stats.cost += cost;
+      stats.calls += 1;
+      agentStats.set(agent, stats);
+    }
+
+    // Convert to response format
+    const by_agent = Array.from(agentStats.entries()).map(([agent, stats]) => ({
+      agent,
+      total_input: stats.input,
+      total_output: stats.output,
+      total_all: stats.total,
+      total_cost: stats.cost,
+      calls: stats.calls,
+    })).sort((a, b) => b.total_all - a.total_all);
+
+    return { by_agent, period: args?.period || 'all' };
+  } catch (err: any) {
+    return { error: err.message, by_agent: [] };
+  }
+});
+
+ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; since?: number }) => {
+  try {
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    if (!fs.existsSync(sessionsDbPath)) {
+      return { error: 'sessions.db not found', entries: [] };
+    }
+
+    // Build query with filters
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const limit = args?.limit || 100;
+    const since = args?.since || 0;
+    
+    let query = `SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions`;
+    const whereClauses = [];
+    if (args?.agent) whereClauses.push(`agent_id = '${args.agent}'`);
+    if (since > 0) whereClauses.push(`created_at >= ${since}`);
+    if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
+    query += ` ORDER BY created_at DESC LIMIT ${limit}`;
+
+    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
+    let rows: any[] = [];
+    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+
+    // Transform to expected format
+    const entries = rows.map(row => ({
+      id: row.session_id,
+      timestamp: row.created_at,
+      agent: row.agent_id || 'unknown',
+      session_id: row.session_id,
+      model: row.model || 'unknown',
+      input_tokens: row.input_tokens || 0,
+      output_tokens: row.output_tokens || 0,
+      total_tokens: row.total_tokens || 0,
+    }));
+
+    return { entries };
+  } catch (err: any) {
+    return { error: err.message, entries: [] };
+  }
+});
+
+ipcMain.handle('tokens:budget', async (_, agent: string) => {
+  try {
+    // Get budget settings from froggo.db
+    const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent) as any;
+    if (!budgetRow) {
+      return {
+        agent,
+        daily_limit: 0,
+        used_today: 0,
+        remaining: 0,
+        percentage_used: 0,
+        percent_used: 0,
+        alert_threshold: 0.9,
+        over_budget: false,
+        hard_limit: false,
+      };
+    }
+
+    // Get today's usage from gateway sessions.db
+    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
+    const startOfDay = new Date().setHours(0, 0, 0, 0);
+    
+    let usedToday = 0;
+    if (fs.existsSync(sessionsDbPath)) {
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      const query = `SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = '${agent}' AND created_at >= ${startOfDay}`;
+      const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 5000 });
+      try {
+        const rows = JSON.parse(stdout || '[{"total":0}]');
+        usedToday = rows[0]?.total || 0;
+      } catch { usedToday = 0; }
+    }
+
+    const dailyLimit = budgetRow.daily_token_limit || 0;
+    const remaining = Math.max(0, dailyLimit - usedToday);
+    const percentageUsed = dailyLimit > 0 ? usedToday / dailyLimit : 0;
+    const alertThreshold = budgetRow.alert_threshold || 0.9;
+    const overBudget = usedToday > dailyLimit && budgetRow.hard_limit === 1;
+
+    return {
+      agent,
+      daily_limit: dailyLimit,
+      used_today: usedToday,
+      remaining,
+      percentage_used: percentageUsed,
+      percent_used: percentageUsed,
+      alert_threshold: alertThreshold,
+      over_budget: overBudget,
+      hard_limit: budgetRow.hard_limit === 1,
+    };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+});
+
+// ============== GOVERNANCE/PERFORMANCE IPC HANDLERS ==============
+ipcMain.handle('get-performance-report', async (_, args?: { days?: number }) => {
+  try {
+    const days = args?.days || 30;
+    const result = execSync(
+      `/Users/worker/.local/bin/froggo-db performance-report --days ${days} --json`,
+      {
+        encoding: 'utf-8',
+        timeout: 10000,
+        env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
+      }
+    );
+    return JSON.parse(result);
+  } catch (err: any) {
+    return { error: err.message, agents: [] };
+  }
+});
+
+ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: number }) => {
+  try {
+    const days = args.days || 30;
+    const result = execSync(
+      `/Users/worker/.local/bin/froggo-db agent-audit ${args.agentId} --days ${days} --json`,
+      {
+        encoding: 'utf-8',
+        timeout: 10000,
+        env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' }
+      }
+    );
+    return JSON.parse(result);
+  } catch (err: any) {
+    return { error: err.message, timeline: [] };
+  }
+});
+
+// ============== DM FEED & CIRCUIT BREAKER IPC HANDLERS ==============
+ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: string }) => {
+  try {
+    const limit = args?.limit || 50;
+    const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
+    // Show all messages including expired ones (users want to see agent communication history)
+    const query = `SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ${limit}`;
+    const result = execSync(`sqlite3 -json "${dbPath}" "${query}"`, { encoding: 'utf-8', timeout: 5000 });
+    return JSON.parse(result || '[]');
+  } catch (e: any) {
+    console.error('get-dm-history error:', e);
+    return [];
+  }
+});
+
+ipcMain.handle('get-circuit-status', async () => {
+  try {
+    const stateFile = path.join(os.homedir(), '.openclaw', 'dispatcher-state.json');
+    const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    return state.circuit_breakers || {};
+  } catch (e) {
+    return {};
+  }
 });
 
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
@@ -6351,16 +7577,11 @@ ipcMain.handle('starred:check', async (_, messageId: number) => {
 });
 
 // ============== SECURITY IPC HANDLERS ==============
-const SECURITY_DB = path.join(os.homedir(), 'clawd', 'data', 'security.db');
 
-// Initialize security database
+// Initialize security database using better-sqlite3
 function initSecurityDB() {
-  const dbDir = path.dirname(SECURITY_DB);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
-  
-  const schema = `
+  const secDb = getSecurityDb();
+  secDb.exec(`
     CREATE TABLE IF NOT EXISTS api_keys (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -6369,7 +7590,7 @@ function initSecurityDB() {
       created_at TEXT NOT NULL,
       last_used TEXT
     );
-    
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id TEXT PRIMARY KEY,
       timestamp TEXT NOT NULL,
@@ -6380,7 +7601,7 @@ function initSecurityDB() {
       recommendation TEXT,
       status TEXT DEFAULT 'open'
     );
-    
+
     CREATE TABLE IF NOT EXISTS security_alerts (
       id TEXT PRIMARY KEY,
       timestamp TEXT NOT NULL,
@@ -6389,9 +7610,7 @@ function initSecurityDB() {
       source TEXT NOT NULL,
       dismissed INTEGER DEFAULT 0
     );
-  `;
-  
-  execSync(`sqlite3 "${SECURITY_DB}" "${schema}"`, { stdio: 'pipe' });
+  `);
 }
 
 // Ensure DB exists
@@ -6400,9 +7619,8 @@ initSecurityDB();
 // List API keys
 ipcMain.handle('security:listKeys', async () => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "SELECT * FROM api_keys ORDER BY created_at DESC" -json`;
-    const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-    const keys = JSON.parse(result || '[]');
+    const secDb = getSecurityDb();
+    const keys = secDb.prepare('SELECT * FROM api_keys ORDER BY created_at DESC').all();
     return { success: true, keys };
   } catch (error: any) {
     safeLog.error('[Security] List keys error:', error);
@@ -6413,10 +7631,12 @@ ipcMain.handle('security:listKeys', async () => {
 // Add API key
 ipcMain.handle('security:addKey', async (_, key: { name: string; service: string; key: string }) => {
   try {
+    const secDb = getSecurityDb();
     const id = `key-${Date.now()}`;
     const now = new Date().toISOString();
-    const cmd = `sqlite3 "${SECURITY_DB}" "INSERT INTO api_keys (id, name, service, key, created_at) VALUES ('${id}', '${key.name.replace(/'/g, "''")}', '${key.service.replace(/'/g, "''")}', '${key.key.replace(/'/g, "''")}', '${now}')"`;
-    execSync(cmd, { stdio: 'pipe' });
+    secDb.prepare('INSERT INTO api_keys (id, name, service, key, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      id, key.name, key.service, key.key, now
+    );
     return { success: true, id };
   } catch (error: any) {
     safeLog.error('[Security] Add key error:', error);
@@ -6427,8 +7647,8 @@ ipcMain.handle('security:addKey', async (_, key: { name: string; service: string
 // Delete API key
 ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "DELETE FROM api_keys WHERE id='${keyId}'"`;
-    execSync(cmd, { stdio: 'pipe' });
+    const secDb = getSecurityDb();
+    secDb.prepare('DELETE FROM api_keys WHERE id = ?').run(keyId);
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Security] Delete key error:', error);
@@ -6439,9 +7659,8 @@ ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
 // List audit logs
 ipcMain.handle('security:listAuditLogs', async () => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100" -json`;
-    const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-    const logs = JSON.parse(result || '[]');
+    const secDb = getSecurityDb();
+    const logs = secDb.prepare('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all();
     return { success: true, logs };
   } catch (error: any) {
     safeLog.error('[Security] List audit logs error:', error);
@@ -6452,10 +7671,9 @@ ipcMain.handle('security:listAuditLogs', async () => {
 // Update audit log status
 ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { status?: string }) => {
   try {
-    const setClauses = [];
-    if (updates.status) setClauses.push(`status='${updates.status}'`);
-    const cmd = `sqlite3 "${SECURITY_DB}" "UPDATE audit_logs SET ${setClauses.join(', ')} WHERE id='${logId}'"`;
-    execSync(cmd, { stdio: 'pipe' });
+    if (!updates.status) return { success: false, error: 'No updates provided' };
+    const secDb = getSecurityDb();
+    secDb.prepare('UPDATE audit_logs SET status = ? WHERE id = ?').run(updates.status, logId);
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Security] Update audit log error:', error);
@@ -6466,9 +7684,8 @@ ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { st
 // List security alerts
 ipcMain.handle('security:listAlerts', async () => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "SELECT * FROM security_alerts WHERE dismissed=0 ORDER BY timestamp DESC LIMIT 20" -json`;
-    const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-    const alerts = JSON.parse(result || '[]');
+    const secDb = getSecurityDb();
+    const alerts = secDb.prepare('SELECT * FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all();
     return { success: true, alerts };
   } catch (error: any) {
     safeLog.error('[Security] List alerts error:', error);
@@ -6479,8 +7696,8 @@ ipcMain.handle('security:listAlerts', async () => {
 // Dismiss alert
 ipcMain.handle('security:dismissAlert', async (_, alertId: string) => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "UPDATE security_alerts SET dismissed=1 WHERE id='${alertId}'"`;
-    execSync(cmd, { stdio: 'pipe' });
+    const secDb = getSecurityDb();
+    secDb.prepare('UPDATE security_alerts SET dismissed = 1 WHERE id = ?').run(alertId);
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Security] Dismiss alert error:', error);
@@ -6503,19 +7720,24 @@ ipcMain.handle('security:runAudit', async () => {
     
     const output = JSON.parse(result);
     
-    // Store findings in database
+    // Store findings in database using parameterized queries
+    const secDb = getSecurityDb();
     const now = new Date().toISOString();
+    const insertFinding = secDb.prepare(
+      "INSERT INTO audit_logs (id, timestamp, severity, category, finding, details, recommendation, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'open')"
+    );
     for (const finding of output.findings || []) {
       const id = `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const cmd = `sqlite3 "${SECURITY_DB}" "INSERT INTO audit_logs (id, timestamp, severity, category, finding, details, recommendation, status) VALUES ('${id}', '${now}', '${finding.severity}', '${finding.category.replace(/'/g, "''")}', '${finding.finding.replace(/'/g, "''")}', '${finding.details.replace(/'/g, "''")}', '${(finding.recommendation || '').replace(/'/g, "''")}', 'open')"`;
-      execSync(cmd, { stdio: 'pipe' });
+      insertFinding.run(id, now, finding.severity, finding.category, finding.finding, finding.details, finding.recommendation || '');
     }
-    
+
     // Store alerts if any critical/high issues
+    const insertAlert = secDb.prepare(
+      'INSERT INTO security_alerts (id, timestamp, severity, message, source, dismissed) VALUES (?, ?, ?, ?, ?, 0)'
+    );
     for (const alert of output.alerts || []) {
       const id = `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const cmd = `sqlite3 "${SECURITY_DB}" "INSERT INTO security_alerts (id, timestamp, severity, message, source, dismissed) VALUES ('${id}', '${now}', '${alert.severity}', '${alert.message.replace(/'/g, "''")}', '${alert.source}', 0)"`;
-      execSync(cmd, { stdio: 'pipe' });
+      insertAlert.run(id, now, alert.severity, alert.message, alert.source);
     }
     
     return {
@@ -6640,5 +7862,60 @@ ipcMain.handle('exportBackup:stats', async () => {
   } catch (error: any) {
     safeLog.error('[ExportBackup] Stats error:', error);
     return { success: false, stats: null, error: error.message };
+  }
+});
+
+// Get dashboard agent sessions status
+ipcMain.handle('dashboardAgents:status', async () => {
+  try {
+    const status = getDashboardAgentsStatus();
+    return { success: true, agents: status };
+  } catch (error: any) {
+    safeLog.error('[DashboardAgents] Status error:', error);
+    return { success: false, agents: [], error: error.message };
+  }
+});
+
+// ============== HR REPORTS ==============
+ipcMain.handle('hrReports:list', async () => {
+  try {
+    const reportsDir = path.join(os.homedir(), 'clawd', 'reports', 'hr');
+    if (!fs.existsSync(reportsDir)) {
+      return { success: true, reports: [] };
+    }
+    const files = fs.readdirSync(reportsDir);
+    const reports = files
+      .filter(f => f.endsWith('.md') && f !== 'README.md')
+      .map(f => {
+        const filePath = path.join(reportsDir, f);
+        const stat = fs.statSync(filePath);
+        return {
+          name: f,
+          path: filePath,
+          size: stat.size,
+          createdAt: stat.birthtime.getTime(),
+          modifiedAt: stat.mtime.getTime(),
+        };
+      })
+      .sort((a, b) => b.createdAt - a.createdAt); // Newest first
+    return { success: true, reports };
+  } catch (error: any) {
+    console.error('[HRReports] List error:', error);
+    return { success: false, reports: [], error: error.message };
+  }
+});
+
+ipcMain.handle('hrReports:read', async (_, filename: string) => {
+  try {
+    const reportsDir = path.join(os.homedir(), 'clawd', 'reports', 'hr');
+    const filePath = path.join(reportsDir, path.basename(filename)); // Security: basename only
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'Report not found' };
+    }
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { success: true, content };
+  } catch (error: any) {
+    console.error('[HRReports] Read error:', error);
+    return { success: false, error: error.message };
   }
 });

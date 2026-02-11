@@ -35,9 +35,9 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
   const loadFolders = async () => {
     setLoading(true);
     try {
-      const result = await window.clawdbot.folders.list();
-      if (result.success) {
-        setFolders(result.folders || []);
+      const result = await window.clawdbot?.folders.list();
+      if (result?.success) {
+        setFolders(result?.folders || []);
       } else {
         showToast('error', 'Failed to load folders');
       }
@@ -60,14 +60,14 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     }
 
     try {
-      const result = await window.clawdbot.folders.create(formData);
-      if (result.success) {
+      const result = await window.clawdbot?.folders.create(formData);
+      if (result?.success) {
         showToast('success', `Folder "${formData.name}" created`);
         setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
         setShowCreate(false);
         loadFolders();
       } else {
-        showToast('error', result.error || 'Failed to create folder');
+        showToast('error', result?.error || 'Failed to create folder');
       }
     } catch (error) {
       console.error('[FolderManager] Create error:', error);
@@ -82,14 +82,14 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     }
 
     try {
-      const result = await window.clawdbot.folders.update(folderId, formData);
-      if (result.success) {
+      const result = await window.clawdbot?.folders.update(folderId, formData);
+      if (result?.success) {
         showToast('success', 'Folder updated');
         setEditingId(null);
         setFormData({ name: '', icon: '📁', color: '#6366f1', description: '' });
         loadFolders();
       } else {
-        showToast('error', result.error || 'Failed to update folder');
+        showToast('error', result?.error || 'Failed to update folder');
       }
     } catch (error) {
       console.error('[FolderManager] Update error:', error);
@@ -103,12 +103,12 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     }
 
     try {
-      const result = await window.clawdbot.folders.delete(folderId);
-      if (result.success) {
+      const result = await window.clawdbot?.folders.delete(folderId);
+      if (result?.success) {
         showToast('success', `Folder "${folderName}" deleted`);
         loadFolders();
       } else {
-        showToast('error', result.error || 'Failed to delete folder');
+        showToast('error', result?.error || 'Failed to delete folder');
       }
     } catch (error) {
       console.error('[FolderManager] Delete error:', error);

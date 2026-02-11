@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, PhoneOff, Mic, MicOff, Activity, Lock, Unlock, Inbox, Loader, Wifi, WifiOff } from 'lucide-react';
-import { useStore } from '../store/store';
+import { Inbox, Loader } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 
@@ -12,31 +11,26 @@ interface SystemStatus {
 }
 
 interface TopBarProps {
-  onCallClick?: () => void;
-  onNavigate?: (view: string) => void;
-  sidebarWidth?: number; // Dynamic sidebar width
+  onNavigate?: (view: any) => void;
+  sidebarWidth?: number;
 }
 
-export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: TopBarProps) {
-  const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
+export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   const [status, setStatus] = useState<SystemStatus>({
     watcherRunning: false,
     killSwitchOn: true,
     pendingInbox: 0,
     inProgressTasks: 0,
   });
-  const [connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
-  const { focusMode, setFocusMode, config } = useFocusMode();
+  const [_connectionState, setConnectionState] = useState<ConnectionState>(gateway.getState());
+  const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
 
-  // Track gateway connection
   useEffect(() => {
     const unsub = gateway.on('stateChange', ({ state }: { state: ConnectionState }) => {
       setConnectionState(state);
     });
-    return () => {
-      unsub();
-    };
+    return () => { unsub(); };
   }, []);
 
   useEffect(() => {
@@ -50,156 +44,41 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
         console.error('[TopBar] Status check failed:', e);
       }
     };
-
     checkStatus();
-    const interval = setInterval(checkStatus, 10000); // Check every 10s
+    const interval = setInterval(checkStatus, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleCallClick = () => {
-    toggleMeeting();
-    onCallClick?.();
-  };
-
   return (
-    <header 
-      className="drag-region fixed top-0 right-0 h-12 z-50 flex items-center justify-between px-4 transition-all duration-200" 
-      style={{ left: `${sidebarWidth}px` }}
-      role="banner"
-      aria-label="Top navigation bar"
-    >
-      {/* System Status Indicators */}
-      <div className="no-drag flex items-center gap-1.5 overflow-x-auto scrollbar-hide max-w-[calc(100%-200px)]" role="status" aria-label="System status indicators">
-        {/* Gateway Connection */}
-        <div 
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
-            connectionState === 'connected'
-              ? 'bg-green-500/10 text-green-400'
-              : connectionState === 'connecting' || connectionState === 'authenticating'
-              ? 'bg-yellow-500/10 text-yellow-400'
-              : 'bg-red-500/10 text-red-400'
-          }`}
-          role="status"
-          aria-label={`Gateway connection: ${connectionState}`}
-        >
-          {connectionState === 'connected' ? <Wifi size={12} aria-hidden="true" className="flex-shrink-0" /> : <WifiOff size={12} aria-hidden="true" className="flex-shrink-0" />}
-          <span className="flex-shrink-0">
-            {connectionState === 'connected' ? 'Online' : 
-             connectionState === 'connecting' ? 'Connecting...' :
-             connectionState === 'authenticating' ? 'Auth...' : 'Offline'}
-          </span>
-        </div>
-
-        {/* Watcher Status */}
-        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
-          status.watcherRunning 
-            ? 'bg-green-500/10 text-green-400' 
-            : 'bg-red-500/10 text-red-400'
-        }`}>
-          <Activity size={12} aria-hidden="true" className="flex-shrink-0" />
-          <span className="flex-shrink-0">Watcher</span>
-          <span className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0 ${status.watcherRunning ? 'bg-green-400' : 'bg-red-400'}`} aria-hidden="true" />
-        </div>
-
-        {/* Kill Switch Status */}
-        <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
-          status.killSwitchOn 
-            ? 'bg-red-500/10 text-red-400' 
-            : 'bg-green-500/10 text-green-400'
-        }`}>
-          {status.killSwitchOn ? <Lock size={12} aria-hidden="true" className="flex-shrink-0" /> : <Unlock size={12} aria-hidden="true" className="flex-shrink-0" />}
-          <span className="flex-shrink-0">{status.killSwitchOn ? 'Blocked' : 'Live'}</span>
-        </div>
-
-        {/* Focus Mode */}
-        {focusMode && (
-          <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
-        )}
-
-        {/* Pending Inbox */}
-        {status.pendingInbox > 0 && (
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-yellow-500/10 text-yellow-400 transition-colors flex-shrink-0 whitespace-nowrap">
-            <Inbox size={12} aria-hidden="true" className="flex-shrink-0" />
-            <span className="flex-shrink-0 tabular-nums">{status.pendingInbox} pending</span>
-          </div>
-        )}
-
-        {/* In-Progress Tasks */}
-        {status.inProgressTasks > 0 && (
-          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-500/10 text-blue-400 transition-colors flex-shrink-0 whitespace-nowrap">
-            <Loader size={12} className="animate-spin flex-shrink-0" aria-hidden="true" />
-            <span className="flex-shrink-0 tabular-nums">{status.inProgressTasks} running</span>
-          </div>
-        )}
-      </div>
-
-      {/* Right side controls */}
-      <div className="no-drag flex items-center gap-2 flex-shrink-0">
-        {/* Mute status indicator */}
-        {isMuted && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full transition-all flex-shrink-0 whitespace-nowrap">
-            <MicOff size={14} className="text-red-400 flex-shrink-0" aria-hidden="true" />
-            <span className="text-xs text-red-400 font-medium flex-shrink-0">Muted</span>
-            <span className="text-xs text-red-400/60 flex-shrink-0">⌘M</span>
-          </div>
-        )}
-        
-        {/* Meeting active indicator */}
-        {isMeetingActive && !isMuted && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/30 rounded-full animate-pulse flex-shrink-0 whitespace-nowrap">
-            <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" aria-hidden="true" />
-            <span className="text-xs text-red-400 font-medium flex-shrink-0">Meeting Active</span>
-          </div>
-        )}
-
-        {/* Mute button - always visible */}
-        <button
-          onClick={toggleMuted}
-          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-            isMuted 
-              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-              : 'bg-clawd-surface/80 text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-surface'
-          }`}
-          title={isMuted ? 'Unmute (⌘M)' : 'Mute (⌘M)'}
-          aria-label={isMuted ? 'Unmute microphone (Command M)' : 'Mute microphone (Command M)'}
-          aria-pressed={isMuted}
-        >
-          {isMuted ? (
-            <MicOff size={16} aria-hidden="true" />
-          ) : (
-            <Mic size={16} aria-hidden="true" />
+    <>
+      <header 
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-clawd-surface/80 backdrop-blur-xl border-b border-white/[0.08] dark:border-gray-800/50 transition-all duration-200" 
+        style={{ left: `${sidebarWidth}px` }}
+      >
+        {/* Left: Focus mode */}
+        <div className="no-drag flex items-center gap-2">
+          {focusMode && (
+            <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
           )}
-        </button>
+        </div>
 
-        {/* Call button - triggers meeting mode */}
-        <button
-          onClick={handleCallClick}
-          className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-            isMeetingActive 
-              ? 'bg-red-500 text-white animate-pulse hover:bg-red-600' 
-              : 'bg-clawd-accent text-white hover:bg-clawd-accent/80'
-          }`}
-          title={isMeetingActive ? 'End meeting' : 'Start meeting mode'}
-          aria-label={isMeetingActive ? 'End meeting mode' : 'Start meeting mode'}
-          aria-pressed={isMeetingActive}
-        >
-          {isMeetingActive ? (
-            <PhoneOff size={16} aria-hidden="true" />
-          ) : (
-            <Phone size={16} aria-hidden="true" />
+        {/* Right: Counters only */}
+        <div className="no-drag flex items-center gap-3">
+          {status.pendingInbox > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-yellow-400" title={`${status.pendingInbox} pending inbox items`}>
+              <Inbox size={12} aria-hidden="true" />
+              <span className="tabular-nums">{status.pendingInbox}</span>
+            </span>
           )}
-        </button>
 
-        {/* Frog emoji button - far right */}
-        <button
-          onClick={() => onNavigate?.('dashboard')}
-          className="text-2xl cursor-pointer hover:scale-110 transition-transform p-1"
-          title="Go to dashboard"
-          aria-label="Go to dashboard home"
-        >
-          🐸
-        </button>
-      </div>
+          {status.inProgressTasks > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400" title={`${status.inProgressTasks} tasks in progress`}>
+              <Loader size={12} className="animate-spin" aria-hidden="true" />
+              <span className="tabular-nums">{status.inProgressTasks}</span>
+            </span>
+          )}
+        </div>
+      </header>
 
       {/* Focus Mode Selector */}
       <FocusModeSelector
@@ -208,6 +87,6 @@ export default function TopBar({ onCallClick, onNavigate, sidebarWidth = 208 }: 
         currentMode={focusMode}
         onSelectMode={setFocusMode}
       />
-    </header>
+    </>
   );
 }

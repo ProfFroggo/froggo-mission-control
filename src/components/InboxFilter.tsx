@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, Star, Mail, Tag, Calendar, Paperclip, X, Save, ChevronDown, Reply } from 'lucide-react';
+import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply } from 'lucide-react';
 
 export interface FilterCriteria {
   search?: string;
@@ -55,7 +55,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const [searchInput, setSearchInput] = useState('');
   const [quickFilterInput, setQuickFilterInput] = useState('');
   const [platforms, setPlatforms] = useState<string[]>([]);
-  const [flags, setFlags] = useState<FilterCriteria['flags']>({});
+  const [flags, setFlags] = useState<NonNullable<FilterCriteria['flags']>>({});
   const [logicMode, setLogicMode] = useState<'AND' | 'OR'>('AND');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showSavedFilters, setShowSavedFilters] = useState(false);

@@ -6,7 +6,7 @@
 
 interface RenderMetrics {
   componentName: string;
-  phase: 'mount' | 'update';
+  phase: 'mount' | 'update' | 'nested-update';
   actualDuration: number;
   baseDuration: number;
   startTime: number;
@@ -41,7 +41,7 @@ const stats: PerformanceStats = {
  */
 export function logRender(
   id: string,
-  phase: 'mount' | 'update',
+  phase: 'mount' | 'update' | 'nested-update',
   actualDuration: number,
   baseDuration: number,
   startTime: number,

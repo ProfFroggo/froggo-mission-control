@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MessageSquare, Search, Filter, RefreshCw, Clock, ArrowRight, ChevronDown, X, Folder, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
 import FolderSelector from './FolderSelector';
 import FolderManager from './FolderManager';
@@ -51,7 +51,7 @@ const CHANNELS: { id: ChannelFilter; label: string; icon: string; color: string 
   { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'text-green-400' },
   { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'text-blue-400' },
   { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-purple-400' },
-  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-gray-400' },
+  { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-clawd-text-dim' },
   { id: 'agents', label: 'Agents', icon: '🤖', color: 'text-yellow-400' },
 ];
 
@@ -59,7 +59,7 @@ export default function SessionsFilter() {
   const { sessions, fetchSessions, connected } = useStore();
   const [filter, setFilter] = useState<ChannelFilter>('all');
   const [search, setSearch] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [_showDropdown, _setShowDropdown] = useState(false);
   const [folders, setFolders] = useState<MessageFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [folderAssignments, setFolderAssignments] = useState<Record<string, number[]>>({});
@@ -76,6 +76,10 @@ export default function SessionsFilter() {
   const [showSnoozeModal, setShowSnoozeModal] = useState<{ key: string; name: string } | null>(null);
   const [showSnoozed, setShowSnoozed] = useState(true);
 
+  // Request deduplication and backoff state
+  const fetchingRef = useRef(false);
+  const [failCount, setFailCount] = useState(0);
+
   // Drag and drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -87,34 +91,56 @@ export default function SessionsFilter() {
 
   useEffect(() => {
     if (connected) {
-      fetchSessions();
-      loadFolders();
-      loadNotificationSettings();
-      loadPinnedSessions();
-      loadSnoozedSessions();
-      const interval = setInterval(() => {
-        fetchSessions();
-        loadFolders();
-        loadNotificationSettings();
-        loadPinnedSessions();
-        loadSnoozedSessions();
-      }, 30000);
-      return () => clearInterval(interval);
+      // Initial load
+      const poll = async () => {
+        // Skip if already fetching (request deduplication)
+        if (fetchingRef.current) {
+          console.log('[SessionsFilter] Skipping poll - request already in flight');
+          return;
+        }
+        
+        fetchingRef.current = true;
+        try {
+          await fetchSessions();
+          await loadFolders();
+          await loadNotificationSettings();
+          await loadPinnedSessions();
+          await loadSnoozedSessions();
+          // Reset fail count on success
+          setFailCount(0);
+        } catch (error) {
+          console.error('[SessionsFilter] Poll failed:', error);
+          // Increment fail count for exponential backoff
+          setFailCount(f => Math.min(f + 1, 6)); // Max 6 = 64x backoff
+        } finally {
+          fetchingRef.current = false;
+        }
+      };
+
+      // Initial poll
+      poll();
+
+      // Calculate interval with exponential backoff: 30s, 60s, 120s, 240s, 480s, 960s max
+      const interval = 30000 * Math.pow(2, failCount);
+      console.log(`[SessionsFilter] Setting poll interval to ${interval}ms (failCount=${failCount})`);
+      
+      const timer = setInterval(poll, interval);
+      return () => clearInterval(timer);
     }
-  }, [connected, fetchSessions]);
+  }, [connected, fetchSessions, failCount]);
 
   const loadFolders = async () => {
     try {
-      const result = await window.clawdbot.folders.list();
-      if (result.success) {
-        setFolders(result.folders || []);
+      const result = await window.clawdbot?.folders.list();
+      if (result?.success) {
+        setFolders(result?.folders || []);
         
         // Load folder assignments for all sessions
         const assignments: Record<string, number[]> = {};
         for (const session of sessions) {
-          const folderResult = await window.clawdbot.folders.forConversation(session.key);
-          if (folderResult.success && folderResult.folders.length > 0) {
-            assignments[session.key] = folderResult.folders.map((f: any) => f.id);
+          const folderResult = await window.clawdbot?.folders.forConversation(session.key);
+          if (folderResult?.success && folderResult?.folders.length > 0) {
+            assignments[session.key] = folderResult?.folders.map((f: any) => f.id);
           }
         }
         setFolderAssignments(assignments);
@@ -128,9 +154,9 @@ export default function SessionsFilter() {
     try {
       const settings: Record<string, any> = {};
       for (const session of sessions) {
-        const result = await window.clawdbot.notificationSettings.getEffective(session.key);
-        if (result.success && result.settings) {
-          settings[session.key] = result.settings;
+        const result = await window.clawdbot?.notificationSettings.getEffective(session.key);
+        if (result?.success && result?.settings) {
+          settings[session.key] = result?.settings;
         }
       }
       setNotificationSettings(settings);
@@ -141,10 +167,10 @@ export default function SessionsFilter() {
 
   const loadPinnedSessions = async () => {
     try {
-      const result = await window.clawdbot.pins.list();
-      if (result.success && result.pins) {
+      const result = await window.clawdbot?.pins.list();
+      if (result?.success && result?.pins) {
         // Pins are already sorted by pin_order ASC from the backend
-        const orderedKeys = result.pins.map((p: any) => p.session_key);
+        const orderedKeys = result?.pins.map((p: any) => p.session_key);
         const pinSet = new Set(orderedKeys);
         setPinnedSessions(pinSet);
         setPinnedOrder(orderedKeys);
@@ -156,10 +182,10 @@ export default function SessionsFilter() {
 
   const loadSnoozedSessions = async () => {
     try {
-      const result = await window.clawdbot.snooze.list();
-      if (result.success && result.snoozes) {
+      const result = await window.clawdbot?.snooze.list();
+      if (result?.success && result.snoozes) {
         const snoozeMap: Record<string, any> = {};
-        result.snoozes.forEach((snooze: any) => {
+        result?.snoozes.forEach((snooze: any) => {
           snoozeMap[snooze.session_id] = snooze;
         });
         setSnoozedSessions(snoozeMap);
@@ -171,13 +197,13 @@ export default function SessionsFilter() {
 
   const togglePin = async (sessionKey: string) => {
     try {
-      const result = await window.clawdbot.pins.toggle(sessionKey);
-      if (result.success) {
+      const result = await window.clawdbot?.pins.toggle(sessionKey);
+      if (result?.success) {
         // Reload pins to update UI
         await loadPinnedSessions();
-      } else if (result.error) {
+      } else if (result?.error) {
         // Show error if pin limit reached
-        alert(result.error);
+        alert(result?.error);
       }
     } catch (error) {
       console.error('[SessionsFilter] Failed to toggle pin:', error);
@@ -213,9 +239,9 @@ export default function SessionsFilter() {
     
     // Save to backend
     try {
-      const result = await window.clawdbot.pins.reorder(newOrder);
-      if (!result.success) {
-        console.error('[SessionsFilter] Failed to reorder pins:', result.error);
+      const result = await window.clawdbot?.pins.reorder(newOrder);
+      if (!result?.success) {
+        console.error('[SessionsFilter] Failed to reorder pins:', result?.error);
         // Reload to restore correct order
         await loadPinnedSessions();
       }
@@ -368,12 +394,12 @@ export default function SessionsFilter() {
       // Delete each selected session
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot.conversations.delete(sessionKey);
-          if (result.success) {
+          const result = await window.clawdbot?.conversations.delete(sessionKey);
+          if (result?.success) {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to delete ${sessionKey}:`, result.error);
+            console.error(`[SessionsFilter] Failed to delete ${sessionKey}:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -409,12 +435,12 @@ export default function SessionsFilter() {
       // Archive each selected session
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot.conversations.archive(sessionKey);
-          if (result.success) {
+          const result = await window.clawdbot?.conversations.archive(sessionKey);
+          if (result?.success) {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to archive ${sessionKey}:`, result.error);
+            console.error(`[SessionsFilter] Failed to archive ${sessionKey}:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -449,12 +475,12 @@ export default function SessionsFilter() {
       // Mark each selected session as read
       for (const sessionKey of selectedSessions) {
         try {
-          const result = await window.clawdbot.conversations.markRead(sessionKey);
-          if (result.success) {
+          const result = await window.clawdbot?.conversations.markRead(sessionKey);
+          if (result?.success) {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to mark ${sessionKey} as read:`, result.error);
+            console.error(`[SessionsFilter] Failed to mark ${sessionKey} as read:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -487,13 +513,13 @@ export default function SessionsFilter() {
   const handleConversationDrop = async (sessionKey: string, folderId: number) => {
     try {
       console.log('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
-      const result = await window.clawdbot.folders.assign(folderId, sessionKey);
-      if (result.success) {
+      const result = await window.clawdbot?.folders.assign(folderId, sessionKey);
+      if (result?.success) {
         // Refresh folders and assignments
         await loadFolders();
         console.log('[SessionsFilter] Successfully assigned conversation to folder');
       } else {
-        console.error('[SessionsFilter] Failed to assign folder:', result.error);
+        console.error('[SessionsFilter] Failed to assign folder:', result?.error);
         alert('Failed to assign to folder');
       }
     } catch (error) {
@@ -727,7 +753,7 @@ export default function SessionsFilter() {
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/30 rounded-full text-xs">
@@ -890,7 +916,7 @@ export default function SessionsFilter() {
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-500'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
                               <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full text-xs">

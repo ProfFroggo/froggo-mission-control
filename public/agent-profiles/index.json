@@ -1,0 +1,69 @@
+{
+  "agents": [
+    {
+      "id": "froggo",
+      "name": "Froggo",
+      "emoji": "\ud83d\udc38",
+      "role": "General Assistant",
+      "color": "#4CAF50",
+      "profilePath": "./froggo.json",
+      "imagePath": "./froggo.svg"
+    },
+    {
+      "id": "coder",
+      "name": "Coder",
+      "emoji": "\ud83d\udcbb",
+      "role": "Software Development",
+      "color": "#2196F3",
+      "profilePath": "./coder.json",
+      "imagePath": "./coder.svg"
+    },
+    {
+      "id": "writer",
+      "name": "Writer",
+      "emoji": "\u270d\ufe0f",
+      "role": "Content Creation",
+      "color": "#9C27B0",
+      "profilePath": "./writer.json",
+      "imagePath": "./writer.svg"
+    },
+    {
+      "id": "researcher",
+      "name": "Researcher",
+      "emoji": "\ud83d\udd2c",
+      "role": "Analysis & Investigation",
+      "color": "#FF9800",
+      "profilePath": "./researcher.json",
+      "imagePath": "./researcher.svg"
+    },
+    {
+      "id": "chief",
+      "name": "Chief",
+      "emoji": "\ud83d\udc54",
+      "role": "Strategic Coordination",
+      "color": "#F44336",
+      "profilePath": "./chief.json",
+      "imagePath": "./chief.svg"
+    },
+    {
+      "id": "hr",
+      "name": "HR",
+      "emoji": "\ud83c\udf93",
+      "role": "Agent Management & Training",
+      "color": "#00897B",
+      "profilePath": "./hr.json",
+      "imagePath": "./hr.svg"
+    },
+    {
+      "id": "designer",
+      "name": "Pixel",
+      "emoji": "\ud83c\udfa8",
+      "role": "UI/Graphic Designer",
+      "color": "#EC4899",
+      "profilePath": "./designer.json",
+      "imagePath": "./designer.svg"
+    }
+  ],
+  "version": "1.0.0",
+  "created": "2025-01-29"
+}

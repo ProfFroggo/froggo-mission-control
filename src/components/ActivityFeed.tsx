@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, Phone, Send, Bot, Clock, RefreshCw, Filter } from 'lucide-react';
+import { MessageSquare, RefreshCw } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 
 // Channel icons and colors
@@ -13,7 +13,7 @@ const channelConfig: Record<string, { icon: string; color: string; label: string
   slack: { icon: '💼', color: 'bg-purple-600/20 text-purple-300 border-purple-600/30', label: 'Slack' },
   voice: { icon: '🎤', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'Voice' },
   cron: { icon: '⏰', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', label: 'Scheduled' },
-  system: { icon: '⚙️', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', label: 'System' },
+  system: { icon: '⚙️', color: 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30', label: 'System' },
 };
 
 interface Activity {

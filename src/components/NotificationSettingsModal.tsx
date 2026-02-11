@@ -18,8 +18,8 @@ export default function NotificationSettingsModal({
 }: NotificationSettingsModalProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState<any>(null);
-  const [globalDefaults, setGlobalDefaults] = useState<any>(null);
+  const [_settings, setSettings] = useState<any>(null);
+  const [_globalDefaults, setGlobalDefaults] = useState<any>(null);
   const [hasCustomSettings, setHasCustomSettings] = useState(false);
 
   // Form state
@@ -58,12 +58,12 @@ export default function NotificationSettingsModal({
     setLoading(true);
     try {
       // Load conversation-specific settings
-      const result = await window.clawdbot.notificationSettings.get(sessionKey);
+      const result = await window.clawdbot?.notificationSettings.get(sessionKey);
       
       // Load global defaults
-      const defaultsResult = await window.clawdbot.notificationSettings.getGlobalDefaults();
+      const defaultsResult = await window.clawdbot?.notificationSettings.getGlobalDefaults();
       
-      if (result.success && result.settings) {
+      if (result?.success && result?.settings) {
         // Has custom settings
         setHasCustomSettings(true);
         const s = result.settings;
@@ -83,10 +83,10 @@ export default function NotificationSettingsModal({
         setBadgeCountEnabled(s.badge_count_enabled === 1);
         setMuteUntil(s.mute_until);
         setNotes(s.notes || '');
-      } else if (defaultsResult.success && defaultsResult.defaults) {
+      } else if (defaultsResult?.success && defaultsResult?.defaults) {
         // No custom settings, use global defaults
         setHasCustomSettings(false);
-        const d = defaultsResult.defaults;
+        const d = defaultsResult?.defaults;
         setGlobalDefaults(d);
         
         setNotificationLevel(d.default_notification_level || 'all');
@@ -125,12 +125,12 @@ export default function NotificationSettingsModal({
         notes: notes,
       };
 
-      const result = await window.clawdbot.notificationSettings.set(
+      const result = await window.clawdbot?.notificationSettings.set(
         sessionKey,
         updatedSettings
       );
 
-      if (result.success) {
+      if (result?.success) {
         setHasCustomSettings(true);
         onClose();
       } else {
@@ -149,8 +149,8 @@ export default function NotificationSettingsModal({
     
     setSaving(true);
     try {
-      const result = await window.clawdbot.notificationSettings.delete(sessionKey);
-      if (result.success) {
+      const result = await window.clawdbot?.notificationSettings.delete(sessionKey);
+      if (result?.success) {
         setHasCustomSettings(false);
         await loadSettings(); // Reload to show defaults
       }
@@ -167,12 +167,12 @@ export default function NotificationSettingsModal({
     
     setSaving(true);
     try {
-      const result = await window.clawdbot.notificationSettings.muteConversation(
+      const result = await window.clawdbot?.notificationSettings.muteConversation(
         sessionKey,
         until.toISOString()
       );
       
-      if (result.success) {
+      if (result?.success) {
         setMuteUntil(until.toISOString());
         setNotificationLevel('none');
         onClose();
@@ -187,9 +187,9 @@ export default function NotificationSettingsModal({
   const handleUnmute = async () => {
     setSaving(true);
     try {
-      const result = await window.clawdbot.notificationSettings.unmuteConversation(sessionKey);
+      const result = await window.clawdbot?.notificationSettings.unmuteConversation(sessionKey);
       
-      if (result.success) {
+      if (result?.success) {
         setMuteUntil(null);
         setNotificationLevel('all');
         onClose();

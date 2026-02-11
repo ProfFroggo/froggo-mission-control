@@ -37,7 +37,7 @@ export function useKeyboardShortcuts(
 
       // Check modifier keys
       const ctrlMatch = shortcut.ctrl ? (e.ctrlKey || e.metaKey) : !(e.ctrlKey || e.metaKey);
-      const metaMatch = shortcut.meta ? (e.metaKey || e.ctrlKey) : !(e.metaKey || e.ctrlKey);
+  //     const __metaMatch = shortcut.meta ? (e.metaKey || e.ctrlKey) : !(e.metaKey || e.ctrlKey);
       const shiftMatch = shortcut.shift ? e.shiftKey : !e.shiftKey;
       const altMatch = shortcut.alt ? e.altKey : !e.altKey;
 

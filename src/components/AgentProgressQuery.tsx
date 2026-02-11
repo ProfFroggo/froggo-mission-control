@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { showToast } from './Toast';
+import { gateway } from '@/lib/gateway';
 
 interface AgentProgressQueryProps {
   taskId: string;
@@ -23,20 +24,21 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
   useEffect(() => {
     const checkAgent = async () => {
       try {
-        const result = await (window as any).clawdbot.sessions.list();
-        if (result.success && result.sessions) {
+        const result = await gateway.getSessions();
+        if (result.sessions) {
           const activeSession = result.sessions.find((s: any) => {
             const isRecent = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
             const matchesTask = s.label && (
-              s.label.includes(taskId) || 
+              s.label.includes(taskId) ||
               s.label.includes(`task-${taskId}`)
             );
             return isRecent && matchesTask;
           });
-          
+
           if (activeSession) {
             setHasActiveAgent(true);
-            setSessionKey(activeSession.key);
+            // Gateway returns sessionKey, map to key for component compatibility
+            setSessionKey(activeSession.sessionKey || activeSession.key);
           } else {
             setHasActiveAgent(false);
             setSessionKey(null);
@@ -65,30 +67,25 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
     try {
       // Send progress query to agent session
       const message = `Please provide a brief progress update on task: ${taskTitle}\n\nWhat have you completed so far? What are you currently working on? Any blockers?`;
-      
-      const result = await (window as any).clawdbot.sessions.send(sessionKey, message);
-      
-      if (result.success) {
-        // Wait a moment for agent to process and respond
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Fetch recent chat messages to get agent's response
-        const chatResult = await (window as any).clawdbot.chat.recent(sessionKey, 1);
-        
-        if (chatResult.success && chatResult.messages && chatResult.messages.length > 0) {
-          const lastMessage = chatResult.messages[0];
-          if (lastMessage.role === 'assistant') {
-            setResponse(lastMessage.content);
-            showToast('success', 'Progress received', 'Agent responded with status update');
-          } else {
-            setError('Agent did not respond yet. Check Sessions panel for response.');
-          }
+
+      await gateway.sendToSession(sessionKey, message);
+
+      // Wait a moment for agent to process and respond
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Fetch recent chat messages to get agent's response
+      const chatResult = await (window as any).clawdbot?.chat?.recent?.(sessionKey, 1);
+
+      if (chatResult?.success && chatResult.messages && chatResult.messages.length > 0) {
+        const lastMessage = chatResult.messages[0];
+        if (lastMessage.role === 'assistant') {
+          setResponse(lastMessage.content);
+          showToast('success', 'Progress received', 'Agent responded with status update');
         } else {
-          setError('Could not fetch agent response. Check Sessions panel.');
+          setError('Agent did not respond yet. Check Sessions panel for response.');
         }
       } else {
-        setError(result.error || 'Failed to send query');
-        showToast('error', 'Query failed', result.error || 'Could not reach agent');
+        setError('Could not fetch agent response. Check Sessions panel.');
       }
     } catch (err: any) {
       console.error('Failed to query agent:', err);
@@ -132,7 +129,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
             <CheckCircle size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
             <div className="text-xs font-semibold text-green-400">Agent Progress Report</div>
           </div>
-          <div className="text-sm text-gray-300 whitespace-pre-wrap ml-6">
+          <div className="text-sm text-clawd-text-dim whitespace-pre-wrap ml-6">
             {response}
           </div>
         </div>

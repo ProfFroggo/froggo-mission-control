@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
+import AgentAvatar from './AgentAvatar';
+import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
+import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
+import CreateRoomModal from './CreateRoomModal';
+import ChatRoomView from './ChatRoomView';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { useChatRoomStore } from '../store/chatRoomStore';
 import { showToast } from './Toast';
-import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
+import { getUserFriendlyError } from '../utils/errorMessages';
 
 interface AttachedFile {
   id: string;
@@ -25,6 +31,9 @@ interface Message {
 
 export default function ChatPanel() {
   const { addActivity } = useStore();
+  const { rooms, activeRoomId, setActiveRoom, createRoom } = useChatRoomStore();
+  const [showCreateRoom, setShowCreateRoom] = useState(false);
+  const [showRoomList, setShowRoomList] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,29 +49,78 @@ export default function ChatPanel() {
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
+  const agents = useStore(s => s.agents);
+  const chatAgents = fetchAgentList();
+  const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(chatAgents.length > 0 ? chatAgents[0] : null);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+
+  // Update selectedAgent when agents load if not set
+  useEffect(() => {
+    if (!selectedAgent && chatAgents.length > 0) {
+      setSelectedAgent(chatAgents[0]);
+    }
+  }, [chatAgents.length, selectedAgent]);
+  
+  // Cache messages per agent so switching is instant
+  const messageCacheRef = useRef<Map<string, Message[]>>(new Map());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentResponseRef = useRef<string>('');
   const currentMsgIdRef = useRef<string>('');
+  const currentRunIdRef = useRef<string>('');
 
   const connected = connectionState === 'connected';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Agent switching handler
+  const handleAgentSwitch = useCallback(async (agent: ChatAgent) => {
+    if (!selectedAgent || agent.id === selectedAgent.id) return;
+
+    // Save current messages to cache
+    messageCacheRef.current.set(selectedAgent.id, messages);
+    
+    // Switch to the persistent agent session
+    gateway.setSessionKey(agent.sessionKey);
+    setSelectedAgent(agent);
+    setLoading(false);
+    setSuggestedReplies([]);
+    setSearchQuery('');
+    setShowSearch(false);
+    
+    // Check cache first
+    const cached = messageCacheRef.current.get(agent.id);
+    if (cached) {
+      setMessages(cached);
+      setHistoryLoaded(true);
+      return;
+    }
+    
+    // Load from DB for this agent
+    setMessages([]);
+    setHistoryLoaded(true); // prevent gateway fallback race
+    if (window.clawdbot?.chat?.loadMessages) {
+      const result = await window.clawdbot?.chat.loadMessages(50, agent.dbSessionKey);
+      if (result?.success && result.messages?.length > 0) {
+        setMessages(result.messages);
+        messageCacheRef.current.set(agent.id, result.messages);
+      }
+    }
+  }, [selectedAgent, messages]);
+
   // Load starred message IDs
   useEffect(() => {
     const loadStarredIds = async () => {
-      if (window.clawdbot?.starred?.list) {
-        const result = await window.clawdbot.starred.list({ sessionKey: 'chat:main', limit: 1000 });
-        if (result?.success && result.starred) {
-          const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
-          setStarredMessageIds(ids);
-        }
+      if (!selectedAgent || !window.clawdbot?.starred?.list) return;
+      const result = await window.clawdbot?.starred.list({ sessionKey: selectedAgent.dbSessionKey, limit: 1000 });
+      if (result?.success && result.starred) {
+        const ids = new Set(result.starred.map((s: any) => s.message_id.toString()));
+        setStarredMessageIds(ids);
       }
     };
     loadStarredIds();
-  }, [messages.length]);
+  }, [messages.length, selectedAgent?.id]);
 
   // Toggle star on a message
   const handleToggleStar = async (msg: Message, e: React.MouseEvent) => {
@@ -79,7 +137,7 @@ export default function ChatPanel() {
     try {
       if (isStarred) {
         // Unstar
-        const result = await window.clawdbot.starred.unstar(messageId);
+        const result = await window.clawdbot?.starred.unstar(messageId);
         if (result?.success) {
           setStarredMessageIds(prev => {
             const next = new Set(prev);
@@ -92,7 +150,7 @@ export default function ChatPanel() {
         }
       } else {
         // Star
-        const result = await window.clawdbot.starred.star(messageId);
+        const result = await window.clawdbot?.starred.star(messageId);
         if (result?.success) {
           setStarredMessageIds(prev => new Set(prev).add(msg.id));
           showToast('Message starred', 'success');
@@ -106,18 +164,20 @@ export default function ChatPanel() {
     }
   };
 
-  // Load messages from database on mount - this is the source of truth
+  // Load messages from database on mount (and when agent changes) - this is the source of truth
   useEffect(() => {
     const loadFromDb = async () => {
-      console.log('[Chat] Loading from froggo.db...');
+      if (!selectedAgent) return;
+      console.log('[Chat] Loading from froggo.db for agent:', selectedAgent.id);
       // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
       setHistoryLoaded(true);
-      
+
       if (window.clawdbot?.chat?.loadMessages) {
-        const result = await window.clawdbot.chat.loadMessages(50);
+        const result = await window.clawdbot?.chat.loadMessages(50, selectedAgent.dbSessionKey);
         console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
         if (result.success && result.messages?.length > 0) {
           setMessages(result.messages);
+          messageCacheRef.current.set(selectedAgent.id, result.messages);
           console.log('[Chat] Loaded', result.messages.length, 'messages from DB');
         } else {
           console.log('[Chat] No messages in DB');
@@ -125,21 +185,20 @@ export default function ChatPanel() {
       }
     };
     loadFromDb();
-  }, []);
+  }, []); // Only on mount - agent switching handled by handleAgentSwitch
 
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
-    if (window.clawdbot?.chat?.saveMessage) {
-      try {
-        const result = await window.clawdbot.chat.saveMessage({ role, content, timestamp: Date.now() });
-        if (result?.success) {
-          console.log(`[Chat] ${role} message saved to DB`);
-        } else {
-          console.error(`[Chat] Failed to save ${role} message:`, result?.error);
-        }
-      } catch (err) {
-        console.error(`[Chat] Error saving ${role} message:`, err);
+    if (!selectedAgent || !window.clawdbot?.chat?.saveMessage) return;
+    try {
+      const result = await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
+      if (result?.success) {
+        console.log(`[Chat] ${role} message saved to DB`);
+      } else {
+        console.error(`[Chat] Failed to save ${role} message:`, result);
       }
+    } catch (err) {
+      console.error(`[Chat] Error saving ${role} message:`, err);
     }
   };
 
@@ -191,10 +250,17 @@ export default function ChatPanel() {
   };
 
   // Filter messages based on search query
+  // Filter out silent agent replies (NO_REPLY, HEARTBEAT_OK, NO) from display
+  const isSystemReply = (content: string) => {
+    const trimmed = content?.trim();
+    return trimmed === 'NO_REPLY' || trimmed === 'HEARTBEAT_OK' || trimmed === 'NO' || trimmed === 'NO_RE' || trimmed === 'NO_';
+  };
+
   const filteredMessages = useMemo(() => {
-    if (!searchQuery.trim()) return messages;
+    const visible = messages.filter(msg => !isSystemReply(msg.content));
+    if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
-    return messages.filter(msg => 
+    return visible.filter(msg => 
       msg.content.toLowerCase().includes(query) ||
       msg.role.toLowerCase().includes(query)
     );
@@ -288,6 +354,10 @@ export default function ChatPanel() {
             ? { ...m, content: currentResponseRef.current } 
             : m
         ));
+        // Re-enable input on first delta (streaming has started)
+        if (loading) {
+          setLoading(false);
+        }
       }
     };
 
@@ -312,11 +382,12 @@ export default function ChatPanel() {
         ));
         
         // Save assistant message to database
-        if (finalContent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot.chat.saveMessage({ 
-            role: 'assistant', 
-            content: finalContent, 
-            timestamp: Date.now() 
+        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          window.clawdbot?.chat.saveMessage({
+            role: 'assistant',
+            content: finalContent,
+            timestamp: Date.now(),
+            sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
               console.log('[Chat] Assistant message saved to DB (handleEnd)');
@@ -342,7 +413,7 @@ export default function ChatPanel() {
         }
         
         setLoading(false);
-        currentMsgIdRef.current = '';
+        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         currentResponseRef.current = '';
       }
     };
@@ -383,11 +454,12 @@ export default function ChatPanel() {
         ));
         
         // Save assistant message to database
-        if (finalContent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot.chat.saveMessage({ 
-            role: 'assistant', 
-            content: finalContent, 
-            timestamp: Date.now() 
+        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          window.clawdbot?.chat.saveMessage({
+            role: 'assistant',
+            content: finalContent,
+            timestamp: Date.now(),
+            sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
               console.log('[Chat] Assistant message saved to DB');
@@ -421,7 +493,7 @@ export default function ChatPanel() {
         }
         
         setLoading(false);
-        currentMsgIdRef.current = '';
+        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         currentResponseRef.current = '';
       }
     };
@@ -439,7 +511,7 @@ export default function ChatPanel() {
             : m
         ));
         setLoading(false);
-        currentMsgIdRef.current = '';
+        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
       }
     };
 
@@ -450,7 +522,7 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [speakResponses]);
+  }, [speakResponses, selectedAgent?.dbSessionKey]);
 
   // Setup voice recognition
   useEffect(() => {
@@ -528,7 +600,7 @@ export default function ChatPanel() {
       }));
       
       if (window.clawdbot?.chat?.suggestReplies) {
-        const result = await window.clawdbot.chat.suggestReplies(context);
+        const result = await window.clawdbot?.chat.suggestReplies(context);
         
         if (result.success && result.suggestions?.length > 0) {
           setSuggestedReplies(result.suggestions);
@@ -588,8 +660,8 @@ export default function ChatPanel() {
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
           } catch (e) {
-            // Fallback: include base64 hint
-            fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Image data included - use vision to analyze]`);
+            // Fallback: include base64 data URL so agent can still see the image
+            fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
           }
         } else if (att.type === 'application/pdf') {
           // PDF: Save and suggest extraction
@@ -619,8 +691,15 @@ export default function ChatPanel() {
             fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Could not transcribe: ${e}]`);
           }
         } else {
-          // Other files: include metadata
-          fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+          // Other files: save and include path
+          try {
+            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            savedFiles.push(tempPath);
+            fileContents.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
+          } catch (e) {
+            fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
+          }
         }
       }
     }
@@ -661,7 +740,9 @@ export default function ChatPanel() {
     try {
       // Use streaming send - events will update the message
       // Send full content including file contents
-      await gateway.sendChatStreaming(content);
+      // Gateway routes to the session set via setSessionKey()
+      const runId = await gateway.sendChatStreaming(content);
+      if (runId) currentRunIdRef.current = runId;
       
       // Timeout fallback
       setTimeout(() => {
@@ -673,7 +754,7 @@ export default function ChatPanel() {
               : m
           ));
           setLoading(false);
-          currentMsgIdRef.current = '';
+          currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
         }
       }, 120000);
       
@@ -688,7 +769,7 @@ export default function ChatPanel() {
           : m
       ));
       setLoading(false);
-      currentMsgIdRef.current = '';
+      currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
     }
   };
 
@@ -702,12 +783,14 @@ export default function ChatPanel() {
   };
 
   const clearChat = async () => {
+    if (!selectedAgent) return;
     setMessages([]);
+    messageCacheRef.current.delete(selectedAgent.id);
     window.speechSynthesis.cancel();
     // Also clear from database
     if (window.clawdbot?.chat?.clearMessages) {
-      await window.clawdbot.chat.clearMessages();
-      console.log('[Chat] Cleared messages from DB');
+      await window.clawdbot?.chat.clearMessages(selectedAgent.dbSessionKey);
+      console.log('[Chat] Cleared messages from DB for', selectedAgent.id);
     }
   };
 
@@ -734,8 +817,51 @@ export default function ChatPanel() {
     }
   };
 
+  const handleCreateRoom = (name: string, agents: string[]) => {
+    createRoom(name, agents);
+    setShowRoomList(false);
+    showToast(`Room "${name}" created!`, 'success');
+  };
+
+  const startTeamMeeting = () => {
+    const allAgentIds = agents.map(a => a.id);
+    const timestamp = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    createRoom(`Team Meeting — ${timestamp}`, allAgentIds);
+    setShowRoomList(false);
+    showToast('🏢 Team Meeting started! All agents are here.', 'success');
+  };
+
+  // If viewing a room, render the room view
+  if (activeRoomId) {
+    return (
+      <>
+        <ChatRoomView
+          roomId={activeRoomId}
+          onBack={() => setActiveRoom(null)}
+        />
+        <CreateRoomModal
+          isOpen={showCreateRoom}
+          onClose={() => setShowCreateRoom(false)}
+          onCreate={handleCreateRoom}
+        />
+      </>
+    );
+  }
+
+  // Guard against null selectedAgent (agents still loading)
+  if (!selectedAgent) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 size={48} className="mx-auto mb-4 animate-spin text-clawd-accent" />
+          <p className="text-lg font-medium">Loading agents...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
+    <div
       className={`h-full flex flex-col relative ${isDragging ? 'ring-2 ring-clawd-accent ring-inset' : ''}`}
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
@@ -752,28 +878,32 @@ export default function ChatPanel() {
       )}
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between bg-clawd-surface">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-clawd-accent/20 flex items-center justify-center text-xl">
-            🐸
-          </div>
-          <div>
-            <h2 className="font-semibold">Froggo</h2>
-            <div className="flex items-center gap-2 text-xs">
-              <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-              <span className="text-clawd-text-dim">{getStatusText()}</span>
-              {connectionState === 'disconnected' && (
-                <button
-                  onClick={reconnect}
-                  className="text-clawd-accent hover:underline flex items-center gap-1"
-                >
-                  <RefreshCw size={10} /> Reconnect
-                </button>
-              )}
-            </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <AgentSelector selectedAgent={selectedAgent} onSelect={handleAgentSwitch} />
+          <div className="flex items-center gap-2 text-xs flex-shrink-0">
+            <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
+            <span className="text-clawd-text-dim">{getStatusText()}</span>
+            {connectionState === 'disconnected' && (
+              <button
+                onClick={reconnect}
+                className="text-clawd-accent hover:underline flex items-center gap-1"
+              >
+                <RefreshCw size={10} /> Reconnect
+              </button>
+            )}
           </div>
         </div>
         
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsVoiceMode(!isVoiceMode)}
+            className={`p-2 rounded-lg transition-colors ${
+              isVoiceMode ? 'bg-purple-500/20 text-purple-400' : 'bg-clawd-border text-clawd-text-dim hover:text-purple-400'
+            }`}
+            title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
+          >
+            {isVoiceMode ? <PhoneOff size={16} /> : <Phone size={16} />}
+          </button>
           <button
             onClick={() => setShowSearch(!showSearch)}
             className={`p-2 rounded-lg transition-colors ${
@@ -799,11 +929,94 @@ export default function ChatPanel() {
           >
             <Trash2 size={16} />
           </button>
+          <div className="w-px h-5 bg-clawd-border mx-1" />
+          <button
+            onClick={startTeamMeeting}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            title="Start Team Meeting — All agents join"
+          >
+            <UsersRound size={15} />
+            <span className="hidden sm:inline">Team Meeting</span>
+          </button>
+          <button
+            onClick={() => setShowRoomList(!showRoomList)}
+            className={`p-2 rounded-lg transition-colors relative ${
+              showRoomList ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
+            }`}
+            title="Chat Rooms"
+          >
+            <Users size={16} />
+            {rooms.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-clawd-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {rooms.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setShowCreateRoom(true)}
+            className="p-2 rounded-lg bg-clawd-accent text-white hover:opacity-90 transition-opacity"
+            title="Create Chat Room"
+          >
+            <MessageSquarePlus size={16} />
+          </button>
         </div>
       </div>
 
+      {/* Room List Dropdown */}
+      {showRoomList && (
+        <div className="border-b border-clawd-border bg-clawd-surface/95 backdrop-blur-sm">
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-clawd-text-dim uppercase tracking-wide">Chat Rooms</span>
+              <button
+                onClick={() => { setShowCreateRoom(true); setShowRoomList(false); }}
+                className="text-xs text-clawd-accent hover:underline flex items-center gap-1"
+              >
+                <MessageSquarePlus size={12} /> New Room
+              </button>
+            </div>
+            {rooms.length === 0 ? (
+              <p className="text-sm text-clawd-text-dim py-3 text-center">
+                No rooms yet. Create one to start a multi-agent discussion!
+              </p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {rooms.map(room => (
+                  <button
+                    key={room.id}
+                    onClick={() => { setActiveRoom(room.id); setShowRoomList(false); }}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-clawd-bg border border-transparent hover:border-clawd-border transition-all text-left"
+                  >
+                    <div className="flex -space-x-1.5">
+                      {room.agents.slice(0, 3).map(id => (
+                        <AgentAvatar key={id} agentId={id} size="xs" />
+                      ))}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{room.name}</div>
+                      <div className="text-xs text-clawd-text-dim">
+                        {room.messages.length} messages · {new Date(room.updatedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Voice Mode */}
+      {isVoiceMode && (
+        <VoiceChatPanel
+          agentId={selectedAgent.id === 'froggo' ? 'froggo' : selectedAgent.id}
+          onSwitchToText={() => setIsVoiceMode(false)}
+          embedded={true}
+        />
+      )}
+
       {/* Search Bar */}
-      {showSearch && (
+      {!isVoiceMode && showSearch && (
         <div className="px-4 py-3 border-b border-clawd-border bg-clawd-bg/50">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
@@ -833,12 +1046,12 @@ export default function ChatPanel() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isVoiceMode ? 'hidden' : ''}`}>
         {messages.length === 0 ? (
           <div className="text-center py-16 text-clawd-text-dim">
-            <div className="text-6xl mb-4">🐸</div>
-            <p className="text-lg font-medium mb-2">Hey! I'm Froggo</p>
-            <p className="text-sm">Your AI assistant. Ask me anything!</p>
+            <AgentAvatar agentId={selectedAgent.id} size="2xl" className="mx-auto mb-4" />
+            <p className="text-lg font-medium mb-2">Hey! I'm {selectedAgent.name}</p>
+            <p className="text-sm">{selectedAgent.role}. Ask me anything!</p>
             <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-md mx-auto">
               {['Check my calendar', 'Draft a tweet', 'What tasks are pending?', 'Check my emails'].map((q, i) => (
                 <button
@@ -881,13 +1094,11 @@ export default function ChatPanel() {
                 {/* Avatar column - consistent width */}
                 <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-sm font-semibold shadow-md ring-2 ring-white/20">
+                    <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/20">
                       K
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-xl shadow-md ring-2 ring-white/20">
-                      🐸
-                    </div>
+                    <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
                   )}
                 </div>
 
@@ -898,7 +1109,7 @@ export default function ChatPanel() {
                     <div className={`text-xs font-medium mb-1 px-1 ${
                       isUser ? 'text-clawd-accent' : 'text-emerald-600'
                     }`}>
-                      {isUser ? 'You' : 'Froggo'}
+                      {isUser ? 'You' : selectedAgent.name}
                     </div>
                   )}
 
@@ -938,8 +1149,8 @@ export default function ChatPanel() {
                     <div
                       className={`px-4 py-3 transition-all duration-150 ${
                         isUser
-                          ? 'bg-gradient-to-br from-clawd-accent to-purple-500 text-white shadow-md'
-                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md'
+                          ? 'bg-clawd-accent text-white'
+                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md'
                       } ${
                         isUser
                           ? showAvatar 
@@ -999,7 +1210,7 @@ export default function ChatPanel() {
       </div>
 
       {/* Connection banner */}
-      {connectionState === 'disconnected' && (
+      {!isVoiceMode && connectionState === 'disconnected' && (
         <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2 text-sm">
           <WifiOff size={14} />
           <span>Disconnected from gateway</span>
@@ -1010,7 +1221,7 @@ export default function ChatPanel() {
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-clawd-border bg-clawd-surface">
+      <div className={`p-4 border-t border-clawd-border bg-clawd-surface ${isVoiceMode ? 'hidden' : ''}`}>
         {/* Attachment preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -1058,7 +1269,7 @@ export default function ChatPanel() {
                 <button
                   key={idx}
                   onClick={() => useSuggestion(suggestion)}
-                  className="px-3 py-2 bg-gradient-to-r from-clawd-accent/10 to-purple-500/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
+                  className="px-3 py-2 bg-clawd-accent/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
                   title="Click to use this reply"
                 >
                   {suggestion}
@@ -1120,7 +1331,7 @@ export default function ChatPanel() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={connected ? "Message Froggo..." : "Waiting for connection..."}
+              placeholder={connected ? `Message ${selectedAgent.name}...` : "Waiting for connection..."}
               disabled={!connected || loading}
               rows={1}
               className="w-full bg-clawd-bg border border-clawd-border rounded-xl px-4 py-3 pr-12 resize-none focus:outline-none focus:border-clawd-accent disabled:opacity-50"
@@ -1143,6 +1354,14 @@ export default function ChatPanel() {
         onClose={() => setPreviewFile(null)}
         file={previewFile}
       />
+
+      {/* Create Room Modal */}
+      <CreateRoomModal
+        isOpen={showCreateRoom}
+        onClose={() => setShowCreateRoom(false)}
+        onCreate={handleCreateRoom}
+      />
     </div>
   );
 }
+

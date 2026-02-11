@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Heart, MessageCircle, Repeat, BarChart2, RefreshCw, Edit, Trash2, Eye, Users, Sparkles, Image, Calendar, X, Lightbulb, ArrowRight, Search, FileText, Zap } from 'lucide-react';
 import { useStore, XDraft } from '../store/store';
-import { LoadingButton, Spinner } from './LoadingStates';
+import { LoadingButton } from './LoadingStates';
 import ContentCalendar from './ContentCalendar';
 import XAutomationsTab from './XAutomationsTab';
 
@@ -166,7 +166,7 @@ export default function XPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeTab]);
 
-  // Map bird CLI output to our Tweet format
+  // Map x-api output to our Tweet format
   const mapTweet = (t: any): Tweet => ({
     id: t.id || String(Date.now()),
     text: t.text || t.content || '',
@@ -310,7 +310,7 @@ export default function XPanel() {
   };
 
   const handlePost = async (draft: XDraft) => {
-    // Actually post the tweet via bird CLI
+    // Actually post the tweet via x-api
     updateXDraft(draft.id, { status: 'pending' });
     
     try {
@@ -623,7 +623,7 @@ export default function XPanel() {
         )}
 
         {activeTab === 'plan' && (
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-8xl mx-auto space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column: Chat with Plan Agent */}
               <div className="bg-clawd-surface rounded-xl border border-clawd-border flex flex-col h-[500px]">
@@ -1090,7 +1090,7 @@ export default function XPanel() {
               <div className="text-center py-12 text-clawd-text-dim">
                 <MessageCircle size={48} className="mx-auto mb-4 opacity-30" />
                 <p>Click Refresh to load mentions</p>
-                <p className="text-sm mt-2">Uses bird CLI to fetch @Prof_Frogo mentions</p>
+                <p className="text-sm mt-2">Uses x-api to fetch @Prof_Frogo mentions</p>
               </div>
             ) : (
               mentions.map((tweet) => (
@@ -1111,7 +1111,7 @@ export default function XPanel() {
               <div className="text-center py-12 text-clawd-text-dim">
                 <Users size={48} className="mx-auto mb-4 opacity-30" />
                 <p>Click Refresh to load your timeline</p>
-                <p className="text-sm mt-2">Uses bird CLI to fetch your home feed</p>
+                <p className="text-sm mt-2">Uses x-api to fetch your home feed</p>
               </div>
             ) : (
               timeline.map((tweet) => (

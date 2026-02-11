@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, RefreshCw, ToggleLeft, ToggleRight, List, MessageCircle } from 'lucide-react';
+import { MessageSquare, RefreshCw, List, MessageCircle } from 'lucide-react';
 import ThreadListItem from './ThreadListItem';
 import InboxFilter, { FilterCriteria } from './InboxFilter';
 

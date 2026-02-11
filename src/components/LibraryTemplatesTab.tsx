@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, Plus, Edit3, Trash2, Copy, Search, Tag, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -26,7 +26,7 @@ const typeConfig: Record<string, { icon: any; color: string; label: string }> = 
   tweet: { icon: XIcon, color: 'text-white', label: 'Post' },
   email: { icon: Mail, color: 'text-red-400', label: 'Email' },
   message: { icon: MessageSquare, color: 'text-green-400', label: 'Message' },
-  generic: { icon: FileText, color: 'text-gray-400', label: 'Generic' },
+  generic: { icon: FileText, color: 'text-clawd-text-dim', label: 'Generic' },
 };
 
 // Default templates

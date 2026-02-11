@@ -1,47 +1,5 @@
 import { ipcMain } from 'electron';
-import { execSync } from 'child_process';
-import path from 'path';
-import os from 'os';
-
-const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-
-// Helper to execute SQL queries
-function query(sql: string, params: any[] = []): any {
-  try {
-    const escapedParams = params.map(p => 
-      typeof p === 'string' ? `'${p.replace(/'/g, "''")}'` : p
-    );
-    const fullSql = sql.replace(/\?/g, () => String(escapedParams.shift()));
-    
-    const result = execSync(
-      `sqlite3 "${DB_PATH}" "${fullSql}"`,
-      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
-    );
-    
-    return result.trim();
-  } catch (e: any) {
-    console.error('[x-automations] Query error:', e.message);
-    throw e;
-  }
-}
-
-// Helper to parse JSON output from SQLite
-function queryJSON(sql: string): any[] {
-  try {
-    const result = execSync(
-      `sqlite3 -json "${DB_PATH}" "${sql}"`,
-      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
-    );
-    
-    const trimmed = result.trim();
-    if (!trimmed || trimmed === '[]') return [];
-    
-    return JSON.parse(trimmed);
-  } catch (e: any) {
-    console.error('[x-automations] JSON query error:', e.message);
-    return [];
-  }
-}
+import { prepare } from './database';
 
 // Generate ID
 function generateId(): string {
@@ -50,23 +8,27 @@ function generateId(): string {
 
 // List all automations
 export function listAutomations() {
-  const automations = queryJSON(
-    'SELECT * FROM x_automations ORDER BY created_at DESC'
-  );
-  return { success: true, automations };
+  try {
+    const automations = prepare('SELECT * FROM x_automations ORDER BY created_at DESC').all();
+    return { success: true, automations };
+  } catch (e: any) {
+    console.error('[x-automations] List error:', e.message);
+    return { success: true, automations: [] };
+  }
 }
 
 // Get single automation
 export function getAutomation(id: string) {
-  const automations = queryJSON(
-    `SELECT * FROM x_automations WHERE id = '${id}'`
-  );
-  
-  if (automations.length === 0) {
-    return { success: false, error: 'Automation not found' };
+  try {
+    const automation = prepare('SELECT * FROM x_automations WHERE id = ?').get(id);
+    if (!automation) {
+      return { success: false, error: 'Automation not found' };
+    }
+    return { success: true, automation };
+  } catch (e: any) {
+    console.error('[x-automations] Get error:', e.message);
+    return { success: false, error: e.message };
   }
-  
-  return { success: true, automation: automations[0] };
 }
 
 // Create automation
@@ -82,35 +44,31 @@ export function createAutomation(data: {
 }) {
   const id = generateId();
   const now = Date.now();
-  
-  const sql = `
-    INSERT INTO x_automations (
-      id, name, description, enabled,
-      trigger_type, trigger_config, conditions, actions,
-      max_executions_per_hour, max_executions_per_day,
-      total_executions, created_at, updated_at, created_by
-    ) VALUES (
-      '${id}',
-      '${data.name.replace(/'/g, "''")}',
-      '${(data.description || '').replace(/'/g, "''")}',
-      1,
-      '${data.trigger_type}',
-      '${data.trigger_config.replace(/'/g, "''")}',
-      '${(data.conditions || '[]').replace(/'/g, "''")}',
-      '${data.actions.replace(/'/g, "''")}',
-      ${data.max_executions_per_hour || 10},
-      ${data.max_executions_per_day || 50},
-      0,
-      ${now},
-      ${now},
-      'user'
-    )
-  `;
-  
+
   try {
-    query(sql);
+    prepare(`
+      INSERT INTO x_automations (
+        id, name, description, enabled,
+        trigger_type, trigger_config, conditions, actions,
+        max_executions_per_hour, max_executions_per_day,
+        total_executions, created_at, updated_at, created_by
+      ) VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'user')
+    `).run(
+      id,
+      data.name,
+      data.description || '',
+      data.trigger_type,
+      data.trigger_config,
+      data.conditions || '[]',
+      data.actions,
+      data.max_executions_per_hour || 10,
+      data.max_executions_per_day || 50,
+      now,
+      now
+    );
     return { success: true, id };
   } catch (e: any) {
+    console.error('[x-automations] Create error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -126,41 +84,53 @@ export function updateAutomation(id: string, updates: {
   max_executions_per_hour?: number;
   max_executions_per_day?: number;
 }) {
-  const setParts: string[] = [];
-  
+  const setClauses: string[] = [];
+  const params: any[] = [];
+
   if (updates.name !== undefined) {
-    setParts.push(`name = '${updates.name.replace(/'/g, "''")}'`);
+    setClauses.push('name = ?');
+    params.push(updates.name);
   }
   if (updates.description !== undefined) {
-    setParts.push(`description = '${updates.description.replace(/'/g, "''")}'`);
+    setClauses.push('description = ?');
+    params.push(updates.description);
   }
   if (updates.trigger_type !== undefined) {
-    setParts.push(`trigger_type = '${updates.trigger_type}'`);
+    setClauses.push('trigger_type = ?');
+    params.push(updates.trigger_type);
   }
   if (updates.trigger_config !== undefined) {
-    setParts.push(`trigger_config = '${updates.trigger_config.replace(/'/g, "''")}'`);
+    setClauses.push('trigger_config = ?');
+    params.push(updates.trigger_config);
   }
   if (updates.conditions !== undefined) {
-    setParts.push(`conditions = '${updates.conditions.replace(/'/g, "''")}'`);
+    setClauses.push('conditions = ?');
+    params.push(updates.conditions);
   }
   if (updates.actions !== undefined) {
-    setParts.push(`actions = '${updates.actions.replace(/'/g, "''")}'`);
+    setClauses.push('actions = ?');
+    params.push(updates.actions);
   }
   if (updates.max_executions_per_hour !== undefined) {
-    setParts.push(`max_executions_per_hour = ${updates.max_executions_per_hour}`);
+    setClauses.push('max_executions_per_hour = ?');
+    params.push(updates.max_executions_per_hour);
   }
   if (updates.max_executions_per_day !== undefined) {
-    setParts.push(`max_executions_per_day = ${updates.max_executions_per_day}`);
+    setClauses.push('max_executions_per_day = ?');
+    params.push(updates.max_executions_per_day);
   }
-  
-  setParts.push(`updated_at = ${Date.now()}`);
-  
-  const sql = `UPDATE x_automations SET ${setParts.join(', ')} WHERE id = '${id}'`;
-  
+
+  setClauses.push('updated_at = ?');
+  params.push(Date.now());
+
+  // WHERE id = ?
+  params.push(id);
+
   try {
-    query(sql);
+    prepare(`UPDATE x_automations SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
   } catch (e: any) {
+    console.error('[x-automations] Update error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -168,9 +138,10 @@ export function updateAutomation(id: string, updates: {
 // Delete automation
 export function deleteAutomation(id: string) {
   try {
-    query(`DELETE FROM x_automations WHERE id = '${id}'`);
+    prepare('DELETE FROM x_automations WHERE id = ?').run(id);
     return { success: true };
   } catch (e: any) {
+    console.error('[x-automations] Delete error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -178,52 +149,66 @@ export function deleteAutomation(id: string) {
 // Toggle automation enabled/disabled
 export function toggleAutomation(id: string, enabled: boolean) {
   try {
-    query(`UPDATE x_automations SET enabled = ${enabled ? 1 : 0}, updated_at = ${Date.now()} WHERE id = '${id}'`);
+    prepare('UPDATE x_automations SET enabled = ?, updated_at = ? WHERE id = ?').run(
+      enabled ? 1 : 0,
+      Date.now(),
+      id
+    );
     return { success: true };
   } catch (e: any) {
+    console.error('[x-automations] Toggle error:', e.message);
     return { success: false, error: e.message };
   }
 }
 
 // Get executions
 export function getExecutions(automationId?: string, limit: number = 50) {
-  let sql = 'SELECT * FROM x_automation_executions';
-  
-  if (automationId) {
-    sql += ` WHERE automation_id = '${automationId}'`;
+  try {
+    let executions: any[];
+    if (automationId) {
+      executions = prepare(
+        'SELECT * FROM x_automation_executions WHERE automation_id = ? ORDER BY executed_at DESC LIMIT ?'
+      ).all(automationId, limit);
+    } else {
+      executions = prepare(
+        'SELECT * FROM x_automation_executions ORDER BY executed_at DESC LIMIT ?'
+      ).all(limit);
+    }
+    return { success: true, executions };
+  } catch (e: any) {
+    console.error('[x-automations] Executions error:', e.message);
+    return { success: true, executions: [] };
   }
-  
-  sql += ` ORDER BY executed_at DESC LIMIT ${limit}`;
-  
-  const executions = queryJSON(sql);
-  return { success: true, executions };
 }
 
 // Get rate limit status
 export function getRateLimit(automationId: string) {
-  const hourBucket = new Date().toISOString().substring(0, 13); // YYYY-MM-DD-HH
-  
-  const result = queryJSON(
-    `SELECT execution_count FROM x_automation_rate_limits 
-     WHERE automation_id = '${automationId}' AND hour_bucket = '${hourBucket}'`
-  );
-  
-  const currentHour = result.length > 0 ? result[0].execution_count : 0;
-  
-  // Get today's total
-  const todayBucket = new Date().toISOString().substring(0, 10); // YYYY-MM-DD
-  const todayResult = queryJSON(
-    `SELECT SUM(execution_count) as total FROM x_automation_rate_limits 
-     WHERE automation_id = '${automationId}' AND hour_bucket LIKE '${todayBucket}%'`
-  );
-  
-  const currentDay = todayResult.length > 0 ? todayResult[0].total || 0 : 0;
-  
-  return { 
-    success: true, 
-    currentHour, 
-    currentDay 
-  };
+  try {
+    const hourBucket = new Date().toISOString().substring(0, 13); // YYYY-MM-DDTHH
+
+    const hourRow = prepare(
+      'SELECT execution_count FROM x_automation_rate_limits WHERE automation_id = ? AND hour_bucket = ?'
+    ).get(automationId, hourBucket) as any;
+
+    const currentHour = hourRow ? hourRow.execution_count : 0;
+
+    // Get today's total
+    const todayBucket = new Date().toISOString().substring(0, 10); // YYYY-MM-DD
+    const dayRow = prepare(
+      'SELECT SUM(execution_count) as total FROM x_automation_rate_limits WHERE automation_id = ? AND hour_bucket LIKE ?'
+    ).get(automationId, todayBucket + '%') as any;
+
+    const currentDay = dayRow ? dayRow.total || 0 : 0;
+
+    return {
+      success: true,
+      currentHour,
+      currentDay
+    };
+  } catch (e: any) {
+    console.error('[x-automations] Rate limit error:', e.message);
+    return { success: true, currentHour: 0, currentDay: 0 };
+  }
 }
 
 // Register IPC handlers
@@ -231,34 +216,34 @@ export function registerXAutomationsHandlers() {
   ipcMain.handle('x-automations:list', async () => {
     return listAutomations();
   });
-  
+
   ipcMain.handle('x-automations:get', async (_, id: string) => {
     return getAutomation(id);
   });
-  
+
   ipcMain.handle('x-automations:create', async (_, data) => {
     return createAutomation(data);
   });
-  
+
   ipcMain.handle('x-automations:update', async (_, id: string, updates) => {
     return updateAutomation(id, updates);
   });
-  
+
   ipcMain.handle('x-automations:delete', async (_, id: string) => {
     return deleteAutomation(id);
   });
-  
+
   ipcMain.handle('x-automations:toggle', async (_, id: string, enabled: boolean) => {
     return toggleAutomation(id, enabled);
   });
-  
+
   ipcMain.handle('x-automations:executions', async (_, automationId?: string, limit?: number) => {
     return getExecutions(automationId, limit);
   });
-  
+
   ipcMain.handle('x-automations:rate-limit', async (_, automationId: string) => {
     return getRateLimit(automationId);
   });
-  
+
   console.log('[x-automations] IPC handlers registered');
 }

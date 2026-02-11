@@ -310,18 +310,12 @@ aside {
 
 /* ========== TOUCH TARGET SIZE ========== */
 
-/* Ensure minimum touch target size (44x44px) */
-button,
-a,
-[role="button"],
-[role="link"],
+
+/* Checkboxes/radios: smaller touch target, styled via forms.css */
 input[type="checkbox"],
 input[type="radio"] {
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  min-width: unset;
+  min-height: unset;
 }
 
 /* Exception for inline elements */

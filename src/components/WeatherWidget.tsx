@@ -71,8 +71,8 @@ export default function WeatherWidget() {
     if (desc.includes('rain') || desc.includes('shower')) return 'text-blue-400';
     if (desc.includes('snow') || desc.includes('sleet')) return 'text-cyan-300';
     if (desc.includes('clear') || desc.includes('sunny')) return 'text-yellow-400';
-    if (desc.includes('cloud') || desc.includes('overcast')) return 'text-gray-400';
-    return 'text-gray-400';
+    if (desc.includes('cloud') || desc.includes('overcast')) return 'text-clawd-text-dim';
+    return 'text-clawd-text-dim';
   };
 
   const current = weather?.current_condition?.[0];
@@ -80,7 +80,7 @@ export default function WeatherWidget() {
   const forecast = weather?.weather?.slice(1, 4); // Next 3 days
 
   const WeatherIcon = current ? getWeatherIcon(current.weatherDesc[0].value) : Cloud;
-  const weatherColor = current ? getWeatherColor(current.weatherDesc[0].value) : 'text-gray-400';
+  const weatherColor = current ? getWeatherColor(current.weatherDesc[0].value) : 'text-clawd-text-dim';
 
   return (
     <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
@@ -150,7 +150,7 @@ export default function WeatherWidget() {
                 <span className="text-clawd-text-dim">{current.humidity}%</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Wind size={14} className="text-gray-400" />
+                <Wind size={14} className="text-clawd-text-dim" />
                 <span className="text-clawd-text-dim">{current.windspeedKmph} km/h</span>
               </div>
             </div>

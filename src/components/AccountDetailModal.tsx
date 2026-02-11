@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, RefreshCw, Trash2, CheckCircle, XCircle, AlertTriangle, Shield, Key, Clock, ExternalLink } from 'lucide-react';
-import { ConnectedAccount, DataType, AccountScope } from '../types/accounts';
+import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink } from 'lucide-react';
+import { ConnectedAccount, DataType } from '../types/accounts';
 
 interface Props {
   account: ConnectedAccount;

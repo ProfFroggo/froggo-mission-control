@@ -43,8 +43,8 @@ export function PriorityIndicator({
       pulse: false
     },
     low: {
-      color: 'bg-gray-500',
-      textColor: 'text-gray-400',
+      color: 'bg-clawd-bg0',
+      textColor: 'text-clawd-text-dim',
       label: 'Low',
       icon: ChevronDown,
       pulse: false
@@ -180,7 +180,7 @@ export function PriorityStats({ stats }: { stats: any }) {
         </div>
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">Low</div>
-          <div className="text-2xl font-bold text-gray-400">{stats.low || 0}</div>
+          <div className="text-2xl font-bold text-clawd-text-dim">{stats.low || 0}</div>
         </div>
       </div>
       

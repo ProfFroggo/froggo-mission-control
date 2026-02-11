@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Clock, Edit3, Trash2, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Mail, MessageSquare, Calendar, Edit3, Eye } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -8,7 +8,6 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 import { showToast } from './Toast';
-import EmptyState from './EmptyState';
 
 interface ScheduledItem {
   id: string;
@@ -30,7 +29,7 @@ const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
 export default function ContentCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [items, setItems] = useState<ScheduledItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 

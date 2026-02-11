@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, FileText, Bot, Sparkles, Settings, Edit3, Save, X, Plus, MessageSquare, ChevronRight, Folder, RefreshCw, Trash2, Book, User, Wrench, Monitor } from 'lucide-react';
+import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench } from 'lucide-react';
 import { showToast } from './Toast';
 import SkillsTab from './SkillsTab';
 import NodesTab from './NodesTab';
@@ -42,7 +42,7 @@ export default function ContextControlBoard() {
   const [originalContent, setOriginalContent] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [_skills, setSkills] = useState<Skill[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
@@ -52,6 +52,11 @@ export default function ContextControlBoard() {
     setSelectedFile(file);
     setLoading(true);
     try {
+      if (!(window as any).clawdbot) {
+        showToast('error', 'API not ready', 'Clawdbot APIs not available');
+        setLoading(false);
+        return;
+      }
       const result = await (window as any).clawdbot?.exec?.run(`cat "${file.path}" 2>/dev/null || echo "File not found"`);
       const content = result?.stdout || '';
       setFileContent(content);
@@ -69,7 +74,7 @@ export default function ContextControlBoard() {
     setSaving(true);
     try {
       // Escape content for shell
-      const escaped = fileContent.replace(/'/g, "'\\''");
+  //     const __escaped = fileContent.replace(/'/g, "'\\''");
       await (window as any).clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
       setOriginalContent(fileContent);
       setEditing(false);
@@ -332,8 +337,8 @@ export default function ContextControlBoard() {
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded text-xs ${
                       agent.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                      agent.status === 'idle' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-gray-500/20 text-gray-400'
+                      agent.status === 'idle' ? 'bg-gray-500/20 text-gray-400' :
+                      'bg-clawd-bg0/20 text-clawd-text-dim'
                     }`}>
                       {agent.status}
                     </span>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, X, Send, Inbox, Brain, Database, Plus, FileText, Clock, Home, Coffee, Play, Terminal, RefreshCw, Star } from 'lucide-react';
+import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, Inbox, Brain, Database, Plus, FileText, Home, Coffee, Play, Terminal, RefreshCw, Star } from 'lucide-react';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
 
 // X logo component
@@ -43,11 +43,11 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     { id: 'nav-tasks', icon: <ListTodo size={16} />, label: 'Go to Tasks', shortcut: '⌘4', category: 'Navigation', action: () => { onNavigate('kanban'); onClose(); } },
     { id: 'nav-agents', icon: <Bot size={16} />, label: 'Go to Agents', shortcut: '⌘5', category: 'Navigation', action: () => { onNavigate('agents'); onClose(); } },
     { id: 'nav-twitter', icon: <XIcon size={16} />, label: 'Go to X', shortcut: '⌘6', category: 'Navigation', action: () => { onNavigate('twitter'); onClose(); } },
-    { id: 'nav-voice', icon: <Mic size={16} />, label: 'Go to Voice', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('voice'); onClose(); } },
-    { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
+    { id: 'nav-meetings', icon: <Mic size={16} />, label: 'Go to Meetings', shortcut: '⌘7', category: 'Navigation', action: () => { onNavigate('meetings'); onClose(); } },
+    { id: 'nav-voicechat', icon: <Mic size={16} />, label: 'Go to Voice Chat', shortcut: '⌘8', category: 'Navigation', action: () => { onNavigate('voicechat'); onClose(); } },
+    { id: 'nav-chat', icon: <MessageSquare size={16} />, label: 'Go to Chat', shortcut: '', category: 'Navigation', action: () => { onNavigate('chat'); onClose(); } },
     { id: 'nav-accounts', icon: <Settings size={16} />, label: 'Go to Accounts', shortcut: '⌘9', category: 'Navigation', action: () => { onNavigate('accounts'); onClose(); } },
     { id: 'nav-approvals', icon: <Inbox size={16} />, label: 'Go to Approvals', shortcut: '⌘0', category: 'Navigation', action: () => { onNavigate('approvals'); onClose(); } },
-    { id: 'nav-starred', icon: <Star size={16} />, label: 'Go to Starred Messages', shortcut: '⌘⇧S', category: 'Navigation', action: () => { onNavigate('starred'); onClose(); } },
     
     // Quick Actions
     { id: 'action-calendar', icon: <Calendar size={16} />, label: 'Check Calendar Today', category: 'Actions', action: async () => {
@@ -327,7 +327,6 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
           </div>
-          <span>⌘K to toggle</span>
         </div>
       </div>
     </div>

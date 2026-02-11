@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FolderOpen, FileText, BookOpen, Lightbulb } from 'lucide-react';
 import LibraryFilesTab from './LibraryFilesTab';
 import LibraryTemplatesTab from './LibraryTemplatesTab';
@@ -15,6 +15,17 @@ const tabs: Array<{ id: LibraryTab; label: string; icon: any }> = [
 
 export default function LibraryPanel() {
   const [activeTab, setActiveTab] = useState<LibraryTab>('templates');
+  const [navigatePath, setNavigatePath] = useState<string | null>(null);
+
+  // Check for navigation path from HRSection or other sources
+  useEffect(() => {
+    const path = sessionStorage.getItem('library-navigate-path');
+    if (path) {
+      setActiveTab('files');
+      setNavigatePath(path);
+      sessionStorage.removeItem('library-navigate-path');
+    }
+  }, []);
 
   return (
     <div className="h-full flex flex-col bg-clawd-bg">
@@ -55,7 +66,7 @@ export default function LibraryPanel() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'files' && <LibraryFilesTab />}
+        {activeTab === 'files' && <LibraryFilesTab initialPath={navigatePath} />}
         {activeTab === 'templates' && <LibraryTemplatesTab />}
         {activeTab === 'skills' && <LibrarySkillsTab />}
         {activeTab === 'resources' && (
