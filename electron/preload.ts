@@ -12,13 +12,15 @@ contextBridge.exposeInMainWorld('clawdbot', {
     },
   },
   gateway: {
-    // sessions, sessionsList removed - renderer uses gateway.ts WebSocket directly
     // Listen for broadcast events from main process (for real-time task updates)
     onBroadcast: (callback: (event: { type: string; event: string; payload: any }) => void) => {
       const handler = (_: any, data: any) => callback(data);
       ipcRenderer.on('gateway-broadcast', handler);
       return () => ipcRenderer.removeListener('gateway-broadcast', handler);
     },
+  },
+  sessions: {
+    list: (activeMinutes?: number) => ipcRenderer.invoke('sessions:list', activeMinutes),
   },
   // Whisper (legacy/fallback)
   whisper: {

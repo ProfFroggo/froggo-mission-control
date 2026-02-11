@@ -343,8 +343,11 @@ export const useStore = create<Store>()(
       fetchSessions: async () => {
         try {
           get().setLoading('sessions', true);
-          const res = await gateway.getSessions();
-          set({ sessions: res.sessions || [] });
+          // Use IPC handler instead of WebSocket RPC (sessions.list RPC method doesn't exist)
+          const result = await (window as any).clawdbot?.sessions?.list();
+          if (result?.success && result?.sessions) {
+            set({ sessions: result.sessions || [] });
+          }
         } catch (e) {
           console.error('Failed to fetch sessions:', e);
         } finally {
@@ -356,8 +359,9 @@ export const useStore = create<Store>()(
       gatewaySessions: [],
       loadGatewaySessions: async () => {
         try {
-          const result = await gateway.getSessions();
-          if (result?.sessions && Array.isArray(result.sessions)) {
+          // Use IPC handler instead of WebSocket RPC (sessions.list RPC method doesn't exist)
+          const result = await (window as any).clawdbot?.sessions?.list();
+          if (result?.success && result?.sessions && Array.isArray(result.sessions)) {
             const now = Date.now();
             const fiveMinutes = 5 * 60 * 1000;
             

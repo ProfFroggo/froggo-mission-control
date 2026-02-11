@@ -99,6 +99,45 @@ ipcMain.handle('agents:list', async () => {
   });
 });
 
+// ============== SESSIONS LIST ==============
+ipcMain.handle('sessions:list', async (_, activeMinutes?: number) => {
+  return new Promise((resolve) => {
+    const args = ['sessions', 'list', '--json'];
+    if (activeMinutes) {
+      args.push('--active', String(activeMinutes));
+    }
+    
+    exec(
+      `openclaw ${args.join(' ')}`,
+      { 
+        timeout: 10000, 
+        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } 
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          safeLog.warn('[Sessions] CLI failed:', error.message);
+          resolve({ success: false, error: error.message, sessions: [] });
+          return;
+        }
+
+        try {
+          const data = JSON.parse(stdout || '{}');
+          safeLog.log(`[Sessions] Loaded ${data.sessions?.length || 0} sessions from gateway`);
+          resolve({ 
+            success: true, 
+            sessions: data.sessions || [],
+            count: data.count || 0,
+            path: data.path
+          });
+        } catch (parseError: any) {
+          safeLog.warn('[Sessions] Parse failed:', parseError.message);
+          resolve({ success: false, error: parseError.message, sessions: [] });
+        }
+      }
+    );
+  });
+});
+
 // ============== AGENT REGISTRY FROM DB ==============
 ipcMain.handle('get-agent-registry', async () => {
   try {
