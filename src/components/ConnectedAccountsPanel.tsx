@@ -335,7 +335,7 @@ export default function ConnectedAccountsPanel() {
                 { priority: 2, rule: 'Reply-To Header', description: 'Uses reply-to address from original message', example: 'Respects email threading and conversation flow' },
                 { priority: 3, rule: 'Conversation Continuity', description: 'Continues thread with same account used previously', example: 'Keeps multi-message conversations consistent' },
                 { priority: 4, rule: 'Calendar Source', description: 'Invite on iCloud calendar → Uses iCloud account', example: 'Matches calendar events to their source' },
-                { priority: 5, rule: 'Domain Match', description: '@bitso.com email → kevin.macarthur@bitso.com', example: 'Uses company email for company communications' },
+                { priority: 5, rule: 'Domain Match', description: '@company.com email → user@company.com', example: 'Uses company email for company communications' },
                 { priority: 6, rule: 'Capability Match', description: 'Uses accounts with required data type (email, calendar, etc)', example: 'Ensures account can handle the action' },
                 { priority: 7, rule: 'Context-Free', description: 'No context available - suggests adding more info', example: 'Last resort - indicates missing context' },
               ].map((rule) => (

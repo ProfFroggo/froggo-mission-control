@@ -116,7 +116,7 @@ export class SmartAccountSelector {
       }
     }
 
-    // Strategy 5: Domain matching (e.g., @bitso.com → kevin.macarthur@bitso.com)
+    // Strategy 5: Domain matching (e.g., @company.com → user@company.com)
     if (context.receivedAt) {
       const domain = context.receivedAt.split('@')[1];
       const domainMatches = this.accounts.filter(a => 
@@ -237,7 +237,7 @@ export const SELECTION_RULES = [
   {
     priority: 5,
     rule: 'Domain Match',
-    description: '@bitso.com email → kevin.macarthur@bitso.com',
+    description: '@company.com email → user@company.com',
     example: 'Uses company email for company communications',
   },
   {

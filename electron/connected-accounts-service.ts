@@ -107,11 +107,9 @@ async function dbRun(query: string, params: any[] = []): Promise<void> {
 }
 
 class ConnectedAccountsService {
-  private readonly GOG_ACCOUNTS = [
-    'kevin.macarthur@bitso.com',
-    'kevin@carbium.io',
-    'kmacarthur.gpt@gmail.com'
-  ];
+  // Google accounts — populated dynamically from connected_accounts DB table
+  // Previously hardcoded; now empty default so new installs don't assume specific accounts
+  private readonly GOG_ACCOUNTS: string[] = [];
 
   /**
    * Get all connected accounts

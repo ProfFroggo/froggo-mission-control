@@ -50,6 +50,25 @@ function getAgentRegistry(): Record<string, AgentRegistryEntry> {
   return (global as any)._agentRegistryCache;
 }
 
+// ============== DEFAULT EMAIL ACCOUNT ==============
+/**
+ * Get first authenticated Google email from gog CLI.
+ * Returns empty string if no account is available (no hardcoded fallback).
+ */
+function getDefaultGogEmail(): string {
+  try {
+    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
+      timeout: 5000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+    }).toString();
+    const gogData = JSON.parse(gogList);
+    const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
+    return accounts[0]?.email || '';
+  } catch {
+    return '';
+  }
+}
+
 // ============== AGENTS LIST FROM GATEWAY ==============
 function getAgentsFromDB(): any[] {
   try {
@@ -5369,7 +5388,7 @@ async function refreshCommsBackground() {
     } catch (e) { safeLog.error('[CommsPolling] Discord error:', e); }
 
     // ===== EMAIL =====
-    let emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+    let emailAccounts: string[] = [];
     try {
       const gogAuthRaw = await runMsgCmd('/opt/homebrew/bin/gog auth list --json', 10000);
       if (gogAuthRaw) {
@@ -5801,11 +5820,8 @@ ipcMain.handle('email:accounts', async () => {
   return new Promise((resolve) => {
     exec('/opt/homebrew/bin/gog auth list --json', { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
       if (error || !stdout) {
-        // Fallback to hardcoded defaults
-        resolve({ success: true, accounts: [
-          { email: 'kevin.macarthur@bitso.com', label: 'Bitso' },
-          { email: 'kevin@carbium.io', label: 'Carbium' },
-        ]});
+        // No hardcoded fallback — return empty if gog auth not available
+        resolve({ success: true, accounts: [] });
         return;
       }
       try {
@@ -5816,15 +5832,9 @@ ipcMain.handle('email:accounts', async () => {
             email: a.email,
             label: a.email.split('@')[0],
           }));
-        resolve({ success: true, accounts: gmailAccounts.length > 0 ? gmailAccounts : [
-          { email: 'kevin.macarthur@bitso.com', label: 'Bitso' },
-          { email: 'kevin@carbium.io', label: 'Carbium' },
-        ]});
+        resolve({ success: true, accounts: gmailAccounts });
       } catch {
-        resolve({ success: true, accounts: [
-          { email: 'kevin.macarthur@bitso.com', label: 'Bitso' },
-          { email: 'kevin@carbium.io', label: 'Carbium' },
-        ]});
+        resolve({ success: true, accounts: [] });
       }
     });
   });
@@ -5856,7 +5866,15 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
   const envPath = `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}`;
 
   // Try to read with specified account, or try all known accounts
-  const tryAccounts = account ? [account] : ['kevin.macarthur@bitso.com', 'kevin@carbium.io', 'kmacarthur.gpt@gmail.com'];
+  // Get account list dynamically from gog CLI if no specific account given
+  let tryAccounts: string[] = account ? [account] : [];
+  if (!account) {
+    try {
+      const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
+      const gogData = JSON.parse(gogList);
+      tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
+    } catch {}
+  }
 
   for (const acct of tryAccounts) {
     // Try 'gog gmail read' first (more reliable), fallback to 'thread get'
@@ -5906,7 +5924,7 @@ ipcMain.handle('email:search', async (_, query: string, account?: string) => {
 });
 
 ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: string, account?: string) => {
-  const acct = account || 'kevin@carbium.io';
+  const acct = account || getDefaultGogEmail();
   const title = `Email to ${to}: ${subject.slice(0, 30)}`;
   const content = `To: ${to}\nSubject: ${subject}\nAccount: ${acct}\n\n${body}`;
   const cmd = `/opt/homebrew/bin/froggo-db inbox-add --type email --title "${title.replace(/"/g, '\\"')}" --content "${content.replace(/"/g, '\\"')}" --channel dashboard`;
@@ -6066,7 +6084,7 @@ async function runImportantEmailCheck() {
   const newInboxItems: string[] = [];
   
   // Discover email accounts from gog auth, fallback to defaults
-  let emailAccounts = ['kevin.macarthur@bitso.com', 'kevin@carbium.io'];
+  let emailAccounts: string[] = [];
   try {
     const gogAuthRaw = await new Promise<string>((resolve) => {
       exec('/opt/homebrew/bin/gog auth list --json', { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH}` } }, (error, stdout) => {
@@ -6167,7 +6185,7 @@ app.on('ready', () => {
 
 // ============== CALENDAR IPC HANDLERS ==============
 ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => {
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const daysArg = days ? `--days ${days}` : '--days 7';
   const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar events ${daysArg} --json`;
   
@@ -6190,7 +6208,7 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
 
 ipcMain.handle('calendar:createEvent', async (_, params: any) => {
   const { account, title, start, end, location, description, attendees, isAllDay, recurrence, timeZone } = params;
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const calendarId = 'primary'; // Use primary calendar
   
   // Build gog calendar create command
@@ -6239,7 +6257,7 @@ ipcMain.handle('calendar:createEvent', async (_, params: any) => {
 
 ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
   const { account, eventId, title, start, end, location, description, attendees, isAllDay, timeZone } = params;
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
   
   // Build gog calendar update command
@@ -6283,7 +6301,7 @@ ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
 
 ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
   const { account, eventId } = params;
-  const acct = account || 'kevin.macarthur@bitso.com';
+  const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
   
   const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar delete ${calendarId} "${eventId}"`;
@@ -6328,11 +6346,18 @@ ipcMain.handle('calendar:listCalendars', async (_, account: string) => {
 
 // List authenticated accounts (check which accounts have valid credentials)
 ipcMain.handle('calendar:listAccounts', async () => {
-  const knownAccounts = [
-    'kevin.macarthur@bitso.com',
-    'kevin@carbium.io',
-    'kmacarthur.gpt@gmail.com'
-  ];
+  // Dynamically discover accounts from gog CLI instead of hardcoding
+  let knownAccounts: string[] = [];
+  try {
+    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
+      timeout: 5000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+    }).toString();
+    const gogData = JSON.parse(gogList);
+    knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
+  } catch {
+    safeLog.warn('[Calendar] Failed to discover gog accounts for listAccounts');
+  }
   
   // Test each account to see if it's authenticated
   const accountPromises = knownAccounts.map(async (email) => {
