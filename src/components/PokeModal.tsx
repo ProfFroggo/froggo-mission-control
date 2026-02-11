@@ -339,7 +339,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             onKeyDown={handleKeyDown}
             placeholder={sending ? 'Waiting for response...' : 'Ask about this task...'}
             disabled={sending || loading}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-clawd-bg-alt border border-clawd-border text-clawd-text text-sm placeholder:text-clawd-text-muted/50 focus:outline-none focus:border-clawd-accent/50 disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-xl bg-clawd-bg-alt border border-clawd-border text-clawd-text text-sm focus:outline-none focus:border-clawd-accent/50 disabled:opacity-50"
           />
           <button
             onClick={sendMessage}
