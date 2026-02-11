@@ -4,7 +4,7 @@ import {
   ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, 
   Inbox, ListTodo, AlertTriangle, Sparkles, 
   TrendingUp, Clock, Zap, Users, Edit3, Plus, RotateCcw,
-  X, Minus, Maximize2, GripVertical
+  X, Minus, Maximize2, GripVertical, Shield
 } from 'lucide-react';
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
@@ -24,6 +24,7 @@ import TodayCalendarWidget from './TodayCalendarWidget';
 import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
 import TokenSummaryWidget from './TokenSummaryWidget';
+import HealthStatusWidget from './HealthStatusWidget';
 import { useStore } from '../store/store';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'approvals';
@@ -51,6 +52,7 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'weather', title: 'Weather', icon: TrendingUp, removable: true },
   { id: 'quick-stats', title: 'Quick Stats', icon: TrendingUp, removable: true },
   { id: 'token-usage', title: 'Token Usage', icon: Zap, removable: true },
+  { id: 'health-status', title: 'System Health', icon: Shield, removable: true },
   { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
 ];
 
@@ -60,12 +62,13 @@ const DEFAULT_LAYOUT: Layout[] = [
   { i: 'active-tasks', x: 3, y: 5, w: 3, h: 4 },
   { i: 'urgent', x: 6, y: 5, w: 3, h: 4 },
   { i: 'agents-count', x: 9, y: 5, w: 3, h: 4 },
-  { i: 'active-work', x: 0, y: 9, w: 8, h: 8 },
+  { id: 'active-work', x: 0, y: 9, w: 8, h: 8 },
   { i: 'calendar', x: 8, y: 9, w: 4, h: 4 },
   { i: 'weather', x: 8, y: 13, w: 2, h: 3 },
   { i: 'quick-stats', x: 10, y: 13, w: 2, h: 3 },
   { i: 'token-usage', x: 8, y: 16, w: 4, h: 3 },
-  { i: 'activity', x: 0, y: 19, w: 12, h: 5 },
+  { i: 'health-status', x: 0, y: 17, w: 4, h: 4 },
+  { i: 'activity', x: 0, y: 21, w: 12, h: 5 },
 ];
 
 interface DashboardWidgetProps {
@@ -767,6 +770,23 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 onRemove={() => handleRemoveWidget('token-usage')}
               >
                 <TokenSummaryWidget />
+              </DashboardWidget>
+            </div>
+          )}
+
+          {/* HEALTH STATUS WIDGET */}
+          {!hiddenWidgets.has('health-status') && (
+            <div key="health-status">
+              <DashboardWidget
+                id="health-status"
+                title="System Health"
+                icon={Shield}
+                editMode={editMode}
+                minimized={minimizedWidgets.has('health-status')}
+                onToggleMinimize={() => handleToggleMinimize('health-status')}
+                onRemove={() => handleRemoveWidget('health-status')}
+              >
+                <HealthStatusWidget />
               </DashboardWidget>
             </div>
           )}
