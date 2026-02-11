@@ -17,7 +17,7 @@ import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsS
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
-import { db, prepare, getScheduleDb, closeDb } from './database';
+import { db, prepare, getScheduleDb, getSecurityDb, closeDb } from './database';
 import { validateFsPath } from './fs-validation';
 
 // ============== AGENT REGISTRY ==============
@@ -475,130 +475,122 @@ const SCHEDULE_CHECK_INTERVAL = 30000; // 30 seconds
 
 // Process scheduled items that are overdue
 async function processScheduledItems() {
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  
-  // Query for pending items where scheduled_for <= now
-  // Fetch all pending and filter in JS (handles various datetime formats)
-  const query = `SELECT * FROM schedule WHERE status='pending'`;
-  
-  exec(`sqlite3 "${dbPath}" "${query}" -json`, { timeout: 10000 }, async (error, stdout) => {
-    if (error) {
-      safeLog.error('[ScheduleProcessor] Query error:', error.message);
-      return;
-    }
-    
-    let items: any[] = [];
+  // Query for pending items and filter in JS (handles various datetime formats)
+  let items: any[] = [];
+  try {
+    items = prepare("SELECT * FROM schedule WHERE status = 'pending'").all() as any[];
+  } catch (e: any) {
+    safeLog.error('[ScheduleProcessor] Query error:', e.message);
+    return;
+  }
+
+  if (items.length === 0) return;
+
+  // Filter for overdue items (scheduled_for <= now)
+  const now = new Date();
+  items = items.filter(item => {
+    if (!item.scheduled_for) return false;
+    const scheduledTime = new Date(item.scheduled_for);
+    return scheduledTime <= now;
+  });
+
+  if (items.length === 0) return;
+
+  safeLog.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
+
+  // Helper to update schedule status via parameterized query
+  const updateScheduleStatus = (itemId: string, status: string, error?: string | null) => {
     try {
-      const trimmed = stdout.trim();
-      if (trimmed && trimmed !== '[]') {
-        items = JSON.parse(trimmed);
+      prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(status, error || null, itemId);
+    } catch (dbErr: any) {
+      safeLog.error('[ScheduleProcessor] DB update error:', dbErr);
+    }
+  };
+
+  for (const item of items) {
+    safeLog.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
+
+    let execCmd = '';
+    let metadata: any = {};
+
+    try {
+      if (item.metadata) {
+        metadata = JSON.parse(item.metadata);
       }
     } catch (e) {
-      // No items or parse error - that's fine
-      return;
+      safeLog.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
     }
-    
-    if (items.length === 0) return;
-    
-    // Filter for overdue items (scheduled_for <= now) handling various datetime formats
-    const now = new Date();
-    items = items.filter(item => {
-      if (!item.scheduled_for) return false;
-      const scheduledTime = new Date(item.scheduled_for);
-      return scheduledTime <= now;
-    });
-    
-    if (items.length === 0) return;
-    
-    safeLog.log(`[ScheduleProcessor] Found ${items.length} overdue item(s) to process`);
-    
-    for (const item of items) {
-      safeLog.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
-      
-      let execCmd = '';
-      let metadata: any = {};
-      
+
+    // Build command based on type
+    if (item.type === 'tweet') {
+      // Post via X API directly
       try {
-        if (item.metadata) {
-          metadata = JSON.parse(item.metadata);
+        const result = await xApi.postTweet(item.content);
+        if (result.success) {
+          safeLog.log(`[ScheduleProcessor] Tweet posted: ${result.id}`);
+          updateScheduleStatus(item.id, 'completed');
+        } else {
+          safeLog.error(`[ScheduleProcessor] Tweet failed: ${result.error}`);
+          updateScheduleStatus(item.id, 'failed', result.error || 'Unknown tweet error');
         }
-      } catch (e) {
-        safeLog.error(`[ScheduleProcessor] Failed to parse metadata for ${item.id}:`, e);
+        continue;
+      } catch (e: any) {
+        safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
       }
-      
-      // Build command based on type
-      if (item.type === 'tweet') {
-        // Post via X API directly
-        try {
-          const result = await xApi.postTweet(item.content);
-          if (result.success) {
-            safeLog.log(`[ScheduleProcessor] Tweet posted: ${result.id}`);
-            exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='completed' WHERE id='${item.id}'"`, () => {});
-          } else {
-            safeLog.error(`[ScheduleProcessor] Tweet failed: ${result.error}`);
-            exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${(result.error || '').replace(/'/g, "''")}' WHERE id='${item.id}'"`, () => {});
-          }
-          continue;
-        } catch (e: any) {
-          safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
-        }
-        execCmd = ''; // fallback cleared
-      } else if (item.type === 'email') {
-        const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
-        const account = metadata.account || '';
-        
-        // GUARD: Skip emails with missing recipient or account (prevents gog auth loops)
-        if (!recipient || !recipient.trim()) {
-          safeLog.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing recipient' WHERE id='${item.id}'"`, () => {});
-          continue;
-        }
-        if (!account || !account.trim()) {
-          safeLog.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Missing GOG account' WHERE id='${item.id}'"`, () => {});
-          continue;
-        }
-        
-        const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
-        const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-        execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
-      } else {
-        safeLog.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
-        // Mark as failed with unknown type error
-        exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='Unknown type: ${item.type}' WHERE id='${item.id}'"`, () => {});
+      execCmd = ''; // fallback cleared
+    } else if (item.type === 'email') {
+      const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
+      const account = metadata.account || '';
+
+      // GUARD: Skip emails with missing recipient or account (prevents gog auth loops)
+      if (!recipient || !recipient.trim()) {
+        safeLog.error(`[ScheduleProcessor] Email ${item.id} has no recipient - marking as failed`);
+        updateScheduleStatus(item.id, 'failed', 'Missing recipient');
         continue;
       }
-      
-      safeLog.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
-      
-      // Execute the command
-      exec(execCmd, { timeout: 60000 }, (execError, execStdout, execStderr) => {
-        if (execError) {
-          safeLog.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
-          const errorMsg = (execError.message || '').replace(/'/g, "''").slice(0, 500);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='failed', error='${errorMsg}' WHERE id='${item.id}'"`, () => {});
-          
-          // Notify renderer of failure
-          safeSend('schedule-processed', { 
-            id: item.id, 
-            type: item.type, 
-            success: false, 
-            error: execError.message 
-          });
-        } else {
-          safeLog.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
-          exec(`sqlite3 "${dbPath}" "UPDATE schedule SET status='sent', sent_at=datetime('now') WHERE id='${item.id}'"`, () => {});
-          
-          // Notify renderer of success
-          safeSend('schedule-processed', { 
-            id: item.id, 
-            type: item.type, 
-            success: true 
-          });
-        }
-      });
+      if (!account || !account.trim()) {
+        safeLog.error(`[ScheduleProcessor] Email ${item.id} has no account configured - marking as failed`);
+        updateScheduleStatus(item.id, 'failed', 'Missing GOG account');
+        continue;
+      }
+
+      const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
+      const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+      execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
+    } else {
+      safeLog.warn(`[ScheduleProcessor] Unknown type: ${item.type}`);
+      updateScheduleStatus(item.id, 'failed', `Unknown type: ${item.type}`);
+      continue;
     }
-  });
+
+    safeLog.log(`[ScheduleProcessor] Executing: ${execCmd.slice(0, 100)}...`);
+
+    // Execute the command
+    exec(execCmd, { timeout: 60000 }, (execError) => {
+      if (execError) {
+        safeLog.error(`[ScheduleProcessor] Failed to send ${item.id}:`, execError.message);
+        updateScheduleStatus(item.id, 'failed', (execError.message || '').slice(0, 500));
+
+        // Notify renderer of failure
+        safeSend('schedule-processed', {
+          id: item.id,
+          type: item.type,
+          success: false,
+          error: execError.message
+        });
+      } else {
+        safeLog.log(`[ScheduleProcessor] Successfully sent ${item.id}`);
+        updateScheduleStatus(item.id, 'sent');
+
+        // Notify renderer of success
+        safeSend('schedule-processed', {
+          id: item.id,
+          type: item.type,
+          success: true
+        });
+      }
+    });
+  }
 }
 
 function startScheduleProcessor() {
@@ -1266,79 +1258,58 @@ ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: stri
 
 // Quick mute conversation
 ipcMain.handle('notification-settings:mute', async (_, sessionKey: string, duration?: string) => {
-  let muteUntil = 'NULL';
-  
-  if (duration) {
-    muteUntil = `'${duration}'`;
-  } else {
-    // Default: mute for 24 hours
-    const tomorrow = new Date();
-    tomorrow.setHours(tomorrow.getHours() + 24);
-    muteUntil = `'${tomorrow.toISOString()}'`;
+  try {
+    let muteUntil: string | null = null;
+
+    if (duration) {
+      muteUntil = duration;
+    } else {
+      // Default: mute for 24 hours
+      const tomorrow = new Date();
+      tomorrow.setHours(tomorrow.getHours() + 24);
+      muteUntil = tomorrow.toISOString();
+    }
+
+    // Check if settings exist
+    const existing = prepare('SELECT id FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+
+    if (existing) {
+      prepare("UPDATE conversation_notification_settings SET mute_until = ?, notification_level = 'none' WHERE session_key = ?").run(muteUntil, sessionKey);
+    } else {
+      prepare("INSERT INTO conversation_notification_settings (session_key, notification_level, mute_until) VALUES (?, 'none', ?)").run(sessionKey, muteUntil);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Mute error:', error);
+    return { success: false, error: error.message };
   }
-  
-  // Check if settings exist
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Mute check error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      const existing = JSON.parse(stdout || '[]');
-      let cmd: string;
-      
-      if (existing.length > 0) {
-        // UPDATE existing
-        cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET mute_until = ${muteUntil}, notification_level = 'none' WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-      } else {
-        // INSERT new
-        cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_notification_settings (session_key, notification_level, mute_until) VALUES ('${sessionKey.replace(/'/g, "''")}', 'none', ${muteUntil})"`;
-      }
-      
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error('[NotificationSettings] Mute error:', error);
-          resolve({ success: false, error: error.message });
-          return;
-        }
-        
-        resolve({ success: true });
-      });
-    });
-  });
 });
 
 // Unmute conversation
 ipcMain.handle('notification-settings:unmute', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Unmute error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare("UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = ?").run(sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Unmute error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: string; content?: string; reason?: string }) => {
-  const escapedTitle = rejection.title.replace(/"/g, '\\"');
-  const escapedReason = (rejection.reason || '').replace(/"/g, '\\"');
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO rejected_decisions (type, title, content, reason) VALUES ('${rejection.type}', '${escapedTitle}', '', '${escapedReason}')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error });
-    });
-  });
+  try {
+    prepare('INSERT INTO rejected_decisions (type, title, content, reason) VALUES (?, ?, ?, ?)').run(
+      rejection.type,
+      rejection.title,
+      rejection.content || '',
+      rejection.reason || ''
+    );
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Rejections] Log error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string; reviewStatus?: string; reviewerId?: string }) => {
@@ -3420,22 +3391,17 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
 });
 
 ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; content: string; context?: string; channel?: string }) => {
-  const escapedTitle = item.title.replace(/"/g, '\\"');
-  const escapedContent = item.content.replace(/"/g, '\\"');
-  const contextArg = item.context ? `--context "${item.context.replace(/"/g, '\\"')}"` : '';
-  const channelArg = item.channel ? `--channel ${item.channel}` : '';
-  
   // Run injection detection on content
   const injectionScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'injection-detect.sh');
-  
+
   return new Promise((resolve) => {
     // Escape content for shell - use base64 to avoid shell injection issues
     const contentBase64 = Buffer.from(item.content).toString('base64');
     const detectCmd = `echo "${contentBase64}" | base64 -d | ${injectionScriptPath}`;
-    
+
     exec(detectCmd, { timeout: 5000 }, (detectError, detectStdout) => {
       let injectionResult = null;
-      
+
       try {
         if (detectStdout) {
           injectionResult = JSON.parse(detectStdout.trim());
@@ -3444,7 +3410,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       } catch (e) {
         safeLog.error('[Inbox] Failed to parse injection detection result:', e);
       }
-      
+
       // Build metadata with injection detection result
       let metadata: any = {};
       if (injectionResult && injectionResult.detected) {
@@ -3454,100 +3420,92 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
           pattern: injectionResult.pattern,
           risk: injectionResult.risk,
         };
-        safeLog.log(`[Inbox] ⚠️ INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
+        safeLog.log(`[Inbox] INJECTION DETECTED: ${injectionResult.type} (${injectionResult.risk}) - pattern: "${injectionResult.pattern}"`);
       }
-      
-      // Add to inbox via direct SQL to include metadata
-      const now = Date.now();
-      const metadataJson = JSON.stringify(metadata).replace(/'/g, "''");
-      const escapedTitleSql = item.title.replace(/'/g, "''");
-      const escapedContentSql = item.content.replace(/'/g, "''");
-      const escapedContextSql = (item.context || '').replace(/'/g, "''");
-      
-      const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitleSql}', '${escapedContentSql}', '${escapedContextSql}', 'pending', '${item.channel || 'unknown'}', '${metadataJson}', datetime('now'))"`;
-      
-      exec(sqlCmd, { timeout: 10000 }, (error) => {
-        if (error) {
-          safeLog.error('[Inbox] Add error:', error);
-          resolve({ success: false, error: error.message });
-        } else {
-          resolve({ 
-            success: true, 
-            injectionWarning: injectionResult?.detected ? injectionResult : null 
-          });
-        }
-      });
+
+      // Add to inbox via parameterized query
+      try {
+        prepare(
+          "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES (?, ?, ?, ?, 'pending', ?, ?, datetime('now'))"
+        ).run(
+          item.type,
+          item.title,
+          item.content,
+          item.context || '',
+          item.channel || 'unknown',
+          JSON.stringify(metadata)
+        );
+        resolve({
+          success: true,
+          injectionWarning: injectionResult?.detected ? injectionResult : null
+        });
+      } catch (error: any) {
+        safeLog.error('[Inbox] Add error:', error);
+        resolve({ success: false, error: error.message });
+      }
     });
   });
 });
 
 ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?: string; feedback?: string }) => {
   safeLog.log('[Inbox:update] Called with id:', id, 'type:', typeof id, 'updates:', updates);
-  
+
   // Skip if it's a task-review item (those should go through tasks:update)
   if (typeof id === 'string' && id.startsWith('task-review-')) {
     safeLog.log('[Inbox:update] Skipping task-review item');
     return { success: true, skipped: true };
   }
-  
-  const sets: string[] = [];
-  if (updates.status) sets.push(`status='${updates.status}'`);
-  if (updates.feedback) sets.push(`feedback='${updates.feedback.replace(/'/g, "''")}'`);
-  if (updates.status) sets.push(`reviewed_at=datetime('now')`);
-  
-  if (sets.length === 0) return { success: false };
-  
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET ${sets.join(', ')} WHERE id=${id}"`;
-  safeLog.log('[Inbox:update] Running:', cmd);
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-      safeLog.log('[Inbox:update] Result - error:', error, 'stdout:', stdout, 'stderr:', stderr);
-      resolve({ success: !error });
-    });
-  });
+
+  try {
+    const setClauses: string[] = [];
+    const params: any[] = [];
+
+    if (updates.status) {
+      setClauses.push('status = ?');
+      params.push(updates.status);
+    }
+    if (updates.feedback) {
+      setClauses.push('feedback = ?');
+      params.push(updates.feedback);
+    }
+    if (updates.status) {
+      setClauses.push("reviewed_at = datetime('now')");
+    }
+
+    if (setClauses.length === 0) return { success: false };
+
+    params.push(id);
+    prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Inbox:update] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('inbox:approveAll', async () => {
-  return new Promise((resolve) => {
-    // Count pending items first
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) FROM inbox WHERE status='pending'"`, (_, countOut) => {
-      const count = parseInt(countOut?.trim() || '0', 10);
-      
-      // Approve all pending
-      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='approved', reviewed_at=datetime('now') WHERE status='pending'"`;
-      
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          resolve({ success: false, error: error.message });
-        } else {
-          resolve({ success: true, count });
-        }
-      });
-    });
-  });
+  try {
+    const countRow = prepare("SELECT COUNT(*) as cnt FROM inbox WHERE status = 'pending'").get() as any;
+    const count = countRow?.cnt || 0;
+
+    prepare("UPDATE inbox SET status = 'approved', reviewed_at = datetime('now') WHERE status = 'pending'").run();
+    return { success: true, count };
+  } catch (error: any) {
+    safeLog.error('[Inbox:approveAll] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== INBOX REVISION HANDLERS ==============
 // List items that need revision (for agents to process)
 ipcMain.handle('inbox:listRevisions', async () => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='needs-revision' ORDER BY created DESC" -json`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Inbox] List revisions error:', error);
-        resolve({ success: false, items: [] });
-        return;
-      }
-      try {
-        const items = JSON.parse(stdout || '[]');
-        resolve({ success: true, items });
-      } catch {
-        resolve({ success: true, items: [] });
-      }
-    });
-  });
+  try {
+    const items = prepare("SELECT * FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
+    return { success: true, items };
+  } catch (error: any) {
+    safeLog.error('[Inbox] List revisions error:', error);
+    return { success: false, items: [] };
+  }
 });
 
 // Submit revised content for an inbox item
@@ -3971,8 +3929,9 @@ const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
 
 ipcMain.handle('schedule:list', async () => {
   safeLog.log('[Schedule:list] Called');
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ${scheduleDbPath} "
+  try {
+    // Ensure schedule table exists
+    db.exec(`
       CREATE TABLE IF NOT EXISTS schedule (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -3983,54 +3942,37 @@ ipcMain.handle('schedule:list', async () => {
         sent_at TEXT,
         error TEXT,
         metadata TEXT
-      );
-      SELECT * FROM schedule ORDER BY scheduled_for ASC;
-    " -json 2>/dev/null || echo '[]'`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      safeLog.log('[Schedule:list] Raw output:', stdout?.slice(0, 200));
-      try {
-        // JSON output may span multiple lines - find [ and take everything from there
-        const trimmed = stdout.trim();
-        const jsonStart = trimmed.indexOf('[');
-        const jsonStr = jsonStart >= 0 ? trimmed.slice(jsonStart) : '[]';
-        safeLog.log('[Schedule:list] JSON extracted, length:', jsonStr.length);
-        const items = JSON.parse(jsonStr).map((row: any) => ({
-          id: row.id,
-          type: row.type,
-          content: row.content,
-          scheduledFor: row.scheduled_for,
-          status: row.status,
-          createdAt: row.created_at,
-          sentAt: row.sent_at,
-          error: row.error,
-          metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
-        }));
-        safeLog.log('[Schedule:list] Parsed', items.length, 'items');
-        resolve({ success: true, items });
-      } catch (e) {
-        safeLog.error('[Schedule:list] Error:', e);
-        resolve({ success: true, items: [] });
-      }
-    });
-  });
+      )
+    `);
+
+    const rows = prepare('SELECT * FROM schedule ORDER BY scheduled_for ASC').all() as any[];
+    const items = rows.map((row: any) => ({
+      id: row.id,
+      type: row.type,
+      content: row.content,
+      scheduledFor: row.scheduled_for,
+      status: row.status,
+      createdAt: row.created_at,
+      sentAt: row.sent_at,
+      error: row.error,
+      metadata: row.metadata ? (() => { try { return JSON.parse(row.metadata); } catch { return undefined; } })() : undefined,
+    }));
+    safeLog.log('[Schedule:list] Parsed', items.length, 'items');
+    return { success: true, items };
+  } catch (e: any) {
+    safeLog.error('[Schedule:list] Error:', e);
+    return { success: true, items: [] };
+  }
 });
 
 ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; scheduledFor: string; metadata?: any }) => {
   safeLog.log('[Schedule:add] Received:', JSON.stringify(item, null, 2));
-  
+
   const id = `sched-${Date.now()}`;
-  // Escape for SQL single-quoted strings: double the single quotes
-  const escapedContent = item.content.replace(/'/g, "''");
-  const escapedMetadata = item.metadata 
-    ? JSON.stringify(item.metadata).replace(/'/g, "''")
-    : null;
-  
-  safeLog.log('[Schedule:add] Escaped metadata:', escapedMetadata);
-  
-  return new Promise((resolve) => {
-    // First ensure the schedule table exists
-    const createTableSql = `
+
+  try {
+    // Ensure schedule table exists
+    db.exec(`
       CREATE TABLE IF NOT EXISTS schedule (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -4041,44 +3983,26 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
         sent_at TEXT,
         error TEXT,
         metadata TEXT
-      );
-    `;
-    
-    exec(`sqlite3 "${scheduleDbPath}" "${createTableSql}"`, { timeout: 5000 }, (createError) => {
-      if (createError) {
-        safeLog.error('[Schedule:add] Failed to create table:', createError.message);
-        resolve({ success: false, error: 'Failed to initialize schedule table: ' + createError.message });
-        return;
-      }
-      
-      // Build SQL and write to temp file to avoid shell escaping nightmares
-      const metadataVal = escapedMetadata ? `'${escapedMetadata}'` : 'NULL';
-      const sql = `INSERT INTO schedule (id, type, content, scheduled_for, metadata) VALUES ('${id}', '${item.type}', '${escapedContent}', '${item.scheduledFor}', ${metadataVal});`;
-      const tmpFile = `/tmp/schedule-${id}.sql`;
-      
-      safeLog.log('[Schedule:add] SQL:', sql);
-      safeLog.log('[Schedule:add] Writing to:', tmpFile);
-      
-      fs.writeFileSync(tmpFile, sql);
-      const insertCmd = `sqlite3 "${scheduleDbPath}" < "${tmpFile}"`;
-      
-      exec(insertCmd, { timeout: 5000 }, (error) => {
-      // Clean up temp file
-      try { fs.unlinkSync(tmpFile); } catch {}
-      
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
+      )
+    `);
 
-      // Create cron job to execute at scheduled time
-      const cronTime = new Date(item.scheduledFor);
-      const cronText = item.type === 'tweet' 
-        ? `Execute scheduled tweet: ${item.content.slice(0, 50)}...`
-        : `Execute scheduled email to ${item.metadata?.recipient}: ${item.content.slice(0, 50)}...`;
-      
-      // Use Clawdbot cron API
-      fetch('http://localhost:18789/api/cron', {
+    prepare('INSERT INTO schedule (id, type, content, scheduled_for, metadata) VALUES (?, ?, ?, ?, ?)').run(
+      id,
+      item.type,
+      item.content,
+      item.scheduledFor,
+      item.metadata ? JSON.stringify(item.metadata) : null
+    );
+
+    // Create cron job to execute at scheduled time
+    const cronTime = new Date(item.scheduledFor);
+    const cronText = item.type === 'tweet'
+      ? `Execute scheduled tweet: ${item.content.slice(0, 50)}...`
+      : `Execute scheduled email to ${item.metadata?.recipient}: ${item.content.slice(0, 50)}...`;
+
+    // Use Clawdbot cron API
+    try {
+      await fetch('http://localhost:18789/api/cron', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4090,120 +4014,121 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
             enabled: true,
           }
         })
-      }).then(() => {
-        resolve({ success: true, id });
-      }).catch((e) => {
-        // Cron failed but item is in DB
-        resolve({ success: true, id, warning: 'Cron job creation failed' });
       });
-    });
-    }); // Close createTableSql exec callback
-  });
+    } catch {
+      // Cron failed but item is in DB
+      return { success: true, id, warning: 'Cron job creation failed' };
+    }
+
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[Schedule:add] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('schedule:cancel', async (_, id: string) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ${scheduleDbPath} "UPDATE schedule SET status='cancelled' WHERE id='${id}'"`;
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-      } else {
-        // Also remove cron job
-        fetch('http://localhost:18789/api/cron', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'remove', jobId: id })
-        }).catch(() => {});
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare("UPDATE schedule SET status = 'cancelled' WHERE id = ?").run(id);
+    // Also remove cron job
+    fetch('http://localhost:18789/api/cron', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remove', jobId: id })
+    }).catch(() => {});
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => {
-  const sets: string[] = [];
-  if (item.type) sets.push(`type='${item.type}'`);
-  if (item.content) sets.push(`content='${item.content.replace(/'/g, "''")}'`);
-  if (item.scheduledFor) sets.push(`scheduled_for='${item.scheduledFor}'`);
-  if (item.metadata) sets.push(`metadata='${JSON.stringify(item.metadata).replace(/'/g, "''")}'`);
-  
-  if (sets.length === 0) return { success: false, error: 'No updates provided' };
-  
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ${scheduleDbPath} "UPDATE schedule SET ${sets.join(', ')} WHERE id='${id}'"`;
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    const setClauses: string[] = [];
+    const params: any[] = [];
+
+    if (item.type) {
+      setClauses.push('type = ?');
+      params.push(item.type);
+    }
+    if (item.content) {
+      setClauses.push('content = ?');
+      params.push(item.content);
+    }
+    if (item.scheduledFor) {
+      setClauses.push('scheduled_for = ?');
+      params.push(item.scheduledFor);
+    }
+    if (item.metadata) {
+      setClauses.push('metadata = ?');
+      params.push(JSON.stringify(item.metadata));
+    }
+
+    if (setClauses.length === 0) return { success: false, error: 'No updates provided' };
+
+    params.push(id);
+    prepare(`UPDATE schedule SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('schedule:sendNow', async (_, id: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get the scheduled item
-    exec(`sqlite3 ${scheduleDbPath} "SELECT * FROM schedule WHERE id='${id}'" -json`, async (_, stdout) => {
-      try {
-        const items = JSON.parse(stdout || '[]');
-        if (items.length === 0) {
-          resolve({ success: false, error: 'Item not found' });
-          return;
-        }
+    const item = prepare('SELECT * FROM schedule WHERE id = ?').get(id) as any;
+    if (!item) {
+      return { success: false, error: 'Item not found' };
+    }
 
-        const item = items[0];
-
-        // Execute immediately based on type
-        let execCmd = '';
-        if (item.type === 'tweet') {
-          // Post via X API directly
-          try {
-            const result = await xApi.postTweet(item.content);
-            if (result.success) {
-              exec(`sqlite3 "${scheduleDbPath}" "UPDATE schedule SET status='completed' WHERE id='${id}'"`, () => {});
-              resolve({ success: true, id: result.id });
-            } else {
-              resolve({ success: false, error: result.error });
-            }
-          } catch (e: any) {
-            resolve({ success: false, error: e.message });
-          }
-          return;
-        } else if (item.type === 'email') {
-          const meta = item.metadata ? JSON.parse(item.metadata) : {};
-          const recipient = meta.recipient || meta.to || '';
-          const account = meta.account || '';
-          
-          // GUARD: Require recipient and account for email sends
-          if (!recipient || !recipient.trim()) {
-            resolve({ success: false, error: 'Missing email recipient' });
-            return;
-          }
-          if (!account || !account.trim()) {
-            resolve({ success: false, error: 'Missing GOG account - cannot send email without account' });
-            return;
-          }
-          
-          // Create draft instead of sending directly (requires approval)
-          execCmd = `GOG_ACCOUNT="${account}" gog gmail drafts create --to "${recipient}" --subject "${meta.subject || 'No subject'}" --body "${item.content.replace(/"/g, '\\"')}"`;
-        }
-        
-        if (!execCmd) {
-          resolve({ success: false, error: 'Unknown item type' });
-          return;
-        }
-        
-        exec(execCmd, { timeout: 30000 }, (execError) => {
-          // Update status
-          const status = execError ? 'failed' : 'sent';
-          const errorMsg = execError ? execError.message.replace(/'/g, "''") : null;
-          
-          exec(`sqlite3 ${scheduleDbPath} "UPDATE schedule SET status='${status}', sent_at=datetime('now')${errorMsg ? ", error='" + errorMsg + "'" : ''} WHERE id='${id}'"`, () => {
-            resolve({ success: !execError, error: execError?.message });
-          });
-        });
-      } catch (e) {
-        resolve({ success: false, error: String(e) });
+    // Execute immediately based on type
+    if (item.type === 'tweet') {
+      // Post via X API directly
+      const result = await xApi.postTweet(item.content);
+      if (result.success) {
+        prepare("UPDATE schedule SET status = 'completed' WHERE id = ?").run(id);
+        return { success: true, id: result.id };
+      } else {
+        return { success: false, error: result.error };
       }
-    });
-  });
+    } else if (item.type === 'email') {
+      const meta = item.metadata ? JSON.parse(item.metadata) : {};
+      const recipient = meta.recipient || meta.to || '';
+      const account = meta.account || '';
+
+      // GUARD: Require recipient and account for email sends
+      if (!recipient || !recipient.trim()) {
+        return { success: false, error: 'Missing email recipient' };
+      }
+      if (!account || !account.trim()) {
+        return { success: false, error: 'Missing GOG account - cannot send email without account' };
+      }
+
+      // Create draft instead of sending directly (requires approval)
+      const execCmd = `GOG_ACCOUNT="${account}" gog gmail drafts create --to "${recipient}" --subject "${(meta.subject || 'No subject').replace(/"/g, '\\"')}" --body "${item.content.replace(/"/g, '\\"')}"`;
+
+      return new Promise((resolve) => {
+        exec(execCmd, { timeout: 30000 }, (execError) => {
+          const status = execError ? 'failed' : 'sent';
+          try {
+            prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(
+              status,
+              execError ? execError.message.slice(0, 500) : null,
+              id
+            );
+          } catch (dbErr: any) {
+            safeLog.error('[Schedule:sendNow] DB update error:', dbErr);
+          }
+          resolve({ success: !execError, error: execError?.message });
+        });
+      });
+    }
+
+    return { success: false, error: 'Unknown item type' };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
 });
 
 // ============== MESSAGING SEARCH IPC HANDLERS ==============
@@ -4335,51 +4260,29 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
   }
 });
 
-// Execute SQL against froggo.db
+// Execute SQL against froggo.db (parameterized via better-sqlite3)
 ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
-  return new Promise((resolve) => {
-    const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-    
+  try {
     // For safety, only allow SELECT and INSERT statements from the renderer
     const queryLower = query.trim().toLowerCase();
     if (!queryLower.startsWith('select') && !queryLower.startsWith('insert')) {
-      resolve({ success: false, error: 'Only SELECT and INSERT queries are allowed from renderer' });
-      return;
+      return { success: false, error: 'Only SELECT and INSERT queries are allowed from renderer' };
     }
-    
-    // Escape params and build command
-    let finalQuery = query;
-    if (params && params.length > 0) {
-      // Simple param substitution (replace ? with escaped values)
-      params.forEach(param => {
-        const escaped = String(param).replace(/'/g, "''");
-        finalQuery = finalQuery.replace('?', `'${escaped}'`);
-      });
+
+    const stmt = prepare(query);
+    const bindParams = params && params.length > 0 ? params : [];
+
+    if (queryLower.startsWith('insert')) {
+      stmt.run(...bindParams);
+      return { success: true, result: [] };
+    } else {
+      const result = stmt.all(...bindParams);
+      return { success: true, result };
     }
-    
-    const cmd = `sqlite3 "${dbPath}" "${finalQuery.replace(/"/g, '\\"')}" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
-      if (error) {
-        safeLog.error('[DB] Exec error:', error, stderr);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      try {
-        // For INSERT, stdout might be empty
-        if (queryLower.startsWith('insert')) {
-          resolve({ success: true, result: [] });
-        } else {
-          const result = JSON.parse(stdout || '[]');
-          resolve({ success: true, result });
-        }
-      } catch (parseError: any) {
-        safeLog.error('[DB] Parse error:', parseError);
-        resolve({ success: false, error: 'Failed to parse database result' });
-      }
-    });
-  });
+  } catch (error: any) {
+    safeLog.error('[DB] Exec error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== MEDIA UPLOAD IPC HANDLERS ==============
@@ -4471,58 +4374,53 @@ ipcMain.handle('library:list', async (_, category?: string) => {
   if (!fs.existsSync(libraryDir)) {
     fs.mkdirSync(libraryDir, { recursive: true });
   }
-  
-  return new Promise((resolve) => {
-    const categoryFilter = category ? `WHERE category='${category}'` : '';
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM library ${categoryFilter} ORDER BY updated_at DESC" -json 2>/dev/null || echo '[]'`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: true, files: [] });
-        return;
-      }
+
+  try {
+    let rawFiles: any[];
+    if (category) {
+      rawFiles = prepare('SELECT * FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as any[];
+    } else {
+      rawFiles = prepare('SELECT * FROM library ORDER BY updated_at DESC').all() as any[];
+    }
+
+    // Transform snake_case to camelCase for frontend
+    const files = rawFiles.map((f: any) => {
+      // Safely parse JSON fields
+      let linkedTasks: string[] = [];
+      let tags: string[] = [];
+
       try {
-        const rawFiles = JSON.parse(stdout || '[]');
-        // Transform snake_case to camelCase for frontend
-        const files = rawFiles.map((f: any) => {
-          // Safely parse JSON fields
-          let linkedTasks: string[] = [];
-          let tags: string[] = [];
-          
-          try {
-            linkedTasks = f.linked_tasks ? JSON.parse(f.linked_tasks) : [];
-          } catch (e) {
-            safeLog.warn('[library:list] Failed to parse linked_tasks for', f.id, ':', e);
-          }
-          
-          try {
-            tags = f.tags ? JSON.parse(f.tags) : [];
-          } catch (e) {
-            safeLog.warn('[library:list] Failed to parse tags for', f.id, ':', e);
-          }
-          
-          return {
-            id: f.id || '',
-            name: f.name || 'Unnamed',
-            path: f.path || '',
-            category: f.category || 'other',
-            size: f.size || 0,
-            mimeType: f.mime_type || null,
-            createdAt: f.created_at || new Date().toISOString(),
-            updatedAt: f.updated_at || new Date().toISOString(),
-            linkedTasks,
-            tags,
-          };
-        });
-        
-        safeLog.log(`[library:list] Returning ${files.length} files`);
-        resolve({ success: true, files });
-      } catch (parseError) {
-        safeLog.error('[library:list] Parse error:', parseError);
-        resolve({ success: true, files: [] });
+        linkedTasks = f.linked_tasks ? JSON.parse(f.linked_tasks) : [];
+      } catch (e) {
+        safeLog.warn('[library:list] Failed to parse linked_tasks for', f.id, ':', e);
       }
+
+      try {
+        tags = f.tags ? JSON.parse(f.tags) : [];
+      } catch (e) {
+        safeLog.warn('[library:list] Failed to parse tags for', f.id, ':', e);
+      }
+
+      return {
+        id: f.id || '',
+        name: f.name || 'Unnamed',
+        path: f.path || '',
+        category: f.category || 'other',
+        size: f.size || 0,
+        mimeType: f.mime_type || null,
+        createdAt: f.created_at || new Date().toISOString(),
+        updatedAt: f.updated_at || new Date().toISOString(),
+        linkedTasks,
+        tags,
+      };
     });
-  });
+
+    safeLog.log(`[library:list] Returning ${files.length} files`);
+    return { success: true, files };
+  } catch (error: any) {
+    safeLog.error('[library:list] Error:', error);
+    return { success: true, files: [] };
+  }
 });
 
 ipcMain.handle('library:upload', async () => {
@@ -7679,16 +7577,11 @@ ipcMain.handle('starred:check', async (_, messageId: number) => {
 });
 
 // ============== SECURITY IPC HANDLERS ==============
-const SECURITY_DB = path.join(os.homedir(), 'clawd', 'data', 'security.db');
 
-// Initialize security database
+// Initialize security database using better-sqlite3
 function initSecurityDB() {
-  const dbDir = path.dirname(SECURITY_DB);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
-  
-  const schema = `
+  const secDb = getSecurityDb();
+  secDb.exec(`
     CREATE TABLE IF NOT EXISTS api_keys (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -7697,7 +7590,7 @@ function initSecurityDB() {
       created_at TEXT NOT NULL,
       last_used TEXT
     );
-    
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id TEXT PRIMARY KEY,
       timestamp TEXT NOT NULL,
@@ -7708,7 +7601,7 @@ function initSecurityDB() {
       recommendation TEXT,
       status TEXT DEFAULT 'open'
     );
-    
+
     CREATE TABLE IF NOT EXISTS security_alerts (
       id TEXT PRIMARY KEY,
       timestamp TEXT NOT NULL,
@@ -7717,9 +7610,7 @@ function initSecurityDB() {
       source TEXT NOT NULL,
       dismissed INTEGER DEFAULT 0
     );
-  `;
-  
-  execSync(`sqlite3 "${SECURITY_DB}" "${schema}"`, { stdio: 'pipe' });
+  `);
 }
 
 // Ensure DB exists
@@ -7728,9 +7619,8 @@ initSecurityDB();
 // List API keys
 ipcMain.handle('security:listKeys', async () => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "SELECT * FROM api_keys ORDER BY created_at DESC" -json`;
-    const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-    const keys = JSON.parse(result || '[]');
+    const secDb = getSecurityDb();
+    const keys = secDb.prepare('SELECT * FROM api_keys ORDER BY created_at DESC').all();
     return { success: true, keys };
   } catch (error: any) {
     safeLog.error('[Security] List keys error:', error);
@@ -7741,10 +7631,12 @@ ipcMain.handle('security:listKeys', async () => {
 // Add API key
 ipcMain.handle('security:addKey', async (_, key: { name: string; service: string; key: string }) => {
   try {
+    const secDb = getSecurityDb();
     const id = `key-${Date.now()}`;
     const now = new Date().toISOString();
-    const cmd = `sqlite3 "${SECURITY_DB}" "INSERT INTO api_keys (id, name, service, key, created_at) VALUES ('${id}', '${key.name.replace(/'/g, "''")}', '${key.service.replace(/'/g, "''")}', '${key.key.replace(/'/g, "''")}', '${now}')"`;
-    execSync(cmd, { stdio: 'pipe' });
+    secDb.prepare('INSERT INTO api_keys (id, name, service, key, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      id, key.name, key.service, key.key, now
+    );
     return { success: true, id };
   } catch (error: any) {
     safeLog.error('[Security] Add key error:', error);
@@ -7755,8 +7647,8 @@ ipcMain.handle('security:addKey', async (_, key: { name: string; service: string
 // Delete API key
 ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "DELETE FROM api_keys WHERE id='${keyId}'"`;
-    execSync(cmd, { stdio: 'pipe' });
+    const secDb = getSecurityDb();
+    secDb.prepare('DELETE FROM api_keys WHERE id = ?').run(keyId);
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Security] Delete key error:', error);
@@ -7767,9 +7659,8 @@ ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
 // List audit logs
 ipcMain.handle('security:listAuditLogs', async () => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100" -json`;
-    const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-    const logs = JSON.parse(result || '[]');
+    const secDb = getSecurityDb();
+    const logs = secDb.prepare('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all();
     return { success: true, logs };
   } catch (error: any) {
     safeLog.error('[Security] List audit logs error:', error);
@@ -7780,10 +7671,9 @@ ipcMain.handle('security:listAuditLogs', async () => {
 // Update audit log status
 ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { status?: string }) => {
   try {
-    const setClauses = [];
-    if (updates.status) setClauses.push(`status='${updates.status}'`);
-    const cmd = `sqlite3 "${SECURITY_DB}" "UPDATE audit_logs SET ${setClauses.join(', ')} WHERE id='${logId}'"`;
-    execSync(cmd, { stdio: 'pipe' });
+    if (!updates.status) return { success: false, error: 'No updates provided' };
+    const secDb = getSecurityDb();
+    secDb.prepare('UPDATE audit_logs SET status = ? WHERE id = ?').run(updates.status, logId);
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Security] Update audit log error:', error);
@@ -7794,9 +7684,8 @@ ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { st
 // List security alerts
 ipcMain.handle('security:listAlerts', async () => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "SELECT * FROM security_alerts WHERE dismissed=0 ORDER BY timestamp DESC LIMIT 20" -json`;
-    const result = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
-    const alerts = JSON.parse(result || '[]');
+    const secDb = getSecurityDb();
+    const alerts = secDb.prepare('SELECT * FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all();
     return { success: true, alerts };
   } catch (error: any) {
     safeLog.error('[Security] List alerts error:', error);
@@ -7807,8 +7696,8 @@ ipcMain.handle('security:listAlerts', async () => {
 // Dismiss alert
 ipcMain.handle('security:dismissAlert', async (_, alertId: string) => {
   try {
-    const cmd = `sqlite3 "${SECURITY_DB}" "UPDATE security_alerts SET dismissed=1 WHERE id='${alertId}'"`;
-    execSync(cmd, { stdio: 'pipe' });
+    const secDb = getSecurityDb();
+    secDb.prepare('UPDATE security_alerts SET dismissed = 1 WHERE id = ?').run(alertId);
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Security] Dismiss alert error:', error);
@@ -7831,19 +7720,24 @@ ipcMain.handle('security:runAudit', async () => {
     
     const output = JSON.parse(result);
     
-    // Store findings in database
+    // Store findings in database using parameterized queries
+    const secDb = getSecurityDb();
     const now = new Date().toISOString();
+    const insertFinding = secDb.prepare(
+      "INSERT INTO audit_logs (id, timestamp, severity, category, finding, details, recommendation, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'open')"
+    );
     for (const finding of output.findings || []) {
       const id = `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const cmd = `sqlite3 "${SECURITY_DB}" "INSERT INTO audit_logs (id, timestamp, severity, category, finding, details, recommendation, status) VALUES ('${id}', '${now}', '${finding.severity}', '${finding.category.replace(/'/g, "''")}', '${finding.finding.replace(/'/g, "''")}', '${finding.details.replace(/'/g, "''")}', '${(finding.recommendation || '').replace(/'/g, "''")}', 'open')"`;
-      execSync(cmd, { stdio: 'pipe' });
+      insertFinding.run(id, now, finding.severity, finding.category, finding.finding, finding.details, finding.recommendation || '');
     }
-    
+
     // Store alerts if any critical/high issues
+    const insertAlert = secDb.prepare(
+      'INSERT INTO security_alerts (id, timestamp, severity, message, source, dismissed) VALUES (?, ?, ?, ?, ?, 0)'
+    );
     for (const alert of output.alerts || []) {
       const id = `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const cmd = `sqlite3 "${SECURITY_DB}" "INSERT INTO security_alerts (id, timestamp, severity, message, source, dismissed) VALUES ('${id}', '${now}', '${alert.severity}', '${alert.message.replace(/'/g, "''")}', '${alert.source}', 0)"`;
-      execSync(cmd, { stdio: 'pipe' });
+      insertAlert.run(id, now, alert.severity, alert.message, alert.source);
     }
     
     return {

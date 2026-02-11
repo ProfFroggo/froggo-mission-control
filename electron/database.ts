@@ -50,6 +50,23 @@ export function getScheduleDb(): Database.Database {
   return scheduleDb;
 }
 
+// Lazy security.db connection
+let securityDb: Database.Database | null = null;
+const SECURITY_DB_PATH = join(homedir(), 'clawd', 'data', 'security.db');
+
+/**
+ * Get the security database connection (lazy initialization).
+ * Creates the DB file if it does not exist.
+ */
+export function getSecurityDb(): Database.Database {
+  if (!securityDb) {
+    securityDb = new Database(SECURITY_DB_PATH);
+    securityDb.pragma('journal_mode = WAL');
+    securityDb.pragma('wal_autocheckpoint = 1000');
+  }
+  return securityDb;
+}
+
 /**
  * Close all database connections
  * Call during app shutdown
@@ -73,6 +90,16 @@ export function closeDb(): void {
       console.error('[Database] Failed to close schedule.db:', error);
     }
     scheduleDb = null;
+  }
+
+  // Close security DB if open
+  if (securityDb) {
+    try {
+      securityDb.close();
+    } catch (error) {
+      console.error('[Database] Failed to close security.db:', error);
+    }
+    securityDb = null;
   }
 
   // Close main DB
