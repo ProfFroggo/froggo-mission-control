@@ -21,13 +21,21 @@ import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
-// API key loading
-const FALLBACK_GEMINI_API_KEY = 'AIzaSyCziHu8LUZ6RXmt-4lu_NzgEfczM0DC1RE';
-
-function loadApiKey(): string {
+// API key loading — no hardcoded fallback; uses IPC to fetch from secure store
+async function loadApiKey(): Promise<string> {
+  // 1. Check Vite env vars (dev mode)
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
-  if (FALLBACK_GEMINI_API_KEY) return FALLBACK_GEMINI_API_KEY;
+  // 2. Try IPC to main process secret store
+  try {
+    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    if (key) return key;
+  } catch {}
+  // 3. Check localStorage settings
+  try {
+    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+    if (s.geminiApiKey) return s.geminiApiKey;
+  } catch {}
   return '';
 }
 
@@ -105,7 +113,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   // Refs
   const callActiveRef = useRef(false);
-  const apiKey = useRef(loadApiKey());
+  const apiKey = useRef('');
+
+  // Load API key asynchronously on mount
+  useEffect(() => {
+    loadApiKey().then(key => { apiKey.current = key; });
+  }, []);
   
   // Agent context
   const [agentContext, setAgentContext] = useState<AgentContext | null>(null);

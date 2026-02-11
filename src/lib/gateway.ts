@@ -1,7 +1,7 @@
 // Gateway WebSocket Client - connects to Clawdbot gateway
 
 const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
-const DEFAULT_TOKEN = '14ac9fc2afdd3363df3842a36ab269ca4137b8059ca3b0ba';
+const DEFAULT_TOKEN = '';
 const DEFAULT_SESSION_KEY = 'agent:froggo:dashboard'; // Default session key (overridable via setSessionKey)
 
 /** Callback interface for per-runId event handling */

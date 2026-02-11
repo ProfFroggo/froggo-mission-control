@@ -11,8 +11,22 @@ import {
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 
-// Gemini API key (same as used elsewhere in the dashboard)
-const GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
+// Gemini API key — loaded dynamically, no hardcoded fallback
+let _cachedScribeKey: string | null = null;
+async function getGeminiApiKey(): Promise<string> {
+  if (_cachedScribeKey) return _cachedScribeKey;
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  if (viteKey && viteKey !== 'your_key_here') { _cachedScribeKey = viteKey; return viteKey; }
+  try {
+    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    if (key) { _cachedScribeKey = key; return key; }
+  } catch {}
+  try {
+    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+    if (s.geminiApiKey) { _cachedScribeKey = s.geminiApiKey; return s.geminiApiKey; }
+  } catch {}
+  return '';
+}
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
 // How often to send audio chunks for transcription (ms)
@@ -64,7 +78,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 async function transcribeWithGemini(base64Audio: string, mimeType: string): Promise<string> {
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${await getGeminiApiKey()}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -469,7 +483,7 @@ export default function MeetingScribe() {
     setIsSummarizing(true);
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${await getGeminiApiKey()}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

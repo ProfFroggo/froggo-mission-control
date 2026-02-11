@@ -18,7 +18,22 @@ import { useStore } from '../store/store';
  * 3. Action Items: Clear approve/edit/dismiss workflow
  */
 
-const GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
+// Gemini API key — loaded dynamically, no hardcoded fallback
+let _cachedGeminiKey: string | null = null;
+async function getGeminiApiKey(): Promise<string> {
+  if (_cachedGeminiKey) return _cachedGeminiKey;
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  if (viteKey && viteKey !== 'your_key_here') { _cachedGeminiKey = viteKey; return viteKey; }
+  try {
+    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    if (key) { _cachedGeminiKey = key; return key; }
+  } catch {}
+  try {
+    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+    if (s.geminiApiKey) { _cachedGeminiKey = s.geminiApiKey; return s.geminiApiKey; }
+  } catch {}
+  return '';
+}
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 const GEMINI_MODEL = 'models/gemini-live-2.5-flash-preview';
 
@@ -254,7 +269,7 @@ export default function MeetingsPanel() {
     try {
       const fullText = transcript.join('\n');
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -480,8 +495,9 @@ export default function MeetingsPanel() {
 
   // Gemini Live Transcription
   const connectGeminiTranscription = useCallback(async (_stream: MediaStream) => {
+    const apiKey = await getGeminiApiKey();
     return new Promise<WebSocket>((resolve, reject) => {
-      const url = `${GEMINI_WS_URL}?key=${GEMINI_API_KEY}`;
+      const url = `${GEMINI_WS_URL}?key=${apiKey}`;
       const ws = new WebSocket(url);
       wsRef.current = ws;
 
@@ -610,7 +626,7 @@ export default function MeetingsPanel() {
   const cleanupWithGemini = useCallback(async (text: string) => {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -792,7 +808,7 @@ export default function MeetingsPanel() {
       } else {
         const prompt = `You are helping Kevin review a meeting transcript. Answer questions about the meeting content.\n\nMeeting from ${meeting.date.toLocaleDateString()}:\n${meeting.rawContent}\n\nUser question: ${question}\n\nGive a helpful, concise answer.`;
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
