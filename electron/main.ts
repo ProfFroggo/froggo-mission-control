@@ -4775,6 +4775,78 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
   }
 });
 
+ipcMain.handle('ai:generateContent', async (_, prompt: string, type: string, options?: { agent?: string }) => {
+  safeLog.log('[AI:Generate] Called with type:', type, 'agent:', options?.agent || 'default');
+  try {
+    // Determine which agent to use
+    const agentId = options?.agent || 'social-manager';
+    
+    // Create session key for this agent
+    const sessionKey = `agent:${agentId}:xpanel-ai`;
+    
+    // Build appropriate prompt based on type
+    let fullPrompt: string;
+    if (type === 'ideas') {
+      fullPrompt = `Generate 5 engaging X/Twitter content ideas about: ${prompt}\n\nFor each idea, provide:\n1. The main idea/angle\n2. A compelling hook/opening line\n\nReturn as JSON array: [{ "idea": "...", "hook": "..." }]`;
+    } else if (type === 'chat') {
+      fullPrompt = prompt;
+    } else {
+      fullPrompt = prompt;
+    }
+    
+    // Escape single quotes for shell
+    const escapedPrompt = fullPrompt.replace(/'/g, "'\\''");
+    
+    // Send to agent via openclaw CLI
+    const response = await new Promise<string>((resolve, reject) => {
+      exec(
+        `openclaw agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent ${agentId}`,
+        {
+          encoding: 'utf-8',
+          timeout: 60000,
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            safeLog.error('[AI:Generate] CLI error:', error.message);
+            reject(error);
+            return;
+          }
+          
+          const output = stdout.trim();
+          safeLog.log('[AI:Generate] Got response, length:', output.length);
+          resolve(output);
+        }
+      );
+    });
+    
+    // Parse response based on type
+    if (type === 'ideas') {
+      try {
+        // Try to extract JSON array from response
+        const jsonMatch = response.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          const ideas = JSON.parse(jsonMatch[0]);
+          return { success: true, ideas };
+        } else {
+          // Fallback: parse manually
+          safeLog.warn('[AI:Generate] Could not find JSON in response, using raw text');
+          return { success: true, ideas: [{ idea: response, hook: '' }] };
+        }
+      } catch (parseError: any) {
+        safeLog.error('[AI:Generate] JSON parse error:', parseError.message);
+        return { success: true, ideas: [{ idea: response, hook: '' }] };
+      }
+    } else {
+      // For chat type, return raw response
+      return { success: true, response };
+    }
+  } catch (e: any) {
+    safeLog.error('[AI:Generate] Error:', e);
+    return { success: false, error: e.message };
+  }
+});
+
 // ============== TWITTER IPC HANDLERS (X API v2) ==============
 
 ipcMain.handle('twitter:mentions', async () => {

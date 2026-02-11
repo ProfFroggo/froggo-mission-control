@@ -54,7 +54,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   // Agent counts from Gateway
   const subagentSessions = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = subagentSessions.filter(s => s.isActive);
-  const totalAgentCount = activeSubagents.length + 1;
+  
+  // Agent count from registry (exclude phantom agents like 'main', 'chat-agent')
+  const PHANTOM_AGENTS = ['main', 'chat-agent'];
+  const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
+  const totalAgentCount = realAgents.length;
 
   // Attention items for hero
   const urgentCount = pendingApprovals.length + urgentTasks.length + unassignedTasks.length;
@@ -497,7 +501,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="text-left">
                 <h3 className="text-lg font-semibold mb-1">Activity Stream</h3>
                 <p className="text-sm text-clawd-text-dim">
-                  {sessions.length} sessions • {activeSubagents.length} agents • {activities.length} notifications
+                  {sessions.length} sessions • {totalAgentCount} agents • {activities.length} notifications
                 </p>
               </div>
             </div>

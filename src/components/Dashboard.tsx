@@ -205,7 +205,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   // Agent counts from Gateway
   const subagentSessions = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = subagentSessions.filter(s => s.isActive);
-  const totalAgentCount = activeSubagents.length + 1;
+  
+  // Agent count from registry (exclude phantom agents like 'main', 'chat-agent')
+  const PHANTOM_AGENTS = ['main', 'chat-agent'];
+  const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
+  const totalAgentCount = realAgents.length;
 
   // Attention items for hero
   const urgentCount = pendingApprovals.length + urgentTasks.length + unassignedTasks.length;
@@ -852,7 +856,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowActivityStream(!showActivityStream); } }}
                   >
                     <div className="text-sm text-clawd-text-dim">
-                      {sessions.length} sessions • {activeSubagents.length} agents • {activities.length} notifications
+                      {sessions.length} sessions • {totalAgentCount} agents • {activities.length} notifications
                     </div>
                     
                     <div className="flex items-center gap-3">
