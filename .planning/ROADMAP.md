@@ -27,11 +27,15 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
   3. Passing `'; DROP TABLE tasks; --` as a task title through the UI does not execute SQL injection
   4. The filesystem IPC handlers refuse to read/write paths outside the allowed directories (~/clawd/, ~/.openclaw/)
   5. The encryption key is loaded from environment or keychain, not from a hardcoded default string
-**Plans**: 2 plans
+**Plans**: 6 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Remove credentials and PII from source (SEC-01, SEC-02, SEC-07 — move tokens to safeStorage, scrub PII, replace encryption key) [Wave 1]
-- [ ] 01-02-PLAN.md — Lock down attack surface (SEC-03, SEC-04, SEC-05, SEC-06 — disable DevTools, parameterize SQL, restrict FS/DB handlers) [Wave 2, depends on 01-01]
+- [x] 01-01-PLAN.md — Remove credentials and PII from source (SEC-01, SEC-02, SEC-07) [Wave 1]
+- [x] 01-02-PLAN.md — Lock down attack surface (SEC-03, SEC-04 partial, SEC-05, SEC-06) [Wave 2]
+- [ ] 01-03-PLAN.md — Gap closure: Migrate notification-settings + snooze handlers to prepare() [Wave 3, gap_closure]
+- [ ] 01-04-PLAN.md — Gap closure: Migrate message folder + conversation pin handlers to prepare() [Wave 4, gap_closure]
+- [ ] 01-05-PLAN.md — Gap closure: Migrate task/attachment/library/inbox handlers to prepare() [Wave 5, gap_closure]
+- [ ] 01-06-PLAN.md — Gap closure: Migrate calendar/conversation/chat/sessions.db + final sweep [Wave 6, gap_closure]
 
 ### Phase 2: Fix Broken Features
 **Goal**: Every feature works and every data indicator reflects live reality
@@ -88,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Hardening | 0/2 | Not started | - |
+| 1. Security Hardening | 2/6 | Gap closure in progress | - |
 | 2. Fix Broken Features | 0/2 | Not started | - |
 | 3. Functional Fixes | 0/2 | Not started | - |
 | 4. Cleanup & Debloat | 0/2 | Not started | - |
