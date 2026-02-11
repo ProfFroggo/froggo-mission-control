@@ -51,6 +51,7 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
+  { id: 'blocked', title: 'Blocked', color: 'border-l-red-500', bg: 'bg-red-500/10', emoji: '🚫' },
   { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10', emoji: '📝' },
   { id: 'internal-review', title: 'Internal Review', color: 'border-l-cyan-500', bg: 'bg-cyan-500/10', emoji: '🔍' },
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
