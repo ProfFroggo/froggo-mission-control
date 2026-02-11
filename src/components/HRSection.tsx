@@ -30,7 +30,7 @@ export default function HRSection() {
           SELECT 
             (SELECT COUNT(DISTINCT id) FROM agent_registry WHERE status = 'active') as total_agents,
             (SELECT ROUND(AVG(proficiency), 1) FROM agent_skills) as avg_prof,
-            (SELECT COUNT(*) FROM agent_training_log WHERE created_at > strftime('%s','now','-7 days') * 1000) as recent_trainings
+            (SELECT COUNT(*) FROM agent_training_log) as recent_trainings
         `);
         const skillsRes = await dbExec(
           `SELECT agent_id, skill_name, proficiency FROM agent_skills WHERE proficiency < 4 ORDER BY proficiency ASC LIMIT 5`
@@ -107,7 +107,7 @@ export default function HRSection() {
               <div className="p-3 bg-clawd-bg">
                 <div className="text-lg font-bold text-clawd-text">{teamHealth.recentTrainings}</div>
                 <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider flex items-center gap-1">
-                  <BookOpen size={10} /> Trainings
+                  <BookOpen size={10} /> Total Trainings
                 </div>
               </div>
               <div className="p-3 bg-clawd-bg">
