@@ -521,6 +521,7 @@ export const useStore = create<Store>()(
               lastAgentUpdate: t.last_agent_update || undefined,
               createdAt: t.created_at || Date.now(),
               updatedAt: t.updated_at || Date.now(),
+              last_activity_at: t.last_activity_at || undefined,
               subtasks: [] as Subtask[],
             }));
             

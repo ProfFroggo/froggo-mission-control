@@ -755,18 +755,15 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setAgentChatOpen(true);
     setChatMessages([]);
     setChatLoading(true);
-    // Load chat history from gateway
+    // Spawn session via IPC (ensures agent session exists)
     try {
-      const res = await fetch(`http://localhost:18789/api/sessions/${agent.sessionKey || `agent:${agent.id}`}/history?limit=30`);
-      if (res.ok) {
-        const data = await res.json();
-        const msgs = (data.messages || data || []).map((m: any) => ({
-          role: m.role || 'user',
-          content: m.content || m.text || m.message || '',
-        })).filter((m: any) => m.content && (m.role === 'user' || m.role === 'assistant'));
-        setChatMessages(msgs);
+      const ipc = (window as any).clawdbot?.agents;
+      if (ipc?.spawnChat) {
+        await ipc.spawnChat(agent.id);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('[QuickActions] Failed to spawn agent chat session:', e);
+    }
     setChatLoading(false);
   };
 
@@ -777,15 +774,15 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
     setChatLoading(true);
     try {
-      const res = await fetch('http://localhost:18789/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, sessionKey: `agent:${chatAgent.id}:main` }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const reply = data.response || data.message || data.text || '';
+      const ipc = (window as any).clawdbot?.agents;
+      if (ipc?.chat) {
+        const sessionKey = `agent:${chatAgent.id}:dashboard`;
+        const result = await ipc.chat(sessionKey, msg);
+        const reply = typeof result === 'string' ? result : (result?.response || result?.message || '');
         if (reply) setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+        else setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No response from agent' }]);
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Chat IPC not available' }]);
       }
     } catch (err) {
       setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Failed to get response' }]);
