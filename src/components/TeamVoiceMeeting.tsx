@@ -8,6 +8,9 @@ import MarkdownMessage from './MarkdownMessage';
 import { getAgentTheme } from '../utils/agentThemes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { geminiLive } from '../lib/geminiLiveService';
+import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
+
 // Browser speech synthesis helpers (replaced googleTTS)
 function speakBrowser(text: string): Promise<void> {
   return new Promise((resolve) => {
@@ -18,7 +21,15 @@ function speakBrowser(text: string): Promise<void> {
   });
 }
 function stopSpeaking() { window.speechSynthesis.cancel(); }
-import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
+
+// API key loading (same as VoiceChatPanel)
+const FALLBACK_GEMINI_API_KEY = 'AIzaSyCziHu8LUZ6RXmt-4lu_NzgEfczM0DC1RE';
+function loadApiKey(): string {
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
+  if (viteKey && viteKey !== 'your_key_here') return viteKey;
+  if (FALLBACK_GEMINI_API_KEY) return FALLBACK_GEMINI_API_KEY;
+  return '';
+}
 
 interface TranscriptEntry {
   id: string;
@@ -65,8 +76,8 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   const [speakLevel, setSpeakLevel] = useState(0);
 
   // Refs
-  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const apiKeyRef = useRef(loadApiKey());
   const isActiveRef = useRef(false);
   const listeningRef = useRef(false);
   const micStreamRef = useRef<MediaStream | null>(null);
@@ -121,51 +132,17 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     };
   }, [listening]);
 
-  // ── Web Speech API (STT) ──
-  useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) final += t;
-        else interim += t;
-      }
-      if (interim) setPartialTranscript(interim);
-      if (final) {
-        setPartialTranscript('');
-        handleUserSpeech(final.trim());
-      }
-    };
-
-    recognition.onerror = (e: any) => {
-      if (e.error !== 'aborted' && e.error !== 'no-speech') {
-        console.warn('[TeamVoice] STT error:', e.error);
-      }
-    };
-
-    recognition.onend = () => {
-      if (isActiveRef.current && listeningRef.current) {
-        try { recognition.start(); } catch {}
-      } else {
-        setListening(false);
-        listeningRef.current = false;
-      }
-    };
-
-    recognitionRef.current = recognition;
-    return () => { try { recognition.abort(); } catch {} };
-  }, []);
-
   // Streaming events handled via per-runId callbacks in sendChatWithCallbacks
   // No global event listeners needed — each sendToAgent call gets isolated callbacks
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (geminiLive.connected) {
+        geminiLive.disconnect();
+      }
+    };
+  }, []);
 
   const clearPending = () => {
     pendingAgentRef.current = null;
@@ -251,6 +228,55 @@ Respond as ${agentName(agentId)}:`;
     setSpeakQueue(targets);
     processNextAgent();
   }, [room, roomId, turnMode, extractMentions, addMessage]);
+
+  // ── Gemini Live event handlers (STT) ──
+  useEffect(() => {
+    const unsubs = [
+      geminiLive.on('listening-start', () => {
+        setListening(true);
+        listeningRef.current = true;
+      }),
+      geminiLive.on('listening-end', () => {
+        setListening(false);
+        listeningRef.current = false;
+      }),
+      geminiLive.on('audio-level', ({ level }: { level: number }) => setMicLevel(level)),
+      geminiLive.on('transcript', (data: { text: string; role: string }) => {
+        if (!data.text?.trim()) return;
+        if (data.role !== 'user') return; // Only capture user speech
+        
+        const text = data.text.trim();
+        
+        // Show partial transcript for user feedback
+        setPartialTranscript(text);
+        
+        // Process complete utterances
+        // Gemini Live provides continuous transcription, so we use a debounce approach
+        const w = window as any;
+        if (w._teamVoiceTranscriptTimer) clearTimeout(w._teamVoiceTranscriptTimer);
+        w._teamVoiceTranscriptTimer = setTimeout(() => {
+          setPartialTranscript('');
+          handleUserSpeech(text);
+        }, 1500); // Wait 1.5s after speech stops before processing
+      }),
+      geminiLive.on('error', ({ message }: { message: string }) => {
+        console.error('[TeamVoice] Gemini error:', message);
+        setTranscript(prev => [...prev, {
+          id: `sys-${Date.now()}`,
+          speaker: 'system',
+          content: `⚠️ ${message}`,
+          timestamp: Date.now(),
+          type: 'text',
+        }]);
+      }),
+      geminiLive.on('disconnected', () => {
+        if (isActiveRef.current) {
+          console.warn('[TeamVoice] Gemini Live disconnected unexpectedly');
+        }
+      }),
+    ];
+    return () => unsubs.forEach(u => u());
+  }, [handleUserSpeech]);
 
   // ── Process next agent in queue ──
   const processNextAgent = useCallback(() => {
@@ -373,41 +399,97 @@ Respond as ${agentName(agentId)}:`;
   };
 
   // ── Start/stop listening ──
-  const startListening = () => {
-    if (!recognitionRef.current || listeningRef.current) return;
+  const startListening = async () => {
+    if (listeningRef.current || !geminiLive.connected) return;
     stopSpeaking();
     window.speechSynthesis.cancel();
     try {
-      recognitionRef.current.start();
-      setListening(true);
-      listeningRef.current = true;
-    } catch {}
+      await geminiLive.startMic();
+      // geminiLive events will update listening state
+    } catch (err: any) {
+      console.error('[TeamVoice] Failed to start mic:', err);
+      setTranscript(prev => [...prev, {
+        id: `sys-${Date.now()}`,
+        speaker: 'system',
+        content: `⚠️ Microphone error: ${err.message}`,
+        timestamp: Date.now(),
+        type: 'text',
+      }]);
+    }
   };
 
   const stopListeningFn = () => {
     listeningRef.current = false;
     setListening(false);
-    try { recognitionRef.current?.abort(); } catch {}
+    if (geminiLive.connected) {
+      geminiLive.stopMic();
+    }
   };
 
   // ── Meeting controls ──
-  const startMeeting = () => {
+  const startMeeting = async () => {
+    if (!apiKeyRef.current) {
+      setTranscript(prev => [...prev, {
+        id: `sys-${Date.now()}`,
+        speaker: 'system',
+        content: '⚠️ No Gemini API key. Set VITE_GEMINI_API_KEY in .env',
+        timestamp: Date.now(),
+        type: 'text',
+      }]);
+      return;
+    }
+
     setIsActive(true);
     isActiveRef.current = true;
     setTranscript(prev => [...prev, {
       id: `sys-${Date.now()}`,
       speaker: 'system',
-      content: 'Voice meeting started',
+      content: 'Connecting to voice service…',
       timestamp: Date.now(),
       type: 'text',
     }]);
-    startListening();
+
+    try {
+      // Connect to Gemini Live for STT only (not as an agent brain)
+      await geminiLive.connect({
+        apiKey: apiKeyRef.current,
+        voice: 'Puck', // Default voice (not used for output in team mode)
+        videoMode: 'none',
+        systemInstruction: 'You are a voice interface for a team meeting. Your only job is to listen and transcribe. Do not respond or generate content.',
+      });
+
+      setTranscript(prev => [...prev, {
+        id: `sys-${Date.now()}`,
+        speaker: 'system',
+        content: 'Voice meeting started',
+        timestamp: Date.now(),
+        type: 'text',
+      }]);
+
+      await startListening();
+    } catch (err: any) {
+      console.error('[TeamVoice] Failed to start meeting:', err);
+      setTranscript(prev => [...prev, {
+        id: `sys-${Date.now()}`,
+        speaker: 'system',
+        content: `⚠️ Failed to start: ${err.message}`,
+        timestamp: Date.now(),
+        type: 'text',
+      }]);
+      setIsActive(false);
+      isActiveRef.current = false;
+    }
   };
 
-  const endMeeting = () => {
+  const endMeeting = async () => {
     stopListeningFn();
     stopSpeaking();
     window.speechSynthesis.cancel();
+    
+    if (geminiLive.connected) {
+      await geminiLive.disconnect();
+    }
+    
     setIsActive(false);
     isActiveRef.current = false;
     setSpeakingAgent(null);
