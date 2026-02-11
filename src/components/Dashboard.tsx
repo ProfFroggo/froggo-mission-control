@@ -25,6 +25,8 @@ import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
 import TokenSummaryWidget from './TokenSummaryWidget';
 import HealthStatusWidget from './HealthStatusWidget';
+import InboxWidget from './InboxWidget';
+import NewContentWidget from './NewContentWidget';
 import { useStore } from '../store/store';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'approvals';
@@ -44,9 +46,11 @@ interface WidgetConfig {
 const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'hero', title: 'Dashboard Header', icon: Sparkles, removable: false },
   { id: 'approvals', title: 'Pending Approvals', icon: Inbox, removable: true },
+  { id: 'inbox', title: 'Unread Inbox', icon: Inbox, removable: true },
   { id: 'active-tasks', title: 'Active Tasks', icon: ListTodo, removable: true },
   { id: 'urgent', title: 'Needs Attention', icon: AlertTriangle, removable: true },
   { id: 'agents-count', title: 'Active Agents', icon: Bot, removable: true },
+  { id: 'new-content', title: 'New Content', icon: Sparkles, removable: true },
   { id: 'active-work', title: 'Active Work', icon: Activity, removable: true },
   { id: 'calendar', title: 'Calendar', icon: Calendar, removable: true },
   { id: 'weather', title: 'Weather', icon: TrendingUp, removable: true },
@@ -58,10 +62,12 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
 
 const DEFAULT_LAYOUT: Layout[] = [
   { i: 'hero', x: 0, y: 0, w: 12, h: 5, static: true },
-  { i: 'approvals', x: 0, y: 5, w: 3, h: 4 },
-  { i: 'active-tasks', x: 3, y: 5, w: 3, h: 4 },
-  { i: 'urgent', x: 6, y: 5, w: 3, h: 4 },
-  { i: 'agents-count', x: 9, y: 5, w: 3, h: 4 },
+  { i: 'approvals', x: 0, y: 5, w: 2, h: 4 },
+  { i: 'inbox', x: 2, y: 5, w: 2, h: 4 },
+  { i: 'active-tasks', x: 4, y: 5, w: 2, h: 4 },
+  { i: 'urgent', x: 6, y: 5, w: 2, h: 4 },
+  { i: 'agents-count', x: 8, y: 5, w: 2, h: 4 },
+  { i: 'new-content', x: 10, y: 5, w: 2, h: 4 },
   { id: 'active-work', x: 0, y: 9, w: 8, h: 8 },
   { i: 'calendar', x: 8, y: 9, w: 4, h: 4 },
   { i: 'weather', x: 8, y: 13, w: 2, h: 3 },
@@ -471,6 +477,23 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             </div>
           )}
 
+          {/* INBOX WIDGET */}
+          {!hiddenWidgets.has('inbox') && (
+            <div key="inbox">
+              <DashboardWidget
+                id="inbox"
+                title="Unread Inbox"
+                icon={Inbox}
+                editMode={editMode}
+                minimized={minimizedWidgets.has('inbox')}
+                onToggleMinimize={() => handleToggleMinimize('inbox')}
+                onRemove={() => handleRemoveWidget('inbox')}
+              >
+                <InboxWidget />
+              </DashboardWidget>
+            </div>
+          )}
+
           {/* ACTIVE TASKS WIDGET */}
           {!hiddenWidgets.has('active-tasks') && (
             <div key="active-tasks">
@@ -591,6 +614,23 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                     </div>
                   )}
                 </button>
+              </DashboardWidget>
+            </div>
+          )}
+
+          {/* NEW CONTENT WIDGET */}
+          {!hiddenWidgets.has('new-content') && (
+            <div key="new-content">
+              <DashboardWidget
+                id="new-content"
+                title="New Content"
+                icon={Sparkles}
+                editMode={editMode}
+                minimized={minimizedWidgets.has('new-content')}
+                onToggleMinimize={() => handleToggleMinimize('new-content')}
+                onRemove={() => handleRemoveWidget('new-content')}
+              >
+                <NewContentWidget />
               </DashboardWidget>
             </div>
           )}
