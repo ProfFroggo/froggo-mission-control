@@ -250,10 +250,10 @@ export default function ChatPanel() {
   };
 
   // Filter messages based on search query
-  // Filter out silent agent replies (NO_REPLY, HEARTBEAT_OK) from display
+  // Filter out silent agent replies (NO_REPLY, HEARTBEAT_OK, NO) from display
   const isSystemReply = (content: string) => {
     const trimmed = content?.trim();
-    return trimmed === 'NO_REPLY' || trimmed === 'HEARTBEAT_OK' || trimmed === 'NO_RE' || trimmed === 'NO_';
+    return trimmed === 'NO_REPLY' || trimmed === 'HEARTBEAT_OK' || trimmed === 'NO' || trimmed === 'NO_RE' || trimmed === 'NO_';
   };
 
   const filteredMessages = useMemo(() => {

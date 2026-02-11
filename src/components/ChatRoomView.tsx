@@ -611,7 +611,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         ) : (
           room.messages.filter(m => {
             const t = m.content?.trim();
-            if (t === 'NO_REPLY' || t === 'HEARTBEAT_OK' || t === 'NO_RE' || t === 'NO_') return false;
+            if (t === 'NO_REPLY' || t === 'HEARTBEAT_OK' || t === 'NO' || t === 'NO_RE' || t === 'NO_') return false;
             return m.streaming || t;
           }).map((msg, idx) => {
             const isUser = msg.role === 'user';
