@@ -269,7 +269,7 @@ class TwitterOAuthService {
       const lines = content.split('\n');
       const creds: any = {};
 
-      lines.forEach(line => {
+      lines.forEach((line: string) => {
         const match = line.match(/export (\w+)="(.+)"/);
         if (match) {
           creds[match[1]] = match[2];
