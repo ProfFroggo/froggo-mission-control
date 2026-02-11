@@ -79,8 +79,14 @@ export default function AnalyticsOverview() {
         const completionsMap = fillDateRange(analyticsResult.completions || [], days, 'tasks_completed');
         const createdMap = fillDateRange(analyticsResult.created || [], days, 'tasks_created');
 
-        // Merge into daily activity array
-        const allDates = [...new Set([...completionsMap.keys(), ...createdMap.keys()])].sort();
+        // Generate complete date range (fillDateRange already filled all dates, just use one map's keys)
+        const allDates: string[] = [];
+        for (let i = days - 1; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          allDates.push(d.toISOString().split('T')[0]);
+        }
+        
         const daily: DailyActivity[] = allDates.map(date => ({
           date,
           label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
