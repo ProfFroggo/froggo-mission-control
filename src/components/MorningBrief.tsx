@@ -129,9 +129,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
       }
       
-      // Fetch work calendar events (kevin.macarthur@bitso.com)
+      // Fetch work calendar events (from user settings)
       try {
-        const calendarResult = await (window as any).clawdbot?.calendar?.events('kevin.macarthur@bitso.com', 1);
+        const calAccount = (await import('../store/userSettings')).useUserSettings.getState().emailAccounts[0]?.email || '';
+        const calendarResult = calAccount ? await (window as any).clawdbot?.calendar?.events(calAccount, 1) : null;
         if (calendarResult?.events) {
           upcomingEventsData = calendarResult.events;
         }
@@ -414,7 +415,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
     return (
       <div className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4">
         <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Good morning, Kevin 👋</h1>
+          <h1 className="text-2xl font-bold mb-4">Good morning 👋</h1>
           <p className="text-clawd-text-dim mb-6">Couldn't load your brief data.</p>
           <button
             onClick={onDismiss}
@@ -441,7 +442,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         {/* Header */}
         <div className="p-8 text-center border-b border-clawd-border bg-gradient-to-br from-clawd-accent/10 to-transparent">
           <div className="mb-4">{getIcon()}</div>
-          <h1 className="text-3xl font-bold mb-2">{brief.greeting}, Kevin 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">{brief.greeting} 👋</h1>
           <p className="text-clawd-text-dim">
             {hasItems ? "Here's what needs your attention" : "All clear! Nothing urgent right now."}
           </p>

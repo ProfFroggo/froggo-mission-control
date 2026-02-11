@@ -19,14 +19,10 @@ interface UserSettingsState extends UserIdentity, UserPreferences {
 }
 
 const defaults: UserIdentity & UserPreferences = {
-  name: 'Kevin MacArthur',
-  email: 'kevin@carbium.io',
-  phone: '+35054008841',
-  emailAccounts: [
-    { email: 'kevin@carbium.io', label: 'Carbium', color: 'text-green-400' },
-    { email: 'kevin.macarthur@bitso.com', label: 'Bitso', color: 'text-blue-400' },
-    { email: 'kmacarthur.gpt@gmail.com', label: 'Gmail', color: 'text-red-400' },
-  ],
+  name: '',
+  email: '',
+  phone: '',
+  emailAccounts: [],
   theme: 'dark',
   notifications: true,
 };

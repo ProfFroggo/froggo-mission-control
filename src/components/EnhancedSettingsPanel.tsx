@@ -149,7 +149,7 @@ const defaultSettings: Settings = {
   rateLimitTweets: 10,
   rateLimitEmails: 20,
   defaultEmailAccount: useUserSettings.getState().email,
-  defaultCalendarAccount: 'kevin.macarthur@bitso.com',
+  defaultCalendarAccount: useUserSettings.getState().emailAccounts[0]?.email || '',
   performance: {
     enableCache: true,
     cacheSize: 100,

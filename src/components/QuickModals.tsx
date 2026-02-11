@@ -25,7 +25,8 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await (window as any).clawdbot?.calendar?.events('kevin.macarthur@bitso.com', 3);
+      const calAccount = useUserSettings.getState().emailAccounts[0]?.email || '';
+      const result = calAccount ? await (window as any).clawdbot?.calendar?.events(calAccount, 3) : null;
       if (result?.success && result.events?.events) {
         setEvents(result.events.events.map((e: any) => ({
           id: e.id,

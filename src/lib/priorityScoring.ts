@@ -86,17 +86,14 @@ const URGENCY_KEYWORDS = {
 };
 
 // Important senders (name/identifier → base score)
+// Important sender roles (generic — specific people are configured via VIP system in froggo-db)
 const IMPORTANT_SENDERS: Record<string, number> = {
-  'kevin': 25,
-  'kmac': 25,
-  'kevin.macarthur': 25,
   'boss': 20,
   'manager': 15,
   'lead': 15,
   'ceo': 20,
   'cto': 18,
   'team lead': 15,
-  // Add more as needed
 };
 
 // Type-based priority

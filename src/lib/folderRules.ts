@@ -249,7 +249,7 @@ export const RULE_TEMPLATES: Partial<FolderRule>[] = [
     name: 'Work Emails',
     operator: 'OR',
     conditions: [
-      { type: 'domain_matches', value: '*.bitso.com' },
+      { type: 'domain_matches', value: '*.example.com' },
       { type: 'content_contains', value: 'work,meeting,project,deadline' }
     ],
     priority: 80

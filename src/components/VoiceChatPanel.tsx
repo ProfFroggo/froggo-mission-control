@@ -17,6 +17,7 @@ import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
 import DraggableVideoWindow from './DraggableVideoWindow';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
+import { useUserSettings } from '../store/userSettings';
 import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
@@ -1113,9 +1114,12 @@ function buildSystemInstruction(agent: ChatAgent, context?: AgentContext | null,
     parts.push(`You are ${agent.name}, ${agent.role || 'an AI assistant'}.`);
   }
 
-  // Essential facts only (~150 tokens)
+  // Essential facts only
   parts.push(`Current date: ${new Date().toLocaleString()}`);
-  parts.push(`Your human: Kevin MacArthur (Europe/Gibraltar, wife Melanie, daughters Willow 5 & Aeyva 3).`);
+  const userName = useUserSettings.getState().name;
+  if (userName) {
+    parts.push(`Your human: ${userName}.`);
+  }
   
   // Team roster (one-liners only, ~150 tokens)
   parts.push(`Your team: Coder 💻 (code/builds), Writer ✍️ (content), Researcher 🔍 (analysis), Chief 👨‍💻 (complex projects), Clara 🔍 (quality review), Designer 🎨 (UI/UX), HR 🎓 (agent management), Jess 🤖 (psychology/therapy).`);

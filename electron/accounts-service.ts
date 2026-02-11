@@ -87,11 +87,18 @@ class AccountsService {
   private async migrateLegacyAccounts() {
     console.log('[AccountsService] Migrating legacy calendar accounts...');
     
-    const knownAccounts = [
-      'kevin.macarthur@bitso.com',
-      'kevin@carbium.io',
-      'kmacarthur.gpt@gmail.com'
-    ];
+    // Dynamically discover accounts from gog CLI instead of hardcoding
+    let knownAccounts: string[] = [];
+    try {
+      const gogList = await execAsync('/opt/homebrew/bin/gog auth list --json', {
+        timeout: 5000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+      });
+      const gogData = JSON.parse(gogList.stdout);
+      knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
+    } catch {
+      console.log('[AccountsService] Failed to discover gog accounts for migration');
+    }
 
     for (const email of knownAccounts) {
       // Test if account works with gog CLI

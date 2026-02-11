@@ -98,11 +98,8 @@ interface AIAnalysis {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Default email accounts (fallback when gateway doesn't return email accounts)
-const DEFAULT_EMAIL_ACCOUNTS: Account[] = [
-  { id: 'gmail-bitso', label: 'Bitso', platform: 'email', address: 'kevin.macarthur@bitso.com', icon: <Mail size={16} />, color: 'text-orange-400' },
-  { id: 'gmail-carbium', label: 'Carbium', platform: 'email', address: 'kevin@carbium.io', icon: <Mail size={16} />, color: 'text-blue-400' },
-];
+// Default email accounts (empty — populated dynamically from gateway or user settings)
+const DEFAULT_EMAIL_ACCOUNTS: Account[] = [];
 
 const PLATFORM_ICON_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   whatsapp: { icon: <MessageCircle size={16} />, color: 'text-green-400', label: 'WhatsApp' },

@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, RefreshCw, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react';
+import { useUserSettings } from '../store/userSettings';
 
 interface CalendarEvent {
   id: string;
@@ -36,7 +37,8 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
     
     try {
       // Fetch calendar events directly via IPC
-      const result = await (window as any).clawdbot?.calendar?.events('kevin.macarthur@bitso.com', 3);
+      const calAccount = useUserSettings.getState().emailAccounts[0]?.email || '';
+      const result = calAccount ? await (window as any).clawdbot?.calendar?.events(calAccount, 3) : null;
       console.log('[Calendar] Events result:', result);
       
       if (result?.success && result.events?.events) {
@@ -49,7 +51,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
           location: e.location || '',
           attendees: e.attendees?.length || 0,
           isAllDay: !!e.start?.date && !e.start?.dateTime,
-          account: 'kevin.macarthur@bitso.com',
+          account: calAccount,
         }));
         setEvents(mapped);
         setLastFetch(Date.now());
