@@ -21,10 +21,8 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
 );
 
 import TodayCalendarWidget from './TodayCalendarWidget';
-import EmailWidget from './EmailWidget';
 import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
-import { CalendarModal, EmailModal, MentionsModal, MessagesModal } from './QuickModals';
 import { useStore } from '../store/store';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'approvals';
@@ -43,14 +41,12 @@ interface WidgetConfig {
 
 const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'hero', title: 'Dashboard Header', icon: Sparkles, removable: false },
-  { id: 'quick-actions', title: 'Quick Actions', icon: Zap, removable: true },
   { id: 'approvals', title: 'Pending Approvals', icon: Inbox, removable: true },
   { id: 'active-tasks', title: 'Active Tasks', icon: ListTodo, removable: true },
   { id: 'urgent', title: 'Needs Attention', icon: AlertTriangle, removable: true },
   { id: 'agents-count', title: 'Active Agents', icon: Bot, removable: true },
   { id: 'active-work', title: 'Active Work', icon: Activity, removable: true },
   { id: 'calendar', title: 'Calendar', icon: Calendar, removable: true },
-  { id: 'email', title: 'Email', icon: Mail, removable: true },
   { id: 'weather', title: 'Weather', icon: TrendingUp, removable: true },
   { id: 'quick-stats', title: 'Quick Stats', icon: TrendingUp, removable: true },
   { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
@@ -58,17 +54,15 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
 
 const DEFAULT_LAYOUT: Layout[] = [
   { i: 'hero', x: 0, y: 0, w: 12, h: 5, static: true },
-  { i: 'quick-actions', x: 0, y: 5, w: 12, h: 2 },
-  { i: 'approvals', x: 0, y: 7, w: 3, h: 4 },
-  { i: 'active-tasks', x: 3, y: 7, w: 3, h: 4 },
-  { i: 'urgent', x: 6, y: 7, w: 3, h: 4 },
-  { i: 'agents-count', x: 9, y: 7, w: 3, h: 4 },
-  { i: 'active-work', x: 0, y: 11, w: 8, h: 8 },
-  { i: 'calendar', x: 8, y: 11, w: 4, h: 4 },
-  { i: 'email', x: 8, y: 15, w: 4, h: 4 },
-  { i: 'weather', x: 8, y: 19, w: 2, h: 3 },
-  { i: 'quick-stats', x: 10, y: 19, w: 2, h: 3 },
-  { i: 'activity', x: 0, y: 22, w: 12, h: 5 },
+  { i: 'approvals', x: 0, y: 5, w: 3, h: 4 },
+  { i: 'active-tasks', x: 3, y: 5, w: 3, h: 4 },
+  { i: 'urgent', x: 6, y: 5, w: 3, h: 4 },
+  { i: 'agents-count', x: 9, y: 5, w: 3, h: 4 },
+  { i: 'active-work', x: 0, y: 9, w: 8, h: 8 },
+  { i: 'calendar', x: 8, y: 9, w: 4, h: 4 },
+  { i: 'weather', x: 8, y: 13, w: 2, h: 3 },
+  { i: 'quick-stats', x: 10, y: 13, w: 2, h: 3 },
+  { i: 'activity', x: 0, y: 17, w: 12, h: 5 },
 ];
 
 interface DashboardWidgetProps {
@@ -153,8 +147,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   } = useStore();
   
   const [greeting, setGreeting] = useState('');
-  const [loadingAction, _setLoadingAction] = useState<string | null>(null);
-  const [activeModal, setActiveModal] = useState<'calendar' | 'email' | 'mentions' | 'messages' | null>(null);
   const [showActivityStream, setShowActivityStream] = useState(false);
   
   // Widget customization state
@@ -272,28 +264,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     setMinimizedWidgets(newMinimized);
     localStorage.setItem('dashboard-minimized-widgets', JSON.stringify([...newMinimized]));
   };
-
-  const handleQuickAction = (label: string) => {
-    if (label === 'Daily Brief') {
-      onShowBrief?.();
-      return;
-    }
-    const modalMap: Record<string, 'calendar' | 'email' | 'mentions' | 'messages'> = {
-      'Calendar': 'calendar',
-      'Email': 'email',
-      'X Mentions': 'mentions',
-      'Messages': 'messages',
-    };
-    setActiveModal(modalMap[label] || null);
-  };
-
-  const quickActions = [
-    { icon: Calendar, label: 'Calendar', color: 'from-blue-500 to-blue-600', textColor: 'text-blue-100' },
-    { icon: Mail, label: 'Email', color: 'from-green-500 to-green-600', textColor: 'text-green-100' },
-    { icon: XIcon, label: 'X Mentions', color: 'from-gray-700 to-gray-900', textColor: 'text-white' },
-    { icon: MessageSquare, label: 'Messages', color: 'from-purple-500 to-purple-600', textColor: 'text-purple-100' },
-    { icon: Sparkles, label: 'Daily Brief', color: 'from-yellow-500 to-orange-500', textColor: 'text-yellow-100' },
-  ];
 
   const getSessionIcon = (session: any) => {
     if (session.channel === 'whatsapp') return '💬';
@@ -451,47 +421,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   </div>
               </div>
             </div>
-
-          {/* QUICK ACTIONS WIDGET */}
-          {!hiddenWidgets.has('quick-actions') && (
-            <div key="quick-actions">
-              <DashboardWidget
-                id="quick-actions"
-                title="Quick Actions"
-                icon={Zap}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('quick-actions')}
-                onToggleMinimize={() => handleToggleMinimize('quick-actions')}
-                onRemove={() => handleRemoveWidget('quick-actions')}
-              >
-                <div className="p-4">
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    {quickActions.map(({ icon: Icon, label, color, textColor }, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleQuickAction(label)}
-                        disabled={loadingAction === label}
-                        className={`group relative overflow-hidden rounded-xl p-3 bg-gradient-to-br ${color} 
-                          hover:scale-105 active:scale-95 transition-all duration-200 
-                          shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed
-                          border border-white/10`}
-                      >
-                        <div className="relative z-10 flex flex-col items-center gap-2">
-                          {loadingAction === label ? (
-                            <Spinner size={20} className="text-white" />
-                          ) : (
-                            <Icon size={20} className={textColor} />
-                          )}
-                          <span className={`text-xs font-medium ${textColor}`}>{label}</span>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </DashboardWidget>
-            </div>
-          )}
 
           {/* APPROVALS WIDGET */}
           {!hiddenWidgets.has('approvals') && (
@@ -787,23 +716,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             </div>
           )}
 
-          {/* EMAIL WIDGET */}
-          {!hiddenWidgets.has('email') && (
-            <div key="email">
-              <DashboardWidget
-                id="email"
-                title="Email"
-                icon={Mail}
-                editMode={editMode}
-                minimized={minimizedWidgets.has('email')}
-                onToggleMinimize={() => handleToggleMinimize('email')}
-                onRemove={() => handleRemoveWidget('email')}
-              >
-                <EmailWidget />
-              </DashboardWidget>
-            </div>
-          )}
-
           {/* WEATHER WIDGET */}
           {!hiddenWidgets.has('weather') && (
             <div key="weather">
@@ -1010,12 +922,6 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           )}
         </ResponsiveGridLayout>
       </div>
-      
-      {/* Quick Action Modals */}
-      <CalendarModal isOpen={activeModal === 'calendar'} onClose={() => setActiveModal(null)} />
-      <EmailModal isOpen={activeModal === 'email'} onClose={() => setActiveModal(null)} />
-      <MentionsModal isOpen={activeModal === 'mentions'} onClose={() => setActiveModal(null)} />
-      <MessagesModal isOpen={activeModal === 'messages'} onClose={() => setActiveModal(null)} />
     </div>
   );
 }
