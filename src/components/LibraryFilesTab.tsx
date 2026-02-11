@@ -70,9 +70,36 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.library?.list(selectedCategory === 'all' ? undefined : selectedCategory);
-      if (result?.success) {
-        setFiles(result.files || []);
+      // Fetch library files
+      const libraryResult = await (window as any).clawdbot?.library?.list(selectedCategory === 'all' ? undefined : selectedCategory);
+      const libraryFiles: LibraryFile[] = libraryResult?.success ? (libraryResult.files || []) : [];
+      
+      // Fetch task attachments
+      const attachmentsResult = await (window as any).clawdbot?.tasks?.attachments?.listAll();
+      const taskAttachments = attachmentsResult?.success ? (attachmentsResult.attachments || []) : [];
+      
+      // Convert task attachments to LibraryFile format
+      const convertedAttachments: LibraryFile[] = taskAttachments.map((att: any) => ({
+        id: `attachment-${att.id}`,
+        name: att.filename || 'Unnamed',
+        path: att.file_path || '',
+        category: att.category || 'other',
+        size: att.file_size || 0,
+        mimeType: att.mime_type,
+        createdAt: att.uploaded_at || '',
+        updatedAt: att.uploaded_at || '',
+        linkedTasks: att.task_id ? [att.task_id] : [],
+        tags: [],
+      }));
+      
+      // Merge both sources
+      const allFiles = [...libraryFiles, ...convertedAttachments];
+      
+      // Apply category filter if needed
+      if (selectedCategory !== 'all') {
+        setFiles(allFiles.filter(f => f.category === selectedCategory));
+      } else {
+        setFiles(allFiles);
       }
     } catch (error) {
       console.error('[Library] Load error:', error);
