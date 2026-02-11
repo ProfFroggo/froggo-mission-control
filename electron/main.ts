@@ -18,6 +18,7 @@ import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
 import { db, prepare, getScheduleDb, closeDb } from './database';
+import { validateFsPath } from './fs-validation';
 
 // ============== AGENT REGISTRY ==============
 interface AgentRegistryEntry {
@@ -349,8 +350,6 @@ function createWindow() {
   } else {
     safeLog.log('Running in production mode, loading from dist');
     mainWindow.loadFile(distPath);
-    // Temporarily enable DevTools in production for debugging
-    mainWindow.webContents.openDevTools();
   }
 
   // Handle permission requests (microphone, camera, screen capture)
@@ -4284,9 +4283,14 @@ ipcMain.handle('search:whatsapp', async (_, query: string) => {
 // ============== FILESYSTEM IPC HANDLERS ==============
 ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string) => {
   try {
+    const check = validateFsPath(filePath);
+    if (!check.valid) {
+      safeLog.error('[FS] Write blocked:', check.error);
+      return { success: false, error: check.error };
+    }
     const buffer = Buffer.from(base64Data, 'base64');
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, path: filePath };
+    fs.writeFileSync(check.resolved, buffer);
+    return { success: true, path: check.resolved };
   } catch (error: any) {
     safeLog.error('[FS] Write error:', error);
     return { success: false, error: error.message };
@@ -4295,7 +4299,12 @@ ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string)
 
 ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => {
   try {
-    const content = fs.readFileSync(filePath, encoding as BufferEncoding || 'utf8');
+    const check = validateFsPath(filePath);
+    if (!check.valid) {
+      safeLog.error('[FS] Read blocked:', check.error);
+      return { success: false, error: check.error };
+    }
+    const content = fs.readFileSync(check.resolved, encoding as BufferEncoding || 'utf8');
     return { success: true, content };
   } catch (error: any) {
     safeLog.error('[FS] Read error:', error);
@@ -4306,19 +4315,20 @@ ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => 
 // Append to file
 ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
   try {
-    // Resolve ~ to home directory if present
-    const resolvedPath = filePath.startsWith('~') 
-      ? path.join(os.homedir(), filePath.slice(1))
-      : filePath;
-    
+    const check = validateFsPath(filePath);
+    if (!check.valid) {
+      safeLog.error('[FS] Append blocked:', check.error);
+      return { success: false, error: check.error };
+    }
+
     // Ensure directory exists
-    const dir = path.dirname(resolvedPath);
+    const dir = path.dirname(check.resolved);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
-    fs.appendFileSync(resolvedPath, content);
-    return { success: true, path: resolvedPath };
+
+    fs.appendFileSync(check.resolved, content);
+    return { success: true, path: check.resolved };
   } catch (error: any) {
     safeLog.error('[FS] Append error:', error);
     return { success: false, error: error.message };
