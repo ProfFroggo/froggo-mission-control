@@ -2,7 +2,7 @@ name: Build Electron App
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, froggo-main ]  # Support both main branches
   workflow_dispatch:  # Allow manual triggers
 
 jobs:
