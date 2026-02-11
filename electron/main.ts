@@ -1274,56 +1274,63 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
 });
 
 ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string; reviewStatus?: string; reviewerId?: string }) => {
-  // Split updates into SQL fields (not supported by CLI) and CLI fields
-  const sqlFields: string[] = [];
-  
-  if (updates.planningNotes !== undefined) {
-    const escapedNotes = updates.planningNotes.replace(/'/g, "''");
-    sqlFields.push(`planning_notes='${escapedNotes}'`);
-  }
-  
-  if (updates.reviewStatus !== undefined) {
-    const escapedStatus = updates.reviewStatus.replace(/'/g, "''");
-    sqlFields.push(`reviewStatus='${escapedStatus}'`);
-  }
-  
-  if (updates.reviewerId !== undefined) {
-    const escapedReviewer = updates.reviewerId.replace(/'/g, "''");
-    sqlFields.push(`reviewerId='${escapedReviewer}'`);
-  }
-  
-  // Add status to SQL if provided (more reliable than CLI for atomic updates)
-  if (updates.status !== undefined) {
-    const escapedStatus = updates.status.replace(/'/g, "''");
-    sqlFields.push(`status='${escapedStatus}'`);
-  }
-  
-  if (updates.assignedTo !== undefined) {
-    const escapedAssignee = updates.assignedTo.replace(/'/g, "''");
-    sqlFields.push(`assigned_to='${escapedAssignee}'`);
-  }
-  
-  // Execute SQL update if we have any fields
-  if (sqlFields.length > 0) {
-    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET ${sqlFields.join(', ')}, updated_at=strftime('%s','now')*1000 WHERE id='${taskId}'"`;
+  try {
+    const sqlFields: string[] = [];
+    const params: any[] = [];
     
-    return new Promise((resolve) => {
-      exec(sqlCmd, { timeout: 10000 }, (error, stdout, stderr) => {
-        if (error) {
-          safeLog.error('[Tasks] Update error:', error.message, stderr);
-          resolve({ success: false, error: error.message });
-        } else {
-          safeLog.log('[Tasks] Updated via SQL:', taskId, updates);
-          // Emit task update event for real-time Dashboard refresh
-          emitTaskEvent('task.updated', taskId);
-          resolve({ success: true });
-        }
-      });
-    });
+    if (updates.planningNotes !== undefined) {
+      sqlFields.push('planning_notes = ?');
+      params.push(updates.planningNotes);
+    }
+    
+    if (updates.reviewStatus !== undefined) {
+      sqlFields.push('reviewStatus = ?');
+      params.push(updates.reviewStatus);
+    }
+    
+    if (updates.reviewerId !== undefined) {
+      sqlFields.push('reviewerId = ?');
+      params.push(updates.reviewerId);
+    }
+    
+    if (updates.status !== undefined) {
+      sqlFields.push('status = ?');
+      params.push(updates.status);
+    }
+    
+    if (updates.assignedTo !== undefined) {
+      sqlFields.push('assigned_to = ?');
+      params.push(updates.assignedTo);
+    }
+    
+    // Execute SQL update if we have any fields
+    if (sqlFields.length > 0) {
+      const now = Date.now();
+      sqlFields.push('updated_at = ?');
+      params.push(now);
+      params.push(taskId);
+      
+      const result = prepare(
+        `UPDATE tasks SET ${sqlFields.join(', ')} WHERE id = ?`
+      ).run(...params);
+      
+      if (result.changes > 0) {
+        safeLog.log('[Tasks] Updated via prepared statement:', taskId, updates);
+        // Emit task update event for real-time Dashboard refresh
+        emitTaskEvent('task.updated', taskId);
+        return { success: true };
+      } else {
+        safeLog.warn('[Tasks] Update: task not found:', taskId);
+        return { success: false, error: 'Task not found' };
+      }
+    }
+    
+    // If no updates provided, return success
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Tasks] Update error:', error.message);
+    return { success: false, error: error.message };
   }
-  
-  // If no updates provided, return success
-  return { success: true };
 });
 
 ipcMain.handle('tasks:list', async (_, status?: string) => {
@@ -1491,43 +1498,45 @@ ipcMain.handle('tasks:delete', async (_, taskId: string) => {
   // Direct SQL: set cancelled=1 to soft-delete. Can't use froggo-db task-update --status cancelled
   // because the enforce_valid_state_transitions trigger blocks 'cancelled' as a status value.
   // The cancelled column is the proper soft-delete mechanism (froggo-db task-list already filters it).
-  const froggoDbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
-  const escapedId = taskId.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE tasks SET cancelled = 1, updated_at = ${Date.now()} WHERE id = '${escapedId}'"`;
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error) => {
-      if (error) {
-        safeLog.error('[Tasks] Delete error:', error.message);
-      } else {
-        safeLog.log('[Tasks] Soft-deleted (cancelled=1):', taskId);
-      }
-      resolve({ success: !error });
-    });
-  });
+  try {
+    const now = Date.now();
+    const result = prepare('UPDATE tasks SET cancelled = 1, updated_at = ? WHERE id = ?').run(now, taskId);
+    
+    if (result.changes > 0) {
+      safeLog.log('[Tasks] Soft-deleted (cancelled=1):', taskId);
+      return { success: true };
+    } else {
+      safeLog.warn('[Tasks] Delete: task not found:', taskId);
+      return { success: false, error: 'Task not found' };
+    }
+  } catch (error: any) {
+    safeLog.error('[Tasks] Delete error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 // Archive all done tasks - bulk operation for cleaning up Kanban board
 ipcMain.handle('tasks:archiveDone', async () => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
-  const now = Date.now();
-  // Set archived=1 for all done tasks (excludes already cancelled tasks)
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE tasks SET archived = 1, updated_at = ${now} WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)"`;
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Tasks] Archive done error:', error.message);
-        resolve({ success: false, error: error.message });
-      } else {
-        // Get count of archived tasks from changes
-        const countCmd = `sqlite3 "${froggoDbPath}" "SELECT changes()"`;
-        exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
-          const count = countError ? 0 : parseInt(countStdout.trim() || '0', 10);
-          safeLog.log(`[Tasks] Archived ${count} done tasks`);
-          resolve({ success: true, count });
-        });
-      }
+  try {
+    const now = Date.now();
+    
+    // Use transaction for atomic bulk operation
+    const archive = db.transaction(() => {
+      // Set archived=1 for all done tasks (excludes already cancelled tasks)
+      const result = prepare(
+        'UPDATE tasks SET archived = 1, updated_at = ? WHERE status = ? AND (cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)'
+      ).run(now, 'done');
+      
+      return result.changes;
     });
-  });
+    
+    const count = archive();
+    safeLog.log(`[Tasks] Archived ${count} done tasks`);
+    return { success: true, count };
+  } catch (error: any) {
+    safeLog.error('[Tasks] Archive done error:', error.message);
+    return { success: false, error: error.message, count: 0 };
+  }
 });
 
 // Poke a task - INTERNAL: spawn agent chat session for status update (no Discord posting)
