@@ -1150,7 +1150,7 @@ export default function ChatPanel() {
                       className={`px-4 py-3 transition-all duration-150 ${
                         isUser
                           ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md'
+                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md'
                       } ${
                         isUser
                           ? showAvatar 
