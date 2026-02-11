@@ -23,6 +23,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
 import TodayCalendarWidget from './TodayCalendarWidget';
 import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
+import TokenSummaryWidget from './TokenSummaryWidget';
 import { useStore } from '../store/store';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'sessions' | 'library' | 'schedule' | 'codeagent' | 'context' | 'calendar' | 'templates' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'approvals';
@@ -49,6 +50,7 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'calendar', title: 'Calendar', icon: Calendar, removable: true },
   { id: 'weather', title: 'Weather', icon: TrendingUp, removable: true },
   { id: 'quick-stats', title: 'Quick Stats', icon: TrendingUp, removable: true },
+  { id: 'token-usage', title: 'Token Usage', icon: Zap, removable: true },
   { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
 ];
 
@@ -62,7 +64,8 @@ const DEFAULT_LAYOUT: Layout[] = [
   { i: 'calendar', x: 8, y: 9, w: 4, h: 4 },
   { i: 'weather', x: 8, y: 13, w: 2, h: 3 },
   { i: 'quick-stats', x: 10, y: 13, w: 2, h: 3 },
-  { i: 'activity', x: 0, y: 17, w: 12, h: 5 },
+  { i: 'token-usage', x: 8, y: 16, w: 4, h: 3 },
+  { i: 'activity', x: 0, y: 19, w: 12, h: 5 },
 ];
 
 interface DashboardWidgetProps {
@@ -747,6 +750,23 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 onRemove={() => handleRemoveWidget('quick-stats')}
               >
                 <QuickStatsWidget />
+              </DashboardWidget>
+            </div>
+          )}
+
+          {/* TOKEN USAGE WIDGET */}
+          {!hiddenWidgets.has('token-usage') && (
+            <div key="token-usage">
+              <DashboardWidget
+                id="token-usage"
+                title="Token Usage"
+                icon={Zap}
+                editMode={editMode}
+                minimized={minimizedWidgets.has('token-usage')}
+                onToggleMinimize={() => handleToggleMinimize('token-usage')}
+                onRemove={() => handleRemoveWidget('token-usage')}
+              >
+                <TokenSummaryWidget />
               </DashboardWidget>
             </div>
           )}
