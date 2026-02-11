@@ -290,7 +290,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
       {/* Grid Layout */}
-      <div ref={gridContainerRef} className="px-8 py-8">
+      <div ref={gridContainerRef} className="px-6 py-4">
         <ResponsiveGridLayout
           className="layout"
           layouts={{ lg: layout }}
@@ -298,6 +298,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           breakpoints={{ lg: 1200, md: 996, sm: 768 }}
           cols={{ lg: 12, md: 12, sm: 12 }}
           rowHeight={40}
+          margin={[8, 8]}
           onLayoutChange={handleLayoutChange}
           isDraggable={editMode}
           isResizable={editMode}
