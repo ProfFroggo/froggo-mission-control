@@ -48,35 +48,51 @@ function getAgentRegistry(): Record<string, AgentRegistryEntry> {
 }
 
 // ============== AGENTS LIST FROM GATEWAY ==============
+function getAgentsFromDB(): any[] {
+  try {
+    const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all() as any[];
+    return rows.map((r: any) => ({
+      id: r.id,
+      identityName: r.name || r.id,
+      identityEmoji: '🤖',
+      description: r.role || r.description || '',
+      workspace: `~/clawd-${r.id}`,
+      model: '',
+      isDefault: r.id === 'froggo',
+    }));
+  } catch (e: any) {
+    safeLog.error('[Agents] DB fallback failed:', e.message);
+    return [];
+  }
+}
+
 ipcMain.handle('agents:list', async () => {
   return new Promise((resolve) => {
     exec('openclaw agents list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout, stderr) => {
       if (error) {
-        safeLog.error('[Agents] Failed to list agents:', error.message);
-        resolve({ success: false, agents: [], error: error.message });
+        safeLog.warn('[Agents] CLI failed, falling back to DB:', error.message);
+        const agents = getAgentsFromDB();
+        safeLog.log(`[Agents] Loaded ${agents.length} agents from DB fallback`);
+        resolve({ success: agents.length > 0, agents });
         return;
       }
 
       try {
         // Parse JSON output from CLI
         const rawAgents = JSON.parse(stdout || '[]');
-        const agents = rawAgents.map((a: any) => ({
-          id: a.id,
-          name: a.identityName || a.id,
-          avatar: a.identityEmoji || '🤖',
-          description: a.workspace || '',
-          status: a.isDefault ? 'active' : 'idle',
-          capabilities: [],
-          model: a.model,
-          workspace: a.workspace,
-          isDefault: a.isDefault,
-        }));
+        if (rawAgents.length === 0) {
+          safeLog.warn('[Agents] CLI returned empty, falling back to DB');
+          const agents = getAgentsFromDB();
+          resolve({ success: agents.length > 0, agents });
+          return;
+        }
 
-        safeLog.log(`[Agents] Loaded ${agents.length} agents from gateway`);
-        resolve({ success: true, agents });
+        safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
+        resolve({ success: true, agents: rawAgents });
       } catch (parseError: any) {
-        safeLog.error('[Agents] Failed to parse agent list:', parseError);
-        resolve({ success: false, agents: [], error: parseError.message });
+        safeLog.warn('[Agents] Parse failed, falling back to DB:', (parseError as any).message);
+        const agents = getAgentsFromDB();
+        resolve({ success: agents.length > 0, agents });
       }
     });
   });
@@ -4721,6 +4737,11 @@ try {
 // Expose OpenAI API key to renderer (for Whisper transcription)
 ipcMain.handle('get-openai-key', async () => {
   return openaiApiKey;
+});
+
+ipcMain.handle('ai:analyzeMessages', async (_, ids: string[]) => {
+  safeLog.log('[AI:Analyze] Stub handler called for', ids?.length || 0, 'messages');
+  return { success: false, error: 'Analysis not available' };
 });
 
 ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; description?: string }) => {
