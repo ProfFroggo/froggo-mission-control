@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mail, MessageSquare, Send, Check, X, Edit, RefreshCw, Clock, Sparkles, FileText, Phone, MessageCircle, Gamepad2, AlertTriangle, Star, Archive, ArchiveRestore, CheckSquare, Square, Trash2, MailOpen, MailCheck, TrendingUp } from 'lucide-react';
+import { Mail, MessageSquare, Send, Check, X, Edit, RefreshCw, Clock, Sparkles, FileText, MessageCircle, Gamepad2, AlertTriangle, Star, Archive, ArchiveRestore, CheckSquare, Trash2, MailOpen, TrendingUp } from 'lucide-react';
 import InboxFilter, { FilterCriteria } from './InboxFilter';
-import { PriorityIndicator, PriorityExplanation, PriorityStats, PrioritySettings, usePriorityData } from './PriorityInbox';
+import { PriorityIndicator, PriorityExplanation, usePriorityData } from './PriorityInbox';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -93,7 +93,7 @@ function BulkActionsToolbar({
 
 // Cache configuration
 const CACHE_KEY = 'comms-inbox-cache';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 20 * 1000; // 20 seconds - keep inbox live
 
 interface CacheData {
   timestamp: number;
@@ -263,22 +263,53 @@ function MessageModal({ message, isOpen, onClose, onSendReply, onScheduleReply }
     }
   };
 
-  const generateReply = async () => {
+  const generateReply = async (tone?: 'formal' | 'casual' | 'auto') => {
     if (!message) return;
     setGenerating(true);
     setHasGenerated(true);
-    // TODO: Call actual AI to generate reply
-    await new Promise(resolve => setTimeout(resolve, 800));
-    // Generate contextual reply based on message content
-    const greetings = ['Hi', 'Hey', 'Hello'];
-    const greeting = greetings[Math.floor(Math.random() * greetings.length)];
-    const responses = [
-      `${greeting} ${(message.name || message.from || 'there').split(' ')[0]}! Thanks for your message. I'll get back to you on this shortly.`,
-      `${greeting}! Got your message about "${message.preview.slice(0, 30)}...". Let me look into it and follow up.`,
-      `Thanks for reaching out! I've noted this and will respond properly soon.`,
-    ];
-    setReply(responses[Math.floor(Math.random() * responses.length)]);
-    setGenerating(false);
+
+    try {
+      // Build thread context from loaded context messages + current message
+      const threadMessages: Array<{role: string, content: string}> = [];
+      
+      if (contextMessages.length > 0) {
+        for (const ctx of contextMessages) {
+          threadMessages.push({
+            role: ctx.sender || 'them',
+            content: ctx.text || '',
+          });
+        }
+      }
+      
+      // Add the current message
+      threadMessages.push({
+        role: message.name || message.from || 'them',
+        content: emailBody || message.preview || '',
+      });
+
+      // Call AI to generate reply
+      const result = await (window as any).clawdbot?.ai?.generateReply({
+        threadMessages,
+        platform: message.platform,
+        recipientName: message.name || message.from,
+        tone: tone || 'auto',
+      });
+
+      if (result?.success && result.draft) {
+        setReply(result.draft);
+      } else {
+        // Fallback to simple template on error
+        console.warn('[CommsInbox] AI reply failed:', result?.error);
+        const name = (message.name || message.from || 'there').split(' ')[0];
+        setReply(`Hi ${name}, thanks for your message. Let me get back to you on this shortly.`);
+      }
+    } catch (e) {
+      console.error('[CommsInbox] AI reply generation error:', e);
+      const name = (message.name || message.from || 'there').split(' ')[0];
+      setReply(`Hi ${name}, thanks for your message. Let me get back to you on this shortly.`);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (!isOpen || !message) return null;
@@ -467,7 +498,7 @@ function MessageCard({
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={handleCheckboxClick}
+              onChange={() => onToggleSelect?.(message.id)}
               onClick={handleCheckboxClick}
               className="flex-shrink-0 w-4 h-4 rounded border-clawd-border bg-clawd-bg checked:bg-clawd-accent cursor-pointer"
             />
@@ -668,10 +699,15 @@ export default function CommsInbox() {
 
   // Apply messages to state (shared between cache and fresh load)
   const applyMessages = useCallback((msgs: Message[]) => {
-    setAllMessages(msgs);
+    // Recalculate relativeTime from timestamps (cached values go stale)
+    const refreshed = msgs.map(m => ({
+      ...m,
+      relativeTime: m.timestamp ? formatRelativeTime(new Date(m.timestamp).getTime()) : m.relativeTime,
+    }));
+    setAllMessages(refreshed);
     
     // Apply current filters
-    let filtered = applyFilters(msgs, filterCriteria);
+    let filtered = applyFilters(refreshed, filterCriteria);
     
     // Sort by priority if enabled
     if (sortByPriority) {
@@ -781,8 +817,8 @@ export default function CommsInbox() {
       setFromCache(true);
       setLoading(false);
       
-      // Background refresh if local cache is older than 1 minute
-      if (Date.now() - localCache.timestamp > 60 * 1000) {
+      // Background refresh if local cache is older than 15 seconds
+      if (Date.now() - localCache.timestamp > 15 * 1000) {
         setRefreshing(true);
         const { messages, fromCache: backendCache } = await fetchMessages();
         if (messages && isMounted.current) {
@@ -827,6 +863,25 @@ export default function CommsInbox() {
   const handleRefresh = useCallback(() => {
     loadMessages(true);
   }, [loadMessages]);
+
+  // Check for historical data on first mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const historyCheck = await (window as any).clawdbot?.inbox?.checkHistory?.();
+        if (historyCheck?.needsBackfill) {
+          console.log('[CommsInbox] First launch detected - triggering historical backfill...');
+          await (window as any).clawdbot?.inbox?.triggerBackfill?.(60);
+          // Show a notification that backfill is running
+          console.log('[CommsInbox] Historical backfill started in background');
+        } else {
+          console.log('[CommsInbox] Historical data already loaded:', historyCheck);
+        }
+      } catch (e) {
+        console.error('[CommsInbox] Failed to check historical data:', e);
+      }
+    })();
+  }, []); // Run only once on mount
 
   useEffect(() => {
     isMounted.current = true;

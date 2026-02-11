@@ -20,6 +20,7 @@ interface ExtractedSkillData {
   name?: string;
   category?: string;
   description?: string;
+  reason?: string;
   instructions?: string;
   skillType?: 'code' | 'research' | 'content' | 'general';
 }
@@ -201,7 +202,7 @@ Return ONLY a JSON array of suggestions:
 \`\`\``;
 
       const response = await gateway.sendChat(prompt);
-      const suggestions = extractSuggestionsFromResponse(response);
+      const suggestions = extractSuggestionsFromResponse(response.content);
       setSuggestions(suggestions);
     } catch (error) {
       console.error('Failed to load suggestions:', error);
@@ -379,7 +380,7 @@ Format as markdown with proper headings.`;
       setName(suggestion.name);
       setCategory(suggestion.category);
       setDescription(suggestion.reason);
-      setInstructions(response);
+      setInstructions(response.content);
       setMode('manual'); // Switch to manual to review/edit
     } catch (error) {
       console.error('Failed to generate instructions:', error);

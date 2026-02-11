@@ -54,7 +54,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
   const loadCurrentSnooze = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot.snooze.get(sessionKey);
+      const result = await window.clawdbot!.snooze.get(sessionKey);
       if (result.success && result.snooze) {
         setCurrentSnooze(result.snooze);
         setReason(result.snooze.snooze_reason || '');
@@ -104,7 +104,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       setSubmitting(true);
       setError('');
 
-      const result = await window.clawdbot.snooze.set(sessionKey, snoozeUntil, reason || undefined);
+      const result = await window.clawdbot!.snooze.set(sessionKey, String(snoozeUntil), reason || undefined);
       
       if (result.success) {
         console.log('[SnoozeModal] Snooze set successfully');
@@ -125,7 +125,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       setSubmitting(true);
       setError('');
 
-      const result = await window.clawdbot.snooze.unset(sessionKey);
+      const result = await window.clawdbot!.snooze.unset(sessionKey);
       
       if (result.success) {
         console.log('[SnoozeModal] Unsnooze successful');

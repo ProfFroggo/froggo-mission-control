@@ -1,220 +1,243 @@
 /**
- * design-tokens.css
+ * FROGGO DASHBOARD DESIGN TOKENS
  * 
- * Standardized design tokens for Froggo Dashboard
- * Version: 1.0.0
- * Last Updated: 2026-01-29
+ * Centralized design system tokens for consistent UI
+ * Created: 2025-01-28
+ * Task: task-1769688719100
  * 
- * This file defines all CSS variables used throughout the application.
- * Import this file in index.css to make tokens available globally.
+ * Usage: Import this file in index.css
+ * Documentation: ~/clawd/docs/design-system/DESIGN_TOKENS.md
  */
 
 :root {
   /* ============================================
-     THEME COLORS - Adapt to light/dark mode
+     SPACING TOKENS
      ============================================ */
   
-  /* Dark theme (default) */
-  --clawd-bg: #0a0a0a;           /* Main background */
-  --clawd-surface: #141414;      /* Cards, panels, elevated surfaces */
-  --clawd-border: #262626;       /* Borders, dividers */
-  --clawd-text: #fafafa;         /* Primary text */
-  --clawd-text-dim: #a1a1aa;     /* Secondary text, muted content */
-  --clawd-accent: #22c55e;       /* Primary accent color (green) */
-  --clawd-accent-dim: #16a34a;   /* Darker accent for hover states */
+  /* Inline spacing - for icon+text, tight inline elements */
+  --space-inline-tight: 0.375rem;    /* 6px - gap-1.5 */
+  --space-inline: 0.5rem;            /* 8px - gap-2 (DEFAULT) */
+  
+  /* Stack spacing - for vertical lists, form fields */
+  --space-stack-tight: 0.5rem;       /* 8px - gap-2 */
+  --space-stack: 0.75rem;            /* 12px - gap-3 (DEFAULT) */
+  --space-stack-relaxed: 1rem;       /* 16px - gap-4 */
+  
+  /* Component internal padding - for cards, panels, containers */
+  --space-component-sm: 0.75rem;     /* 12px - p-3 (compact) */
+  --space-component: 1rem;           /* 16px - p-4 (DEFAULT) */
+  --space-component-lg: 1.5rem;      /* 24px - p-6 (spacious) */
+  
+  /* Section spacing - between major layout sections */
+  --space-section: 1.5rem;           /* 24px - gap-6 */
+  --space-section-lg: 2rem;          /* 32px - gap-8 */
   
   /* ============================================
-     TYPOGRAPHY
+     TYPOGRAPHY TOKENS
      ============================================ */
   
-  --clawd-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --clawd-font-mono: 'JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
-  --clawd-font-size: 14px;       /* Base font size */
-  --clawd-line-height: 1.5;      /* Base line height */
+  /* Font sizes */
+  --text-display: 1.875rem;          /* 30px - text-3xl */
+  --text-heading-lg: 1.5rem;         /* 24px - text-2xl */
+  --text-heading: 1.25rem;           /* 20px - text-xl */
+  --text-subheading: 1.125rem;       /* 18px - text-lg */
+  --text-body: 1rem;                 /* 16px - text-base (DEFAULT) */
+  --text-small: 0.875rem;            /* 14px - text-sm */
+  --text-caption: 0.75rem;           /* 12px - text-xs */
   
-  /* Font sizes - use Tailwind text-* classes in components */
-  --text-xs: 12px;               /* Labels, badges, timestamps */
-  --text-sm: 14px;               /* Body text (default) */
-  --text-base: 16px;             /* Emphasized body text */
-  --text-lg: 18px;               /* Subheadings */
-  --text-xl: 20px;               /* Section headings */
-  --text-2xl: 24px;              /* Page headings */
-  --text-3xl: 30px;              /* Hero text */
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  
+  /* Font weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Letter spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
   
   /* ============================================
-     SPACING SCALE (4px base unit)
+     COLOR TOKENS - THEME BASE
      ============================================ */
   
-  --space-1: 4px;                /* gap-1, p-1, m-1 */
-  --space-2: 8px;                /* gap-2, p-2, m-2 (most common) */
-  --space-3: 12px;               /* gap-3, p-3, m-3 */
-  --space-4: 16px;               /* gap-4, p-4, m-4 */
-  --space-6: 24px;               /* gap-6, p-6, m-6 */
-  --space-8: 32px;               /* gap-8, p-8, m-8 */
+  /* Surface colors */
+  --clawd-bg: #0a0a0a;               /* Page background */
+  --clawd-surface: #141414;          /* Cards, panels, elevated surfaces */
+  --clawd-border: #262626;           /* Borders, dividers */
+  
+  /* Text colors */
+  --clawd-text: #fafafa;             /* Primary text */
+  --clawd-text-dim: #a1a1aa;         /* Secondary text, muted content */
+  
+  /* Accent colors */
+  --clawd-accent: #22c55e;           /* Primary action color (green) */
+  --clawd-accent-dim: #16a34a;       /* Accent hover/active state */
   
   /* ============================================
-     ICON SIZES
+     COLOR TOKENS - INTERACTIVE STATES
      ============================================ */
   
-  --icon-xs: 12px;               /* Priority badges, status dots */
-  --icon-sm: 14px;               /* Small buttons, compact lists */
-  --icon-md: 16px;               /* DEFAULT - standard buttons, cards */
-  --icon-lg: 18px;               /* Headings, emphasis */
-  --icon-xl: 20px;               /* Section headers, modal titles */
-  --icon-2xl: 24px;              /* Large headers, important actions */
-  --icon-3xl: 32px;              /* Hero sections, loading states */
-  --icon-4xl: 48px;              /* Empty states, splash screens */
+  /* Hover states */
+  --color-hover: color-mix(in srgb, var(--clawd-surface) 90%, var(--clawd-text));
+  --color-hover-accent: color-mix(in srgb, var(--clawd-accent) 90%, transparent);
+  
+  /* Active states */
+  --color-active: color-mix(in srgb, var(--clawd-surface) 80%, var(--clawd-text));
+  
+  /* Disabled states */
+  --color-disabled: color-mix(in srgb, var(--clawd-surface) 50%, transparent);
+  --color-disabled-text: color-mix(in srgb, var(--clawd-text-dim) 50%, transparent);
+  
+  /* Focus ring */
+  --color-focus-ring: var(--clawd-accent);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
   
   /* ============================================
-     BORDER RADIUS
-     ============================================ */
-  
-  --radius-sm: 4px;              /* Subtle rounding */
-  --radius-md: 6px;              /* Medium rounding */
-  --radius-lg: 8px;              /* Default rounding (buttons, inputs, cards) */
-  --radius-xl: 12px;             /* Large cards, panels */
-  --radius-2xl: 16px;            /* Hero cards, modals */
-  --radius-3xl: 24px;            /* Extra large cards */
-  --radius-full: 9999px;         /* Badges, avatars, pills */
-  
-  /* ============================================
-     STATUS COLORS (theme-independent)
+     COLOR TOKENS - SEMANTIC
      ============================================ */
   
   /* Success */
   --color-success: #22c55e;
   --color-success-bg: rgba(34, 197, 94, 0.1);
   --color-success-border: rgba(34, 197, 94, 0.3);
+  --color-success-hover: #16a34a;
   
   /* Error */
   --color-error: #ef4444;
   --color-error-bg: rgba(239, 68, 68, 0.1);
   --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-hover: #dc2626;
   
   /* Warning */
   --color-warning: #f59e0b;
   --color-warning-bg: rgba(245, 158, 11, 0.1);
   --color-warning-border: rgba(245, 158, 11, 0.3);
+  --color-warning-hover: #d97706;
   
   /* Info */
   --color-info: #3b82f6;
   --color-info-bg: rgba(59, 130, 246, 0.1);
   --color-info-border: rgba(59, 130, 246, 0.3);
+  --color-info-hover: #2563eb;
+  --color-info-text: #3b82f6;
+  
+  /* Review (purple) */
+  --color-review: #a855f7;
+  --color-review-bg: rgba(168, 85, 247, 0.1);
+  --color-review-border: rgba(168, 85, 247, 0.3);
+  --color-review-hover: #9333ea;
+  --color-review-text: #a855f7;
+  
+  /* Muted / Neutral */
+  --color-muted: #6b7280;
+  --color-muted-bg: rgba(107, 114, 128, 0.1);
+  --color-muted-border: rgba(107, 114, 128, 0.3);
+  --color-muted-text: #9ca3af;
+  
+  /* Danger (orange, destructive actions) */
+  --color-danger: #f97316;
+  --color-danger-hover: #ea580c;
   
   /* ============================================
-     CHANNEL BRAND COLORS (fixed for identity)
+     COLOR TOKENS - CHANNEL BRANDS
      ============================================ */
   
   /* Discord */
   --channel-discord: #5865F2;
   --channel-discord-bg: rgba(88, 101, 242, 0.2);
-  --channel-discord-border: rgba(88, 101, 242, 0.3);
   
   /* Telegram */
   --channel-telegram: #229ED9;
   --channel-telegram-bg: rgba(34, 158, 217, 0.2);
-  --channel-telegram-border: rgba(34, 158, 217, 0.3);
   
   /* WhatsApp */
   --channel-whatsapp: #25D366;
   --channel-whatsapp-bg: rgba(37, 211, 102, 0.2);
-  --channel-whatsapp-border: rgba(37, 211, 102, 0.3);
   
   /* Webchat */
   --channel-webchat: #a855f7;
   --channel-webchat-bg: rgba(168, 85, 247, 0.2);
-  --channel-webchat-border: rgba(168, 85, 247, 0.3);
   
   /* ============================================
-     PRIORITY COLORS
+     BORDER RADIUS TOKENS
      ============================================ */
   
-  /* P0 - Urgent */
-  --priority-p0: #ef4444;        /* red-400 */
-  --priority-p0-bg: rgba(239, 68, 68, 0.2);
-  --priority-p0-border: rgba(239, 68, 68, 0.3);
-  
-  /* P1 - High */
-  --priority-p1: #fb923c;        /* orange-400 */
-  --priority-p1-bg: rgba(251, 146, 60, 0.2);
-  --priority-p1-border: rgba(251, 146, 60, 0.3);
-  
-  /* P2 - Medium */
-  --priority-p2: #facc15;        /* yellow-400 */
-  --priority-p2-bg: rgba(250, 204, 21, 0.2);
-  --priority-p2-border: rgba(250, 204, 21, 0.3);
-  
-  /* P3 - Low */
-  --priority-p3: #9ca3af;        /* gray-400 */
-  --priority-p3-bg: rgba(156, 163, 175, 0.2);
-  --priority-p3-border: rgba(156, 163, 175, 0.3);
+  --radius-sm: 0.5rem;               /* 8px - rounded-lg (buttons, inputs, small cards) */
+  --radius: 0.75rem;                 /* 12px - rounded-xl (standard cards, modals) */
+  --radius-lg: 1rem;                 /* 16px - rounded-2xl (large panels, hero cards) */
+  --radius-full: 9999px;             /* rounded-full (pills, circular badges) */
   
   /* ============================================
-     KANBAN COLUMN COLORS
+     SHADOW TOKENS (ELEVATION)
      ============================================ */
   
-  --kanban-backlog: #6b7280;      /* gray-500 */
-  --kanban-backlog-bg: rgba(107, 114, 128, 0.1);
-  
-  --kanban-todo: #3b82f6;         /* blue-500 */
-  --kanban-todo-bg: rgba(59, 130, 246, 0.1);
-  
-  --kanban-in-progress: #eab308;  /* yellow-500 */
-  --kanban-in-progress-bg: rgba(234, 179, 8, 0.1);
-  
-  --kanban-review: #a855f7;       /* purple-500 */
-  --kanban-review-bg: rgba(168, 85, 247, 0.1);
-  
-  --kanban-human-review: #f97316; /* orange-500 */
-  --kanban-human-review-bg: rgba(249, 115, 22, 0.1);
-  
-  --kanban-done: #22c55e;         /* green-500 */
-  --kanban-done-bg: rgba(34, 197, 94, 0.1);
-  
-  --kanban-failed: #ef4444;       /* red-500 */
-  --kanban-failed-bg: rgba(239, 68, 68, 0.1);
-  
-  /* ============================================
-     SHADOWS
-     ============================================ */
-  
-  /* Card shadows */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-card-lg: 0 4px 16px rgba(0, 0, 0, 0.35);
-  
-  /* Glow effects */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(34, 197, 94, 0.3);
   --shadow-glow-lg: 0 0 40px rgba(34, 197, 94, 0.4);
   
-  /* Modal shadows */
-  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  --shadow-modal-light: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  
   /* ============================================
-     ANIMATION TIMINGS
+     COMPONENT SIZE TOKENS
      ============================================ */
   
-  --duration-fast: 150ms;        /* Fast interactions (buttons, hovers) */
-  --duration-normal: 200ms;      /* Standard animations (dropdowns, tooltips) */
-  --duration-slow: 300ms;        /* Smooth animations (panels, modals) */
+  /* Icon sizes */
+  --icon-xs: 0.75rem;                /* 12px */
+  --icon-sm: 1rem;                   /* 16px */
+  --icon-md: 1.25rem;                /* 20px */
+  --icon-lg: 1.5rem;                 /* 24px */
+  --icon-xl: 2rem;                   /* 32px */
   
-  --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Button/Input heights (consistent across form elements) */
+  --control-height-sm: 2rem;         /* 32px */
+  --control-height: 2.5rem;          /* 40px */
+  --control-height-lg: 3rem;         /* 48px */
+  
+  /* Avatar sizes */
+  --avatar-sm: 1.5rem;               /* 24px */
+  --avatar: 2rem;                    /* 32px */
+  --avatar-lg: 3rem;                 /* 48px */
+  --avatar-xl: 4rem;                 /* 64px */
+  
+  /* Badge sizes (height) */
+  --badge-sm: 1.25rem;               /* 20px */
+  --badge: 1.5rem;                   /* 24px */
+  --badge-lg: 2rem;                  /* 32px */
   
   /* ============================================
-     Z-INDEX LAYERS
+     TRANSITION TOKENS
+     ============================================ */
+  
+  /* Durations */
+  --duration-fast: 150ms;            /* Hover, focus, clicks */
+  --duration-normal: 200ms;          /* Modals, slides, cards */
+  --duration-slow: 300ms;            /* Large movements, page transitions */
+  
+  /* Easing functions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ============================================
+     Z-INDEX SCALE
      ============================================ */
   
   --z-base: 0;
   --z-dropdown: 1000;
   --z-sticky: 1100;
-  --z-modal-backdrop: 1200;
+  --z-overlay: 1200;
   --z-modal: 1300;
-  --z-toast: 1400;
-  --z-tooltip: 1500;
+  --z-popover: 1400;
+  --z-toast: 1500;
+  --z-tooltip: 1600;
 }
 
 /* ============================================
@@ -222,159 +245,109 @@
    ============================================ */
 
 :root.light {
+  /* Surface colors */
   --clawd-bg: #fafafa;
   --clawd-surface: #ffffff;
   --clawd-border: #e4e4e7;
+  
+  /* Text colors */
   --clawd-text: #18181b;
-  --clawd-text-dim: #52525b;     /* Improved contrast: 7.8:1 (was 5.9:1) */
+  --clawd-text-dim: #52525b;
   
-  /* Light theme shadows */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
-  --shadow-card-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-/* ============================================
-   UTILITY COLOR MIXINS (for dynamic colors)
-   ============================================ */
-
-/* Background variations */
-.bg-subtle {
-  background: color-mix(in srgb, var(--clawd-surface) 50%, var(--clawd-bg));
-}
-
-.bg-hover {
-  background: color-mix(in srgb, var(--clawd-surface) 90%, var(--clawd-text));
-}
-
-/* Accent variations */
-.accent-bg-subtle {
-  background: color-mix(in srgb, var(--clawd-accent) 10%, transparent);
-}
-
-.accent-bg {
-  background: color-mix(in srgb, var(--clawd-accent) 20%, transparent);
-}
-
-/* Border variations */
-.border-subtle {
-  border-color: color-mix(in srgb, var(--clawd-border) 50%, transparent);
-}
-
-/* ============================================
-   ACCESSIBILITY UTILITIES
-   ============================================ */
-
-/* Skip link for keyboard navigation */
-.skip-link {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: var(--clawd-accent);
-  color: white;
-  padding: 8px 16px;
-  text-decoration: none;
-  border-radius: 0 0 4px 0;
-  z-index: var(--z-tooltip);
-}
-
-.skip-link:focus {
-  top: 0;
-}
-
-/* Screen reader only */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-/* Focus visible styles */
-.focus-visible {
-  outline: 2px solid var(--clawd-accent);
-  outline-offset: 2px;
-}
-
-/* ============================================
-   PRINT STYLES
-   ============================================ */
-
-@media print {
-  :root {
-    --clawd-bg: #ffffff;
-    --clawd-surface: #ffffff;
-    --clawd-border: #000000;
-    --clawd-text: #000000;
-    --clawd-text-dim: #666666;
-  }
+  /* Interactive states (light theme specific) */
+  --color-hover: color-mix(in srgb, var(--clawd-bg) 90%, var(--clawd-text));
+  --color-active: color-mix(in srgb, var(--clawd-bg) 80%, var(--clawd-text));
   
-  /* Hide interactive elements */
-  button,
-  .no-print {
-    display: none !important;
-  }
-  
-  /* Ensure text is readable */
-  * {
-    background: transparent !important;
-    box-shadow: none !important;
-  }
+  /* Shadows (lighter in light theme) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.25);
 }
 
 /* ============================================
-   REDUCED MOTION
+   SEMANTIC UTILITY CLASSES
    ============================================ */
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+/* Typography Hierarchy */
+.text-display {
+  font-size: var(--text-display);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
 }
 
-/* ============================================
-   HIGH CONTRAST MODE
-   ============================================ */
-
-@media (prefers-contrast: high) {
-  :root {
-    --clawd-border: #ffffff;
-    --clawd-text: #ffffff;
-  }
-  
-  :root.light {
-    --clawd-border: #000000;
-    --clawd-text: #000000;
-  }
-  
-  /* Increase border widths */
-  * {
-    border-width: 2px !important;
-  }
+.text-heading-1 {
+  font-size: var(--text-heading-lg);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
 }
 
-/* ============================================
-   DARK MODE PREFERENCE
-   ============================================ */
-
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    color-scheme: dark;
-  }
+.text-heading-2 {
+  font-size: var(--text-heading);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-tight);
 }
 
-@media (prefers-color-scheme: light) {
-  :root.light {
-    color-scheme: light;
-  }
+.text-heading-3 {
+  font-size: var(--text-subheading);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-normal);
+}
+
+.text-body {
+  font-size: var(--text-body);
+  font-weight: var(--font-normal);
+  line-height: var(--leading-normal);
+}
+
+.text-secondary {
+  font-size: var(--text-small);
+  color: var(--clawd-text-dim);
+  line-height: var(--leading-normal);
+}
+
+.text-caption {
+  font-size: var(--text-caption);
+  color: var(--clawd-text-dim);
+  line-height: var(--leading-normal);
+}
+
+/* Status Colors */
+.text-success { color: var(--color-success); }
+.text-error { color: var(--color-error); }
+.text-warning { color: var(--color-warning); }
+.text-info { color: var(--color-info); }
+
+.bg-success { background: var(--color-success-bg); }
+.bg-error { background: var(--color-error-bg); }
+.bg-warning { background: var(--color-warning-bg); }
+.bg-info { background: var(--color-info-bg); }
+
+.border-success { border-color: var(--color-success-border); }
+.border-error { border-color: var(--color-error-border); }
+.border-warning { border-color: var(--color-warning-border); }
+.border-info { border-color: var(--color-info-border); }
+
+/* Focus Styles */
+.focus-ring:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Transitions */
+.transition-fast {
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+.transition-normal {
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--ease-out);
+}
+
+.transition-slow {
+  transition-duration: var(--duration-slow);
+  transition-timing-function: var(--ease-in-out);
 }

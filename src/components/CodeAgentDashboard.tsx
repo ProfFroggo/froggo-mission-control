@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Code, GitCommit, GitBranch, Terminal, Zap, Clock, DollarSign, RefreshCw, Play, Pause, ChevronRight, FileCode, CheckCircle, XCircle, Loader2, Timer, Bug } from 'lucide-react';
-import { showToast } from './Toast';
+import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle } from 'lucide-react';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
 
@@ -39,12 +38,17 @@ export default function CodeAgentDashboard() {
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [tasks, setTasks] = useState<DevTask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [totalCost, setTotalCost] = useState(0);
+  const [_totalCost, _setTotalCost] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // Safety check - bail if clawdbot APIs not available
+      if (!(window as any).clawdbot) {
+        console.warn('[CodeAgentDashboard] Clawdbot APIs not available yet');
+        return;
+      }
       // Load recent git commits
       const gitResult = await (window as any).clawdbot?.exec?.run(
         'git log --oneline -20 --pretty=format:"%h|%s|%an|%at" 2>/dev/null || echo ""'
@@ -134,12 +138,12 @@ export default function CodeAgentDashboard() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const formatDuration = (ms: number) => {
-    const hours = Math.floor(ms / 3600000);
-    const minutes = Math.floor((ms % 3600000) / 60000);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  };
+  // const formatDuration = (ms: number) => {
+  //   const hours = Math.floor(ms / 3600000);
+  //   const minutes = Math.floor((ms % 3600000) / 60000);
+  //   if (hours > 0) return `${hours}h ${minutes}m`;
+  //   return `${minutes}m`;
+  // };
 
   const formatTimeAgo = (timestamp: number) => {
     const diff = Date.now() - timestamp;
@@ -150,14 +154,14 @@ export default function CodeAgentDashboard() {
   };
 
   const statusColors = {
-    running: 'bg-green-500',
-    idle: 'bg-yellow-500',
-    completed: 'bg-blue-500',
+    running: 'bg-yellow-500',
+    idle: 'bg-green-500',
+    completed: 'bg-green-500',
     failed: 'bg-red-500',
   };
 
   const taskStatusColors = {
-    pending: 'bg-gray-500',
+    pending: 'bg-clawd-bg0',
     'in-progress': 'bg-yellow-500',
     review: 'bg-purple-500',
     done: 'bg-green-500',

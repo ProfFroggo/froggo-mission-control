@@ -1,59 +1,47 @@
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { initApprovalQueue } from './lib/approvalQueue';
-// PERFORMANCE: voiceService no longer preloads - loads on-demand when Voice panel opens
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import LoadingPanel from './components/LoadingPanel';
 import PerformanceProfiler from './components/PerformanceProfiler';
+import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
+import { showToast } from './components/Toast';
 // Import protected panels with error boundaries
 import {
   Dashboard,
   Kanban,
   AgentPanel,
   ChatPanel,
-  // VoicePanel, // TEMP DISABLED - missing voiceService
+  MeetingsPanel,
+  VoiceChatPanel,
   SettingsPanel,
   NotificationsPanel,
   XPanel,
   InboxPanel,
-  ThreePaneInbox,
-  CommsInbox,
-  UnifiedCommsInbox,
   CommsInbox3Pane,
   LibraryPanel,
-  CalendarPanel,
   SchedulePanel,
   CodeAgentDashboard,
   ContextControlBoard,
   AnalyticsDashboard,
   ConnectedAccountsPanel,
-  StarredMessagesPanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
-// Ox Lite Dashboard - Ox-specific panels
-import OxDashboard from './components/OxDashboard';
-import OxAnalytics from './components/OxAnalytics';
-import OxGuardrails from './components/OxGuardrails';
-import OxSubAgentPanel from './components/OxSubAgentPanel';
-import OxTaskInbox from './components/OxTaskInbox';
-import OxWorkload from './components/OxWorkload';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
 import MorningBrief from './components/MorningBrief';
-import ContentCalendar from './components/ContentCalendar';
 import QuickActions, { QuickActionsRef } from './components/QuickActions';
 import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
-import ErrorBoundaryTest from './components/ErrorBoundaryTest';
 import HelpPanel from './components/HelpPanel';
+import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
-import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import { DMFeed } from './components/DMFeed';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'voice' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'starred' | 'error-test' | 'ox-dashboard' | 'ox-analytics' | 'ox-guardrails' | 'ox-subagents' | 'ox-tasks' | 'ox-workload';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -77,18 +65,15 @@ function App() {
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(208); // Track sidebar width for TopBar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
-  const { activeTour, completeTour, skipTour, hasCompletedTour } = useTour();
+  const { activeTour, completeTour, skipTour } = useTour();
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
-  const { toggleMuted, setMeetingActive, loadApprovals } = useStore();
+  const { toggleMuted, loadApprovals } = useStore();
 
-  // Initialize approval queue file watcher and load approvals from DB
+  // Load approvals from inbox database
   useEffect(() => {
-    const cleanup = initApprovalQueue();
-    // Load real approvals from inbox database
     loadApprovals();
-    return cleanup;
   }, [loadApprovals]);
 
   // Apply saved theme and accent color on startup
@@ -138,14 +123,60 @@ function App() {
     }
   }, []);
 
-  // Handle call button click - navigate to voice and start meeting
-  const handleCallClick = useCallback(() => {
-    setCurrentView('voice');
+  // Listen for navigate-library event from HRSection
+  useEffect(() => {
+    const handleNavigateLibrary = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setCurrentView('library');
+      // Store the path for LibraryPanel to consume
+      if (customEvent.detail?.path) {
+        sessionStorage.setItem('library-navigate-path', customEvent.detail.path);
+      }
+    };
+    window.addEventListener('navigate-library', handleNavigateLibrary);
+    return () => window.removeEventListener('navigate-library', handleNavigateLibrary);
   }, []);
 
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Theme toggle - ⌘⇧D
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        const newTheme = toggleTheme();
+        const themeName = getThemeDisplayName(newTheme);
+        showToast('success', 'Theme Changed', `Switched to ${themeName}`);
+        return;
+      }
+
+      // Scroll navigation - Option/Alt + Arrow keys
+      if (e.altKey) {
+        const mainContent = document.getElementById('main-content');
+        if (!mainContent) return;
+
+        const scrollAmount = 100; // pixels
+        const pageScrollAmount = mainContent.clientHeight * 0.8; // 80% of viewport
+
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            mainContent.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+            return;
+          case 'ArrowDown':
+            e.preventDefault();
+            mainContent.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+            return;
+          case 'PageUp':
+            e.preventDefault();
+            mainContent.scrollBy({ top: -pageScrollAmount, behavior: 'smooth' });
+            return;
+          case 'PageDown':
+            e.preventDefault();
+            mainContent.scrollBy({ top: pageScrollAmount, behavior: 'smooth' });
+            return;
+        }
+      }
+
       // Global search - ⌘K or ⌘F (primary shortcuts)
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'f')) {
         e.preventDefault();
@@ -202,12 +233,7 @@ function App() {
         return;
       }
 
-      // Starred messages - ⌘⇧S
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        setCurrentView('starred');
-        return;
-      }
+      // Starred messages removed - keyboard shortcut disabled
 
       // Mute toggle - ⌘M
       if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
@@ -245,11 +271,11 @@ function App() {
             break;
           case '7':
             e.preventDefault();
-            setCurrentView('voice');
+            setCurrentView('meetings');
             break;
           case '8':
             e.preventDefault();
-            setCurrentView('chat');
+            setCurrentView('voicechat');
             break;
           case '9':
             e.preventDefault();
@@ -265,25 +291,18 @@ function App() {
             break;
         }
 
-        // Cmd+Shift shortcuts
+        // Cmd+Shift shortcuts (navigation only - theme toggle handled above)
         if (e.shiftKey) {
           switch (e.key.toUpperCase()) {
             case 'C':
               e.preventDefault();
               setCurrentView('context');
               break;
-            case 'D':
-              e.preventDefault();
-              setCurrentView('codeagent');
-              break;
             case 'L':
               e.preventDefault();
               setCurrentView('library');
               break;
-            case 'S':
-              e.preventDefault();
-              setCurrentView('schedule');
-              break;
+            // Note: ⌘⇧D is now theme toggle
           }
         }
       }
@@ -302,31 +321,10 @@ function App() {
     <ErrorBoundary panelName="Application Root">
       {/* Network Status Indicator */}
       <NetworkStatus />
-      
-      {/* Skip Navigation Link for keyboard users */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
-      {/* ARIA live region for announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-        id="aria-announcements"
-      />
 
       <div className="flex h-screen bg-clawd-bg">
-        {/* Top bar with call button */}
-        <ErrorBoundary panelName="Top Bar">
-          <TopBar 
-            onCallClick={handleCallClick} 
-            onNavigate={setCurrentView} 
-            sidebarWidth={sidebarWidth}
-          />
-        </ErrorBoundary>
-        
+        {/* TopBar removed */}
+
         {/* Sidebar */}
         <ErrorBoundary panelName="Sidebar">
           <Sidebar 
@@ -340,7 +338,7 @@ function App() {
         {/* Main content - each panel already wrapped via ProtectedPanels */}
         <main 
           id="main-content"
-          className="flex-1 overflow-hidden pt-12"
+          className="flex-1 overflow-hidden relative z-0"
           role="main"
           aria-label={`${currentView.charAt(0).toUpperCase() + currentView.slice(1)} panel`}
         >
@@ -350,7 +348,9 @@ function App() {
               {currentView === 'kanban' && <Kanban />}
               {currentView === 'agents' && <AgentPanel />}
               {currentView === 'chat' && <ChatPanel />}
-              {/* {currentView === 'voice' && <VoicePanel />} */} {/* TEMP DISABLED - missing voiceService */}
+              {currentView === 'agentdms' && <DMFeed />}
+              {currentView === 'meetings' && <MeetingsPanel />}
+              {currentView === 'voicechat' && <VoiceChatPanel />}
               {currentView === 'settings' && <SettingsPanel />}
               {currentView === 'notifications' && <NotificationsPanel />}
               {currentView === 'twitter' && <XPanel />}
@@ -363,15 +363,7 @@ function App() {
               {currentView === 'context' && <ContextControlBoard />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
-              {currentView === 'starred' && <StarredMessagesPanel />}
-              {currentView === 'error-test' && import.meta.env.DEV && <ErrorBoundaryTest />}
-              {/* Ox Lite Dashboard Panels */}
-              {currentView === 'ox-dashboard' && <OxDashboard />}
-              {currentView === 'ox-analytics' && <OxAnalytics />}
-              {currentView === 'ox-guardrails' && <OxGuardrails />}
-              {currentView === 'ox-subagents' && <OxSubAgentPanel />}
-              {currentView === 'ox-tasks' && <OxTaskInbox />}
-              {currentView === 'ox-workload' && <OxWorkload />}
+              {currentView === 'contacts' && <ContactModal isOpen={true} onClose={() => setCurrentView('dashboard')} />}
             </Suspense>
           </PerformanceProfiler>
         </main>
@@ -384,6 +376,9 @@ function App() {
             onNavigate={(view) => setCurrentView(view as View)}
           />
         </ErrorBoundary>
+
+        {/* Edit Panels Modal */}
+        <EditPanelsModal />
 
         {/* Toast notifications */}
         <ErrorBoundary panelName="Toast System">
@@ -447,6 +442,8 @@ function App() {
             onNewTask={() => setCurrentView('kanban')}
             onAddContact={() => setContactModalOpen(true)}
             onAddSkill={() => setSkillModalOpen(true)}
+            onNavigate={(view) => setCurrentView(view as any)}
+            currentView={currentView}
             onApproveAll={async () => {
               try {
                 const result = await (window as any).clawdbot?.inbox?.approveAll();

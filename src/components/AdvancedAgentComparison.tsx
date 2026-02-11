@@ -5,7 +5,6 @@ import {
   Clock,
   Target,
   Award,
-  X,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
@@ -47,9 +46,9 @@ export default function AdvancedAgentComparison({
   isOpen,
   onClose,
 }: AdvancedAgentComparisonProps) {
-  const [agents, setAgents] = useState<AgentUtilization[]>([]);
+  const [_agents, setAgents] = useState<AgentUtilization[]>([]);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<AgentMetrics[]>([]);
 
   useEffect(() => {
@@ -162,7 +161,7 @@ export default function AdvancedAgentComparison({
   const getTrendIcon = (value: number, threshold: number) => {
     if (value > threshold) return <ArrowUpRight size={16} className="text-green-400" />;
     if (value < threshold) return <ArrowDownRight size={16} className="text-red-400" />;
-    return <Minus size={16} className="text-gray-400" />;
+    return <Minus size={16} className="text-clawd-text-dim" />;
   };
 
   return (

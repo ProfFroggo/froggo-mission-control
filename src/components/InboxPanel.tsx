@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, Trash2, CheckCircle, RefreshCw, Plus, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, Sparkles } from 'lucide-react';
+import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 import { SkeletonInbox } from './Skeleton';
 import EmptyState from './EmptyState';
 import { LoadingButton } from './LoadingStates';
-import { calculatePriorityScore, getPriorityLevel, groupByPriority } from '../lib/priorityScoring';
+import { calculatePriorityScore, getPriorityLevel } from '../lib/priorityScoring';
 import AIAssistancePanel from './AIAssistancePanel';
+import IconBadge from './IconBadge';
+import MarkdownMessage from './MarkdownMessage';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -59,7 +61,7 @@ const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string
   email: { icon: Mail, color: 'text-green-400 bg-green-500/20', label: 'Email' },
   message: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/20', label: 'Message' },
   task: { icon: Bot, color: 'text-yellow-400 bg-yellow-500/20', label: 'Task' },
-  action: { icon: Calendar, color: 'text-orange-400 bg-orange-500/20', label: 'Action' },
+  action: { icon: Play, color: 'text-green-400 bg-green-500/20', label: 'Action' },
 };
 
 // Helper component for shortcut rows
@@ -72,14 +74,16 @@ function ShortcutRow({ keys, description }: { keys: string[]; description: strin
             <kbd className="px-2 py-1 bg-clawd-border rounded text-xs font-mono">
               {key}
             </kbd>
-            {i < keys.length - 1 && <span className="mx-1 text-zinc-500">then</span>}
+            {i < keys.length - 1 && <span className="mx-1 text-clawd-text-dim">then</span>}
           </span>
         ))}
       </div>
-      <span className="text-zinc-400 text-xs ml-3">{description}</span>
+      <span className="text-clawd-text-dim text-xs ml-3">{description}</span>
     </div>
   );
 }
+
+type TabType = 'all' | 'approvals' | 'reviews';
 
 export default function InboxPanel() {
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -88,23 +92,25 @@ export default function InboxPanel() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [feedbackId, setFeedbackId] = useState<number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   const [filter, setFilter] = useState<ApprovalType | 'all'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
   const [rejectDialogItem, setRejectDialogItem] = useState<InboxItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const rejectInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const recentlyRejectedTaskIds = useRef<Set<string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   
   // Sorting state
   type SortMode = 'priority' | 'time' | 'type';
-  const [sortMode, setSortMode] = useState<SortMode>('priority');
+  const [sortMode, setSortMode] = useState<SortMode>('time');
   const [sortAscending, setSortAscending] = useState(false);
   
   // View mode state (list or priority lanes)
   type ViewMode = 'list' | 'lanes';
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [collapsedLanes, setCollapsedLanes] = useState<Set<string>>(new Set());
+  const [_collapsedLanes, _setCollapsedLanes] = useState<Set<string>>(new Set());
   
   // Keyboard shortcuts state
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
@@ -137,26 +143,30 @@ export default function InboxPanel() {
       }
       
       // Load inbox items
-      const result = await window.clawdbot!.inbox.list();
+      const result = await window.clawdbot?.inbox.list();
       let allItems = result.success ? (result.items || []) : [];
       
-      // Also load tasks in "review" status
+      // Also load tasks in "review" status that haven't been reviewed yet
       try {
-        const tasksResult = await window.clawdbot!.tasks.list('review');
+        const tasksResult = await window.clawdbot?.tasks.list('review');
         if (tasksResult?.success && tasksResult.tasks?.length > 0) {
           // Convert tasks to inbox item format
-          const taskItems = tasksResult.tasks.map((t: any) => ({
-            id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
-            type: 'task' as const,
-            title: `✅ Review: ${t.title}`,
-            content: t.description || t.last_agent_update || 'Task completed, ready for review',
-            context: `Project: ${t.project || 'General'}`,
-            status: 'pending',
-            source_channel: 'kanban',
-            created: new Date(t.created_at || Date.now()).toISOString(),
-            metadata: JSON.stringify({ taskId: t.id, project: t.project }),
-            isTask: true, // Flag to handle differently
-          }));
+          // ONLY show tasks with reviewStatus='pending' (not yet reviewed)
+          const taskItems = tasksResult.tasks
+            .filter((t: any) => !recentlyRejectedTaskIds.current.has(t.id))
+            .filter((t: any) => t.reviewStatus === 'pending') // FIX: Only show pending reviews
+            .map((t: any) => ({
+              id: `task-review-${t.id}`, // Prefix to distinguish from inbox items
+              type: 'task' as const,
+              title: `✅ Review: ${t.title}`,
+              content: t.description || t.last_agent_update || 'Task completed, ready for review',
+              context: `Project: ${t.project || 'General'}`,
+              status: 'pending', // Review inbox item status (not task status)
+              source_channel: 'kanban',
+              created: new Date(t.created_at || Date.now()).toISOString(),
+              metadata: JSON.stringify({ taskId: t.id, project: t.project, taskStatus: t.status }),
+              isTask: true, // Flag to handle differently
+            }));
           allItems = [...taskItems, ...allItems];
         }
       } catch (e) {
@@ -178,10 +188,38 @@ export default function InboxPanel() {
     return () => clearInterval(interval);
   }, []);
 
+  // Helper to determine if an item is a review vs approval
+  const isReviewItem = (item: InboxItem): boolean => {
+    // Task items are reviews (completed work)
+    if ((item as any).isTask) return true;
+    
+    // Check metadata for review flag
+    if (item.metadata) {
+      try {
+        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (meta.isReview) return true;
+      } catch {}
+    }
+    
+    // Everything else is an approval (blocking decision)
+    return false;
+  };
+
   // Derive filtered lists from items (must be before useEffect that uses them!)
   const pendingItems = items.filter(i => i.status === 'pending');
   const completedItems = items.filter(i => i.status !== 'pending');
-  let filteredPending = filter === 'all' ? pendingItems : pendingItems.filter(i => i.type === filter);
+  
+  // Apply tab filter first
+  let tabFiltered = pendingItems;
+  if (activeTab === 'approvals') {
+    tabFiltered = pendingItems.filter(i => !isReviewItem(i));
+  } else if (activeTab === 'reviews') {
+    tabFiltered = pendingItems.filter(i => isReviewItem(i));
+  }
+  // 'all' shows everything
+  
+  // Then apply type filter
+  let filteredPending = filter === 'all' ? tabFiltered : tabFiltered.filter(i => i.type === filter);
   
   // Calculate priority scores if not present and sort
   filteredPending = filteredPending.map(item => {
@@ -332,9 +370,13 @@ export default function InboxPanel() {
           break;
           
         // Selection shortcuts
-        case 'x': // Toggle selection
+        case 'x': // Toggle selection (Shift+X = bulk approve)
           e.preventDefault();
-          if (navItems[focusedIndex]) {
+          if (e.shiftKey) {
+            if (selectedIds.size > 0) {
+              handleBulkApprove();
+            }
+          } else if (navItems[focusedIndex]) {
             toggleSelection(navItems[focusedIndex].id);
           }
           break;
@@ -349,9 +391,11 @@ export default function InboxPanel() {
           break;
           
         // Action shortcuts
-        case 'a': // Approve focused item
+        case 'a': // Approve focused item (Shift+A = approve all)
           e.preventDefault();
-          if (navItems[focusedIndex]) {
+          if (e.shiftKey) {
+            handleApproveAll();
+          } else if (navItems[focusedIndex]) {
             handleApprove(navItems[focusedIndex]);
           }
           break;
@@ -370,21 +414,7 @@ export default function InboxPanel() {
           }
           break;
           
-        case 'shift+a': // Approve all
-          if (e.shiftKey && key === 'a') {
-            e.preventDefault();
-            handleApproveAll();
-          }
-          break;
-          
-        case 'shift+x': // Bulk approve selected
-          if (e.shiftKey && key === 'x') {
-            e.preventDefault();
-            if (selectedIds.size > 0) {
-              handleBulkApprove();
-            }
-          }
-          break;
+        // Shift+A and Shift+X handled in 'a' and 'x' cases above
           
         // Filter shortcuts
         case '/': // Focus search/filter (can be implemented later)
@@ -442,10 +472,10 @@ export default function InboxPanel() {
   // Check if agent is still active on this task
   const checkForActiveAgent = async (taskId: string) => {
     try {
-      const result = await window.clawdbot!.sessions.list();
-      if (result.success && result.sessions) {
+      const result = await window.clawdbot?.sessions.list();
+      if (result?.success && result?.sessions) {
         // Find session with label matching task ID
-        const activeSession = result.sessions.find((s: any) => {
+        const activeSession = result?.sessions.find((s: any) => {
           // Session is active if updated within last 5 minutes
           const isActive = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
           // Label contains task ID (e.g., "coder-task-123")
@@ -563,15 +593,15 @@ export default function InboxPanel() {
       
       try {
         // Add Stage 2 item to inbox
-        const result = await window.clawdbot!.inbox.addWithMetadata(stage2Item);
+        const result = await window.clawdbot?.inbox.addWithMetadata(stage2Item);
         
-        if (result.success) {
+        if (result?.success) {
           // Mark original as approved (Stage 1 complete)
           setItems(prev => prev.filter(i => i.id !== item.id));
-          await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+          await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
           showToast('success', 'Email content approved', `Ready to send to ${recipient}`);
         } else {
-          showToast('error', 'Failed to create send task', result.error);
+          showToast('error', 'Failed to create send task', result?.error);
         }
       } catch (error: any) {
         console.error('[Inbox] Stage 1 email approval error:', error);
@@ -598,17 +628,22 @@ export default function InboxPanel() {
     try {
       // Check if this is a task review (not a regular inbox item)
       if ((item as any).isTask && item.metadata) {
-        // This is a task in review status - mark it as done
+        // This is a task in review status - approve and move to done
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'done' });
-          console.log('[Inbox] Task approved and marked done:', meta.taskId);
+          console.log('[Inbox] Approving task:', meta.taskId);
+          // FIX: Update BOTH reviewStatus (to mark as reviewed) AND status (to move to done)
+          await window.clawdbot?.tasks.update(meta.taskId, { 
+            reviewStatus: 'approved',
+            status: 'done'
+          } as any);
+          console.log('[Inbox] Task approved and marked as done:', meta.taskId);
           return;
         }
       }
       
       // Regular inbox item - update and create execution task
-      await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+      await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
       const projectMap: Record<string, string> = {
@@ -640,14 +675,14 @@ export default function InboxPanel() {
         metadata,
       };
       
-      const result = await window.clawdbot!.tasks.sync(taskData);
-      if (!result.success) {
-        console.error('[Inbox] Task creation failed:', result.error);
+      const result = await window.clawdbot?.tasks.sync(taskData);
+      if (!result?.success) {
+        console.error('[Inbox] Task creation failed:', result?.error);
       } else {
         // SAFEGUARD: Verify the status is correct after a brief delay
         setTimeout(async () => {
           try {
-            await window.clawdbot!.tasks.update(taskData.id, { status: 'in-progress' });
+            await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
             console.log('[Inbox] Status verified for task:', taskData.id);
           } catch (e) {
             console.warn('[Inbox] Status verify failed:', e);
@@ -682,13 +717,48 @@ export default function InboxPanel() {
       setItems(prev => prev.filter(i => i.id !== item.id));
       showToast('warning', 'Rejected ✗', item.title);
       
-      // Sync in background
-      await window.clawdbot!.inbox.update(item.id, { 
-        status: 'rejected',
-        feedback: reason 
-      });
+      // Check if this is a task review item
+      const isTaskItem = (item as any).isTask || String(item.id).startsWith('task-review-');
       
-      await window.clawdbot!.rejections.log({
+      if (isTaskItem && item.metadata) {
+        // For task items, update the task status back to in-progress and mark review as rejected
+        const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+        if (meta.taskId) {
+          // Prevent poll from re-adding this task while status update propagates
+          recentlyRejectedTaskIds.current.add(meta.taskId);
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
+          try {
+            // FIX: Update BOTH reviewStatus (mark as rejected) AND status (send back to in-progress)
+            await window.clawdbot?.tasks.update(meta.taskId, { 
+              reviewStatus: 'rejected',
+              status: 'in-progress' 
+            });
+          } catch (updateErr) {
+            console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
+            // Retry once after a short delay
+            setTimeout(async () => {
+              try {
+                await window.clawdbot?.tasks.update(meta.taskId, { 
+                  reviewStatus: 'rejected',
+                  status: 'in-progress' 
+                });
+                console.log('[Inbox] Retry succeeded for task:', meta.taskId);
+              } catch (retryErr) {
+                console.error('[Inbox] Retry also failed:', retryErr);
+              }
+            }, 2000);
+          }
+          gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
+        }
+      } else {
+        // Regular inbox item
+        await window.clawdbot?.inbox.update(item.id, { 
+          status: 'rejected',
+          feedback: reason 
+        });
+      }
+      
+      await window.clawdbot?.rejections.log({
         type: item.type,
         title: item.title,
         content: item.content,
@@ -726,19 +796,33 @@ export default function InboxPanel() {
         // For task items, update the task status back to in-progress with feedback
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
-          await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+          // Prevent poll from re-adding this task while status update propagates
+          recentlyRejectedTaskIds.current.add(meta.taskId);
+          setTimeout(() => recentlyRejectedTaskIds.current.delete(meta.taskId), 120000);
+          try {
+            await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+          } catch (updateErr) {
+            console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
+            setTimeout(async () => {
+              try {
+                await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
+              } catch (retryErr) {
+                console.error('[Inbox] Retry also failed:', retryErr);
+              }
+            }, 2000);
+          }
           // Log activity with rejection reason
           gateway.sendToMain(`[TASK_REVISION] Task "${item.title}" needs revision.\nReason: ${reason}`);
         }
       } else {
         // Regular inbox item
-        await window.clawdbot!.inbox.update(item.id, { 
+        await window.clawdbot?.inbox.update(item.id, { 
           status: 'rejected',
           feedback: reason 
         });
       }
       
-      await window.clawdbot!.rejections.log({
+      await window.clawdbot?.rejections.log({
         type: item.type,
         title: item.title,
         content: item.content,
@@ -771,14 +855,14 @@ export default function InboxPanel() {
       // For task items, update the task status back to in-progress with feedback
       const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
       if (meta.taskId) {
-        await window.clawdbot!.tasks.update(meta.taskId, { status: 'in-progress' });
+        await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
         gateway.sendToMain(`[TASK_FEEDBACK] Task "${item.title}" needs revision.\nFeedback: ${feedbackText}`);
         showToast('success', 'Feedback sent', 'Task moved back to In Progress');
       }
     } else {
       // Regular inbox item - update status and create revision task
-      await window.clawdbot!.inbox.update(item.id, { 
+      await window.clawdbot?.inbox.update(item.id, { 
         status: 'needs-revision', 
         feedback: feedbackText 
       });
@@ -794,10 +878,10 @@ export default function InboxPanel() {
         assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
       };
       
-      const result = await window.clawdbot!.tasks.sync(taskData);
+      const result = await window.clawdbot?.tasks.sync(taskData);
       if (result?.success) {
         showToast('success', 'Revision task created', 'Check Tasks tab');
-        await window.clawdbot!.tasks.update?.(taskData.id, { status: 'in-progress' });
+        await window.clawdbot?.tasks.update?.(taskData.id, { status: 'in-progress' });
       } else {
         console.error('[Inbox] Task creation failed:', result);
         showToast('error', 'Revision task failed', result?.error || 'Unknown error');
@@ -974,6 +1058,58 @@ export default function InboxPanel() {
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => { setActiveTab('all'); setFocusedIndex(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'all'
+                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+            }`}
+          >
+            <Inbox size={16} className="flex-shrink-0" />
+            All
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === 'all' ? 'bg-white/20' : 'bg-clawd-bg'
+            }`}>
+              {pendingItems.length}
+            </span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('approvals'); setFocusedIndex(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'approvals'
+                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+            }`}
+          >
+            <ShieldAlert size={16} className="flex-shrink-0" />
+            Approvals
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === 'approvals' ? 'bg-white/20' : 'bg-clawd-bg'
+            }`}>
+              {pendingItems.filter(i => !isReviewItem(i)).length}
+            </span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('reviews'); setFocusedIndex(0); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'reviews'
+                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
+                : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/70'
+            }`}
+          >
+            <CheckCircle size={16} className="flex-shrink-0" />
+            Reviews
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeTab === 'reviews' ? 'bg-white/20' : 'bg-clawd-bg'
+            }`}>
+              {pendingItems.filter(i => isReviewItem(i)).length}
+            </span>
+          </button>
+        </div>
+
         {/* Sort Controls */}
         <div className="flex items-center gap-3 mb-3">
           <span className="text-xs text-clawd-text-dim font-medium">Sort by:</span>
@@ -1113,7 +1249,7 @@ export default function InboxPanel() {
                     return (
                       <div className={`${style.bg} ${style.text} px-4 py-2 flex items-center gap-2 border-b ${style.border}`}>
                         <ShieldAlert size={20} className="flex-shrink-0" />
-                        <div className="flex-1 min-w-0 min-w-0">
+                        <div className="flex-1 min-w-0">
                           <div className="icon-text flex-wrap">
                             <span className="font-semibold text-sm">⚠️ Potential {warning.type.replace('_', ' ')}</span>
                             <span className={`text-xs px-2 py-0.5 rounded ${style.bg} font-medium uppercase`}>
@@ -1131,7 +1267,7 @@ export default function InboxPanel() {
                   
                   {/* Header */}
                   <div className="p-4 flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1 min-w-0 min-w-0">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
                       {/* Selection checkbox */}
                       <input
                         type="checkbox"
@@ -1140,10 +1276,8 @@ export default function InboxPanel() {
                         onClick={(e) => e.stopPropagation()}
                         className="w-4 h-4 mt-1 rounded border-clawd-border text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 bg-clawd-bg cursor-pointer"
                       />
-                      <div className={`p-2 rounded-lg ${config.color} flex-shrink-0 flex items-center justify-center`}>
-                        <Icon size={20} className="flex-shrink-0" />
-                      </div>
-                      <div className="flex-1 min-w-0 min-w-0">
+                      <IconBadge icon={Icon} size={18} color={config.color} />
+                      <div className="flex-1 min-w-0">
                         <div className="icon-text mb-1 flex-wrap">
                           <span className="text-xs font-medium px-2 py-0.5 bg-clawd-border rounded">
                             {config.label}
@@ -1161,7 +1295,7 @@ export default function InboxPanel() {
                           {/* Priority Badge */}
                           {item.priority_score !== undefined && item.priority_score !== null && (
                             (() => {
-                              const { level, label, color } = getPriorityLevel(item.priority_score);
+                              const { label, color } = getPriorityLevel(item.priority_score);
                               return (
                                 <span
                                   className={`text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap ${color}`}
@@ -1280,9 +1414,9 @@ export default function InboxPanel() {
                       
                       <div className="mt-4 mb-4">
                         <div className="text-sm text-clawd-text-dim mb-2">Content:</div>
-                        <pre className="bg-clawd-bg p-3 rounded-lg text-sm whitespace-pre-wrap font-mono border border-clawd-border">
-                          {item.content}
-                        </pre>
+                        <div className="bg-clawd-bg p-3 rounded-lg text-sm whitespace-pre-wrap font-mono border border-clawd-border text-left overflow-x-auto">
+                          <MarkdownMessage content={item.content} />
+                        </div>
                       </div>
 
                       {/* Feedback Form */}
@@ -1401,9 +1535,9 @@ export default function InboxPanel() {
       {/* Rejection Dialog */}
       {rejectDialogItem && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
-            <p className="text-sm text-zinc-400 mb-4">This helps me learn what you don't want.</p>
+            <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don't want.</p>
             <input
               ref={rejectInputRef}
               type="text"
@@ -1419,7 +1553,7 @@ export default function InboxPanel() {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setRejectDialogItem(null)}
-                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                className="px-4 py-2 text-sm text-clawd-text-dim hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -1437,7 +1571,7 @@ export default function InboxPanel() {
       {/* Schedule Modal */}
       {scheduleModal && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setScheduleModal(null)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded-lg ${typeConfig[scheduleModal.item.type].color}`}>
@@ -1445,13 +1579,13 @@ export default function InboxPanel() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Send or Schedule?</h3>
-                <p className="text-sm text-zinc-400">{scheduleModal.item.title}</p>
+                <p className="text-sm text-clawd-text-dim">{scheduleModal.item.title}</p>
               </div>
             </div>
 
             {/* Content Preview */}
             <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 mb-6 max-h-32 overflow-y-auto">
-              <pre className="text-sm whitespace-pre-wrap font-mono text-zinc-300">
+              <pre className="text-sm whitespace-pre-wrap font-mono text-clawd-text-dim">
                 {scheduleModal.item.content}
               </pre>
             </div>
@@ -1465,28 +1599,28 @@ export default function InboxPanel() {
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 min-w-0">
-                    <label className="text-xs text-zinc-400 mb-1 block">Date</label>
+                    <label className="text-xs text-clawd-text-dim mb-1 block">Date</label>
                     <input
                       type="date"
                       value={scheduleModal.date}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                      className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <label className="text-xs text-zinc-400 mb-1 block">Time</label>
+                    <label className="text-xs text-clawd-text-dim mb-1 block">Time</label>
                     <input
                       type="time"
                       value={scheduleModal.time}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, time: e.target.value })}
-                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+                      className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-clawd-accent"
                     />
                   </div>
                 </div>
                 {/* Friendly time display */}
                 {scheduleModal.date && scheduleModal.time && (
-                  <p className="text-xs text-zinc-400 mt-2">
+                  <p className="text-xs text-clawd-text-dim mt-2">
                     Will be sent on {new Date(`${scheduleModal.date}T${scheduleModal.time}`).toLocaleString(undefined, {
                       weekday: 'long',
                       month: 'short',
@@ -1532,18 +1666,18 @@ export default function InboxPanel() {
                         showToast('info', 'Sending email...', `To: ${recipient}`);
                         
                         try {
-                          const result = await window.clawdbot!.email.send({
+                          const result = await window.clawdbot?.email.send({
                             to: recipient,
                             subject,
                             body: item.content,
                             account,
                           });
                           
-                          if (result.success) {
-                            await window.clawdbot!.inbox.update(item.id, { status: 'approved' });
+                          if (result?.success) {
+                            await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
                             showToast('success', 'Email sent ✓', `To: ${recipient}`);
                           } else {
-                            showToast('error', 'Email failed', result.error);
+                            showToast('error', 'Email failed', result?.error);
                             loadInbox(); // Revert
                           }
                         } catch (e: any) {
@@ -1574,7 +1708,7 @@ export default function InboxPanel() {
                   {/* Schedule picker state: Back / Confirm */}
                   <button
                     onClick={() => setScheduleModal({ ...scheduleModal, showDatePicker: false })}
-                    className="px-4 py-3 bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                    className="px-4 py-3 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors"
                   >
                     Back
                   </button>
@@ -1598,7 +1732,7 @@ export default function InboxPanel() {
                       
                       // Add to schedule
                       try {
-                        const result = await window.clawdbot!.schedule.add({
+                        const result = await window.clawdbot?.schedule.add({
                           type: item.type,
                           content: item.content,
                           scheduledFor,
@@ -1609,10 +1743,10 @@ export default function InboxPanel() {
                           },
                         });
                         
-                        if (result.success) {
+                        if (result?.success) {
                           // Remove from inbox
                           setItems(prev => prev.filter(i => i.id !== item.id));
-                          await window.clawdbot!.inbox.update(item.id, { status: 'scheduled' });
+                          await window.clawdbot?.inbox.update(item.id, { status: 'scheduled' });
                           
                           const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
                             weekday: 'short',
@@ -1644,7 +1778,7 @@ export default function InboxPanel() {
             {/* Cancel link */}
             <button
               onClick={() => setScheduleModal(null)}
-              className="w-full mt-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              className="w-full mt-3 py-2 text-sm text-clawd-text-dim hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -1655,11 +1789,11 @@ export default function InboxPanel() {
       {/* Keyboard Shortcuts Help Overlay */}
       {showKeyboardHelp && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold mb-1">⌨️ Keyboard Shortcuts</h2>
-                <p className="text-sm text-zinc-400">Gmail-style navigation and actions</p>
+                <p className="text-sm text-clawd-text-dim">Gmail-style navigation and actions</p>
               </div>
               <button
                 onClick={() => setShowKeyboardHelp(false)}
@@ -1725,7 +1859,7 @@ export default function InboxPanel() {
             </div>
 
             <div className="mt-6 pt-4 border-t border-clawd-border">
-              <p className="text-xs text-zinc-400 text-center">
+              <p className="text-xs text-clawd-text-dim text-center">
                 Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">?</kbd> to toggle this help • 
                 Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">Esc</kbd> to close
               </p>
@@ -1737,7 +1871,7 @@ export default function InboxPanel() {
       {/* Agent Still Active Warning Modal */}
       {showAgentWarning && activeAgentSession && pendingApprovalItem && (
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowAgentWarning(false)}>
-          <div className="bg-zinc-800 border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-yellow-500/20 rounded-lg">
@@ -1745,7 +1879,7 @@ export default function InboxPanel() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Agent Still Active</h3>
-                <p className="text-sm text-zinc-400">Cannot approve yet</p>
+                <p className="text-sm text-clawd-text-dim">Cannot approve yet</p>
               </div>
             </div>
 
@@ -1754,7 +1888,7 @@ export default function InboxPanel() {
               <p className="text-sm text-yellow-200 mb-2">
                 ⚠️ An agent is currently working on this task
               </p>
-              <div className="text-xs text-zinc-400 space-y-1">
+              <div className="text-xs text-clawd-text-dim space-y-1">
                 <div>
                   <span className="font-medium">Session:</span> {activeAgentSession.displayName || activeAgentSession.label || 'Unknown'}
                 </div>
@@ -1767,7 +1901,7 @@ export default function InboxPanel() {
               </div>
             </div>
             
-            <p className="text-sm text-zinc-300 mb-3">
+            <p className="text-sm text-clawd-text-dim mb-3">
               If you approve now, the agent might reset the task status when it finishes, creating an approval loop.
             </p>
             
@@ -1783,7 +1917,7 @@ export default function InboxPanel() {
                   setActiveAgentSession(null);
                   setPendingApprovalItem(null);
                 }}
-                className="flex-1 min-w-0 px-4 py-3 bg-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-600 transition-colors"
+                className="flex-1 min-w-0 px-4 py-3 bg-clawd-surface text-clawd-text-dim rounded-lg hover:bg-clawd-border transition-colors"
               >
                 Cancel
               </button>
@@ -1792,11 +1926,11 @@ export default function InboxPanel() {
                   setAbortingAgent(true);
                   try {
                     // Kill the agent session
-                    const result = await window.clawdbot!.exec.run(
+                    const result = await window.clawdbot?.exec.run(
                       `clawdbot sessions kill ${activeAgentSession.sessionId}`
                     );
                     
-                    if (result.success) {
+                    if (result?.success) {
                       showToast('success', 'Agent aborted', 'Proceeding with approval...');
                       
                       // Wait a moment for session to fully terminate
@@ -1808,7 +1942,7 @@ export default function InboxPanel() {
                         : pendingApprovalItem.metadata;
                       
                       if (meta.taskId) {
-                        await window.clawdbot!.tasks.update(meta.taskId, { status: 'done' });
+                        await window.clawdbot?.tasks.update(meta.taskId, { status: 'done' });
                         setItems(prev => prev.filter(i => i.id !== pendingApprovalItem.id));
                         showToast('success', 'Task approved and completed ✓');
                       }
@@ -1817,7 +1951,7 @@ export default function InboxPanel() {
                       setActiveAgentSession(null);
                       setPendingApprovalItem(null);
                     } else {
-                      showToast('error', 'Failed to abort agent', result.stderr || 'Unknown error');
+                      showToast('error', 'Failed to abort agent', result?.stderr || 'Unknown error');
                     }
                   } catch (err: any) {
                     showToast('error', 'Abort failed', err.message);

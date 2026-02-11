@@ -202,8 +202,8 @@ export default function SecuritySettings() {
       case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
       case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
       case 'low': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'info': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'info': return 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30';
+      default: return 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30';
     }
   };
 
@@ -392,7 +392,7 @@ export default function SecuritySettings() {
                           ? 'bg-green-500/20 text-green-400' 
                           : log.status === 'acknowledged'
                           ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-gray-500/20 text-gray-400'
+                          : 'bg-clawd-bg0/20 text-clawd-text-dim'
                       }`}>
                         {log.status}
                       </span>

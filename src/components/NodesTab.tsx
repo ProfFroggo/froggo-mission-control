@@ -156,8 +156,8 @@ export default function NodesTab() {
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-clawd-bg/50 transition-colors"
                   onClick={() => setExpandedNode(isExpanded ? null : node.nodeId)}
                 >
-                  <div className={`p-2 rounded-lg ${node.connected ? 'bg-green-500/20' : 'bg-gray-500/20'}`}>
-                    {node.connected ? <Wifi size={20} className="text-green-400" /> : <WifiOff size={20} className="text-gray-400" />}
+                  <div className={`p-2 rounded-lg ${node.connected ? 'bg-green-500/20' : 'bg-clawd-bg0/20'}`}>
+                    {node.connected ? <Wifi size={20} className="text-green-400" /> : <WifiOff size={20} className="text-clawd-text-dim" />}
                   </div>
                   <div className="flex-1">
                     {isRenaming ? (
@@ -192,7 +192,7 @@ export default function NodesTab() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded text-xs ${
-                      node.paired ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                      node.paired ? 'bg-green-500/20 text-green-400' : 'bg-clawd-bg0/20 text-clawd-text-dim'
                     }`}>
                       {node.paired ? 'Paired' : 'Unpaired'}
                     </span>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Play, Square, TrendingUp, Filter } from 'lucide-react';
+import { Clock, Play, TrendingUp } from 'lucide-react';
 import { getTimeTrackingData, type TimeTrackingData } from '../../services/analyticsService';
 import { Spinner } from '../LoadingStates';
 

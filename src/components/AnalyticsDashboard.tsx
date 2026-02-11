@@ -10,9 +10,9 @@ import {
   MessageSquare,
   GitCompare,
   Target,
-  Calendar,
   Download,
   RefreshCw,
+  Zap,
 } from 'lucide-react';
 import AnalyticsOverview from './AnalyticsOverview';
 import SessionsFilter from './SessionsFilter';
@@ -25,11 +25,14 @@ import UsageStatsPanel from './UsageStatsPanel';
 import AdvancedAgentComparison from './AdvancedAgentComparison';
 import PerformanceBenchmarks from './PerformanceBenchmarks';
 import RealTimeAnalytics from './RealTimeAnalytics';
-import DateRangePicker, { DateRange } from './DateRangePicker';
+import TokenUsageWidget from './TokenUsageWidget';
+import PerformanceTable from './PerformanceTable';
+import { DateRange } from './DateRangePicker';
 
 type Tab =
   | 'overview'
   | 'realtime'
+  | 'tokens'
   | 'trends'
   | 'agents'
   | 'usage'
@@ -51,6 +54,12 @@ const TABS: { id: Tab; label: string; icon: any; description: string }[] = [
     label: 'Real-Time',
     icon: Activity,
     description: 'Live analytics feed',
+  },
+  {
+    id: 'tokens',
+    label: 'Token Usage',
+    icon: Zap,
+    description: 'Token burn rate & budgets',
   },
   {
     id: 'trends',
@@ -105,7 +114,7 @@ const TABS: { id: Tab; label: string; icon: any; description: string }[] = [
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [showAgentComparison, setShowAgentComparison] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({
+  const [dateRange, _setDateRange] = useState<DateRange>({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     end: new Date(),
   });
@@ -117,9 +126,6 @@ export default function AnalyticsDashboard() {
 
   const handleExport = async () => {
     try {
-      const db = await (window as any).clawdbot?.db?.connect();
-      if (!db) throw new Error('Database not available');
-
       // Export analytics data
       const exportData = {
         generatedAt: new Date().toISOString(),
@@ -128,7 +134,6 @@ export default function AnalyticsDashboard() {
           end: dateRange.end.toISOString(),
         },
         currentTab: activeTab,
-        // Add more export data as needed
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -140,8 +145,6 @@ export default function AnalyticsDashboard() {
       a.download = `analytics-export-${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
-
-      await db.close();
     } catch (error) {
       console.error('Failed to export analytics:', error);
     }
@@ -220,8 +223,9 @@ export default function AnalyticsDashboard() {
       <div className="flex-1 overflow-hidden p-6" key={refreshKey}>
         {activeTab === 'overview' && <AnalyticsOverview />}
         {activeTab === 'realtime' && <RealTimeAnalytics />}
+        {activeTab === 'tokens' && <TokenUsageWidget />}
         {activeTab === 'trends' && <TaskTrendsChart />}
-        {activeTab === 'agents' && <AgentUtilizationChart />}
+        {activeTab === 'agents' && <PerformanceTable />}
         {activeTab === 'usage' && <UsageStatsPanel />}
         {activeTab === 'benchmarks' && <PerformanceBenchmarks />}
         {activeTab === 'time' && <TimeTrackingPanel />}

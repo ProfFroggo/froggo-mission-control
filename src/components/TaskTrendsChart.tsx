@@ -13,7 +13,7 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { TrendingUp, Calendar } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { getTaskCompletionTrends, TaskCompletionTrend } from '../services/analyticsService';
 
 export default function TaskTrendsChart() {

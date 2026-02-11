@@ -92,7 +92,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
     // Extract readable part from session ID
     const parts = sessionId.split(':');
     if (parts.length >= 3) {
-      return parts[2]; // e.g., "whatsapp" from "agent:chat-agent:whatsapp:xxx"
+      return parts[2]; // e.g., "whatsapp" from "agent:froggo:whatsapp:xxx"
     }
     return sessionId;
   };

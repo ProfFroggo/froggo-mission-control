@@ -1,0 +1,48 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Soft pink background -->
+  <rect width="1024" height="1024" fill="#FFC0CB"/>
+  
+  <!-- Designer character with glasses and artistic flair -->
+  <g transform="translate(512, 512)">
+    <!-- Face -->
+    <circle cx="0" cy="0" r="250" fill="#FFE5E5"/>
+    
+    <!-- Trendy glasses -->
+    <g transform="translate(0, -30)">
+      <!-- Left lens -->
+      <circle cx="-80" cy="0" r="60" fill="none" stroke="#EC4899" stroke-width="8"/>
+      <circle cx="-80" cy="0" r="55" fill="#FFF" opacity="0.3"/>
+      
+      <!-- Right lens -->
+      <circle cx="80" cy="0" r="60" fill="none" stroke="#EC4899" stroke-width="8"/>
+      <circle cx="80" cy="0" r="55" fill="#FFF" opacity="0.3"/>
+      
+      <!-- Bridge -->
+      <line x1="-20" y1="0" x2="20" y2="0" stroke="#EC4899" stroke-width="6"/>
+    </g>
+    
+    <!-- Creative/artistic hair flair -->
+    <path d="M -180 -100 Q -200 -180 -150 -220 Q -100 -240 -50 -220 Q 0 -250 50 -220 Q 100 -240 150 -220 Q 200 -180 180 -100 Z" 
+          fill="#EC4899"/>
+    
+    <!-- Smile -->
+    <path d="M -80 80 Q 0 120 80 80" fill="none" stroke="#EC4899" stroke-width="6" stroke-linecap="round"/>
+    
+    <!-- Eyes (sparkle) -->
+    <circle cx="-80" cy="-10" r="8" fill="#EC4899"/>
+    <circle cx="80" cy="-10" r="8" fill="#EC4899"/>
+    <circle cx="-75" cy="-15" r="3" fill="#FFF"/>
+    <circle cx="85" cy="-15" r="3" fill="#FFF"/>
+    
+    <!-- Artistic touch - paint palette icon -->
+    <g transform="translate(180, 180) scale(0.8)">
+      <ellipse cx="0" cy="0" rx="50" ry="40" fill="#FFE5E5" stroke="#EC4899" stroke-width="4"/>
+      <circle cx="-15" cy="-10" r="6" fill="#EC4899"/>
+      <circle cx="15" cy="-10" r="6" fill="#F97316"/>
+      <circle cx="0" cy="10" r="6" fill="#8B5CF6"/>
+    </g>
+  </g>
+  
+  <!-- 🎨 Emoji hint -->
+  <text x="512" y="950" font-size="80" text-anchor="middle" fill="#EC4899">🎨</text>
+</svg>

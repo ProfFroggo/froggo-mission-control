@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag } from 'lucide-react';
 import { gateway } from '../lib/gateway';
+import { useUserSettings } from '../store/userSettings';
 
 interface EmailAccount {
   email: string;
@@ -10,21 +11,9 @@ interface EmailAccount {
   starred: number;
 }
 
-const ALL_ACCOUNTS = [
-  { email: 'kevin.macarthur@bitso.com', label: 'Bitso', color: 'text-blue-400' },
-  { email: 'kevin@carbium.io', label: 'Carbium', color: 'text-green-400' },
-  { email: 'kmacarthur.gpt@gmail.com', label: 'Personal', color: 'text-purple-400' },
-];
-
-interface EmailWidgetProps {
-  filterAccount?: string; // OX LITE: Filter to specific account
-}
-
-export default function EmailWidget({ filterAccount }: EmailWidgetProps) {
-  // OX LITE: If filterAccount provided, only show that account
-  const ACCOUNTS = filterAccount 
-    ? ALL_ACCOUNTS.filter(a => a.email === filterAccount)
-    : ALL_ACCOUNTS;
+export default function EmailWidget() {
+  const { emailAccounts } = useUserSettings();
+  const ACCOUNTS = emailAccounts.map(a => ({ email: a.email, label: a.label, color: a.color || 'text-clawd-text-dim' }));
   const [accounts, setAccounts] = useState<EmailAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

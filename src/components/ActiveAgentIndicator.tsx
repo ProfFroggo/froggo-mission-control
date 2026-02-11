@@ -3,6 +3,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { gateway } from '@/lib/gateway';
 
 interface ActiveAgentIndicatorProps {
   taskId: string;
@@ -23,18 +24,18 @@ export default function ActiveAgentIndicator({
   useEffect(() => {
     const checkActiveAgent = async () => {
       try {
-        const result = await (window as any).clawdbot.sessions.list();
-        if (result.success && result.sessions) {
+        const result = await gateway.getSessions();
+        if (result.sessions) {
           // Find session with label matching task ID and recent activity
           const activeSession = result.sessions.find((s: any) => {
             const isRecent = (Date.now() - s.updatedAt) < 5 * 60 * 1000; // Active within 5 mins
             const matchesTask = s.label && (
-              s.label.includes(taskId) || 
+              s.label.includes(taskId) ||
               s.label.includes(`task-${taskId}`)
             );
             return isRecent && matchesTask;
           });
-          
+
           if (activeSession) {
             setIsActive(true);
             // Extract agent name from label (e.g., "coder-task-123" -> "coder")
@@ -54,11 +55,40 @@ export default function ActiveAgentIndicator({
 
     // Check immediately
     checkActiveAgent();
-    
-    // Poll every 10 seconds
-    const interval = setInterval(checkActiveAgent, 10000);
-    
-    return () => clearInterval(interval);
+
+    // Set up event-based updates for real-time status changes
+    const unsubscribeTaskUpdated = gateway.on('task.updated', (payload: any) => {
+      // Refresh when task is updated (covers task progress and status changes)
+      if (payload?.id === taskId || payload?.taskId === taskId) {
+        checkActiveAgent();
+      }
+    });
+
+    const unsubscribeStateChange = gateway.on('stateChange', ({ state }: { state: string }) => {
+      // Refresh when gateway connection state changes
+      if (state === 'connected') {
+        checkActiveAgent();
+      }
+    });
+
+    // Also listen for generic chat events that might indicate agent activity
+    const unsubscribeChat = gateway.on('chat', (payload: any) => {
+      // If chat event mentions this task, refresh indicator
+      const content = payload?.content || payload?.message?.content?.[0]?.text || '';
+      if (typeof content === 'string' && (content.includes(taskId) || content.includes(`task-${taskId}`))) {
+        checkActiveAgent();
+      }
+    });
+
+    // Fallback polling at longer interval (30s) for cases where events might be missed
+    const interval = setInterval(checkActiveAgent, 30000);
+
+    return () => {
+      clearInterval(interval);
+      unsubscribeTaskUpdated();
+      unsubscribeStateChange();
+      unsubscribeChat();
+    };
   }, [taskId]);
 
   if (!isActive) return null;

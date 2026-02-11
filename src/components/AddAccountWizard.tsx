@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
-import { showToast } from './Toast';
+import { useUserSettings } from '../store/userSettings';
 
 interface Props {
   onClose: () => void;
@@ -277,7 +277,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   Or select a known account:
                 </label>
                 <div className="space-y-2">
-                  {provider === 'google' && ['kevin.macarthur@bitso.com', 'kevin@carbium.io', 'kmacarthur.gpt@gmail.com'].map(acc => (
+                  {provider === 'google' && useUserSettings.getState().emailAccounts.map(a => a.email).map(acc => (
                     <button
                       key={acc}
                       onClick={() => setEmail(acc)}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, Pause, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video } from 'lucide-react';
+import { Calendar, Clock, Mail, Plus, Trash2, Edit2, Play, RefreshCw, X, Check, Paperclip, Image as ImageIcon, Video } from 'lucide-react';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -8,6 +8,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 import { showToast } from './Toast';
+import IconBadge from './IconBadge';
 
 type ScheduledItemType = 'tweet' | 'email' | 'message';
 type ScheduledItemStatus = 'pending' | 'sent' | 'cancelled' | 'failed';
@@ -25,6 +26,9 @@ interface ScheduledItem {
     replyTo?: string;
     recipient?: string;
     subject?: string;
+    mediaPath?: string;
+    mediaType?: string;
+    mediaFileName?: string;
   };
 }
 
@@ -596,9 +600,7 @@ export default function ContentScheduler() {
                   } transition-colors`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-2 rounded-lg ${config.color} flex items-center justify-center`}>
-                      <Icon size={16} />
-                    </div>
+                    <IconBadge icon={Icon} size={16} color={config.color} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -606,7 +608,7 @@ export default function ContentScheduler() {
                           item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
                           item.status === 'sent' ? 'bg-green-500/20 text-green-400' :
                           item.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                          'bg-gray-500/20 text-gray-400'
+                          'bg-clawd-bg0/20 text-clawd-text-dim'
                         }`}>
                           {item.status}
                         </span>

@@ -66,7 +66,19 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
 let toastListeners: ((toasts: ToastMessage[]) => void)[] = [];
 let currentToasts: ToastMessage[] = [];
 
-export function showToast(type: ToastType, title: string, message?: string, duration?: number) {
+export function showToast(type: ToastType, title: string, message?: string, duration?: number): void;
+export function showToast(title: string, type: ToastType, message?: string, duration?: number): void;
+export function showToast(typeOrTitle: string, titleOrType: string, message?: string, duration?: number) {
+  const validTypes: ToastType[] = ['success', 'error', 'warning', 'info'];
+  let type: ToastType;
+  let title: string;
+  if (validTypes.includes(typeOrTitle as ToastType)) {
+    type = typeOrTitle as ToastType;
+    title = titleOrType;
+  } else {
+    type = (validTypes.includes(titleOrType as ToastType) ? titleOrType : 'info') as ToastType;
+    title = typeOrTitle;
+  }
   const toast: ToastMessage = {
     id: `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,

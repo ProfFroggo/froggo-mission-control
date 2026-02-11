@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, FileText, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap } from 'lucide-react';
+import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { SkeletonList } from './Skeleton';
+import { gateway } from '../lib/gateway';
 
 // X logo component
 const XIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
@@ -66,7 +67,7 @@ const typeLabels = {
 };
 
 const statusColors = {
-  todo: 'text-gray-400',
+  todo: 'text-clawd-text-dim',
   'in-progress': 'text-blue-400',
   done: 'text-green-400',
   blocked: 'text-red-400',
@@ -210,24 +211,28 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         })));
       }
 
-      // Search sessions
-      const sessionsResult = await (window as any).clawdbot?.sessions?.list();
-      if (sessionsResult?.success && sessionsResult.sessions) {
-        const matchingSessions = sessionsResult.sessions.filter((s: any) => 
-          s.label?.toLowerCase().includes(q.toLowerCase()) ||
-          s.channel?.toLowerCase().includes(q.toLowerCase()) ||
-          s.sessionKey?.toLowerCase().includes(q.toLowerCase())
-        ).slice(0, 5);
-        
-        allResults.push(...matchingSessions.map((s: any) => ({
-          id: s.sessionKey,
-          type: 'session' as const,
-          title: s.label || s.sessionKey,
-          snippet: `Channel: ${s.channel || 'unknown'} • Messages: ${s.messageCount || 0}`,
-          timestamp: s.lastActivity,
-          source: 'Sessions',
-          metadata: s,
-        })));
+      // Search sessions via gateway WebSocket
+      try {
+        const sessionsResult = await gateway.getSessions();
+        if (sessionsResult?.sessions) {
+          const matchingSessions = sessionsResult.sessions.filter((s: any) => 
+            s.label?.toLowerCase().includes(q.toLowerCase()) ||
+            s.channel?.toLowerCase().includes(q.toLowerCase()) ||
+            s.key?.toLowerCase().includes(q.toLowerCase())
+          ).slice(0, 5);
+          
+          allResults.push(...matchingSessions.map((s: any) => ({
+            id: s.key,
+            type: 'session' as const,
+            title: s.label || s.key,
+            snippet: `Channel: ${s.channel || 'unknown'}`,
+            timestamp: s.updatedAt,
+            source: 'Sessions',
+            metadata: s,
+          })));
+        }
+      } catch (e) {
+        // Gateway not connected or sessions unavailable - skip sessions search
       }
 
       // Search WhatsApp messages
@@ -244,17 +249,17 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         })));
       }
 
-      // Search agents (mock data - can be replaced with real agent search)
-      const agents = ['coder', 'writer', 'researcher', 'chief', 'social-manager'];
-      const matchingAgents = agents.filter(a => a.toLowerCase().includes(q.toLowerCase()));
-      if (matchingAgents.length > 0) {
-        allResults.push(...matchingAgents.map(a => ({
-          id: `agent-${a}`,
+      // Search agents from database
+      const agentResult = await (window as any).clawdbot?.agents?.search(q);
+      if (agentResult?.success && agentResult.agents?.length > 0) {
+        allResults.push(...agentResult.agents.map((a: any) => ({
+          id: `agent-${a.id}`,
           type: 'agent' as const,
-          title: a.charAt(0).toUpperCase() + a.slice(1),
-          snippet: `Agent role: ${a}`,
+          title: `${a.name} — ${a.role}`,
+          snippet: `${a.description}${a.recentTask ? ` • Latest: ${a.recentTask}` : ''} • ${a.taskCount} tasks • ${a.status}`,
           source: 'Agents',
-          metadata: { role: a },
+          metadata: { role: a.id, capabilities: a.capabilities, status: a.status },
+          status: a.status === 'active' ? 'in-progress' : undefined,
         })));
       }
 

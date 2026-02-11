@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, MessageSquare, Zap, Clock, Calendar, Activity, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { TrendingUp, MessageSquare, Zap, Clock, Calendar, Activity, ArrowUp, ArrowDown, Minus, Users, FolderKanban } from 'lucide-react';
 
 interface Stat {
   label: string;
@@ -12,85 +12,172 @@ interface Stat {
 
 interface DailyActivity {
   date: string;
-  messages: number;
-  tasks: number;
-  approvals: number;
+  label: string;
+  completed: number;
+  created: number;
+}
+
+interface AgentData {
+  agent: string;
+  total: number;
+  completed: number;
+}
+
+interface ProjectData {
+  project: string;
+  total: number;
+  completed: number;
+  completion_rate: number;
 }
 
 export default function AnalyticsOverview() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('7d');
   const [stats, setStats] = useState<Stat[]>([]);
   const [dailyData, setDailyData] = useState<DailyActivity[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [agents, setAgents] = useState<AgentData[]>([]);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [_loading, setLoading] = useState(false);
+
+  // Fill gaps in date range with zeros
+  function fillDateRange(data: { date: string; [key: string]: any }[], days: number, valueKey: string): Map<string, number> {
+    const map = new Map<string, number>();
+    // Build map from data
+    for (const row of data) {
+      if (row.date && row.date !== '1970-01-01') {
+        map.set(row.date, row[valueKey] || 0);
+      }
+    }
+    // Fill missing dates
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      if (!map.has(key)) map.set(key, 0);
+    }
+    return map;
+  }
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      // Get sessions count
+      // Fetch real analytics data from froggo.db
+      const analyticsResult = await (window as any).clawdbot?.analytics?.getData(timeRange).catch(() => null);
+
+      // Also get current stats
       const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch(() => null);
       const sessionsCount = sessionsResult?.sessions?.length || 0;
-
-      // Get tasks stats
       const tasksResult = await (window as any).clawdbot?.tasks?.list().catch(() => null);
       const tasksCount = tasksResult?.tasks?.length || 0;
       const completedTasks = tasksResult?.tasks?.filter((t: any) => t.status === 'done')?.length || 0;
-
-      // Get inbox stats - check for success flag
       const inboxResult = await (window as any).clawdbot?.inbox?.list().catch(() => null);
-      const pendingApprovals = inboxResult?.success 
-        ? (inboxResult.items?.filter((i: any) => i.status === 'pending')?.length || 0)
-        : (inboxResult?.items?.filter((i: any) => i.status === 'pending')?.length || 0);
-      const totalApprovals = inboxResult?.items?.length || 0;
+      const pendingApprovals = inboxResult?.items?.filter((i: any) => i.status === 'pending')?.length || 0;
 
-      setStats([
-        {
-          label: 'Active Sessions',
-          value: sessionsCount,
-          change: 12,
-          trend: 'up',
-          icon: MessageSquare,
-          color: 'text-blue-400',
-        },
-        {
-          label: 'Tasks Completed',
-          value: `${completedTasks}/${tasksCount}`,
-          change: completedTasks > 0 ? 8 : 0,
-          trend: completedTasks > 0 ? 'up' : 'neutral',
-          icon: Zap,
-          color: 'text-green-400',
-        },
-        {
-          label: 'Pending Approvals',
-          value: pendingApprovals,
-          trend: pendingApprovals > 5 ? 'down' : 'neutral',
-          icon: Clock,
-          color: 'text-yellow-400',
-        },
-        {
-          label: 'Total Interactions',
-          value: totalApprovals + sessionsCount * 10, // Estimate
-          change: 15,
-          trend: 'up',
-          icon: Activity,
-          color: 'text-purple-400',
-        },
-      ]);
+      if (analyticsResult?.success) {
+        const days = analyticsResult.days || (timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90);
 
-      // Generate mock daily data for chart
-      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-      const data: DailyActivity[] = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        data.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          messages: Math.floor(Math.random() * 50) + 10,
-          tasks: Math.floor(Math.random() * 10) + 2,
-          approvals: Math.floor(Math.random() * 8) + 1,
-        });
+        // Build daily data from real completions + creations
+        const completionsMap = fillDateRange(analyticsResult.completions || [], days, 'tasks_completed');
+        const createdMap = fillDateRange(analyticsResult.created || [], days, 'tasks_created');
+
+        // Generate complete date range (fillDateRange already filled all dates, just use one map's keys)
+        const allDates: string[] = [];
+        for (let i = days - 1; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          allDates.push(d.toISOString().split('T')[0]);
+        }
+        
+        const daily: DailyActivity[] = allDates.map(date => ({
+          date,
+          label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          completed: completionsMap.get(date) || 0,
+          created: createdMap.get(date) || 0,
+        }));
+        setDailyData(daily);
+
+        // Agent data
+        setAgents(analyticsResult.agents || []);
+
+        // Project data
+        setProjects(analyticsResult.projects || []);
+
+        // Compute trends from real data
+        const totalCompleted = daily.reduce((s, d) => s + d.completed, 0);
+        const avgPerDay = daily.length > 0 ? Math.round(totalCompleted / daily.length * 10) / 10 : 0;
+
+        // Compare first half vs second half for trend
+        const mid = Math.floor(daily.length / 2);
+        const firstHalf = daily.slice(0, mid).reduce((s, d) => s + d.completed, 0);
+        const secondHalf = daily.slice(mid).reduce((s, d) => s + d.completed, 0);
+        const completionTrend = firstHalf > 0 ? Math.round((secondHalf - firstHalf) / firstHalf * 100) : 0;
+
+        setStats([
+          {
+            label: 'Active Sessions',
+            value: sessionsCount,
+            trend: sessionsCount > 0 ? 'up' : 'neutral',
+            icon: MessageSquare,
+            color: 'text-blue-400',
+          },
+          {
+            label: 'Tasks Completed',
+            value: `${completedTasks}/${tasksCount}`,
+            change: completionTrend > 0 ? completionTrend : undefined,
+            trend: completionTrend > 0 ? 'up' : completionTrend < 0 ? 'down' : 'neutral',
+            icon: Zap,
+            color: 'text-green-400',
+          },
+          {
+            label: 'Avg/Day',
+            value: avgPerDay,
+            trend: avgPerDay > 3 ? 'up' : avgPerDay > 0 ? 'neutral' : 'down',
+            icon: Activity,
+            color: 'text-purple-400',
+          },
+          {
+            label: 'Pending Approvals',
+            value: pendingApprovals,
+            trend: pendingApprovals > 5 ? 'down' : 'neutral',
+            icon: Clock,
+            color: 'text-yellow-400',
+          },
+        ]);
+      } else {
+        // Fallback: use basic task data if analytics IPC not available
+        setStats([
+          {
+            label: 'Active Sessions',
+            value: sessionsCount,
+            trend: 'neutral',
+            icon: MessageSquare,
+            color: 'text-blue-400',
+          },
+          {
+            label: 'Tasks Completed',
+            value: `${completedTasks}/${tasksCount}`,
+            trend: completedTasks > 0 ? 'up' : 'neutral',
+            icon: Zap,
+            color: 'text-green-400',
+          },
+          {
+            label: 'Pending Approvals',
+            value: pendingApprovals,
+            trend: pendingApprovals > 5 ? 'down' : 'neutral',
+            icon: Clock,
+            color: 'text-yellow-400',
+          },
+          {
+            label: 'Total Tasks',
+            value: tasksCount,
+            trend: 'neutral',
+            icon: Activity,
+            color: 'text-purple-400',
+          },
+        ]);
+        setDailyData([]);
+        setAgents([]);
+        setProjects([]);
       }
-      setDailyData(data);
-
     } catch (error) {
       console.error('Failed to load analytics:', error);
     } finally {
@@ -102,7 +189,7 @@ export default function AnalyticsOverview() {
     loadAnalytics();
   }, [loadAnalytics]);
 
-  const maxMessages = Math.max(...dailyData.map(d => d.messages), 1);
+  const maxValue = Math.max(...dailyData.map(d => Math.max(d.completed, d.created)), 1);
 
   return (
     <div className="h-full overflow-y-auto p-6">
@@ -156,76 +243,231 @@ export default function AnalyticsOverview() {
         })}
       </div>
 
-      {/* Activity Chart */}
+      {/* Activity Chart - Real Data */}
       <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">Activity Over Time</h2>
+          <h2 className="font-semibold">Task Activity</h2>
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-sm" />
-              <span className="text-clawd-text-dim">Messages</span>
-            </div>
-            <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-sm" />
-              <span className="text-clawd-text-dim">Tasks</span>
+              <span className="text-clawd-text-dim">Completed</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-sm" />
-              <span className="text-clawd-text-dim">Approvals</span>
+              <div className="w-3 h-3 bg-blue-500 rounded-sm" />
+              <span className="text-clawd-text-dim">Created</span>
             </div>
           </div>
         </div>
 
-        {/* Simple bar chart */}
-        <div className="h-48 flex items-end gap-1">
-          {dailyData.map((day, idx) => (
-            <div key={idx} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full flex flex-col items-center gap-0.5">
-                <div
-                  className="w-full bg-blue-500/80 rounded-t transition-all"
-                  style={{ height: `${(day.messages / maxMessages) * 120}px` }}
+        {dailyData.length > 0 ? (
+          <div className="h-64 relative">
+            <svg
+              className="w-full h-full"
+              viewBox={`0 0 ${dailyData.length * 40} 240`}
+              preserveAspectRatio="xMidYMid meet"
+            >
+              {/* Grid lines */}
+              {[0, 25, 50, 75, 100].map((percent) => (
+                <line
+                  key={percent}
+                  x1="0"
+                  y1={240 - (percent / 100) * 200}
+                  x2={dailyData.length * 40}
+                  y2={240 - (percent / 100) * 200}
+                  stroke="currentColor"
+                  strokeOpacity="0.1"
+                  className="text-clawd-border"
                 />
-                <div
-                  className="w-full bg-green-500/80 transition-all"
-                  style={{ height: `${(day.tasks / maxMessages) * 120}px` }}
-                />
-                <div
-                  className="w-full bg-purple-500/80 rounded-b transition-all"
-                  style={{ height: `${(day.approvals / maxMessages) * 120}px` }}
-                />
-              </div>
-              <span className="text-[10px] text-clawd-text-dim mt-1 rotate-45 origin-left">
-                {day.date}
-              </span>
+              ))}
+
+              {/* Completed line (green) */}
+              <polyline
+                points={dailyData
+                  .map((day, idx) => {
+                    const x = idx * 40 + 20;
+                    const y = 240 - (day.completed / maxValue) * 200;
+                    return `${x},${y}`;
+                  })
+                  .join(' ')}
+                fill="none"
+                stroke="rgb(34 197 94)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Completed points */}
+              {dailyData.map((day, idx) => {
+                const x = idx * 40 + 20;
+                const y = 240 - (day.completed / maxValue) * 200;
+                return (
+                  <circle
+                    key={`completed-${idx}`}
+                    cx={x}
+                    cy={y}
+                    r="4"
+                    fill="rgb(34 197 94)"
+                    className="hover:r-6 transition-all"
+                  >
+                    <title>{`${day.label}\nCompleted: ${day.completed}`}</title>
+                  </circle>
+                );
+              })}
+
+              {/* Created line (blue) */}
+              <polyline
+                points={dailyData
+                  .map((day, idx) => {
+                    const x = idx * 40 + 20;
+                    const y = 240 - (day.created / maxValue) * 200;
+                    return `${x},${y}`;
+                  })
+                  .join(' ')}
+                fill="none"
+                stroke="rgb(59 130 246)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Created points */}
+              {dailyData.map((day, idx) => {
+                const x = idx * 40 + 20;
+                const y = 240 - (day.created / maxValue) * 200;
+                return (
+                  <circle
+                    key={`created-${idx}`}
+                    cx={x}
+                    cy={y}
+                    r="4"
+                    fill="rgb(59 130 246)"
+                    className="hover:r-6 transition-all"
+                  >
+                    <title>{`${day.label}\nCreated: ${day.created}`}</title>
+                  </circle>
+                );
+              })}
+
+              {/* X-axis labels */}
+              {dailyData.map((day, idx) => {
+                if (dailyData.length <= 14 || idx % Math.ceil(dailyData.length / 14) === 0) {
+                  const x = idx * 40 + 20;
+                  return (
+                    <text
+                      key={`label-${idx}`}
+                      x={x}
+                      y="230"
+                      fontSize="10"
+                      fill="currentColor"
+                      className="text-clawd-text-dim"
+                      textAnchor="middle"
+                    >
+                      {day.label}
+                    </text>
+                  );
+                }
+                return null;
+              })}
+            </svg>
+          </div>
+        ) : (
+          <div className="h-64 flex items-center justify-center text-clawd-text-dim">
+            No task data available for this period
+          </div>
+        )}
+      </div>
+
+      {/* Agent Activity + Project Progress */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        {/* Agent Utilization */}
+        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Users size={16} className="text-clawd-accent" />
+            Agent Activity
+          </h3>
+          {agents.length > 0 ? (
+            <div className="space-y-3">
+              {agents.slice(0, 6).map((agent, idx) => {
+                const pct = agent.total > 0 ? Math.round((agent.completed / agent.total) * 100) : 0;
+                return (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="truncate max-w-[150px]">{agent.agent}</span>
+                      <span className="text-clawd-text-dim">{agent.completed}/{agent.total} ({pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-clawd-bg rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-clawd-accent rounded-full transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          ) : (
+            <div className="text-sm text-clawd-text-dim py-4 text-center">No agent data for this period</div>
+          )}
+        </div>
+
+        {/* Project Progress */}
+        <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <FolderKanban size={16} className="text-clawd-accent" />
+            Project Progress
+          </h3>
+          {projects.length > 0 ? (
+            <div className="space-y-3">
+              {projects.slice(0, 6).map((proj, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="truncate max-w-[150px]">{proj.project}</span>
+                    <span className="text-clawd-text-dim">{proj.completed}/{proj.total} ({proj.completion_rate}%)</span>
+                  </div>
+                  <div className="h-2 bg-clawd-bg rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${proj.completion_rate}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-clawd-text-dim py-4 text-center">No project data for this period</div>
+          )}
         </div>
       </div>
 
-      {/* Quick insights */}
+      {/* Real insights from data */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <TrendingUp size={16} className="text-clawd-accent" />
-            Top Insights
+            Insights
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
-              <span className="text-sm">Most active day</span>
+              <span className="text-sm">Most productive day</span>
               <span className="text-sm font-medium text-clawd-accent">
-                {dailyData.length > 0 ? dailyData.reduce((max, d) => d.messages > max.messages ? d : max, dailyData[0]).date : '-'}
+                {dailyData.length > 0
+                  ? (() => {
+                      const best = dailyData.reduce((max, d) => d.completed > max.completed ? d : max, dailyData[0]);
+                      return best.completed > 0 ? `${best.label} (${best.completed})` : '-';
+                    })()
+                  : '-'}
               </span>
             </div>
             <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
-              <span className="text-sm">Avg messages/day</span>
+              <span className="text-sm">Total completed</span>
               <span className="text-sm font-medium text-clawd-accent">
-                {dailyData.length > 0 ? Math.round(dailyData.reduce((sum, d) => sum + d.messages, 0) / dailyData.length) : 0}
+                {dailyData.reduce((sum, d) => sum + d.completed, 0)} tasks
               </span>
             </div>
             <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
-              <span className="text-sm">Avg tasks/day</span>
+              <span className="text-sm">Total created</span>
               <span className="text-sm font-medium text-clawd-accent">
-                {dailyData.length > 0 ? Math.round(dailyData.reduce((sum, d) => sum + d.tasks, 0) / dailyData.length) : 0}
+                {dailyData.reduce((sum, d) => sum + d.created, 0)} tasks
               </span>
             </div>
           </div>
@@ -234,21 +476,21 @@ export default function AnalyticsOverview() {
         <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
             <Calendar size={16} className="text-clawd-accent" />
-            Usage Patterns
+            Top Agents
           </h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
-              <span className="text-sm">Peak hours</span>
-              <span className="text-sm font-medium text-clawd-accent">9AM - 11AM</span>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
-              <span className="text-sm">Busiest channel</span>
-              <span className="text-sm font-medium text-clawd-accent">Discord</span>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
-              <span className="text-sm">Most used agent</span>
-              <span className="text-sm font-medium text-clawd-accent">Coder</span>
-            </div>
+            {agents.length > 0 ? agents.slice(0, 3).map((agent, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 bg-clawd-bg rounded-lg">
+                <span className="text-sm truncate max-w-[150px]">
+                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'} {agent.agent}
+                </span>
+                <span className="text-sm font-medium text-clawd-accent">
+                  {agent.completed} done
+                </span>
+              </div>
+            )) : (
+              <div className="text-sm text-clawd-text-dim py-4 text-center">No agent data</div>
+            )}
           </div>
         </div>
       </div>

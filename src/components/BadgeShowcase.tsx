@@ -83,7 +83,7 @@ export default function BadgeShowcase() {
             </div>
             <div className="text-center">
               <IconBadge icon={AlertTriangle} color={BadgePresets.systemAlert.color} size={16} />
-              <div className="text-xs text-clawd-text-dim mt-2">18px</div>
+              <div className="text-xs text-clawd-text-dim mt-2">16px</div>
             </div>
             <div className="text-center">
               <IconBadge icon={AlertTriangle} color={BadgePresets.systemAlert.color} size={24} />

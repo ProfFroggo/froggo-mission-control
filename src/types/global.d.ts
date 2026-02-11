@@ -48,12 +48,6 @@ declare global {
         status: () => Promise<unknown>;
         sessions: () => Promise<unknown>;
       };
-      approvals: {
-        read: () => Promise<{ items: any[] }>;
-        clear: () => Promise<{ success: boolean }>;
-        remove: (id: string) => Promise<{ success: boolean }>;
-        onUpdate: (callback: (items: any[]) => void) => () => void;
-      };
       // Vosk real-time streaming API
       vosk: {
         check: () => Promise<{ available: boolean; modelPath: string; modelExists: boolean }>;
@@ -83,6 +77,7 @@ declare global {
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;
         // Poke Brain for status update
         poke: (taskId: string, title: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+        pokeInternal: (taskId: string, title: string) => Promise<{ success: boolean; sessionKey?: string; response?: string; error?: string }>;
         // Subtask operations
         subtasks: {
           list: (taskId: string) => Promise<{ success: boolean; subtasks: SubtaskData[] }>;
@@ -135,6 +130,7 @@ declare global {
       // Database
       db: {
         exec: (query: string, params?: any[]) => Promise<{ success: boolean; result?: any[]; error?: string }>;
+        query: (query: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
       };
       // Library
       library: {
@@ -171,6 +167,10 @@ declare global {
       settings: {
         get: () => Promise<{ success: boolean; settings: any }>;
         save: (settings: any) => Promise<{ success: boolean }>;
+        getApiKey: (keyName: string) => Promise<string | null>;
+        storeApiKey: (keyName: string, value: string) => Promise<{ success: boolean; error?: string }>;
+        hasApiKey: (keyName: string) => Promise<boolean>;
+        deleteApiKey: (keyName: string) => Promise<{ success: boolean; error?: string }>;
       };
       // X (bird CLI)
       twitter: {
@@ -239,17 +239,23 @@ declare global {
         pin: (sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
         unpin: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
         toggle: (sessionKey: string) => Promise<{ success: boolean; pinned: boolean; error?: string }>;
+        reorder: (order: string[]) => Promise<{ success: boolean; error?: string }>;
       };
       // Message Folders
       folders: {
         list: () => Promise<{ success: boolean; folders: any[]; error?: string }>;
         create: (folder: { name: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; folder?: any; error?: string }>;
-        update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
+        update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => Promise<{ success: boolean; error?: string }>;
         delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
         assign: (folderId: number, sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
         unassign: (folderId: number, sessionKey: string) => Promise<{ success: boolean; error?: string }>;
         forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: any[]; error?: string }>;
         conversations: (folderId: number) => Promise<{ success: boolean; conversations: any[]; error?: string }>;
+        rules: {
+          get: (folderId: number) => Promise<{ success: boolean; rule?: any; error?: string }>;
+          save: (folderId: number, rule: any) => Promise<{ success: boolean; error?: string }>;
+          delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
+        };
       };
       // Conversations
       conversations: {
@@ -264,6 +270,46 @@ declare global {
       exec: {
         run: (command: string) => Promise<{ success: boolean; stdout: string; stderr: string }>;
       };
+      // Notification settings (per-conversation)
+      notificationSettings: {
+        get: (sessionKey: string) => Promise<{ success: boolean; settings?: any; error?: string }>;
+        set: (sessionKey: string, settings: any) => Promise<{ success: boolean; error?: string }>;
+        delete: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+        getEffective: (sessionKey: string) => Promise<{ success: boolean; settings?: any; error?: string }>;
+        getGlobalDefaults: () => Promise<{ success: boolean; defaults?: any; error?: string }>;
+        setGlobalDefaults: (defaults: any) => Promise<{ success: boolean; error?: string }>;
+        muteConversation: (sessionKey: string, until?: string) => Promise<{ success: boolean; error?: string }>;
+        unmuteConversation: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // VIP contacts
+      vip: {
+        list: (category?: string) => Promise<any>;
+        add: (vip: { identifier: string; label?: string; type?: string; category?: string; boost?: number; notes?: string }) => Promise<{ success: boolean; error?: string }>;
+        update: (id: number | string, updates: { label?: string; boost?: number; category?: string; notes?: string }) => Promise<{ success: boolean; error?: string }>;
+        remove: (id: number | string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Snooze conversations
+      snooze: {
+        list: () => Promise<{ success: boolean; snoozes?: any[]; error?: string }>;
+        get: (sessionKey: string) => Promise<{ success: boolean; snooze?: any; error?: string }>;
+        set: (sessionKey: string, until: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
+        unset: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Froggo DB direct queries
+      froggo: {
+        query: (sql: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
+      };
+      // System notifications
+      notifications: {
+        getPrefs: () => Promise<any>;
+        updatePrefs: (updates: any) => Promise<void>;
+        send: (options: any) => Promise<void>;
+        test: () => Promise<void>;
+        onReceived: (callback: (notification: any) => void) => () => void;
+        onAction: (callback: (action: any) => void) => () => void;
+      };
+      // Navigation
+      onNavigate: (callback: (view: string, data?: any) => void) => () => void;
       // Starred messages
       starred: {
         star: (messageId: number, note?: string, category?: string) => Promise<{ success: boolean; error?: string }>;
@@ -272,6 +318,86 @@ declare global {
         search: (query: string, limit?: number) => Promise<{ success: boolean; results: any[]; error?: string }>;
         stats: () => Promise<{ success: boolean; stats: { total: number; byCategory?: any[] } }>;
         check: (messageId: number) => Promise<{ success: boolean; isStarred: boolean }>;
+      };
+      // Agent registry (dynamic agent loading)
+      getAgentRegistry: () => Promise<Array<{
+        id: string;
+        name: string;
+        role: string;
+        description: string;
+        color: string;
+        image_path: string;
+        status: string;
+        trust_tier: string;
+      }>>;
+      // DM Feed & Circuit Breakers
+      getDMHistory: (args?: { limit?: number; agent?: string }) => Promise<Array<{
+        id: number;
+        correlation_id: string;
+        from_agent: string;
+        to_agent: string;
+        message_type: string;
+        subject: string;
+        body: string;
+        status: string;
+        created_at: number;
+        read_at: number | null;
+      }>>;
+      getCircuitStatus: () => Promise<Record<string, {
+        state: 'closed' | 'open' | 'half_open';
+        consecutive_failures: number;
+        last_failure_time: number | null;
+        suspended_until: number | null;
+        last_state_change: number;
+      }>>;
+      // Agent performance & governance
+      getPerformanceReport: (days: number) => Promise<{
+        days: number;
+        agents: Array<{
+          agent_id: string;
+          status: string;
+          success_rate: number;
+          avg_completion_hours: number;
+          clara_approval_rate: number;
+          tokens_per_task: number;
+          total_tasks: number;
+          total_cost: number;
+        }>;
+        error?: string;
+      }>;
+      getAgentAudit: (agentId: string, days: number) => Promise<{
+        agent_id: string;
+        days: number;
+        timeline: Array<{
+          timestamp: string;
+          type: 'lifecycle' | 'activity';
+          action: string;
+          task_id?: string;
+          message?: string;
+          outcome?: string;
+          field?: string;
+          from_value?: string;
+          to_value?: string;
+          changed_by?: string;
+          reason?: string;
+        }>;
+        error?: string;
+      }>;
+      // Widget API - dynamic agent widget loading
+      widgetAPI?: {
+        scanManifest: (agentId: string) => Promise<{
+          version?: string;
+          widgets?: Array<{
+            id: string;
+            name: string;
+            component: string;
+            permissions: string[];
+            panelType: 'dashboard' | 'sidebar' | 'modal';
+            icon: string;
+            description: string;
+          }>;
+          error?: string;
+        }>;
       };
     };
   }

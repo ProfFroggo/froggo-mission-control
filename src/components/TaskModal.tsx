@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { gateway } from '../lib/gateway';
-import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
+import BaseModal, { BaseModalBody } from './BaseModal';
+import AgentAvatar from './AgentAvatar';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} /> },
   { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} /> },
   { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={14} /> },
-  { id: 'p3', label: 'Low', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: <ArrowDown size={14} /> },
+  { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} /> },
 ];
 
 interface TaskModalProps {
@@ -170,7 +171,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       assignedTo: assignedTo || undefined,
       reviewerId: reviewerId || 'froggo', // Always set reviewer (default: froggo)
-      reviewStatus: 'pending', // Initialize review status
+      reviewStatus: 'pending' as any, // Initialize review status
     };
 
     addTask(newTask);
@@ -286,7 +287,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       dueDate: extractedData.dueDate,
       assignedTo: extractedData.assignedTo || autoAssignWorker(extractedData),
       reviewerId: 'froggo', // Always default to Froggo as reviewer
-      reviewStatus: 'pending' as const, // Initialize review status
+      reviewStatus: 'pending' as any, // Initialize review status
     };
 
     addTask(newTask);
@@ -643,7 +644,6 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     onChange={e => setStatus(e.target.value as TaskStatus)}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   >
-                    <option value="backlog">📋 Backlog</option>
                     <option value="todo">📝 To Do</option>
                     <option value="in-progress">⚡ In Progress</option>
                     <option value="review">👀 Review</option>
@@ -683,7 +683,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                             : 'border-clawd-border hover:border-clawd-accent/50'
                         }`}
                       >
-                        <span className="text-base">{agent.avatar || '🤖'}</span>
+                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
                       </button>
                     ))}
@@ -709,7 +709,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                             : 'border-clawd-border hover:border-clawd-accent/50'
                         }`}
                       >
-                        <span className="text-base">{agent.avatar || '🤖'}</span>
+                        <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
                         <span className="truncate">{agent.name}</span>
                         {agent.id === 'froggo' && <span className="text-xs opacity-60">(default)</span>}
                       </button>

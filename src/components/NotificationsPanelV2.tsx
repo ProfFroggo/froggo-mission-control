@@ -5,12 +5,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { 
-  Bell, Check, X, Clock, MessageSquare, Calendar, Mail, AlertCircle, 
-  CheckCircle, RefreshCw, Filter, Inbox, Settings, CheckCheck, 
-  Clock3, AlertTriangle, Bot, Star, XCircle, Activity 
+  Bell, Check, X, Clock, MessageSquare, Calendar, AlertCircle, 
+  CheckCircle, RefreshCw, Settings, CheckCheck, 
+  Clock3, AlertTriangle, Bot, Star, XCircle 
 } from 'lucide-react';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
+import IconBadge from './IconBadge';
 import { 
   notificationService, 
   Notification, 
@@ -34,7 +35,7 @@ const priorityBadges: Record<string, { color: string; label: string }> = {
   urgent: { color: 'bg-red-500 text-white', label: 'Urgent' },
   high: { color: 'bg-orange-500 text-white', label: 'High' },
   normal: { color: 'bg-blue-500/20 text-blue-400', label: 'Normal' },
-  low: { color: 'bg-gray-500/20 text-gray-400', label: 'Low' },
+  low: { color: 'bg-clawd-bg0/20 text-clawd-text-dim', label: 'Low' },
 };
 
 export default function NotificationsPanelV2() {
@@ -180,9 +181,7 @@ export default function NotificationsPanelV2() {
                   className="p-4 bg-clawd-surface border border-clawd-border rounded-xl"
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config?.color || 'bg-gray-500/10'} flex items-center justify-center`}>
-                      <Icon size={20} />
-                    </div>
+                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-clawd-bg0/10 text-clawd-text-dim'} />
                     
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
@@ -352,9 +351,7 @@ export default function NotificationsPanelV2() {
                   onClick={() => handleNavigate(notif)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config?.color || 'bg-gray-500/10'} flex-shrink-0 flex items-center justify-center`}>
-                      <Icon size={16} />
-                    </div>
+                    <IconBadge icon={Icon} size={16} color={config?.color || 'bg-clawd-bg0/10 text-clawd-text-dim'} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -378,12 +375,18 @@ export default function NotificationsPanelV2() {
                       )}
                       
                       <div className="flex items-center gap-2 mt-2 text-xs text-clawd-text-dim flex-wrap">
-                        <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color.replace('text-', 'bg-').replace('/10', '/20') || 'bg-gray-500/20'}`}>
+                        <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color.replace('text-', 'bg-').replace('/10', '/20') || 'bg-clawd-bg0/20'}`}>
                           {config?.label || notif.type}
                         </span>
                         <Clock size={10} />
                         <span>{formatTimeAgo(notif.created_at)}</span>
-                        {notif.source_id && (
+                        {notif.channel && (
+                          <>
+                            <span>•</span>
+                            <span className="text-xs opacity-75">{notif.channel}</span>
+                          </>
+                        )}
+                        {notif.source_id && !notif.channel && (
                           <>
                             <span>•</span>
                             <span className="font-mono text-xs opacity-50">{notif.source_id}</span>

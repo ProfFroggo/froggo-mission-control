@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
-import { spawnAgent, spawnWorker, matchTaskToAgent, AGENTS } from '../lib/agents';
+import { matchTaskToAgent } from '../lib/agents';
 
-export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed';
+export type TaskStatus = 'blocked' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
 
 export interface TaskLabel {
@@ -56,6 +56,7 @@ export interface Task {
   blocks?: string[]; // Task IDs this blocks
   progress?: number; // 0-100 percentage
   lastAgentUpdate?: string; // Last status message from agent
+  completedAt?: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -65,11 +66,12 @@ export interface Agent {
   name: string;
   avatar?: string;
   description?: string;
-  status: 'active' | 'busy' | 'idle' | 'offline';
+  status: 'active' | 'busy' | 'idle' | 'offline' | 'suspended' | 'archived' | 'draft';
   capabilities?: string[];
   sessionKey?: string;
   currentTaskId?: string;
   lastActivity?: number;
+  trust_tier?: 'apprentice' | 'journeyman' | 'expert' | 'master';
 }
 
 export interface Session {
@@ -91,6 +93,9 @@ export interface GatewaySession {
   totalTokens?: number;
   contextTokens?: number;
   label?: string; // Sub-agent label when spawned with sessions_spawn
+  channel?: string; // Delivery channel (discord, whatsapp, etc.)
+  inputTokens?: number;
+  outputTokens?: number;
   // Derived fields for UI
   type: 'main' | 'subagent' | 'cron' | 'discord' | 'telegram' | 'whatsapp' | 'web' | 'other';
   displayName: string;
@@ -125,6 +130,8 @@ export interface ApprovalItem {
   metadata?: {
     to?: string;
     from?: string;
+    subject?: string;
+    account?: string;
     platform?: string;
     replyTo?: string;
     scheduledFor?: string;
@@ -172,11 +179,12 @@ interface Store {
 
   // Tasks (local)
   tasks: Task[];
+  taskCounts: { totalDone: number; totalArchived: number };
   loadTasksFromDB: () => Promise<void>;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   moveTask: (id: string, status: TaskStatus) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string) => Promise<void>;
   assignTask: (id: string, agentId: string | undefined) => void;
   
   // Subtasks (DB-backed)
@@ -189,8 +197,9 @@ interface Store {
   loadTaskActivity: (taskId: string, limit?: number) => Promise<TaskActivity[]>;
   logTaskActivity: (taskId: string, action: string, message: string, agentId?: string, details?: string) => Promise<boolean>;
 
-  // Agents (predefined + dynamic)
+  // Agents (loaded from registry + dynamic)
   agents: Agent[];
+  fetchAgents: () => Promise<void>;
   spawnAgentForTask: (taskId: string) => Promise<void>;
   createWorkerAgent: (name: string, task: string) => Promise<string>;
   updateAgentStatus: (agentId: string, status: Agent['status'], sessionKey?: string) => void;
@@ -216,54 +225,92 @@ interface Store {
   deleteXDraft: (id: string) => void;
   markXDraftPosted: (id: string) => void;
 
-  // Orchestration - Froggo management
-  autoAssignTask: (taskId: string) => void;
-  processAgentOutput: (agentId: string, output: string, taskId: string) => void;
-  getUnassignedTasks: () => Task[];
-  getTasksNeedingReview: () => Task[];
 }
 
-// Execute approved items
-async function executeApproval(item: ApprovalItem) {
-  console.log('Executing approval:', item.type, item.title);
+// Execute approved items via direct IPC calls
+async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; error?: string }> {
+  console.log('[Approval] Executing:', item.type, item.title);
+  const clawdbot = (window as any).clawdbot;
   
   try {
     switch (item.type) {
       case 'tweet':
-      case 'reply':
-        // Send to gateway to post via bird CLI
-        await gateway.sendChat(`[APPROVED] Post this ${item.type}: ${item.content}`);
+      case 'reply': {
+        // Post tweet directly via bird CLI IPC
+        if (clawdbot?.execute?.tweet) {
+          const result = await clawdbot.execute.tweet(item.content);
+          if (!result.success) {
+            console.error('[Approval] Tweet failed:', result.error);
+            // Fallback: notify agent to handle it
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Tweet failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
+            return { success: false, error: result.error };
+          }
+          console.log('[Approval] Tweet posted successfully');
+        } else {
+          // Fallback if IPC not available
+          await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch(() => {});
+        }
         break;
-      case 'email':
-        // Send email via gateway
-        await gateway.sendChat(`[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`);
+      }
+      case 'email': {
+        // Send email directly via gog gmail IPC
+        if (clawdbot?.email?.send && item.metadata?.to) {
+          const result = await clawdbot.email.send({
+            to: item.metadata.to,
+            subject: item.metadata.subject || item.title || 'No subject',
+            body: item.content,
+            account: item.metadata.account,
+          });
+          if (!result.success) {
+            console.error('[Approval] Email failed:', result.error);
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Email to ${item.metadata.to} failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
+            return { success: false, error: result.error };
+          }
+          console.log('[Approval] Email sent successfully to', item.metadata.to);
+        } else {
+          await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch(() => {});
+        }
         break;
-      case 'message':
-        // Send message via gateway
-        await gateway.sendChat(`[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`);
+      }
+      case 'message': {
+        // Send message via messages IPC
+        if (clawdbot?.messages?.send && item.metadata?.platform && item.metadata?.to) {
+          const result = await clawdbot.messages.send(item.metadata.platform, item.metadata.to, item.content);
+          if (!result?.success) {
+            console.error('[Approval] Message failed:', result?.error);
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.metadata.platform} message to ${item.metadata.to} failed: ${result?.error}`).catch(() => {});
+            return { success: false, error: result?.error };
+          }
+          console.log('[Approval] Message sent successfully');
+        } else {
+          await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch(() => {});
+        }
         break;
+      }
+      case 'task': {
+        // Notify agent to create task (tasks are managed by the agent/froggo-db)
+        await gateway.sendToSession('main', `[APPROVED] Create task: ${item.title}\n${item.content}`).catch(() => {});
+        break;
+      }
       case 'action':
-        // Execute action via gateway
-        await gateway.sendChat(`[APPROVED] Execute action: ${item.title}\n${item.content}`);
+      default: {
+        // Generic actions - notify agent to execute
+        await gateway.sendToSession('main', `[APPROVED] Execute action: ${item.title}\n${item.content}`).catch(() => {});
         break;
-      case 'task':
-        // Create/update task
-        await gateway.sendChat(`[APPROVED] Task: ${item.title}\n${item.content}`);
-        break;
+      }
     }
-  } catch (e) {
-    console.error('Failed to execute approval:', e);
+    return { success: true };
+  } catch (e: any) {
+    console.error('[Approval] Failed to execute:', e);
+    // Notify agent about the failure so it can retry or handle
+    await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${e.message}\n\nContent: ${item.content}`).catch(() => {});
+    return { success: false, error: e.message };
   }
 }
 
-const defaultAgents: Agent[] = [
-  { id: 'main', name: 'Froggo', avatar: '🐸', description: 'Main assistant - orchestrates everything', status: 'active', capabilities: ['chat', 'code', 'web', 'email', 'orchestrate'] },
-  { id: 'froggo', name: 'Froggo', avatar: '🐸', description: 'Agent reviewer - reviews all completed work', status: 'active', capabilities: ['review', 'orchestrate', 'approve'] },
-  { id: 'coder', name: 'Coder', avatar: '💻', description: 'Software engineering tasks', status: 'idle', capabilities: ['code', 'git', 'debug', 'test'] },
-  { id: 'researcher', name: 'Researcher', avatar: '🔍', description: 'Research & analysis', status: 'idle', capabilities: ['web', 'analyze', 'summarize'] },
-  { id: 'writer', name: 'Writer', avatar: '✍️', description: 'Content creation', status: 'idle', capabilities: ['write', 'edit', 'social'] },
-  { id: 'chief', name: 'Chief', avatar: '👨‍💻', description: 'Lead Engineer (GSD methodology)', status: 'idle', capabilities: ['code', 'architecture', 'planning'] },
-];
+
+// No fallback agents - agents are loaded exclusively from the gateway registry
+// This prevents phantom/duplicate agents from appearing in the UI
 
 export const useStore = create<Store>()(
   persist(
@@ -296,8 +343,11 @@ export const useStore = create<Store>()(
       fetchSessions: async () => {
         try {
           get().setLoading('sessions', true);
-          const res = await gateway.getSessions();
-          set({ sessions: res.sessions || [] });
+          // Use IPC handler instead of WebSocket RPC (sessions.list RPC method doesn't exist)
+          const result = await (window as any).clawdbot?.sessions?.list();
+          if (result?.success && result?.sessions) {
+            set({ sessions: result.sessions || [] });
+          }
         } catch (e) {
           console.error('Failed to fetch sessions:', e);
         } finally {
@@ -309,8 +359,9 @@ export const useStore = create<Store>()(
       gatewaySessions: [],
       loadGatewaySessions: async () => {
         try {
-          const result = await (window as any).clawdbot?.gateway?.sessionsList();
-          if (result?.success && Array.isArray(result.sessions)) {
+          // Use IPC handler instead of WebSocket RPC (sessions.list RPC method doesn't exist)
+          const result = await (window as any).clawdbot?.sessions?.list();
+          if (result?.success && result?.sessions && Array.isArray(result.sessions)) {
             const now = Date.now();
             const fiveMinutes = 5 * 60 * 1000;
             
@@ -362,6 +413,9 @@ export const useStore = create<Store>()(
                 model: s.model,
                 totalTokens: s.totalTokens,
                 contextTokens: s.contextTokens,
+                inputTokens: s.inputTokens,
+                outputTokens: s.outputTokens,
+                channel: s.channel,
                 label,
                 type,
                 displayName,
@@ -369,11 +423,79 @@ export const useStore = create<Store>()(
               };
             });
             
-            // OX LITE: Filter to only show Ox's spawned sessions (label starts with 'ox-')
-            const oxSessions = processed.filter((s: GatewaySession) => 
-              s.type === 'subagent' && s.label && s.label.startsWith('ox-')
-            );
-            set({ gatewaySessions: oxSessions });
+            // Enrich agent statuses from session data
+            // Map session agent keys to dashboard agent IDs
+            const agentKeyMap: Record<string, string> = {
+              'froggo': 'main',
+            };
+            const resolveAgentId = (key: string): string | null => {
+              const match = (key || '').match(/^agent:([^:]+)/);
+              if (!match) return null;
+              const raw = match[1];
+              return agentKeyMap[raw] || raw;
+            };
+
+            // Group non-subagent sessions by agent_id to determine activity
+            const agentActivity = new Map<string, { latestUpdate: number; totalTokens: number; sessionCount: number; activeCount: number; model?: string; channel?: string }>();
+            for (const s of processed) {
+              if (s.type === 'subagent') continue;
+              const agentId = resolveAgentId(s.key);
+              if (!agentId) continue;
+              const existing = agentActivity.get(agentId) || { latestUpdate: 0, totalTokens: 0, sessionCount: 0, activeCount: 0 };
+              if ((s.updatedAt || 0) > existing.latestUpdate) {
+                if (s.model) existing.model = s.model;
+                if (s.channel) existing.channel = s.channel;
+              }
+              existing.latestUpdate = Math.max(existing.latestUpdate, s.updatedAt || 0);
+              existing.totalTokens += s.totalTokens || 0;
+              existing.sessionCount++;
+              if (s.isActive) existing.activeCount++;
+              agentActivity.set(agentId, existing);
+            }
+
+            // Count active subagents per parent agent
+            const subagentCounts = new Map<string, number>();
+            for (const s of processed) {
+              if (s.type !== 'subagent') continue;
+              const agentId = resolveAgentId(s.key);
+              if (!agentId) continue;
+              subagentCounts.set(agentId, (subagentCounts.get(agentId) || 0) + (s.isActive ? 1 : 0));
+            }
+
+            // Skip phantom agents — use exclusion instead of inclusion
+            const PHANTOM_AGENTS = ['main', 'chat-agent'];
+
+            set((state: Store) => ({
+              gatewaySessions: processed,
+              agents: state.agents.map((agent: Agent) => {
+                // Skip phantom/legacy agents
+                if (PHANTOM_AGENTS.includes(agent.id)) {
+                  return agent;
+                }
+
+                const activity = agentActivity.get(agent.id);
+                const activeSubagents = subagentCounts.get(agent.id) || 0;
+
+                // If no activity AND no active subagents, keep default status
+                if (!activity && !activeSubagents) return agent;
+
+                const ageMs = activity?.latestUpdate ? now - activity.latestUpdate : Infinity;
+                let status: Agent['status'];
+                if ((activity?.activeCount || 0) > 0 || activeSubagents > 0) {
+                  status = 'active';
+                } else if (ageMs < 30 * 60 * 1000) { // 30 minutes
+                  status = 'idle';
+                } else {
+                  status = 'offline';
+                }
+
+                return {
+                  ...agent,
+                  status,
+                  lastActivity: activity?.latestUpdate || agent.lastActivity,
+                };
+              }),
+            }));
           }
         } catch (error) {
           console.error('Failed to load gateway sessions:', error);
@@ -381,14 +503,13 @@ export const useStore = create<Store>()(
       },
 
       tasks: [], // Empty - loaded from froggo-db only
+      taskCounts: { totalDone: 0, totalArchived: 0 },
       loadTasksFromDB: async () => {
         try {
           get().setLoading('tasks', true);
-          // Load tasks with limit for better performance
-          // Get all non-done tasks + last 50 completed tasks
           const result = await (window as any).clawdbot?.tasks?.list();
           if (result?.success && Array.isArray(result.tasks)) {
-            // Convert froggo-db tasks to store format
+            // Convert froggo-db tasks to store format (backend already filters archived/cancelled)
             const tasksWithoutSubtasks = result.tasks.map((t: any) => ({
               id: t.id,
               title: t.title,
@@ -396,7 +517,7 @@ export const useStore = create<Store>()(
               status: t.status as TaskStatus,
               priority: t.priority as TaskPriority | undefined,
               project: t.project || 'General',
-              assignedTo: t.assigned_to,
+              assignedTo: t.assigned_to === 'main' ? 'froggo' : t.assigned_to,
               reviewerId: t.reviewerId || t.reviewer_id || undefined,
               reviewStatus: t.reviewStatus || t.review_status || undefined,
               planningNotes: t.planning_notes || t.planningNotes || undefined,
@@ -404,23 +525,16 @@ export const useStore = create<Store>()(
               lastAgentUpdate: t.last_agent_update || undefined,
               createdAt: t.created_at || Date.now(),
               updatedAt: t.updated_at || Date.now(),
+              last_activity_at: t.last_activity_at || undefined,
               subtasks: [] as Subtask[],
             }));
-            
-            // Filter: keep all active tasks + last 50 completed
-            const activeTasks = tasksWithoutSubtasks.filter((t: Task) => t.status !== 'done');
-            const completedTasks = tasksWithoutSubtasks
-              .filter((t: Task) => t.status === 'done')
-              .sort((a: Task, b: Task) => (b.updatedAt || 0) - (a.updatedAt || 0))
-              .slice(0, 50);
-            const filteredTasks = [...activeTasks, ...completedTasks];
             
             // Load subtasks in parallel with batching (10 at a time)
             const BATCH_SIZE = 10;
             const tasksWithSubtasks: Task[] = [];
             
-            for (let i = 0; i < filteredTasks.length; i += BATCH_SIZE) {
-              const batch = filteredTasks.slice(i, i + BATCH_SIZE);
+            for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
+              const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
               const batchResults = await Promise.all(
                 batch.map(async (task: Task) => {
                   try {
@@ -435,7 +549,14 @@ export const useStore = create<Store>()(
               tasksWithSubtasks.push(...batchResults);
             }
             
-            set({ tasks: tasksWithSubtasks });
+            // Update tasks and counts
+            set({ 
+              tasks: tasksWithSubtasks,
+              taskCounts: { 
+                totalDone: result.totalDone || 0, 
+                totalArchived: result.totalArchived || 0 
+              }
+            });
           }
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
@@ -456,9 +577,42 @@ export const useStore = create<Store>()(
         // Sync to froggo-db
         (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
       },
-      updateTask: (id: string, updates: Partial<Task>) => set((s: Store) => ({
-        tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
-      })),
+      updateTask: (id: string, updates: Partial<Task>) => {
+        console.log('[Store] updateTask called:', id, updates);
+        // Snapshot original values for rollback
+        const original = get().tasks.find((t: Task) => t.id === id);
+        const rollbackValues = original
+          ? Object.keys(updates).reduce((acc, key) => ({ ...acc, [key]: (original as any)[key] }), {} as Partial<Task>)
+          : null;
+        // Optimistically update UI
+        set((s: Store) => ({
+          tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
+        }));
+
+        console.log('[Store] Calling clawdbot.tasks.update via IPC');
+        // Persist to database via IPC
+        (window as any).clawdbot?.tasks?.update(id, updates)
+          .then((result: any) => {
+            if (!result?.success) {
+              console.error('[Store] Task update failed:', result?.error);
+              if (rollbackValues) {
+                set((s: Store) => ({
+                  tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
+                }));
+              }
+            } else {
+              console.log('[Store] Task update persisted:', id, updates);
+            }
+          })
+          .catch((err: any) => {
+            console.error('[Store] Task update exception:', err);
+            if (rollbackValues) {
+              set((s: Store) => ({
+                tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
+              }));
+            }
+          });
+      },
       moveTask: (id: string, status: TaskStatus) => {
         const task = get().tasks.find((t: Task) => t.id === id);
         if (!task) return;
@@ -523,7 +677,14 @@ export const useStore = create<Store>()(
           timestamp: Date.now(),
         });
       },
-      deleteTask: (id: string) => set((s: Store) => ({ tasks: s.tasks.filter((t: Task) => t.id !== id) })),
+      deleteTask: async (id: string) => {
+        try {
+          await (window as any).clawdbot?.tasks?.delete(id);
+        } catch (e) {
+          console.error('Failed to delete task from DB:', e);
+        }
+        set((s: Store) => ({ tasks: s.tasks.filter((t: Task) => t.id !== id) }));
+      },
       assignTask: (id: string, agentId?: string) => {
         const task = get().tasks.find((t: Task) => t.id === id);
         const agent = agentId ? get().agents.find((a: Agent) => a.id === agentId) : null;
@@ -689,7 +850,53 @@ export const useStore = create<Store>()(
         }
       },
 
-      agents: defaultAgents,
+      agents: [], // Start empty - loaded from gateway only
+
+      fetchAgents: async () => {
+        try {
+          get().setLoading('agents', true);
+          // Fetch agents from gateway using the new IPC handler
+          const result = await (window as any).clawdbot?.agents?.list();
+          if (result?.success && Array.isArray(result.agents) && result.agents.length > 0) {
+            // Map CLI fields (identityName, identityEmoji) to store fields (name, avatar)
+            const agents: Agent[] = result.agents.map((cliAgent: any) => ({
+              id: cliAgent.id,
+              name: cliAgent.identityName || cliAgent.id,
+              avatar: cliAgent.identityEmoji || '🤖',
+              description: cliAgent.description || '',
+              status: 'idle' as Agent['status'],
+              capabilities: cliAgent.capabilities || [],
+              workspace: cliAgent.workspace,
+              model: cliAgent.model,
+            }));
+
+            // Preserve runtime state (status/sessionKey/currentTaskId/lastActivity) from current agents
+            const current = get().agents;
+            const fresh = agents.map((agent: Agent) => {
+              const existing = current.find((a: Agent) => a.id === agent.id);
+              // If agent exists, keep its runtime state, otherwise use fresh state
+              return existing
+                ? { ...agent, status: existing.status, sessionKey: existing.sessionKey, currentTaskId: existing.currentTaskId, lastActivity: existing.lastActivity }
+                : agent;
+            });
+
+            // Set agents to ONLY gateway agents (no fallback, no phantom agents)
+            set({ agents: fresh });
+            console.log(`[Store] Loaded ${fresh.length} agents from gateway:`, fresh.map((a: Agent) => `${a.avatar} ${a.name} (${a.id})`).join(', '));
+          } else {
+            // If gateway unavailable, keep empty (no phantom agents)
+            console.warn('[Store] Gateway agents unavailable, agents list will be empty until gateway loads');
+            if (result?.error) {
+              console.error('[Store] Gateway error:', result.error);
+            }
+          }
+        } catch (e) {
+          console.error('[Store] Failed to fetch agents from gateway:', e);
+          // On error, keep current agents (don't inject fallbacks)
+        } finally {
+          get().setLoading('agents', false);
+        }
+      },
 
       // Spawn an agent to work on a task
       spawnAgentForTask: async (taskId: string) => {
@@ -720,9 +927,12 @@ export const useStore = create<Store>()(
             ),
           }));
 
-          // Send execution trigger to Froggo (brain) in main session
-          const triggerMessage = `[TASK_START] taskId: ${taskId}`;
-          await gateway.sendToMain(triggerMessage);
+          // IMMEDIATELY spawn agent via spawn-agent-with-retry (don't wait for DB triggers)
+          try {
+            await (window as any).clawdbot?.agents?.spawnForTask?.(taskId, agentId);
+          } catch (spawnErr) {
+            console.warn('Direct spawn failed, relying on DB triggers:', spawnErr);
+          }
 
           get().addActivity({
             type: 'agent',
@@ -817,64 +1027,7 @@ Start now.`;
       })),
       clearActivities: () => set({ activities: [] }),
 
-      // Approvals - seed with some examples
-      approvals: [
-        {
-          id: 'appr-seed-1',
-          type: 'tweet' as ApprovalType,
-          title: 'Weekly Thread Draft',
-          content: `Thread: Why your AI agent is probably trash 🧵
-
-1/ Everyone's building AI agents rn but most miss the point entirely.
-
-They focus on the tech stack when they should focus on the workflow.
-
-2/ The best AI agents aren't the smartest. They're the most predictable.
-
-Users need to trust what it will do. Surprises = churn.
-
-3/ Here's what actually matters:
-- Clear scope (what it does AND doesn't do)
-- Consistent behavior  
-- Graceful failures
-- Human escalation path
-
-4/ Stop building "autonomous" agents. Build collaborative ones.
-
-The goal isn't to replace humans. It's to amplify them.`,
-          context: 'Drafted based on your X growth strategy - thought leadership content',
-          metadata: { platform: 'X', scheduledFor: 'Tomorrow 9am' },
-          status: 'pending' as ApprovalStatus,
-          createdAt: Date.now() - 1800000,
-        },
-        {
-          id: 'appr-seed-2',
-          type: 'reply' as ApprovalType,
-          title: 'Reply to @cobie',
-          content: `This. The best products feel inevitable in hindsight but impossible to predict beforehand.
-
-The pattern I've seen: founders who deeply understand one specific user segment always beat generalists trying to "disrupt an industry."`,
-          context: 'Replying to thread about product-market fit',
-          metadata: { platform: 'X', replyTo: '@cobie: "PMF isn\'t about TAM..."' },
-          status: 'pending' as ApprovalStatus,
-          createdAt: Date.now() - 3600000,
-        },
-        {
-          id: 'appr-seed-3',
-          type: 'action' as ApprovalType,
-          title: 'Schedule Team Sync',
-          content: `Create recurring meeting:
-- Title: "Weekly Team Sync"
-- When: Every Monday 10:00 AM
-- Duration: 30 min
-- Attendees: Alberto, Maria, Dev team
-- Location: Google Meet`,
-          context: 'You mentioned wanting to set up regular syncs',
-          metadata: { platform: 'Google Calendar' },
-          status: 'pending' as ApprovalStatus,
-          createdAt: Date.now() - 900000,
-        },
-      ],
+      approvals: [],
       addApproval: (a: Omit<ApprovalItem, 'id' | 'status' | 'createdAt'>) => {
         // Notify user
         notifyNewApproval(a.title);
@@ -892,25 +1045,37 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         const state = get();
         const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
-          // Execute the action
-          executeApproval(item);
-          // Create completion task
-          const completionTask: Task = {
-            id: `task-exec-${Date.now()}`,
-            title: `Execute: ${item.title}`,
-            description: `Approved ${item.type}: ${item.content?.slice(0, 200)}...`,
-            status: 'in-progress',
-            project: 'Approvals',
-            assignedTo: 'coder', // Never assign to main/froggo - use coder for execution
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-          };
+          // Remove from inbox immediately (optimistic)
           set((s: Store) => ({
-            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Remove from inbox
-            tasks: [completionTask, ...s.tasks],
+            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id),
           }));
-          // Notify main session
-          gateway.sendToSession('main', `[APPROVED] Execute ${item.type}: "${item.title}"\n\nContent:\n${item.content}`).catch(() => {});
+          
+          // Also remove from file-based approval queue
+          (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
+          
+          // Execute the action asynchronously
+          executeApproval(item).then((result) => {
+            const taskStatus = result.success ? 'done' : 'failed';
+            const completionTask: Task = {
+              id: `task-exec-${Date.now()}`,
+              title: `${result.success ? '✅' : '❌'} ${item.type}: ${item.title}`,
+              description: result.success 
+                ? `Executed ${item.type}: ${item.content?.slice(0, 200)}` 
+                : `Failed to execute ${item.type}: ${result.error}\n\nContent: ${item.content?.slice(0, 200)}`,
+              status: taskStatus,
+              project: 'Approvals',
+              assignedTo: 'coder',
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            };
+            set((s: Store) => ({
+              tasks: [completionTask, ...s.tasks],
+            }));
+            // Notify main session
+            if (result.success) {
+              gateway.sendToSession('main', `[EXECUTED] ${item.type}: "${item.title}" completed successfully`).catch(() => {});
+            }
+          });
         }
       },
       rejectItem: (id: string) => {
@@ -927,6 +1092,8 @@ The pattern I've seen: founders who deeply understand one specific user segment 
           // Notify main session
           gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch(() => {});
         }
+        // Remove from file-based queue
+        (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
         set((s: Store) => ({
           approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
         }));
@@ -946,6 +1113,8 @@ The pattern I've seen: founders who deeply understand one specific user segment 
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
+          // Remove from file-based queue
+          (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
           set((s: Store) => ({
             approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
             tasks: [revisionTask, ...s.tasks],
@@ -1010,99 +1179,6 @@ The pattern I've seen: founders who deeply understand one specific user segment 
         xDrafts: s.xDrafts.filter(d => d.id !== id)
       })),
 
-      // Orchestration functions for Froggo
-
-      // Auto-assign a task to the best agent
-      autoAssignTask: (taskId: string) => {
-        const state = get();
-        const task = state.tasks.find((t: Task) => t.id === taskId);
-        if (!task || task.assignedTo) return;
-
-        const agentId = matchTaskToAgent(task.title, task.description || '');
-        
-        set((s: Store) => ({
-          tasks: s.tasks.map((t: Task) => 
-            t.id === taskId ? { ...t, assignedTo: agentId, updatedAt: Date.now() } : t
-          ),
-        }));
-
-        get().addActivity({
-          type: 'system',
-          message: `🐸 Auto-assigned "${task.title}" to ${agentId}`,
-          timestamp: Date.now(),
-        });
-      },
-
-      // Process output from an agent and decide next steps
-      processAgentOutput: (agentId: string, output: string, taskId: string) => {
-        const state = get();
-        const task = state.tasks.find((t: Task) => t.id === taskId);
-        const agent = state.agents.find((a: Agent) => a.id === agentId);
-        
-        if (!task || !agent) return;
-
-        // Determine if output needs Kevin's approval
-        const needsKevinApproval = 
-          task.project === 'X' ||
-          output.toLowerCase().includes('tweet') ||
-          output.toLowerCase().includes('email') ||
-          output.toLowerCase().includes('message') ||
-          output.toLowerCase().includes('post');
-
-        if (needsKevinApproval) {
-          // Queue for Kevin's approval
-          get().addApproval({
-            type: task.project === 'X' ? 'tweet' : 'action',
-            title: `${agent.avatar} ${agent.name}: ${task.title}`,
-            content: output,
-            context: `Completed by ${agent.name} agent`,
-            metadata: {
-              platform: task.project,
-            },
-          });
-
-          // Move to review
-          set((s: Store) => ({
-            tasks: s.tasks.map((t: Task) => 
-              t.id === taskId ? { ...t, status: 'review' as TaskStatus, updatedAt: Date.now() } : t
-            ),
-          }));
-        } else {
-          // Froggo can approve internal work
-          set((s: Store) => ({
-            tasks: s.tasks.map((t: Task) => 
-              t.id === taskId ? { ...t, status: 'done' as TaskStatus, updatedAt: Date.now() } : t
-            ),
-          }));
-
-          get().addActivity({
-            type: 'system',
-            message: `🐸 Approved: ${task.title}`,
-            timestamp: Date.now(),
-          });
-        }
-
-        // Reset agent status
-        set((s: Store) => ({
-          agents: s.agents.map((a: Agent) => 
-            a.id === agentId ? { ...a, status: 'idle' as const, currentTaskId: undefined } : a
-          ),
-        }));
-      },
-
-      // Get tasks that need assignment
-      getUnassignedTasks: () => {
-        return get().tasks.filter((t: Task) => 
-          !t.assignedTo && 
-          t.status !== 'done' && 
-          t.status !== 'review'
-        );
-      },
-
-      // Get tasks in review status
-      getTasksNeedingReview: () => {
-        return get().tasks.filter((t: Task) => t.status === 'review');
-      },
     }),
     {
       name: 'clawd-dashboard',
@@ -1200,7 +1276,11 @@ gateway.on('task.created', (payload: any) => {
 
 gateway.on('task.updated', (payload: any) => {
   console.log('[Store] Task updated event received:', payload);
-  useStore.getState().loadTasksFromDB();
+  // Refresh tasks on status changes (covers [TASK_START] pattern from catch-all)
+  clearTimeout((window as any).__taskRefreshTimer);
+  (window as any).__taskRefreshTimer = setTimeout(() => {
+    useStore.getState().loadTasksFromDB();
+  }, 500);
 });
 
 gateway.on('tasks.refresh', () => {
@@ -1208,27 +1288,12 @@ gateway.on('tasks.refresh', () => {
   useStore.getState().loadTasksFromDB();
 });
 
-// Catch-all listener for task-related patterns in any event
-gateway.on('*', (msg: any) => {
-  // Check if this is a task-related event we should handle
-  const content = msg?.payload?.message?.content?.[0]?.text || 
-                  msg?.payload?.content || 
-                  msg?.content || '';
-  
-  // Detect task creation patterns from main agent
-  if (typeof content === 'string' && (
-    content.includes('[TASK_CREATED]') ||
-    content.includes('[TASK_START]') ||
-    content.includes('{"detected":true')
-  )) {
-    console.log('[Store] Task pattern detected in event, refreshing tasks');
-    // Debounce to avoid multiple rapid refreshes
-    clearTimeout((window as any).__taskRefreshTimer);
-    (window as any).__taskRefreshTimer = setTimeout(() => {
-      useStore.getState().loadTasksFromDB();
-    }, 500);
-  }
-});
+// NOTE: Previous gateway.on('*') catch-all removed in Phase 08-03.
+// All task/chat events now handled by explicit listeners above:
+// - task.created: handles [TASK_CREATED] pattern
+// - task.updated: handles [TASK_START] pattern and status changes
+// - chat.message: handles {"detected":true} task detection from AI
+// If events are missed, add specific gateway.on('event.name') listener.
 
 // Listen for direct gateway broadcasts from main process (real-time task updates)
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
@@ -1249,14 +1314,22 @@ if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadc
 // Also check for approval patterns in chat messages
 gateway.on('chat.message', (payload: any) => {
   const content = payload?.content || '';
-  
+
+  // Detect task creation patterns from AI analysis
+  if (typeof content === 'string' && content.includes('{"detected":true')) {
+    console.log('[Store] Task detection pattern in chat message, refreshing tasks');
+    clearTimeout((window as any).__taskRefreshTimer);
+    (window as any).__taskRefreshTimer = setTimeout(() => {
+      useStore.getState().loadTasksFromDB();
+    }, 500);
+  }
+
   // Detect approval request patterns
   if (content.includes('[NEEDS_APPROVAL]') || content.includes('[DRAFT]')) {
     // Parse the approval from the message
-    const lines = content.split('\n');
     const typeMatch = content.match(/\[TYPE:(\w+)\]/);
     const titleMatch = content.match(/\[TITLE:([^\]]+)\]/);
-    
+
     if (typeMatch && titleMatch) {
       const type = typeMatch[1].toLowerCase() as ApprovalType;
       const title = titleMatch[1];

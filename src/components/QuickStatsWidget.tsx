@@ -1,11 +1,12 @@
 import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
+import AgentAvatar from './AgentAvatar';
 
 export default function QuickStatsWidget() {
   const { sessions, agents, tasks, activities, gatewaySessions } = useStore();
 
   // Active Sessions - breakdown by channel
-  const activeSessions = sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000); // Active in last 5 min
+  // const __activeSessions = sessions.filter(s => Date.now() - (s.lastActivity || 0) < 300000); // Active in last 5 min
   const sessionsByChannel = sessions.reduce((acc, s: any) => {
     const channel = s.channel || 'web';
     acc[channel] = (acc[channel] || 0) + 1;
@@ -42,7 +43,7 @@ export default function QuickStatsWidget() {
     discord: 'text-indigo-400',
     telegram: 'text-blue-400',
     whatsapp: 'text-green-400',
-    web: 'text-gray-400',
+    web: 'text-clawd-text-dim',
   };
 
   return (
@@ -68,7 +69,7 @@ export default function QuickStatsWidget() {
                 className="flex items-center gap-1.5 px-2 py-1 bg-clawd-bg/50 rounded-md text-xs"
               >
                 <span>{channelIcons[channel] || '💻'}</span>
-                <span className={channelColors[channel] || 'text-gray-400'}>
+                <span className={channelColors[channel] || 'text-clawd-text-dim'}>
                   {channel}
                 </span>
                 <span className="text-clawd-text-dim">×{count}</span>
@@ -91,7 +92,7 @@ export default function QuickStatsWidget() {
             {busyAgents.length > 0 ? (
               busyAgents.map(agent => (
                 <div key={agent.id} className="flex items-center gap-2 text-xs overflow-hidden">
-                  <span className="no-shrink">{agent.avatar}</span>
+                  <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
                   <span className="text-clawd-text agent-name flex-shrink">{agent.name}</span>
                   {agent.currentTaskId && (
                     <span className="ml-auto text-clawd-text-dim text-truncate flex-1">

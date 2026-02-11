@@ -13,7 +13,6 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   Repeat,
   Globe,
   CheckCircle,
@@ -26,6 +25,7 @@ import { getUserFriendlyError, getErrorTitle } from '../utils/errorMessages';
 import CalendarFilterModal from './CalendarFilterModal';
 import TaskModal from './TaskModal';
 import { TaskPriority } from '../store/store';
+import { useUserSettings } from '../store/userSettings';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -74,11 +74,8 @@ interface CalendarAccount {
 
 type ViewMode = 'month' | 'week' | 'day';
 
-const ACCOUNTS: CalendarAccount[] = [
-  { email: 'kevin.macarthur@bitso.com', label: 'Bitso (Work)' },
-  { email: 'kevin@carbium.io', label: 'Carbium' },
-  { email: 'kmacarthur.gpt@gmail.com', label: 'Personal' },
-];
+// Calendar accounts derived from user settings - see useUserSettings store
+const ACCOUNTS: CalendarAccount[] = useUserSettings.getState().emailAccounts.map(a => ({ email: a.email, label: a.label }));
 
 const TIMEZONES = [
   'Europe/Gibraltar',
@@ -100,7 +97,7 @@ export default function CalendarPanel() {
   const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState(ACCOUNTS[0].email);
+  const [selectedAccount, _setSelectedAccount] = useState(ACCOUNTS[0].email);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showEventModal, setShowEventModal] = useState(false);
@@ -479,7 +476,7 @@ export default function CalendarPanel() {
     markdown += `**Date:** ${startDate.toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
     markdown += `**Time:** ${formatTime(event.start, event.isAllDay)}`;
     if (endDate && !event.isAllDay) {
-      markdown += ` - ${formatTime(event.end)}`;
+      markdown += ` - ${formatTime(event.end!)}`;
     }
     markdown += `\n`;
     
@@ -618,8 +615,8 @@ export default function CalendarPanel() {
         return {
           borderColor: 'border-l-gray-500',
           icon: Calendar,
-          iconColor: 'text-gray-400',
-          bgColor: 'bg-gray-500/10',
+          iconColor: 'text-clawd-text-dim',
+          bgColor: 'bg-clawd-bg0/10',
         };
     }
   };
@@ -874,7 +871,7 @@ export default function CalendarPanel() {
                               <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                                 event.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                                 event.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-gray-500/20 text-gray-400'
+                                'bg-clawd-bg0/20 text-clawd-text-dim'
                               }`}>
                                 {event.priority}
                               </span>
@@ -883,7 +880,7 @@ export default function CalendarPanel() {
                               <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${
                                 event.status === 'pending' ? 'bg-purple-500/20 text-purple-400' :
                                 event.status === 'sent' ? 'bg-green-500/20 text-green-400' :
-                                'bg-gray-500/20 text-gray-400'
+                                'bg-clawd-bg0/20 text-clawd-text-dim'
                               }`}>
                                 {event.status}
                               </span>

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Check, X, Zap, Info, ChevronDown, Save, Play, TestTube } from 'lucide-react';
+import { Plus, Trash2, Check, X, Zap, Info, ChevronDown, Save, TestTube } from 'lucide-react';
 import { showToast } from './Toast';
 import {
   RuleConditionType,
-  RuleOperator,
   RuleCondition,
   FolderRule,
   validateRule,

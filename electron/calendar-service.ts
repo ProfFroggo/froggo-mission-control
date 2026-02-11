@@ -61,11 +61,26 @@ interface CalendarCache {
   [key: string]: CacheEntry;
 }
 
-const GOOGLE_ACCOUNTS = [
-  'kevin.macarthur@bitso.com',
-  'kevin@carbium.io',
-  'kmacarthur.gpt@gmail.com'
-];
+/**
+ * Dynamically discover authenticated Google accounts from gog CLI.
+ * Returns empty array if gog is unavailable (no hardcoded fallback).
+ */
+function getGoogleAccounts(): string[] {
+  try {
+    const { execSync } = require('child_process');
+    const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
+      timeout: 5000,
+      env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+    }).toString();
+    const gogData = JSON.parse(gogList);
+    return (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+// Discovered at startup, refreshed when needed
+let GOOGLE_ACCOUNTS: string[] = getGoogleAccounts();
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const CACHE_FILE_PATH = path.join(os.homedir(), 'clawd', 'data', 'calendar-cache.json');

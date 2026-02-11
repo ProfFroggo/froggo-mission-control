@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, Check, X, Pause, AlertCircle } from 'lucide-react';
+import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
 
@@ -201,7 +201,7 @@ export default function CronTab() {
                       <span>{formatSchedule(job.schedule)}</span>
                       <span>Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
                       {job.state.lastStatus && (
-                        <span className={job.state.lastStatus === 'ok' ? 'text-green-400' : job.state.lastStatus === 'error' ? 'text-red-400' : 'text-gray-400'}>
+                        <span className={job.state.lastStatus === 'ok' ? 'text-green-400' : job.state.lastStatus === 'error' ? 'text-red-400' : 'text-clawd-text-dim'}>
                           Last: {job.state.lastStatus} {formatTimeAgo(job.state.lastRunAtMs)}
                         </span>
                       )}

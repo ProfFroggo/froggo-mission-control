@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Bot, Clock, User, Play, Pause, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, GripVertical, ChevronRight, HandMetal, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
-import { useStore, Task, Subtask, TaskActivity } from '../store/store';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
+import { useStore, Task, TaskStatus, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
+import AgentAvatar from './AgentAvatar';
+import PokeModal from './PokeModal';
+import { gateway } from '@/lib/gateway';
 
 interface TaskAttachment {
   id: number;
@@ -24,7 +27,7 @@ interface TaskDetailPanelProps {
 
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
-  const [loading, setLoading] = useState(false);
+  const [_loading, _setLoading] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
@@ -34,6 +37,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [poking, setPoking] = useState(false);
+  const [showPokeModal, setShowPokeModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
@@ -41,8 +45,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
-  const [showAgentWarning, setShowAgentWarning] = useState(false);
-  const [activeAgentSession, setActiveAgentSession] = useState<any>(null);
+  const [_showAgentWarning, _setShowAgentWarning] = useState(false);
+  const [_activeAgentSession, _setActiveAgentSession] = useState<any>(null);
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -309,10 +313,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Check if agent is still active on this task
   const checkForActiveAgent = async () => {
     if (!task) return null;
-    
+
     try {
-      const result = await (window as any).clawdbot.sessions.list();
-      if (result.success && result.sessions) {
+      const result = await gateway.getSessions();
+      if (result.sessions) {
         // Find session with label matching task ID
         const activeSession = result.sessions.find((s: any) => {
           // Session is active if updated within last 5 minutes
@@ -321,8 +325,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           const matchesTask = s.label && s.label.includes(task.id);
           return isActive && matchesTask;
         });
-        
-        return activeSession || null;
+
+        if (activeSession) {
+          // Map sessionKey to key for component compatibility
+          return {
+            ...activeSession,
+            key: activeSession.sessionKey || activeSession.key,
+          };
+        }
       }
     } catch (err) {
       console.error('Failed to check for active agent:', err);
@@ -340,21 +350,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handlePoke = async () => {
     if (!task) return;
-    setPoking(true);
-    try {
-      const result = await (window as any).clawdbot.tasks.poke(task.id, task.title);
-      if (result.success) {
-        showToast('info', '🫵 Poked!', 'Brain will respond with status update');
-        await logTaskActivity(task.id, 'poked', 'Task poked for status update');
-        loadActivity();
-      } else {
-        showToast('error', 'Poke failed', result.error || 'Could not reach Gateway');
-      }
-    } catch (err: any) {
-      showToast('error', 'Poke failed', err.message);
-    } finally {
-      setPoking(false);
-    }
+    // Open internal poke modal instead of posting to Discord
+    setShowPokeModal(true);
   };
 
   const handleReopen = async () => {
@@ -367,7 +364,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       // Update task: status to 'todo' and clear completed_at
       await updateTask(task.id, { 
         status: 'todo',
-        completedAt: null
+        completedAt: null as any
       });
       
       // Log activity with reason
@@ -552,16 +549,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   // Activity icon based on action type
   const getActivityIcon = (action: string) => {
     switch (action) {
-      case 'task_started': return <Play size={14} className="text-green-400" />;
-      case 'task_completed': return <CheckCircle size={14} className="text-green-400" />;
-      case 'subtask_added': return <Plus size={14} className="text-blue-400" />;
-      case 'subtask_completed': return <Check size={14} className="text-green-400" />;
-      case 'subtask_uncompleted': return <XCircle size={14} className="text-yellow-400" />;
-      case 'subtask_deleted': return <X size={14} className="text-red-400" />;
-      case 'reviewer_assigned': return <Eye size={14} className="text-purple-400" />;
-      case 'review_status': return <Eye size={14} className="text-purple-400" />;
+      case 'task_started': return <Play size={14} className="text-success" />;
+      case 'task_completed': return <CheckCircle size={14} className="text-success" />;
+      case 'subtask_added': return <Plus size={14} className="text-info" />;
+      case 'subtask_completed': return <Check size={14} className="text-success" />;
+      case 'subtask_uncompleted': return <XCircle size={14} className="text-warning" />;
+      case 'subtask_deleted': return <X size={14} className="text-error" />;
+      case 'reviewer_assigned': return <Eye size={14} className="text-review" />;
+      case 'review_status': return <Eye size={14} className="text-review" />;
       case 'agent_message': return <Bot size={14} className="text-clawd-accent" />;
-      case 'progress': return <Activity size={14} className="text-yellow-400" />;
+      case 'progress': return <Activity size={14} className="text-warning" />;
       default: return <MessageSquare size={14} className="text-clawd-text-dim" />;
     }
   };
@@ -575,11 +572,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <div className="flex items-center gap-2 mb-2">
               <ActiveAgentIndicator taskId={task.id} showLabel size="md" />
               <span className={`px-2 py-1 text-xs rounded-lg ${
-                task.status === 'done' ? 'bg-green-500/20 text-green-400' :
-                task.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
-                task.status === 'review' ? 'bg-purple-500/20 text-purple-400' :
-                task.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                'bg-blue-500/20 text-blue-400'
+                task.status === 'done' ? 'bg-success-subtle text-success' :
+                task.status === 'in-progress' ? 'bg-warning-subtle text-warning' :
+                task.status === 'review' ? 'bg-review-subtle text-review' :
+                task.status === 'failed' ? 'bg-error-subtle text-error' :
+                'bg-info-subtle text-info'
               }`}>
                 {task.status.replace('-', ' ')}
               </span>
@@ -587,7 +584,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
             <h2 className="text-xl font-semibold mb-2">{task.title}</h2>
             {task.description && (
-              <p className="text-sm text-clawd-text-dim">{task.description}</p>
+              <div className="max-h-96 overflow-y-auto text-sm text-clawd-text-dim">{task.description}</div>
             )}
           </div>
           <button
@@ -615,7 +612,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
             <div className="flex justify-between mt-1 text-xs text-clawd-text-dim">
               <span>{Math.round(subtaskProgress)}% complete</span>
-              {isWorking && <span className="text-yellow-400 animate-pulse">Agent working...</span>}
+              {isWorking && <span className="text-warning animate-pulse">Agent working...</span>}
             </div>
           </div>
         )}
@@ -641,31 +638,31 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Worker Agent</h3>
             {assignedAgent ? (
               <div className="flex items-center gap-2 p-2 bg-clawd-bg rounded-lg border border-clawd-border">
-                <div className="text-lg">{assignedAgent.avatar || '🤖'}</div>
+                <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="md" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{assignedAgent.name}</div>
                 </div>
                 {!isWorking && task.status !== 'done' && (
                   <button
                     onClick={handleStart}
-                    className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                    className="p-1.5 bg-success text-white rounded-lg hover:bg-success-hover"
                     title="Start Work"
                   >
                     <Play size={14} />
                   </button>
                 )}
                 {isWorking && (
-                  <div className="flex items-center gap-1 text-yellow-400">
+                  <div className="flex items-center gap-1 text-warning">
                     <Loader2 size={14} className="animate-spin" />
                   </div>
                 )}
               </div>
             ) : isRemoteAgent ? (
-              <div className="flex items-center gap-2 p-2 bg-purple-500/10 rounded-lg border border-purple-500/30">
+              <div className="flex items-center gap-2 p-2 bg-review-subtle rounded-lg border border-review-border">
                 <div className="text-lg">🌐</div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate capitalize">{task.assignedTo}</div>
-                  <div className="text-xs text-purple-400">Remote Agent</div>
+                  <div className="text-xs text-review">Remote Agent</div>
                 </div>
               </div>
             ) : (
@@ -680,16 +677,16 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <h3 className="text-xs font-medium text-clawd-text-dim mb-2">Review Agent</h3>
             {reviewer ? (
               <div className="flex items-center gap-2 p-2 bg-clawd-bg rounded-lg border border-clawd-border">
-                <div className="text-lg">{reviewer.avatar || '👀'}</div>
+                <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="md" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{reviewer.name}</div>
                 </div>
                 {task.reviewStatus && (
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    task.reviewStatus === 'approved' ? 'bg-green-500/20 text-green-400' :
-                    task.reviewStatus === 'needs-changes' ? 'bg-red-500/20 text-red-400' :
-                    task.reviewStatus === 'in-review' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-gray-500/20 text-gray-400'
+                    task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
+                    task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
+                    task.reviewStatus === 'in-review' ? 'bg-warning-subtle text-warning' :
+                    'bg-muted-subtle text-muted'
                   }`}>
                     {task.reviewStatus}
                   </span>
@@ -798,12 +795,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Subtask List */}
             <div className="space-y-2">
-              {subtasks.map((st, idx) => (
+              {subtasks.map((st, _idx) => (
                 <div
                   key={st.id}
                   className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${
                     st.completed 
-                      ? 'bg-green-500/5 border-green-500/20' 
+                      ? 'bg-success-subtle border-success-border' 
                       : 'bg-clawd-bg border-clawd-border hover:border-clawd-accent/50'
                   }`}
                 >
@@ -811,7 +808,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     onClick={() => handleToggleSubtask(st.id)}
                     className={`w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
                       st.completed 
-                        ? 'bg-green-500 text-white' 
+                        ? 'bg-success text-white' 
                         : 'border-2 border-clawd-border hover:border-clawd-accent'
                     }`}
                   >
@@ -825,7 +822,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       <p className="text-xs text-clawd-text-dim mt-0.5">{st.description}</p>
                     )}
                     {st.completedAt && (
-                      <p className="text-xs text-green-400/60 mt-0.5">
+                      <p className="text-xs text-success/60 mt-0.5">
                         Completed {formatTime(st.completedAt)}
                         {st.completedBy && ` by ${agents.find(a => a.id === st.completedBy)?.name || st.completedBy}`}
                       </p>
@@ -838,7 +835,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   )}
                   <button
                     onClick={() => handleDeleteSubtask(st.id)}
-                    className="p-1 text-clawd-text-dim hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    className="p-1 text-clawd-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   >
                     <X size={14} />
                   </button>
@@ -919,7 +916,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             )}
 
             <div className="space-y-1">
-              {activities.map((act, idx) => (
+              {activities.map((act, _idx) => (
                 <div
                   key={act.id}
                   className="flex items-start gap-3 p-2 rounded-lg hover:bg-clawd-bg/50 transition-colors"
@@ -1062,10 +1059,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     </button>
                     <button
                       onClick={() => handleDeleteAttachment(attachment.id)}
-                      className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                      className="p-2 hover:bg-error-subtle rounded-lg transition-colors"
                       title="Delete attachment"
                     >
-                      <Trash2 size={16} className="text-red-400" />
+                      <Trash2 size={16} className="text-error" />
                     </button>
                   </div>
                 </div>
@@ -1093,18 +1090,26 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           <div className="p-4">
             {/* Quick Approve/Reject Actions (when in review status) */}
             {task.status === 'review' && task.reviewStatus !== 'approved' && (
-              <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+              <div className="mb-4 p-4 bg-warning-subtle border border-warning-border rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertCircle size={16} className="text-yellow-400" />
-                  <span className="font-medium text-yellow-400">Awaiting Review</span>
+                  <AlertCircle size={16} className="text-warning" />
+                  <span className="font-medium text-warning">Awaiting Review</span>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      setReviewStatus('approved');
-                      showToast('success', 'Task approved! You can now mark it as done.');
+                      console.log('[TaskDetailPanel] APPROVE CLICKED', task.id, task.status, task.reviewStatus);
+                      // ATOMIC UPDATE: Change both reviewStatus AND status in one call
+                      const updates: any = { 
+                        reviewStatus: 'approved',
+                        status: 'in-progress'
+                      };
+                      console.log('[TaskDetailPanel] Calling updateTask with:', updates);
+                      updateTask(task.id, updates);
+                      logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
+                      showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-success text-white rounded-lg hover:bg-success-hover transition-colors"
                   >
                     <CheckCircle size={16} />
                     Approve
@@ -1115,7 +1120,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       updateTask(task.id, { status: 'in-progress' });
                       showToast('info', 'Task sent back for changes');
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-error text-white rounded-lg hover:bg-error-hover transition-colors"
                   >
                     <XCircle size={16} />
                     Request Changes
@@ -1126,10 +1131,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Approved Notice */}
             {task.reviewStatus === 'approved' && (
-              <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+              <div className="mb-4 p-4 bg-success-subtle border border-success-border rounded-xl">
                 <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-400" />
-                  <span className="font-medium text-green-400">Review Approved</span>
+                  <CheckCircle size={16} className="text-success" />
+                  <span className="font-medium text-success">Review Approved</span>
                 </div>
                 <p className="mt-2 text-sm text-clawd-text-dim">
                   This task has been approved and can now be marked as done.
@@ -1152,9 +1157,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         onClick={() => setReviewStatus(status)}
                         className={`p-2 rounded-lg text-sm transition-colors ${
                           task.reviewStatus === status
-                            ? status === 'approved' ? 'bg-green-500 text-white' :
-                              status === 'needs-changes' ? 'bg-red-500 text-white' :
-                              status === 'in-review' ? 'bg-yellow-500 text-white' :
+                            ? status === 'approved' ? 'bg-success text-white' :
+                              status === 'needs-changes' ? 'bg-error text-white' :
+                              status === 'in-review' ? 'bg-warning text-white' :
                               'bg-clawd-accent text-white'
                             : 'bg-clawd-border hover:bg-clawd-border/80'
                         }`}
@@ -1180,10 +1185,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 </div>
 
                 {/* Pre-approval Checklist */}
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                <div className="p-4 bg-warning-subtle border border-warning-border rounded-xl">
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle size={16} className="text-yellow-400" />
-                    <span className="font-medium text-yellow-400">Pre-Approval Checklist</span>
+                    <AlertCircle size={16} className="text-warning" />
+                    <span className="font-medium text-warning">Pre-Approval Checklist</span>
                   </div>
                   <div className="text-sm text-clawd-text-dim space-y-1">
                     <div className="flex items-center gap-2">
@@ -1261,8 +1266,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 disabled={!validation.allowed || checkingAgent}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-colors ${
                   validation.allowed && !checkingAgent
-                    ? 'bg-green-500 text-white hover:bg-green-600'
-                    : 'bg-gray-500/50 text-gray-400 cursor-not-allowed'
+                    ? 'bg-success text-white hover:bg-success-hover'
+                    : 'bg-muted/50 text-muted cursor-not-allowed'
                 }`}
                 title={validation.allowed ? 'Mark task as done' : validation.reasons.join('\n')}
               >
@@ -1280,7 +1285,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 )}
               </button>
               {!validation.allowed && (
-                <div className="text-xs text-red-400 px-2">
+                <div className="text-xs text-error px-2">
                   {validation.reasons[0]}
                 </div>
               )}
@@ -1329,7 +1334,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 autoFocus
               />
               {reopenReason.trim().length === 0 && (
-                <p className="text-xs text-red-400 mt-2">
+                <p className="text-xs text-error mt-2">
                   Reason is required and cannot be empty
                 </p>
               )}
@@ -1365,8 +1370,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-clawd-border">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-500/20 rounded-lg">
-                  <AlertCircle size={24} className="text-yellow-400" />
+                <div className="p-2 bg-warning-subtle rounded-lg">
+                  <AlertCircle size={24} className="text-warning" />
                 </div>
                 <h3 className="text-lg font-semibold">Agent Still Active</h3>
               </div>
@@ -1383,8 +1388,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
             {/* Content */}
             <div className="p-6">
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
-                <p className="text-sm text-yellow-200 mb-2">
+              <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 mb-4">
+                <p className="text-sm text-warning mb-2">
                   ⚠️ An agent is currently working on this task
                 </p>
                 <div className="text-xs text-clawd-text-dim space-y-1">
@@ -1450,7 +1455,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   }
                 }}
                 disabled={abortingAgent}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-danger text-white rounded-xl hover:bg-danger-hover transition-colors disabled:opacity-50"
               >
                 {abortingAgent ? (
                   <>
@@ -1467,6 +1472,18 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
           </div>
         </div>
+      )}
+
+      {/* Poke Modal - Internal status update + chat */}
+      {showPokeModal && task && (
+        <PokeModal
+          taskId={task.id}
+          taskTitle={task.title}
+          onClose={() => {
+            setShowPokeModal(false);
+            loadActivity();
+          }}
+        />
       )}
     </div>
   );

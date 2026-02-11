@@ -227,35 +227,27 @@ Todo → In Progress → Review → Done
     lastUpdated: '2026-01-28'
   },
 
-  // Voice Assistant
+  // Voice Chat
   {
-    id: 'voice-assistant',
-    title: 'Voice Assistant',
+    id: 'voice-chat',
+    title: 'Voice Chat',
     category: 'Voice',
-    content: `The Voice panel (⌘8) provides real-time transcription and conversation.
+    content: `Voice Chat (⌘8) provides real-time bidirectional voice conversations with agents via Gemini Live.
 
 **Features:**
+- Select any agent to talk to
+- Real-time audio streaming (speak and hear responses)
+- Camera and screen sharing support
+- Text input during calls
+- Tool calling (create tasks, spawn agents, check status)
+- Full conversation history per agent
 
-**Conversation Mode:**
-1. Click the frog orb to start listening
-2. Speak naturally - see real-time transcription
-3. After silence, message sends to Froggo
-4. Froggo responds via text-to-speech
-5. Auto-restarts listening for continuous conversation
-6. Click orb again to stop
-
-**Meeting Eavesdrop Mode:**
-1. Click phone icon to start continuous listening
-2. Transcription runs without sending messages
-3. Auto-detects action items (schedule, email, task keywords)
-4. Click "Send Summary" to send transcript + action items
-5. Click phone icon to end
-
-**Settings:**
-- Choose TTS voice (Samantha, Karen, Daniel)
-- Adjust silence detection threshold
-- Enable/disable auto-send
-- Configure wake words
+**How to use:**
+1. Select an agent from the dropdown
+2. Press the call button to connect
+3. Speak naturally — the agent hears and responds in real-time
+4. Use camera/screen share buttons during a call for visual context
+5. Press end call when done
 
 **Privacy:**
 All transcription runs locally on your device using Vosk. No cloud processing.`,
@@ -369,10 +361,18 @@ All tweets require approval before posting (unless auto-approval enabled in Sett
 - ⌘N: New (context-aware)
 - ⌘S: Save/submit
 
+**Appearance & Navigation:**
+- ⌘⇧D: Toggle dark/light mode (quick theme switch)
+- ⌥↑: Scroll up
+- ⌥↓: Scroll down
+- ⌥⇞: Scroll page up
+- ⌥⇟: Scroll page down
+
 **Quick Actions:**
 - ⌘⇧M: Quick message
 - ⌘⇧N: Add contact
 - ⌘⇧K: Add skill
+- ⌘⇧S: Starred messages
 
 **Task Management:**
 - N: New task
@@ -388,8 +388,49 @@ All tweets require approval before posting (unless auto-approval enabled in Sett
 - X: Defer
 
 Press ⌘? anytime to view the full shortcut reference.`,
-    keywords: ['keyboard', 'shortcuts', 'hotkey', 'keys', 'navigation', 'productivity'],
-    lastUpdated: '2026-01-28'
+    keywords: ['keyboard', 'shortcuts', 'hotkey', 'keys', 'navigation', 'productivity', 'theme', 'scroll'],
+    lastUpdated: '2026-01-30'
+  },
+
+  // Theme Toggle & Scroll Navigation
+  {
+    id: 'theme-scroll-hotkeys',
+    title: 'Theme Toggle & Scroll Navigation',
+    category: 'Productivity',
+    content: `Quickly switch themes and navigate without using your mouse.
+
+**Theme Toggle (⌘⇧D):**
+Press ⌘⇧D (Cmd+Shift+D) to instantly toggle between dark and light mode. This works from any page and shows a toast notification confirming the change.
+
+**Why use it?**
+- Quick testing of light/dark mode designs
+- Switch based on time of day or lighting conditions
+- No need to open Settings panel
+- Works everywhere in the app
+
+**Scroll Navigation (⌥ + Arrows):**
+Use Option/Alt key with arrow keys to scroll through content:
+- ⌥↑ (Option+Up): Scroll up smoothly
+- ⌥↓ (Option+Down): Scroll down smoothly
+- ⌥⇞ (Option+Page Up): Scroll up by page
+- ⌥⇟ (Option+Page Down): Scroll down by page
+
+**Why use it?**
+- Keyboard-only navigation
+- Precise scrolling without mouse/trackpad
+- Faster than reaching for mouse
+- Smooth scroll animation for comfort
+
+**Pro Tips:**
+- Use theme toggle during screen sharing to improve visibility
+- Combine scroll navigation with other keyboard shortcuts for full hands-on-keyboard workflow
+- Theme preference is saved automatically
+- Scroll amount is optimized for readability
+
+These features are designed for power users who prefer keyboard navigation and frequent testing workflows.`,
+    keywords: ['theme', 'dark', 'light', 'toggle', 'scroll', 'navigation', 'keyboard', 'hotkey', 'accessibility'],
+    relatedTo: ['settings', 'dashboard'],
+    lastUpdated: '2026-01-30'
   },
 
   // Settings
@@ -559,6 +600,18 @@ export const quickTips: QuickTip[] = [
     title: 'Approve with Keyboard',
     description: 'Use J/K to navigate inbox and A/R to approve/reject. Lightning fast!',
     icon: '⌨️'
+  },
+  {
+    id: 'tip-theme-toggle',
+    title: 'Quick Theme Switch',
+    description: 'Press ⌘⇧D to instantly toggle between dark and light mode. Perfect for testing or adjusting to lighting conditions!',
+    icon: '🌓'
+  },
+  {
+    id: 'tip-scroll-navigation',
+    title: 'Keyboard Scrolling',
+    description: 'Use ⌥↑/↓ (Option+Arrows) to scroll smoothly without touching your mouse. Full keyboard workflow!',
+    icon: '⬆️'
   }
 ];
 

@@ -1,42 +1,42 @@
-import { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { useState, useMemo, useEffect, useCallback, memo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
-  Plus, MoreHorizontal, Bot, Trash2, FolderOpen, GripVertical, Clock, User, Play, Zap, 
-  CheckSquare, Filter, Search, AlertTriangle, Calendar, Tag, ArrowUp, ArrowDown,
-  ChevronDown, RefreshCw, Keyboard, X, Flag, Circle, Timer
+  Plus, MoreHorizontal, Bot, Trash2, FolderOpen, Clock, User, Play, Zap, 
+  CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
-import ActiveAgentIndicator from './ActiveAgentIndicator';
+import PokeModal from './PokeModal';
+import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
-import { Spinner, TaskCardSkeleton, LoadingButton, InlineLoader } from './LoadingStates';
+import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import HealthCheckModal from './HealthCheckModal';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
   { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
   { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
   { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={14} className="flex-shrink-0" /> },
-  { id: 'p3', label: 'Low', color: 'text-gray-400', bg: 'bg-gray-500/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
+  { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
-// Format relative time
-function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-  
-  if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
-  return `${Math.floor(diff / 604800000)}w`;
-}
+// function formatRelativeTime(timestamp: number): string {
+//   const now = Date.now();
+//   const diff = now - timestamp;
+//   if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
+//   if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+//   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+//   if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
+//   return `${Math.floor(diff / 604800000)}w`;
+// }
 
 // Format due date
 function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean } {
   const now = Date.now();
   const diff = timestamp - now;
   const isOverdue = diff < 0;
-  const isDueSoon = diff > 0 && diff < 86400000; // Due within 24h
+  // const isDueSoon = diff > 0 && diff < 86400000; // Due within 24h
   
   if (isOverdue) {
     const overdueDiff = Math.abs(diff);
@@ -51,13 +51,13 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
-  { id: 'backlog', title: 'Backlog', color: 'border-l-gray-500', bg: 'bg-gray-500/10', emoji: '📋' },
+  { id: 'blocked', title: 'Blocked', color: 'border-l-red-500', bg: 'bg-red-500/10', emoji: '🚫' },
   { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10', emoji: '📝' },
+  { id: 'internal-review', title: 'Internal Review', color: 'border-l-cyan-500', bg: 'bg-cyan-500/10', emoji: '🔍' },
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
   { id: 'review', title: 'Agent Review', color: 'border-l-purple-500', bg: 'bg-purple-500/10', emoji: '🤖' },
   { id: 'human-review', title: 'Human Review', color: 'border-l-orange-500', bg: 'bg-orange-500/10', emoji: '👤' },
   { id: 'done', title: 'Done', color: 'border-l-green-500', bg: 'bg-green-500/10', emoji: '✅' },
-  { id: 'failed', title: 'Failed', color: 'border-l-red-500', bg: 'bg-red-500/10', emoji: '❌' },
 ];
 
 interface Filters {
@@ -70,13 +70,18 @@ interface Filters {
 }
 
 export default function Kanban() {
-  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading } = useStore();
+  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading, taskCounts } = useStore();
   
   // Local loading states for operations
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletingTasks, setDeletingTasks] = useState<Set<string>>(new Set());
   const [spawningTasks, setSpawningTasks] = useState<Set<string>>(new Set());
   const [movingTasks, setMovingTasks] = useState<Set<string>>(new Set());
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  
+  // Active agent sessions (for real-time activity indicators)
+  const [activeSessions, setActiveSessions] = useState<Record<string, boolean>>({});
   
   // Load tasks from froggo-db on mount and poll (only when visible)
   useEffect(() => {
@@ -112,13 +117,38 @@ export default function Kanban() {
     };
   }, [loadTasksFromDB]);
   
+  // Poll active agent sessions for activity indicators
+  useEffect(() => {
+    const pollActiveSessions = async () => {
+      try {
+        const result = await (window as any).clawdbot?.agents?.getActiveSessions();
+        if (result?.success && result.sessions) {
+          const activeMap: Record<string, boolean> = {};
+          result.sessions.forEach((s: any) => {
+            activeMap[s.agentId] = true;
+          });
+          setActiveSessions(activeMap);
+        }
+      } catch (err) {
+        console.error('Failed to poll active sessions:', err);
+      }
+    };
+    
+    pollActiveSessions(); // Initial poll
+    const interval = setInterval(pollActiveSessions, 30000); // Poll every 30s
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStatus, setModalStatus] = useState<TaskStatus>('todo');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [pokeTask, setPokeTask] = useState<Task | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showHealthCheck, setShowHealthCheck] = useState(false);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -128,6 +158,69 @@ export default function Kanban() {
     hasDueDate: null,
     showCompleted: true,
   });
+
+  // Per-column filter and sort settings
+  type SortOption = 'newest' | 'oldest' | 'priority-asc' | 'priority-desc' | 'progress-asc' | 'progress-desc';
+
+  interface ColumnSettings {
+    sortBy: SortOption;
+    filterAgent: string; // 'all' or agent ID
+    filterPriority: TaskPriority | 'all';
+  }
+
+  const [columnSettings, setColumnSettings] = useState<Record<TaskStatus, ColumnSettings>>(() => {
+    const saved = localStorage.getItem('kanban-column-settings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse column settings:', e);
+      }
+    }
+    
+    // Default settings for each column
+    return columns.reduce((acc, col) => {
+      acc[col.id] = {
+        sortBy: 'newest',
+        filterAgent: 'all',
+        filterPriority: 'all',
+      };
+      return acc;
+    }, {} as Record<TaskStatus, ColumnSettings>);
+  });
+
+  // Column control dropdowns state
+  const [columnDropdowns, setColumnDropdowns] = useState<Record<TaskStatus, { sort: boolean; filter: boolean }>>(() => 
+    columns.reduce((acc, col) => {
+      acc[col.id] = { sort: false, filter: false };
+      return acc;
+    }, {} as Record<TaskStatus, { sort: boolean; filter: boolean }>)
+  );
+
+  // Persist column settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('kanban-column-settings', JSON.stringify(columnSettings));
+  }, [columnSettings]);
+
+  const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
+    setColumnSettings(prev => ({
+      ...prev,
+      [columnId]: {
+        ...prev[columnId],
+        [key]: value,
+      },
+    }));
+  };
+
+  const toggleColumnDropdown = (columnId: TaskStatus, dropdown: 'sort' | 'filter') => {
+    setColumnDropdowns(prev => ({
+      ...prev,
+      [columnId]: {
+        ...prev[columnId],
+        [dropdown]: !prev[columnId][dropdown],
+      },
+    }));
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -164,10 +257,10 @@ export default function Kanban() {
     return ['all', ...Array.from(projectSet)];
   }, [tasks]);
 
-  const assignees = useMemo(() => {
-    const ids = new Set(tasks.map(t => t.assignedTo).filter(Boolean));
-    return ['all', 'unassigned', ...Array.from(ids)];
-  }, [tasks]);
+  // const assignees = useMemo(() => {
+  //   const ids = new Set(tasks.map(t => t.assignedTo).filter(Boolean));
+  //   return ['all', 'unassigned', ...Array.from(ids)];
+  // }, [tasks]);
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
@@ -252,6 +345,49 @@ export default function Kanban() {
     });
   };
 
+  // Apply per-column filtering and sorting
+  const getColumnTasks = useCallback((columnId: TaskStatus) => {
+    const settings = columnSettings[columnId];
+    let columnTasks = filteredTasks.filter(t => t.status === columnId);
+    
+    // Apply column filters
+    if (settings.filterAgent !== 'all') {
+      if (settings.filterAgent === 'unassigned') {
+        columnTasks = columnTasks.filter(t => !t.assignedTo);
+      } else {
+        columnTasks = columnTasks.filter(t => t.assignedTo === settings.filterAgent);
+      }
+    }
+    
+    if (settings.filterPriority !== 'all') {
+      columnTasks = columnTasks.filter(t => t.priority === settings.filterPriority);
+    }
+    
+    // Apply column sorting
+    return columnTasks.sort((a, b) => {
+      switch (settings.sortBy) {
+        case 'newest':
+          return b.createdAt - a.createdAt;
+        case 'oldest':
+          return a.createdAt - b.createdAt;
+        case 'priority-asc': {
+          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+          return (priorityOrder[a.priority || 'undefined'] - priorityOrder[b.priority || 'undefined']);
+        }
+        case 'priority-desc': {
+          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+          return (priorityOrder[b.priority || 'undefined'] - priorityOrder[a.priority || 'undefined']);
+        }
+        case 'progress-asc':
+          return (a.progress || 0) - (b.progress || 0);
+        case 'progress-desc':
+          return (b.progress || 0) - (a.progress || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [filteredTasks, columnSettings]);
+
   // Stats
   const stats = useMemo(() => {
     const inProgress = tasks.filter(t => t.status === 'in-progress').length;
@@ -290,46 +426,6 @@ export default function Kanban() {
       return;
     }
 
-    // PLANNING PHASE VALIDATION: backlog → todo requires planning
-    if (task.status === 'backlog' && status === 'todo') {
-      const errors: string[] = [];
-      
-      // Check 1: Subtasks
-      const subtaskCount = (task.subtasks || []).length;
-      if (subtaskCount === 0) {
-        errors.push('❌ No subtasks - break down the work first');
-      }
-      
-      // Check 2: Worker assigned
-      if (!task.assignedTo || task.assignedTo === '') {
-        errors.push('❌ No worker assigned');
-      } else if (['main', 'froggo'].includes(task.assignedTo)) {
-        errors.push('❌ Assigned to main/froggo - use coder/researcher/writer/chief');
-      }
-      
-      // Check 3: Planning notes (detailed)
-      if (!task.planningNotes || task.planningNotes.trim().length < 50) {
-        errors.push('❌ No planning notes (min 50 chars)');
-      }
-      
-      // Check 4: Effort estimate in planning notes
-      if (task.planningNotes) {
-        const hasEffort = /effort|estimate|complexity|hours|days|easy|medium|hard|simple|complex/i.test(task.planningNotes);
-        if (!hasEffort) {
-          errors.push('❌ No effort estimate in planning notes');
-        }
-      } else {
-        errors.push('❌ Document effort/complexity');
-      }
-      
-      if (errors.length > 0) {
-        showToast('error', 'Planning incomplete', errors.join('\n'));
-        setDraggedTask(null);
-        setDragOverColumn(null);
-        return;
-      }
-    }
-
     // All validations passed - move the task
     handleMoveTask(draggedTask, status);
     setDraggedTask(null);
@@ -361,6 +457,10 @@ export default function Kanban() {
     }
   };
 
+  const handleHealthCheck = () => {
+    setShowHealthCheck(true);
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     setDeletingTasks(prev => new Set(prev).add(taskId));
     try {
@@ -374,6 +474,24 @@ export default function Kanban() {
         next.delete(taskId);
         return next;
       });
+    }
+  };
+
+  const handleArchiveDone = async () => {
+    setShowArchiveConfirm(false);
+    setIsArchiving(true);
+    try {
+      const result = await (window as any).clawdbot?.tasks?.archiveDone();
+      if (result?.success) {
+        showToast('success', `Archived ${result.count || 0} done tasks`);
+        await loadTasksFromDB(); // Refresh to remove archived tasks
+      } else {
+        showToast('error', 'Failed to archive tasks');
+      }
+    } catch (error) {
+      showToast('error', 'Failed to archive tasks');
+    } finally {
+      setIsArchiving(false);
     }
   };
 
@@ -436,7 +554,7 @@ export default function Kanban() {
                 </span>
               )}
               {stats.unassigned > 0 && (
-                <span className="icon-text-tight text-gray-400">
+                <span className="icon-text-tight text-clawd-text-dim">
                   <User size={14} className="flex-shrink-0" /> {stats.unassigned} unassigned
                 </span>
               )}
@@ -482,6 +600,16 @@ export default function Kanban() {
               title="Refresh tasks"
             >
               <RefreshCw size={16} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+
+            {/* Health Check */}
+            <button
+              onClick={handleHealthCheck}
+              className="icon-text px-3 py-2 border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/10 transition-all"
+              title="Request Froggo to review board health, merge redundant tasks, and verify workflow"
+            >
+              <Stethoscope size={16} className="flex-shrink-0" />
+              Health Check
             </button>
             
             {/* New Task */}
@@ -573,7 +701,9 @@ export default function Kanban() {
       {/* Kanban Board */}
       <div className="flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto">
         {columns.map((column) => {
-          const columnTasks = filteredTasks.filter(t => t.status === column.id);
+          const columnTasks = getColumnTasks(column.id);
+          const settings = columnSettings[column.id];
+          const dropdowns = columnDropdowns[column.id];
           const isDragOver = dragOverColumn === column.id;
           
           return (
@@ -592,20 +722,114 @@ export default function Kanban() {
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-clawd-border border-l-4 ${column.color} rounded-t-2xl`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <div className="icon-text">
                     <span>{column.emoji}</span>
                     <h3 className="font-semibold text-sm">{column.title}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`}>
-                      {columnTasks.length}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${column.bg}`} title={column.id === 'done' && taskCounts.totalArchived > 0 ? `${taskCounts.totalArchived} archived` : undefined}>
+                      {column.id === 'done' && taskCounts.totalDone > columnTasks.length 
+                        ? `${columnTasks.length}/${taskCounts.totalDone}`
+                        : columnTasks.length}
                     </span>
                   </div>
-                  <button
-                    onClick={() => handleAddTask(column.id)}
-                    className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text"
-                  >
-                    <Plus size={16} className="flex-shrink-0" />
-                  </button>
+                  {column.id === 'done' ? (
+                    <button
+                      onClick={() => setShowArchiveConfirm(true)}
+                      disabled={isArchiving || columnTasks.length === 0}
+                      className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text disabled:opacity-50"
+                      title="Archive all done tasks"
+                    >
+                      <Archive size={16} className="flex-shrink-0" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleAddTask(column.id)}
+                      className="icon-btn-sm text-clawd-text-dim hover:text-clawd-text"
+                    >
+                      <Plus size={16} className="flex-shrink-0" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Filter and Sort Controls */}
+                <div className="flex items-center gap-1">
+                  {/* Sort Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => toggleColumnDropdown(column.id, 'sort')}
+                      className={`icon-btn-sm text-clawd-text-dim hover:text-clawd-text ${settings.sortBy !== 'newest' ? 'text-clawd-accent' : ''}`}
+                      title="Sort"
+                    >
+                      <ArrowDown size={14} className="flex-shrink-0" />
+                    </button>
+                    {dropdowns.sort && (
+                      <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                        <div className="p-1">
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'newest' ? 'text-clawd-accent' : ''}`}>Newest First</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'oldest' ? 'text-clawd-accent' : ''}`}>Oldest First</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-clawd-accent' : ''}`}>Priority: Low → High</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-clawd-accent' : ''}`}>Priority: High → Low</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-clawd-accent' : ''}`}>Progress: 0% → 100%</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-clawd-accent' : ''}`}>Progress: 100% → 0%</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Filter Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => toggleColumnDropdown(column.id, 'filter')}
+                      className={`icon-btn-sm text-clawd-text-dim hover:text-clawd-text ${settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'text-clawd-accent' : ''}`}
+                      title="Filter"
+                    >
+                      <Filter size={14} className="flex-shrink-0" />
+                    </button>
+                    {dropdowns.filter && (
+                      <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                        <div className="p-2 border-b border-clawd-border">
+                          <div className="text-xs font-semibold text-clawd-text-dim mb-1">Agent</div>
+                          <select
+                            value={settings.filterAgent}
+                            onChange={(e) => updateColumnSetting(column.id, 'filterAgent', e.target.value)}
+                            className="w-full bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm"
+                          >
+                            <option value="all">All Agents</option>
+                            <option value="unassigned">Unassigned</option>
+                            {agents.map(a => (
+                              <option key={a.id} value={a.id}>{a.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="p-2">
+                          <div className="text-xs font-semibold text-clawd-text-dim mb-1">Priority</div>
+                          <select
+                            value={settings.filterPriority}
+                            onChange={(e) => updateColumnSetting(column.id, 'filterPriority', e.target.value as TaskPriority | 'all')}
+                            className="w-full bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm"
+                          >
+                            <option value="all">All Priorities</option>
+                            {PRIORITIES.map(p => (
+                              <option key={p.id} value={p.id}>{p.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
+                          <div className="p-2 border-t border-clawd-border">
+                            <button
+                              onClick={() => {
+                                updateColumnSetting(column.id, 'filterAgent', 'all');
+                                updateColumnSetting(column.id, 'filterPriority', 'all');
+                              }}
+                              className="w-full text-sm text-clawd-accent hover:underline"
+                            >
+                              Clear Filters
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -624,6 +848,7 @@ export default function Kanban() {
                       key={task.id}
                       task={task}
                       agents={agents}
+                      activeSessions={activeSessions}
                       onDragStart={(e) => handleDragStart(e, task.id)}
                       onDragEnd={handleDragEnd}
                       onDelete={() => handleDeleteTask(task.id)}
@@ -631,6 +856,7 @@ export default function Kanban() {
                       onStartAgent={() => handleSpawnAgent(task.id)}
                       onClick={() => setSelectedTask(task)}
                       onSetPriority={(priority) => handleQuickPriority(task.id, priority)}
+                      onPoke={() => setPokeTask(task)}
                       isDragging={draggedTask === task.id}
                       isDeleting={deletingTasks.has(task.id)}
                       isSpawning={spawningTasks.has(task.id)}
@@ -685,6 +911,54 @@ export default function Kanban() {
         task={selectedTask}
         onClose={() => setSelectedTask(null)}
       />
+
+      {pokeTask && (
+        <PokeModal
+          taskId={pokeTask.id}
+          taskTitle={pokeTask.title}
+          onClose={() => setPokeTask(null)}
+        />
+      )}
+
+      {showHealthCheck && (
+        <HealthCheckModal
+          onClose={() => setShowHealthCheck(false)}
+          stats={{
+            totalTasks: tasks.length,
+            inProgress: stats.inProgress,
+            urgent: stats.urgent,
+            overdue: stats.overdue,
+            unassigned: stats.unassigned,
+          }}
+        />
+      )}
+
+      {/* Archive Confirmation Dialog */}
+      {showArchiveConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-clawd-bg1 rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
+            <h3 className="text-lg font-semibold mb-2">Archive Done Tasks</h3>
+            <p className="text-clawd-text-dim mb-4">
+              Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
+              They will be removed from the board but can still be accessed in the archive.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowArchiveConfirm(false)}
+                className="px-4 py-2 rounded-lg bg-clawd-bg2 hover:bg-clawd-border transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleArchiveDone}
+                className="px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors"
+              >
+                Archive
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -692,6 +966,7 @@ export default function Kanban() {
 interface TaskCardProps {
   task: Task;
   agents: { id: string; name: string; avatar?: string; status?: string; currentTaskId?: string }[];
+  activeSessions: Record<string, boolean>;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onDelete: () => void;
@@ -699,20 +974,86 @@ interface TaskCardProps {
   onStartAgent: () => void;
   onClick: () => void;
   onSetPriority: (priority: TaskPriority) => void;
+  onPoke: () => void;
   isDragging: boolean;
   isDeleting?: boolean;
   isSpawning?: boolean;
   isMoving?: boolean;
 }
 
-const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
+const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragStart, onDragEnd, onDelete, onAssign, onStartAgent, onClick, onSetPriority, onPoke, isDragging, isDeleting, isSpawning, isMoving }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [showPriority, setShowPriority] = useState(false);
+  const [priorityBtnPos, setPriorityBtnPos] = useState<{top: number, left: number} | null>(null);
+  const [assignBtnPos, setAssignBtnPos] = useState<{top: number, left: number} | null>(null);
+  const [menuBtnPos, setMenuBtnPos] = useState<{top: number, left: number} | null>(null);
+  
+  const priorityBtnRef = useRef<HTMLButtonElement>(null);
+  const assignBtnRef = useRef<HTMLButtonElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   
   const assignedAgent = task.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isAgentWorking = assignedAgent?.currentTaskId === task.id;
   const canStart = assignedAgent && !isAgentWorking && task.status !== 'done' && task.status !== 'in-progress';
+  
+  // Agent status indicator - based on actual task activity, not just session
+  const getAgentStatus = (): 'active' | 'paused' | 'blocked' | 'idle' | undefined => {
+    if (!task.assignedTo) return undefined;
+    
+    // Blocked: task status is review or internal-review (waiting on someone else)
+    if (task.status === 'review' || task.status === 'internal-review') return 'blocked';
+    
+    // Idle: task assigned but not started (todo status)
+    if (task.status === 'todo') return 'idle';
+    
+    // For in-progress tasks, check ACTUAL task activity (not just session status)
+    if (task.status === 'in-progress' && (task as any).last_activity_at) {
+      const now = Date.now();
+      const lastActivity = (task as any).last_activity_at;
+      const minutesSinceActivity = (now - lastActivity) / (1000 * 60);
+      
+      // Active: activity in last 15 minutes
+      if (minutesSinceActivity < 15) return 'active';
+      
+      // Paused: no activity in 15+ minutes (yellow/red indicators will show in UI)
+      return 'paused';
+    }
+    
+    // Fallback: in-progress with no activity tracking
+    if (task.status === 'in-progress') return 'paused';
+    
+    return undefined;
+  };
+
+  // Activity indicator color - shows real-time task activity
+  const getActivityIndicator = (): { color: string; description: string } | null => {
+    // Only show for in-progress tasks with assigned agents
+    if (task.status !== 'in-progress' || !task.assignedTo) return null;
+    
+    const lastActivity = (task as any).last_activity_at;
+    
+    // 🟠 Orange: Silent agent - assigned but no activity logged
+    if (!lastActivity) {
+      return { color: 'border-orange-500/70', description: 'Silent agent (no activity logged)' };
+    }
+    
+    const now = Date.now();
+    const minutesSinceActivity = (now - lastActivity) / (1000 * 60);
+    
+    // 🟢 Green: Active work in last 15 minutes
+    if (minutesSinceActivity < 15) {
+      return { color: 'border-green-500/70', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
+    }
+    
+    // 🟡 Yellow: Stale, no activity in 15-30 minutes
+    if (minutesSinceActivity < 30) {
+      return { color: 'border-yellow-500/70', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
+    }
+    
+    // 🔴 Red: Stuck/abandoned, no activity in 30+ minutes
+    return { color: 'border-red-500/70', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
+  };
   
   // Subtask progress
   const subtaskCount = task.subtasks?.length || 0;
@@ -725,64 +1066,136 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
   // Priority info
   const priorityConfig = task.priority ? PRIORITIES.find(p => p.id === task.priority) : null;
 
+  // Activity indicator (takes precedence for in-progress tasks)
+  const activityIndicator = getActivityIndicator();
+
   return (
     <div
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`bg-clawd-bg rounded-xl p-3 border transition-all cursor-pointer group relative overflow-hidden ${
+      className={`bg-clawd-bg rounded-xl p-3 border-2 transition-all cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
       } ${
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
+        activityIndicator ? activityIndicator.color :
         dueInfo?.isOverdue ? 'border-red-500/50 bg-red-500/5' :
         task.priority === 'p0' ? 'border-red-500/30' :
         'border-clawd-border hover:border-clawd-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
+      title={activityIndicator?.description}
     >
       {/* Top row: Priority + Title + Menu */}
-      <div className="flex items-start gap-2 mb-2">
+      <div className="flex items-start gap-1.5 mb-2">
         {/* Priority indicator */}
         {priorityConfig && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowPriority(!showPriority); }}
-            className={`p-1 rounded ${priorityConfig.bg} ${priorityConfig.color} flex-shrink-0`}
-            title={priorityConfig.label}
-          >
-            {priorityConfig.icon}
-          </button>
+          <div className="relative flex-shrink-0">
+            <button
+              ref={priorityBtnRef}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (!showPriority && priorityBtnRef.current) {
+                  const rect = priorityBtnRef.current.getBoundingClientRect();
+                  setPriorityBtnPos({ top: rect.bottom + 4, left: rect.left });
+                }
+                setShowPriority(!showPriority); 
+              }}
+              className={`p-0.5 rounded ${priorityConfig.bg} ${priorityConfig.color}`}
+              title={priorityConfig.label}
+            >
+              {priorityConfig.icon}
+            </button>
+            
+            {/* Priority Picker Modal */}
+            {showPriority && priorityBtnPos && createPortal(
+              <>
+                <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} />
+                <div 
+                  className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
+                  style={{ top: `${priorityBtnPos.top}px`, left: `${priorityBtnPos.left}px` }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
+                  <div className="space-y-1">
+                    {PRIORITIES.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
+                        className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                          task.priority === p.id ? `${p.bg} ${p.color}` : ''
+                        }`}
+                      >
+                        <span className={p.color}>{p.icon}</span>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>,
+              document.body
+            )}
+          </div>
         )}
         
-        {/* Active agent indicator + Title */}
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          <ActiveAgentIndicator taskId={task.id} size="sm" />
+        {/* Title */}
+        <div className="flex items-start gap-1 flex-1 min-w-0">
           <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
         </div>
         
         <div className="relative flex-shrink-0">
           <button 
-            className="icon-btn-sm text-clawd-text-dim opacity-0 group-hover:opacity-100"
-            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+            ref={menuBtnRef}
+            className="icon-btn-sm text-clawd-text-dim opacity-60 hover:opacity-100"
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (!showMenu && menuBtnRef.current) {
+                const rect = menuBtnRef.current.getBoundingClientRect();
+                setMenuBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
+              }
+              setShowMenu(!showMenu); 
+            }}
           >
             <MoreHorizontal size={16} className="flex-shrink-0" />
           </button>
           
-          {showMenu && (
+          {showMenu && menuBtnPos && createPortal(
             <>
               <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-8 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-[110] min-w-40">
+              <div className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-[101] min-w-40"
+                style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowPriority(true); setShowMenu(false); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (menuBtnPos) {
+                      setPriorityBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left });
+                    }
+                    setShowPriority(true); 
+                    setShowMenu(false); 
+                  }}
                   className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
                   <Flag size={16} className="flex-shrink-0" /> Set Priority
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowAssign(true); setShowMenu(false); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (menuBtnPos) {
+                      setAssignBtnPos({ top: menuBtnPos.top, left: menuBtnPos.left });
+                    }
+                    setShowAssign(true); 
+                    setShowMenu(false); 
+                  }}
                   className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
                 >
                   <Bot size={16} className="flex-shrink-0" /> Assign Agent
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPoke(); setShowMenu(false); }}
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border"
+                >
+                  <Hand size={16} className="flex-shrink-0" /> Poke
                 </button>
                 <hr className="my-1 border-clawd-border" />
                 <button
@@ -794,7 +1207,8 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
                   {isDeleting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>
@@ -844,100 +1258,98 @@ const TaskCard = memo(function TaskCard({ task, agents, onDragStart, onDragEnd, 
           )}
         </div>
         
-        {assignedAgent ? (
-          <div className="flex items-center gap-1.5 no-shrink">
-            {isAgentWorking ? (
-              <span className="icon-badge-sm bg-yellow-500/20 text-yellow-400 animate-pulse">
-                <Zap size={14} className="no-shrink" />
-              </span>
-            ) : canStart ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
-                disabled={isSpawning}
-                className="icon-badge-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        <div className="relative flex-shrink-0">
+          {assignedAgent ? (
+            <div className="flex items-center gap-1.5 no-shrink">
+              {isAgentWorking ? (
+                <span className="icon-badge-sm bg-yellow-500/20 text-yellow-400 animate-pulse">
+                  <Zap size={14} className="no-shrink" />
+                </span>
+              ) : canStart ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onStartAgent(); }}
+                  disabled={isSpawning}
+                  className="icon-badge-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
+                </button>
+              ) : null}
+              <button 
+                ref={assignBtnRef}
+                className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (!showAssign && assignBtnRef.current) {
+                    const rect = assignBtnRef.current.getBoundingClientRect();
+                    setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
+                  }
+                  setShowAssign(true); 
+                }}
               >
-                {isSpawning ? <Spinner size={14} className="no-shrink" /> : <Play size={14} className="no-shrink" />}
+                <AgentAvatar 
+                  agentId={assignedAgent.id} 
+                  fallbackEmoji={assignedAgent.avatar} 
+                  size="xs"
+                  status={getAgentStatus()}
+                />
               </button>
-            ) : null}
+            </div>
+          ) : (
             <button 
-              className="icon-text-tight px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent rounded hover:bg-clawd-accent/20 no-shrink"
-              onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
+              ref={assignBtnRef}
+              className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (!showAssign && assignBtnRef.current) {
+                  const rect = assignBtnRef.current.getBoundingClientRect();
+                  setAssignBtnPos({ top: rect.bottom + 4, left: rect.right - 160 });
+                }
+                setShowAssign(true); 
+              }}
             >
-              <span>{assignedAgent.avatar || '🤖'}</span>
+              <User size={14} className="no-shrink" />
             </button>
-          </div>
-        ) : (
-          <button 
-            className="icon-btn-sm text-clawd-text-dim hover:text-clawd-accent no-shrink"
-            onClick={(e) => { e.stopPropagation(); setShowAssign(true); }}
-          >
-            <User size={14} className="no-shrink" />
-          </button>
-        )}
-      </div>
-
-      {/* Priority Picker */}
-      {showPriority && (
-        <>
-          <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} />
-          <div 
-            className="absolute left-0 right-0 top-full mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[110]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
-            <div className="space-y-1">
-              {PRIORITIES.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
-                  className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                    task.priority === p.id ? `${p.bg} ${p.color}` : ''
-                  }`}
-                >
-                  <span className={p.color}>{p.icon}</span>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Assign Modal */}
-      {showAssign && (
-        <>
-          <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} />
-          <div 
-            className="absolute left-0 right-0 top-full mt-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[110]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
-            <div className="space-y-1">
-              <button
-                onClick={() => { onAssign(''); setShowAssign(false); }}
-                className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                  !task.assignedTo ? 'bg-clawd-border' : ''
-                }`}
+          )}
+          
+          {/* Assign Agent Modal */}
+          {showAssign && assignBtnPos && createPortal(
+            <>
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} />
+              <div 
+                className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
+                style={{ top: `${assignBtnPos.top}px`, left: `${assignBtnPos.left}px` }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <User size={16} className="text-clawd-text-dim" />
-                Unassigned
-              </button>
-              {agents.map(agent => (
-                <button
-                  key={agent.id}
-                  onClick={() => { onAssign(agent.id); setShowAssign(false); }}
-                  className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
-                    task.assignedTo === agent.id ? 'bg-clawd-accent/20 text-clawd-accent' : ''
-                  }`}
-                >
-                  <span className="text-base">{agent.avatar || '🤖'}</span>
-                  {agent.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+                <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => { onAssign(''); setShowAssign(false); }}
+                    className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                      !task.assignedTo ? 'bg-clawd-border' : ''
+                    }`}
+                  >
+                    <User size={16} className="text-clawd-text-dim" />
+                    Unassigned
+                  </button>
+                  {agents.map(agent => (
+                    <button
+                      key={agent.id}
+                      onClick={() => { onAssign(agent.id); setShowAssign(false); }}
+                      className={`w-full p-2 rounded-lg text-left text-sm flex items-center gap-2 hover:bg-clawd-border transition-colors ${
+                        task.assignedTo === agent.id ? 'bg-clawd-accent/20 text-clawd-accent' : ''
+                      }`}
+                    >
+                      <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
+                      {agent.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>,
+            document.body
+          )}
+        </div>
+      </div>
     </div>
   );
 }, (prevProps, nextProps) => {

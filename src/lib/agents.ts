@@ -2,65 +2,17 @@
 // Spawns and manages real sub-agents via Clawdbot gateway
 
 import { gateway } from './gateway';
+import { useStore } from '../store/store';
 
 export interface AgentConfig {
   id: string;
   name: string;
   emoji: string;
   description: string;
-  systemPromptPath?: string;
   capabilities: string[];
   model?: string;
+  workspace?: string;
 }
-
-// Pre-defined agents
-export const AGENTS: Record<string, AgentConfig> = {
-  coder: {
-    id: 'coder',
-    name: 'Coder',
-    emoji: '💻',
-    description: 'Software engineering tasks',
-    systemPromptPath: '/Users/worker/clawd/agents/coder/AGENT.md',
-    capabilities: ['code', 'git', 'debug', 'test'],
-    model: 'anthropic/claude-sonnet-4',
-  },
-  researcher: {
-    id: 'researcher',
-    name: 'Researcher',
-    emoji: '🔍',
-    description: 'Research and analysis',
-    systemPromptPath: '/Users/worker/clawd/agents/researcher/AGENT.md',
-    capabilities: ['web', 'analyze', 'summarize'],
-    model: 'anthropic/claude-sonnet-4',
-  },
-  writer: {
-    id: 'writer',
-    name: 'Writer',
-    emoji: '✍️',
-    description: 'Content creation',
-    systemPromptPath: '/Users/worker/clawd/agents/writer/AGENT.md',
-    capabilities: ['write', 'edit', 'social'],
-    model: 'anthropic/claude-sonnet-4',
-  },
-  chief: {
-    id: 'chief',
-    name: 'Chief',
-    emoji: '👨‍💻',
-    description: 'Lead Engineer (GSD methodology)',
-    systemPromptPath: '/Users/worker/clawd/agents/lead-engineer/AGENT.md',
-    capabilities: ['code', 'architecture', 'planning'],
-    model: 'anthropic/claude-sonnet-4',
-  },
-  froggo: {
-    id: 'froggo',
-    name: 'Froggo',
-    emoji: '🐸',
-    description: 'Main orchestrator and agent reviewer',
-    systemPromptPath: '/Users/worker/clawd/AGENTS.md',
-    capabilities: ['orchestrate', 'review', 'approve', 'delegate'],
-    model: 'anthropic/claude-sonnet-4-5',
-  },
-};
 
 // Spawn an agent with a specific task
 export async function spawnAgent(
@@ -72,30 +24,22 @@ export async function spawnAgent(
     timeout?: number;
   }
 ): Promise<{ sessionKey: string; label: string }> {
-  const agent = AGENTS[agentId];
+  // Get agent from store instead of hardcoded AGENTS constant
+  const agent = useStore.getState().agents.find(a => a.id === agentId);
   if (!agent) {
     throw new Error(`Unknown agent: ${agentId}`);
   }
 
   const label = options?.label || `${agent.id}-${Date.now()}`;
-  
-  // Load agent prompt
-  let systemPrompt = '';
-  if (agent.systemPromptPath) {
-    try {
-      // In Electron, we'd read from filesystem
-      // For now, embed basic prompts
-      systemPrompt = getAgentPrompt(agentId);
-    } catch (e) {
-      console.error('Failed to load agent prompt:', e);
-    }
-  }
+
+  // Load agent prompt (fallback only - agents load their own from workspace)
+  const systemPrompt = getAgentPrompt(agentId);
 
   // Spawn via gateway
   const result = await gateway.spawnAgent(
     `${systemPrompt}\n\n## YOUR TASK\n${task}`,
     label,
-    options?.model || agent.model
+    options?.model // Use provided model or gateway default
   );
 
   return {
@@ -179,15 +123,10 @@ export async function messageAgent(sessionKey: string, message: string): Promise
   });
 }
 
-// Embedded agent prompts (fallback)
+// Embedded agent prompts (fallback only - agents load their own from workspace)
 function getAgentPrompt(agentId: string): string {
-  const prompts: Record<string, string> = {
-    coder: `You are Coder, a focused software engineer agent. Execute coding tasks efficiently, write clean code, test your work, and commit with clear messages.`,
-    researcher: `You are Researcher, an analysis agent. Gather information from multiple sources, analyze data, and provide concise summaries with actionable insights.`,
-    writer: `You are Writer, a content creation agent. Draft engaging content for the target platform and audience. Submit all external content for approval using [NEEDS_APPROVAL] format.`,
-    chief: `You are Chief, a Lead Engineer using GSD (Get Shit Done) methodology. Use /gsd: commands for spec-driven development. Plan thoroughly, execute in atomic chunks, verify everything works.`,
-  };
-  return prompts[agentId] || '';
+  // Return empty string - agents load their own prompts from workspace AGENTS.md files
+  return '';
 }
 
 // Match task to best agent

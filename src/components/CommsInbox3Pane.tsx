@@ -1,20 +1,25 @@
 /**
  * CommsInbox3Pane - Proper 3-pane communications inbox
- * 
- * LEFT: Account/folder selector (Gmail accounts, WhatsApp, Telegram, Discord)
+ *
+ * LEFT: Account/folder selector (Gmail accounts, WhatsApp, Telegram, Discord, System)
  * CENTER: Message/conversation list for selected account
  * RIGHT: Message detail view with thread and reply
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Mail, MessageCircle, Send, Gamepad2, MessageSquare,
-  Inbox, Star, Archive, Trash2, Clock, AlertTriangle,
+  Mail, MessageCircle, Send, Gamepad2,
+  Inbox, Star, Archive, AlertTriangle,
   RefreshCw, ChevronRight, ChevronDown, Search,
   Reply, ReplyAll, Forward, MoreHorizontal,
-  Sparkles, X, Paperclip, Check, Eye
+  Sparkles, X, Paperclip, Eye, Check, MailOpen,
+  Activity as ActivityIcon, ChevronUp, FileText, Code,
+  CalendarPlus, ListPlus
 } from 'lucide-react';
-import DOMPurify from 'dompurify';
+import { showToast } from './Toast';
+import { gateway } from '../lib/gateway';
+import { useStore, Activity } from '../store/store';
+import MarkdownMessage from './MarkdownMessage';
 
 // X logo
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -28,7 +33,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
 interface Account {
   id: string;
   label: string;
-  platform: 'email' | 'whatsapp' | 'telegram' | 'discord' | 'twitter';
+  platform: 'email' | 'whatsapp' | 'telegram' | 'discord' | 'twitter' | 'system';
   address?: string; // email address or phone number
   icon: React.ReactNode;
   color: string;
@@ -45,6 +50,7 @@ interface Folder {
 interface ConversationItem {
   id: string;
   platform: string;
+  account?: string; // email address for email messages
   from?: string;
   name?: string;
   subject?: string;
@@ -73,19 +79,101 @@ interface ThreadMessage {
   hasAttachment?: boolean;
 }
 
+interface EmailMetadata {
+  from?: string;
+  to?: string;
+  cc?: string;
+  date?: string;
+  subject?: string;
+}
+
+interface AIAnalysis {
+  triage: 'urgent' | 'action' | 'fyi' | 'no-reply';
+  summary: string;
+  tasks: Array<{title: string; description: string}>;
+  events: Array<{title: string; date: string; time: string; duration?: string; location?: string}>;
+  reply_draft: string | null;
+  reply_needed: boolean;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCOUNTS: Account[] = [
-  { id: 'gmail-bitso', label: 'Bitso', platform: 'email', address: 'kevin.macarthur@bitso.com', icon: <Mail size={16} />, color: 'text-orange-400' },
-  { id: 'gmail-carbium', label: 'Carbium', platform: 'email', address: 'kevin@carbium.io', icon: <Mail size={16} />, color: 'text-blue-400' },
-  { id: 'whatsapp', label: 'WhatsApp', platform: 'whatsapp', icon: <MessageCircle size={16} />, color: 'text-green-400' },
-  { id: 'telegram', label: 'Telegram', platform: 'telegram', icon: <Send size={16} />, color: 'text-sky-400' },
-  { id: 'discord', label: 'Discord', platform: 'discord', icon: <Gamepad2 size={16} />, color: 'text-indigo-400' },
-  { id: 'twitter', label: 'X DMs', platform: 'twitter', icon: <XIcon size={16} />, color: 'text-gray-300' },
-];
+// Default email accounts (empty — populated dynamically from gateway or user settings)
+const DEFAULT_EMAIL_ACCOUNTS: Account[] = [];
+
+const PLATFORM_ICON_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  whatsapp: { icon: <MessageCircle size={16} />, color: 'text-green-400', label: 'WhatsApp' },
+  telegram: { icon: <Send size={16} />, color: 'text-sky-400', label: 'Telegram' },
+  discord: { icon: <Gamepad2 size={16} />, color: 'text-indigo-400', label: 'Discord' },
+  twitter: { icon: <XIcon size={16} />, color: 'text-clawd-text-dim', label: 'X DMs' },
+};
+
+const SYSTEM_ACCOUNT: Account = {
+  id: 'system',
+  label: 'System',
+  platform: 'system',
+  icon: <ActivityIcon size={16} />,
+  color: 'text-purple-400',
+};
+
+const EMAIL_COLORS = ['text-orange-400', 'text-blue-400', 'text-emerald-400', 'text-rose-400', 'text-amber-400'];
+
+// Build accounts from gateway channels + discovered email accounts
+function buildAccountsFromSources(
+  channelAccounts: Record<string, Array<{ accountId: string; name?: string; connected?: boolean; enabled?: boolean; configured?: boolean; running?: boolean }>>,
+  emailAccounts: Array<{ email: string; label: string }>,
+): Account[] {
+  const accounts: Account[] = [];
+
+  // Email accounts from gog auth discovery (or fallback)
+  emailAccounts.forEach((entry, i) => {
+    accounts.push({
+      id: `email-${entry.email}`,
+      label: entry.label,
+      platform: 'email',
+      address: entry.email,
+      icon: <Mail size={16} />,
+      color: EMAIL_COLORS[i % EMAIL_COLORS.length],
+    });
+  });
+
+  // Platform accounts from gateway — show if configured+running or connected or enabled
+  for (const [platform, entries] of Object.entries(channelAccounts)) {
+    if (platform === 'email') continue;
+    const meta = PLATFORM_ICON_MAP[platform];
+    if (!meta) continue;
+    const active = entries.some(e => e.connected || e.enabled || (e.configured && e.running));
+    if (active) {
+      accounts.push({
+        id: platform,
+        label: meta.label,
+        platform: platform as Account['platform'],
+        icon: meta.icon,
+        color: meta.color,
+      });
+    }
+  }
+
+  // System always present
+  accounts.push(SYSTEM_ACCOUNT);
+
+  return accounts;
+}
+
+// Legacy fallback
+function buildAccountsFallback(): Account[] {
+  return [
+    ...DEFAULT_EMAIL_ACCOUNTS,
+    { id: 'whatsapp', label: 'WhatsApp', platform: 'whatsapp', icon: <MessageCircle size={16} />, color: 'text-green-400' },
+    { id: 'telegram', label: 'Telegram', platform: 'telegram', icon: <Send size={16} />, color: 'text-sky-400' },
+    { id: 'discord', label: 'Discord', platform: 'discord', icon: <Gamepad2 size={16} />, color: 'text-indigo-400' },
+    { id: 'twitter', label: 'X DMs', platform: 'twitter', icon: <XIcon size={16} />, color: 'text-clawd-text-dim' },
+    SYSTEM_ACCOUNT,
+  ];
+}
 
 const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: (m) => !m.is_starred },
+  { id: 'inbox', label: 'Inbox', icon: <Inbox size={16} />, filter: () => true },
   { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
   { id: 'unreplied', label: 'Unreplied', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
   { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
@@ -98,38 +186,190 @@ const FOLDERS: Folder[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(ts: number): string {
-  const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return 'now';
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  return `${d}d`;
-}
-
 function platformColor(p: string): string {
   const map: Record<string, string> = {
     email: 'text-orange-400', whatsapp: 'text-green-400', telegram: 'text-sky-400',
-    discord: 'text-indigo-400', twitter: 'text-gray-300'
+    discord: 'text-indigo-400', twitter: 'text-clawd-text-dim', system: 'text-purple-400'
   };
   return map[p] || 'text-clawd-text-dim';
 }
 
-// Detect if content is HTML
-function isHTML(content: string): boolean {
-  const htmlTags = /<[^>]+>/;
-  return htmlTags.test(content);
+function platformIcon(platform: string, size: number) {
+  switch (platform) {
+    case 'email': return <Mail size={size} />;
+    case 'whatsapp': return <MessageCircle size={size} />;
+    case 'telegram': return <Send size={size} />;
+    case 'discord': return <Gamepad2 size={size} />;
+    case 'twitter': return <XIcon size={size} />;
+    case 'system': return <ActivityIcon size={size} />;
+    default: return null;
+  }
 }
 
-// Sanitize HTML content
-function sanitizeHTML(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'div', 'span', 'pre', 'code', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target'],
-    ALLOW_DATA_ATTR: false,
-  });
+// Triage badge colors
+const TRIAGE_COLORS: Record<string, string> = {
+  urgent: 'bg-red-500',
+  action: 'bg-orange-500',
+  fyi: 'bg-blue-500',
+  'no-reply': 'bg-gray-500',
+};
+
+const TRIAGE_LABELS: Record<string, string> = {
+  urgent: 'Urgent',
+  action: 'Action needed',
+  fyi: 'FYI',
+  'no-reply': 'No reply needed',
+};
+
+// Sanitize HTML email body for safe iframe rendering
+function sanitizeEmailHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]*/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:');
+}
+
+function isHtmlEmail(body: string): boolean {
+  return /<html[\s>]|<body[\s>]|<!doctype/i.test(body);
+}
+
+// Detect if a message contains HTML tags (not full email, just inline HTML like <b>, <a>, <br>, etc.)
+function isHtmlContent(text: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(text) && !isHtmlEmail(text);
+}
+
+// Sanitize inline HTML for chat messages (strip dangerous tags, keep formatting)
+function sanitizeInlineHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]*/gi, '')
+    .replace(/javascript\s*:/gi, 'blocked:');
+}
+
+// Parse email headers from body output (gog gmail read returns headers + body)
+function parseEmailBodyAndMeta(raw: string): { body: string; metadata: EmailMetadata } {
+  const metadata: EmailMetadata = {};
+  const lines = raw.split('\n');
+  let bodyStart = 0;
+
+  for (let i = 0; i < Math.min(lines.length, 30); i++) {
+    const line = lines[i];
+    if (/^From:\s/i.test(line)) { metadata.from = line.replace(/^From:\s*/i, '').trim(); bodyStart = i + 1; }
+    else if (/^To:\s/i.test(line)) { metadata.to = line.replace(/^To:\s*/i, '').trim(); bodyStart = i + 1; }
+    else if (/^Cc:\s/i.test(line)) { metadata.cc = line.replace(/^Cc:\s*/i, '').trim(); bodyStart = i + 1; }
+    else if (/^Date:\s/i.test(line)) { metadata.date = line.replace(/^Date:\s*/i, '').trim(); bodyStart = i + 1; }
+    else if (/^Subject:\s/i.test(line)) { metadata.subject = line.replace(/^Subject:\s*/i, '').trim(); bodyStart = i + 1; }
+    else if (line.trim() === '' && bodyStart > 0) { bodyStart = i + 1; break; }
+  }
+
+  const body = bodyStart > 0 ? lines.slice(bodyStart).join('\n') : raw;
+  return { body, metadata };
+}
+
+// ─── Email Body Renderer ──────────────────────────────────────────────────────
+
+function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMetadata }) {
+  const [showHtml, setShowHtml] = useState(true);
+  const htmlMode = isHtmlEmail(body);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Auto-resize iframe to content height
+  useEffect(() => {
+    if (!htmlMode || !showHtml || !iframeRef.current) return;
+    const iframe = iframeRef.current;
+    const handleLoad = () => {
+      try {
+        const doc = iframe.contentDocument;
+        if (doc?.body) {
+          iframe.style.height = `${doc.body.scrollHeight + 20}px`;
+        }
+      } catch { /* cross-origin, ignore */ }
+    };
+    iframe.addEventListener('load', handleLoad);
+    return () => iframe.removeEventListener('load', handleLoad);
+  }, [htmlMode, showHtml, body]);
+
+  const hasMetadata = metadata.from || metadata.to || metadata.date;
+
+  return (
+    <div className="bg-clawd-surface rounded-lg border border-clawd-border overflow-hidden">
+      {/* Email header bar */}
+      {hasMetadata && (
+        <div className="px-4 py-3 border-b border-clawd-border space-y-1">
+          {metadata.from && (
+            <div className="flex gap-2 text-sm">
+              <span className="text-clawd-text-dim w-12 flex-shrink-0">From</span>
+              <span className="font-medium">{metadata.from}</span>
+            </div>
+          )}
+          {metadata.to && (
+            <div className="flex gap-2 text-sm">
+              <span className="text-clawd-text-dim w-12 flex-shrink-0">To</span>
+              <span>{metadata.to}</span>
+            </div>
+          )}
+          {metadata.cc && (
+            <div className="flex gap-2 text-sm">
+              <span className="text-clawd-text-dim w-12 flex-shrink-0">Cc</span>
+              <span className="text-clawd-text-dim">{metadata.cc}</span>
+            </div>
+          )}
+          {metadata.date && (
+            <div className="flex gap-2 text-sm">
+              <span className="text-clawd-text-dim w-12 flex-shrink-0">Date</span>
+              <span className="text-clawd-text-dim">{metadata.date}</span>
+            </div>
+          )}
+          {metadata.subject && (
+            <div className="flex gap-2 text-sm">
+              <span className="text-clawd-text-dim w-12 flex-shrink-0">Subj</span>
+              <span className="font-semibold">{metadata.subject}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* HTML/Plain toggle for HTML emails */}
+      {htmlMode && (
+        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-clawd-border bg-clawd-bg/50">
+          <button
+            onClick={() => setShowHtml(true)}
+            className={`text-xs px-2 py-0.5 rounded ${showHtml ? 'bg-clawd-accent/20 text-clawd-accent' : 'text-clawd-text-dim hover:text-clawd-text'}`}
+          >
+            <Code size={10} className="inline mr-1" />HTML
+          </button>
+          <button
+            onClick={() => setShowHtml(false)}
+            className={`text-xs px-2 py-0.5 rounded ${!showHtml ? 'bg-clawd-accent/20 text-clawd-accent' : 'text-clawd-text-dim hover:text-clawd-text'}`}
+          >
+            <FileText size={10} className="inline mr-1" />Plain
+          </button>
+        </div>
+      )}
+
+      {/* Body content */}
+      <div className="p-4">
+        {htmlMode && showHtml ? (
+          <iframe
+            ref={iframeRef}
+            srcDoc={sanitizeEmailHtml(body)}
+            sandbox="allow-same-origin"
+            className="w-full border-0 min-h-[200px] bg-white rounded"
+            style={{ colorScheme: 'light' }}
+            title="Email content"
+          />
+        ) : (
+          <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
+            {htmlMode ? body.replace(/<[^>]+>/g, '') : body}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Left Pane: Account & Folder Selector ─────────────────────────────────────
@@ -141,6 +381,8 @@ function LeftPane({
   onSelectFolder,
   accountCounts,
   folderCounts,
+  accounts,
+  loadingAccounts,
 }: {
   selectedAccount: string | null;
   selectedFolder: string;
@@ -148,12 +390,14 @@ function LeftPane({
   onSelectFolder: (id: string) => void;
   accountCounts: Record<string, number>;
   folderCounts: Record<string, number>;
+  accounts: Account[];
+  loadingAccounts: boolean;
 }) {
   const [accountsExpanded, setAccountsExpanded] = useState(true);
   const [foldersExpanded, setFoldersExpanded] = useState(true);
 
   return (
-    <div className="w-60 flex-shrink-0 bg-clawd-surface border-r border-clawd-border flex flex-col overflow-y-auto">
+    <div className="w-56 flex-shrink-0 bg-clawd-surface border-r border-clawd-border flex flex-col overflow-y-auto">
       {/* All Messages */}
       <button
         onClick={() => { onSelectAccount(null); onSelectFolder('inbox'); }}
@@ -178,10 +422,11 @@ function LeftPane({
         >
           {accountsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Accounts
+          {loadingAccounts && <RefreshCw size={10} className="animate-spin ml-auto" />}
         </button>
         {accountsExpanded && (
           <div className="pb-2">
-            {ACCOUNTS.map(account => (
+            {accounts.map(account => (
               <button
                 key={account.id}
                 onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
@@ -251,26 +496,51 @@ function CenterPane({
   selectedId,
   onSelect,
   onToggleStar,
+  onArchive,
+  onToggleRead,
   loading,
   searchQuery,
   onSearchChange,
   accountLabel,
   onRefresh,
   refreshing,
+  selectedPlatform,
+  hasMore,
+  onLoadMore,
+  onLoadAll,
+  aiAnalyses,
 }: {
   conversations: ConversationItem[];
   selectedId: string | null;
   onSelect: (c: ConversationItem) => void;
   onToggleStar: (id: string) => void;
+  onArchive: (c: ConversationItem) => void;
+  onToggleRead: (c: ConversationItem) => void;
   loading: boolean;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   accountLabel: string;
   onRefresh: () => void;
   refreshing: boolean;
+  selectedPlatform?: string;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  onLoadAll?: () => void;
+  aiAnalyses?: Map<string, AIAnalysis>;
 }) {
+  // Platform-specific empty states
+  const emptyState = () => {
+    const p = selectedPlatform;
+    if (p === 'system') return { icon: <ActivityIcon size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No system activity' };
+    if (p === 'telegram') return { icon: <Send size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No Telegram messages' };
+    if (p === 'whatsapp') return { icon: <MessageCircle size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No WhatsApp messages' };
+    if (p === 'discord') return { icon: <Gamepad2 size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No Discord messages' };
+    if (p === 'twitter') return { icon: <XIcon size={32} />, msg: 'No X DMs' };
+    return { icon: <Mail size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No messages' };
+  };
+
   return (
-    <div className="flex-1 min-w-[320px] max-w-[480px] bg-clawd-bg border-r border-clawd-border flex flex-col">
+    <div className="flex-1 min-w-[300px] max-w-[440px] bg-clawd-bg border-r border-clawd-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-clawd-border">
         <div className="flex items-center justify-between mb-2">
@@ -302,97 +572,306 @@ function CenterPane({
           <div className="text-center text-clawd-text-dim py-12 text-sm">Loading messages...</div>
         ) : conversations.length === 0 ? (
           <div className="text-center text-clawd-text-dim py-12">
-            <Mail size={32} className="mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No messages</p>
+            {emptyState().icon}
+            <p className="text-sm">{emptyState().msg}</p>
           </div>
         ) : (
-          conversations.map(conv => (
-            <button
-              key={conv.id}
-              onClick={() => onSelect(conv)}
-              className={`w-full text-left px-4 py-3 border-b border-clawd-border/50 transition-all duration-150 group ${
-                selectedId === conv.id
-                  ? 'bg-clawd-accent/10 border-l-2 border-l-clawd-accent'
-                  : 'hover:bg-clawd-surface/80'
-              } ${!conv.is_read ? 'bg-clawd-surface/30' : ''}`}
-            >
-              <div className="flex items-start gap-3">
-                {/* Avatar/Icon */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-clawd-border/50 flex items-center justify-center relative mt-0.5">
-                  {!conv.is_read && (
-                    <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-clawd-accent rounded-full border-2 border-clawd-bg" />
-                  )}
-                  {conv.platform === 'email' && <Mail size={16} className="text-orange-400" />}
-                  {conv.platform === 'whatsapp' && <MessageCircle size={16} className="text-green-400" />}
-                  {conv.platform === 'telegram' && <Send size={16} className="text-sky-400" />}
-                  {conv.platform === 'discord' && <Gamepad2 size={16} className="text-indigo-400" />}
-                  {conv.platform === 'twitter' && <XIcon size={16} className="text-gray-300" />}
-                </div>
-
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  {/* Header: Sender + Timestamp */}
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className={`text-sm truncate ${!conv.is_read ? 'font-bold' : 'font-semibold'} text-clawd-text`}>
-                      {(() => {
-                        // Clean up redundant sender names like "Name from Name"
-                        const name = conv.name || conv.from || 'Unknown';
-                        const parts = name.split(' from ');
-                        return parts.length > 1 && parts[0] === parts[1] ? parts[0] : name;
-                      })()}
-                    </span>
-                    <span className="text-xs text-clawd-text-dim flex-shrink-0 font-medium tabular-nums">{conv.relativeTime}</span>
+          <>
+            {conversations.map(conv => (
+              <button
+                key={conv.id}
+                onClick={() => onSelect(conv)}
+                className={`group w-full text-left px-3 py-2.5 border-b border-clawd-border/30 border-l-2 transition-colors ${
+                  selectedId === conv.id
+                    ? 'bg-clawd-accent/10 border-l-clawd-accent'
+                    : 'border-l-transparent hover:bg-clawd-surface/50'
+                } ${!conv.is_read ? 'bg-clawd-surface/30' : ''}`}
+              >
+                <div className="flex items-start gap-2 overflow-hidden w-full">
+                  {/* Unread dot */}
+                  <div className="mt-2 flex-shrink-0 w-2">
+                    {!conv.is_read && <div className="w-2 h-2 bg-clawd-accent rounded-full" />}
                   </div>
 
-                  {/* Subject (if exists) - Allow 2 lines with ellipsis */}
-                  {conv.subject && (
-                    <div className={`text-sm leading-snug ${!conv.is_read ? 'font-semibold' : 'font-medium'} text-clawd-text line-clamp-2`}>
-                      {conv.subject}
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
+                        {conv.name || conv.from || 'Unknown'}
+                      </span>
+                      <span className="text-[11px] text-clawd-text-dim flex-shrink-0">{conv.relativeTime}</span>
+                    </div>
+                    {conv.subject && (
+                      <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-clawd-text/80'}`}>
+                        {conv.subject}
+                      </div>
+                    )}
+                    <p className="text-xs text-clawd-text-dim/70 truncate mt-0.5">{conv.preview}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      <span className={`flex-shrink-0 ${platformColor(conv.platform)}`}>
+                        {platformIcon(conv.platform, 10)}
+                      </span>
+                      {aiAnalyses?.get(conv.id) && (
+                        <span
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${TRIAGE_COLORS[aiAnalyses.get(conv.id)!.triage] || 'bg-gray-500'}`}
+                          title={TRIAGE_LABELS[aiAnalyses.get(conv.id)!.triage] || ''}
+                        />
+                      )}
+                      {conv.message_count && conv.message_count > 1 && (
+                        <span className="text-[10px] text-clawd-text-dim bg-clawd-border/60 rounded px-1 py-0.5">
+                          {conv.message_count}
+                        </span>
+                      )}
+                      {conv.unread_count && conv.unread_count > 0 && (
+                        <span className="text-[10px] text-blue-400 bg-blue-500/15 rounded px-1 py-0.5 font-medium" title="Unread messages">
+                          {conv.unread_count} unread
+                        </span>
+                      )}
+                      {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
+                        <span className="text-[10px] text-orange-400 bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                          <Reply size={8} />
+                          reply
+                        </span>
+                      )}
+                      {conv.has_attachment && <Paperclip size={10} className="text-clawd-text-dim flex-shrink-0" />}
+                      {conv.is_starred && (
+                        <Star size={10} className="text-yellow-400 flex-shrink-0" fill="currentColor" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  {conv.platform !== 'system' && (
+                    <div className="flex flex-col gap-0.5 flex-shrink-0 ml-1">
+                      <button
+                        onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
+                        className={`p-1 rounded hover:bg-clawd-border transition-opacity ${
+                          conv.is_starred ? 'text-yellow-400' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
+                        }`}
+                        title={conv.is_starred ? 'Unstar' : 'Star'}
+                      >
+                        <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); onArchive(conv); }}
+                        className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Archive"
+                      >
+                        <Archive size={14} />
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
+                        className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={conv.is_read ? 'Mark unread' : 'Mark read'}
+                      >
+                        {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
+                      </button>
                     </div>
                   )}
-
-                  {/* Preview - Allow 2 lines with ellipsis */}
-                  <p className="text-xs text-clawd-text-dim leading-relaxed line-clamp-2">
-                    {conv.preview}
-                  </p>
-
-                  {/* Metadata badges */}
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {conv.message_count && conv.message_count > 1 && (
-                      <span className="text-[10px] text-clawd-text-dim bg-clawd-border rounded px-1.5 py-0.5 font-medium">
-                        {conv.message_count}
-                      </span>
-                    )}
-                    {conv.unread_count && conv.unread_count > 0 && (
-                      <span className="text-[10px] text-blue-400 bg-blue-500/20 rounded px-1.5 py-0.5 font-semibold" title="Unread messages">
-                        {conv.unread_count} unread
-                      </span>
-                    )}
-                    {(conv.unreplied_count && conv.unreplied_count > 0) || (conv.has_reply === false) && (
-                      <span className="text-[10px] text-orange-400 bg-orange-500/20 rounded px-1.5 py-0.5 flex items-center gap-0.5 font-semibold" title="Awaiting reply">
-                        <Reply size={8} />
-                        reply
-                      </span>
-                    )}
-                    {conv.has_attachment && <Paperclip size={10} className="text-clawd-text-dim" />}
-                    {conv.is_starred && (
-                      <Star size={10} className="text-yellow-400" fill="currentColor" />
-                    )}
-                  </div>
                 </div>
-
-                {/* Star toggle button */}
+              </button>
+            ))}
+            {hasMore && onLoadMore && (
+              <div className="flex gap-2 px-2 py-2">
                 <button
-                  onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                  className={`p-1.5 rounded-lg hover:bg-clawd-border flex-shrink-0 transition-all duration-150 mt-0.5 ${
-                    conv.is_starred ? 'text-yellow-400 opacity-100' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
-                  }`}
-                  title={conv.is_starred ? 'Unstar' : 'Star'}
+                  onClick={onLoadMore}
+                  className="flex-1 py-2 text-sm text-clawd-accent hover:bg-clawd-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
                 >
-                  <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
+                  <ChevronDown size={14} />
+                  Load more (+50)
                 </button>
+                {onLoadAll && (
+                  <button
+                    onClick={onLoadAll}
+                    className="flex-1 py-2 text-sm text-clawd-accent hover:bg-clawd-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                  >
+                    Load All
+                  </button>
+                )}
               </div>
-            </button>
-          ))
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Inbox Dashboard (shown when no message selected) ─────────────────────────
+
+function InboxDashboard({
+  messages,
+  aiAnalyses,
+  onSelect,
+  onCreateTask,
+  analysisLoading,
+}: {
+  messages: ConversationItem[];
+  aiAnalyses: Map<string, AIAnalysis>;
+  onSelect: (c: ConversationItem) => void;
+  onCreateTask: (task: { title: string; description: string }) => void;
+  analysisLoading: boolean;
+}) {
+  // Stats
+  const unreadCount = messages.filter(m => !m.is_read).length;
+  const platformCounts: Record<string, number> = {};
+  for (const m of messages) {
+    platformCounts[m.platform] = (platformCounts[m.platform] || 0) + 1;
+  }
+
+  // Priority messages: urgent + action from AI analysis
+  const priorityMessages = messages.filter(m => {
+    const a = aiAnalyses.get(m.id);
+    return a && (a.triage === 'urgent' || a.triage === 'action');
+  }).slice(0, 5);
+
+  // All detected tasks from all analyses
+  const allTasks: Array<{task: {title: string; description: string}; from: string; platform: string}> = [];
+  for (const [id, analysis] of aiAnalyses) {
+    if (analysis.tasks.length > 0) {
+      const msg = messages.find(m => m.id === id);
+      for (const task of analysis.tasks) {
+        allTasks.push({ task, from: msg?.name || msg?.from || 'Unknown', platform: msg?.platform || '' });
+      }
+    }
+  }
+
+  // Unread by platform
+  const unreadByPlatform: Record<string, number> = {};
+  for (const m of messages.filter(m => !m.is_read)) {
+    unreadByPlatform[m.platform] = (unreadByPlatform[m.platform] || 0) + 1;
+  }
+
+  return (
+    <div className="flex-1 flex flex-col bg-clawd-bg overflow-y-auto">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-clawd-border bg-clawd-surface">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles size={18} className="text-clawd-accent" />
+          <h2 className="font-bold text-base">Smart Inbox</h2>
+          {analysisLoading && <RefreshCw size={12} className="animate-spin text-clawd-text-dim ml-auto" />}
+        </div>
+        <p className="text-xs text-clawd-text-dim">AI-powered overview of your communications</p>
+      </div>
+
+      <div className="px-5 py-4 space-y-4">
+        {/* Stats Row */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
+            <div className="text-2xl font-bold text-clawd-accent">{unreadCount}</div>
+            <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Unread</div>
+          </div>
+          <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
+            <div className="text-2xl font-bold text-red-400">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
+            <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Urgent</div>
+          </div>
+          <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
+            <div className="text-2xl font-bold text-orange-400">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
+            <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Action</div>
+          </div>
+          <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
+            <div className="text-2xl font-bold text-clawd-text">{messages.length}</div>
+            <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Total</div>
+          </div>
+        </div>
+
+        {/* Unread by Platform */}
+        {Object.keys(unreadByPlatform).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(unreadByPlatform).map(([platform, count]) => (
+              <div key={platform} className="flex items-center gap-1.5 text-xs bg-clawd-surface border border-clawd-border rounded-full px-3 py-1">
+                <span className={platformColor(platform)}>{platformIcon(platform, 12)}</span>
+                <span className="font-medium">{count}</span>
+                <span className="text-clawd-text-dim">unread</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Priority Messages */}
+        {priorityMessages.length > 0 && (
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-clawd-text-dim mb-2 flex items-center gap-1.5">
+              <AlertTriangle size={12} />
+              Needs Your Attention
+            </h3>
+            <div className="space-y-1.5">
+              {priorityMessages.map(msg => {
+                const analysis = aiAnalyses.get(msg.id);
+                return (
+                  <button
+                    key={msg.id}
+                    onClick={() => onSelect(msg)}
+                    className="w-full text-left bg-clawd-surface border border-clawd-border rounded-lg p-3 hover:border-clawd-accent/50 hover:bg-clawd-accent/5 transition-colors group"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                        analysis?.triage === 'urgent' ? 'bg-red-500' : 'bg-orange-500'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className={`${platformColor(msg.platform)}`}>{platformIcon(msg.platform, 11)}</span>
+                          <span className="text-sm font-medium truncate">{msg.name || msg.from}</span>
+                          <span className="text-[10px] text-clawd-text-dim ml-auto flex-shrink-0">{msg.relativeTime}</span>
+                        </div>
+                        {analysis?.summary && (
+                          <p className="text-xs text-clawd-text/70 truncate">{analysis.summary}</p>
+                        )}
+                        {/* Quick action hint */}
+                        {analysis?.reply_needed && (
+                          <span className="text-[10px] text-clawd-accent mt-1 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Reply size={9} /> Click to reply
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Suggested Tasks from Comms */}
+        {allTasks.length > 0 && (
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-clawd-text-dim mb-2 flex items-center gap-1.5">
+              <ListPlus size={12} />
+              Suggested Tasks
+            </h3>
+            <div className="space-y-1.5">
+              {allTasks.slice(0, 5).map((item, i) => (
+                <div key={i} className="flex items-center gap-2 bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2">
+                  <span className={`flex-shrink-0 ${platformColor(item.platform)}`}>{platformIcon(item.platform, 11)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">{item.task.title}</p>
+                    <p className="text-[10px] text-clawd-text-dim truncate">From {item.from}{item.task.description ? ` — ${item.task.description}` : ''}</p>
+                  </div>
+                  <button
+                    onClick={() => onCreateTask(item.task)}
+                    className="flex-shrink-0 text-[10px] px-2.5 py-1 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/20 rounded-md hover:bg-clawd-accent/20 transition-colors font-medium"
+                  >
+                    Create
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state when no AI data yet */}
+        {aiAnalyses.size === 0 && !analysisLoading && (
+          <div className="text-center py-8">
+            <Sparkles size={32} className="mx-auto mb-3 text-clawd-text-dim/30" />
+            <p className="text-sm text-clawd-text-dim">AI is analyzing your messages...</p>
+            <p className="text-[10px] text-clawd-text-dim/50 mt-1">Select a message or wait for batch analysis</p>
+          </div>
+        )}
+
+        {analysisLoading && aiAnalyses.size === 0 && (
+          <div className="text-center py-8">
+            <Sparkles size={24} className="mx-auto mb-2 text-clawd-accent animate-pulse" />
+            <p className="text-sm text-clawd-text-dim">Analyzing your inbox...</p>
+          </div>
         )}
       </div>
     </div>
@@ -407,14 +886,30 @@ function RightPane({
   loadingThread,
   onSendReply,
   emailBody,
+  emailMetadata,
   loadingBody,
+  aiAnalysis,
+  onCreateTask,
+  onCreateEvent,
+  allMessages,
+  aiAnalyses,
+  onSelectMessage,
+  analysisLoading,
 }: {
   conversation: ConversationItem | null;
   thread: ThreadMessage[];
   loadingThread: boolean;
   onSendReply: (text: string) => void;
   emailBody: string;
+  emailMetadata: EmailMetadata;
   loadingBody: boolean;
+  aiAnalysis?: AIAnalysis | null;
+  onCreateTask?: (task: { title: string; description: string }) => void;
+  onCreateEvent?: (event: { title: string; date: string; time?: string; duration?: string; location?: string }) => void;
+  allMessages: ConversationItem[];
+  aiAnalyses: Map<string, AIAnalysis>;
+  onSelectMessage: (c: ConversationItem) => void;
+  analysisLoading: boolean;
 }) {
   const [replyText, setReplyText] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -424,13 +919,15 @@ function RightPane({
   const [aiIntent, setAiIntent] = useState('');
   const [generatingFromIntent, setGeneratingFromIntent] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const replyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setReplyText('');
+    // Pre-populate reply with AI draft if available
+    setReplyText(aiAnalysis?.reply_draft || '');
     setShowAIPanel(false);
     setSuggestedReplies([]);
     setAiIntent('');
-  }, [conversation?.id]);
+  }, [conversation?.id, aiAnalysis?.reply_draft]);
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -443,23 +940,80 @@ function RightPane({
     }
   }, [showAIPanel, conversation]);
 
+  const buildThreadContext = () => {
+    const threadMessages: Array<{role: string, content: string}> = [];
+    if (thread.length > 0) {
+      for (const msg of thread.slice(-10)) {
+        threadMessages.push({
+          role: msg.senderName || msg.sender || 'them',
+          content: msg.text || '',
+        });
+      }
+    } else if (conversation) {
+      threadMessages.push({
+        role: conversation.name || conversation.from || 'them',
+        content: conversation.preview || conversation.subject || '',
+      });
+    }
+    return threadMessages;
+  };
+
+  const callAIReply = async (tone: 'formal' | 'casual' | 'auto' = 'auto', intentOverride?: string) => {
+    const threadMessages = buildThreadContext();
+    if (intentOverride) {
+      threadMessages.push({ role: 'user-intent', content: `User wants to say: ${intentOverride}` });
+    }
+    const result = await (window as any).clawdbot?.ai?.generateReply({
+      threadMessages,
+      platform: conversation?.platform,
+      recipientName: conversation?.name || conversation?.from,
+      subject: conversation?.subject,
+      tone,
+    });
+    return result;
+  };
+
   const generateSuggestions = async () => {
     if (!conversation) return;
     setLoadingSuggestions(true);
     try {
-      // Simulate AI suggestions based on context
-      await new Promise(r => setTimeout(r, 1200));
-      const name = (conversation.name || conversation.from || 'there').split(' ')[0];
-      const suggestions = [
-        `Hi ${name}, thanks for reaching out! I'll look into this and get back to you shortly.`,
-        `Thanks for the message. Let me check on that for you.`,
-        `Got it, ${name}. I'll take care of this today.`,
-        `Appreciate you following up. I'm on it!`,
-        `Thanks ${name}! I'll review and respond with details soon.`
-      ];
+      const suggestions: string[] = [];
+
+      // Use AI analysis reply_draft first (already generated, zero cost)
+      if (aiAnalysis?.reply_draft) {
+        suggestions.push(aiAnalysis.reply_draft);
+      }
+
+      // Generate one fresh contextual reply (not three)
+      const result = await callAIReply('auto');
+      if (result?.success && result.draft) {
+        // Don't add if it's basically the same as the AI draft
+        if (!aiAnalysis?.reply_draft || result.draft !== aiAnalysis.reply_draft) {
+          suggestions.push(result.draft);
+        }
+      }
+
+      // Try one more with different tone if we have room
+      if (suggestions.length < 2) {
+        const alt = await callAIReply(conversation.platform === 'email' ? 'formal' : 'casual');
+        if (alt?.success && alt.draft && !suggestions.includes(alt.draft)) {
+          suggestions.push(alt.draft);
+        }
+      }
+
+      // If API totally failed and no AI analysis draft, show honest empty state
+      if (suggestions.length === 0) {
+        suggestions.push('(AI reply generation failed — check API key)');
+      }
       setSuggestedReplies(suggestions);
     } catch (e) {
       console.error('Failed to generate suggestions:', e);
+      // Show the AI analysis draft if we have it, otherwise honest error
+      if (aiAnalysis?.reply_draft) {
+        setSuggestedReplies([aiAnalysis.reply_draft]);
+      } else {
+        setSuggestedReplies(['(AI reply generation failed — check API key)']);
+      }
     } finally {
       setLoadingSuggestions(false);
     }
@@ -469,15 +1023,17 @@ function RightPane({
     if (!aiIntent.trim()) return;
     setGeneratingFromIntent(true);
     try {
-      // Simulate AI generation from intent
-      await new Promise(r => setTimeout(r, 1000));
-      const name = (conversation?.name || conversation?.from || 'there').split(' ')[0];
-      // Mock response based on intent
-      const generated = `Hi ${name},\n\n${aiIntent}\n\nLet me know if you need anything else!\n\nBest regards`;
-      setReplyText(generated);
+      const result = await callAIReply('auto', aiIntent);
+      if (result?.success && result.draft) {
+        setReplyText(result.draft);
+      } else {
+        const name = (conversation?.name || conversation?.from || 'there').split(' ')[0];
+        setReplyText(`Hi ${name},\n\n${aiIntent}\n\nBest regards`);
+      }
       setAiIntent('');
     } catch (e) {
       console.error('Failed to generate from intent:', e);
+      setReplyText(aiIntent);
     } finally {
       setGeneratingFromIntent(false);
     }
@@ -491,10 +1047,21 @@ function RightPane({
   const generateReply = async () => {
     if (!conversation) return;
     setGenerating(true);
-    await new Promise(r => setTimeout(r, 800));
-    const name = (conversation.name || conversation.from || 'there').split(' ')[0];
-    setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
-    setGenerating(false);
+    try {
+      const result = await callAIReply('auto');
+      if (result?.success && result.draft) {
+        setReplyText(result.draft);
+      } else {
+        const name = (conversation.name || conversation.from || 'there').split(' ')[0];
+        setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
+      }
+    } catch (e) {
+      console.error('Failed to generate reply:', e);
+      const name = (conversation.name || conversation.from || 'there').split(' ')[0];
+      setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleSend = () => {
@@ -503,47 +1070,60 @@ function RightPane({
     setReplyText('');
   };
 
+  // Focus reply box externally via ref
+  const focusReply = useCallback(() => {
+    replyRef.current?.focus();
+  }, []);
+
+  // Expose focusReply on the component via a data attribute trick
+  // (keyboard handler in parent will call this)
+  useEffect(() => {
+    (window as any).__commsInboxFocusReply = focusReply;
+    return () => { delete (window as any).__commsInboxFocusReply; };
+  }, [focusReply]);
+
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-clawd-bg">
-        <div className="text-center text-clawd-text-dim">
-          <Mail size={48} className="mx-auto mb-3 opacity-20" />
-          <p className="text-sm">Select a message to view</p>
-        </div>
-      </div>
+      <InboxDashboard
+        messages={allMessages}
+        aiAnalyses={aiAnalyses}
+        onSelect={onSelectMessage}
+        onCreateTask={onCreateTask || (() => {})}
+        analysisLoading={analysisLoading}
+      />
     );
   }
 
+  const isSystem = conversation.platform === 'system';
+
   return (
-    <div className="flex-1 flex flex-col bg-clawd-bg min-w-0">
+    <div className="flex-1 flex flex-col bg-clawd-bg min-w-0 text-left">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-clawd-border bg-clawd-surface">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="font-bold text-lg truncate">
+      <div className="px-5 py-3 border-b border-clawd-border bg-clawd-surface">
+        <div className="flex items-center justify-between gap-3 mb-0.5">
+          <h2 className="font-bold text-base truncate min-w-0 flex-1">
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button className="p-2 rounded-lg hover:bg-clawd-border" title="Reply">
-              <Reply size={16} />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-clawd-border" title="Reply All">
-              <ReplyAll size={16} />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-clawd-border" title="Forward">
-              <Forward size={16} />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-clawd-border" title="More">
-              <MoreHorizontal size={16} />
-            </button>
-          </div>
+          {!isSystem && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button className="p-2 rounded-lg hover:bg-clawd-border" title="Reply">
+                <Reply size={16} />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-clawd-border" title="Reply All">
+                <ReplyAll size={16} />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-clawd-border" title="Forward">
+                <Forward size={16} />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-clawd-border" title="More">
+                <MoreHorizontal size={16} />
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 text-sm text-clawd-text-dim">
           <span className={platformColor(conversation.platform)}>
-            {conversation.platform === 'email' && <Mail size={14} />}
-            {conversation.platform === 'whatsapp' && <MessageCircle size={14} />}
-            {conversation.platform === 'telegram' && <Send size={14} />}
-            {conversation.platform === 'discord' && <Gamepad2 size={14} />}
-            {conversation.platform === 'twitter' && <XIcon size={14} />}
+            {platformIcon(conversation.platform, 14)}
           </span>
           <span>{conversation.name || conversation.from}</span>
           <span>·</span>
@@ -557,75 +1137,125 @@ function RightPane({
         </div>
       </div>
 
-      {/* Thread / Message Body */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {loadingThread || loadingBody ? (
-          <div className="text-center text-clawd-text-dim py-8 text-sm">Loading...</div>
-        ) : conversation.platform === 'email' ? (
-          /* Email view */
-          <div className="bg-clawd-surface rounded-lg p-4 border border-clawd-border">
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-clawd-border">
-              <span className="font-semibold text-sm">{conversation.name || conversation.from}</span>
-              <span className="text-xs text-clawd-text-dim">{conversation.relativeTime}</span>
-            </div>
-            {emailBody ? (
-              isHTML(emailBody) ? (
-                /* Render HTML email */
-                <div 
-                  className="text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-clawd-text prose-p:text-clawd-text prose-a:text-clawd-accent prose-strong:text-clawd-text prose-ul:text-clawd-text prose-ol:text-clawd-text"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(emailBody) }}
-                />
-              ) : (
-                /* Render plain text email */
-                <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{emailBody}</pre>
-              )
-            ) : (
-              /* Fallback to preview if body not available */
-              <div className="text-sm text-clawd-text-dim italic">
-                <p className="mb-2">Email body not available. Preview:</p>
-                <p className="text-clawd-text">{conversation.preview}</p>
-              </div>
+      {/* AI Analysis Banner */}
+      {!isSystem && aiAnalysis && (
+        <div className="px-4 py-3 border-b border-clawd-border bg-gradient-to-r from-clawd-surface to-clawd-bg/50">
+          {/* Summary + Triage */}
+          <div className="flex items-center gap-2 mb-1.5">
+            <Sparkles size={13} className="text-clawd-accent flex-shrink-0" />
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+              aiAnalysis.triage === 'urgent' ? 'bg-red-500/20 text-red-400' :
+              aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-orange-400' :
+              aiAnalysis.triage === 'fyi' ? 'bg-blue-500/20 text-blue-400' :
+              'bg-gray-500/20 text-gray-400'
+            }`}>
+              {TRIAGE_LABELS[aiAnalysis.triage]}
+            </span>
+            {!aiAnalysis.reply_needed && (
+              <span className="text-[10px] text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded font-medium">
+                No reply needed
+              </span>
             )}
           </div>
+          <p className="text-xs text-clawd-text/80 mb-2 leading-relaxed">{aiAnalysis.summary}</p>
+
+          {/* Detected Tasks */}
+          {aiAnalysis.tasks.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-1.5">
+              {aiAnalysis.tasks.map((task, i) => (
+                <button
+                  key={i}
+                  onClick={() => onCreateTask?.(task)}
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/20 rounded-md hover:bg-clawd-accent/20 transition-colors"
+                  title={task.description}
+                >
+                  <ListPlus size={10} />
+                  {task.title}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Detected Events */}
+          {aiAnalysis.events.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {aiAnalysis.events.map((event, i) => (
+                <button
+                  key={i}
+                  onClick={() => onCreateEvent?.(event)}
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors"
+                  title={`${event.date} ${event.time || ''} ${event.location || ''}`}
+                >
+                  <CalendarPlus size={10} />
+                  {event.title}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Thread / Message Body */}
+      <div className="flex-1 overflow-y-auto px-5 py-3 text-left min-w-0">
+        {loadingThread || loadingBody ? (
+          <div className="text-center text-clawd-text-dim py-8 text-sm">Loading...</div>
+        ) : isSystem ? (
+          /* System activity detail */
+          <div className="bg-clawd-surface rounded-lg p-4 border border-clawd-border">
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-clawd-border">
+              <ActivityIcon size={14} className="text-purple-400" />
+              <span className="font-semibold text-sm">{conversation.name || 'System'}</span>
+              <span className="text-xs text-clawd-text-dim ml-auto">{conversation.relativeTime}</span>
+            </div>
+            <MarkdownMessage content={conversation.preview} />
+          </div>
+        ) : conversation.platform === 'email' && emailBody ? (
+          /* Email body with proper rendering */
+          <EmailBodyRenderer body={emailBody} metadata={emailMetadata} />
         ) : thread.length > 0 ? (
           /* Chat thread */
-          <div className="space-y-3">
+          <div className="space-y-4">
             {thread.map((msg, i) => (
-              <div key={msg.id || i} className={`flex gap-3 ${msg.fromMe ? 'flex-row-reverse' : ''}`}>
-                {/* Avatar */}
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-clawd-border/50 flex items-center justify-center text-xs font-semibold text-clawd-text-dim">
-                  {msg.fromMe ? 'K' : (msg.senderName || msg.sender || '?')[0].toUpperCase()}
-                </div>
-                
-                {/* Message bubble */}
-                <div className={`max-w-[70%] flex flex-col ${msg.fromMe ? 'items-end' : 'items-start'}`}>
-                  <div className="flex items-center gap-2 mb-1 px-1">
+              <div key={msg.id || i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
+                  msg.fromMe
+                    ? 'bg-clawd-accent/20 border border-clawd-accent/30'
+                    : 'bg-clawd-surface border border-clawd-border'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</span>
-                    <span className="text-xs text-clawd-text-dim font-medium">{msg.timestamp}</span>
+                    <span className="text-[10px] text-clawd-text-dim">{msg.timestamp}</span>
                   </div>
-                  <div className={`rounded-xl px-4 py-2.5 ${
-                    msg.fromMe
-                      ? 'bg-clawd-accent/20 border border-clawd-accent/30'
-                      : 'bg-clawd-surface border border-clawd-border'
-                  }`}>
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
-                  </div>
+                  {isHtmlContent(msg.text)
+                    ? <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(msg.text) }} />
+                    : <MarkdownMessage content={msg.text} />
+                  }
                 </div>
               </div>
             ))}
             <div ref={threadEndRef} />
           </div>
+        ) : conversation.platform === 'telegram' ? (
+          /* Telegram empty state — show preview while thread loads */
+          <div className="bg-clawd-surface rounded-lg p-4 border border-clawd-border">
+            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-clawd-border text-sky-400">
+              <Send size={14} />
+              <span className="font-semibold text-sm text-clawd-text">{conversation.name || conversation.from}</span>
+            </div>
+            <div className="mb-3"><MarkdownMessage content={conversation.preview} /></div>
+            <p className="text-xs text-clawd-text-dim italic">Thread history could not be loaded. Check tgcli connection.</p>
+          </div>
         ) : (
           /* Fallback: just show preview */
           <div className="bg-clawd-surface rounded-lg p-4 border border-clawd-border">
-            <p className="text-sm leading-relaxed">{conversation.preview}</p>
+            <MarkdownMessage content={conversation.preview} />
           </div>
         )}
       </div>
 
-      {/* AI Assistant Panel */}
-      {showAIPanel && (
-        <div className="px-6 py-4 border-t border-clawd-border bg-clawd-surface/50">
+      {/* AI Assistant Panel — not for system messages */}
+      {!isSystem && showAIPanel && (
+        <div className="px-5 py-3 border-t border-clawd-border bg-clawd-surface/50">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-clawd-accent" />
@@ -699,66 +1329,104 @@ function RightPane({
         </div>
       )}
 
-      {/* Reply Box */}
-      <div className="px-6 py-4 border-t border-clawd-border bg-clawd-surface">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-clawd-text-dim">Reply</span>
-          <div className="flex items-center gap-2">
+      {/* Smart Reply Chips — Gmail-style quick replies */}
+      {!isSystem && !showAIPanel && !replyText && aiAnalysis?.reply_needed && (
+        <div className="px-5 py-2 border-t border-clawd-border/50 bg-clawd-surface/50 flex items-center gap-2 overflow-x-auto">
+          <Sparkles size={11} className="text-clawd-accent flex-shrink-0" />
+          {aiAnalysis.reply_draft && (
             <button
-              onClick={() => setShowAIPanel(!showAIPanel)}
-              className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
-                showAIPanel
-                  ? 'bg-clawd-accent/20 text-clawd-accent'
-                  : 'text-clawd-accent hover:bg-clawd-accent/10'
-              }`}
+              onClick={() => setReplyText(aiAnalysis.reply_draft!)}
+              className="text-xs px-3 py-1.5 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/20 rounded-full hover:bg-clawd-accent/20 transition-colors whitespace-nowrap"
             >
-              <Sparkles size={14} />
-              AI Assist
+              {aiAnalysis.reply_draft.length > 40 ? aiAnalysis.reply_draft.slice(0, 40) + '...' : aiAnalysis.reply_draft}
             </button>
-            <button
-              onClick={generateReply}
-              disabled={generating}
-              className="flex items-center gap-1 text-xs text-clawd-text-dim hover:text-clawd-accent disabled:opacity-50"
-            >
-              <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
-              {generating ? 'Generating...' : 'Quick Draft'}
-            </button>
-          </div>
+          )}
+          <button
+            onClick={() => setReplyText('Thanks, got it!')}
+            className="text-xs px-3 py-1.5 bg-clawd-surface border border-clawd-border rounded-full hover:border-clawd-accent/30 transition-colors whitespace-nowrap"
+          >
+            Thanks, got it!
+          </button>
+          <button
+            onClick={() => setReplyText("I'll look into this and get back to you.")}
+            className="text-xs px-3 py-1.5 bg-clawd-surface border border-clawd-border rounded-full hover:border-clawd-accent/30 transition-colors whitespace-nowrap"
+          >
+            I'll look into this
+          </button>
+          <button
+            onClick={generateReply}
+            disabled={generating}
+            className="text-xs px-3 py-1.5 bg-clawd-surface border border-clawd-border rounded-full hover:border-clawd-accent/30 transition-colors whitespace-nowrap flex items-center gap-1"
+          >
+            <Sparkles size={10} className={generating ? 'animate-spin' : ''} />
+            Custom AI reply
+          </button>
         </div>
-        <div className="flex gap-2">
-          <textarea
-            value={replyText}
-            onChange={e => setReplyText(e.target.value)}
-            placeholder="Write your reply..."
-            className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg p-3 text-sm resize-none h-24 focus:outline-none focus:border-clawd-accent"
-            onKeyDown={e => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                handleSend();
-              }
-            }}
-          />
-        </div>
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-[10px] text-clawd-text-dim">⌘+Enter to send</span>
-          <div className="flex gap-2">
-            {replyText && (
+      )}
+
+      {/* Reply Box — not for system messages */}
+      {!isSystem && (
+        <div className="px-5 py-3 border-t border-clawd-border bg-clawd-surface">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-clawd-text-dim">Reply</span>
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setReplyText('')}
-                className="text-clawd-text-dim hover:text-clawd-text text-sm px-3 py-2"
+                onClick={() => setShowAIPanel(!showAIPanel)}
+                className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+                  showAIPanel
+                    ? 'bg-clawd-accent/20 text-clawd-accent'
+                    : 'text-clawd-accent hover:bg-clawd-accent/10'
+                }`}
               >
-                Discard
+                <Sparkles size={14} />
+                AI Assist
               </button>
-            )}
-            <button
-              onClick={handleSend}
-              disabled={!replyText.trim()}
-              className="bg-clawd-accent hover:bg-clawd-accent/80 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2"
-            >
-              <Send size={14} /> Send
-            </button>
+              <button
+                onClick={generateReply}
+                disabled={generating}
+                className="flex items-center gap-1 text-xs text-clawd-text-dim hover:text-clawd-accent disabled:opacity-50"
+              >
+                <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
+                {generating ? 'Generating...' : 'Quick Draft'}
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <textarea
+              ref={replyRef}
+              value={replyText}
+              onChange={e => setReplyText(e.target.value)}
+              placeholder="Write your reply..."
+              className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg p-2.5 text-sm resize-none h-20 focus:outline-none focus:border-clawd-accent"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  handleSend();
+                }
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-[10px] text-clawd-text-dim">⌘+Enter to send</span>
+            <div className="flex gap-2">
+              {replyText && (
+                <button
+                  onClick={() => setReplyText('')}
+                  className="text-clawd-text-dim hover:text-clawd-text text-sm px-3 py-2"
+                >
+                  Discard
+                </button>
+              )}
+              <button
+                onClick={handleSend}
+                disabled={!replyText.trim()}
+                className="bg-clawd-accent hover:bg-clawd-accent/80 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2"
+              >
+                <Send size={14} /> Send
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -766,6 +1434,45 @@ function RightPane({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CommsInbox3Pane() {
+  // Dynamic accounts from gateway
+  const [accounts, setAccounts] = useState<Account[]>(buildAccountsFallback);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAccounts = async () => {
+      try {
+        // Fetch email accounts (from gog auth) and gateway channels in parallel
+        const [emailResult, channelsResult] = await Promise.all([
+          (window as any).clawdbot?.email?.accounts?.()
+            .catch(() => null),
+          gateway.getChannelsStatus().catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        const emailAccounts = emailResult?.success && emailResult.accounts?.length > 0
+          ? emailResult.accounts
+          : DEFAULT_EMAIL_ACCOUNTS.map(a => ({ email: a.address!, label: a.label }));
+
+        const channelAccounts = channelsResult?.channelAccounts || {};
+        const detected = buildAccountsFromSources(channelAccounts, emailAccounts);
+        if (detected.length > 1) {
+          setAccounts(detected);
+        }
+      } catch (e) {
+        console.error('[CommsInbox3Pane] Failed to load accounts:', e);
+      } finally {
+        if (!cancelled) setLoadingAccounts(false);
+      }
+    };
+    loadAccounts();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Zustand store for activities (system channel)
+  const activities = useStore((s) => s.activities);
+
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedConversation, setSelectedConversation] = useState<ConversationItem | null>(null);
@@ -777,21 +1484,46 @@ export default function CommsInbox3Pane() {
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [loadingThread, setLoadingThread] = useState(false);
   const [emailBody, setEmailBody] = useState('');
+  const [emailMetadata, setEmailMetadata] = useState<EmailMetadata>({});
   const [loadingBody, setLoadingBody] = useState(false);
   const [accountCounts, setAccountCounts] = useState<Record<string, number>>({});
   const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
+  const [messageLimit, setMessageLimit] = useState(500); // Show more history by default
   const isMounted = useRef(true);
+  const [aiAnalyses, setAiAnalyses] = useState<Map<string, AIAnalysis>>(new Map());
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const analysisBatchRef = useRef<Set<string>>(new Set());
+
+  // Convert activities to ConversationItems for system channel
+  const systemMessages: ConversationItem[] = activities.map((a: Activity) => {
+    const diffMs = Date.now() - a.timestamp;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    let relativeTime = 'just now';
+    if (diffMins >= 60) relativeTime = `${diffHours}h ago`;
+    else if (diffMins >= 1) relativeTime = `${diffMins}m ago`;
+
+    const typeLabels: Record<string, string> = {
+      task: 'Task Update', chat: 'Chat', agent: 'Agent', system: 'System', error: 'Error'
+    };
+
+    return {
+      id: `system-${a.id}`,
+      platform: 'system',
+      name: typeLabels[a.type] || 'System',
+      subject: a.sessionKey ? `Session: ${a.sessionKey}` : undefined,
+      preview: a.message,
+      timestamp: new Date(a.timestamp).toISOString(),
+      relativeTime,
+      is_read: true,
+    };
+  });
 
   // Determine which account's platform we're filtering on
   const getAccountPlatform = (accountId: string | null): string | null => {
     if (!accountId) return null;
-    const account = ACCOUNTS.find(a => a.id === accountId);
+    const account = accounts.find(a => a.id === accountId);
     return account?.platform || null;
-  };
-
-  const getAccountAddress = (accountId: string | null): string | undefined => {
-    if (!accountId) return undefined;
-    return ACCOUNTS.find(a => a.id === accountId)?.address;
   };
 
   // Filter and sort messages for display
@@ -806,11 +1538,12 @@ export default function CommsInbox3Pane() {
     // Account filter
     if (accountId) {
       const platform = getAccountPlatform(accountId);
-      const address = getAccountAddress(accountId);
+      const address = accounts.find(a => a.id === accountId)?.address;
       filtered = filtered.filter(m => {
         if (m.platform !== platform) return false;
-        // For email, further filter by account address if possible
-        // (backend may tag messages with account info)
+        if (platform === 'email' && address && m.account) {
+          return m.account === address;
+        }
         return true;
       });
     }
@@ -832,24 +1565,35 @@ export default function CommsInbox3Pane() {
       );
     }
 
-    // Sort: unread first, then by timestamp
+    // Sort: unread first, then by timestamp (oldest first, like WhatsApp)
     filtered.sort((a, b) => {
       if (!a.is_read && b.is_read) return -1;
       if (a.is_read && !b.is_read) return 1;
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      // Oldest messages first (WhatsApp-style: new messages at bottom)
+      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
 
     return filtered;
-  }, []);
+  }, [accounts]);
 
   // Compute counts
   const computeCounts = useCallback((msgs: ConversationItem[]) => {
     const aCounts: Record<string, number> = {};
     const fCounts: Record<string, number> = {};
 
-    for (const account of ACCOUNTS) {
+    for (const account of accounts) {
+      if (account.platform === 'system') {
+        aCounts[account.id] = systemMessages.filter(m => !m.is_read).length;
+        continue;
+      }
       const platform = account.platform;
-      aCounts[account.id] = msgs.filter(m => m.platform === platform && !m.is_read).length;
+      aCounts[account.id] = msgs.filter(m => {
+        if (m.platform !== platform || m.is_read) return false;
+        if (platform === 'email' && account.address && m.account) {
+          return m.account === account.address;
+        }
+        return platform !== 'email' || !account.address;
+      }).length;
     }
 
     for (const folder of FOLDERS) {
@@ -862,7 +1606,7 @@ export default function CommsInbox3Pane() {
 
     setAccountCounts(aCounts);
     setFolderCounts(fCounts);
-  }, []);
+  }, [accounts, systemMessages.length]);
 
   // Load messages from backend
   const loadMessages = useCallback(async (forceRefresh = false) => {
@@ -874,10 +1618,22 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      // FIXED: Increased limit from 50 to 500 to show more messages
-      const result = await (window as any).clawdbot?.messages?.recent(500, showArchived);
+      const result = await (window as any).clawdbot?.messages?.recent(messageLimit, showArchived);
       if (result?.success && result.chats && isMounted.current) {
-        const msgs = result.chats as ConversationItem[];
+        const msgs = (result.chats as ConversationItem[]).map(m => {
+          if (!m.timestamp) return m;
+          const diffMs = Date.now() - new Date(m.timestamp).getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMins / 60);
+          const diffDays = Math.floor(diffHours / 24);
+          let relativeTime = m.relativeTime;
+          if (diffMins < 1) relativeTime = 'just now';
+          else if (diffMins < 60) relativeTime = `${diffMins}m ago`;
+          else if (diffHours < 24) relativeTime = `${diffHours}h ago`;
+          else if (diffDays < 7) relativeTime = `${diffDays}d ago`;
+          else relativeTime = new Date(m.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          return { ...m, relativeTime };
+        });
         setAllMessages(msgs);
         computeCounts(msgs);
       }
@@ -889,56 +1645,86 @@ export default function CommsInbox3Pane() {
         setRefreshing(false);
       }
     }
-  }, [selectedFolder, computeCounts]);
+  }, [selectedFolder, computeCounts, messageLimit]);
+
+  // Determine the selected platform for empty state
+  const selectedPlatform = selectedAccount
+    ? accounts.find(a => a.id === selectedAccount)?.platform
+    : undefined;
 
   // Update display when filters change
   useEffect(() => {
-    const filtered = filterMessages(allMessages, selectedAccount, selectedFolder, searchQuery);
-    setDisplayMessages(filtered);
-  }, [allMessages, selectedAccount, selectedFolder, searchQuery, filterMessages]);
+    // If system account is selected, show system messages
+    if (selectedPlatform === 'system') {
+      let filtered = [...systemMessages];
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(m =>
+          (m.name && m.name.toLowerCase().includes(q)) ||
+          m.preview.toLowerCase().includes(q)
+        );
+      }
+      setDisplayMessages(filtered);
+    } else {
+      const filtered = filterMessages(allMessages, selectedAccount, selectedFolder, searchQuery);
+      setDisplayMessages(filtered);
+    }
+  }, [allMessages, selectedAccount, selectedFolder, searchQuery, filterMessages, selectedPlatform, activities]);
 
-  // Initial load + polling
+  // Initial load + event-driven refresh with 60s fallback
   useEffect(() => {
     isMounted.current = true;
     loadMessages();
+
+    // Listen for comms-updated events from background polling
+    const cleanup = (window as any).clawdbot?.messages?.onUpdate?.((data: any) => {
+      if (isMounted.current) {
+        loadMessages(true);
+      }
+    });
+
+    // 60s safety-net fallback
     const interval = setInterval(() => {
       if (isMounted.current) loadMessages(true);
-    }, 30000);
-    return () => { isMounted.current = false; clearInterval(interval); };
+    }, 60000);
+
+    return () => {
+      isMounted.current = false;
+      clearInterval(interval);
+      cleanup?.();
+    };
   }, [loadMessages]);
 
   // Load thread/body when conversation selected
   useEffect(() => {
-    if (!selectedConversation) {
-      setThread([]);
-      setEmailBody('');
-      return;
-    }
+    // Always clear old state on any selection change
+    setThread([]);
+    setEmailBody('');
+    setEmailMetadata({});
+
+    if (!selectedConversation) return;
+
+    // System messages don't need thread loading
+    if (selectedConversation.platform === 'system') return;
 
     const loadDetail = async () => {
       if (selectedConversation.platform === 'email') {
         setLoadingBody(true);
         try {
-          // Extract email ID - handle various formats
-          let emailId = selectedConversation.id;
-          if (emailId.startsWith('email-')) {
-            emailId = emailId.replace('email-', '');
-          }
-          
-          console.log('[CommsInbox3Pane] Fetching email body for ID:', emailId);
-          const result = await (window as any).clawdbot?.email?.body(emailId);
-          console.log('[CommsInbox3Pane] Email body result:', result?.success, 'body length:', result?.body?.length);
-          
+          const emailId = selectedConversation.id.replace('email-', '');
+          const result = await (window as any).clawdbot?.email?.body(emailId, selectedConversation.account);
           if (result?.success && result.body) {
-            setEmailBody(result.body);
+            const { body, metadata } = parseEmailBodyAndMeta(result.body);
+            setEmailBody(body);
+            setEmailMetadata(metadata);
           } else {
-            console.warn('[CommsInbox3Pane] No email body returned:', result?.error);
-            // Fall back to preview if body not available
             setEmailBody('');
+            setEmailMetadata({});
           }
         } catch (e) {
-          console.error('[CommsInbox3Pane] Failed to load email body:', e);
+          console.error('Failed to load email body:', e);
           setEmailBody('');
+          setEmailMetadata({});
         } finally {
           setLoadingBody(false);
         }
@@ -968,10 +1754,148 @@ export default function CommsInbox3Pane() {
           m.id === selectedConversation.id ? { ...m, is_read: true } : m
         ));
       } catch (e) { /* ignore */ }
+
+      // Trigger AI analysis
+      if (selectedConversation.platform !== 'system') {
+        try {
+          const cached = await (window as any).clawdbot?.ai?.getAnalysis?.(selectedConversation.id, selectedConversation.platform);
+          if (cached?.success && cached.analysis) {
+            setAiAnalyses(prev => new Map(prev).set(selectedConversation.id, cached.analysis));
+          } else {
+            // Queue for batch analysis
+            analysisBatchRef.current.add(selectedConversation.id);
+            processBatchAnalysis();
+          }
+        } catch (e) {
+          console.error('[AI] Analysis fetch error:', e);
+        }
+      }
     };
 
     loadDetail();
   }, [selectedConversation?.id]);
+
+  // Batch AI analysis processor
+  const processBatchAnalysis = useCallback(async () => {
+    if (analysisLoading || analysisBatchRef.current.size === 0) return;
+    setAnalysisLoading(true);
+    try {
+      const ids = Array.from(analysisBatchRef.current).slice(0, 10);
+      analysisBatchRef.current.clear();
+      const result = await (window as any).clawdbot?.ai?.analyzeMessages?.(ids);
+      if (result?.success && result.analyses) {
+        setAiAnalyses(prev => {
+          const next = new Map(prev);
+          for (const [id, analysis] of Object.entries(result.analyses)) {
+            next.set(id, analysis as AIAnalysis);
+          }
+          return next;
+        });
+      }
+    } catch (e) {
+      console.error('[AI] Batch analysis error:', e);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [analysisLoading]);
+
+  // Background batch: analyze top 10 unanalyzed messages after initial load
+  useEffect(() => {
+    if (allMessages.length === 0) return;
+    const unanalyzed = allMessages
+      .filter(m => m.platform !== 'system' && !aiAnalyses.has(m.id))
+      .slice(0, 10);
+    if (unanalyzed.length > 0) {
+      for (const m of unanalyzed) analysisBatchRef.current.add(m.id);
+      // Small delay to let UI settle
+      const timer = setTimeout(processBatchAnalysis, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [allMessages.length]); // Only on message count change
+
+  // Create task/event handlers
+  const handleCreateDetectedTask = async (task: { title: string; description: string }) => {
+    try {
+      const result = await (window as any).clawdbot?.ai?.createDetectedTask?.(task);
+      if (result?.success) {
+        showToast('success', 'Task Created', task.title);
+      } else {
+        showToast('error', 'Failed', result?.error || 'Could not create task');
+      }
+    } catch (e: any) {
+      showToast('error', 'Error', e.message);
+    }
+  };
+
+  const handleCreateDetectedEvent = async (event: { title: string; date: string; time?: string; duration?: string; location?: string }) => {
+    try {
+      const result = await (window as any).clawdbot?.ai?.createDetectedEvent?.(event);
+      if (result?.success) {
+        showToast('success', 'Event Created', event.title);
+      } else {
+        showToast('error', 'Failed', result?.error || 'Could not create event');
+      }
+    } catch (e: any) {
+      showToast('error', 'Error', e.message);
+    }
+  };
+
+  // Keyboard navigation: j/k for next/prev, r to focus reply
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (e.key === 'j' || e.key === 'k') {
+        e.preventDefault();
+        const idx = displayMessages.findIndex(m => m.id === selectedConversation?.id);
+        let next: number;
+        if (e.key === 'j') {
+          next = idx < displayMessages.length - 1 ? idx + 1 : idx;
+        } else {
+          next = idx > 0 ? idx - 1 : 0;
+        }
+        if (displayMessages[next]) {
+          setSelectedConversation(displayMessages[next]);
+        }
+      } else if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        (window as any).__commsInboxFocusReply?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [displayMessages, selectedConversation?.id]);
+
+  // Archive conversation
+  const handleArchive = async (conv: ConversationItem) => {
+    const sessionKey = `${conv.platform}:${conv.from || conv.name || ''}`;
+    try {
+      await (window as any).clawdbot?.conversations?.archive?.(sessionKey);
+      setAllMessages(prev => prev.filter(m => m.id !== conv.id));
+      if (selectedConversation?.id === conv.id) {
+        setSelectedConversation(null);
+      }
+      showToast('success', 'Archived', `${conv.name || conv.from || 'Conversation'} archived`);
+    } catch (e: any) {
+      showToast('error', 'Archive failed', e.message);
+    }
+  };
+
+  // Toggle read/unread
+  const handleToggleRead = async (conv: ConversationItem) => {
+    const newReadState = !conv.is_read;
+    try {
+      await (window as any).clawdbot?.inbox?.markRead?.(conv.id, newReadState);
+      setAllMessages(prev => prev.map(m =>
+        m.id === conv.id ? { ...m, is_read: newReadState } : m
+      ));
+    } catch (e) {
+      console.error('Failed to toggle read:', e);
+    }
+  };
 
   // Toggle star
   const handleToggleStar = async (id: string) => {
@@ -996,7 +1920,6 @@ export default function CommsInbox3Pane() {
         selectedConversation.platform, recipient, text
       );
       if (result?.success) {
-        // Add to thread
         setThread(prev => [...prev, {
           id: `sent-${Date.now()}`,
           sender: 'You',
@@ -1004,18 +1927,30 @@ export default function CommsInbox3Pane() {
           timestamp: 'just now',
           fromMe: true,
         }]);
+        showToast('success', 'Sent', `Reply sent to ${recipient}`);
       } else {
-        alert(`❌ Failed to send: ${result?.error || 'Unknown error'}`);
+        showToast('error', 'Send failed', result?.error || 'Unknown error');
       }
     } catch (e: any) {
-      alert(`❌ Error: ${e.message}`);
+      showToast('error', 'Send failed', e.message);
     }
   };
+
+  // Load more messages
+  const handleLoadMore = () => {
+    setMessageLimit(prev => prev + 50);
+  };
+  const handleLoadAll = () => {
+    setMessageLimit(99999); // Load all messages
+  };
+  useEffect(() => {
+    if (messageLimit > 50) loadMessages(true);
+  }, [messageLimit]);
 
   // Get label for center pane header
   const getAccountLabel = (): string => {
     if (!selectedAccount) return 'All Messages';
-    const account = ACCOUNTS.find(a => a.id === selectedAccount);
+    const account = accounts.find(a => a.id === selectedAccount);
     return account ? `${account.label}${account.address ? ` (${account.address})` : ''}` : 'Messages';
   };
 
@@ -1028,18 +1963,27 @@ export default function CommsInbox3Pane() {
         onSelectFolder={setSelectedFolder}
         accountCounts={accountCounts}
         folderCounts={folderCounts}
+        accounts={accounts}
+        loadingAccounts={loadingAccounts}
       />
       <CenterPane
         conversations={displayMessages}
         selectedId={selectedConversation?.id || null}
         onSelect={setSelectedConversation}
         onToggleStar={handleToggleStar}
+        onArchive={handleArchive}
+        onToggleRead={handleToggleRead}
         loading={loading}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         accountLabel={getAccountLabel()}
         onRefresh={() => loadMessages(true)}
         refreshing={refreshing}
+        selectedPlatform={selectedPlatform}
+        hasMore={displayMessages.length >= messageLimit}
+        onLoadMore={handleLoadMore}
+        onLoadAll={handleLoadAll}
+        aiAnalyses={aiAnalyses}
       />
       <RightPane
         conversation={selectedConversation}
@@ -1047,7 +1991,15 @@ export default function CommsInbox3Pane() {
         loadingThread={loadingThread}
         onSendReply={handleSendReply}
         emailBody={emailBody}
+        emailMetadata={emailMetadata}
         loadingBody={loadingBody}
+        aiAnalysis={selectedConversation ? aiAnalyses.get(selectedConversation.id) || null : null}
+        onCreateTask={handleCreateDetectedTask}
+        onCreateEvent={handleCreateDetectedEvent}
+        allMessages={allMessages}
+        aiAnalyses={aiAnalyses}
+        onSelectMessage={setSelectedConversation}
+        analysisLoading={analysisLoading}
       />
     </div>
   );

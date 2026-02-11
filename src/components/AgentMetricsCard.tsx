@@ -25,7 +25,22 @@ interface AgentMetricsCardProps {
   compact?: boolean;
 }
 
-export default function AgentMetricsCard({ agentId, agentName, metrics, compact = false }: AgentMetricsCardProps) {
+export default function AgentMetricsCard({ metrics, compact = false }: AgentMetricsCardProps) {
+  // Default all metrics to safe values
+  const m: AgentMetrics = {
+    totalTasks: metrics?.totalTasks ?? 0,
+    completedTasks: metrics?.completedTasks ?? 0,
+    inProgressTasks: metrics?.inProgressTasks ?? 0,
+    reviewTasks: metrics?.reviewTasks ?? 0,
+    blockedTasks: metrics?.blockedTasks ?? 0,
+    completionRate: metrics?.completionRate ?? 0,
+    avgTaskTimeHours: metrics?.avgTaskTimeHours ?? 0,
+    reviewSuccessRate: metrics?.reviewSuccessRate ?? 0,
+    completedLast7Days: metrics?.completedLast7Days ?? 0,
+    subtaskCompletionRate: metrics?.subtaskCompletionRate ?? 0,
+    performanceTrend: metrics?.performanceTrend,
+  };
+
   // Rating badges based on completion rate
   const getRatingBadge = (rate: number) => {
     if (rate >= 95) return { label: 'Excellent', color: 'text-green-400 bg-green-500/20 border-green-500/30' };
@@ -35,7 +50,7 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
     return { label: 'Needs Improvement', color: 'text-red-400 bg-red-500/20 border-red-500/30' };
   };
 
-  const rating = getRatingBadge(metrics.completionRate);
+  const rating = getRatingBadge(m.completionRate);
 
   // Format average time
   const formatAvgTime = (hours: number) => {
@@ -88,19 +103,19 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
         {/* Completion Rate Badge */}
         <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border no-shrink no-wrap ${rating.color}`}>
           <Target size={14} className="no-shrink" />
-          <span className="font-semibold no-shrink">{metrics.completionRate.toFixed(1)}%</span>
+          <span className="font-semibold no-shrink">{m.completionRate.toFixed(1)}%</span>
         </div>
         
         {/* Avg Time */}
         <div className="flex items-center gap-1 text-clawd-text-dim no-shrink no-wrap">
           <Clock size={14} className="no-shrink" />
-          <span className="no-shrink">{formatAvgTime(metrics.avgTaskTimeHours)}</span>
+          <span className="no-shrink">{formatAvgTime(m.avgTaskTimeHours)}</span>
         </div>
         
         {/* Completed Tasks */}
         <div className="flex items-center gap-1 text-green-400 no-shrink no-wrap">
           <CheckCircle size={14} className="no-shrink" />
-          <span className="no-shrink">{metrics.completedTasks}</span>
+          <span className="no-shrink">{m.completedTasks}</span>
         </div>
       </div>
     );
@@ -127,11 +142,11 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
             <span className="text-xs text-clawd-text-dim">Accuracy Rate</span>
           </div>
           <div className="text-2xl font-bold text-green-400">
-            {metrics.completionRate.toFixed(1)}%
+            {m.completionRate.toFixed(1)}%
           </div>
-          <ProgressBar value={metrics.completionRate} max={100} color="bg-green-500" />
+          <ProgressBar value={m.completionRate} max={100} color="bg-green-500" />
           <div className="text-xs text-clawd-text-dim mt-1">
-            {metrics.completedTasks} / {metrics.totalTasks} tasks
+            {m.completedTasks} / {m.totalTasks} tasks
           </div>
         </div>
 
@@ -142,15 +157,15 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
             <span className="text-xs text-clawd-text-dim">Task Completion</span>
           </div>
           <div className="text-2xl font-bold text-blue-400">
-            {metrics.completedTasks}
+            {m.completedTasks}
           </div>
           <ProgressBar 
-            value={metrics.completedTasks} 
-            max={metrics.totalTasks || 1} 
+            value={m.completedTasks} 
+            max={m.totalTasks || 1} 
             color="bg-blue-500" 
           />
           <div className="text-xs text-clawd-text-dim mt-1">
-            {metrics.inProgressTasks} in progress
+            {m.inProgressTasks} in progress
           </div>
         </div>
 
@@ -161,12 +176,12 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
             <span className="text-xs text-clawd-text-dim">Avg Task Time</span>
           </div>
           <div className="text-2xl font-bold text-purple-400">
-            {formatAvgTime(metrics.avgTaskTimeHours)}
+            {formatAvgTime(m.avgTaskTimeHours)}
           </div>
           <div className="text-xs text-clawd-text-dim mt-2">
-            {metrics.reviewSuccessRate > 0 && (
+            {m.reviewSuccessRate > 0 && (
               <span className="text-green-400">
-                {metrics.reviewSuccessRate.toFixed(0)}% review pass
+                {m.reviewSuccessRate.toFixed(0)}% review pass
               </span>
             )}
           </div>
@@ -183,13 +198,13 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-yellow-400">
-              {metrics.completedLast7Days}
+              {m.completedLast7Days}
             </span>
             <span className="text-xs text-clawd-text-dim">tasks completed</span>
           </div>
-          {metrics.performanceTrend && (
+          {m.performanceTrend && (
             <div className="mt-2">
-              <Sparkline data={metrics.performanceTrend} />
+              <Sparkline data={m.performanceTrend} />
             </div>
           )}
         </div>
@@ -202,12 +217,12 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-pink-400">
-              {metrics.subtaskCompletionRate.toFixed(0)}%
+              {m.subtaskCompletionRate.toFixed(0)}%
             </span>
             <span className="text-xs text-clawd-text-dim">completion</span>
           </div>
           <ProgressBar 
-            value={metrics.subtaskCompletionRate} 
+            value={m.subtaskCompletionRate} 
             max={100} 
             color="bg-pink-500" 
           />
@@ -215,18 +230,18 @@ export default function AgentMetricsCard({ agentId, agentName, metrics, compact 
       </div>
 
       {/* Status Breakdown */}
-      {(metrics.reviewTasks > 0 || metrics.blockedTasks > 0) && (
+      {(m.reviewTasks > 0 || m.blockedTasks > 0) && (
         <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
-          {metrics.reviewTasks > 0 && (
+          {m.reviewTasks > 0 && (
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span>{metrics.reviewTasks} in review</span>
+              <span>{m.reviewTasks} in review</span>
             </div>
           )}
-          {metrics.blockedTasks > 0 && (
+          {m.blockedTasks > 0 && (
             <div className="flex items-center gap-1">
               <AlertCircle size={14} className="text-red-400" />
-              <span>{metrics.blockedTasks} blocked</span>
+              <span>{m.blockedTasks} blocked</span>
             </div>
           )}
         </div>

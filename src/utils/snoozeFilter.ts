@@ -3,7 +3,7 @@
  * Integrate these into your Sessions panel/list component
  */
 
-import { Session } from '../types';
+import { Session } from '../store/store';
 
 export interface SnoozeData {
   session_id: string;
@@ -36,7 +36,7 @@ export const filterSessionsBySnooze = (
 
   return sessions
     .map((session) => {
-      const snoozeData = snoozed[session.id];
+      const snoozeData = snoozed[session.key];
       
       if (!snoozeData) {
         return { ...session };
@@ -53,8 +53,8 @@ export const filterSessionsBySnooze = (
     })
     .filter((session) => {
       // If we're not showing snoozed conversations, filter them out
-      if (!showSnoozed && session.snoozeData) {
-        const isExpired = session.snoozeData.snooze_until <= now;
+      if (!showSnoozed && (session as any).snoozeData) {
+        const isExpired = (session as any).snoozeData.snooze_until <= now;
         // Show if expired (needs attention), hide if still snoozed
         return isExpired;
       }
