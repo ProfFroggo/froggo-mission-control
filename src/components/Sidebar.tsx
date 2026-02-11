@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Command, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, Loader } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, Loader } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -38,15 +38,10 @@ const panelIconMap: Record<string, any> = {
   codeagent: Code,
   library: FolderOpen,
   schedule: Calendar,
+  notifications: Bell,
 };
 
-// Static items not managed by panel config (always shown)
-const staticNavItems = [
-  { id: 'context' as View, icon: Sparkles, label: 'Context', shortcut: '⌘⇧C' },
-  { id: 'codeagent' as View, icon: Code, label: 'Dev', shortcut: '⌘⇧D' },
-  { id: 'library' as View, icon: FolderOpen, label: 'Library', shortcut: '⌘⇧L' },
-  { id: 'schedule' as View, icon: Calendar, label: 'Schedule', shortcut: '' },
-];
+// Static items removed - Context, Dev, Library, and Schedule are now managed by panel config
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -174,6 +169,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             if (id === 'inbox') badge = unreadMsgCount;
             if (id === 'approvals') badge = inboxCount;
             if (id === 'kanban') badge = activeTasks;
+            if (id === 'notifications') badge = unreadNotifications;
             
             return (
               <button
@@ -219,75 +215,6 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
               </button>
             );
           })}
-
-          {/* Static nav items (not configurable) */}
-          {staticNavItems.map(({ id, icon: Icon, label, shortcut }) => {
-            const isActive = currentView === id;
-            return (
-              <button
-                key={id}
-                onClick={() => onNavigate(id)}
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
-                  isActive
-                    ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
-                    : 'text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
-                } ${expanded ? '' : 'justify-center'}`}
-                title={expanded ? undefined : `${label} (${shortcut})`}
-                aria-label={label}
-                aria-current={isActive ? 'page' : undefined}
-                data-view={id}
-              >
-                <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
-                {expanded && <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Divider */}
-        <div className="my-4 border-t border-clawd-border" role="separator" aria-hidden="true" />
-
-        {/* Secondary Nav */}
-        <div className="space-y-1" role="group" aria-label="Secondary navigation">
-          <button
-            onClick={() => onNavigate('notifications')}
-            className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
-              currentView === 'notifications'
-                ? 'bg-clawd-accent text-white shadow-lg shadow-clawd-accent/20'
-                : 'text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text'
-            } ${expanded ? '' : 'justify-center'}`}
-            title={expanded ? undefined : 'Notifications'}
-            aria-label={`Notifications${unreadNotifications > 0 ? ` (${unreadNotifications} unread)` : ''}`}
-            aria-current={currentView === 'notifications' ? 'page' : undefined}
-          >
-            <Bell size={20} className="flex-shrink-0" aria-hidden="true" />
-            
-            {expanded && (
-              <>
-                <span className="text-sm font-medium flex-1 text-left truncate">Notifications</span>
-                {unreadNotifications > 0 && (
-                  <NumberBadge
-                    count={unreadNotifications}
-                    maxCount={99}
-                    position="inline"
-                    variant={currentView === 'notifications' ? 'secondary' : 'primary'}
-                    size="sm"
-                    className={currentView === 'notifications' ? 'bg-white/20 text-white' : 'bg-clawd-accent/20 text-clawd-accent'}
-                  />
-                )}
-              </>
-            )}
-            
-            {!expanded && unreadNotifications > 0 && (
-              <NumberBadge
-                count={unreadNotifications}
-                maxCount={99}
-                position="absolute-top-right"
-                variant="primary"
-                size="sm"
-              />
-            )}
-          </button>
         </div>
       </nav>
 
@@ -345,13 +272,6 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             aria-label="Edit Panels"
           >
             <SlidersHorizontal size={16} aria-hidden="true" />
-          </button>
-          <button
-            className="no-drag p-1.5 rounded-lg transition-all duration-200 text-clawd-text-dim hover:bg-clawd-border hover:text-clawd-text"
-            title="⌘K for commands"
-            aria-label="Command palette"
-          >
-            <Command size={16} aria-hidden="true" />
           </button>
           {onOpenHelp && (
             <button 
