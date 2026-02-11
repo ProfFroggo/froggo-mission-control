@@ -21,6 +21,11 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'chat', label: 'Chat', visible: true, order: 8 },
   { id: 'accounts', label: 'Accounts', visible: true, order: 9 },
   { id: 'approvals', label: 'Approvals', visible: true, order: 10 },
+  { id: 'context', label: 'Context', visible: true, order: 11 },
+  { id: 'codeagent', label: 'Dev', visible: true, order: 12 },
+  { id: 'library', label: 'Library', visible: true, order: 13 },
+  { id: 'schedule', label: 'Schedule', visible: true, order: 14 },
+  { id: 'notifications', label: 'Notifications', visible: true, order: 15 },
 ];
 
 function loadFromStorage(): PanelConfig[] {
