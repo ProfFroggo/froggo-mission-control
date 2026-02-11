@@ -7385,7 +7385,8 @@ ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: stri
   try {
     const limit = args?.limit || 50;
     const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
-    const query = `SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages WHERE status != 'expired' ORDER BY created_at DESC LIMIT ${limit}`;
+    // Show all messages including expired ones (users want to see agent communication history)
+    const query = `SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ${limit}`;
     const result = execSync(`sqlite3 -json "${dbPath}" "${query}"`, { encoding: 'utf-8', timeout: 5000 });
     return JSON.parse(result || '[]');
   } catch (e: any) {
