@@ -159,12 +159,11 @@ class Gateway {
         if (msg.type === 'event') {
           const payload = msg.payload || {};
           const eventSessionKey = payload?.sessionKey || '';
-          // Accept events that match our current session key, have a tracked runId,
-          // or have no routing info at all (legacy events from active requests).
+          // Accept events that match our current session key OR have a tracked runId.
+          // If no routing info is present, REJECT the event to prevent cross-session bleed.
           const matchesSession = eventSessionKey && eventSessionKey === this.sessionKey;
           const matchesRunId = payload?.runId && this.activeRunIds.has(payload.runId);
-          const noRoutingInfo = !eventSessionKey && !payload?.runId;
-          const isOurSession = matchesSession || matchesRunId || (noRoutingInfo && this.activeRunIds.size > 0);
+          const isOurSession = matchesSession || matchesRunId;
           
           // Debug log for chat-related events
           if (msg.event?.startsWith('chat')) {
@@ -232,8 +231,13 @@ class Gateway {
             this.emit('chat', { ...payload, _event: 'error', error: true });
           }
           
-          this.emit(msg.event, payload);
-          this.emit('*', msg);
+          // Only emit session-routed events if they belong to our session
+          // Global events (no routing info) are still emitted to allow system-wide notifications
+          const hasRoutingInfo = eventSessionKey || payload?.runId;
+          if (!hasRoutingInfo || isOurSession) {
+            this.emit(msg.event, payload);
+            this.emit('*', msg);
+          }
         }
       } catch (err) {
         console.error('[Gateway] Parse error:', err);
@@ -464,6 +468,17 @@ class Gateway {
 
   // High-level methods
   async getSessions() {
+    if (!this.connected) {
+      console.warn('[Gateway] getSessions called before connected, waiting...');
+      // Wait up to 5 seconds for connection
+      for (let i = 0; i < 50; i++) {
+        if (this.connected) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
+      if (!this.connected) {
+        throw new Error('Not connected');
+      }
+    }
     return this.request<{ sessions: any[] }>('sessions.list', {});
   }
 
