@@ -123,7 +123,43 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
 
     // === CRITICAL: Workflow Violations ===
     
-    // 1. In-progress without agent
+    // 1. BLOCKED TASKS (critical - should never have blocked tasks lingering)
+    const blockedTasks = allTasks.filter(t => t.status === 'blocked');
+    if (blockedTasks.length > 0) {
+      foundIssues.push({
+        id: 'blocked-tasks',
+        type: 'workflow',
+        severity: 'critical',
+        title: `${blockedTasks.length} task(s) in BLOCKED status`,
+        description: blockedTasks.map(t => `"${t.title?.slice(0, 30)}..."`).slice(0, 3).join(', '),
+        taskIds: blockedTasks.map(t => t.id),
+        action: `Review ${blockedTasks.length} blocked task(s) - move to todo or cancel`,
+        actionVerb: 'Identifying blocked tasks'
+      });
+    }
+    setScanProgress(25);
+
+    // 2. STALLED IN-PROGRESS (no activity in last 30 minutes)
+    const thirtyMinAgo = Date.now() - 30 * 60 * 1000;
+    const stalledTasks = allTasks.filter(t => 
+      t.status === 'in-progress' && 
+      (!t.updated_at || t.updated_at < thirtyMinAgo) &&
+      (!t.last_activity_at || t.last_activity_at < thirtyMinAgo)
+    );
+    if (stalledTasks.length > 0) {
+      foundIssues.push({
+        id: 'stalled-tasks',
+        type: 'workflow',
+        severity: 'critical',
+        title: `${stalledTasks.length} stalled in-progress task(s)`,
+        description: `No progress in 30+ minutes: ${stalledTasks.map(t => `"${t.title?.slice(0, 25)}..."`).slice(0, 2).join(', ')}`,
+        taskIds: stalledTasks.map(t => t.id),
+        action: `Review ${stalledTasks.length} stalled task(s) - check if agent is stuck`,
+        actionVerb: 'Detecting stalled work'
+      });
+    }
+    
+    // 3. In-progress without agent
     const inProgressNoAgent = allTasks.filter(t => 
       t.status === 'in-progress' && (!t.assigned_to || t.assigned_to === '')
     );
@@ -304,7 +340,28 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
       await delay(500); // Longer delay so user sees progress
 
       try {
-        if (issue.id === 'no-agent-inprogress') {
+        if (issue.id === 'blocked-tasks') {
+          // For blocked tasks, just log them - manual review needed
+          setExecutionLog(prev => [...prev, `Found ${issue.taskIds.length} blocked task(s):`]);
+          for (const id of issue.taskIds) {
+            const task = tasks.find(t => t.id === id);
+            setExecutionLog(prev => [...prev, `  ⚠️ "${task?.title?.slice(0, 40)}..." (${id.slice(-8)})`]);
+            await delay(200);
+          }
+          setExecutionLog(prev => [...prev, `→ Manual review recommended - these need investigation`]);
+        }
+        else if (issue.id === 'stalled-tasks') {
+          // For stalled tasks, log them - agents may need to be respawned
+          setExecutionLog(prev => [...prev, `Found ${issue.taskIds.length} stalled task(s):`]);
+          for (const id of issue.taskIds) {
+            const task = tasks.find(t => t.id === id);
+            const ageMin = task?.updated_at ? Math.round((Date.now() - task.updated_at) / 60000) : '??';
+            setExecutionLog(prev => [...prev, `  ⚠️ "${task?.title?.slice(0, 35)}..." (${ageMin}min ago)`]);
+            await delay(200);
+          }
+          setExecutionLog(prev => [...prev, `→ Check if agents need respawning or tasks need unblocking`]);
+        }
+        else if (issue.id === 'no-agent-inprogress') {
           let fixed = 0;
           for (const id of issue.taskIds) {
             const task = tasks.find(t => t.id === id);
