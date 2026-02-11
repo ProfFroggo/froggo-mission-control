@@ -582,8 +582,10 @@ mark {
 
 /* react-grid-layout dark mode overrides */
 .react-grid-item.react-grid-placeholder {
-  background: rgba(99, 102, 241, 0.3) !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+  border: 2px dashed rgba(34, 197, 94, 0.4) !important;
   border-radius: 1rem;
+  opacity: 0.8;
 }
 
 .react-grid-item > .react-resizable-handle::after {
@@ -598,4 +600,17 @@ mark {
 .react-grid-item {
   border: none !important;
   outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-grid-item.react-dragging,
+.react-grid-item.resizing {
+  opacity: 0.7;
+  z-index: 100;
+  border: none !important;
+  outline: none !important;
+}
+
+.react-grid-item.react-dragging {
+  transition: none;
 }
