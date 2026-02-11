@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer, shell, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec, execSync } from 'child_process';
+import { exec, execSync, execFile } from 'child_process';
 import * as os from 'os';
 import * as crypto from 'crypto';
 import * as http from 'http';
@@ -4795,12 +4795,29 @@ ipcMain.handle('ai:analyzeMessages', async (_, ids: string[]) => {
 
 ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; description?: string }) => {
   try {
-    const escapedTitle = (task.title || '').replace(/"/g, '\\"');
-    const escapedDesc = task.description ? (task.description || '').replace(/"/g, '\\"') : '';
-    const descArg = escapedDesc ? ` --desc "${escapedDesc}"` : '';
-    const result = await runMsgCmd(`/Users/worker/.local/bin/froggo-db task-add "${escapedTitle}"${descArg}`, 5000);
-    safeLog.log('[AI:Task] Created task:', task.title, result);
-    return { success: true, result: result?.trim() };
+    // SECURITY: Use execFile with args array to prevent command injection
+    // No shell escaping needed - args passed directly to process
+    const args = ['task-add', task.title || ''];
+    if (task.description) {
+      args.push('--desc', task.description);
+    }
+    
+    const result = await new Promise<string>((resolve, reject) => {
+      execFile('/Users/worker/.local/bin/froggo-db', args, {
+        timeout: 5000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
+      }, (error, stdout, stderr) => {
+        if (error) {
+          safeLog.error('[AI:Task] Error:', error.message, stderr);
+          reject(error);
+        } else {
+          resolve(stdout);
+        }
+      });
+    });
+    
+    safeLog.log('[AI:Task] Created task:', task.title, result.trim());
+    return { success: true, result: result.trim() };
   } catch (e: any) {
     safeLog.error('[AI:Task] Error:', e);
     return { success: false, error: e.message };
@@ -4813,12 +4830,36 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
     // Default 1h duration
     const startDate = new Date(start);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-    const escapedTitle = (event.title || '').replace(/"/g, '\\"');
-    let cmd = `/opt/homebrew/bin/gog calendar create --title "${escapedTitle}" --start "${start}" --end "${endDate.toISOString()}"`;
-    if (event.location) cmd += ` --location "${event.location.replace(/"/g, '\\"')}"`;
-    const result = await runMsgCmd(cmd, 10000);
-    safeLog.log('[AI:Event] Created event:', event.title, result);
-    return { success: true, result: result?.trim() };
+    
+    // SECURITY: Use execFile with args array to prevent command injection
+    // No shell escaping needed - args passed directly to process
+    const args = [
+      'calendar', 'create',
+      '--title', event.title || '',
+      '--start', start,
+      '--end', endDate.toISOString()
+    ];
+    
+    if (event.location) {
+      args.push('--location', event.location);
+    }
+    
+    const result = await new Promise<string>((resolve, reject) => {
+      execFile('/opt/homebrew/bin/gog', args, {
+        timeout: 10000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
+      }, (error, stdout, stderr) => {
+        if (error) {
+          safeLog.error('[AI:Event] Error:', error.message, stderr);
+          reject(error);
+        } else {
+          resolve(stdout);
+        }
+      });
+    });
+    
+    safeLog.log('[AI:Event] Created event:', event.title, result.trim());
+    return { success: true, result: result.trim() };
   } catch (e: any) {
     safeLog.error('[AI:Event] Error:', e);
     return { success: false, error: e.message };
