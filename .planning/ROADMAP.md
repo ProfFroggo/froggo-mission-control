@@ -30,8 +30,8 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Remove credentials and PII from source (SEC-01, SEC-02, SEC-07 — move tokens to env/keychain, scrub PII, replace encryption key)
-- [ ] 01-02: Lock down attack surface (SEC-03, SEC-04, SEC-05, SEC-06 — disable DevTools, parameterize SQL, restrict FS/DB handlers)
+- [ ] 01-01-PLAN.md — Remove credentials and PII from source (SEC-01, SEC-02, SEC-07 — move tokens to safeStorage, scrub PII, replace encryption key) [Wave 1]
+- [ ] 01-02-PLAN.md — Lock down attack surface (SEC-03, SEC-04, SEC-05, SEC-06 — disable DevTools, parameterize SQL, restrict FS/DB handlers) [Wave 2, depends on 01-01]
 
 ### Phase 2: Fix Broken Features
 **Goal**: Every feature works and every data indicator reflects live reality
