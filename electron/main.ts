@@ -7,6 +7,7 @@ import * as crypto from 'crypto';
 import * as http from 'http';
 import { calendarService } from './calendar-service';
 import { accountsService } from './accounts-service';
+import { accountsServiceV2 } from './accounts-service-v2';
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
 import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
@@ -6198,7 +6199,8 @@ ipcMain.handle('calendar:testConnection', async (_, account: string) => {
 // List all connected accounts
 ipcMain.handle('accounts:list', async () => {
   try {
-    const result = await accountsService.listAccounts();
+    // Use V2 service for OAuth status detection
+    const result = await accountsServiceV2.listAccounts();
     return result;
   } catch (error: any) {
     safeLog.error('[Accounts] List error:', error);
@@ -6224,7 +6226,7 @@ ipcMain.handle('accounts:add', async (_, request: {
   }
 });
 
-// Test account connection
+// Test account connection (kept for backward compatibility)
 ipcMain.handle('accounts:test', async (_, accountId: string) => {
   try {
     const result = await accountsService.testAccount(accountId);
@@ -6235,11 +6237,23 @@ ipcMain.handle('accounts:test', async (_, accountId: string) => {
   }
 });
 
+// Refresh/renew account OAuth
+ipcMain.handle('accounts:refresh', async (_, accountId: string) => {
+  try {
+    safeLog.log('[Accounts] Refreshing OAuth for:', accountId);
+    const result = await accountsServiceV2.refreshAccount(accountId);
+    return result;
+  } catch (error: any) {
+    safeLog.error('[Accounts] Refresh error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Remove account
 ipcMain.handle('accounts:remove', async (_, accountId: string) => {
   try {
     safeLog.log('[Accounts] Removing account:', accountId);
-    const result = await accountsService.removeAccount(accountId);
+    const result = await accountsServiceV2.removeAccount(accountId);
     return result;
   } catch (error: any) {
     safeLog.error('[Accounts] Remove error:', error);
@@ -6292,8 +6306,9 @@ import { connectedAccountsService } from './connected-accounts-service';
 
 ipcMain.handle('connectedAccounts:list', async () => {
   try {
-    const accounts = await connectedAccountsService.listAccounts();
-    return { success: true, accounts };
+    // Use V2 service for real gog accounts with OAuth status
+    const result = await accountsServiceV2.listAccounts();
+    return result;
   } catch (error: any) {
     safeLog.error('[ConnectedAccounts] List error:', error);
     return { success: false, accounts: [], error: error.message };
@@ -6352,7 +6367,9 @@ ipcMain.handle('connectedAccounts:remove', async (_, accountId: string) => {
 
 ipcMain.handle('connectedAccounts:refresh', async (_, accountId: string) => {
   try {
-    const result = await connectedAccountsService.refreshAccount(accountId);
+    // Use V2 service for OAuth renewal (opens browser)
+    safeLog.log('[ConnectedAccounts] Refreshing OAuth for:', accountId);
+    const result = await accountsServiceV2.refreshAccount(accountId);
     return result;
   } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Refresh error:', error);
