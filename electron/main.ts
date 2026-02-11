@@ -5438,9 +5438,10 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
     const filtered = staleCache.filter(m => includeArchived || !archivedKeys.has(getSessionKey(m)));
     safeLog.log(`[Messages] Returning ${filtered.length} from stale cache, triggering background refresh`);
     // Trigger background refresh (non-blocking)
-    refreshCommsBackground().then(() => {
-      safeSend('comms-updated', { ts: Date.now() });
-    }).catch(e => safeLog.error('[Messages] Background refresh failed:', e));
+    // NOTE: Do NOT send comms-updated here — that causes a recursive loop:
+    // comms-updated → loadMessages → messages:recent → refreshCommsBackground → comms-updated → ...
+    // The periodic timer (startCommsPolling) already handles sending comms-updated.
+    refreshCommsBackground().catch(e => safeLog.error('[Messages] Background refresh failed:', e));
     return { success: true, chats: filtered, fromCache: true, refreshing: true };
   }
 

@@ -104,7 +104,7 @@ export default function InboxPanel() {
   
   // Sorting state
   type SortMode = 'priority' | 'time' | 'type';
-  const [sortMode, setSortMode] = useState<SortMode>('priority');
+  const [sortMode, setSortMode] = useState<SortMode>('time');
   const [sortAscending, setSortAscending] = useState(false);
   
   // View mode state (list or priority lanes)
