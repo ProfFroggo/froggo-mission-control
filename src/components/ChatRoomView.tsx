@@ -648,7 +648,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
                         ? 'bg-clawd-accent text-white rounded-tr-md'
-                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border'} rounded-tl-md shadow-sm`
+                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border dark:border-gray-800'} rounded-tl-md shadow-sm`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
