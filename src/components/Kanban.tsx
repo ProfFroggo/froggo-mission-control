@@ -1032,7 +1032,11 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
     if (task.status !== 'in-progress' || !task.assignedTo) return null;
     
     const lastActivity = (task as any).last_activity_at;
-    if (!lastActivity) return null;
+    
+    // 🟠 Orange: Silent agent - assigned but no activity logged
+    if (!lastActivity) {
+      return { color: 'border-orange-500/70', description: 'Silent agent (no activity logged)' };
+    }
     
     const now = Date.now();
     const minutesSinceActivity = (now - lastActivity) / (1000 * 60);
