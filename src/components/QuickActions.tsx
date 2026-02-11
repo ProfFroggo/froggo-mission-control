@@ -776,7 +776,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     try {
       const ipc = (window as any).clawdbot?.agents;
       if (ipc?.chat) {
-        const sessionKey = `agent:${chatAgent.id}:dashboard`;
+        const sessionKey = `agent:${chatAgent.id}:main`;
         const result = await ipc.chat(sessionKey, msg);
         const reply = typeof result === 'string' ? result : (result?.response || result?.message || '');
         if (reply) setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
