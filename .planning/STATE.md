@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 1 of 4 (Security Hardening)
-Plan: 0 of 2 in current phase (both planned)
-Status: Ready to execute
-Last activity: 2026-02-11 -- Phase 1 planned (2 plans in 2 waves)
+Plan: 1 of 2 in current phase (01-01 complete, 01-02 pending)
+Status: In progress
+Last activity: 2026-02-11 -- Completed 01-01-PLAN.md (credential & PII removal)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 12.5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: ~45min
+- Total execution time: ~45min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-security-hardening | 1/2 | ~45min | ~45min |
 
 **Recent Trend:**
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: 01-01 (~45min)
+- Trend: First plan complete
 
 *Updated after each plan completion*
 
@@ -45,6 +45,10 @@ Recent decisions affecting current work:
 - Wave-based execution order: security first, then broken features, then functional, then cleanup
 - Keep preload namespace as `clawdbot` (cosmetic rename deferred to v2)
 - Keep electron/main.ts as monolith (breakup deferred to v2)
+- Used Electron safeStorage (OS keychain) for secret storage instead of .env files
+- Async IPC bridge pattern for API keys (safeStorage only in main process)
+- Dynamic gog CLI discovery for Google accounts instead of hardcoded arrays
+- Empty defaults in userSettings store -- existing users unaffected via localStorage persistence
 
 ### Pending Todos
 
@@ -53,10 +57,10 @@ None yet.
 ### Blockers/Concerns
 
 - Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
-- Credential removal (SEC-01/SEC-07) needs env var or keychain strategy decided before implementation
+- Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: Roadmap created, ready to plan Phase 1
+Last session: 2026-02-11T22:33Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None
