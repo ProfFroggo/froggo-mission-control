@@ -254,29 +254,118 @@ export default function AnalyticsOverview() {
         </div>
 
         {dailyData.length > 0 ? (
-          <div className="h-48 flex items-end gap-1 overflow-hidden">
-            {dailyData.map((day, idx) => (
-              <div key={idx} className="flex-1 min-w-0 flex flex-col items-center gap-0.5" title={`${day.date}\nCompleted: ${day.completed}\nCreated: ${day.created}`}>
-                <div className="w-full max-w-full flex flex-col items-center gap-0.5 overflow-hidden">
-                  <div
-                    className="w-full max-w-full bg-green-500/80 rounded-t transition-all"
-                    style={{ height: `${Math.max((day.completed / maxValue) * 140, day.completed > 0 ? 4 : 0)}px` }}
-                  />
-                  <div
-                    className="w-full max-w-full bg-blue-500/80 rounded-b transition-all"
-                    style={{ height: `${Math.max((day.created / maxValue) * 140, day.created > 0 ? 4 : 0)}px` }}
-                  />
-                </div>
-                {(dailyData.length <= 14 || idx % Math.ceil(dailyData.length / 14) === 0) && (
-                  <span className="text-[10px] text-clawd-text-dim mt-1 rotate-45 origin-left">
-                    {day.label}
-                  </span>
-                )}
-              </div>
-            ))}
+          <div className="h-64 relative">
+            <svg
+              className="w-full h-full"
+              viewBox={`0 0 ${dailyData.length * 40} 240`}
+              preserveAspectRatio="none"
+            >
+              {/* Grid lines */}
+              {[0, 25, 50, 75, 100].map((percent) => (
+                <line
+                  key={percent}
+                  x1="0"
+                  y1={240 - (percent / 100) * 200}
+                  x2={dailyData.length * 40}
+                  y2={240 - (percent / 100) * 200}
+                  stroke="currentColor"
+                  strokeOpacity="0.1"
+                  className="text-clawd-border"
+                />
+              ))}
+
+              {/* Completed line (green) */}
+              <polyline
+                points={dailyData
+                  .map((day, idx) => {
+                    const x = idx * 40 + 20;
+                    const y = 240 - (day.completed / maxValue) * 200;
+                    return `${x},${y}`;
+                  })
+                  .join(' ')}
+                fill="none"
+                stroke="rgb(34 197 94)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Completed points */}
+              {dailyData.map((day, idx) => {
+                const x = idx * 40 + 20;
+                const y = 240 - (day.completed / maxValue) * 200;
+                return (
+                  <circle
+                    key={`completed-${idx}`}
+                    cx={x}
+                    cy={y}
+                    r="4"
+                    fill="rgb(34 197 94)"
+                    className="hover:r-6 transition-all"
+                  >
+                    <title>{`${day.label}\nCompleted: ${day.completed}`}</title>
+                  </circle>
+                );
+              })}
+
+              {/* Created line (blue) */}
+              <polyline
+                points={dailyData
+                  .map((day, idx) => {
+                    const x = idx * 40 + 20;
+                    const y = 240 - (day.created / maxValue) * 200;
+                    return `${x},${y}`;
+                  })
+                  .join(' ')}
+                fill="none"
+                stroke="rgb(59 130 246)"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Created points */}
+              {dailyData.map((day, idx) => {
+                const x = idx * 40 + 20;
+                const y = 240 - (day.created / maxValue) * 200;
+                return (
+                  <circle
+                    key={`created-${idx}`}
+                    cx={x}
+                    cy={y}
+                    r="4"
+                    fill="rgb(59 130 246)"
+                    className="hover:r-6 transition-all"
+                  >
+                    <title>{`${day.label}\nCreated: ${day.created}`}</title>
+                  </circle>
+                );
+              })}
+
+              {/* X-axis labels */}
+              {dailyData.map((day, idx) => {
+                if (dailyData.length <= 14 || idx % Math.ceil(dailyData.length / 14) === 0) {
+                  const x = idx * 40 + 20;
+                  return (
+                    <text
+                      key={`label-${idx}`}
+                      x={x}
+                      y="230"
+                      fontSize="10"
+                      fill="currentColor"
+                      className="text-clawd-text-dim"
+                      textAnchor="middle"
+                    >
+                      {day.label}
+                    </text>
+                  );
+                }
+                return null;
+              })}
+            </svg>
           </div>
         ) : (
-          <div className="h-48 flex items-center justify-center text-clawd-text-dim">
+          <div className="h-64 flex items-center justify-center text-clawd-text-dim">
             No task data available for this period
           </div>
         )}
