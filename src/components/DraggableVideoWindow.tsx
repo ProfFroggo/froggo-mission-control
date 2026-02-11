@@ -215,7 +215,7 @@ export default function DraggableVideoWindow({
           className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
           onMouseDown={handleResizeStart}
         >
-          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/40 rounded-br" />
+          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/40 dark:border-gray-600/40 rounded-br" />
         </div>
       )}
     </div>
