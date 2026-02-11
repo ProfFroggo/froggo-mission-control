@@ -54,7 +54,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   const [inboxCount, setInboxCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
   const [sysStatus, setSysStatus] = useState<SystemStatus>({ watcherRunning: false, killSwitchOn: true });
-  const { connected, tasks } = useStore();
+  const { connected, tasks, activities } = useStore();
   const { panels: panelConfig, openEditModal } = usePanelConfigStore();
   const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
@@ -131,7 +131,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     return () => clearInterval(interval);
   }, []);
   
-  const unreadNotifications = inboxCount;
+  const unreadNotifications = activities.length;
 
   return (
     <>
