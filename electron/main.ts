@@ -4787,7 +4787,9 @@ ipcMain.handle('ai:analyzeMessages', async (_, ids: string[]) => {
 ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; description?: string }) => {
   try {
     const escapedTitle = (task.title || '').replace(/"/g, '\\"');
-    const result = await runMsgCmd(`/Users/worker/.local/bin/froggo-db task-add "${escapedTitle}"`, 5000);
+    const escapedDesc = task.description ? (task.description || '').replace(/"/g, '\\"') : '';
+    const descArg = escapedDesc ? ` --desc "${escapedDesc}"` : '';
+    const result = await runMsgCmd(`/Users/worker/.local/bin/froggo-db task-add "${escapedTitle}"${descArg}`, 5000);
     safeLog.log('[AI:Task] Created task:', task.title, result);
     return { success: true, result: result?.trim() };
   } catch (e: any) {
