@@ -264,7 +264,7 @@ export default function AnalyticsOverview() {
             <svg
               className="w-full h-full"
               viewBox={`0 0 ${dailyData.length * 40} 240`}
-              preserveAspectRatio="none"
+              preserveAspectRatio="xMidYMid meet"
             >
               {/* Grid lines */}
               {[0, 25, 50, 75, 100].map((percent) => (
