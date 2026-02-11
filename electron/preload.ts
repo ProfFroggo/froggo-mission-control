@@ -103,6 +103,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     // Attachments operations
     attachments: {
       list: (taskId: string) => ipcRenderer.invoke('attachments:list', taskId),
+      listAll: () => ipcRenderer.invoke('attachments:listAll'),
       add: (taskId: string, filePath: string, category?: string, uploadedBy?: string) =>
         ipcRenderer.invoke('attachments:add', taskId, filePath, category, uploadedBy),
       delete: (attachmentId: number) => ipcRenderer.invoke('attachments:delete', attachmentId),

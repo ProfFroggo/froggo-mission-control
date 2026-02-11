@@ -1885,6 +1885,28 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
   });
 });
 
+// List ALL task attachments (for Files view)
+ipcMain.handle('attachments:listAll', async () => {
+  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC" -json`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Attachments] ListAll error:', error);
+        resolve({ success: false, attachments: [] });
+        return;
+      }
+      try {
+        const attachments = JSON.parse(stdout || '[]');
+        resolve({ success: true, attachments });
+      } catch (e) {
+        safeLog.error('[Attachments] Parse error:', e);
+        resolve({ success: false, attachments: [] });
+      }
+    });
+  });
+});
+
 ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, category: string = 'deliverable', uploadedBy: string = 'user') => {
   const filename = path.basename(filePath);
   
