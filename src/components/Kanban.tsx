@@ -158,6 +158,69 @@ export default function Kanban() {
     showCompleted: true,
   });
 
+  // Per-column filter and sort settings
+  type SortOption = 'newest' | 'oldest' | 'priority-asc' | 'priority-desc' | 'progress-asc' | 'progress-desc';
+
+  interface ColumnSettings {
+    sortBy: SortOption;
+    filterAgent: string; // 'all' or agent ID
+    filterPriority: TaskPriority | 'all';
+  }
+
+  const [columnSettings, setColumnSettings] = useState<Record<TaskStatus, ColumnSettings>>(() => {
+    const saved = localStorage.getItem('kanban-column-settings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse column settings:', e);
+      }
+    }
+    
+    // Default settings for each column
+    return columns.reduce((acc, col) => {
+      acc[col.id] = {
+        sortBy: 'newest',
+        filterAgent: 'all',
+        filterPriority: 'all',
+      };
+      return acc;
+    }, {} as Record<TaskStatus, ColumnSettings>);
+  });
+
+  // Column control dropdowns state
+  const [columnDropdowns, setColumnDropdowns] = useState<Record<TaskStatus, { sort: boolean; filter: boolean }>>(() => 
+    columns.reduce((acc, col) => {
+      acc[col.id] = { sort: false, filter: false };
+      return acc;
+    }, {} as Record<TaskStatus, { sort: boolean; filter: boolean }>)
+  );
+
+  // Persist column settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('kanban-column-settings', JSON.stringify(columnSettings));
+  }, [columnSettings]);
+
+  const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {
+    setColumnSettings(prev => ({
+      ...prev,
+      [columnId]: {
+        ...prev[columnId],
+        [key]: value,
+      },
+    }));
+  };
+
+  const toggleColumnDropdown = (columnId: TaskStatus, dropdown: 'sort' | 'filter') => {
+    setColumnDropdowns(prev => ({
+      ...prev,
+      [columnId]: {
+        ...prev[columnId],
+        [dropdown]: !prev[columnId][dropdown],
+      },
+    }));
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -280,6 +343,49 @@ export default function Kanban() {
       showCompleted: true,
     });
   };
+
+  // Apply per-column filtering and sorting
+  const getColumnTasks = useCallback((columnId: TaskStatus) => {
+    const settings = columnSettings[columnId];
+    let columnTasks = filteredTasks.filter(t => t.status === columnId);
+    
+    // Apply column filters
+    if (settings.filterAgent !== 'all') {
+      if (settings.filterAgent === 'unassigned') {
+        columnTasks = columnTasks.filter(t => !t.assignedTo);
+      } else {
+        columnTasks = columnTasks.filter(t => t.assignedTo === settings.filterAgent);
+      }
+    }
+    
+    if (settings.filterPriority !== 'all') {
+      columnTasks = columnTasks.filter(t => t.priority === settings.filterPriority);
+    }
+    
+    // Apply column sorting
+    return columnTasks.sort((a, b) => {
+      switch (settings.sortBy) {
+        case 'newest':
+          return b.createdAt - a.createdAt;
+        case 'oldest':
+          return a.createdAt - b.createdAt;
+        case 'priority-asc': {
+          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+          return (priorityOrder[a.priority || 'undefined'] - priorityOrder[b.priority || 'undefined']);
+        }
+        case 'priority-desc': {
+          const priorityOrder = { p0: 0, p1: 1, p2: 2, p3: 3, undefined: 4 };
+          return (priorityOrder[b.priority || 'undefined'] - priorityOrder[a.priority || 'undefined']);
+        }
+        case 'progress-asc':
+          return (a.progress || 0) - (b.progress || 0);
+        case 'progress-desc':
+          return (b.progress || 0) - (a.progress || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [filteredTasks, columnSettings]);
 
   // Stats
   const stats = useMemo(() => {
@@ -594,7 +700,9 @@ export default function Kanban() {
       {/* Kanban Board */}
       <div className="flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto">
         {columns.map((column) => {
-          const columnTasks = filteredTasks.filter(t => t.status === column.id);
+          const columnTasks = getColumnTasks(column.id);
+          const settings = columnSettings[column.id];
+          const dropdowns = columnDropdowns[column.id];
           const isDragOver = dragOverColumn === column.id;
           
           return (
@@ -613,7 +721,7 @@ export default function Kanban() {
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-clawd-border border-l-4 ${column.color} rounded-t-2xl`}>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <div className="icon-text">
                     <span>{column.emoji}</span>
                     <h3 className="font-semibold text-sm">{column.title}</h3>
@@ -640,6 +748,87 @@ export default function Kanban() {
                       <Plus size={16} className="flex-shrink-0" />
                     </button>
                   )}
+                </div>
+                
+                {/* Filter and Sort Controls */}
+                <div className="flex items-center gap-1">
+                  {/* Sort Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => toggleColumnDropdown(column.id, 'sort')}
+                      className={`icon-btn-sm text-clawd-text-dim hover:text-clawd-text ${settings.sortBy !== 'newest' ? 'text-clawd-accent' : ''}`}
+                      title="Sort"
+                    >
+                      <ArrowDown size={14} className="flex-shrink-0" />
+                    </button>
+                    {dropdowns.sort && (
+                      <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                        <div className="p-1">
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'newest' ? 'text-clawd-accent' : ''}`}>Newest First</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'oldest' ? 'text-clawd-accent' : ''}`}>Oldest First</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-clawd-accent' : ''}`}>Priority: Low → High</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-clawd-accent' : ''}`}>Priority: High → Low</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-clawd-accent' : ''}`}>Progress: 0% → 100%</button>
+                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-clawd-accent' : ''}`}>Progress: 100% → 0%</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Filter Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => toggleColumnDropdown(column.id, 'filter')}
+                      className={`icon-btn-sm text-clawd-text-dim hover:text-clawd-text ${settings.filterAgent !== 'all' || settings.filterPriority !== 'all' ? 'text-clawd-accent' : ''}`}
+                      title="Filter"
+                    >
+                      <Filter size={14} className="flex-shrink-0" />
+                    </button>
+                    {dropdowns.filter && (
+                      <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
+                        <div className="p-2 border-b border-clawd-border">
+                          <div className="text-xs font-semibold text-clawd-text-dim mb-1">Agent</div>
+                          <select
+                            value={settings.filterAgent}
+                            onChange={(e) => updateColumnSetting(column.id, 'filterAgent', e.target.value)}
+                            className="w-full bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm"
+                          >
+                            <option value="all">All Agents</option>
+                            <option value="unassigned">Unassigned</option>
+                            {agents.map(a => (
+                              <option key={a.id} value={a.id}>{a.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="p-2">
+                          <div className="text-xs font-semibold text-clawd-text-dim mb-1">Priority</div>
+                          <select
+                            value={settings.filterPriority}
+                            onChange={(e) => updateColumnSetting(column.id, 'filterPriority', e.target.value as TaskPriority | 'all')}
+                            className="w-full bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm"
+                          >
+                            <option value="all">All Priorities</option>
+                            {PRIORITIES.map(p => (
+                              <option key={p.id} value={p.id}>{p.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        {(settings.filterAgent !== 'all' || settings.filterPriority !== 'all') && (
+                          <div className="p-2 border-t border-clawd-border">
+                            <button
+                              onClick={() => {
+                                updateColumnSetting(column.id, 'filterAgent', 'all');
+                                updateColumnSetting(column.id, 'filterPriority', 'all');
+                              }}
+                              className="w-full text-sm text-clawd-accent hover:underline"
+                            >
+                              Clear Filters
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
