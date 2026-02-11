@@ -503,6 +503,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
     suggestReplies: (context: { role: string; content: string }[]) =>
       ipcRenderer.invoke('chat:suggestReplies', context),
   },
+  // Settings — API key management (safeStorage backed)
+  settings: {
+    getApiKey: (keyName: string) => ipcRenderer.invoke('settings:getApiKey', keyName),
+    storeApiKey: (keyName: string, value: string) => ipcRenderer.invoke('settings:storeApiKey', keyName, value),
+    hasApiKey: (keyName: string) => ipcRenderer.invoke('settings:hasApiKey', keyName),
+    deleteApiKey: (keyName: string) => ipcRenderer.invoke('settings:deleteApiKey', keyName),
+  },
   // Security management
   security: {
     listKeys: () => ipcRenderer.invoke('security:listKeys'),

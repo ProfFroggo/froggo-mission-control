@@ -22,12 +22,18 @@ function speakBrowser(text: string): Promise<void> {
 }
 function stopSpeaking() { window.speechSynthesis.cancel(); }
 
-// API key loading (same as VoiceChatPanel)
-const FALLBACK_GEMINI_API_KEY = 'AIzaSyCziHu8LUZ6RXmt-4lu_NzgEfczM0DC1RE';
-function loadApiKey(): string {
+// API key loading — no hardcoded fallback; uses IPC to fetch from secure store
+async function loadApiKey(): Promise<string> {
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
-  if (FALLBACK_GEMINI_API_KEY) return FALLBACK_GEMINI_API_KEY;
+  try {
+    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    if (key) return key;
+  } catch {}
+  try {
+    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+    if (s.geminiApiKey) return s.geminiApiKey;
+  } catch {}
   return '';
 }
 
@@ -77,7 +83,12 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const apiKeyRef = useRef(loadApiKey());
+  const apiKeyRef = useRef('');
+
+  // Load API key asynchronously on mount
+  useEffect(() => {
+    loadApiKey().then(key => { apiKeyRef.current = key; });
+  }, []);
   const isActiveRef = useRef(false);
   const listeningRef = useRef(false);
   const micStreamRef = useRef<MediaStream | null>(null);

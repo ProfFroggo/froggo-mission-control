@@ -12,31 +12,25 @@ import { MeetingTranscriber, Meeting, MeetingTranscript, TranscriptionSegment } 
 import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
 import MarkdownMessage from './MarkdownMessage';
 
-// Fallback API key if .env is not configured
-const FALLBACK_GEMINI_API_KEY = 'AIzaSyAryVt2xhugisz03eraIhTMhXO6cKMYUGY';
-
-function getApiKey(): string {
-  // Try Vite env var first (from .env file)
+// API key loading — no hardcoded fallback; uses IPC to fetch from secure store
+async function getApiKey(): Promise<string> {
+  // 1. Try Vite env var first (from .env file)
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
-  if (viteKey && viteKey !== 'your_key_here') {
-    console.log('[MeetingTranscribe] ✅ Using API key from .env');
-    return viteKey;
-  }
-
-  // Try localStorage
+  if (viteKey && viteKey !== 'your_key_here') return viteKey;
+  // 2. Try IPC to main process secret store
+  try {
+    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    if (key) return key;
+  } catch {}
+  // 3. Try localStorage
   const storedKey = localStorage.getItem('gemini_api_key');
-  if (storedKey && storedKey !== 'your_key_here') {
-    console.log('[MeetingTranscribe] ✅ Using API key from localStorage');
-    return storedKey;
-  }
-
-  // Use fallback
-  if (FALLBACK_GEMINI_API_KEY) {
-    console.log('[MeetingTranscribe] ⚠️ Using fallback API key');
-    return FALLBACK_GEMINI_API_KEY;
-  }
-
-  throw new Error('Gemini API key not set. Configure VITE_GEMINI_API_KEY in .env or set it in Voice Settings.');
+  if (storedKey && storedKey !== 'your_key_here') return storedKey;
+  // 4. Check localStorage settings
+  try {
+    const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+    if (s.geminiApiKey) return s.geminiApiKey;
+  } catch {}
+  throw new Error('Gemini API key not set. Configure it in Settings > API Keys.');
 }
 
 export default function MeetingTranscribe() {
@@ -63,8 +57,9 @@ export default function MeetingTranscribe() {
 
   // Initialize transcriber
   useEffect(() => {
+    (async () => {
     try {
-      const apiKey = getApiKey();
+      const apiKey = await getApiKey();
       const t = new MeetingTranscriber(apiKey);
       // Set up real-time callback to push segments into state
       t.onTranscript((segment: TranscriptionSegment) => {
@@ -79,6 +74,7 @@ export default function MeetingTranscribe() {
     } catch (err: any) {
       setInitError(err.message);
     }
+    })();
   }, []);
 
   // Load meetings on mount
@@ -246,7 +242,7 @@ export default function MeetingTranscribe() {
     setIsUploading(true);
 
     try {
-      const apiKey = getApiKey();
+      const apiKey = await getApiKey();
       const service = new GeminiTranscriptionService(apiKey);
       const transcript = await service.transcribeAudio(file, file.type || 'audio/webm');
 

@@ -1,21 +1,45 @@
 /**
  * X API v2 Client — Bearer token auth for all operations.
+ * Tokens loaded from secret store (Electron safeStorage) or env vars.
  */
+
+import { getSecret } from './secret-store';
 
 const X_API_BASE = 'https://api.x.com/2';
 
-const BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAAHDq7QEAAAAAYRPv3a6qXPlpcGmYSw8IEb2VWNc%3DYn2wnpzUcDaceiXcZorBQNMIik4h5J4YEOajFehA0FX3x1NUtv';
-const ACCESS_TOKEN = '1464300272944099329-AjnGVlrmjCJRINNNOUScSNN3HpMBt4';
+let bearerToken: string | null = null;
+let accessToken: string | null = null;
+
+/**
+ * Initialize X API tokens from secret store or env vars.
+ * Call after app.ready.
+ */
+export function initXApiTokens(): void {
+  bearerToken = process.env.X_BEARER_TOKEN || getSecret('x-bearer-token') || null;
+  accessToken = process.env.X_ACCESS_TOKEN || getSecret('x-access-token') || null;
+  if (bearerToken) {
+    console.log('[X API] Bearer token loaded');
+  }
+  if (accessToken) {
+    console.log('[X API] Access token loaded');
+  }
+}
 
 let cachedUserId: string | null = null;
 
 // --- Helpers ---
 
-const bearerHeaders = {
-  'Authorization': `Bearer ${BEARER_TOKEN}`,
-};
+function getBearerHeaders(): Record<string, string> {
+  if (!bearerToken) {
+    throw new Error('X API bearer token not configured. Add it in Settings > API Keys.');
+  }
+  return {
+    'Authorization': `Bearer ${bearerToken}`,
+  };
+}
 
 async function bearerFetch(endpoint: string, params?: Record<string, string>): Promise<any> {
+  const headers = getBearerHeaders();
   const url = new URL(`${X_API_BASE}${endpoint}`);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -23,7 +47,7 @@ async function bearerFetch(endpoint: string, params?: Record<string, string>): P
     }
   }
 
-  const res = await fetch(url.toString(), { headers: bearerHeaders });
+  const res = await fetch(url.toString(), { headers });
 
   if (!res.ok) {
     const text = await res.text();
@@ -34,9 +58,10 @@ async function bearerFetch(endpoint: string, params?: Record<string, string>): P
 }
 
 async function bearerPost(endpoint: string, body: any): Promise<any> {
+  const headers = getBearerHeaders();
   const res = await fetch(`${X_API_BASE}${endpoint}`, {
     method: 'POST',
-    headers: { ...bearerHeaders, 'Content-Type': 'application/json' },
+    headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
@@ -49,9 +74,10 @@ async function bearerPost(endpoint: string, body: any): Promise<any> {
 }
 
 async function bearerDelete(endpoint: string): Promise<any> {
+  const headers = getBearerHeaders();
   const res = await fetch(`${X_API_BASE}${endpoint}`, {
     method: 'DELETE',
-    headers: bearerHeaders,
+    headers,
   });
 
   if (!res.ok) {
@@ -67,8 +93,12 @@ async function bearerDelete(endpoint: string): Promise<any> {
 export async function getUserId(): Promise<string> {
   if (cachedUserId) return cachedUserId;
 
+  if (!accessToken) {
+    throw new Error('X API access token not configured. Add it in Settings > API Keys.');
+  }
+
   // Extract user ID from access token (format: userId-randomString)
-  const parts = ACCESS_TOKEN.split('-');
+  const parts = accessToken.split('-');
   if (parts.length >= 2 && /^\d+$/.test(parts[0])) {
     cachedUserId = parts[0];
     return cachedUserId;

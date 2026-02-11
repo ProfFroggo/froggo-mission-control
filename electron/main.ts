@@ -15,6 +15,8 @@ import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
+import { initXApiTokens } from './x-api-client';
+import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
 import { db, prepare, getScheduleDb, closeDb } from './database';
 
 // ============== AGENT REGISTRY ==============
@@ -667,6 +669,13 @@ app.whenReady().then(() => {
     });
   }
   
+  // Initialize X API tokens from secret store
+  try {
+    initXApiTokens();
+  } catch (err) {
+    safeLog.error('[Main] Failed to initialize X API tokens:', err);
+  }
+
   // Start task notification watcher
   startTaskNotifyWatcher();
   
@@ -720,6 +729,47 @@ app.on('will-quit', () => {
 app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
+  }
+});
+
+// ============== SECRET STORE / API KEY IPC HANDLERS ==============
+// These use Electron safeStorage which is available after app.ready
+
+ipcMain.handle('settings:getApiKey', async (_, keyName: string) => {
+  try {
+    return getSecret(keyName);
+  } catch (err: any) {
+    console.error('[Settings] getApiKey error:', err.message);
+    return null;
+  }
+});
+
+ipcMain.handle('settings:storeApiKey', async (_, keyName: string, value: string) => {
+  try {
+    storeSecret(keyName, value);
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Settings] storeApiKey error:', err.message);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('settings:hasApiKey', async (_, keyName: string) => {
+  try {
+    return hasSecret(keyName);
+  } catch (err: any) {
+    console.error('[Settings] hasApiKey error:', err.message);
+    return false;
+  }
+});
+
+ipcMain.handle('settings:deleteApiKey', async (_, keyName: string) => {
+  try {
+    deleteSecret(keyName);
+    return { success: true };
+  } catch (err: any) {
+    console.error('[Settings] deleteApiKey error:', err.message);
+    return { success: false, error: err.message };
   }
 });
 

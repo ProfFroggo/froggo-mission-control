@@ -594,15 +594,19 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setCallRinging(false);
   };
 
-  const getGeminiApiKey = () => {
+  const getGeminiApiKey = async (): Promise<string> => {
     // 1. Check localStorage settings
     try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
     catch {}
     // 2. Check env vars
     const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
     if (envKey) return envKey;
-    // 3. Fallback key (same as VoiceChatPanel)
-    return 'AIzaSyCziHu8LUZ6RXmt-4lu_NzgEfczM0DC1RE';
+    // 3. Try IPC to main process secret store
+    try {
+      const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+      if (key) return key;
+    } catch {}
+    return '';
   };
 
   // ─── FEATURE 2: Agent call handling (real Gemini Live) ───
@@ -622,7 +626,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       showToast('success', 'Call Ended', `Disconnected from ${agent.name}`);
     } else {
       // Start call
-      const apiKey = getGeminiApiKey();
+      const apiKey = await getGeminiApiKey();
       if (!apiKey) {
         showToast('error', 'No API Key', 'Set Gemini API key in Settings');
         return;

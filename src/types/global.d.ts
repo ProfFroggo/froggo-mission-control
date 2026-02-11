@@ -167,6 +167,10 @@ declare global {
       settings: {
         get: () => Promise<{ success: boolean; settings: any }>;
         save: (settings: any) => Promise<{ success: boolean }>;
+        getApiKey: (keyName: string) => Promise<string | null>;
+        storeApiKey: (keyName: string, value: string) => Promise<{ success: boolean; error?: string }>;
+        hasApiKey: (keyName: string) => Promise<boolean>;
+        deleteApiKey: (keyName: string) => Promise<{ success: boolean; error?: string }>;
       };
       // X (bird CLI)
       twitter: {
