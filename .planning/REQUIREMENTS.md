@@ -1,7 +1,7 @@
 # Requirements: Writing System v2.0
 
 **Defined:** 2026-02-12
-**Core Value:** Kevin can write a complete memoir using AI-collaborative inline feedback — highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
+**Core Value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
 
 ## v2 Requirements
 
@@ -94,8 +94,8 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | Feature | Reason |
 |---------|--------|
 | Real-time multi-user collaboration | Single-user workflow, CRDT complexity unjustified |
-| AI autocomplete/ghost text | Research confirms it destroys creative voice — anti-feature |
-| AI-generated first drafts | User writes, AI assists — never the other way around |
+| AI autocomplete/ghost text | Research confirms it destroys creative voice -- anti-feature |
+| AI-generated first drafts | User writes, AI assists -- never the other way around |
 | Custom markdown editor (split-pane) | TipTap WYSIWYG is better for prose writing |
 | Gamification (streaks, badges) | Research shows it pressures and stresses writers |
 | electron/main.ts monolith breakup | Separate effort, not writing-related |
@@ -151,10 +151,10 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | AGENT-05 | Phase 6 | Pending |
 
 **Coverage:**
-- v2 requirements: 40 total
-- Mapped to phases: 40
-- Unmapped: 0 ✓
+- v2 requirements: 44 total
+- Mapped to phases: 44
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-12 after research synthesis*
+*Last updated: 2026-02-12 after roadmap creation*
