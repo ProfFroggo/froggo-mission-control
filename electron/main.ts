@@ -13,6 +13,7 @@ import { setupNotificationEvents } from './notification-events';
 import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
 import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
+import { registerWritingProjectHandlers } from './writing-project-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
@@ -370,6 +371,9 @@ function createWindow() {
 
   // Register X Automations handlers
   registerXAutomationsHandlers();
+
+  // Register Writing Project handlers
+  registerWritingProjectHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
