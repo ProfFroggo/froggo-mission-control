@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell } from 'lucide-react';
+import { showToast } from './Toast';
 
 interface Transaction {
   id: string;
@@ -28,15 +29,43 @@ interface Budget {
   categories: BudgetCategory[];
 }
 
+interface Alert {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  message: string;
+  timestamp: number;
+  data?: any;
+}
+
+interface Insight {
+  type: string;
+  title: string;
+  description: string;
+  data?: any;
+}
+
 export default function FinancePanel() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [familyBudget, setFamilyBudget] = useState<Budget | null>(null);
   const [cryptoBudget, setCryptoBudget] = useState<Budget | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const lastAlertCheck = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     loadFinanceData();
+    loadAlerts();
+    
+    // Check for new alerts every 30 seconds
+    const alertInterval = setInterval(() => {
+      loadAlerts();
+    }, 30000);
+    
+    return () => clearInterval(alertInterval);
   }, []);
 
   const loadFinanceData = async () => {
@@ -64,6 +93,35 @@ export default function FinancePanel() {
       console.error('[Finance] Load error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAlerts = async () => {
+    try {
+      // Load alerts
+      const alertsResult = await (window as any).clawdbot?.finance?.getAlerts();
+      if (alertsResult?.success) {
+        const newAlerts = alertsResult.alerts || [];
+        setAlerts(newAlerts);
+        
+        // Show toasts for new alerts
+        newAlerts.forEach((alert: Alert) => {
+          if (!lastAlertCheck.current.has(alert.id)) {
+            const toastType = alert.severity === 'critical' ? 'error' : 
+                            alert.severity === 'warning' ? 'warning' : 'info';
+            showToast(toastType, alert.title, alert.message);
+            lastAlertCheck.current.add(alert.id);
+          }
+        });
+      }
+
+      // Load insights
+      const insightsResult = await (window as any).clawdbot?.finance?.getInsights();
+      if (insightsResult?.success) {
+        setInsights(insightsResult.insights || []);
+      }
+    } catch (error) {
+      console.error('[Finance] Alerts load error:', error);
     }
   };
 
@@ -157,6 +215,51 @@ export default function FinancePanel() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-4">
+        {/* Alerts & Insights (if any exist) */}
+        {(alerts.length > 0 || insights.length > 0) && (
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Bell size={18} className="text-yellow-500" />
+              <h2 className="text-base font-semibold">Alerts & Insights</h2>
+            </div>
+            
+            <div className="space-y-2">
+              {/* Critical alerts first */}
+              {alerts.filter(a => a.severity === 'critical').map((alert) => (
+                <div key={alert.id} className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-red-400">{alert.title}</div>
+                    <div className="text-xs text-red-400/80 mt-0.5">{alert.message}</div>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Warning alerts */}
+              {alerts.filter(a => a.severity === 'warning').map((alert) => (
+                <div key={alert.id} className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-yellow-400">{alert.title}</div>
+                    <div className="text-xs text-yellow-400/80 mt-0.5">{alert.message}</div>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Insights */}
+              {insights.slice(0, 3).map((insight, idx) => (
+                <div key={idx} className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <TrendingUp size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-blue-400">{insight.title}</div>
+                    <div className="text-xs text-blue-400/80 mt-0.5">{insight.description}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Budget Cards Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {/* Family Budget */}

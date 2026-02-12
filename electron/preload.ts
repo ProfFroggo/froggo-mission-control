@@ -606,6 +606,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getTransactions: (limit?: number) => ipcRenderer.invoke('finance:getTransactions', limit),
     getBudgetStatus: (budgetType: 'family' | 'crypto') => ipcRenderer.invoke('finance:getBudgetStatus', budgetType),
     uploadCSV: (csvContent: string, filename: string) => ipcRenderer.invoke('finance:uploadCSV', csvContent, filename),
+    getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
+    getInsights: () => ipcRenderer.invoke('finance:getInsights'),
   },
 });
 

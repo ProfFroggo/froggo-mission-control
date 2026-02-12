@@ -7499,3 +7499,27 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: stri
     return { success: false, imported: 0, skipped: 0, error: error.message };
   }
 });
+
+ipcMain.handle('finance:getAlerts', async () => {
+  try {
+    const cmd = `froggo-db finance-alerts --format json`;
+    const result = await execPromise(cmd, { timeout: 10000 });
+    const alerts = JSON.parse(result.stdout);
+    return { success: true, alerts: alerts.alerts || [] };
+  } catch (error: any) {
+    safeLog.error('[Finance] Get alerts error:', error.message);
+    return { success: false, alerts: [], error: error.message };
+  }
+});
+
+ipcMain.handle('finance:getInsights', async () => {
+  try {
+    const cmd = `froggo-db finance-insights --format json`;
+    const result = await execPromise(cmd, { timeout: 10000 });
+    const insights = JSON.parse(result.stdout);
+    return { success: true, insights: insights.insights || [] };
+  } catch (error: any) {
+    safeLog.error('[Finance] Get insights error:', error.message);
+    return { success: false, insights: [], error: error.message };
+  }
+});
