@@ -1352,18 +1352,17 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
       </div>
     </div>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison for better memoization
+}, (prev, next) => {
+  // Return true if props are equal (skip re-render)
+  // Intentionally skip callback comparison -- they are recreated each render but do not affect visual output
   return (
-    prevProps.task.id === nextProps.task.id &&
-    prevProps.task.status === nextProps.task.status &&
-    prevProps.task.priority === nextProps.task.priority &&
-    prevProps.task.title === nextProps.task.title &&
-    prevProps.task.assignedTo === nextProps.task.assignedTo &&
-    prevProps.task.lastAgentUpdate === nextProps.task.lastAgentUpdate &&
-    prevProps.task.updatedAt === nextProps.task.updatedAt &&
-    prevProps.task.dueDate === nextProps.task.dueDate &&
-    (prevProps.task.subtasks?.length || 0) === (nextProps.task.subtasks?.length || 0) &&
-    prevProps.isDragging === nextProps.isDragging
+    prev.task === next.task &&
+    prev.isDragging === next.isDragging &&
+    prev.isDeleting === next.isDeleting &&
+    prev.isSpawning === next.isSpawning &&
+    prev.isMoving === next.isMoving &&
+    prev.agents === next.agents &&
+    // activeSessions is a new object each render -- deep compare for small Record<string, boolean>
+    JSON.stringify(prev.activeSessions) === JSON.stringify(next.activeSessions)
   );
 });

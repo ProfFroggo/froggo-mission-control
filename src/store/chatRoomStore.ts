@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const MAX_MESSAGES_PER_ROOM = 200;
+
 export interface RoomMessage {
   id: string;
   role: 'user' | 'agent';
@@ -74,7 +76,7 @@ export const useChatRoomStore = create<ChatRoomState>()(
         set(state => ({
           rooms: state.rooms.map(r =>
             r.id === roomId
-              ? { ...r, messages: [...r.messages, message], updatedAt: Date.now() }
+              ? { ...r, messages: [...r.messages, message].slice(-MAX_MESSAGES_PER_ROOM), updatedAt: Date.now() }
               : r
           ),
         }));
@@ -123,8 +125,8 @@ export const useChatRoomStore = create<ChatRoomState>()(
       partialize: (state) => ({
         rooms: state.rooms.map(r => ({
           ...r,
-          // Don't persist streaming state
-          messages: r.messages.map(m => ({ ...m, streaming: false })),
+          // Cap messages and clear streaming state for persistence
+          messages: r.messages.slice(-MAX_MESSAGES_PER_ROOM).map(m => ({ ...m, streaming: false })),
         })),
       }),
     }
