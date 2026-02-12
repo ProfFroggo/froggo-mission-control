@@ -51,7 +51,7 @@
 - Decimal phases (5.1, 5.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 5: Foundation** - Project CRUD, TipTap editor, chapter management, file storage
-- [ ] **Phase 6: Inline Feedback** - Highlight-to-chat, AI alternatives, streaming, agent routing
+- [x] **Phase 6: Inline Feedback** - Highlight-to-chat, AI alternatives, streaming, agent routing
 - [ ] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
 - [ ] **Phase 8: Research Library** - Sources, fact-checking, Researcher agent
 - [ ] **Phase 9: Outline & Versions** - Chapter navigation, drag-drop, diff comparison
@@ -86,11 +86,11 @@ Plans:
   3. User can accept an alternative (replaces highlighted text) or dismiss, and the interaction is logged per chapter
   4. User can select which agent (Writer, Researcher, Jess) to send feedback to, and agent sessions persist within the project
   5. AI context includes current chapter content, project outline, and memory store data (when available), communicated via existing OpenClaw Gateway WebSocket
-**Plans**: 2 plans
+**Plans**: 2/2 complete
 
 Plans:
-- [ ] 06-01-PLAN.md -- Backend: feedbackStore, writing-feedback-service, preload bridge, main.ts wiring
-- [ ] 06-02-PLAN.md -- UI: FeedbackPopover, AgentPicker, FeedbackAlternative, BubbleMenu in ChapterEditor, streaming
+- [x] 06-01-PLAN.md -- Backend: feedbackStore, writing-feedback-service, preload bridge, main.ts wiring
+- [x] 06-02-PLAN.md -- UI: FeedbackPopover, AgentPicker, FeedbackAlternative, BubbleMenu in ChapterEditor, streaming
 
 ### Phase 7: Memory Store
 **Goal**: User can maintain character profiles, timeline events, and verified facts that are automatically injected into AI context
@@ -156,7 +156,7 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
 | 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
-| 6. Inline Feedback | v2.0 | 0/2 | Planned | - |
+| 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
 | 7. Memory Store | v2.0 | 0/2 | Not started | - |
 | 8. Research Library | v2.0 | 0/2 | Not started | - |
 | 9. Outline & Versions | v2.0 | 0/2 | Not started | - |
@@ -164,4 +164,4 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 
 ---
 *Roadmap created: 2026-02-12*
-*Last updated: 2026-02-12 — Phase 5 complete*
+*Last updated: 2026-02-12 — Phase 6 complete*

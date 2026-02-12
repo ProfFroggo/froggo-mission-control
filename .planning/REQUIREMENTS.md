@@ -30,14 +30,14 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 
 ### Inline Feedback
 
-- [ ] **FEED-01**: User can highlight text in the editor and see a feedback popover
-- [ ] **FEED-02**: User can type feedback/instructions in the popover and send to an AI agent
-- [ ] **FEED-03**: AI agent responds with 2-3 alternative versions of the highlighted text
-- [ ] **FEED-04**: User can accept an alternative (replaces highlighted text) or dismiss
-- [ ] **FEED-05**: User can select which agent to send feedback to (Writer, Researcher, Jess)
-- [ ] **FEED-06**: AI response streams in real-time (not blank screen then full response)
-- [ ] **FEED-07**: Feedback interactions are logged per chapter (JSONL append-only)
-- [ ] **FEED-08**: AI context includes current chapter, outline, and memory store data
+- [x] **FEED-01**: User can highlight text in the editor and see a feedback popover
+- [x] **FEED-02**: User can type feedback/instructions in the popover and send to an AI agent
+- [x] **FEED-03**: AI agent responds with 2-3 alternative versions of the highlighted text
+- [x] **FEED-04**: User can accept an alternative (replaces highlighted text) or dismiss
+- [x] **FEED-05**: User can select which agent to send feedback to (Writer, Researcher, Jess)
+- [x] **FEED-06**: AI response streams in real-time (not blank screen then full response)
+- [x] **FEED-07**: Feedback interactions are logged per chapter (JSONL append-only)
+- [x] **FEED-08**: AI context includes current chapter, outline, and memory store data
 
 ### Memory Store
 
@@ -66,11 +66,11 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 
 ### Agent Integration
 
-- [ ] **AGENT-01**: Writer agent provides style, pacing, and narrative feedback
+- [x] **AGENT-01**: Writer agent provides style, pacing, and narrative feedback
 - [ ] **AGENT-02**: Researcher agent provides fact-checking and source verification
 - [ ] **AGENT-03**: Jess agent provides emotional guidance and memoir-specific support
-- [ ] **AGENT-04**: Each agent has project-scoped sessions (context persists within project)
-- [ ] **AGENT-05**: Agent communication uses existing OpenClaw Gateway WebSocket
+- [x] **AGENT-04**: Each agent has project-scoped sessions (context persists within project)
+- [x] **AGENT-05**: Agent communication uses existing OpenClaw Gateway WebSocket
 
 ## v3 Requirements
 
@@ -120,14 +120,14 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | EDIT-03 | Phase 5 | Complete |
 | EDIT-04 | Phase 5 | Complete |
 | EDIT-05 | Phase 5 | Complete |
-| FEED-01 | Phase 6 | Pending |
-| FEED-02 | Phase 6 | Pending |
-| FEED-03 | Phase 6 | Pending |
-| FEED-04 | Phase 6 | Pending |
-| FEED-05 | Phase 6 | Pending |
-| FEED-06 | Phase 6 | Pending |
-| FEED-07 | Phase 6 | Pending |
-| FEED-08 | Phase 6 | Pending |
+| FEED-01 | Phase 6 | Complete |
+| FEED-02 | Phase 6 | Complete |
+| FEED-03 | Phase 6 | Complete |
+| FEED-04 | Phase 6 | Complete |
+| FEED-05 | Phase 6 | Complete |
+| FEED-06 | Phase 6 | Complete |
+| FEED-07 | Phase 6 | Complete |
+| FEED-08 | Phase 6 | Complete |
 | MEM-01 | Phase 7 | Pending |
 | MEM-02 | Phase 7 | Pending |
 | MEM-03 | Phase 7 | Pending |
@@ -144,11 +144,11 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | OUT-03 | Phase 9 | Pending |
 | OUT-04 | Phase 9 | Pending |
 | OUT-05 | Phase 9 | Pending |
-| AGENT-01 | Phase 6 | Pending |
+| AGENT-01 | Phase 6 | Complete |
 | AGENT-02 | Phase 8 | Pending |
 | AGENT-03 | Phase 10 | Pending |
-| AGENT-04 | Phase 6 | Pending |
-| AGENT-05 | Phase 6 | Pending |
+| AGENT-04 | Phase 6 | Complete |
+| AGENT-05 | Phase 6 | Complete |
 
 **Coverage:**
 - v2 requirements: 44 total
@@ -157,4 +157,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-12 — Phase 5 requirements complete*
+*Last updated: 2026-02-12 — Phase 6 requirements complete*
