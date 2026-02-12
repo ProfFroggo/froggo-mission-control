@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 3 Functional Fixes in progress. Plan 1 of 2 complete.
+**Current focus:** Phase 3 Functional Fixes complete. Phase 4 needs research + planning.
 
 ## Current Position
 
 Phase: 3 of 4 (Functional Fixes)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-12 -- Completed 03-01-PLAN.md (agent routing, error boundary, IPC guards, notification debounce)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-12 -- Completed 03-02-PLAN.md (session dedup, phantom tasks, memo, chat cap, debounced refresh)
 
-Progress: [█████████░] 90%
+Progress: [██████████] 100% (phases 1-3 complete, phase 4 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: ~17min
-- Total execution time: ~149min
+- Total plans completed: 10
+- Average duration: ~15min
+- Total execution time: ~153min
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [█████████░] 90%
 |-------|-------|-------|----------|
 | 01-security-hardening | 6/6 | ~138min | ~23min |
 | 02-fix-broken-features | 2/2 | ~7min | ~3.5min |
-| 03-functional-fixes | 1/2 | ~4min | ~4min |
+| 03-functional-fixes | 2/2 | ~8min | ~4min |
 
 **Recent Trend:**
-- Last 9 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min)
+- Last 10 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min), 03-02 (~4min)
 - Trend: Research-backed plans with targeted edits execute fast
 
 *Updated after each plan completion*
@@ -72,10 +72,14 @@ Recent decisions affecting current work:
 - Ordered regex routing: designer/social-manager/growth-director first (specific), coder/writer/chief last (catch-all)
 - DMFeed default export added for React.lazy() compatibility
 - Per-type debounce Map replaces single refreshTimer for independent event handling
+- loadGatewaySessions sets both gatewaySessions and sessions state (merges two IPC calls)
+- matchTaskToAgent for approval/revision routing instead of hardcoded agent names
+- 400ms debounce for shared task refresh (balances responsiveness and dedup)
+- Reference equality memo (prev.task === next.task) with JSON.stringify for small objects
+- 200 message cap per chat room in localStorage
 
 ### Pending Todos
 
-- Phase 3 plan 2 remaining (03-02-PLAN.md)
 - Phase 4 needs research + planning before execution
 
 ### Blockers/Concerns
@@ -87,5 +91,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
 Resume file: None
