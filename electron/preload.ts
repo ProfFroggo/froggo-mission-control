@@ -627,6 +627,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
       reorder: (projectId: string, chapterIds: string[]) => ipcRenderer.invoke('writing:chapter:reorder', projectId, chapterIds),
       delete: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:chapter:delete', projectId, chapterId),
     },
+    feedback: {
+      log: (projectId: string, entry: any) =>
+        ipcRenderer.invoke('writing:feedback:log', projectId, entry),
+      history: (projectId: string, chapterId: string) =>
+        ipcRenderer.invoke('writing:feedback:history', projectId, chapterId),
+    },
   },
 });
 
