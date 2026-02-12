@@ -609,6 +609,25 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
     getInsights: () => ipcRenderer.invoke('finance:getInsights'),
   },
+  // Writing Module
+  writing: {
+    project: {
+      list: () => ipcRenderer.invoke('writing:project:list'),
+      create: (title: string, type: string) => ipcRenderer.invoke('writing:project:create', title, type),
+      get: (projectId: string) => ipcRenderer.invoke('writing:project:get', projectId),
+      update: (projectId: string, updates: any) => ipcRenderer.invoke('writing:project:update', projectId, updates),
+      delete: (projectId: string) => ipcRenderer.invoke('writing:project:delete', projectId),
+    },
+    chapter: {
+      list: (projectId: string) => ipcRenderer.invoke('writing:chapter:list', projectId),
+      create: (projectId: string, title: string) => ipcRenderer.invoke('writing:chapter:create', projectId, title),
+      read: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:chapter:read', projectId, chapterId),
+      save: (projectId: string, chapterId: string, content: string) => ipcRenderer.invoke('writing:chapter:save', projectId, chapterId, content),
+      rename: (projectId: string, chapterId: string, title: string) => ipcRenderer.invoke('writing:chapter:rename', projectId, chapterId, title),
+      reorder: (projectId: string, chapterIds: string[]) => ipcRenderer.invoke('writing:chapter:reorder', projectId, chapterIds),
+      delete: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:chapter:delete', projectId, chapterId),
+    },
+  },
 });
 
 // Add to clawdbot object - chat message persistence
