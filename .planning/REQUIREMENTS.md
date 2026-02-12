@@ -45,14 +45,14 @@ Requirements for this hardening milestone. Each maps to roadmap phases.
 
 ### Cleanup
 
-- [ ] **CLEAN-01**: Delete dead lib files (readState.ts, queryCache.ts, optimizedQueries.ts, performanceMonitoring.ts, smartAccountSelector.ts, voiceService.ts, api/gateway.ts)
-- [ ] **CLEAN-02**: Delete dead panel exports from ProtectedPanels (ThreePaneInbox, CommsInbox, UnifiedCommsInbox, CalendarPanel, ContentCalendar)
-- [ ] **CLEAN-03**: Remove dead state/functions from store (clearCompletedApprovals, sessions field, getAgentPrompt always-empty)
-- [ ] **CLEAN-04**: Remove dead code from components (commented functions, unused imports, unused state vars with _ prefix)
-- [ ] **CLEAN-05**: Delete .bak files from src/ (agentContext.ts.bak, geminiLiveService blobs, panelConfig backup)
-- [ ] **CLEAN-06**: Fix non-standard CSS classes in QuickStatsWidget (no-shrink, flex-fill, message-preview, no-wrap)
-- [ ] **CLEAN-07**: Remove debug info from MorningBrief production UI
-- [ ] **CLEAN-08**: Fix conflicting keyboard shortcuts in Settings (Cmd+6 and Cmd+7 collisions)
+- [x] **CLEAN-01**: Delete dead lib files (readState.ts, queryCache.ts, optimizedQueries.ts, performanceMonitoring.ts, smartAccountSelector.ts, voiceService.ts, api/gateway.ts)
+- [x] **CLEAN-02**: Delete dead panel exports from ProtectedPanels (ThreePaneInbox, CommsInbox, UnifiedCommsInbox, CalendarPanel, ContentCalendar)
+- [x] **CLEAN-03**: Remove dead state/functions from store (clearCompletedApprovals, sessions field, getAgentPrompt always-empty)
+- [x] **CLEAN-04**: Remove dead code from components (commented functions, unused imports, unused state vars with _ prefix)
+- [x] **CLEAN-05**: Delete .bak files from src/ (agentContext.ts.bak, geminiLiveService blobs, panelConfig backup)
+- [x] **CLEAN-06**: Fix non-standard CSS classes in QuickStatsWidget (no-shrink, flex-fill, message-preview, no-wrap)
+- [x] **CLEAN-07**: Remove debug info from MorningBrief production UI
+- [x] **CLEAN-08**: Fix conflicting keyboard shortcuts in Settings (Cmd+6 and Cmd+7 collisions)
 
 ## v2 Requirements
 
@@ -107,14 +107,14 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | FUNC-08 | Phase 3 | 03-02 | Complete |
 | FUNC-09 | Phase 3 | 03-02 | Complete |
 | FUNC-10 | Phase 3 | 03-02 | Complete |
-| CLEAN-01 | Phase 4 | 04-01 | Pending |
-| CLEAN-02 | Phase 4 | 04-01 | Pending |
-| CLEAN-03 | Phase 4 | 04-01 | Pending |
-| CLEAN-04 | Phase 4 | 04-01 | Pending |
-| CLEAN-05 | Phase 4 | 04-01 | Pending |
-| CLEAN-06 | Phase 4 | 04-02 | Pending |
-| CLEAN-07 | Phase 4 | 04-02 | Pending |
-| CLEAN-08 | Phase 4 | 04-02 | Pending |
+| CLEAN-01 | Phase 4 | 04-01 | Complete |
+| CLEAN-02 | Phase 4 | 04-01 | Complete |
+| CLEAN-03 | Phase 4 | 04-01 | Complete |
+| CLEAN-04 | Phase 4 | 04-01 | Complete |
+| CLEAN-05 | Phase 4 | 04-01 | Complete |
+| CLEAN-06 | Phase 4 | 04-02 | Complete |
+| CLEAN-07 | Phase 4 | 04-02 | Complete |
+| CLEAN-08 | Phase 4 | 04-02 | Complete |
 
 **Coverage:**
 - v1 requirements: 35 total
@@ -124,4 +124,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 -- roadmap created, plan assignments added*
+*Last updated: 2026-02-12 -- all v1 requirements complete*
