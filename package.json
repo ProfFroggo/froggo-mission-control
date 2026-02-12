@@ -73,7 +73,7 @@
   "build": {
     "appId": "com.clawdbot.froggo",
     "productName": "Froggo",
-    "npmRebuild": true,
+    "npmRebuild": false,
     "directories": {
       "output": "release"
     },
