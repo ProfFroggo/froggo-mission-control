@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 2 Fix Broken Features complete. Ready for Phase 3 Functional Fixes (needs research + planning).
+**Current focus:** Phase 3 Functional Fixes in progress. Plan 1 of 2 complete.
 
 ## Current Position
 
-Phase: 2 of 4 (Fix Broken Features) -- COMPLETE
-Plan: 2 of 2 in current phase -- COMPLETE
-Status: Phase complete
-Last activity: 2026-02-12 -- Completed 02-02-PLAN.md (restore AI IPC handlers: channel name fix, generateReply, getAnalysis)
+Phase: 3 of 4 (Functional Fixes)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-12 -- Completed 03-01-PLAN.md (agent routing, error boundary, IPC guards, notification debounce)
 
-Progress: [████████░░] 67%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: ~18min
-- Total execution time: ~145min
+- Total plans completed: 9
+- Average duration: ~17min
+- Total execution time: ~149min
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [████████░░] 67%
 |-------|-------|-------|----------|
 | 01-security-hardening | 6/6 | ~138min | ~23min |
 | 02-fix-broken-features | 2/2 | ~7min | ~3.5min |
+| 03-functional-fixes | 1/2 | ~4min | ~4min |
 
 **Recent Trend:**
-- Last 8 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min)
-- Trend: Phase 2 fixes are fast due to well-researched targeted edits with clear backup references
+- Last 9 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min)
+- Trend: Research-backed plans with targeted edits execute fast
 
 *Updated after each plan completion*
 
@@ -68,21 +69,23 @@ Recent decisions affecting current work:
 - IIFE wrapper for pre-filtered messages to avoid JSX tree restructuring
 - Keep Anthropic API call as-is in ai:generateReply (direct HTTP, no DB)
 - Leave ai:analyzeMessages stub unchanged (too complex, out of scope)
+- Ordered regex routing: designer/social-manager/growth-director first (specific), coder/writer/chief last (catch-all)
+- DMFeed default export added for React.lazy() compatibility
+- Per-type debounce Map replaces single refreshTimer for independent event handling
 
 ### Pending Todos
 
-- Phase 2 complete (all 10 FIX requirements addressed)
-- Phase 3 needs research + planning before execution
+- Phase 3 plan 2 remaining (03-02-PLAN.md)
 - Phase 4 needs research + planning before execution
 
 ### Blockers/Concerns
 
 - Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
 - Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
-- Phases 3 and 4 plan files not yet created -- need research phase
+- Phase 4 plan files not yet created -- need research phase
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
