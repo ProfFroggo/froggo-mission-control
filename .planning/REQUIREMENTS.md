@@ -9,13 +9,13 @@ Requirements for this hardening milestone. Each maps to roadmap phases.
 
 ### Security
 
-- [ ] **SEC-01**: No hardcoded API tokens in source code (Twitter Bearer/Access, Gemini key, Gateway token)
-- [ ] **SEC-02**: No PII in source code (emails, phone numbers, employer info)
-- [ ] **SEC-03**: DevTools disabled in production builds
-- [ ] **SEC-04**: All SQL queries use parameterized inputs or proper escaping (fix 8 injection vectors)
-- [ ] **SEC-05**: Filesystem IPC handlers (fs:writeBase64, fs:readFile, fs:append) restricted to safe paths
-- [ ] **SEC-06**: db:exec handler cannot execute arbitrary SQL beyond safe SELECT patterns
-- [ ] **SEC-07**: Encryption key not using hardcoded default (`default-key-change-me-in-production`)
+- [x] **SEC-01**: No hardcoded API tokens in source code (Twitter Bearer/Access, Gemini key, Gateway token)
+- [x] **SEC-02**: No PII in source code (emails, phone numbers, employer info)
+- [x] **SEC-03**: DevTools disabled in production builds
+- [x] **SEC-04**: All SQL queries use parameterized inputs (156 prepare() calls, zero shell-exec sqlite3)
+- [x] **SEC-05**: Filesystem IPC handlers (fs:writeBase64, fs:readFile, fs:append) restricted to safe paths
+- [x] **SEC-06**: db:exec handler cannot execute arbitrary SQL beyond safe SELECT patterns
+- [x] **SEC-07**: Encryption key not using hardcoded default (`default-key-change-me-in-production`)
 
 ### Broken Features
 
@@ -80,13 +80,13 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 | Requirement | Phase | Plan | Status |
 |-------------|-------|------|--------|
-| SEC-01 | Phase 1 | 01-01 | Pending |
-| SEC-02 | Phase 1 | 01-01 | Pending |
-| SEC-03 | Phase 1 | 01-02 | Pending |
-| SEC-04 | Phase 1 | 01-02 | Pending |
-| SEC-05 | Phase 1 | 01-02 | Pending |
-| SEC-06 | Phase 1 | 01-02 | Pending |
-| SEC-07 | Phase 1 | 01-01 | Pending |
+| SEC-01 | Phase 1 | 01-01 | Complete |
+| SEC-02 | Phase 1 | 01-01 | Complete |
+| SEC-03 | Phase 1 | 01-02 | Complete |
+| SEC-04 | Phase 1 | 01-02, 01-03, 01-04, 01-05, 01-06 | Complete |
+| SEC-05 | Phase 1 | 01-02 | Complete |
+| SEC-06 | Phase 1 | 01-02 | Complete |
+| SEC-07 | Phase 1 | 01-01 | Complete |
 | FIX-01 | Phase 2 | 02-01 | Pending |
 | FIX-02 | Phase 2 | 02-02 | Pending |
 | FIX-03 | Phase 2 | 02-02 | Pending |
