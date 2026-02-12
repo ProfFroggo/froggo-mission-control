@@ -102,8 +102,6 @@ export default function ReportsPanel() {
     );
   }
 
-  // const __report = reportType === 'weekly' ? weeklyReport : monthlyReport;
-
   return (
     <div className="h-full flex flex-col">
       {/* Header */}

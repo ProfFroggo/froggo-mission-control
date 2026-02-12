@@ -104,8 +104,6 @@ function parseMarkdown(text: string): React.ReactNode[] {
 }
 
 function formatInline(text: string): React.ReactNode {
-  // Simple inline formatting
-  // const parts: React.ReactNode[] = [];
   let remaining = text;
 
   // Bold **text**

@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.on('gateway-broadcast', handler);
       return () => ipcRenderer.removeListener('gateway-broadcast', handler);
     },
+    getToken: () => ipcRenderer.invoke('gateway:getToken'),
   },
   sessions: {
     list: (activeMinutes?: number) => ipcRenderer.invoke('sessions:list', activeMinutes),

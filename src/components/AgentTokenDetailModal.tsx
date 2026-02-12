@@ -41,6 +41,11 @@ export default function AgentTokenDetailModal({
 
     setLoading(true);
     try {
+      if (!(window as any).clawdbot?.tokens) {
+        setSessionLog([]);
+        setLoading(false);
+        return; // IPC not available (web mode)
+      }
       const log = await (window as any).clawdbot.tokens.log({
         agent,
         limit: 50,

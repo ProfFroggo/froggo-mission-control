@@ -10,10 +10,10 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 - Integer phases (1, 2, 3, 4): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
-- [ ] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
-- [ ] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
-- [ ] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
+- [x] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
+- [x] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
+- [x] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
+- [x] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
 
 ## Phase Details
 
@@ -32,10 +32,10 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 Plans:
 - [x] 01-01-PLAN.md — Remove credentials and PII from source (SEC-01, SEC-02, SEC-07) [Wave 1]
 - [x] 01-02-PLAN.md — Lock down attack surface (SEC-03, SEC-04 partial, SEC-05, SEC-06) [Wave 2]
-- [ ] 01-03-PLAN.md — Gap closure: Migrate notification-settings + snooze handlers to prepare() [Wave 3, gap_closure]
-- [ ] 01-04-PLAN.md — Gap closure: Migrate message folder + conversation pin handlers to prepare() [Wave 4, gap_closure]
-- [ ] 01-05-PLAN.md — Gap closure: Migrate task/attachment/library/inbox handlers to prepare() [Wave 5, gap_closure]
-- [ ] 01-06-PLAN.md — Gap closure: Migrate calendar/conversation/chat/sessions.db + final sweep [Wave 6, gap_closure]
+- [x] 01-03-PLAN.md — Gap closure: Migrate notification-settings + snooze handlers to prepare() [Wave 3, gap_closure]
+- [x] 01-04-PLAN.md — Gap closure: Migrate message folder + conversation pin handlers to prepare() [Wave 4, gap_closure]
+- [x] 01-05-PLAN.md — Gap closure: Migrate task/attachment/library/inbox handlers to prepare() [Wave 5, gap_closure]
+- [x] 01-06-PLAN.md — Gap closure: Migrate calendar/conversation/chat/sessions.db + final sweep [Wave 6, gap_closure]
 
 ### Phase 2: Fix Broken Features
 **Goal**: Every feature works and every data indicator reflects live reality
@@ -50,8 +50,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Fix data paths and CLI references (FIX-01, FIX-09, FIX-10 — repoint all DB/file paths to live locations, replace clawdbot CLI refs)
-- [ ] 02-02: Fix broken UI and IPC (FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-07, FIX-08 — spawn handler, missing AI IPC, layout key, Tailwind classes, avatar grouping, JSON.parse guard)
+- [x] 02-01-PLAN.md — Fix mechanical bugs: spawn handler, layout key, Tailwind hover, avatar grouping, JSON.parse guards, CLI strings, API key paths (FIX-02, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10) [Wave 1]
+- [x] 02-02-PLAN.md — Restore missing AI IPC handlers with security treatment: fix channel name mismatch, restore generateReply + getAnalysis with prepare() (FIX-03) [Wave 2]
 
 ### Phase 3: Functional Fixes
 **Goal**: App behaves correctly under all conditions including edge cases and race conditions
@@ -66,8 +66,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Fix routing and guards (FUNC-01, FUNC-02, FUNC-03, FUNC-04, FUNC-05 — agent routing table, error boundaries, null guards, notification debounce)
-- [ ] 03-02: Fix state and performance bugs (FUNC-06, FUNC-07, FUNC-08, FUNC-09, FUNC-10 — deduplicate gateway calls, fix phantom tasks, memo comparator, localStorage cap, double listeners)
+- [x] 03-01-PLAN.md — Fix routing and guards: 9-agent routing table, InboxPanel wiring, DMFeed error boundary, IPC null guards, notification debounce (FUNC-01 through FUNC-05) [Wave 1]
+- [x] 03-02-PLAN.md — Fix state and performance: merge session fetches, DB-sync phantom tasks, shared debounced refresh, Kanban memo comparator, localStorage cap (FUNC-06 through FUNC-10) [Wave 2]
 
 ### Phase 4: Cleanup & Debloat
 **Goal**: Lean codebase with no dead files, dead code, or broken styling
@@ -82,8 +82,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Delete dead code and files (CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05 — remove dead libs, dead panel exports, dead store fields, dead component code, .bak files)
-- [ ] 04-02: Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08 — replace non-standard CSS classes, remove debug output, fix shortcut collisions)
+- [x] 04-01-PLAN.md — Delete dead code and files (CLEAN-01 through CLEAN-05) [Wave 1]
+- [x] 04-02-PLAN.md — Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08) [Wave 1]
 
 ## Progress
 
@@ -92,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Hardening | 2/6 | Gap closure in progress | - |
-| 2. Fix Broken Features | 0/2 | Not started | - |
-| 3. Functional Fixes | 0/2 | Not started | - |
-| 4. Cleanup & Debloat | 0/2 | Not started | - |
+| 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
+| 2. Fix Broken Features | 2/2 | Complete | 2026-02-12 |
+| 3. Functional Fixes | 2/2 | Complete | 2026-02-12 |
+| 4. Cleanup & Debloat | 2/2 | Complete | 2026-02-12 |

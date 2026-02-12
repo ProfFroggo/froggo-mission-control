@@ -59,7 +59,6 @@ export default function SessionsFilter() {
   const { sessions, fetchSessions, connected } = useStore();
   const [filter, setFilter] = useState<ChannelFilter>('all');
   const [search, setSearch] = useState('');
-  const [_showDropdown, _setShowDropdown] = useState(false);
   const [folders, setFolders] = useState<MessageFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<number | null>(null);
   const [folderAssignments, setFolderAssignments] = useState<Record<string, number[]>>({});

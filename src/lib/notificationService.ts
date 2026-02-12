@@ -60,7 +60,7 @@ class NotificationService {
   private statsListeners: Set<(stats: NotificationStats) => void> = new Set();
   private cachedNotifications: Notification[] = [];
   private cachedStats: NotificationStats = { total: 0, unread: 0, urgent: 0, actionable: 0 };
-  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private refreshTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private safetyInterval: ReturnType<typeof setInterval> | null = null;
   private dismissedIds: Set<string> = new Set();
   private readIds: Set<string> = new Set();
@@ -187,26 +187,26 @@ class NotificationService {
    * Debounced to handle rapid-fire events
    */
   private handleTaskEvent() {
-    clearTimeout(this.refreshTimer!);
-    this.refreshTimer = setTimeout(() => this.refreshTasks(), 300);
+    clearTimeout(this.refreshTimers.get('task')!);
+    this.refreshTimers.set('task', setTimeout(() => this.refreshTasks(), 300));
   }
 
   /**
    * Event handler for approval events
-   * Debounced to handle rapid-fire events
+   * Debounced per-type to avoid cancelling unrelated refreshes
    */
   private handleApprovalEvent() {
-    clearTimeout(this.refreshTimer!);
-    this.refreshTimer = setTimeout(() => this.refreshApprovals(), 300);
+    clearTimeout(this.refreshTimers.get('approval')!);
+    this.refreshTimers.set('approval', setTimeout(() => this.refreshApprovals(), 300));
   }
 
   /**
    * Event handler for message events
-   * Debounced to handle rapid-fire events
+   * Debounced per-type to avoid cancelling unrelated refreshes
    */
   private handleMessageEvent() {
-    clearTimeout(this.refreshTimer!);
-    this.refreshTimer = setTimeout(() => this.refreshMessages(), 300);
+    clearTimeout(this.refreshTimers.get('message')!);
+    this.refreshTimers.set('message', setTimeout(() => this.refreshMessages(), 300));
   }
 
   /**
@@ -666,10 +666,10 @@ class NotificationService {
       clearInterval(this.safetyInterval);
       this.safetyInterval = null;
     }
-    if (this.refreshTimer) {
-      clearTimeout(this.refreshTimer);
-      this.refreshTimer = null;
+    for (const timer of this.refreshTimers.values()) {
+      clearTimeout(timer);
     }
+    this.refreshTimers.clear();
     this.listeners.clear();
     this.statsListeners.clear();
     this.initialized = false;

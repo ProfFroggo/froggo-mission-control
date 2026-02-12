@@ -68,7 +68,7 @@ const DEFAULT_LAYOUT: Layout[] = [
   { i: 'urgent', x: 6, y: 5, w: 2, h: 4 },
   { i: 'agents-count', x: 8, y: 5, w: 2, h: 4 },
   { i: 'new-content', x: 10, y: 5, w: 2, h: 4 },
-  { id: 'active-work', x: 0, y: 9, w: 8, h: 8 },
+  { i: 'active-work', x: 0, y: 9, w: 8, h: 8 },
   { i: 'calendar', x: 8, y: 9, w: 4, h: 4 },
   { i: 'weather', x: 8, y: 13, w: 2, h: 3 },
   { i: 'quick-stats', x: 10, y: 13, w: 2, h: 3 },
@@ -227,17 +227,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
   useEffect(() => {
     if (connected) {
-      fetchSessions();
-      const interval = setInterval(fetchSessions, 30000);
+      loadGatewaySessions();
+      const interval = setInterval(loadGatewaySessions, 30000);
       return () => clearInterval(interval);
     }
-  }, [connected, fetchSessions]);
-
-  useEffect(() => {
-    loadGatewaySessions();
-    const interval = setInterval(loadGatewaySessions, 30000);
-    return () => clearInterval(interval);
-  }, [loadGatewaySessions]);
+  }, [connected, loadGatewaySessions]);
 
   const handleLayoutChange = (newLayout: Layout[]) => {
     setLayout(newLayout);
