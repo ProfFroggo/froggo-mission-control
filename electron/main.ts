@@ -1002,27 +1002,32 @@ ipcMain.handle('tasks:sync', async (_, task: {
         return;
       }
       
-      // Task doesn't exist, create it via direct SQL for more control
-      const title = task.title.replace(/'/g, "''");
-      const desc = (task.description || '').replace(/'/g, "''");
-      const project = (task.project || 'Default').replace(/'/g, "''");
-      const dueStr = task.dueDate ? new Date(task.dueDate).toISOString() : null;
-      const nowMs = Date.now();
-      
-      const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES ('${task.id}', '${title}', '${desc}', '${task.status || 'todo'}', '${project}', '${task.assignedTo || ''}', '${task.priority || ''}', ${dueStr ? `'${dueStr}'` : 'NULL'}, ${nowMs}, ${nowMs})"`;
-      
-      safeLog.log('[Tasks] Creating task via SQL');
-      
-      exec(insertCmd, { timeout: 10000 }, (addError, addStdout, addStderr) => {
-        if (addError) {
-          safeLog.error('[Tasks] Create error:', addError.message);
-          safeLog.error('[Tasks] stderr:', addStderr);
-          resolve({ success: false, error: addError.message });
-        } else {
-          safeLog.log('[Tasks] Created:', task.id);
-          resolve({ success: true });
-        }
-      });
+      // Task doesn't exist, create it via parameterized query
+      try {
+        const dueStr = task.dueDate ? new Date(task.dueDate).toISOString() : null;
+        const nowMs = Date.now();
+
+        safeLog.log('[Tasks] Creating task via parameterized query');
+
+        prepare('INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+          task.id,
+          task.title,
+          task.description || '',
+          task.status || 'todo',
+          task.project || 'Default',
+          task.assignedTo || '',
+          task.priority || '',
+          dueStr,
+          nowMs,
+          nowMs
+        );
+
+        safeLog.log('[Tasks] Created:', task.id);
+        resolve({ success: true });
+      } catch (err: any) {
+        safeLog.error('[Tasks] Create error:', err.message);
+        resolve({ success: false, error: err.message });
+      }
     });
   });
 });
@@ -2061,25 +2066,13 @@ ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
 
 // List all folders with conversation counts
 ipcMain.handle('folders:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] List error:', error);
-        resolve({ success: false, folders: [] });
-        return;
-      }
-      
-      try {
-        const folders = JSON.parse(stdout || '[]');
-        resolve({ success: true, folders });
-      } catch (e) {
-        safeLog.error('[Folders] Parse error:', e);
-        resolve({ success: false, folders: [] });
-      }
-    });
-  });
+  try {
+    const folders = prepare('SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name').all();
+    return { success: true, folders };
+  } catch (error: any) {
+    safeLog.error('[Folders] List error:', error);
+    return { success: false, folders: [] };
+  }
 });
 
 // Create new folder
@@ -2087,148 +2080,95 @@ ipcMain.handle('folders:create', async (_, folder: { name: string; icon?: string
   const icon = folder.icon || '📁';
   const color = folder.color || '#6366f1';
   const description = folder.description || '';
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO message_folders (name, icon, color, description) VALUES ('${folder.name.replace(/'/g, "''")}', '${icon}', '${color}', '${description.replace(/'/g, "''")}'); SELECT last_insert_rowid()"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] Create error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      const folderId = parseInt(stdout.trim());
-      resolve({ success: true, folderId });
-    });
-  });
+
+  try {
+    const result = prepare('INSERT INTO message_folders (name, icon, color, description) VALUES (?, ?, ?, ?)').run(folder.name, icon, color, description);
+    return { success: true, folderId: Number(result.lastInsertRowid) };
+  } catch (error: any) {
+    safeLog.error('[Folders] Create error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Update folder properties
 ipcMain.handle('folders:update', async (_, folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => {
   const setParts: string[] = [];
-  
-  if (updates.name) setParts.push(`name = '${updates.name.replace(/'/g, "''")}'`);
-  if (updates.icon) setParts.push(`icon = '${updates.icon}'`);
-  if (updates.color) setParts.push(`color = '${updates.color}'`);
-  if (updates.description !== undefined) setParts.push(`description = '${updates.description.replace(/'/g, "''")}'`);
-  if (updates.sort_order !== undefined) setParts.push(`sort_order = ${updates.sort_order}`);
-  
+  const params: any[] = [];
+
+  if (updates.name) { setParts.push('name = ?'); params.push(updates.name); }
+  if (updates.icon) { setParts.push('icon = ?'); params.push(updates.icon); }
+  if (updates.color) { setParts.push('color = ?'); params.push(updates.color); }
+  if (updates.description !== undefined) { setParts.push('description = ?'); params.push(updates.description); }
+  if (updates.sort_order !== undefined) { setParts.push('sort_order = ?'); params.push(updates.sort_order); }
+
   if (setParts.length === 0) {
     return { success: false, error: 'No updates provided' };
   }
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Update error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+
+  params.push(folderId);
+
+  try {
+    db.prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Update error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete folder
 ipcMain.handle('folders:delete', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM message_folders WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Delete error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM message_folders WHERE id = ?').run(folderId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Assign conversation to folder
 ipcMain.handle('folders:assign', async (_, folderId: number, sessionKey: string, notes?: string) => {
-  const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL';
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (${folderId}, '${sessionKey.replace(/'/g, "''")}', ${notesValue})"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Assign error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (?, ?, ?)').run(folderId, sessionKey, notes || null);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Assign error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unassign conversation from folder
 ipcMain.handle('folders:unassign', async (_, folderId: number, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE folder_id = ${folderId} AND session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Unassign error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(folderId, sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Unassign error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get folders for a specific conversation
 ipcMain.handle('folders:for-conversation', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = '${sessionKey.replace(/'/g, "''")}' ORDER BY f.sort_order, f.name" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] Get for conversation error:', error);
-        resolve({ success: false, folders: [] });
-        return;
-      }
-      
-      try {
-        const folders = JSON.parse(stdout || '[]');
-        resolve({ success: true, folders });
-      } catch (e) {
-        safeLog.error('[Folders] Parse error:', e);
-        resolve({ success: false, folders: [] });
-      }
-    });
-  });
+  try {
+    const folders = prepare('SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = ? ORDER BY f.sort_order, f.name').all(sessionKey);
+    return { success: true, folders };
+  } catch (error: any) {
+    safeLog.error('[Folders] Get for conversation error:', error);
+    return { success: false, folders: [] };
+  }
 });
 
 // Get conversations in a folder
 ipcMain.handle('folders:conversations', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ${folderId} ORDER BY added_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] Get conversations error:', error);
-        resolve({ success: false, conversations: [] });
-        return;
-      }
-      
-      try {
-        const conversations = JSON.parse(stdout || '[]');
-        resolve({ success: true, conversations });
-      } catch (e) {
-        safeLog.error('[Folders] Parse error:', e);
-        resolve({ success: false, conversations: [] });
-      }
-    });
-  });
+  try {
+    const conversations = prepare('SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ? ORDER BY added_at DESC').all(folderId);
+    return { success: true, conversations };
+  } catch (error: any) {
+    safeLog.error('[Folders] Get conversations error:', error);
+    return { success: false, conversations: [] };
+  }
 });
 
 // ============== SMART FOLDER RULES HANDLERS ==============
@@ -2236,139 +2176,84 @@ ipcMain.handle('folders:conversations', async (_, folderId: number) => {
 
 // List all rules
 ipcMain.handle('folders:rules:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[FolderRules] List error:', error);
-        resolve({ success: false, rules: [] });
-        return;
-      }
-      
+  try {
+    const folders = prepare('SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1').all() as any[];
+    const rules = folders.map((f: any) => {
       try {
-        const folders = JSON.parse(stdout || '[]');
-        const rules = folders.map((f: any) => {
-          try {
-            const parsed = f.rules ? JSON.parse(f.rules) : null;
-            return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
-          } catch (e) {
-            return null;
-          }
-        }).filter(Boolean);
-        resolve({ success: true, rules });
+        const parsed = f.rules ? JSON.parse(f.rules) : null;
+        return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
       } catch (e) {
-        safeLog.error('[FolderRules] Parse error:', e);
-        resolve({ success: false, rules: [] });
+        return null;
       }
-    });
-  });
+    }).filter(Boolean);
+    return { success: true, rules };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] List error:', error);
+    return { success: false, rules: [] };
+  }
 });
 
 // Get rules for a specific folder
 ipcMain.handle('folders:rules:get', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT rules FROM message_folders WHERE id = ${folderId}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[FolderRules] Get error:', error);
-        resolve({ success: false, rule: null });
-        return;
-      }
-      
-      try {
-        const rows = JSON.parse(stdout || '[]');
-        if (rows.length > 0 && rows[0].rules) {
-          const rule = JSON.parse(rows[0].rules);
-          resolve({ success: true, rule });
-        } else {
-          resolve({ success: true, rule: null });
-        }
-      } catch (e) {
-        safeLog.error('[FolderRules] Parse error:', e);
-        resolve({ success: false, rule: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT rules FROM message_folders WHERE id = ?').get(folderId) as any;
+    if (row && row.rules) {
+      const rule = JSON.parse(row.rules);
+      return { success: true, rule };
+    }
+    return { success: true, rule: null };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Get error:', error);
+    return { success: false, rule: null };
+  }
 });
 
 // Save rules for a folder
 ipcMain.handle('folders:rules:save', async (_, folderId: number, rule: any) => {
-  const rulesJson = JSON.stringify(rule).replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET rules = '${rulesJson}', is_smart = 1 WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[FolderRules] Save error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    const rulesJson = JSON.stringify(rule);
+    prepare('UPDATE message_folders SET rules = ?, is_smart = 1 WHERE id = ?').run(rulesJson, folderId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Save error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete rules for a folder (make it non-smart)
 ipcMain.handle('folders:rules:delete', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[FolderRules] Delete error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ?').run(folderId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Auto-assign conversation based on rules
 ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversationData: any) => {
-  // First, load all smart folder rules
-  const listCmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL" -json`;
-  
-  return new Promise((resolve) => {
-    exec(listCmd, { timeout: 5000 }, async (error, stdout) => {
-      if (error) {
-        safeLog.error('[FolderRules] Auto-assign list error:', error);
-        resolve({ success: false, matchedFolderIds: [] });
-        return;
-      }
-      
+  try {
+    const folders = prepare('SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL').all() as any[];
+    const matchedFolderIds: number[] = [];
+
+    for (const folder of folders) {
       try {
-        const folders = JSON.parse(stdout || '[]');
-        const matchedFolderIds: number[] = [];
-        
-        for (const folder of folders) {
-          try {
-            const rule = JSON.parse(folder.rules);
-            // Import and use rule evaluation logic (simplified here)
-            // In production, this would use the folderRules.ts logic
-            if (evaluateRuleSimple(rule, conversationData)) {
-              matchedFolderIds.push(folder.id);
-              
-              // Auto-assign to folder
-              const assignCmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (${folder.id}, '${sessionKey.replace(/'/g, "''")}', 'rule')"`;
-              exec(assignCmd, { timeout: 5000 }, () => {});
-            }
-          } catch (e) {
-            safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
-          }
+        const rule = JSON.parse(folder.rules);
+        if (evaluateRuleSimple(rule, conversationData)) {
+          matchedFolderIds.push(folder.id);
+          prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(folder.id, sessionKey, 'rule');
         }
-        
-        resolve({ success: true, matchedFolderIds });
       } catch (e) {
-        safeLog.error('[FolderRules] Auto-assign parse error:', e);
-        resolve({ success: false, matchedFolderIds: [] });
+        safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
       }
-    });
-  });
+    }
+
+    return { success: true, matchedFolderIds };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Auto-assign error:', error);
+    return { success: false, matchedFolderIds: [] };
+  }
 });
 
 // Simple rule evaluation (matching subset of folderRules.ts logic)
