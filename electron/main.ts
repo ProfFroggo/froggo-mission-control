@@ -17,7 +17,7 @@ import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsS
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
-import { db, prepare, getScheduleDb, getSecurityDb, closeDb } from './database';
+import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
 import { validateFsPath } from './fs-validation';
 
 // ============== AGENT REGISTRY ==============
@@ -88,6 +88,23 @@ function getAgentsFromDB(): any[] {
     return [];
   }
 }
+
+ipcMain.handle('gateway:getToken', async () => {
+  const configPaths = [
+    path.join(os.homedir(), '.openclaw', 'openclaw.json'),
+    path.join(os.homedir(), '.clawdbot', 'openclaw.json'),
+  ];
+  for (const cfgPath of configPaths) {
+    try {
+      if (fs.existsSync(cfgPath)) {
+        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+        const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
+        if (token) return token;
+      }
+    } catch {}
+  }
+  return '';
+});
 
 ipcMain.handle('agents:list', async () => {
   return new Promise((resolve) => {
@@ -893,7 +910,7 @@ ipcMain.handle('voice:getModelUrl', async () => {
 // Load ElevenLabs API key from env file if not in environment
 let elevenlabsApiKey = process.env.ELEVENLABS_API_KEY || '';
 try {
-  const envPath = path.join(os.homedir(), '.clawdbot', 'elevenlabs.env');
+  const envPath = path.join(os.homedir(), '.openclaw', 'elevenlabs.env');
   if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, 'utf-8');
     const match = content.match(/ELEVENLABS_API_KEY=(.+)/);
@@ -1002,27 +1019,32 @@ ipcMain.handle('tasks:sync', async (_, task: {
         return;
       }
       
-      // Task doesn't exist, create it via direct SQL for more control
-      const title = task.title.replace(/'/g, "''");
-      const desc = (task.description || '').replace(/'/g, "''");
-      const project = (task.project || 'Default').replace(/'/g, "''");
-      const dueStr = task.dueDate ? new Date(task.dueDate).toISOString() : null;
-      const nowMs = Date.now();
-      
-      const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES ('${task.id}', '${title}', '${desc}', '${task.status || 'todo'}', '${project}', '${task.assignedTo || ''}', '${task.priority || ''}', ${dueStr ? `'${dueStr}'` : 'NULL'}, ${nowMs}, ${nowMs})"`;
-      
-      safeLog.log('[Tasks] Creating task via SQL');
-      
-      exec(insertCmd, { timeout: 10000 }, (addError, addStdout, addStderr) => {
-        if (addError) {
-          safeLog.error('[Tasks] Create error:', addError.message);
-          safeLog.error('[Tasks] stderr:', addStderr);
-          resolve({ success: false, error: addError.message });
-        } else {
-          safeLog.log('[Tasks] Created:', task.id);
-          resolve({ success: true });
-        }
-      });
+      // Task doesn't exist, create it via parameterized query
+      try {
+        const dueStr = task.dueDate ? new Date(task.dueDate).toISOString() : null;
+        const nowMs = Date.now();
+
+        safeLog.log('[Tasks] Creating task via parameterized query');
+
+        prepare('INSERT OR REPLACE INTO tasks (id, title, description, status, project, assigned_to, priority, due_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+          task.id,
+          task.title,
+          task.description || '',
+          task.status || 'todo',
+          task.project || 'Default',
+          task.assignedTo || '',
+          task.priority || '',
+          dueStr,
+          nowMs,
+          nowMs
+        );
+
+        safeLog.log('[Tasks] Created:', task.id);
+        resolve({ success: true });
+      } catch (err: any) {
+        safeLog.error('[Tasks] Create error:', err.message);
+        resolve({ success: false, error: err.message });
+      }
     });
   });
 });
@@ -1033,227 +1055,192 @@ ipcMain.handle('tasks:sync', async (_, task: {
 
 // Get notification settings for a specific conversation
 ipcMain.handle('notification-settings:get', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Get error:', error);
-        resolve({ success: false, settings: null });
-        return;
-      }
-      
-      try {
-        const settings = JSON.parse(stdout || '[]');
-        resolve({ success: true, settings: settings[0] || null });
-      } catch (e) {
-        safeLog.error('[NotificationSettings] Parse error:', e);
-        resolve({ success: false, settings: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+    return { success: true, settings: row || null };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Get error:', error);
+    return { success: false, settings: null };
+  }
 });
 
 // Set/update notification settings for a conversation
 ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settings: any) => {
-  // First check if settings exist
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Check error:', error);
-        resolve({ success: false, error: error.message });
-        return;
+  try {
+    // Check if settings exist
+    const existing = prepare('SELECT id FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+
+    if (existing) {
+      // UPDATE existing settings — build dynamic SET clause with parameterized values
+      const setParts: string[] = [];
+      const params: any[] = [];
+
+      if (settings.notification_level !== undefined) {
+        setParts.push('notification_level = ?'); params.push(settings.notification_level);
       }
-      
-      const existing = JSON.parse(stdout || '[]');
-      const isUpdate = existing.length > 0;
-      
-      // Build SQL based on update or insert
-      let cmd: string;
-      
-      if (isUpdate) {
-        // UPDATE existing settings
-        const setParts: string[] = [];
-        
-        if (settings.notification_level !== undefined) 
-          setParts.push(`notification_level = '${settings.notification_level}'`);
-        if (settings.sound_enabled !== undefined) 
-          setParts.push(`sound_enabled = ${settings.sound_enabled ? 1 : 0}`);
-        if (settings.sound_type !== undefined) 
-          setParts.push(`sound_type = '${settings.sound_type}'`);
-        if (settings.desktop_notifications !== undefined) 
-          setParts.push(`desktop_notifications = ${settings.desktop_notifications ? 1 : 0}`);
-        if (settings.quiet_hours_enabled !== undefined) 
-          setParts.push(`quiet_hours_enabled = ${settings.quiet_hours_enabled ? 1 : 0}`);
-        if (settings.quiet_start !== undefined) 
-          setParts.push(`quiet_start = '${settings.quiet_start}'`);
-        if (settings.quiet_end !== undefined) 
-          setParts.push(`quiet_end = '${settings.quiet_end}'`);
-        if (settings.keyword_alerts !== undefined) 
-          setParts.push(`keyword_alerts = '${JSON.stringify(settings.keyword_alerts).replace(/'/g, "''")}'`);
-        if (settings.priority_level !== undefined) 
-          setParts.push(`priority_level = '${settings.priority_level}'`);
-        if (settings.mute_until !== undefined) 
-          setParts.push(`mute_until = ${settings.mute_until ? `'${settings.mute_until}'` : 'NULL'}`);
-        if (settings.notification_frequency !== undefined) 
-          setParts.push(`notification_frequency = '${settings.notification_frequency}'`);
-        if (settings.show_message_preview !== undefined) 
-          setParts.push(`show_message_preview = ${settings.show_message_preview ? 1 : 0}`);
-        if (settings.badge_count_enabled !== undefined) 
-          setParts.push(`badge_count_enabled = ${settings.badge_count_enabled ? 1 : 0}`);
-        if (settings.notes !== undefined) 
-          setParts.push(`notes = '${(settings.notes || '').replace(/'/g, "''")}'`);
-        
-        if (setParts.length === 0) {
-          resolve({ success: false, error: 'No updates provided' });
-          return;
-        }
-        
-        cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET ${setParts.join(', ')} WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-      } else {
-        // INSERT new settings
-        const notificationLevel = settings.notification_level || 'all';
-        const soundEnabled = settings.sound_enabled !== undefined ? (settings.sound_enabled ? 1 : 0) : 1;
-        const soundType = settings.sound_type || 'default';
-        const desktopNotifications = settings.desktop_notifications !== undefined ? (settings.desktop_notifications ? 1 : 0) : 1;
-        const quietHoursEnabled = settings.quiet_hours_enabled ? 1 : 0;
-        const quietStart = settings.quiet_start || 'NULL';
-        const quietEnd = settings.quiet_end || 'NULL';
-        const keywordAlerts = settings.keyword_alerts ? `'${JSON.stringify(settings.keyword_alerts).replace(/'/g, "''")}'` : 'NULL';
-        const priorityLevel = settings.priority_level || 'normal';
-        const muteUntil = settings.mute_until ? `'${settings.mute_until}'` : 'NULL';
-        const notificationFrequency = settings.notification_frequency || 'instant';
-        const showMessagePreview = settings.show_message_preview !== undefined ? (settings.show_message_preview ? 1 : 0) : 1;
-        const badgeCountEnabled = settings.badge_count_enabled !== undefined ? (settings.badge_count_enabled ? 1 : 0) : 1;
-        const notes = settings.notes ? `'${settings.notes.replace(/'/g, "''")}'` : 'NULL';
-        
-        cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_notification_settings (session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, notes) VALUES ('${sessionKey.replace(/'/g, "''")}', '${notificationLevel}', ${soundEnabled}, '${soundType}', ${desktopNotifications}, ${quietHoursEnabled}, ${quietStart}, ${quietEnd}, ${keywordAlerts}, '${priorityLevel}', ${muteUntil}, '${notificationFrequency}', ${showMessagePreview}, ${badgeCountEnabled}, ${notes})"`;
+      if (settings.sound_enabled !== undefined) {
+        setParts.push('sound_enabled = ?'); params.push(settings.sound_enabled ? 1 : 0);
       }
-      
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error('[NotificationSettings] Set error:', error);
-          resolve({ success: false, error: error.message });
-          return;
-        }
-        
-        resolve({ success: true });
-      });
-    });
-  });
+      if (settings.sound_type !== undefined) {
+        setParts.push('sound_type = ?'); params.push(settings.sound_type);
+      }
+      if (settings.desktop_notifications !== undefined) {
+        setParts.push('desktop_notifications = ?'); params.push(settings.desktop_notifications ? 1 : 0);
+      }
+      if (settings.quiet_hours_enabled !== undefined) {
+        setParts.push('quiet_hours_enabled = ?'); params.push(settings.quiet_hours_enabled ? 1 : 0);
+      }
+      if (settings.quiet_start !== undefined) {
+        setParts.push('quiet_start = ?'); params.push(settings.quiet_start);
+      }
+      if (settings.quiet_end !== undefined) {
+        setParts.push('quiet_end = ?'); params.push(settings.quiet_end);
+      }
+      if (settings.keyword_alerts !== undefined) {
+        setParts.push('keyword_alerts = ?'); params.push(JSON.stringify(settings.keyword_alerts));
+      }
+      if (settings.priority_level !== undefined) {
+        setParts.push('priority_level = ?'); params.push(settings.priority_level);
+      }
+      if (settings.mute_until !== undefined) {
+        setParts.push('mute_until = ?'); params.push(settings.mute_until || null);
+      }
+      if (settings.notification_frequency !== undefined) {
+        setParts.push('notification_frequency = ?'); params.push(settings.notification_frequency);
+      }
+      if (settings.show_message_preview !== undefined) {
+        setParts.push('show_message_preview = ?'); params.push(settings.show_message_preview ? 1 : 0);
+      }
+      if (settings.badge_count_enabled !== undefined) {
+        setParts.push('badge_count_enabled = ?'); params.push(settings.badge_count_enabled ? 1 : 0);
+      }
+      if (settings.notes !== undefined) {
+        setParts.push('notes = ?'); params.push(settings.notes || '');
+      }
+
+      if (setParts.length === 0) {
+        return { success: false, error: 'No updates provided' };
+      }
+
+      params.push(sessionKey);
+      db.prepare('UPDATE conversation_notification_settings SET ' + setParts.join(', ') + ' WHERE session_key = ?').run(...params);
+    } else {
+      // INSERT new settings
+      const notificationLevel = settings.notification_level || 'all';
+      const soundEnabled = settings.sound_enabled !== undefined ? (settings.sound_enabled ? 1 : 0) : 1;
+      const soundType = settings.sound_type || 'default';
+      const desktopNotifications = settings.desktop_notifications !== undefined ? (settings.desktop_notifications ? 1 : 0) : 1;
+      const quietHoursEnabled = settings.quiet_hours_enabled ? 1 : 0;
+      const quietStart = settings.quiet_start || null;
+      const quietEnd = settings.quiet_end || null;
+      const keywordAlerts = settings.keyword_alerts ? JSON.stringify(settings.keyword_alerts) : null;
+      const priorityLevel = settings.priority_level || 'normal';
+      const muteUntil = settings.mute_until || null;
+      const notificationFrequency = settings.notification_frequency || 'instant';
+      const showMessagePreview = settings.show_message_preview !== undefined ? (settings.show_message_preview ? 1 : 0) : 1;
+      const badgeCountEnabled = settings.badge_count_enabled !== undefined ? (settings.badge_count_enabled ? 1 : 0) : 1;
+      const notes = settings.notes || null;
+
+      prepare('INSERT INTO conversation_notification_settings (session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+        sessionKey, notificationLevel, soundEnabled, soundType, desktopNotifications,
+        quietHoursEnabled, quietStart, quietEnd, keywordAlerts, priorityLevel,
+        muteUntil, notificationFrequency, showMessagePreview, badgeCountEnabled, notes
+      );
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Set error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete conversation-specific settings
 ipcMain.handle('notification-settings:delete', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Delete error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_notification_settings WHERE session_key = ?').run(sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get global notification defaults
 ipcMain.handle('notification-settings:global-defaults', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM global_notification_defaults WHERE id = 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Get global defaults error:', error);
-        resolve({ success: false, defaults: null });
-        return;
-      }
-      
-      try {
-        const defaults = JSON.parse(stdout || '[]');
-        resolve({ success: true, defaults: defaults[0] || null });
-      } catch (e) {
-        safeLog.error('[NotificationSettings] Parse error:', e);
-        resolve({ success: false, defaults: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM global_notification_defaults WHERE id = 1').get();
+    return { success: true, defaults: row || null };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Get global defaults error:', error);
+    return { success: false, defaults: null };
+  }
 });
 
 // Update global notification defaults
 ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults: any) => {
-  const setParts: string[] = [];
-  
-  if (defaults.default_notification_level !== undefined) 
-    setParts.push(`default_notification_level = '${defaults.default_notification_level}'`);
-  if (defaults.default_sound_enabled !== undefined) 
-    setParts.push(`default_sound_enabled = ${defaults.default_sound_enabled ? 1 : 0}`);
-  if (defaults.default_sound_type !== undefined) 
-    setParts.push(`default_sound_type = '${defaults.default_sound_type}'`);
-  if (defaults.default_desktop_notifications !== undefined) 
-    setParts.push(`default_desktop_notifications = ${defaults.default_desktop_notifications ? 1 : 0}`);
-  if (defaults.quiet_hours_enabled !== undefined) 
-    setParts.push(`quiet_hours_enabled = ${defaults.quiet_hours_enabled ? 1 : 0}`);
-  if (defaults.quiet_start !== undefined) 
-    setParts.push(`quiet_start = '${defaults.quiet_start}'`);
-  if (defaults.quiet_end !== undefined) 
-    setParts.push(`quiet_end = '${defaults.quiet_end}'`);
-  if (defaults.default_priority_level !== undefined) 
-    setParts.push(`default_priority_level = '${defaults.default_priority_level}'`);
-  if (defaults.do_not_disturb_enabled !== undefined) 
-    setParts.push(`do_not_disturb_enabled = ${defaults.do_not_disturb_enabled ? 1 : 0}`);
-  if (defaults.dnd_until !== undefined) 
-    setParts.push(`dnd_until = ${defaults.dnd_until ? `'${defaults.dnd_until}'` : 'NULL'}`);
-  if (defaults.enable_batching !== undefined) 
-    setParts.push(`enable_batching = ${defaults.enable_batching ? 1 : 0}`);
-  if (defaults.batch_interval_minutes !== undefined) 
-    setParts.push(`batch_interval_minutes = ${defaults.batch_interval_minutes}`);
-  
-  if (setParts.length === 0) {
-    return { success: false, error: 'No updates provided' };
+  try {
+    const setParts: string[] = [];
+    const params: any[] = [];
+
+    if (defaults.default_notification_level !== undefined) {
+      setParts.push('default_notification_level = ?'); params.push(defaults.default_notification_level);
+    }
+    if (defaults.default_sound_enabled !== undefined) {
+      setParts.push('default_sound_enabled = ?'); params.push(defaults.default_sound_enabled ? 1 : 0);
+    }
+    if (defaults.default_sound_type !== undefined) {
+      setParts.push('default_sound_type = ?'); params.push(defaults.default_sound_type);
+    }
+    if (defaults.default_desktop_notifications !== undefined) {
+      setParts.push('default_desktop_notifications = ?'); params.push(defaults.default_desktop_notifications ? 1 : 0);
+    }
+    if (defaults.quiet_hours_enabled !== undefined) {
+      setParts.push('quiet_hours_enabled = ?'); params.push(defaults.quiet_hours_enabled ? 1 : 0);
+    }
+    if (defaults.quiet_start !== undefined) {
+      setParts.push('quiet_start = ?'); params.push(defaults.quiet_start);
+    }
+    if (defaults.quiet_end !== undefined) {
+      setParts.push('quiet_end = ?'); params.push(defaults.quiet_end);
+    }
+    if (defaults.default_priority_level !== undefined) {
+      setParts.push('default_priority_level = ?'); params.push(defaults.default_priority_level);
+    }
+    if (defaults.do_not_disturb_enabled !== undefined) {
+      setParts.push('do_not_disturb_enabled = ?'); params.push(defaults.do_not_disturb_enabled ? 1 : 0);
+    }
+    if (defaults.dnd_until !== undefined) {
+      setParts.push('dnd_until = ?'); params.push(defaults.dnd_until || null);
+    }
+    if (defaults.enable_batching !== undefined) {
+      setParts.push('enable_batching = ?'); params.push(defaults.enable_batching ? 1 : 0);
+    }
+    if (defaults.batch_interval_minutes !== undefined) {
+      setParts.push('batch_interval_minutes = ?'); params.push(defaults.batch_interval_minutes);
+    }
+
+    if (setParts.length === 0) {
+      return { success: false, error: 'No updates provided' };
+    }
+
+    db.prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Set global defaults error:', error);
+    return { success: false, error: error.message };
   }
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE global_notification_defaults SET ${setParts.join(', ')} WHERE id = 1"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Set global defaults error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
 });
 
 // Get effective settings (with global fallback)
 ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM effective_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Get effective error:', error);
-        resolve({ success: false, settings: null });
-        return;
-      }
-      
-      try {
-        const settings = JSON.parse(stdout || '[]');
-        resolve({ success: true, settings: settings[0] || null });
-      } catch (e) {
-        safeLog.error('[NotificationSettings] Parse error:', e);
-        resolve({ success: false, settings: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
+    return { success: true, settings: row || null };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Get effective error:', error);
+    return { success: false, settings: null };
+  }
 });
 
 // Quick mute conversation
@@ -1904,59 +1891,37 @@ ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string
 
 // ============== TASK ATTACHMENTS IPC HANDLERS ==============
 ipcMain.handle('attachments:list', async (_, taskId: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id='${taskId}' ORDER BY uploaded_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Attachments] List error:', error);
-        resolve({ success: false, attachments: [] });
-        return;
-      }
-      try {
-        const attachments = JSON.parse(stdout || '[]');
-        resolve({ success: true, attachments });
-      } catch (e) {
-        safeLog.error('[Attachments] Parse error:', e);
-        resolve({ success: false, attachments: [] });
-      }
-    });
-  });
+  try {
+    const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id = ? ORDER BY uploaded_at DESC').all(taskId);
+    return { success: true, attachments };
+  } catch (error: any) {
+    safeLog.error('[Attachments] List error:', error);
+    return { success: false, attachments: [] };
+  }
 });
 
 // List ALL task attachments (for Files view)
 ipcMain.handle('attachments:listAll', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Attachments] ListAll error:', error);
-        resolve({ success: false, attachments: [] });
-        return;
-      }
-      try {
-        const attachments = JSON.parse(stdout || '[]');
-        resolve({ success: true, attachments });
-      } catch (e) {
-        safeLog.error('[Attachments] Parse error:', e);
-        resolve({ success: false, attachments: [] });
-      }
-    });
-  });
+  try {
+    const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC').all();
+    return { success: true, attachments };
+  } catch (error: any) {
+    safeLog.error('[Attachments] ListAll error:', error);
+    return { success: false, attachments: [] };
+  }
 });
 
 ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, category: string = 'deliverable', uploadedBy: string = 'user') => {
   const filename = path.basename(filePath);
-  
+
   // Get file stats
   let fileSize = 0;
   let mimeType = 'application/octet-stream';
-  
+
   try {
     const stats = fs.statSync(filePath);
     fileSize = stats.size;
-    
+
     // Simple MIME type detection based on extension
     const ext = path.extname(filePath).toLowerCase();
     const mimeTypes: Record<string, string> = {
@@ -1981,85 +1946,62 @@ ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, ca
     safeLog.error('[Attachments] File stat error:', e);
     return { success: false, error: 'File not accessible' };
   }
-  
+
   const now = Date.now();
-  const escapedPath = filePath.replace(/'/g, "''");
-  const escapedFilename = filename.replace(/'/g, "''");
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO task_attachments (task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at) VALUES ('${taskId}', '${escapedPath}', '${escapedFilename}', ${fileSize}, '${mimeType}', '${category}', '${uploadedBy}', ${now}); SELECT last_insert_rowid()"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Attachments] Add error:', error);
-        resolve({ success: false, error: error.message });
-        return;
+
+  try {
+    const result = prepare('INSERT INTO task_attachments (task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      taskId, filePath, filename, fileSize, mimeType, category, uploadedBy, now
+    );
+
+    const attachmentId = Number(result.lastInsertRowid);
+
+    // Log activity (fire-and-forget CLI call)
+    const activityCmd = `froggo-db task-activity "${taskId}" "file_attached" "Attached: ${filename} (${category})" --details "${filePath}"`;
+    exec(activityCmd, () => {});
+
+    return {
+      success: true,
+      attachment: {
+        id: attachmentId,
+        task_id: taskId,
+        file_path: filePath,
+        filename,
+        file_size: fileSize,
+        mime_type: mimeType,
+        category,
+        uploaded_by: uploadedBy,
+        uploaded_at: now
       }
-      
-      const attachmentId = parseInt(stdout.trim());
-      
-      // Log activity
-      const activityCmd = `froggo-db task-activity "${taskId}" "file_attached" "Attached: ${escapedFilename} (${category})" --details "${escapedPath}"`;
-      exec(activityCmd, () => {});
-      
-      resolve({ 
-        success: true, 
-        attachment: {
-          id: attachmentId,
-          task_id: taskId,
-          file_path: filePath,
-          filename,
-          file_size: fileSize,
-          mime_type: mimeType,
-          category,
-          uploaded_by: uploadedBy,
-          uploaded_at: now
-        }
-      });
-    });
-  });
+    };
+  } catch (error: any) {
+    safeLog.error('[Attachments] Add error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('attachments:delete', async (_, attachmentId: number) => {
-  // Get attachment info first for activity log
-  const getCmd = `sqlite3 "${froggoDbPath}" "SELECT task_id, filename FROM task_attachments WHERE id=${attachmentId}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
-      if (getError) {
-        resolve({ success: false, error: 'Attachment not found' });
-        return;
-      }
-      
-      try {
-        const attachments = JSON.parse(getStdout);
-        if (!attachments || attachments.length === 0) {
-          resolve({ success: false, error: 'Attachment not found' });
-          return;
-        }
-        
-        const { task_id, filename } = attachments[0];
-        
-        // Delete attachment
-        const deleteCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM task_attachments WHERE id=${attachmentId}"`;
-        exec(deleteCmd, { timeout: 5000 }, (deleteError) => {
-          if (deleteError) {
-            resolve({ success: false, error: deleteError.message });
-            return;
-          }
-          
-          // Log activity
-          const escapedFilename = filename.replace(/'/g, "''");
-          const activityCmd = `froggo-db task-activity "${task_id}" "file_deleted" "Deleted attachment: ${escapedFilename}"`;
-          exec(activityCmd, () => {});
-          
-          resolve({ success: true });
-        });
-      } catch (e) {
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    // Get attachment info first for activity log
+    const attachment = prepare('SELECT task_id, filename FROM task_attachments WHERE id = ?').get(attachmentId) as any;
+    if (!attachment) {
+      return { success: false, error: 'Attachment not found' };
+    }
+
+    const { task_id, filename } = attachment;
+
+    // Delete attachment
+    prepare('DELETE FROM task_attachments WHERE id = ?').run(attachmentId);
+
+    // Log activity (fire-and-forget CLI call)
+    const activityCmd = `froggo-db task-activity "${task_id}" "file_deleted" "Deleted attachment: ${filename}"`;
+    exec(activityCmd, () => {});
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Attachments] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('attachments:open', async (_, filePath: string) => {
@@ -2096,25 +2038,13 @@ ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
 
 // List all folders with conversation counts
 ipcMain.handle('folders:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] List error:', error);
-        resolve({ success: false, folders: [] });
-        return;
-      }
-      
-      try {
-        const folders = JSON.parse(stdout || '[]');
-        resolve({ success: true, folders });
-      } catch (e) {
-        safeLog.error('[Folders] Parse error:', e);
-        resolve({ success: false, folders: [] });
-      }
-    });
-  });
+  try {
+    const folders = prepare('SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name').all();
+    return { success: true, folders };
+  } catch (error: any) {
+    safeLog.error('[Folders] List error:', error);
+    return { success: false, folders: [] };
+  }
 });
 
 // Create new folder
@@ -2122,148 +2052,95 @@ ipcMain.handle('folders:create', async (_, folder: { name: string; icon?: string
   const icon = folder.icon || '📁';
   const color = folder.color || '#6366f1';
   const description = folder.description || '';
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO message_folders (name, icon, color, description) VALUES ('${folder.name.replace(/'/g, "''")}', '${icon}', '${color}', '${description.replace(/'/g, "''")}'); SELECT last_insert_rowid()"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] Create error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      const folderId = parseInt(stdout.trim());
-      resolve({ success: true, folderId });
-    });
-  });
+
+  try {
+    const result = prepare('INSERT INTO message_folders (name, icon, color, description) VALUES (?, ?, ?, ?)').run(folder.name, icon, color, description);
+    return { success: true, folderId: Number(result.lastInsertRowid) };
+  } catch (error: any) {
+    safeLog.error('[Folders] Create error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Update folder properties
 ipcMain.handle('folders:update', async (_, folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => {
   const setParts: string[] = [];
-  
-  if (updates.name) setParts.push(`name = '${updates.name.replace(/'/g, "''")}'`);
-  if (updates.icon) setParts.push(`icon = '${updates.icon}'`);
-  if (updates.color) setParts.push(`color = '${updates.color}'`);
-  if (updates.description !== undefined) setParts.push(`description = '${updates.description.replace(/'/g, "''")}'`);
-  if (updates.sort_order !== undefined) setParts.push(`sort_order = ${updates.sort_order}`);
-  
+  const params: any[] = [];
+
+  if (updates.name) { setParts.push('name = ?'); params.push(updates.name); }
+  if (updates.icon) { setParts.push('icon = ?'); params.push(updates.icon); }
+  if (updates.color) { setParts.push('color = ?'); params.push(updates.color); }
+  if (updates.description !== undefined) { setParts.push('description = ?'); params.push(updates.description); }
+  if (updates.sort_order !== undefined) { setParts.push('sort_order = ?'); params.push(updates.sort_order); }
+
   if (setParts.length === 0) {
     return { success: false, error: 'No updates provided' };
   }
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Update error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+
+  params.push(folderId);
+
+  try {
+    db.prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Update error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete folder
 ipcMain.handle('folders:delete', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM message_folders WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Delete error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM message_folders WHERE id = ?').run(folderId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Assign conversation to folder
 ipcMain.handle('folders:assign', async (_, folderId: number, sessionKey: string, notes?: string) => {
-  const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL';
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (${folderId}, '${sessionKey.replace(/'/g, "''")}', ${notesValue})"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Assign error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (?, ?, ?)').run(folderId, sessionKey, notes || null);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Assign error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unassign conversation from folder
 ipcMain.handle('folders:unassign', async (_, folderId: number, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE folder_id = ${folderId} AND session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Folders] Unassign error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(folderId, sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Folders] Unassign error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get folders for a specific conversation
 ipcMain.handle('folders:for-conversation', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = '${sessionKey.replace(/'/g, "''")}' ORDER BY f.sort_order, f.name" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] Get for conversation error:', error);
-        resolve({ success: false, folders: [] });
-        return;
-      }
-      
-      try {
-        const folders = JSON.parse(stdout || '[]');
-        resolve({ success: true, folders });
-      } catch (e) {
-        safeLog.error('[Folders] Parse error:', e);
-        resolve({ success: false, folders: [] });
-      }
-    });
-  });
+  try {
+    const folders = prepare('SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = ? ORDER BY f.sort_order, f.name').all(sessionKey);
+    return { success: true, folders };
+  } catch (error: any) {
+    safeLog.error('[Folders] Get for conversation error:', error);
+    return { success: false, folders: [] };
+  }
 });
 
 // Get conversations in a folder
 ipcMain.handle('folders:conversations', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ${folderId} ORDER BY added_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Folders] Get conversations error:', error);
-        resolve({ success: false, conversations: [] });
-        return;
-      }
-      
-      try {
-        const conversations = JSON.parse(stdout || '[]');
-        resolve({ success: true, conversations });
-      } catch (e) {
-        safeLog.error('[Folders] Parse error:', e);
-        resolve({ success: false, conversations: [] });
-      }
-    });
-  });
+  try {
+    const conversations = prepare('SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ? ORDER BY added_at DESC').all(folderId);
+    return { success: true, conversations };
+  } catch (error: any) {
+    safeLog.error('[Folders] Get conversations error:', error);
+    return { success: false, conversations: [] };
+  }
 });
 
 // ============== SMART FOLDER RULES HANDLERS ==============
@@ -2271,139 +2148,84 @@ ipcMain.handle('folders:conversations', async (_, folderId: number) => {
 
 // List all rules
 ipcMain.handle('folders:rules:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[FolderRules] List error:', error);
-        resolve({ success: false, rules: [] });
-        return;
-      }
-      
+  try {
+    const folders = prepare('SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1').all() as any[];
+    const rules = folders.map((f: any) => {
       try {
-        const folders = JSON.parse(stdout || '[]');
-        const rules = folders.map((f: any) => {
-          try {
-            const parsed = f.rules ? JSON.parse(f.rules) : null;
-            return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
-          } catch (e) {
-            return null;
-          }
-        }).filter(Boolean);
-        resolve({ success: true, rules });
+        const parsed = f.rules ? JSON.parse(f.rules) : null;
+        return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
       } catch (e) {
-        safeLog.error('[FolderRules] Parse error:', e);
-        resolve({ success: false, rules: [] });
+        return null;
       }
-    });
-  });
+    }).filter(Boolean);
+    return { success: true, rules };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] List error:', error);
+    return { success: false, rules: [] };
+  }
 });
 
 // Get rules for a specific folder
 ipcMain.handle('folders:rules:get', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT rules FROM message_folders WHERE id = ${folderId}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[FolderRules] Get error:', error);
-        resolve({ success: false, rule: null });
-        return;
-      }
-      
-      try {
-        const rows = JSON.parse(stdout || '[]');
-        if (rows.length > 0 && rows[0].rules) {
-          const rule = JSON.parse(rows[0].rules);
-          resolve({ success: true, rule });
-        } else {
-          resolve({ success: true, rule: null });
-        }
-      } catch (e) {
-        safeLog.error('[FolderRules] Parse error:', e);
-        resolve({ success: false, rule: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT rules FROM message_folders WHERE id = ?').get(folderId) as any;
+    if (row && row.rules) {
+      const rule = JSON.parse(row.rules);
+      return { success: true, rule };
+    }
+    return { success: true, rule: null };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Get error:', error);
+    return { success: false, rule: null };
+  }
 });
 
 // Save rules for a folder
 ipcMain.handle('folders:rules:save', async (_, folderId: number, rule: any) => {
-  const rulesJson = JSON.stringify(rule).replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET rules = '${rulesJson}', is_smart = 1 WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[FolderRules] Save error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    const rulesJson = JSON.stringify(rule);
+    prepare('UPDATE message_folders SET rules = ?, is_smart = 1 WHERE id = ?').run(rulesJson, folderId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Save error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete rules for a folder (make it non-smart)
 ipcMain.handle('folders:rules:delete', async (_, folderId: number) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ${folderId}"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[FolderRules] Delete error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ?').run(folderId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Auto-assign conversation based on rules
 ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversationData: any) => {
-  // First, load all smart folder rules
-  const listCmd = `sqlite3 "${froggoDbPath}" "SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL" -json`;
-  
-  return new Promise((resolve) => {
-    exec(listCmd, { timeout: 5000 }, async (error, stdout) => {
-      if (error) {
-        safeLog.error('[FolderRules] Auto-assign list error:', error);
-        resolve({ success: false, matchedFolderIds: [] });
-        return;
-      }
-      
+  try {
+    const folders = prepare('SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL').all() as any[];
+    const matchedFolderIds: number[] = [];
+
+    for (const folder of folders) {
       try {
-        const folders = JSON.parse(stdout || '[]');
-        const matchedFolderIds: number[] = [];
-        
-        for (const folder of folders) {
-          try {
-            const rule = JSON.parse(folder.rules);
-            // Import and use rule evaluation logic (simplified here)
-            // In production, this would use the folderRules.ts logic
-            if (evaluateRuleSimple(rule, conversationData)) {
-              matchedFolderIds.push(folder.id);
-              
-              // Auto-assign to folder
-              const assignCmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (${folder.id}, '${sessionKey.replace(/'/g, "''")}', 'rule')"`;
-              exec(assignCmd, { timeout: 5000 }, () => {});
-            }
-          } catch (e) {
-            safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
-          }
+        const rule = JSON.parse(folder.rules);
+        if (evaluateRuleSimple(rule, conversationData)) {
+          matchedFolderIds.push(folder.id);
+          prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(folder.id, sessionKey, 'rule');
         }
-        
-        resolve({ success: true, matchedFolderIds });
       } catch (e) {
-        safeLog.error('[FolderRules] Auto-assign parse error:', e);
-        resolve({ success: false, matchedFolderIds: [] });
+        safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
       }
-    });
-  });
+    }
+
+    return { success: true, matchedFolderIds };
+  } catch (error: any) {
+    safeLog.error('[FolderRules] Auto-assign error:', error);
+    return { success: false, matchedFolderIds: [] };
+  }
 });
 
 // Simple rule evaluation (matching subset of folderRules.ts logic)
@@ -2455,246 +2277,95 @@ function evaluateRuleSimple(rule: any, data: any): boolean {
 
 // Get all pinned conversations
 ipcMain.handle('pins:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Pins] List error:', error);
-        resolve({ success: false, pins: [] });
-        return;
-      }
-      
-      try {
-        const pins = JSON.parse(stdout || '[]');
-        resolve({ success: true, pins });
-      } catch (e) {
-        safeLog.error('[Pins] Parse error:', e);
-        resolve({ success: false, pins: [] });
-      }
-    });
-  });
+  try {
+    const pins = prepare('SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC').all();
+    return { success: true, pins };
+  } catch (error: any) {
+    safeLog.error('[Pins] List error:', error);
+    return { success: false, pins: [] };
+  }
 });
 
 // Check if a conversation is pinned
 ipcMain.handle('pins:is-pinned', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Pins] Is-pinned error:', error);
-        resolve({ success: false, pinned: false });
-        return;
-      }
-      
-      try {
-        const result = JSON.parse(stdout || '[]');
-        resolve({ success: true, pinned: result.length > 0 });
-      } catch (e) {
-        safeLog.error('[Pins] Is-pinned parse error:', e);
-        resolve({ success: false, pinned: false });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
+    return { success: true, pinned: !!row };
+  } catch (error: any) {
+    safeLog.error('[Pins] Is-pinned error:', error);
+    return { success: false, pinned: false };
+  }
 });
 
 // Pin a conversation
 ipcMain.handle('pins:pin', async (_, sessionKey: string, notes?: string) => {
-  // Check pin count first (max 10)
-  const countCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
-  
-  return new Promise((resolve) => {
-    exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
-      if (countError) {
-        safeLog.error('[Pins] Count check error:', countError);
-        resolve({ success: false, error: countError.message });
-        return;
-      }
-      
-      try {
-        const countResult = JSON.parse(countStdout || '[{"count":0}]');
-        const currentCount = countResult[0]?.count || 0;
-        
-        // Check if already pinned (don't count against limit)
-        const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-        
-        exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
-          if (checkError) {
-            safeLog.error('[Pins] Check existing error:', checkError);
-            resolve({ success: false, error: checkError.message });
-            return;
-          }
-          
-          try {
-            const existing = JSON.parse(checkStdout || '[]');
-            const isAlreadyPinned = existing.length > 0;
-            
-            // If not already pinned and at limit, reject
-            if (!isAlreadyPinned && currentCount >= 10) {
-              safeLog.error('[Pins] Pin limit reached (10 max)');
-              resolve({ success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' });
-              return;
-            }
-            
-            // Get next pin_order (highest + 1)
-            const orderCmd = `sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins" -json`;
-            
-            exec(orderCmd, { timeout: 5000 }, (orderError, orderStdout) => {
-              if (orderError) {
-                safeLog.error('[Pins] Get order error:', orderError);
-                resolve({ success: false, error: orderError.message });
-                return;
-              }
-              
-              try {
-                const orderResult = JSON.parse(orderStdout || '[{"next_order":0}]');
-                const nextOrder = orderResult[0]?.next_order || 0;
-                
-                const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL';
-                const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR REPLACE INTO conversation_pins (session_key, notes, pin_order) VALUES ('${sessionKey.replace(/'/g, "''")}', ${notesValue}, ${nextOrder})"`;
-                
-                exec(cmd, { timeout: 5000 }, (error) => {
-                  if (error) {
-                    safeLog.error('[Pins] Pin error:', error);
-                    resolve({ success: false, error: error.message });
-                    return;
-                  }
-                  
-                  safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
-                  resolve({ success: true });
-                });
-              } catch (e) {
-                safeLog.error('[Pins] Order parse error:', e);
-                resolve({ success: false, error: 'Parse error' });
-              }
-            });
-          } catch (e) {
-            safeLog.error('[Pins] Check parse error:', e);
-            resolve({ success: false, error: 'Parse error' });
-          }
-        });
-      } catch (e) {
-        safeLog.error('[Pins] Count parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
+    const currentCount = countResult?.count || 0;
+
+    const existing = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
+
+    if (!existing && currentCount >= 10) {
+      safeLog.error('[Pins] Pin limit reached (10 max)');
+      return { success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' };
+    }
+
+    const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as any;
+    const nextOrder = orderResult?.next_order || 0;
+
+    prepare('INSERT OR REPLACE INTO conversation_pins (session_key, notes, pin_order) VALUES (?, ?, ?)').run(sessionKey, notes || null, nextOrder);
+
+    safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Pins] Pin error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unpin a conversation
 ipcMain.handle('pins:unpin', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Pins] Unpin error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      safeLog.log('[Pins] Unpinned:', sessionKey);
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
+    safeLog.log('[Pins] Unpinned:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Pins] Unpin error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Toggle pin state
 ipcMain.handle('pins:toggle', async (_, sessionKey: string) => {
-  // First check if pinned
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
-      if (checkError) {
-        safeLog.error('[Pins] Toggle check error:', checkError);
-        resolve({ success: false, error: checkError.message });
-        return;
+  try {
+    const existing = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
+
+    if (existing) {
+      // Unpin
+      prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
+      safeLog.log('[Pins] Toggled:', sessionKey, '-> unpinned');
+      return { success: true, pinned: false };
+    } else {
+      // Pin - check limit first
+      const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
+      const currentCount = countResult?.count || 0;
+
+      if (currentCount >= 10) {
+        safeLog.error('[Pins] Toggle pin limit reached (10 max)');
+        return { success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' };
       }
-      
-      try {
-        const result = JSON.parse(checkStdout || '[]');
-        const isPinned = result.length > 0;
-        
-        if (isPinned) {
-          // Unpin
-          const toggleCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}'"`; 
-          
-          exec(toggleCmd, { timeout: 5000 }, (toggleError) => {
-            if (toggleError) {
-              safeLog.error('[Pins] Toggle unpin error:', toggleError);
-              resolve({ success: false, error: toggleError.message });
-              return;
-            }
-            
-            safeLog.log('[Pins] Toggled:', sessionKey, '→ unpinned');
-            resolve({ success: true, pinned: false });
-          });
-        } else {
-          // Pin - check limit first
-          const countCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
-          
-          exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
-            if (countError) {
-              safeLog.error('[Pins] Toggle count error:', countError);
-              resolve({ success: false, error: countError.message });
-              return;
-            }
-            
-            try {
-              const countResult = JSON.parse(countStdout || '[{"count":0}]');
-              const currentCount = countResult[0]?.count || 0;
-              
-              if (currentCount >= 10) {
-                safeLog.error('[Pins] Toggle pin limit reached (10 max)');
-                resolve({ success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' });
-                return;
-              }
-              
-              // Get next pin_order
-              const orderCmd = `sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins" -json`;
-              
-              exec(orderCmd, { timeout: 5000 }, (orderError, orderStdout) => {
-                if (orderError) {
-                  safeLog.error('[Pins] Toggle order error:', orderError);
-                  resolve({ success: false, error: orderError.message });
-                  return;
-                }
-                
-                try {
-                  const orderResult = JSON.parse(orderStdout || '[{"next_order":0}]');
-                  const nextOrder = orderResult[0]?.next_order || 0;
-                  
-                  const toggleCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_pins (session_key, pin_order) VALUES ('${sessionKey.replace(/'/g, "''")}', ${nextOrder})"`;
-                  
-                  exec(toggleCmd, { timeout: 5000 }, (toggleError) => {
-                    if (toggleError) {
-                      safeLog.error('[Pins] Toggle pin error:', toggleError);
-                      resolve({ success: false, error: toggleError.message });
-                      return;
-                    }
-                    
-                    safeLog.log('[Pins] Toggled:', sessionKey, '→ pinned at order', nextOrder);
-                    resolve({ success: true, pinned: true });
-                  });
-                } catch (e) {
-                  safeLog.error('[Pins] Toggle order parse error:', e);
-                  resolve({ success: false, error: 'Parse error' });
-                }
-              });
-            } catch (e) {
-              safeLog.error('[Pins] Toggle count parse error:', e);
-              resolve({ success: false, error: 'Parse error' });
-            }
-          });
-        }
-      } catch (e) {
-        safeLog.error('[Pins] Toggle parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+
+      const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as any;
+      const nextOrder = orderResult?.next_order || 0;
+
+      prepare('INSERT INTO conversation_pins (session_key, pin_order) VALUES (?, ?)').run(sessionKey, nextOrder);
+      safeLog.log('[Pins] Toggled:', sessionKey, '-> pinned at order', nextOrder);
+      return { success: true, pinned: true };
+    }
+  } catch (error: any) {
+    safeLog.error('[Pins] Toggle error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Reorder pinned conversations
@@ -2705,59 +2376,28 @@ ipcMain.handle('pins:reorder', async (_, sessionKeys: string[]) => {
     return { success: false, error: 'Cannot have more than 10 pinned conversations' };
   }
 
-  // Update pin_order for each session
-  const updates: Promise<any>[] = sessionKeys.map((sessionKey, index) => {
-    const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_pins SET pin_order = ${index} WHERE session_key = '${sessionKey.replace(/'/g, "''")}'"`; 
-    
-    return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error('[Pins] Reorder update error for', sessionKey, ':', error);
-          resolve({ success: false });
-        } else {
-          resolve({ success: true });
-        }
-      });
-    });
-  });
-
   try {
-    const results = await Promise.all(updates);
-    const allSuccess = results.every((r: any) => r.success);
-    
-    if (allSuccess) {
-      safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
-      return { success: true };
-    } else {
-      return { success: false, error: 'Some updates failed' };
+    const updateStmt = prepare('UPDATE conversation_pins SET pin_order = ? WHERE session_key = ?');
+    for (let i = 0; i < sessionKeys.length; i++) {
+      updateStmt.run(i, sessionKeys[i]);
     }
-  } catch (e) {
-    safeLog.error('[Pins] Reorder error:', e);
+    safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Pins] Reorder error:', error);
     return { success: false, error: 'Reorder failed' };
   }
 });
 
 // Get pin count
 ipcMain.handle('pins:count', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Pins] Count error:', error);
-        resolve({ success: false, count: 0 });
-        return;
-      }
-      
-      try {
-        const result = JSON.parse(stdout || '[{"count":0}]');
-        resolve({ success: true, count: result[0]?.count || 0 });
-      } catch (e) {
-        safeLog.error('[Pins] Count parse error:', e);
-        resolve({ success: false, count: 0 });
-      }
-    });
-  });
+  try {
+    const result = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
+    return { success: true, count: result?.count || 0 };
+  } catch (error: any) {
+    safeLog.error('[Pins] Count error:', error);
+    return { success: false, count: 0 };
+  }
 });
 
 // ============== SNOOZE HANDLERS ==============
@@ -2765,215 +2405,112 @@ ipcMain.handle('pins:count', async () => {
 
 // List all snoozed conversations
 ipcMain.handle('snooze:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] List error:', error);
-        resolve({ success: false, snoozes: [] });
-        return;
-      }
-      try {
-        const snoozes = JSON.parse(stdout || '[]');
-        resolve({ success: true, snoozes });
-      } catch (e) {
-        safeLog.error('[Snooze] Parse error:', e);
-        resolve({ success: false, snoozes: [] });
-      }
-    });
-  });
+  try {
+    const snoozes = prepare('SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC').all();
+    return { success: true, snoozes };
+  } catch (error: any) {
+    safeLog.error('[Snooze] List error:', error);
+    return { success: false, snoozes: [] };
+  }
 });
 
 // Check if a session is snoozed
 ipcMain.handle('snooze:get', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] Get error:', error);
-        resolve({ success: false, snooze: null });
-        return;
-      }
-      try {
-        const result = JSON.parse(stdout || '[]');
-        resolve({ 
-          success: true, 
-          snooze: result.length > 0 ? result[0] : null 
-        });
-      } catch (e) {
-        safeLog.error('[Snooze] Parse error:', e);
-        resolve({ success: false, snooze: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
+    return { success: true, snooze: row || null };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Get error:', error);
+    return { success: false, snooze: null };
+  }
 });
 
 // Set/update snooze for a conversation
 ipcMain.handle('snooze:set', async (_, sessionKey: string, snoozeUntil: number, reason?: string) => {
-  const now = Date.now();
-  const reasonEscaped = reason ? reason.replace(/'/g, "''") : '';
-  
-  // Check if already snoozed (for update vs insert)
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
-      if (checkError) {
-        safeLog.error('[Snooze] Set check error:', checkError);
-        resolve({ success: false, error: checkError.message });
-        return;
-      }
-      
-      try {
-        const existing = JSON.parse(checkStdout || '[]');
-        let snoozeCmd: string;
-        
-        if (existing.length > 0) {
-          // Update existing snooze
-          snoozeCmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_snoozes SET snooze_until = ${snoozeUntil}, snooze_reason = '${reasonEscaped}', reminder_sent = 0, updated_at = ${now} WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
-        } else {
-          // Insert new snooze
-          snoozeCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_snoozes (session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at) VALUES ('${sessionKey.replace(/'/g, "''")}', ${snoozeUntil}, '${reasonEscaped}', 0, ${now}, ${now})"`;
-        }
-        
-        exec(snoozeCmd, { timeout: 5000 }, (snoozeError) => {
-          if (snoozeError) {
-            safeLog.error('[Snooze] Set error:', snoozeError);
-            resolve({ success: false, error: snoozeError.message });
-            return;
-          }
-          
-          safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
-          resolve({ success: true });
-        });
-      } catch (e) {
-        safeLog.error('[Snooze] Set parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    const now = Date.now();
+    const snoozeReason = reason || '';
+
+    // Check if already snoozed (for update vs insert)
+    const existing = prepare('SELECT id FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
+
+    if (existing) {
+      prepare('UPDATE conversation_snoozes SET snooze_until = ?, snooze_reason = ?, reminder_sent = 0, updated_at = ? WHERE session_id = ?').run(snoozeUntil, snoozeReason, now, sessionKey);
+    } else {
+      prepare('INSERT INTO conversation_snoozes (session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)').run(sessionKey, snoozeUntil, snoozeReason, now, now);
+    }
+
+    safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Set error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unsnooze a conversation (remove snooze)
 ipcMain.handle('snooze:unset', async (_, sessionKey: string) => {
-  const now = Date.now();
-  
-  // First get the snooze data for history
-  const getCmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
-      if (getError) {
-        safeLog.error('[Snooze] Unset get error:', getError);
-        resolve({ success: false, error: getError.message });
-        return;
-      }
-      
-      try {
-        const snoozes = JSON.parse(getStdout || '[]');
-        
-        if (snoozes.length === 0) {
-          // Not snoozed, nothing to do
-          resolve({ success: true });
-          return;
-        }
-        
-        const snooze = snoozes[0];
-        const reasonEscaped = snooze.snooze_reason ? snooze.snooze_reason.replace(/'/g, "''") : '';
-        
-        // Add to history
-        const historyCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES ('${sessionKey.replace(/'/g, "''")}', ${snooze.snooze_until}, '${reasonEscaped}', ${now}, ${snooze.created_at})"`;
-        
-        exec(historyCmd, { timeout: 5000 }, (historyError) => {
-          if (historyError) {
-            safeLog.warn('[Snooze] History insert error (non-fatal):', historyError);
-          }
-          
-          // Delete from active snoozes
-          const deleteCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
-          
-          exec(deleteCmd, { timeout: 5000 }, (deleteError) => {
-            if (deleteError) {
-              safeLog.error('[Snooze] Unset delete error:', deleteError);
-              resolve({ success: false, error: deleteError.message });
-              return;
-            }
-            
-            safeLog.log('[Snooze] Unsnoozed:', sessionKey);
-            resolve({ success: true });
-          });
-        });
-      } catch (e) {
-        safeLog.error('[Snooze] Unset parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    const now = Date.now();
+
+    // Get the snooze data for history
+    const snooze = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as any;
+
+    if (!snooze) {
+      // Not snoozed, nothing to do
+      return { success: true };
+    }
+
+    // Use transaction for atomicity: history insert + delete
+    db.transaction(() => {
+      prepare('INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
+        sessionKey, snooze.snooze_until, snooze.snooze_reason || '', now, snooze.created_at
+      );
+      prepare('DELETE FROM conversation_snoozes WHERE session_id = ?').run(sessionKey);
+    })();
+
+    safeLog.log('[Snooze] Unsnoozed:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Unset error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Mark reminder as sent for a snooze
 ipcMain.handle('snooze:markReminderSent', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Snooze] Mark reminder error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = ?').run(sessionKey);
+    safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Mark reminder error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get expired snoozes (for reminder processing)
 ipcMain.handle('snooze:expired', async () => {
-  const now = Date.now();
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE snooze_until <= ${now} AND reminder_sent = 0 ORDER BY snooze_until ASC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] Expired list error:', error);
-        resolve({ success: false, snoozes: [] });
-        return;
-      }
-      try {
-        const snoozes = JSON.parse(stdout || '[]');
-        resolve({ success: true, snoozes });
-      } catch (e) {
-        safeLog.error('[Snooze] Expired parse error:', e);
-        resolve({ success: false, snoozes: [] });
-      }
-    });
-  });
+  try {
+    const now = Date.now();
+    const snoozes = prepare('SELECT * FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
+    return { success: true, snoozes };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Expired list error:', error);
+    return { success: false, snoozes: [] };
+  }
 });
 
 // Get snooze history for a session
 ipcMain.handle('snooze:history', async (_, sessionKey: string, limit: number = 10) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM snooze_history WHERE session_id = '${sessionKey.replace(/'/g, "''")}' ORDER BY created_at DESC LIMIT ${limit}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] History error:', error);
-        resolve({ success: false, history: [] });
-        return;
-      }
-      try {
-        const history = JSON.parse(stdout || '[]');
-        resolve({ success: true, history });
-      } catch (e) {
-        safeLog.error('[Snooze] History parse error:', e);
-        resolve({ success: false, history: [] });
-      }
-    });
-  });
+  try {
+    const safeLimit = Math.max(1, Math.min(Math.floor(limit), 100));
+    const history = prepare('SELECT * FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
+    return { success: true, history };
+  } catch (error: any) {
+    safeLog.error('[Snooze] History error:', error);
+    return { success: false, history: [] };
+  }
 });
 
 // ============== CALENDAR EVENTS HANDLERS ==============
@@ -3048,9 +2585,6 @@ ipcMain.handle('calendar:events:create', async (_, event: {
   const eventId = `event-${Date.now()}`;
   const now = Date.now();
   
-  // Escape strings for SQL
-  const escapeSQL = (str: string | undefined) => str ? str.replace(/'/g, "''") : '';
-  
   // Convert start_time to Unix timestamp if it's ISO string
   let start_time_ms: number;
   if (typeof event.start_time === 'string') {
@@ -3058,7 +2592,7 @@ ipcMain.handle('calendar:events:create', async (_, event: {
   } else {
     start_time_ms = event.start_time;
   }
-  
+
   // Convert end_time to Unix timestamp if provided
   let end_time_ms: number | null = null;
   if (event.end_time) {
@@ -3068,60 +2602,64 @@ ipcMain.handle('calendar:events:create', async (_, event: {
       end_time_ms = event.end_time;
     }
   }
-  
-  const title = escapeSQL(event.title);
-  const description = event.description ? escapeSQL(event.description) : '';
+
   const all_day = event.all_day ? 1 : 0;
-  const location = event.location ? escapeSQL(event.location) : '';
-  const color = event.color ? escapeSQL(event.color) : '';
-  const category = event.category ? escapeSQL(event.category) : '';
-  const status = event.status ? escapeSQL(event.status) : 'confirmed';
-  const recurrence = event.recurrence ? escapeSQL(JSON.stringify(event.recurrence)) : '';
-  const attendees = event.attendees ? escapeSQL(JSON.stringify(event.attendees)) : '';
-  const reminders = event.reminders ? escapeSQL(JSON.stringify(event.reminders)) : '';
-  const source = event.source ? escapeSQL(event.source) : 'manual';
-  const source_id = event.source_id ? escapeSQL(event.source_id) : '';
-  const task_id = event.task_id ? escapeSQL(event.task_id) : '';
-  const metadata = event.metadata ? escapeSQL(JSON.stringify(event.metadata)) : '';
-  
-  const end_time_sql = end_time_ms !== null ? end_time_ms : 'NULL';
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO calendar_events (id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata) VALUES ('${eventId}', '${title}', '${description}', ${start_time_ms}, ${end_time_sql}, ${all_day}, '${location}', '${color}', '${category}', '${status}', '${recurrence}', '${attendees}', '${reminders}', '${source}', '${source_id}', ${task_id ? `'${task_id}'` : 'NULL'}, ${now}, ${now}, '${metadata}')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Calendar] Create error:', error);
-        resolve({ success: false, error: error.message });
-        return;
+  const status = event.status || 'confirmed';
+  const source = event.source || 'manual';
+
+  try {
+    prepare(
+      'INSERT INTO calendar_events (id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      eventId,
+      event.title,
+      event.description || '',
+      start_time_ms,
+      end_time_ms,
+      all_day,
+      event.location || '',
+      event.color || '',
+      event.category || '',
+      status,
+      event.recurrence ? JSON.stringify(event.recurrence) : '',
+      event.attendees ? JSON.stringify(event.attendees) : '',
+      event.reminders ? JSON.stringify(event.reminders) : '',
+      source,
+      event.source_id || '',
+      event.task_id || null,
+      now,
+      now,
+      event.metadata ? JSON.stringify(event.metadata) : ''
+    );
+
+    return {
+      success: true,
+      event: {
+        id: eventId,
+        title: event.title,
+        description: event.description,
+        start_time: start_time_ms,
+        end_time: end_time_ms,
+        all_day,
+        location: event.location,
+        color: event.color,
+        category: event.category,
+        status: status,
+        recurrence: event.recurrence,
+        attendees: event.attendees,
+        reminders: event.reminders,
+        source: source,
+        source_id: event.source_id,
+        task_id: event.task_id,
+        created_at: now,
+        updated_at: now,
+        metadata: event.metadata
       }
-      
-      resolve({ 
-        success: true, 
-        event: {
-          id: eventId,
-          title: event.title,
-          description: event.description,
-          start_time: start_time_ms,
-          end_time: end_time_ms,
-          all_day,
-          location: event.location,
-          color: event.color,
-          category: event.category,
-          status: status,
-          recurrence: event.recurrence,
-          attendees: event.attendees,
-          reminders: event.reminders,
-          source: source,
-          source_id: event.source_id,
-          task_id: event.task_id,
-          created_at: now,
-          updated_at: now,
-          metadata: event.metadata
-        }
-      });
-    });
-  });
+    };
+  } catch (error: any) {
+    safeLog.error('[Calendar] Create error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
@@ -3142,104 +2680,59 @@ ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
   task_id?: string;
   metadata?: any;
 }) => {
-  // Build UPDATE SET clause
+  // Build dynamic SET clause with parameterized values
   const setParts: string[] = [];
-  const escapeSQL = (str: string | undefined) => str ? str.replace(/'/g, "''") : '';
-  
-  if (updates.title !== undefined) {
-    setParts.push(`title='${escapeSQL(updates.title)}'`);
-  }
-  if (updates.description !== undefined) {
-    setParts.push(`description='${escapeSQL(updates.description)}'`);
-  }
+  const params: any[] = [];
+
+  if (updates.title !== undefined) { setParts.push('title = ?'); params.push(updates.title); }
+  if (updates.description !== undefined) { setParts.push('description = ?'); params.push(updates.description); }
   if (updates.start_time !== undefined) {
-    const start_ms = typeof updates.start_time === 'string' 
+    const start_ms = typeof updates.start_time === 'string'
       ? new Date(updates.start_time).getTime()
       : updates.start_time;
-    setParts.push(`start_time=${start_ms}`);
+    setParts.push('start_time = ?'); params.push(start_ms);
   }
   if (updates.end_time !== undefined) {
     const end_ms = typeof updates.end_time === 'string'
       ? new Date(updates.end_time).getTime()
       : updates.end_time;
-    setParts.push(`end_time=${end_ms}`);
+    setParts.push('end_time = ?'); params.push(end_ms);
   }
-  if (updates.all_day !== undefined) {
-    setParts.push(`all_day=${updates.all_day ? 1 : 0}`);
-  }
-  if (updates.location !== undefined) {
-    setParts.push(`location='${escapeSQL(updates.location)}'`);
-  }
-  if (updates.color !== undefined) {
-    setParts.push(`color='${escapeSQL(updates.color)}'`);
-  }
-  if (updates.category !== undefined) {
-    setParts.push(`category='${escapeSQL(updates.category)}'`);
-  }
-  if (updates.status !== undefined) {
-    setParts.push(`status='${escapeSQL(updates.status)}'`);
-  }
-  if (updates.recurrence !== undefined) {
-    setParts.push(`recurrence='${escapeSQL(JSON.stringify(updates.recurrence))}'`);
-  }
-  if (updates.attendees !== undefined) {
-    setParts.push(`attendees='${escapeSQL(JSON.stringify(updates.attendees))}'`);
-  }
-  if (updates.reminders !== undefined) {
-    setParts.push(`reminders='${escapeSQL(JSON.stringify(updates.reminders))}'`);
-  }
-  if (updates.source !== undefined) {
-    setParts.push(`source='${escapeSQL(updates.source)}'`);
-  }
-  if (updates.source_id !== undefined) {
-    setParts.push(`source_id='${escapeSQL(updates.source_id)}'`);
-  }
-  if (updates.task_id !== undefined) {
-    if (updates.task_id) {
-      setParts.push(`task_id='${escapeSQL(updates.task_id)}'`);
-    } else {
-      setParts.push(`task_id=NULL`);
-    }
-  }
-  if (updates.metadata !== undefined) {
-    setParts.push(`metadata='${escapeSQL(JSON.stringify(updates.metadata))}'`);
-  }
-  
+  if (updates.all_day !== undefined) { setParts.push('all_day = ?'); params.push(updates.all_day ? 1 : 0); }
+  if (updates.location !== undefined) { setParts.push('location = ?'); params.push(updates.location); }
+  if (updates.color !== undefined) { setParts.push('color = ?'); params.push(updates.color); }
+  if (updates.category !== undefined) { setParts.push('category = ?'); params.push(updates.category); }
+  if (updates.status !== undefined) { setParts.push('status = ?'); params.push(updates.status); }
+  if (updates.recurrence !== undefined) { setParts.push('recurrence = ?'); params.push(JSON.stringify(updates.recurrence)); }
+  if (updates.attendees !== undefined) { setParts.push('attendees = ?'); params.push(JSON.stringify(updates.attendees)); }
+  if (updates.reminders !== undefined) { setParts.push('reminders = ?'); params.push(JSON.stringify(updates.reminders)); }
+  if (updates.source !== undefined) { setParts.push('source = ?'); params.push(updates.source); }
+  if (updates.source_id !== undefined) { setParts.push('source_id = ?'); params.push(updates.source_id); }
+  if (updates.task_id !== undefined) { setParts.push('task_id = ?'); params.push(updates.task_id || null); }
+  if (updates.metadata !== undefined) { setParts.push('metadata = ?'); params.push(JSON.stringify(updates.metadata)); }
+
   if (setParts.length === 0) {
     return { success: false, error: 'No updates provided' };
   }
-  
+
   // Add updated_at timestamp
-  setParts.push(`updated_at=${Date.now()}`);
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE calendar_events SET ${setParts.join(', ')} WHERE id='${eventId}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Calendar] Update error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      // Fetch updated event
-      const getCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata FROM calendar_events WHERE id='${eventId}'" -json`;
-      
-      exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
-        if (getError) {
-          resolve({ success: true, event: null });
-          return;
-        }
-        
-        try {
-          const events = JSON.parse(getStdout || '[]');
-          resolve({ success: true, event: events[0] || null });
-        } catch (e) {
-          resolve({ success: true, event: null });
-        }
-      });
-    });
-  });
+  setParts.push('updated_at = ?');
+  params.push(Date.now());
+  params.push(eventId); // WHERE param
+
+  try {
+    db.prepare(`UPDATE calendar_events SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
+
+    // Fetch updated event
+    const updatedEvent = prepare(
+      'SELECT id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata FROM calendar_events WHERE id = ?'
+    ).get(eventId);
+
+    return { success: true, event: updatedEvent || null };
+  } catch (error: any) {
+    safeLog.error('[Calendar] Update error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('calendar:events:delete', async (_, eventId: string) => {
@@ -3326,68 +2819,51 @@ ipcMain.handle('email:send', async (_, options: { to: string; subject: string; b
 
 // ============== INBOX IPC HANDLERS (froggo-db backed) ==============
 // Add inbox item with custom metadata (used for Stage 2 email items)
-ipcMain.handle('inbox:addWithMetadata', async (_, item: { 
-  type: string; 
-  title: string; 
-  content: string; 
-  context?: string; 
+ipcMain.handle('inbox:addWithMetadata', async (_, item: {
+  type: string;
+  title: string;
+  content: string;
+  context?: string;
   channel?: string;
   metadata?: string;
 }) => {
   safeLog.log('[Inbox:addWithMetadata] Adding item:', item.title);
-  
-  return new Promise((resolve) => {
-    const now = Date.now();
-    const escapedTitle = item.title.replace(/'/g, "''");
-    const escapedContent = item.content.replace(/'/g, "''");
-    const escapedContext = (item.context || '').replace(/'/g, "''");
-    const escapedMetadata = (item.metadata || '{}').replace(/'/g, "''");
-    
-    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitle}', '${escapedContent}', '${escapedContext}', 'pending', '${item.channel || 'system'}', '${escapedMetadata}', datetime('now'))"`;
-    
-    exec(sqlCmd, { timeout: 10000 }, (error) => {
-      if (error) {
-        safeLog.error('[Inbox:addWithMetadata] Error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Inbox:addWithMetadata] Added successfully');
-        resolve({ success: true });
-      }
-    });
-  });
+
+  try {
+    prepare(
+      "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES (?, ?, ?, ?, 'pending', ?, ?, datetime('now'))"
+    ).run(
+      item.type,
+      item.title,
+      item.content,
+      item.context || '',
+      item.channel || 'system',
+      item.metadata || '{}'
+    );
+
+    safeLog.log('[Inbox:addWithMetadata] Added successfully');
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Inbox:addWithMetadata] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('inbox:list', async (_, status?: string) => {
   // Default to 'pending' if no status specified - we only want pending items in the inbox
   const effectiveStatus = status || 'pending';
-  
-  return new Promise((resolve) => {
-    // Query directly via sqlite3
-    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
-    
-    safeLog.log('[Inbox:list] Executing query for status:', effectiveStatus);
-    safeLog.log('[Inbox:list] Command:', sqlCmd);
-    
-    exec(sqlCmd, { timeout: 5000 }, (err, jsonOut, stderr) => {
-      if (err) {
-        safeLog.error('[Inbox:list] Exec error:', err);
-        safeLog.error('[Inbox:list] Stderr:', stderr);
-        resolve({ success: false, items: [], error: err.message });
-      } else {
-        try {
-          safeLog.log('[Inbox:list] Raw output length:', jsonOut?.length || 0);
-          const items = JSON.parse(jsonOut || '[]');
-          safeLog.log('[Inbox:list] SUCCESS - Parsed', items.length, 'items with status:', effectiveStatus);
-          safeLog.log('[Inbox:list] First item:', items[0] ? JSON.stringify(items[0]).substring(0, 100) : 'none');
-          resolve({ success: true, items });
-        } catch (e) {
-          safeLog.error('[Inbox:list] JSON Parse error:', e);
-          safeLog.error('[Inbox:list] Raw output:', jsonOut);
-          resolve({ success: false, items: [], error: (e as Error).message });
-        }
-      }
-    });
-  });
+
+  try {
+    safeLog.log('[Inbox:list] Executing parameterized query for status:', effectiveStatus);
+
+    const items = prepare('SELECT * FROM inbox WHERE status = ? ORDER BY created DESC LIMIT 50').all(effectiveStatus);
+
+    safeLog.log('[Inbox:list] SUCCESS - Found', (items as any[]).length, 'items with status:', effectiveStatus);
+    return { success: true, items };
+  } catch (error: any) {
+    safeLog.error('[Inbox:list] Error:', error);
+    return { success: false, items: [], error: error.message };
+  }
 });
 
 ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; content: string; context?: string; channel?: string }) => {
@@ -3512,101 +2988,72 @@ ipcMain.handle('inbox:listRevisions', async () => {
 // This creates a new pending item with the revised content and marks the original as 'revised'
 ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedContent: string, revisedTitle?: string) => {
   safeLog.log(`[Inbox] Submit revision for item ${originalId}`);
-  
-  return new Promise((resolve) => {
-    // First, get the original item
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${originalId}" -json`, (getErr, getOut) => {
-      if (getErr) {
-        safeLog.error('[Inbox] Get original error:', getErr);
-        resolve({ success: false, error: 'Failed to get original item' });
-        return;
-      }
-      
-      try {
-        const items = JSON.parse(getOut || '[]');
-        if (items.length === 0) {
-          resolve({ success: false, error: 'Original item not found' });
-          return;
-        }
-        
-        const original = items[0];
-        const newTitle = revisedTitle || `[Revised] ${original.title}`;
-        const escapedTitle = newTitle.replace(/'/g, "''");
-        const escapedContent = revisedContent.replace(/'/g, "''");
-        const context = `Revision of inbox item #${originalId}. Original feedback: ${(original.feedback || 'none').replace(/'/g, "''")}`;
-        
-        // Create new pending item with revised content
-        const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('${original.type}', '${escapedTitle}', '${escapedContent}', '${context}', 'pending', '${original.source_channel || 'revision'}', datetime('now'))"`;
-        
-        exec(insertCmd, { timeout: 5000 }, (insertErr) => {
-          if (insertErr) {
-            safeLog.error('[Inbox] Insert revision error:', insertErr);
-            resolve({ success: false, error: insertErr.message });
-            return;
-          }
-          
-          // Mark original as 'revised' (completed state)
-          const updateCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='revised', reviewed_at=datetime('now') WHERE id=${originalId}"`;
-          
-          exec(updateCmd, { timeout: 5000 }, (updateErr) => {
-            if (updateErr) {
-              safeLog.error('[Inbox] Update original error:', updateErr);
-              // Still return success since the revision was created
-            }
-            
-            safeLog.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
-            
-            // Notify frontend of inbox update
-            safeSend('inbox-updated', { revision: true, originalId });
-            
-            resolve({ success: true, message: 'Revision submitted for approval' });
-          });
-        });
-      } catch (e: any) {
-        safeLog.error('[Inbox] Parse error:', e);
-        resolve({ success: false, error: e.message });
-      }
-    });
-  });
+
+  try {
+    // Get the original item
+    const original = prepare('SELECT * FROM inbox WHERE id = ?').get(originalId) as any;
+    if (!original) {
+      return { success: false, error: 'Original item not found' };
+    }
+
+    const newTitle = revisedTitle || `[Revised] ${original.title}`;
+    const context = `Revision of inbox item #${originalId}. Original feedback: ${original.feedback || 'none'}`;
+
+    // Create new pending item with revised content
+    prepare(
+      "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', ?, datetime('now'))"
+    ).run(
+      original.type,
+      newTitle,
+      revisedContent,
+      context,
+      original.source_channel || 'revision'
+    );
+
+    // Mark original as 'revised' (completed state)
+    try {
+      prepare("UPDATE inbox SET status = 'revised', reviewed_at = datetime('now') WHERE id = ?").run(originalId);
+    } catch (updateErr: any) {
+      safeLog.error('[Inbox] Update original error:', updateErr);
+      // Still return success since the revision was created
+    }
+
+    safeLog.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
+
+    // Notify frontend of inbox update
+    safeSend('inbox-updated', { revision: true, originalId });
+
+    return { success: true, message: 'Revision submitted for approval' };
+  } catch (error: any) {
+    safeLog.error('[Inbox] Revision error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get revision details for a specific item (includes original content and feedback)
 ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${itemId} AND status='needs-revision'" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
+  try {
+    const item = prepare("SELECT * FROM inbox WHERE id = ? AND status = 'needs-revision'").get(itemId) as any;
+    if (!item) {
+      return { success: false, error: 'Item not found or not in needs-revision status' };
+    }
+
+    return {
+      success: true,
+      item: {
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        originalContent: item.content,
+        feedback: item.feedback,
+        context: item.context,
+        created: item.created,
+        sourceChannel: item.source_channel,
       }
-      
-      try {
-        const items = JSON.parse(stdout || '[]');
-        if (items.length === 0) {
-          resolve({ success: false, error: 'Item not found or not in needs-revision status' });
-          return;
-        }
-        
-        const item = items[0];
-        resolve({
-          success: true,
-          item: {
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            originalContent: item.content,
-            feedback: item.feedback,
-            context: item.context,
-            created: item.created,
-            sourceChannel: item.source_channel,
-          }
-        });
-      } catch {
-        resolve({ success: false, error: 'Failed to parse item' });
-      }
-    });
-  });
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== INBOX FILTER & SEARCH IPC HANDLERS ==============
@@ -3628,11 +3075,14 @@ ipcMain.handle('inbox:toggleStar', async (_, messageId: string) => {
 });
 
 ipcMain.handle('inbox:markRead', async (_, messageId: string, isRead: boolean = true) => {
-  // Also update comms_cache directly for consistency
-  const escapedId = messageId.replace(/'/g, "''");
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  runMsgCmd(`sqlite3 "${dbPath}" "UPDATE comms_cache SET is_read=${isRead ? 1 : 0} WHERE external_id='${escapedId}'"`, 2000).catch(() => {});
+  // Update comms_cache directly via parameterized query
+  try {
+    prepare('UPDATE comms_cache SET is_read = ? WHERE external_id = ?').run(isRead ? 1 : 0, messageId);
+  } catch {
+    // comms_cache update is best-effort
+  }
 
+  // Also run inbox-filter.sh for any additional side-effects
   return new Promise((resolve) => {
     const cmd = `~/clawd/scripts/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
@@ -3721,20 +3171,18 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
 
 ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
-    const criteriaJson = JSON.stringify(criteria).replace(/'/g, "\\'");
-    const cmd = `echo '${criteriaJson}' | ~/clawd/scripts/inbox-filter.sh filter`;
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      try {
-        const results = stdout.trim().split('\n').filter(Boolean);
-        resolve({ success: true, results });
-      } catch {
-        resolve({ success: false, error: 'Failed to parse filter results' });
-      }
-    });
+    // Pass criteria via stdin using execSync input option to avoid shell injection
+    const { execSync } = require('child_process');
+    try {
+      const result = execSync(
+        `${path.join(os.homedir(), 'clawd', 'scripts', 'inbox-filter.sh')} filter`,
+        { input: JSON.stringify(criteria), encoding: 'utf-8', timeout: 10000 }
+      );
+      const results = result.trim().split('\n').filter(Boolean);
+      resolve({ success: true, results });
+    } catch (error: any) {
+      resolve({ success: false, error: error.message || 'Filter failed' });
+    }
   });
 });
 
@@ -4460,192 +3908,161 @@ ipcMain.handle('library:upload', async () => {
   else if (['.pdf', '.doc', '.docx'].includes(ext)) category = 'document';
   else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov'].includes(ext)) category = 'media';
   
-  // Insert into database
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "
-      CREATE TABLE IF NOT EXISTS library (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        path TEXT NOT NULL,
-        category TEXT DEFAULT 'other',
-        size INTEGER,
-        mime_type TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now')),
-        linked_tasks TEXT,
-        tags TEXT
-      );
-      INSERT INTO library (id, name, path, category, size) VALUES ('${fileId}', '${fileName.replace(/'/g, "''")}', '${destPath.replace(/'/g, "''")}', '${category}', ${stats.size});
-    "`;
-    
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-      } else {
-        resolve({ success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } });
-      }
-    });
-  });
+  // Ensure library table exists (DDL, no user params)
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS library (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      category TEXT DEFAULT 'other',
+      size INTEGER,
+      mime_type TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      linked_tasks TEXT,
+      tags TEXT
+    )`);
+
+    // Insert into database via parameterized query
+    prepare('INSERT INTO library (id, name, path, category, size) VALUES (?, ?, ?, ?, ?)').run(
+      fileId, fileName, destPath, category, stats.size
+    );
+
+    return { success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('library:delete', async (_, fileId: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get file path first
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT path FROM library WHERE id='${fileId}'" -json`, (_, stdout) => {
-      try {
-        const rows = JSON.parse(stdout || '[]');
-        if (rows.length > 0 && rows[0].path) {
-          // Delete file
-          if (fs.existsSync(rows[0].path)) {
-            fs.unlinkSync(rows[0].path);
-          }
-        }
-      } catch {}
-      
-      // Delete from database
-      exec(`sqlite3 ~/clawd/data/froggo.db "DELETE FROM library WHERE id='${fileId}'"`, (error) => {
-        resolve({ success: !error });
-      });
-    });
-  });
+    const row = prepare('SELECT path FROM library WHERE id = ?').get(fileId) as any;
+    if (row && row.path) {
+      // Delete file from disk
+      if (fs.existsSync(row.path)) {
+        fs.unlinkSync(row.path);
+      }
+    }
+
+    // Delete from database
+    prepare('DELETE FROM library WHERE id = ?').run(fileId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Library] Delete error:', error);
+    return { success: false };
+  }
 });
 
 ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get current linked tasks
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT linked_tasks FROM library WHERE id='${fileId}'"`, (_, stdout) => {
-      let linkedTasks: string[] = [];
-      try {
-        const current = stdout?.trim();
-        if (current) linkedTasks = JSON.parse(current);
-      } catch {}
-      
-      if (!linkedTasks.includes(taskId)) {
-        linkedTasks.push(taskId);
-      }
-      
-      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE library SET linked_tasks='${JSON.stringify(linkedTasks)}', updated_at=datetime('now') WHERE id='${fileId}'"`;
-      exec(cmd, (error) => {
-        resolve({ success: !error });
-      });
-    });
-  });
+    const row = prepare('SELECT linked_tasks FROM library WHERE id = ?').get(fileId) as any;
+    let linkedTasks: string[] = [];
+    try {
+      if (row && row.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks);
+    } catch {}
+
+    if (!linkedTasks.includes(taskId)) {
+      linkedTasks.push(taskId);
+    }
+
+    prepare("UPDATE library SET linked_tasks = ?, updated_at = datetime('now') WHERE id = ?").run(
+      JSON.stringify(linkedTasks), fileId
+    );
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Library] Link error:', error);
+    return { success: false };
+  }
 });
 
 ipcMain.handle('library:view', async (_, fileId: string) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path, mime_type, name FROM library WHERE id='${fileId}'" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      try {
-        const rows = JSON.parse(stdout.trim() || '[]');
-        if (rows.length === 0) {
-          resolve({ success: false, error: 'File not found' });
-          return;
-        }
-        
-        const file = rows[0];
-        const filePath = file.path.replace('~', process.env.HOME || '');
-        
-        // Check if file exists
-        if (!fs.existsSync(filePath)) {
-          resolve({ success: false, error: 'File does not exist on disk' });
-          return;
-        }
-        
-        // For text files, read content
-        const mimeType = file.mime_type || '';
-        if (mimeType.includes('text/') || mimeType.includes('markdown') || mimeType.includes('json')) {
-          const content = fs.readFileSync(filePath, 'utf-8');
-          resolve({ 
-            success: true, 
-            content, 
-            mimeType,
-            name: file.name,
-            path: filePath,
-            viewType: 'text'
-          });
-        } else if (mimeType.startsWith('image/')) {
-          // For images, return base64
-          const buffer = fs.readFileSync(filePath);
-          const base64 = buffer.toString('base64');
-          resolve({ 
-            success: true, 
-            content: `data:${mimeType};base64,${base64}`,
-            mimeType,
-            name: file.name,
-            path: filePath,
-            viewType: 'image'
-          });
-        } else {
-          // For other files, just return metadata
-          resolve({ 
-            success: true, 
-            mimeType,
-            name: file.name,
-            path: filePath,
-            viewType: 'binary'
-          });
-        }
-      } catch (parseError: any) {
-        resolve({ success: false, error: parseError.message });
-      }
-    });
-  });
+  try {
+    // Now uses correct DB path via shared prepare() (previously had wrong path ~/Froggo/clawd/data/froggo.db)
+    const file = prepare('SELECT path, mime_type, name FROM library WHERE id = ?').get(fileId) as any;
+    if (!file) {
+      return { success: false, error: 'File not found' };
+    }
+
+    const filePath = file.path.replace('~', process.env.HOME || '');
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'File does not exist on disk' };
+    }
+
+    // For text files, read content
+    const mimeType = file.mime_type || '';
+    if (mimeType.includes('text/') || mimeType.includes('markdown') || mimeType.includes('json')) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return {
+        success: true,
+        content,
+        mimeType,
+        name: file.name,
+        path: filePath,
+        viewType: 'text'
+      };
+    } else if (mimeType.startsWith('image/')) {
+      // For images, return base64
+      const buffer = fs.readFileSync(filePath);
+      const base64 = buffer.toString('base64');
+      return {
+        success: true,
+        content: `data:${mimeType};base64,${base64}`,
+        mimeType,
+        name: file.name,
+        path: filePath,
+        viewType: 'image'
+      };
+    } else {
+      // For other files, just return metadata
+      return {
+        success: true,
+        mimeType,
+        name: file.name,
+        path: filePath,
+        viewType: 'binary'
+      };
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('library:download', async (_, fileId: string) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path, name FROM library WHERE id='${fileId}'" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      try {
-        const rows = JSON.parse(stdout.trim() || '[]');
-        if (rows.length === 0) {
-          resolve({ success: false, error: 'File not found' });
-          return;
-        }
-        
-        const file = rows[0];
-        const sourcePath = file.path.replace('~', process.env.HOME || '');
-        
-        // Check if file exists
-        if (!fs.existsSync(sourcePath)) {
-          resolve({ success: false, error: 'File does not exist on disk' });
-          return;
-        }
-        
-        // Show save dialog
-        dialog.showSaveDialog({
-          title: 'Save File',
-          defaultPath: file.name,
-        }).then((result) => {
-          if (result.canceled || !result.filePath) {
-            resolve({ success: false, error: 'Cancelled' });
-            return;
-          }
-          
-          // Copy file to chosen location
-          fs.copyFileSync(sourcePath, result.filePath);
-          resolve({ success: true, path: result.filePath });
-        }).catch((dialogError) => {
-          resolve({ success: false, error: dialogError.message });
-        });
-      } catch (parseError: any) {
-        resolve({ success: false, error: parseError.message });
-      }
+  try {
+    // Now uses correct DB path via shared prepare() (previously had wrong path ~/Froggo/clawd/data/froggo.db)
+    const file = prepare('SELECT path, name FROM library WHERE id = ?').get(fileId) as any;
+    if (!file) {
+      return { success: false, error: 'File not found' };
+    }
+
+    const sourcePath = file.path.replace('~', process.env.HOME || '');
+
+    // Check if file exists
+    if (!fs.existsSync(sourcePath)) {
+      return { success: false, error: 'File does not exist on disk' };
+    }
+
+    // Show save dialog
+    const saveResult = await dialog.showSaveDialog({
+      title: 'Save File',
+      defaultPath: file.name,
     });
-  });
+
+    if (saveResult.canceled || !saveResult.filePath) {
+      return { success: false, error: 'Cancelled' };
+    }
+
+    // Copy file to chosen location
+    fs.copyFileSync(sourcePath, saveResult.filePath);
+    return { success: true, path: saveResult.filePath };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== SHELL IPC HANDLERS ==============
@@ -4675,11 +4092,12 @@ ipcMain.handle('shell:openPath', async (_, filePath: string) => {
 
 // ============== SEARCH IPC HANDLERS ==============
 ipcMain.handle('search:local', async (_, query: string) => {
-  const escapedQuery = query.replace(/'/g, "''");
-  
+  // Shell-escape query for CLI argument (not SQL)
+  const escapedQuery = query.replace(/'/g, "'\\''");
+
   return new Promise((resolve) => {
     // Search froggo-db for tasks, facts, and messages with JSON output
-    const cmd = `froggo-db search "${escapedQuery}" --limit 20 --json`;
+    const cmd = `froggo-db search '${escapedQuery}' --limit 20 --json`;
     
     exec(cmd, { timeout: 15000 }, (error, stdout) => {
       if (error) {
@@ -4730,7 +4148,7 @@ ipcMain.handle('search:local', async (_, query: string) => {
 // Load Anthropic API key from environment, key file, or openclaw config
 let anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
 try {
-  const keyPath = path.join(os.homedir(), '.clawdbot', 'anthropic.key');
+  const keyPath = path.join(os.homedir(), '.openclaw', 'anthropic.key');
   if (!anthropicApiKey && fs.existsSync(keyPath)) {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
@@ -4776,7 +4194,7 @@ if (!anthropicApiKey) {
 // Load OpenAI API key from environment or config (for Whisper transcription)
 let openaiApiKey = process.env.OPENAI_API_KEY || '';
 try {
-  const keyPath = path.join(os.homedir(), '.clawdbot', 'openai.key');
+  const keyPath = path.join(os.homedir(), '.openclaw', 'openai.key');
   if (!openaiApiKey && fs.existsSync(keyPath)) {
     openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
@@ -4865,7 +4283,7 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
   }
 });
 
-ipcMain.handle('ai:generateContent', async (_, prompt: string, type: string, options?: { agent?: string }) => {
+ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, options?: { agent?: string }) => {
   safeLog.log('[AI:Generate] Called with type:', type, 'agent:', options?.agent || 'default');
   try {
     // Determine which agent to use
@@ -4933,6 +4351,150 @@ ipcMain.handle('ai:generateContent', async (_, prompt: string, type: string, opt
     }
   } catch (e: any) {
     safeLog.error('[AI:Generate] Error:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+// ============== AI REPLY GENERATION ==============
+
+ipcMain.handle('ai:generateReply', async (_, context: {
+  threadMessages: Array<{role: string, content: string}>,
+  platform?: string,
+  recipientName?: string,
+  subject?: string,
+  tone?: 'formal' | 'casual' | 'auto',
+  calendarContext?: string,
+  taskContext?: string,
+}) => {
+  safeLog.log('[AI] Generate reply called:', { platform: context.platform, tone: context.tone, threadLen: context.threadMessages?.length });
+
+  if (!anthropicApiKey) {
+    return { success: false, error: 'No API key configured' };
+  }
+
+  const tone = context.tone || 'auto';
+  const platform = context.platform || 'chat';
+  const name = context.recipientName || 'there';
+
+  // Build system prompt based on platform and tone
+  let toneInstruction = '';
+  if (tone === 'formal') {
+    toneInstruction = 'Use a professional, formal tone. Include proper greetings and sign-offs.';
+  } else if (tone === 'casual') {
+    toneInstruction = 'Use a friendly, casual tone. Keep it conversational.';
+  } else {
+    toneInstruction = 'Match the tone of the conversation — if formal, stay formal; if casual, stay casual.';
+  }
+
+  let platformInstruction = '';
+  if (platform === 'email') {
+    platformInstruction = 'This is an email reply. Use appropriate email formatting with greeting and sign-off.';
+  } else if (platform === 'whatsapp' || platform === 'telegram') {
+    platformInstruction = 'This is a chat message. Keep it short and conversational — no formal sign-offs.';
+  } else if (platform === 'discord') {
+    platformInstruction = 'This is a Discord message. Keep it concise and natural.';
+  }
+
+  // Fetch calendar + task context if not provided (using parameterized queries)
+  let scheduleContext = context.calendarContext || '';
+  let taskCtx = context.taskContext || '';
+  if (!scheduleContext) {
+    try {
+      const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
+      scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
+    } catch {}
+  }
+  if (!taskCtx) {
+    try {
+      const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
+      taskCtx = tasks.map((t: any) => t.title).join('; ');
+    } catch {}
+  }
+
+  let contextBlock = '';
+  if (scheduleContext) contextBlock += `\nUser's upcoming schedule: ${scheduleContext}`;
+  if (taskCtx) contextBlock += `\nUser's active tasks: ${taskCtx}`;
+
+  const systemPrompt = `You are drafting a reply on behalf of the user. Generate a helpful, contextual reply to the conversation below.
+
+${toneInstruction}
+${platformInstruction}${contextBlock}
+
+Rules:
+- Be concise and to the point
+- Sound natural, not robotic
+- Don't be overly eager or sycophantic
+- Address the actual content of the messages
+- Return ONLY the reply text, no explanations or meta-commentary`;
+
+  const threadText = context.threadMessages
+    .slice(-10)
+    .map(m => `${m.role}: ${m.content}`)
+    .join('\n');
+
+  const userPrompt = `Conversation with ${name}${context.subject ? ` (Subject: ${context.subject})` : ''}:\n\n${threadText}\n\nDraft a reply:`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      safeLog.error('[AI] Reply generation API error:', response.status, errText);
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    const draft = data.content?.[0]?.text?.trim() || '';
+    safeLog.log('[AI] Reply generated, length:', draft.length);
+    return { success: true, draft };
+  } catch (e: any) {
+    safeLog.error('[AI] Reply generation error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// ============== AI ANALYSIS LOOKUP ==============
+
+ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
+  try {
+    const row = prepare(
+      "SELECT triage, summary, tasks, events, reply_draft, reply_needed FROM comms_ai_analysis WHERE external_id = ? AND platform = ?"
+    ).get(id, platform) as any;
+
+    if (!row) {
+      return { success: true, analysis: null };
+    }
+
+    let tasks: any[] = [];
+    let events: any[] = [];
+    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch {}
+    try { events = row.events ? JSON.parse(row.events) : []; } catch {}
+
+    return {
+      success: true,
+      analysis: {
+        triage: row.triage,
+        summary: row.summary,
+        tasks,
+        events,
+        reply_draft: row.reply_draft,
+        reply_needed: !!row.reply_needed,
+      },
+    };
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 });
@@ -5172,16 +4734,15 @@ async function refreshCommsBackground() {
   // Helper to get last fetch state
   const getFetchState = async (platform: string, account = ''): Promise<string | null> => {
     try {
-      const raw = await runMsgCmd(`sqlite3 "${db}" "SELECT last_message_ts FROM comms_fetch_state WHERE platform='${platform}' AND account='${account.replace(/'/g, "''")}'"`  , 2000);
-      return raw?.trim() || null;
+      const row = prepare('SELECT last_message_ts FROM comms_fetch_state WHERE platform = ? AND account = ?').get(platform, account) as any;
+      return row?.last_message_ts || null;
     } catch { return null; }
   };
 
   // Helper to update fetch state
   const updateFetchState = async (platform: string, account: string, lastTs: string) => {
     try {
-      const escaped = account.replace(/'/g, "''");
-      await runMsgCmd(`sqlite3 "${db}" "INSERT OR REPLACE INTO comms_fetch_state (platform, account, last_fetch_at, last_message_ts) VALUES ('${platform}', '${escaped}', datetime('now'), '${lastTs}')"`, 2000);
+      prepare("INSERT OR REPLACE INTO comms_fetch_state (platform, account, last_fetch_at, last_message_ts) VALUES (?, ?, datetime('now'), ?)").run(platform, account, lastTs);
     } catch (e) {
       safeLog.error(`[CommsPolling] Failed to update fetch state for ${platform}:${account}`, e);
     }
@@ -5580,145 +5141,92 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
 ipcMain.handle('conversations:archive', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Archive:', sessionKey);
   const ARCHIVE_FOLDER_ID = 4;
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (${ARCHIVE_FOLDER_ID}, '${escapedKey}', 'user')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Conversations] Archive error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Conversations] Archived:', sessionKey);
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(ARCHIVE_FOLDER_ID, sessionKey, 'user');
+    safeLog.log('[Conversations] Archived:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Archive error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unarchive a conversation (remove from Archive folder)
 ipcMain.handle('conversations:unarchive', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Unarchive:', sessionKey);
   const ARCHIVE_FOLDER_ID = 4;
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE folder_id = ${ARCHIVE_FOLDER_ID} AND session_key = '${escapedKey}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Conversations] Unarchive error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Conversations] Unarchived:', sessionKey);
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(ARCHIVE_FOLDER_ID, sessionKey);
+    safeLog.log('[Conversations] Unarchived:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Unarchive error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get archived conversations (with message details)
 ipcMain.handle('conversations:archived', async () => {
   safeLog.log('[Conversations] Get archived list');
   const ARCHIVE_FOLDER_ID = 4;
-  
-  return new Promise((resolve) => {
-    // Get archived session keys with metadata
-    const cmd = `sqlite3 "${froggoDbPath}" "SELECT cf.session_key, cf.added_at, COUNT(c.id) as message_count, MAX(c.timestamp) as last_message FROM conversation_folders cf LEFT JOIN comms_cache c ON (c.platform || ':' || c.sender) = cf.session_key WHERE cf.folder_id = ${ARCHIVE_FOLDER_ID} GROUP BY cf.session_key ORDER BY cf.added_at DESC" -json`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Conversations] Archived list error:', error);
-        resolve({ success: false, conversations: [] });
-        return;
-      }
-      
-      try {
-        const conversations = JSON.parse(stdout || '[]');
-        safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
-        resolve({ success: true, conversations });
-      } catch (e) {
-        safeLog.error('[Conversations] Parse error:', e);
-        resolve({ success: false, conversations: [] });
-      }
-    });
-  });
+  try {
+    const conversations = prepare(
+      `SELECT cf.session_key, cf.added_at, COUNT(c.id) as message_count, MAX(c.timestamp) as last_message
+       FROM conversation_folders cf
+       LEFT JOIN comms_cache c ON (c.platform || ':' || c.sender) = cf.session_key
+       WHERE cf.folder_id = ?
+       GROUP BY cf.session_key
+       ORDER BY cf.added_at DESC`
+    ).all(ARCHIVE_FOLDER_ID);
+    safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
+    return { success: true, conversations };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Archived list error:', error);
+    return { success: false, conversations: [] };
+  }
 });
 
 // Check if a conversation is archived
 ipcMain.handle('conversations:isArchived', async (_, sessionKey: string) => {
   const ARCHIVE_FOLDER_ID = 4;
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ${ARCHIVE_FOLDER_ID} AND session_key = '${escapedKey}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 3000 }, (error, stdout) => {
-      if (error) {
-        resolve({ isArchived: false });
-      } else {
-        const count = parseInt(stdout.trim() || '0', 10);
-        resolve({ isArchived: count > 0 });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ? AND session_key = ?').get(ARCHIVE_FOLDER_ID, sessionKey) as any;
+    return { isArchived: (row?.count || 0) > 0 };
+  } catch {
+    return { isArchived: false };
+  }
 });
 
 // Mark conversation as read (update all messages in session)
 ipcMain.handle('conversations:markRead', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Mark as read:', sessionKey);
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  
-  // Update all messages in comms_cache for this session
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = '${escapedKey}' AND (is_read IS NULL OR is_read = 0)"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Conversations] Mark read error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Conversations] Marked as read:', sessionKey);
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare("UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = ? AND (is_read IS NULL OR is_read = 0)").run(sessionKey);
+    safeLog.log('[Conversations] Marked as read:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Mark read error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete conversation (remove from all folders and delete messages)
 ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Delete:', sessionKey);
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  
-  // Delete from conversation_folders, comms_cache, and any other related tables
-  const cmds = [
-    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE session_key = '${escapedKey}'"`,
-    `sqlite3 "${froggoDbPath}" "DELETE FROM comms_cache WHERE (platform || ':' || sender) = '${escapedKey}'"`,
-    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_snoozes WHERE session_id = '${escapedKey}'"`,
-    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${escapedKey}'"`,
-    // notification_settings might not exist, ignore error
-    `sqlite3 "${froggoDbPath}" "DELETE FROM notification_settings WHERE session_key = '${escapedKey}'" 2>/dev/null || true`,
-  ];
-  
-  return new Promise((resolve) => {
-    // Execute all delete commands sequentially
-    const execSequential = (commands: string[], index = 0) => {
-      if (index >= commands.length) {
-        safeLog.log('[Conversations] Deleted:', sessionKey);
-        resolve({ success: true });
-        return;
-      }
-      
-      exec(commands[index], { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error(`[Conversations] Delete error (step ${index}):`, error);
-          resolve({ success: false, error: error.message });
-        } else {
-          execSequential(commands, index + 1);
-        }
-      });
-    };
-    
-    execSequential(cmds);
-  });
+  try {
+    db.transaction(() => {
+      prepare('DELETE FROM conversation_folders WHERE session_key = ?').run(sessionKey);
+      prepare("DELETE FROM comms_cache WHERE (platform || ':' || sender) = ?").run(sessionKey);
+      prepare('DELETE FROM conversation_snoozes WHERE session_id = ?').run(sessionKey);
+      prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
+      try { prepare('DELETE FROM notification_settings WHERE session_key = ?').run(sessionKey); } catch { /* table may not exist */ }
+    })();
+    safeLog.log('[Conversations] Deleted:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== EMAIL IPC HANDLERS ==============
@@ -6035,20 +5543,20 @@ async function runImportantEmailCheck() {
           results.push(important);
           processedEmailIds.add(id);
           
-          // Create inbox item
-          const title = important.amount 
+          // Create inbox item via parameterized query
+          const title = important.amount
             ? `${important.subject.slice(0, 50)} (${important.amount})`
             : important.subject.slice(0, 60);
           const content = `From: ${important.from}\nReason: ${important.reason}\nAccount: ${acct}`;
-          const escapedTitle = title.replace(/"/g, '\\"').replace(/'/g, "''");
-          const escapedContent = content.replace(/"/g, '\\"').replace(/'/g, "''");
-          
-          const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('email', '${escapedTitle}', '${escapedContent}', '${important.priority} priority', 'pending', 'email', datetime('now'))"`;
-          
-          exec(insertCmd, { timeout: 5000 }, (err) => {
-            if (err) safeLog.error('[Email] Failed to create inbox item:', err);
-            else safeLog.log(`[Email] Created inbox item: ${title}`);
-          });
+
+          try {
+            prepare(
+              "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', 'email', datetime('now'))"
+            ).run('email', title, content, `${important.priority} priority`);
+            safeLog.log(`[Email] Created inbox item: ${title}`);
+          } catch (err: any) {
+            safeLog.error('[Email] Failed to create inbox item:', err);
+          }
           
           newInboxItems.push(title);
         }
@@ -6825,29 +6333,21 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 });
 
 ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const escapedSkill = skill.replace(/'/g, "''");
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES ('${escapedSkill}', 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    prepare("INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES (?, 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')").run(skill);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: string, proficiency: number) => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const escapedSkill = skillName.replace(/'/g, "''");
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE skill_evolution SET proficiency = ${proficiency}, updated_at = datetime('now') WHERE skill_name = '${escapedSkill}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    prepare("UPDATE skill_evolution SET proficiency = ?, updated_at = datetime('now') WHERE skill_name = ?").run(proficiency, skillName);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('agents:search', async (_, query: string) => {
@@ -6917,10 +6417,10 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
   try {
     const result = await new Promise<string>((resolve, reject) => {
       exec(
-        `/opt/homebrew/bin/spawn-agent-with-retry.py notify "${agentId}" "Task assigned: ${taskId}"`,
-        { 
-          encoding: 'utf-8', 
-          timeout: 10000,
+        `openclaw agent --agent "${agentId}" --message "Task assigned: ${taskId}" --json`,
+        {
+          encoding: 'utf-8',
+          timeout: 30000,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
         (error, stdout, stderr) => {
@@ -7099,8 +6599,8 @@ ipcMain.handle('agents:create', async (_, config: { id: string; name: string; ro
 // ============== TOKEN TRACKING IPC HANDLERS ==============
 ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: string }) => {
   try {
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
-    if (!fs.existsSync(sessionsDbPath)) {
+    const sdb = getSessionsDb();
+    if (!sdb) {
       return { error: 'sessions.db not found', by_agent: [] };
     }
 
@@ -7115,21 +6615,15 @@ ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: str
       minTimestamp = now - (30 * 24 * 60 * 60 * 1000);
     }
 
-    // Query sessions from gateway database
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    let query = `SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions`;
-    if (minTimestamp > 0) {
-      query += ` WHERE created_at >= ${minTimestamp}`;
-    }
-    if (args?.agent) {
-      query += minTimestamp > 0 ? ' AND' : ' WHERE';
-      query += ` agent_id = '${args.agent}'`;
-    }
-    
-    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
-    let rows: any[] = [];
-    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+    // Build parameterized query
+    let query = 'SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions';
+    const params: any[] = [];
+    const whereClauses: string[] = [];
+    if (minTimestamp > 0) { whereClauses.push('created_at >= ?'); params.push(minTimestamp); }
+    if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
+    if (whereClauses.length) query += ' WHERE ' + whereClauses.join(' AND ');
+
+    const rows = sdb.prepare(query).all(...params) as any[];
 
     // Model pricing (input/output per 1M tokens)
     const pricing: Record<string, { input: number; output: number }> = {
@@ -7182,27 +6676,24 @@ ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: str
 
 ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; since?: number }) => {
   try {
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
-    if (!fs.existsSync(sessionsDbPath)) {
+    const sdb = getSessionsDb();
+    if (!sdb) {
       return { error: 'sessions.db not found', entries: [] };
     }
 
-    // Build query with filters
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
     const limit = args?.limit || 100;
     const since = args?.since || 0;
-    
-    let query = `SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions`;
-    const whereClauses = [];
-    if (args?.agent) whereClauses.push(`agent_id = '${args.agent}'`);
-    if (since > 0) whereClauses.push(`created_at >= ${since}`);
-    if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
-    query += ` ORDER BY created_at DESC LIMIT ${limit}`;
 
-    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
-    let rows: any[] = [];
-    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+    let query = 'SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions';
+    const params: any[] = [];
+    const whereClauses: string[] = [];
+    if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
+    if (since > 0) { whereClauses.push('created_at >= ?'); params.push(since); }
+    if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
+
+    const rows = sdb.prepare(query).all(...params) as any[];
 
     // Transform to expected format
     const entries = rows.map(row => ({
@@ -7241,18 +6732,14 @@ ipcMain.handle('tokens:budget', async (_, agent: string) => {
     }
 
     // Get today's usage from gateway sessions.db
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
     const startOfDay = new Date().setHours(0, 0, 0, 0);
-    
+
     let usedToday = 0;
-    if (fs.existsSync(sessionsDbPath)) {
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-      const query = `SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = '${agent}' AND created_at >= ${startOfDay}`;
-      const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 5000 });
+    const sdb = getSessionsDb();
+    if (sdb) {
       try {
-        const rows = JSON.parse(stdout || '[{"total":0}]');
-        usedToday = rows[0]?.total || 0;
+        const usageRow = sdb.prepare('SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = ? AND created_at >= ?').get(agent, startOfDay) as any;
+        usedToday = usageRow?.total || 0;
       } catch { usedToday = 0; }
     }
 
@@ -7317,11 +6804,9 @@ ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: numb
 ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: string }) => {
   try {
     const limit = args?.limit || 50;
-    const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
     // Show all messages including expired ones (users want to see agent communication history)
-    const query = `SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ${limit}`;
-    const result = execSync(`sqlite3 -json "${dbPath}" "${query}"`, { encoding: 'utf-8', timeout: 5000 });
-    return JSON.parse(result || '[]');
+    const rows = prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
+    return rows;
   } catch (e: any) {
     console.error('get-dm-history error:', e);
     return [];
@@ -7341,42 +6826,29 @@ ipcMain.handle('get-circuit-status', async () => {
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
 ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => {
   const session = msg.sessionKey || 'dashboard';
-  const escapedContent = msg.content.replace(/'/g, "''");
   const ts = new Date(msg.timestamp).toISOString();
-  
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('${ts}', '${session}', 'dashboard', '${msg.role}', '${escapedContent}')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, 'dashboard', msg.role, msg.content);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: string) => {
   const session = sessionKey || 'dashboard';
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id, timestamp, role, content FROM messages WHERE session_key='${session}' AND channel='dashboard' ORDER BY timestamp DESC LIMIT ${limit}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, messages: [] });
-        return;
-      }
-      try {
-        const rows = JSON.parse(stdout || '[]');
-        const messages = rows.reverse().map((r: any) => ({
-          id: `db-${r.id}`,
-          role: r.role,
-          content: r.content,
-          timestamp: new Date(r.timestamp).getTime(),
-        }));
-        resolve({ success: true, messages });
-      } catch {
-        resolve({ success: true, messages: [] });
-      }
-    });
-  });
+  try {
+    const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, 'dashboard', limit) as any[];
+    const messages = rows.reverse().map((r: any) => ({
+      id: `db-${r.id}`,
+      role: r.role,
+      content: r.content,
+      timestamp: new Date(r.timestamp).getTime(),
+    }));
+    return { success: true, messages };
+  } catch {
+    return { success: true, messages: [] };
+  }
 });
 
 ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {

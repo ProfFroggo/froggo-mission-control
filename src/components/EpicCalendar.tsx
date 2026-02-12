@@ -743,7 +743,6 @@ function MonthView({
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
 }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  // const __lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = getWeekStart(firstDay);
   
   const weeks: Date[][] = [];

@@ -609,14 +609,17 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             )}
           </div>
         ) : (
-          room.messages.filter(m => {
-            const t = m.content?.trim();
-            if (t === 'NO_REPLY' || t === 'HEARTBEAT_OK' || t === 'NO' || t === 'NO_RE' || t === 'NO_') return false;
-            return m.streaming || t;
-          }).map((msg, idx) => {
+          (() => {
+            const displayedMessages = room.messages.filter(m => {
+              const t = m.content?.trim();
+              if (t === 'NO_REPLY' || t === 'HEARTBEAT_OK' || t === 'NO' || t === 'NO_RE' || t === 'NO_') return false;
+              return m.streaming || t;
+            });
+            return displayedMessages.map((msg, idx) => {
             const isUser = msg.role === 'user';
             const theme = msg.agentId ? getAgentTheme(msg.agentId) : null;
-            const showAvatar = idx === 0 || room.messages[idx - 1]?.agentId !== msg.agentId || room.messages[idx - 1]?.role !== msg.role;
+            const prev = idx > 0 ? displayedMessages[idx - 1] : null;
+            const showAvatar = !prev || prev.agentId !== msg.agentId || prev.role !== msg.role;
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return (
@@ -678,7 +681,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 </div>
               </div>
             );
-          })
+          });
+          })()
         )}
 
         {/* Typing indicators for agents */}

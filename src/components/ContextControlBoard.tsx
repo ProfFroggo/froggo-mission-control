@@ -73,8 +73,6 @@ export default function ContextControlBoard() {
     if (!selectedFile) return;
     setSaving(true);
     try {
-      // Escape content for shell
-  //     const __escaped = fileContent.replace(/'/g, "'\\''");
       await (window as any).clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
       setOriginalContent(fileContent);
       setEditing(false);

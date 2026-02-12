@@ -21,23 +21,12 @@ const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; 
   { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
-// function formatRelativeTime(timestamp: number): string {
-//   const now = Date.now();
-//   const diff = now - timestamp;
-//   if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
-//   if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-//   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
-//   if (diff < 604800000) return `${Math.floor(diff / 86400000)}d`;
-//   return `${Math.floor(diff / 604800000)}w`;
-// }
-
 // Format due date
 function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; isDueSoon: boolean } {
   const now = Date.now();
   const diff = timestamp - now;
   const isOverdue = diff < 0;
-  // const isDueSoon = diff > 0 && diff < 86400000; // Due within 24h
-  
+
   if (isOverdue) {
     const overdueDiff = Math.abs(diff);
     if (overdueDiff < 86400000) return { text: 'Overdue', isOverdue: true, isDueSoon: false };
@@ -256,11 +245,6 @@ export default function Kanban() {
     const projectSet = new Set(tasks.map(t => t.project));
     return ['all', ...Array.from(projectSet)];
   }, [tasks]);
-
-  // const assignees = useMemo(() => {
-  //   const ids = new Set(tasks.map(t => t.assignedTo).filter(Boolean));
-  //   return ['all', 'unassigned', ...Array.from(ids)];
-  // }, [tasks]);
 
   // Filter and sort tasks
   const filteredTasks = useMemo(() => {
@@ -1352,18 +1336,17 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
       </div>
     </div>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison for better memoization
+}, (prev, next) => {
+  // Return true if props are equal (skip re-render)
+  // Intentionally skip callback comparison -- they are recreated each render but do not affect visual output
   return (
-    prevProps.task.id === nextProps.task.id &&
-    prevProps.task.status === nextProps.task.status &&
-    prevProps.task.priority === nextProps.task.priority &&
-    prevProps.task.title === nextProps.task.title &&
-    prevProps.task.assignedTo === nextProps.task.assignedTo &&
-    prevProps.task.lastAgentUpdate === nextProps.task.lastAgentUpdate &&
-    prevProps.task.updatedAt === nextProps.task.updatedAt &&
-    prevProps.task.dueDate === nextProps.task.dueDate &&
-    (prevProps.task.subtasks?.length || 0) === (nextProps.task.subtasks?.length || 0) &&
-    prevProps.isDragging === nextProps.isDragging
+    prev.task === next.task &&
+    prev.isDragging === next.isDragging &&
+    prev.isDeleting === next.isDeleting &&
+    prev.isSpawning === next.isSpawning &&
+    prev.isMoving === next.isMoving &&
+    prev.agents === next.agents &&
+    // activeSessions is a new object each render -- deep compare for small Record<string, boolean>
+    JSON.stringify(prev.activeSessions) === JSON.stringify(next.activeSessions)
   );
 });

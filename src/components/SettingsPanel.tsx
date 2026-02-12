@@ -56,15 +56,16 @@ interface Settings {
 }
 
 const defaultKeyboardShortcuts: KeyboardShortcut[] = [
-  { id: 'dashboard', name: 'Dashboard', description: 'Navigate to Dashboard', defaultKey: '1', currentKey: '1', modifiers: ['cmd'] },
-  { id: 'inbox', name: 'Inbox', description: 'Navigate to Inbox', defaultKey: '2', currentKey: '2', modifiers: ['cmd'] },
-  { id: 'comms', name: 'Communications', description: 'Navigate to Comms', defaultKey: '3', currentKey: '3', modifiers: ['cmd'] },
-  { id: 'analytics', name: 'Analytics', description: 'Navigate to Analytics', defaultKey: '4', currentKey: '4', modifiers: ['cmd'] },
-  { id: 'kanban', name: 'Tasks', description: 'Navigate to Kanban', defaultKey: '5', currentKey: '5', modifiers: ['cmd'] },
-  { id: 'agents', name: 'Agents', description: 'Navigate to Agents', defaultKey: '6', currentKey: '6', modifiers: ['cmd'] },
-  { id: 'twitter', name: 'Twitter', description: 'Navigate to Twitter', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
+  { id: 'inbox', name: 'Inbox', description: 'Navigate to Inbox', defaultKey: '1', currentKey: '1', modifiers: ['cmd'] },
+  { id: 'dashboard', name: 'Dashboard', description: 'Navigate to Dashboard', defaultKey: '2', currentKey: '2', modifiers: ['cmd'] },
+  { id: 'analytics', name: 'Analytics', description: 'Navigate to Analytics', defaultKey: '3', currentKey: '3', modifiers: ['cmd'] },
+  { id: 'kanban', name: 'Tasks', description: 'Navigate to Tasks', defaultKey: '4', currentKey: '4', modifiers: ['cmd'] },
+  { id: 'agents', name: 'Agents', description: 'Navigate to Agents', defaultKey: '5', currentKey: '5', modifiers: ['cmd'] },
+  { id: 'twitter', name: 'X / Twitter', description: 'Navigate to X / Twitter', defaultKey: '6', currentKey: '6', modifiers: ['cmd'] },
   { id: 'meetings', name: 'Meetings', description: 'Navigate to Meetings', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
-  { id: 'chat', name: 'Chat', description: 'Navigate to Chat', defaultKey: '9', currentKey: '9', modifiers: ['cmd'] },
+  { id: 'voicechat', name: 'Voice Chat', description: 'Navigate to Voice Chat', defaultKey: '8', currentKey: '8', modifiers: ['cmd'] },
+  { id: 'accounts', name: 'Accounts', description: 'Navigate to Accounts', defaultKey: '9', currentKey: '9', modifiers: ['cmd'] },
+  { id: 'approvals', name: 'Approvals', description: 'Navigate to Approvals', defaultKey: '0', currentKey: '0', modifiers: ['cmd'] },
   { id: 'settings', name: 'Settings', description: 'Open Settings', defaultKey: ',', currentKey: ',', modifiers: ['cmd'] },
   { id: 'commandPalette', name: 'Command Palette', description: 'Open command palette', defaultKey: 'k', currentKey: 'k', modifiers: ['cmd'] },
   { id: 'search', name: 'Search', description: 'Global search', defaultKey: '/', currentKey: '/', modifiers: ['cmd'] },
@@ -163,32 +164,6 @@ export default function SettingsPanel() {
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
   const [saved, setSaved] = useState(false);
-  
-  // Notification preferences state
-  const [_notifPrefs, setNotifPrefs] = useState({
-    enabled: true,
-    taskCompletions: true,
-    agentFailures: true,
-    approvalRequests: true,
-    chatMentions: true,
-    sound: true,
-    showPreviews: true,
-  });
-  
-  // Load notification preferences
-  useEffect(() => {
-    const loadNotifPrefs = async () => {
-      try {
-        const prefs = await (window as any).clawdbot?.notifications?.getPrefs();
-        if (prefs) {
-          setNotifPrefs(prefs);
-        }
-      } catch (e) {
-        console.error('Failed to load notification prefs:', e);
-      }
-    };
-    loadNotifPrefs();
-  }, []);
   const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

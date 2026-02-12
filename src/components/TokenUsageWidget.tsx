@@ -64,6 +64,10 @@ export default function TokenUsageWidget() {
   const loadData = async () => {
     setLoading(true);
     try {
+      if (!(window as any).clawdbot?.tokens) {
+        setLoading(false);
+        return; // IPC not available (web mode)
+      }
       // Map UI period names to froggo-db period names
       const periodMap: Record<string, string> = { 'today': 'day', '7d': 'week', '30d': 'month' };
       const summary = await (window as any).clawdbot.tokens.summary({ period: periodMap[period] || period });

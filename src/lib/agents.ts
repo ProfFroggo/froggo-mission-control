@@ -32,12 +32,9 @@ export async function spawnAgent(
 
   const label = options?.label || `${agent.id}-${Date.now()}`;
 
-  // Load agent prompt (fallback only - agents load their own from workspace)
-  const systemPrompt = getAgentPrompt(agentId);
-
   // Spawn via gateway
   const result = await gateway.spawnAgent(
-    `${systemPrompt}\n\n## YOUR TASK\n${task}`,
+    `## YOUR TASK\n${task}`,
     label,
     options?.model // Use provided model or gateway default
   );
@@ -123,36 +120,26 @@ export async function messageAgent(sessionKey: string, message: string): Promise
   });
 }
 
-// Embedded agent prompts (fallback only - agents load their own from workspace)
-function getAgentPrompt(agentId: string): string {
-  // Return empty string - agents load their own prompts from workspace AGENTS.md files
-  return '';
-}
-
-// Match task to best agent
+// Match task to best agent using ordered regex routing table
+// Order matters: more specific multi-word patterns first, generic last
 export function matchTaskToAgent(taskTitle: string, taskDescription: string): string {
   const text = `${taskTitle} ${taskDescription}`.toLowerCase();
-  
-  // Code-related
-  if (text.match(/code|bug|fix|implement|build|develop|api|function|test|debug/)) {
-    return 'coder';
+
+  const routes: [RegExp, string][] = [
+    [/design|mockup|wireframe|ui\/ux|figma|layout|visual|css|style|theme|branding/, 'designer'],
+    [/social media|twitter|x\.com|instagram|tiktok|linkedin|engagement|followers|hashtag/, 'social-manager'],
+    [/growth|marketing|campaign|audience|conversion|funnel|analytics|seo|outreach/, 'growth-director'],
+    [/hiring|onboard|team member|agent config|training|performance review|hr/, 'hr'],
+    [/architect|infrastructure|devops|deploy|ci\/cd|scaling|migration|refactor|technical debt/, 'lead-engineer'],
+    [/code|bug|fix|implement|build|develop|api|function|test|debug|typescript|react/, 'coder'],
+    [/research|analyze|find|investigate|compare|report|data|metrics|study/, 'researcher'],
+    [/write|draft|tweet|post|email|content|copy|edit|blog|article|newsletter/, 'writer'],
+    [/project|strategy|plan|roadmap|coordinate|prioritize|review/, 'chief'],
+  ];
+
+  for (const [pattern, agent] of routes) {
+    if (pattern.test(text)) return agent;
   }
-  
-  // Research-related  
-  if (text.match(/research|analyze|find|investigate|compare|report|data|metrics/)) {
-    return 'researcher';
-  }
-  
-  // Content-related
-  if (text.match(/write|draft|tweet|post|email|content|copy|edit|blog/)) {
-    return 'writer';
-  }
-  
-  // Complex project
-  if (text.match(/project|architecture|design|system|plan|roadmap/)) {
-    return 'chief';
-  }
-  
-  // Default to coder for technical tasks
-  return 'coder';
+
+  return 'coder'; // safe default
 }

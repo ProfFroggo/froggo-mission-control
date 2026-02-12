@@ -27,6 +27,26 @@ function getSettings(): { gatewayUrl: string; gatewayToken: string } {
   return { gatewayUrl: DEFAULT_GATEWAY_WS, gatewayToken: DEFAULT_TOKEN };
 }
 
+// Fetch gateway token from openclaw config via Electron IPC (async, one-time)
+let _configTokenLoaded = false;
+async function ensureGatewayToken() {
+  if (_configTokenLoaded) return;
+  _configTokenLoaded = true;
+  const settings = getSettings();
+  if (settings.gatewayToken) return; // already have one
+  try {
+    const w = window as any;
+    const token = await w.clawdbot?.gateway?.getToken?.();
+    if (token) {
+      const saved = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
+      saved.gatewayToken = token;
+      localStorage.setItem('froggo-settings', JSON.stringify(saved));
+      console.log('[Gateway] Loaded token from openclaw config');
+      gateway.reconnect();
+    }
+  } catch {}
+}
+
 type Listener = (event: any) => void;
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'authenticating' | 'connected';
@@ -825,4 +845,5 @@ if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadc
   });
 }
 
+ensureGatewayToken();
 gateway.connect();

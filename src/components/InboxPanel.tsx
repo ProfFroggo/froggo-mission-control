@@ -9,6 +9,7 @@ import { calculatePriorityScore, getPriorityLevel } from '../lib/priorityScoring
 import AIAssistancePanel from './AIAssistancePanel';
 import IconBadge from './IconBadge';
 import MarkdownMessage from './MarkdownMessage';
+import { matchTaskToAgent } from '../lib/agents';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -110,8 +111,7 @@ export default function InboxPanel() {
   // View mode state (list or priority lanes)
   type ViewMode = 'list' | 'lanes';
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [_collapsedLanes, _setCollapsedLanes] = useState<Set<string>>(new Set());
-  
+
   // Keyboard shortcuts state
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [gKeyPressed, setGKeyPressed] = useState(false);
@@ -225,7 +225,8 @@ export default function InboxPanel() {
   filteredPending = filteredPending.map(item => {
     if (item.priority_score === undefined || item.priority_score === null) {
       // Calculate on-the-fly if not in DB
-      const metadata = item.metadata ? JSON.parse(item.metadata) : {};
+      let metadata: Record<string, any> = {};
+      try { metadata = item.metadata ? JSON.parse(item.metadata) : {}; } catch { /* malformed JSON */ }
       const score = calculatePriorityScore({
         type: item.type,
         title: item.title,
@@ -671,7 +672,7 @@ export default function InboxPanel() {
         description: item.content,
         status: 'in-progress',
         project: projectMap[item.type] || 'Approved',
-        assignedTo: 'coder', // Never assign to main/froggo - use coder for execution
+        assignedTo: matchTaskToAgent(item.title, item.content || ''),
         metadata,
       };
       
@@ -853,7 +854,8 @@ export default function InboxPanel() {
     
     if (isTaskItem && item.metadata) {
       // For task items, update the task status back to in-progress with feedback
-      const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+      let meta: Record<string, any> = {};
+      try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata; } catch { /* malformed JSON */ }
       if (meta.taskId) {
         await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
@@ -875,7 +877,7 @@ export default function InboxPanel() {
         status: 'in-progress',
         project: item.type === 'tweet' || item.type === 'reply' ? 'X' : 
                  item.type === 'email' ? 'Email' : 'Revisions',
-        assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
+        assignedTo: matchTaskToAgent(item.title, `${item.type} ${item.content || ''}`),
       };
       
       const result = await window.clawdbot?.tasks.sync(taskData);
@@ -1927,7 +1929,7 @@ export default function InboxPanel() {
                   try {
                     // Kill the agent session
                     const result = await window.clawdbot?.exec.run(
-                      `clawdbot sessions kill ${activeAgentSession.sessionId}`
+                      `openclaw sessions kill ${activeAgentSession.sessionId}`
                     );
                     
                     if (result?.success) {

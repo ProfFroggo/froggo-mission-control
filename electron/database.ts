@@ -6,6 +6,7 @@
  */
 
 import Database from 'better-sqlite3';
+import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
@@ -67,6 +68,26 @@ export function getSecurityDb(): Database.Database {
   return securityDb;
 }
 
+// Lazy sessions.db connection (gateway session tracking, readonly)
+let sessionsDb: Database.Database | null = null;
+const SESSIONS_DB_PATH = join(homedir(), '.openclaw', 'sessions.db');
+const SESSIONS_DB_PATH_LEGACY = join(homedir(), '.clawdbot', 'sessions.db');
+
+/**
+ * Get the sessions database connection (lazy initialization).
+ * Readonly -- dashboard only reads session data.
+ * Returns null if sessions.db does not exist at either path.
+ */
+export function getSessionsDb(): Database.Database | null {
+  if (!sessionsDb) {
+    const dbPath = existsSync(SESSIONS_DB_PATH) ? SESSIONS_DB_PATH : SESSIONS_DB_PATH_LEGACY;
+    if (!existsSync(dbPath)) return null;
+    sessionsDb = new Database(dbPath, { readonly: true, fileMustExist: true });
+    sessionsDb.pragma('journal_mode = WAL');
+  }
+  return sessionsDb;
+}
+
 /**
  * Close all database connections
  * Call during app shutdown
@@ -100,6 +121,16 @@ export function closeDb(): void {
       console.error('[Database] Failed to close security.db:', error);
     }
     securityDb = null;
+  }
+
+  // Close sessions DB if open
+  if (sessionsDb) {
+    try {
+      sessionsDb.close();
+    } catch (error) {
+      console.error('[Database] Failed to close sessions.db:', error);
+    }
+    sessionsDb = null;
   }
 
   // Close main DB
