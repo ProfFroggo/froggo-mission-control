@@ -17,14 +17,12 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { safeStorage } from 'electron';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { FROGGO_DB } from './paths';
 
 const execAsync = promisify(exec);
 
-// Database path (fixed: was incorrectly pointing to ~/Froggo/clawd/data)
-const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+// Database path
+const DB_PATH = FROGGO_DB;
 
 export interface ConnectedAccount {
   id: string;

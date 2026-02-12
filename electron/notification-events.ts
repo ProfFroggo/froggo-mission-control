@@ -5,10 +5,9 @@
 
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs';
-import * as os from 'os';
 import { notificationService } from './notification-service';
 import { prepare } from './database';
+import { OPENCLAW_DIR } from './paths';
 
 const safeLog = {
   log: (...args: any[]) => {
@@ -26,7 +25,7 @@ const safeLog = {
     } catch {}
   },
 };
-const SESSION_DIR = path.join(os.homedir(), '.clawdbot', 'sessions');
+const SESSION_DIR = path.join(OPENCLAW_DIR, 'sessions');
 
 interface EventWatcher {
   start: () => void;
