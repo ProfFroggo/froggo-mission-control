@@ -854,7 +854,8 @@ export default function InboxPanel() {
     
     if (isTaskItem && item.metadata) {
       // For task items, update the task status back to in-progress with feedback
-      const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
+      let meta: Record<string, any> = {};
+      try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata; } catch { /* malformed JSON */ }
       if (meta.taskId) {
         await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
