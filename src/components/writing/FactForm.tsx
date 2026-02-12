@@ -48,6 +48,7 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
         <option value="unverified">Unverified</option>
         <option value="verified">Verified</option>
         <option value="disputed">Disputed</option>
+        <option value="needs-source">Needs Source</option>
       </select>
       <div className="flex gap-1">
         <button
