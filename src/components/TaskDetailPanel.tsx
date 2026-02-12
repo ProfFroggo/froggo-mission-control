@@ -1426,9 +1426,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 onClick={async () => {
                   setAbortingAgent(true);
                   try {
-                    // Abort the agent session via clawdbot CLI
+                    // Abort the agent session via openclaw CLI
                     const result = await (window as any).clawdbot.exec.run(
-                      `clawdbot sessions abort ${activeAgentInfo.sessionKey}`
+                      `openclaw sessions abort ${activeAgentInfo.sessionKey}`
                     );
                     
                     if (result.success) {

@@ -225,7 +225,8 @@ export default function InboxPanel() {
   filteredPending = filteredPending.map(item => {
     if (item.priority_score === undefined || item.priority_score === null) {
       // Calculate on-the-fly if not in DB
-      const metadata = item.metadata ? JSON.parse(item.metadata) : {};
+      let metadata: Record<string, any> = {};
+      try { metadata = item.metadata ? JSON.parse(item.metadata) : {}; } catch { /* malformed JSON */ }
       const score = calculatePriorityScore({
         type: item.type,
         title: item.title,
@@ -1927,7 +1928,7 @@ export default function InboxPanel() {
                   try {
                     // Kill the agent session
                     const result = await window.clawdbot?.exec.run(
-                      `clawdbot sessions kill ${activeAgentSession.sessionId}`
+                      `openclaw sessions kill ${activeAgentSession.sessionId}`
                     );
                     
                     if (result?.success) {

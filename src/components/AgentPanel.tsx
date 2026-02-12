@@ -16,6 +16,26 @@ import WidgetLoader from './WidgetLoader';
 
 const getTheme = getAgentTheme;
 
+// Static lookup for Tailwind JIT — dynamic `hover:${theme.bg}` won't generate CSS
+const HOVER_BG_MAP: Record<string, string> = {
+  'bg-green-500/8': 'hover:bg-green-500/8',
+  'bg-blue-500/8': 'hover:bg-blue-500/8',
+  'bg-orange-500/8': 'hover:bg-orange-500/8',
+  'bg-purple-500/8': 'hover:bg-purple-500/8',
+  'bg-red-500/8': 'hover:bg-red-500/8',
+  'bg-teal-500/8': 'hover:bg-teal-500/8',
+  'bg-pink-500/8': 'hover:bg-pink-500/8',
+  'bg-sky-500/8': 'hover:bg-sky-500/8',
+  'bg-violet-500/8': 'hover:bg-violet-500/8',
+  'bg-amber-600/8': 'hover:bg-amber-600/8',
+  'bg-rose-500/8': 'hover:bg-rose-500/8',
+  'bg-cyan-500/8': 'hover:bg-cyan-500/8',
+  'bg-indigo-500/8': 'hover:bg-indigo-500/8',
+  'bg-blue-700/8': 'hover:bg-blue-700/8',
+  'bg-yellow-600/8': 'hover:bg-yellow-600/8',
+  'bg-clawd-surface': 'hover:bg-clawd-surface',
+};
+
 export default function AgentPanel() {
   const { agents, tasks, spawnAgentForTask, updateAgentStatus, fetchAgents, gatewaySessions, loadGatewaySessions, loadTasksFromDB } = useStore();
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -343,7 +363,7 @@ export default function AgentPanel() {
                       </button>
                       <div className="flex-1" />
                       <button onClick={(e) => { e.stopPropagation(); setChatAgent(agent.id); }}
-                        className={`p-1.5 rounded-lg transition-colors hover:${theme.bg} ${theme.text} opacity-50 hover:opacity-100`}
+                        className={`p-1.5 rounded-lg transition-colors ${HOVER_BG_MAP[theme.bg] || ''} ${theme.text} opacity-50 hover:opacity-100`}
                         title="Chat">
                         <MessageSquare size={14} />
                       </button>

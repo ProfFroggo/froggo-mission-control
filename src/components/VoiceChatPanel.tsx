@@ -959,7 +959,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
           await exec(`froggo-db task-add "${safeTitle}" --assign ${args.agent_id} --priority high --status todo 2>&1`);
         }
         const safeMsg = shellSafe(args.message);
-        const r = await exec(`clawdbot gateway sessions-send --target "agent:${args.agent_id}:main" --message "${safeMsg}" 2>&1`);
+        const r = await exec(`openclaw gateway sessions-send --target "agent:${args.agent_id}:main" --message "${safeMsg}" 2>&1`);
         invalidateAgentContext(args.agent_id);
         return { success: r.success, output: r.stdout?.trim(), agent_spawned: args.agent_id };
       }
@@ -992,7 +992,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
       }
       case 'send_message': {
         const safeMsg = shellSafe(args.message);
-        const r = await exec(`clawdbot gateway sessions-send --label discord --message "${safeMsg}" 2>&1`);
+        const r = await exec(`openclaw gateway sessions-send --label discord --message "${safeMsg}" 2>&1`);
         return { success: r.success, output: r.stdout?.trim() };
       }
       case 'search_workspace': {
