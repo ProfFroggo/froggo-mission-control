@@ -16,7 +16,7 @@ const HOME = os.homedir();
 
 // ── Core roots ──
 export const PROJECT_ROOT = process.env.FROGGO_ROOT || path.join(HOME, 'clawd');
-const AGENT_PREFIX = process.env.FROGGO_AGENT_PREFIX || 'clawd-';
+const AGENT_PREFIX = process.env.FROGGO_AGENT_PREFIX || 'agent-';
 
 // ── Project directories ──
 export const DATA_DIR     = path.join(PROJECT_ROOT, 'data');
