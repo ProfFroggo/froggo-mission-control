@@ -89,6 +89,23 @@ function getAgentsFromDB(): any[] {
   }
 }
 
+ipcMain.handle('gateway:getToken', async () => {
+  const configPaths = [
+    path.join(os.homedir(), '.openclaw', 'openclaw.json'),
+    path.join(os.homedir(), '.clawdbot', 'openclaw.json'),
+  ];
+  for (const cfgPath of configPaths) {
+    try {
+      if (fs.existsSync(cfgPath)) {
+        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
+        const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
+        if (token) return token;
+      }
+    } catch {}
+  }
+  return '';
+});
+
 ipcMain.handle('agents:list', async () => {
   return new Promise((resolve) => {
     exec('openclaw agents list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout, stderr) => {
