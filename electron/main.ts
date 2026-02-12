@@ -4449,6 +4449,39 @@ Rules:
   }
 });
 
+// ============== AI ANALYSIS LOOKUP ==============
+
+ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
+  try {
+    const row = prepare(
+      "SELECT triage, summary, tasks, events, reply_draft, reply_needed FROM comms_ai_analysis WHERE external_id = ? AND platform = ?"
+    ).get(id, platform) as any;
+
+    if (!row) {
+      return { success: true, analysis: null };
+    }
+
+    let tasks: any[] = [];
+    let events: any[] = [];
+    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch {}
+    try { events = row.events ? JSON.parse(row.events) : []; } catch {}
+
+    return {
+      success: true,
+      analysis: {
+        triage: row.triage,
+        summary: row.summary,
+        tasks,
+        events,
+        reply_draft: row.reply_draft,
+        reply_needed: !!row.reply_needed,
+      },
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+});
+
 // ============== TWITTER IPC HANDLERS (X API v2) ==============
 
 ipcMain.handle('twitter:mentions', async () => {
