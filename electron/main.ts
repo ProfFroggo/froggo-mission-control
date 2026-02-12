@@ -17,7 +17,7 @@ import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsS
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
-import { db, prepare, getScheduleDb, getSecurityDb, closeDb } from './database';
+import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
 import { validateFsPath } from './fs-validation';
 
 // ============== AGENT REGISTRY ==============
@@ -6438,8 +6438,8 @@ ipcMain.handle('agents:create', async (_, config: { id: string; name: string; ro
 // ============== TOKEN TRACKING IPC HANDLERS ==============
 ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: string }) => {
   try {
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
-    if (!fs.existsSync(sessionsDbPath)) {
+    const sdb = getSessionsDb();
+    if (!sdb) {
       return { error: 'sessions.db not found', by_agent: [] };
     }
 
@@ -6454,21 +6454,15 @@ ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: str
       minTimestamp = now - (30 * 24 * 60 * 60 * 1000);
     }
 
-    // Query sessions from gateway database
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    let query = `SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions`;
-    if (minTimestamp > 0) {
-      query += ` WHERE created_at >= ${minTimestamp}`;
-    }
-    if (args?.agent) {
-      query += minTimestamp > 0 ? ' AND' : ' WHERE';
-      query += ` agent_id = '${args.agent}'`;
-    }
-    
-    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
-    let rows: any[] = [];
-    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+    // Build parameterized query
+    let query = 'SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions';
+    const params: any[] = [];
+    const whereClauses: string[] = [];
+    if (minTimestamp > 0) { whereClauses.push('created_at >= ?'); params.push(minTimestamp); }
+    if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
+    if (whereClauses.length) query += ' WHERE ' + whereClauses.join(' AND ');
+
+    const rows = sdb.prepare(query).all(...params) as any[];
 
     // Model pricing (input/output per 1M tokens)
     const pricing: Record<string, { input: number; output: number }> = {
@@ -6521,27 +6515,24 @@ ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: str
 
 ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; since?: number }) => {
   try {
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
-    if (!fs.existsSync(sessionsDbPath)) {
+    const sdb = getSessionsDb();
+    if (!sdb) {
       return { error: 'sessions.db not found', entries: [] };
     }
 
-    // Build query with filters
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
     const limit = args?.limit || 100;
     const since = args?.since || 0;
-    
-    let query = `SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions`;
-    const whereClauses = [];
-    if (args?.agent) whereClauses.push(`agent_id = '${args.agent}'`);
-    if (since > 0) whereClauses.push(`created_at >= ${since}`);
-    if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
-    query += ` ORDER BY created_at DESC LIMIT ${limit}`;
 
-    const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 10000 });
-    let rows: any[] = [];
-    try { rows = JSON.parse(stdout || '[]'); } catch { rows = []; }
+    let query = 'SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions';
+    const params: any[] = [];
+    const whereClauses: string[] = [];
+    if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
+    if (since > 0) { whereClauses.push('created_at >= ?'); params.push(since); }
+    if (whereClauses.length > 0) query += ' WHERE ' + whereClauses.join(' AND ');
+    query += ' ORDER BY created_at DESC LIMIT ?';
+    params.push(limit);
+
+    const rows = sdb.prepare(query).all(...params) as any[];
 
     // Transform to expected format
     const entries = rows.map(row => ({
@@ -6580,18 +6571,14 @@ ipcMain.handle('tokens:budget', async (_, agent: string) => {
     }
 
     // Get today's usage from gateway sessions.db
-    const sessionsDbPath = path.join(os.homedir(), '.clawdbot', 'sessions.db');
     const startOfDay = new Date().setHours(0, 0, 0, 0);
-    
+
     let usedToday = 0;
-    if (fs.existsSync(sessionsDbPath)) {
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-      const query = `SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = '${agent}' AND created_at >= ${startOfDay}`;
-      const { stdout } = await execAsync(`sqlite3 "${sessionsDbPath}" "${query}" -json`, { timeout: 5000 });
+    const sdb = getSessionsDb();
+    if (sdb) {
       try {
-        const rows = JSON.parse(stdout || '[{"total":0}]');
-        usedToday = rows[0]?.total || 0;
+        const usageRow = sdb.prepare('SELECT SUM(total_tokens) as total FROM sessions WHERE agent_id = ? AND created_at >= ?').get(agent, startOfDay) as any;
+        usedToday = usageRow?.total || 0;
       } catch { usedToday = 0; }
     }
 
@@ -6656,11 +6643,9 @@ ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: numb
 ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: string }) => {
   try {
     const limit = args?.limit || 50;
-    const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
     // Show all messages including expired ones (users want to see agent communication history)
-    const query = `SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ${limit}`;
-    const result = execSync(`sqlite3 -json "${dbPath}" "${query}"`, { encoding: 'utf-8', timeout: 5000 });
-    return JSON.parse(result || '[]');
+    const rows = prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
+    return rows;
   } catch (e: any) {
     console.error('get-dm-history error:', e);
     return [];
