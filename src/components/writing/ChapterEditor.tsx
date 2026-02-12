@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -6,6 +7,7 @@ import CharacterCount from '@tiptap/extension-character-count';
 import Typography from '@tiptap/extension-typography';
 import Link from '@tiptap/extension-link';
 import EditorToolbar from './EditorToolbar';
+import FeedbackPopover from './FeedbackPopover';
 import { useWritingStore } from '../../store/writingStore';
 import { useEffect, useRef, useCallback } from 'react';
 import '../../styles/writing-editor.css';
@@ -125,6 +127,24 @@ export default function ChapterEditor() {
       <EditorToolbar editor={editor} />
       <div className="flex-1 overflow-y-auto">
         <EditorContent editor={editor} />
+        {editor && (
+          <BubbleMenu
+            editor={editor}
+            shouldShow={({ editor: ed, from, to }) => {
+              if (from === to) return false;
+              return !ed.state.selection.empty;
+            }}
+            updateDelay={0}
+            options={{
+              placement: 'top',
+              offset: { mainAxis: 8 },
+              flip: true,
+              shift: { padding: 8 },
+            }}
+          >
+            <FeedbackPopover editor={editor} />
+          </BubbleMenu>
+        )}
       </div>
       <div className="border-t border-clawd-border px-4 py-2 text-xs text-clawd-text-dim flex justify-between flex-shrink-0">
         <span>{wordCount.toLocaleString()} words</span>
