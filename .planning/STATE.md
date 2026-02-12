@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 6 — Inline Feedback (complete, verified 23/23)
+**Current focus:** Phase 7 — Memory Store (in progress)
 
 ## Current Position
 
-Phase: 6 of 10 (Inline Feedback)
-Plan: 2 of 2 in current phase
-Status: Phase complete (verified 23/23 must-haves)
-Last activity: 2026-02-12 — Phase 6 verified (23/23 must-haves passed)
+Phase: 7 of 10 (Memory Store)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-12 — Completed 07-01-PLAN.md (Memory Store Infrastructure)
 
-Progress: [█████░░░░░░░] 42% (5/12 plans)
+Progress: [██████░░░░░░] 50% (6/12 plans)
 
 ## Performance Metrics
 
@@ -24,12 +24,13 @@ Progress: [█████░░░░░░░] 42% (5/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 5
+- Plans completed: 6
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
 - 06-01: 2min (2 tasks)
 - 06-02: 3min (3 tasks)
+- 07-01: 3min (2 tasks)
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ v2 decisions (confirmed in execution):
 - Agent-specific preamble in feedback prompts (writer: style, researcher: accuracy, jess: emotional)
 - Chapter context truncated to ~16K chars around selection position
 - BubbleMenu updateDelay=0 for instant popup; selection collapse after accept to prevent flicker
+- JSON array files per project for memory storage (characters.json, timeline.json, facts.json)
+- Re-list after mutation in memoryStore (simpler than optimistic updates, local I/O is fast)
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-12T21:19:00Z
-Stopped at: Completed 06-02-PLAN.md (Inline Feedback UI) — Phase 6 complete
+Last session: 2026-02-12T22:08:00Z
+Stopped at: Completed 07-01-PLAN.md (Memory Store Infrastructure)
 Resume file: None
