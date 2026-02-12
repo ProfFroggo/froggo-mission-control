@@ -82,8 +82,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Delete dead code and files (CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05 — remove dead libs, dead panel exports, dead store fields, dead component code, .bak files)
-- [ ] 04-02: Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08 — replace non-standard CSS classes, remove debug output, fix shortcut collisions)
+- [ ] 04-01-PLAN.md — Delete dead code and files (CLEAN-01 through CLEAN-05) [Wave 1]
+- [ ] 04-02-PLAN.md — Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08) [Wave 1]
 
 ## Progress
 
