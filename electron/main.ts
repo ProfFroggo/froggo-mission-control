@@ -2730,215 +2730,112 @@ ipcMain.handle('pins:count', async () => {
 
 // List all snoozed conversations
 ipcMain.handle('snooze:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] List error:', error);
-        resolve({ success: false, snoozes: [] });
-        return;
-      }
-      try {
-        const snoozes = JSON.parse(stdout || '[]');
-        resolve({ success: true, snoozes });
-      } catch (e) {
-        safeLog.error('[Snooze] Parse error:', e);
-        resolve({ success: false, snoozes: [] });
-      }
-    });
-  });
+  try {
+    const snoozes = prepare('SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC').all();
+    return { success: true, snoozes };
+  } catch (error: any) {
+    safeLog.error('[Snooze] List error:', error);
+    return { success: false, snoozes: [] };
+  }
 });
 
 // Check if a session is snoozed
 ipcMain.handle('snooze:get', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] Get error:', error);
-        resolve({ success: false, snooze: null });
-        return;
-      }
-      try {
-        const result = JSON.parse(stdout || '[]');
-        resolve({ 
-          success: true, 
-          snooze: result.length > 0 ? result[0] : null 
-        });
-      } catch (e) {
-        safeLog.error('[Snooze] Parse error:', e);
-        resolve({ success: false, snooze: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
+    return { success: true, snooze: row || null };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Get error:', error);
+    return { success: false, snooze: null };
+  }
 });
 
 // Set/update snooze for a conversation
 ipcMain.handle('snooze:set', async (_, sessionKey: string, snoozeUntil: number, reason?: string) => {
-  const now = Date.now();
-  const reasonEscaped = reason ? reason.replace(/'/g, "''") : '';
-  
-  // Check if already snoozed (for update vs insert)
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
-      if (checkError) {
-        safeLog.error('[Snooze] Set check error:', checkError);
-        resolve({ success: false, error: checkError.message });
-        return;
-      }
-      
-      try {
-        const existing = JSON.parse(checkStdout || '[]');
-        let snoozeCmd: string;
-        
-        if (existing.length > 0) {
-          // Update existing snooze
-          snoozeCmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_snoozes SET snooze_until = ${snoozeUntil}, snooze_reason = '${reasonEscaped}', reminder_sent = 0, updated_at = ${now} WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
-        } else {
-          // Insert new snooze
-          snoozeCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_snoozes (session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at) VALUES ('${sessionKey.replace(/'/g, "''")}', ${snoozeUntil}, '${reasonEscaped}', 0, ${now}, ${now})"`;
-        }
-        
-        exec(snoozeCmd, { timeout: 5000 }, (snoozeError) => {
-          if (snoozeError) {
-            safeLog.error('[Snooze] Set error:', snoozeError);
-            resolve({ success: false, error: snoozeError.message });
-            return;
-          }
-          
-          safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
-          resolve({ success: true });
-        });
-      } catch (e) {
-        safeLog.error('[Snooze] Set parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    const now = Date.now();
+    const snoozeReason = reason || '';
+
+    // Check if already snoozed (for update vs insert)
+    const existing = prepare('SELECT id FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
+
+    if (existing) {
+      prepare('UPDATE conversation_snoozes SET snooze_until = ?, snooze_reason = ?, reminder_sent = 0, updated_at = ? WHERE session_id = ?').run(snoozeUntil, snoozeReason, now, sessionKey);
+    } else {
+      prepare('INSERT INTO conversation_snoozes (session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at) VALUES (?, ?, ?, 0, ?, ?)').run(sessionKey, snoozeUntil, snoozeReason, now, now);
+    }
+
+    safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Set error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unsnooze a conversation (remove snooze)
 ipcMain.handle('snooze:unset', async (_, sessionKey: string) => {
-  const now = Date.now();
-  
-  // First get the snooze data for history
-  const getCmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
-      if (getError) {
-        safeLog.error('[Snooze] Unset get error:', getError);
-        resolve({ success: false, error: getError.message });
-        return;
-      }
-      
-      try {
-        const snoozes = JSON.parse(getStdout || '[]');
-        
-        if (snoozes.length === 0) {
-          // Not snoozed, nothing to do
-          resolve({ success: true });
-          return;
-        }
-        
-        const snooze = snoozes[0];
-        const reasonEscaped = snooze.snooze_reason ? snooze.snooze_reason.replace(/'/g, "''") : '';
-        
-        // Add to history
-        const historyCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES ('${sessionKey.replace(/'/g, "''")}', ${snooze.snooze_until}, '${reasonEscaped}', ${now}, ${snooze.created_at})"`;
-        
-        exec(historyCmd, { timeout: 5000 }, (historyError) => {
-          if (historyError) {
-            safeLog.warn('[Snooze] History insert error (non-fatal):', historyError);
-          }
-          
-          // Delete from active snoozes
-          const deleteCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_snoozes WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
-          
-          exec(deleteCmd, { timeout: 5000 }, (deleteError) => {
-            if (deleteError) {
-              safeLog.error('[Snooze] Unset delete error:', deleteError);
-              resolve({ success: false, error: deleteError.message });
-              return;
-            }
-            
-            safeLog.log('[Snooze] Unsnoozed:', sessionKey);
-            resolve({ success: true });
-          });
-        });
-      } catch (e) {
-        safeLog.error('[Snooze] Unset parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    const now = Date.now();
+
+    // Get the snooze data for history
+    const snooze = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as any;
+
+    if (!snooze) {
+      // Not snoozed, nothing to do
+      return { success: true };
+    }
+
+    // Use transaction for atomicity: history insert + delete
+    db.transaction(() => {
+      prepare('INSERT INTO snooze_history (session_id, snooze_until, snooze_reason, unsnoozed_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
+        sessionKey, snooze.snooze_until, snooze.snooze_reason || '', now, snooze.created_at
+      );
+      prepare('DELETE FROM conversation_snoozes WHERE session_id = ?').run(sessionKey);
+    })();
+
+    safeLog.log('[Snooze] Unsnoozed:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Unset error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Mark reminder as sent for a snooze
 ipcMain.handle('snooze:markReminderSent', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = '${sessionKey.replace(/'/g, "''")}'"`; 
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Snooze] Mark reminder error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = ?').run(sessionKey);
+    safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Mark reminder error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get expired snoozes (for reminder processing)
 ipcMain.handle('snooze:expired', async () => {
-  const now = Date.now();
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_snoozes WHERE snooze_until <= ${now} AND reminder_sent = 0 ORDER BY snooze_until ASC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] Expired list error:', error);
-        resolve({ success: false, snoozes: [] });
-        return;
-      }
-      try {
-        const snoozes = JSON.parse(stdout || '[]');
-        resolve({ success: true, snoozes });
-      } catch (e) {
-        safeLog.error('[Snooze] Expired parse error:', e);
-        resolve({ success: false, snoozes: [] });
-      }
-    });
-  });
+  try {
+    const now = Date.now();
+    const snoozes = prepare('SELECT * FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
+    return { success: true, snoozes };
+  } catch (error: any) {
+    safeLog.error('[Snooze] Expired list error:', error);
+    return { success: false, snoozes: [] };
+  }
 });
 
 // Get snooze history for a session
 ipcMain.handle('snooze:history', async (_, sessionKey: string, limit: number = 10) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM snooze_history WHERE session_id = '${sessionKey.replace(/'/g, "''")}' ORDER BY created_at DESC LIMIT ${limit}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Snooze] History error:', error);
-        resolve({ success: false, history: [] });
-        return;
-      }
-      try {
-        const history = JSON.parse(stdout || '[]');
-        resolve({ success: true, history });
-      } catch (e) {
-        safeLog.error('[Snooze] History parse error:', e);
-        resolve({ success: false, history: [] });
-      }
-    });
-  });
+  try {
+    const safeLimit = Math.max(1, Math.min(Math.floor(limit), 100));
+    const history = prepare('SELECT * FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
+    return { success: true, history };
+  } catch (error: any) {
+    safeLog.error('[Snooze] History error:', error);
+    return { success: false, history: [] };
+  }
 });
 
 // ============== CALENDAR EVENTS HANDLERS ==============
