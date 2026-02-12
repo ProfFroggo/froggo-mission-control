@@ -19,16 +19,16 @@ Requirements for this hardening milestone. Each maps to roadmap phases.
 
 ### Broken Features
 
-- [ ] **FIX-01**: Fix wrong DB path ~/Froggo/clawd/data/ -> ~/clawd/data/ in 4 files (library, x-automations, connected-accounts, main.ts)
-- [ ] **FIX-02**: Fix agents:spawnForTask to use dispatcher/openclaw instead of deleted spawn-agent-with-retry.py
-- [ ] **FIX-03**: Register missing AI IPC handlers (ai:generate-content, ai:generateReply, ai:getAnalysis) or remove from preload
-- [ ] **FIX-04**: Fix tasks:list WHERE clause bug (cancelled=0 -> archived=0)
-- [ ] **FIX-05**: Fix Dashboard.tsx DEFAULT_LAYOUT key (id: -> i: for active-work widget)
-- [ ] **FIX-06**: Fix AgentPanel dynamic Tailwind hover classes (use lookup map)
-- [ ] **FIX-07**: Fix ChatRoomView filtered message index mismatch for avatar grouping
-- [ ] **FIX-08**: Guard InboxPanel JSON.parse(metadata) with try/catch
-- [ ] **FIX-09**: Replace all `clawdbot` CLI refs with `openclaw` in 4 frontend files (VoiceChat x2, InboxPanel, TaskDetail)
-- [ ] **FIX-10**: Fix stale ~/.clawdbot/ paths in main.ts (ElevenLabs, Anthropic key, OpenAI key, sessions.db x3)
+- [x] **FIX-01**: Fix wrong DB path ~/Froggo/clawd/data/ -> ~/clawd/data/ in 4 files (library, x-automations, connected-accounts, main.ts)
+- [x] **FIX-02**: Fix agents:spawnForTask to use dispatcher/openclaw instead of deleted spawn-agent-with-retry.py
+- [x] **FIX-03**: Register missing AI IPC handlers (ai:generate-content, ai:generateReply, ai:getAnalysis) or remove from preload
+- [x] **FIX-04**: Fix tasks:list WHERE clause bug (cancelled=0 -> archived=0)
+- [x] **FIX-05**: Fix Dashboard.tsx DEFAULT_LAYOUT key (id: -> i: for active-work widget)
+- [x] **FIX-06**: Fix AgentPanel dynamic Tailwind hover classes (use lookup map)
+- [x] **FIX-07**: Fix ChatRoomView filtered message index mismatch for avatar grouping
+- [x] **FIX-08**: Guard InboxPanel JSON.parse(metadata) with try/catch
+- [x] **FIX-09**: Replace all `clawdbot` CLI refs with `openclaw` in 4 frontend files (VoiceChat x2, InboxPanel, TaskDetail)
+- [x] **FIX-10**: Fix stale ~/.clawdbot/ paths in main.ts (ElevenLabs, Anthropic key, OpenAI key, sessions.db x3)
 
 ### Functional
 
@@ -87,16 +87,16 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | SEC-05 | Phase 1 | 01-02 | Complete |
 | SEC-06 | Phase 1 | 01-02 | Complete |
 | SEC-07 | Phase 1 | 01-01 | Complete |
-| FIX-01 | Phase 2 | 02-01 | Pending |
-| FIX-02 | Phase 2 | 02-02 | Pending |
-| FIX-03 | Phase 2 | 02-02 | Pending |
-| FIX-04 | Phase 2 | 02-02 | Pending |
-| FIX-05 | Phase 2 | 02-02 | Pending |
-| FIX-06 | Phase 2 | 02-02 | Pending |
-| FIX-07 | Phase 2 | 02-02 | Pending |
-| FIX-08 | Phase 2 | 02-02 | Pending |
-| FIX-09 | Phase 2 | 02-01 | Pending |
-| FIX-10 | Phase 2 | 02-01 | Pending |
+| FIX-01 | Phase 2 | 02-01 | Complete |
+| FIX-02 | Phase 2 | 02-01 | Complete |
+| FIX-03 | Phase 2 | 02-02 | Complete |
+| FIX-04 | Phase 2 | 02-01 | Complete |
+| FIX-05 | Phase 2 | 02-01 | Complete |
+| FIX-06 | Phase 2 | 02-01 | Complete |
+| FIX-07 | Phase 2 | 02-01 | Complete |
+| FIX-08 | Phase 2 | 02-01 | Complete |
+| FIX-09 | Phase 2 | 02-01 | Complete |
+| FIX-10 | Phase 2 | 02-01 | Complete |
 | FUNC-01 | Phase 3 | 03-01 | Pending |
 | FUNC-02 | Phase 3 | 03-01 | Pending |
 | FUNC-03 | Phase 3 | 03-01 | Pending |
