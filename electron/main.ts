@@ -4266,7 +4266,7 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
   }
 });
 
-ipcMain.handle('ai:generateContent', async (_, prompt: string, type: string, options?: { agent?: string }) => {
+ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, options?: { agent?: string }) => {
   safeLog.log('[AI:Generate] Called with type:', type, 'agent:', options?.agent || 'default');
   try {
     // Determine which agent to use
@@ -4334,6 +4334,117 @@ ipcMain.handle('ai:generateContent', async (_, prompt: string, type: string, opt
     }
   } catch (e: any) {
     safeLog.error('[AI:Generate] Error:', e);
+    return { success: false, error: e.message };
+  }
+});
+
+// ============== AI REPLY GENERATION ==============
+
+ipcMain.handle('ai:generateReply', async (_, context: {
+  threadMessages: Array<{role: string, content: string}>,
+  platform?: string,
+  recipientName?: string,
+  subject?: string,
+  tone?: 'formal' | 'casual' | 'auto',
+  calendarContext?: string,
+  taskContext?: string,
+}) => {
+  safeLog.log('[AI] Generate reply called:', { platform: context.platform, tone: context.tone, threadLen: context.threadMessages?.length });
+
+  if (!anthropicApiKey) {
+    return { success: false, error: 'No API key configured' };
+  }
+
+  const tone = context.tone || 'auto';
+  const platform = context.platform || 'chat';
+  const name = context.recipientName || 'there';
+
+  // Build system prompt based on platform and tone
+  let toneInstruction = '';
+  if (tone === 'formal') {
+    toneInstruction = 'Use a professional, formal tone. Include proper greetings and sign-offs.';
+  } else if (tone === 'casual') {
+    toneInstruction = 'Use a friendly, casual tone. Keep it conversational.';
+  } else {
+    toneInstruction = 'Match the tone of the conversation — if formal, stay formal; if casual, stay casual.';
+  }
+
+  let platformInstruction = '';
+  if (platform === 'email') {
+    platformInstruction = 'This is an email reply. Use appropriate email formatting with greeting and sign-off.';
+  } else if (platform === 'whatsapp' || platform === 'telegram') {
+    platformInstruction = 'This is a chat message. Keep it short and conversational — no formal sign-offs.';
+  } else if (platform === 'discord') {
+    platformInstruction = 'This is a Discord message. Keep it concise and natural.';
+  }
+
+  // Fetch calendar + task context if not provided (using parameterized queries)
+  let scheduleContext = context.calendarContext || '';
+  let taskCtx = context.taskContext || '';
+  if (!scheduleContext) {
+    try {
+      const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
+      scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
+    } catch {}
+  }
+  if (!taskCtx) {
+    try {
+      const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
+      taskCtx = tasks.map((t: any) => t.title).join('; ');
+    } catch {}
+  }
+
+  let contextBlock = '';
+  if (scheduleContext) contextBlock += `\nUser's upcoming schedule: ${scheduleContext}`;
+  if (taskCtx) contextBlock += `\nUser's active tasks: ${taskCtx}`;
+
+  const systemPrompt = `You are drafting a reply on behalf of the user. Generate a helpful, contextual reply to the conversation below.
+
+${toneInstruction}
+${platformInstruction}${contextBlock}
+
+Rules:
+- Be concise and to the point
+- Sound natural, not robotic
+- Don't be overly eager or sycophantic
+- Address the actual content of the messages
+- Return ONLY the reply text, no explanations or meta-commentary`;
+
+  const threadText = context.threadMessages
+    .slice(-10)
+    .map(m => `${m.role}: ${m.content}`)
+    .join('\n');
+
+  const userPrompt = `Conversation with ${name}${context.subject ? ` (Subject: ${context.subject})` : ''}:\n\n${threadText}\n\nDraft a reply:`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      safeLog.error('[AI] Reply generation API error:', response.status, errText);
+      return { success: false, error: `API error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    const draft = data.content?.[0]?.text?.trim() || '';
+    safeLog.log('[AI] Reply generated, length:', draft.length);
+    return { success: true, draft };
+  } catch (e: any) {
+    safeLog.error('[AI] Reply generation error:', e.message);
     return { success: false, error: e.message };
   }
 });
