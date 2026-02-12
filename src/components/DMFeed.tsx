@@ -36,11 +36,17 @@ export const DMFeed: React.FC = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const msgs = await (window as any).clawdbot?.getDMHistory({ limit: 50 });
+        if (!(window as any).clawdbot?.getDMHistory) {
+          setMessages([]);
+          setLoading(false);
+          return; // IPC not available (web mode)
+        }
+        const msgs = await (window as any).clawdbot.getDMHistory({ limit: 50 });
         setMessages(msgs || []);
         setLoading(false);
       } catch (err) {
         console.error('Failed to fetch DM history:', err);
+        setMessages([]);
         setLoading(false);
       }
     };
@@ -89,3 +95,5 @@ export const DMFeed: React.FC = () => {
     </div>
   );
 };
+
+export default DMFeed;
