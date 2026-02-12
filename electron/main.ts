@@ -2305,246 +2305,95 @@ function evaluateRuleSimple(rule: any, data: any): boolean {
 
 // Get all pinned conversations
 ipcMain.handle('pins:list', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Pins] List error:', error);
-        resolve({ success: false, pins: [] });
-        return;
-      }
-      
-      try {
-        const pins = JSON.parse(stdout || '[]');
-        resolve({ success: true, pins });
-      } catch (e) {
-        safeLog.error('[Pins] Parse error:', e);
-        resolve({ success: false, pins: [] });
-      }
-    });
-  });
+  try {
+    const pins = prepare('SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC').all();
+    return { success: true, pins };
+  } catch (error: any) {
+    safeLog.error('[Pins] List error:', error);
+    return { success: false, pins: [] };
+  }
 });
 
 // Check if a conversation is pinned
 ipcMain.handle('pins:is-pinned', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Pins] Is-pinned error:', error);
-        resolve({ success: false, pinned: false });
-        return;
-      }
-      
-      try {
-        const result = JSON.parse(stdout || '[]');
-        resolve({ success: true, pinned: result.length > 0 });
-      } catch (e) {
-        safeLog.error('[Pins] Is-pinned parse error:', e);
-        resolve({ success: false, pinned: false });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
+    return { success: true, pinned: !!row };
+  } catch (error: any) {
+    safeLog.error('[Pins] Is-pinned error:', error);
+    return { success: false, pinned: false };
+  }
 });
 
 // Pin a conversation
 ipcMain.handle('pins:pin', async (_, sessionKey: string, notes?: string) => {
-  // Check pin count first (max 10)
-  const countCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
-  
-  return new Promise((resolve) => {
-    exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
-      if (countError) {
-        safeLog.error('[Pins] Count check error:', countError);
-        resolve({ success: false, error: countError.message });
-        return;
-      }
-      
-      try {
-        const countResult = JSON.parse(countStdout || '[{"count":0}]');
-        const currentCount = countResult[0]?.count || 0;
-        
-        // Check if already pinned (don't count against limit)
-        const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-        
-        exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
-          if (checkError) {
-            safeLog.error('[Pins] Check existing error:', checkError);
-            resolve({ success: false, error: checkError.message });
-            return;
-          }
-          
-          try {
-            const existing = JSON.parse(checkStdout || '[]');
-            const isAlreadyPinned = existing.length > 0;
-            
-            // If not already pinned and at limit, reject
-            if (!isAlreadyPinned && currentCount >= 10) {
-              safeLog.error('[Pins] Pin limit reached (10 max)');
-              resolve({ success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' });
-              return;
-            }
-            
-            // Get next pin_order (highest + 1)
-            const orderCmd = `sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins" -json`;
-            
-            exec(orderCmd, { timeout: 5000 }, (orderError, orderStdout) => {
-              if (orderError) {
-                safeLog.error('[Pins] Get order error:', orderError);
-                resolve({ success: false, error: orderError.message });
-                return;
-              }
-              
-              try {
-                const orderResult = JSON.parse(orderStdout || '[{"next_order":0}]');
-                const nextOrder = orderResult[0]?.next_order || 0;
-                
-                const notesValue = notes ? `'${notes.replace(/'/g, "''")}'` : 'NULL';
-                const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR REPLACE INTO conversation_pins (session_key, notes, pin_order) VALUES ('${sessionKey.replace(/'/g, "''")}', ${notesValue}, ${nextOrder})"`;
-                
-                exec(cmd, { timeout: 5000 }, (error) => {
-                  if (error) {
-                    safeLog.error('[Pins] Pin error:', error);
-                    resolve({ success: false, error: error.message });
-                    return;
-                  }
-                  
-                  safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
-                  resolve({ success: true });
-                });
-              } catch (e) {
-                safeLog.error('[Pins] Order parse error:', e);
-                resolve({ success: false, error: 'Parse error' });
-              }
-            });
-          } catch (e) {
-            safeLog.error('[Pins] Check parse error:', e);
-            resolve({ success: false, error: 'Parse error' });
-          }
-        });
-      } catch (e) {
-        safeLog.error('[Pins] Count parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
+    const currentCount = countResult?.count || 0;
+
+    const existing = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
+
+    if (!existing && currentCount >= 10) {
+      safeLog.error('[Pins] Pin limit reached (10 max)');
+      return { success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' };
+    }
+
+    const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as any;
+    const nextOrder = orderResult?.next_order || 0;
+
+    prepare('INSERT OR REPLACE INTO conversation_pins (session_key, notes, pin_order) VALUES (?, ?, ?)').run(sessionKey, notes || null, nextOrder);
+
+    safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Pins] Pin error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unpin a conversation
 ipcMain.handle('pins:unpin', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Pins] Unpin error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      safeLog.log('[Pins] Unpinned:', sessionKey);
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
+    safeLog.log('[Pins] Unpinned:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Pins] Unpin error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Toggle pin state
 ipcMain.handle('pins:toggle', async (_, sessionKey: string) => {
-  // First check if pinned
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}' LIMIT 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (checkError, checkStdout) => {
-      if (checkError) {
-        safeLog.error('[Pins] Toggle check error:', checkError);
-        resolve({ success: false, error: checkError.message });
-        return;
+  try {
+    const existing = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
+
+    if (existing) {
+      // Unpin
+      prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
+      safeLog.log('[Pins] Toggled:', sessionKey, '-> unpinned');
+      return { success: true, pinned: false };
+    } else {
+      // Pin - check limit first
+      const countResult = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
+      const currentCount = countResult?.count || 0;
+
+      if (currentCount >= 10) {
+        safeLog.error('[Pins] Toggle pin limit reached (10 max)');
+        return { success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' };
       }
-      
-      try {
-        const result = JSON.parse(checkStdout || '[]');
-        const isPinned = result.length > 0;
-        
-        if (isPinned) {
-          // Unpin
-          const toggleCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${sessionKey.replace(/'/g, "''")}'"`; 
-          
-          exec(toggleCmd, { timeout: 5000 }, (toggleError) => {
-            if (toggleError) {
-              safeLog.error('[Pins] Toggle unpin error:', toggleError);
-              resolve({ success: false, error: toggleError.message });
-              return;
-            }
-            
-            safeLog.log('[Pins] Toggled:', sessionKey, '→ unpinned');
-            resolve({ success: true, pinned: false });
-          });
-        } else {
-          // Pin - check limit first
-          const countCmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
-          
-          exec(countCmd, { timeout: 5000 }, (countError, countStdout) => {
-            if (countError) {
-              safeLog.error('[Pins] Toggle count error:', countError);
-              resolve({ success: false, error: countError.message });
-              return;
-            }
-            
-            try {
-              const countResult = JSON.parse(countStdout || '[{"count":0}]');
-              const currentCount = countResult[0]?.count || 0;
-              
-              if (currentCount >= 10) {
-                safeLog.error('[Pins] Toggle pin limit reached (10 max)');
-                resolve({ success: false, error: 'Maximum 10 pinned conversations allowed. Unpin another conversation first.' });
-                return;
-              }
-              
-              // Get next pin_order
-              const orderCmd = `sqlite3 "${froggoDbPath}" "SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins" -json`;
-              
-              exec(orderCmd, { timeout: 5000 }, (orderError, orderStdout) => {
-                if (orderError) {
-                  safeLog.error('[Pins] Toggle order error:', orderError);
-                  resolve({ success: false, error: orderError.message });
-                  return;
-                }
-                
-                try {
-                  const orderResult = JSON.parse(orderStdout || '[{"next_order":0}]');
-                  const nextOrder = orderResult[0]?.next_order || 0;
-                  
-                  const toggleCmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_pins (session_key, pin_order) VALUES ('${sessionKey.replace(/'/g, "''")}', ${nextOrder})"`;
-                  
-                  exec(toggleCmd, { timeout: 5000 }, (toggleError) => {
-                    if (toggleError) {
-                      safeLog.error('[Pins] Toggle pin error:', toggleError);
-                      resolve({ success: false, error: toggleError.message });
-                      return;
-                    }
-                    
-                    safeLog.log('[Pins] Toggled:', sessionKey, '→ pinned at order', nextOrder);
-                    resolve({ success: true, pinned: true });
-                  });
-                } catch (e) {
-                  safeLog.error('[Pins] Toggle order parse error:', e);
-                  resolve({ success: false, error: 'Parse error' });
-                }
-              });
-            } catch (e) {
-              safeLog.error('[Pins] Toggle count parse error:', e);
-              resolve({ success: false, error: 'Parse error' });
-            }
-          });
-        }
-      } catch (e) {
-        safeLog.error('[Pins] Toggle parse error:', e);
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+
+      const orderResult = prepare('SELECT COALESCE(MAX(pin_order), -1) + 1 as next_order FROM conversation_pins').get() as any;
+      const nextOrder = orderResult?.next_order || 0;
+
+      prepare('INSERT INTO conversation_pins (session_key, pin_order) VALUES (?, ?)').run(sessionKey, nextOrder);
+      safeLog.log('[Pins] Toggled:', sessionKey, '-> pinned at order', nextOrder);
+      return { success: true, pinned: true };
+    }
+  } catch (error: any) {
+    safeLog.error('[Pins] Toggle error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Reorder pinned conversations
@@ -2555,59 +2404,28 @@ ipcMain.handle('pins:reorder', async (_, sessionKeys: string[]) => {
     return { success: false, error: 'Cannot have more than 10 pinned conversations' };
   }
 
-  // Update pin_order for each session
-  const updates: Promise<any>[] = sessionKeys.map((sessionKey, index) => {
-    const cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_pins SET pin_order = ${index} WHERE session_key = '${sessionKey.replace(/'/g, "''")}'"`; 
-    
-    return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error('[Pins] Reorder update error for', sessionKey, ':', error);
-          resolve({ success: false });
-        } else {
-          resolve({ success: true });
-        }
-      });
-    });
-  });
-
   try {
-    const results = await Promise.all(updates);
-    const allSuccess = results.every((r: any) => r.success);
-    
-    if (allSuccess) {
-      safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
-      return { success: true };
-    } else {
-      return { success: false, error: 'Some updates failed' };
+    const updateStmt = prepare('UPDATE conversation_pins SET pin_order = ? WHERE session_key = ?');
+    for (let i = 0; i < sessionKeys.length; i++) {
+      updateStmt.run(i, sessionKeys[i]);
     }
-  } catch (e) {
-    safeLog.error('[Pins] Reorder error:', e);
+    safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Pins] Reorder error:', error);
     return { success: false, error: 'Reorder failed' };
   }
 });
 
 // Get pin count
 ipcMain.handle('pins:count', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_pins" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Pins] Count error:', error);
-        resolve({ success: false, count: 0 });
-        return;
-      }
-      
-      try {
-        const result = JSON.parse(stdout || '[{"count":0}]');
-        resolve({ success: true, count: result[0]?.count || 0 });
-      } catch (e) {
-        safeLog.error('[Pins] Count parse error:', e);
-        resolve({ success: false, count: 0 });
-      }
-    });
-  });
+  try {
+    const result = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
+    return { success: true, count: result?.count || 0 };
+  } catch (error: any) {
+    safeLog.error('[Pins] Count error:', error);
+    return { success: false, count: 0 };
+  }
 });
 
 // ============== SNOOZE HANDLERS ==============
