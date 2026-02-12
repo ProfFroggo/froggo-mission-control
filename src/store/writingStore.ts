@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useMemoryStore } from './memoryStore';
 
 export interface WritingProject {
   id: string;
@@ -135,6 +136,8 @@ export const useWritingStore = create<WritingState>((set, get) => ({
           activeChapterContent: null,
           chapterDirty: false,
         });
+        // Load memory store data for this project
+        useMemoryStore.getState().loadMemory(projectId);
       }
     } catch (err) {
       console.error('[writingStore] openProject failed:', err);
@@ -149,6 +152,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       activeChapterContent: null,
       chapterDirty: false,
     });
+    useMemoryStore.getState().clearMemory();
   },
 
   // ── Chapter actions ──────────────────────────────────────

@@ -4,6 +4,7 @@ import { Send, Loader2 } from 'lucide-react';
 import { gateway } from '../../lib/gateway';
 import { useWritingStore } from '../../store/writingStore';
 import { useFeedbackStore } from '../../store/feedbackStore';
+import { useMemoryStore } from '../../store/memoryStore';
 import AgentPicker from './AgentPicker';
 import FeedbackAlternative from './FeedbackAlternative';
 
@@ -16,6 +17,40 @@ function getSelectedText(editor: Editor): string {
   return editor.state.doc.textBetween(from, to, ' ');
 }
 
+function buildMemoryContext(
+  characters: { name: string; relationship: string; description: string }[],
+  timeline: { date: string; description: string }[],
+  facts: { claim: string; source: string; status: string }[],
+): string {
+  const sections: string[] = [];
+
+  if (characters.length > 0) {
+    sections.push(
+      '### Characters',
+      ...characters.map((c) => `- **${c.name}** (${c.relationship}): ${c.description}`),
+    );
+  }
+
+  if (timeline.length > 0) {
+    sections.push(
+      '### Timeline',
+      ...timeline.map((t) => `- **${t.date}**: ${t.description}`),
+    );
+  }
+
+  if (facts.length > 0) {
+    const statusIcon: Record<string, string> = { verified: 'V', disputed: 'D', unverified: '?' };
+    sections.push(
+      '### Verified Facts',
+      ...facts.map((f) => `- [${statusIcon[f.status] ?? '?'}] ${f.claim} (source: ${f.source})`),
+    );
+  }
+
+  const result = sections.join('\n');
+  // Cap to ~2000 chars to avoid bloating prompt
+  return result.length > 2000 ? result.slice(0, 2000) + '\n...(truncated)' : result;
+}
+
 function buildPrompt(
   selectedText: string,
   instructions: string,
@@ -23,6 +58,7 @@ function buildPrompt(
   chapters: { id: string; title: string; position: number }[] | undefined,
   agentId: string,
   selectionFrom: number,
+  memoryContext: string,
 ): string {
   // Agent-specific preamble
   const agentPreamble: Record<string, string> = {
@@ -70,6 +106,7 @@ function buildPrompt(
     '### Project Outline',
     outline,
     '',
+    ...(memoryContext ? ['### Story Context (Memory)', memoryContext, ''] : []),
     '## Response Format',
     'Provide exactly 3 alternative versions of the highlighted text.',
     'Format each alternative as:',
@@ -98,6 +135,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
   } = useFeedbackStore();
 
   const { activeProjectId, activeChapterId, activeChapterContent, activeProject } = useWritingStore();
+  const { characters, timeline, facts } = useMemoryStore();
 
   // Use ref for accumulating stream content (closures capture stale state)
   const accumulatedRef = useRef('');
@@ -117,6 +155,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     accumulatedRef.current = '';
 
     const sessionKey = `agent:${selectedAgent}:writing:${activeProjectId}`;
+    const memoryContext = buildMemoryContext(characters, timeline, facts);
     const prompt = buildPrompt(
       selectedText,
       instructions,
@@ -124,6 +163,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       activeProject?.chapters,
       selectedAgent,
       from,
+      memoryContext,
     );
 
     try {
