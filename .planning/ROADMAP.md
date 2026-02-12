@@ -101,11 +101,11 @@ Plans:
   2. User can create, edit, and delete timeline events (date, description, chapter references) in the context panel
   3. User can create, edit, and delete verified facts (claim, source, status) in the context panel
   4. Memory store data is automatically included in AI agent context for feedback requests, and persists as JSON files per project
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [ ] 07-01-PLAN.md -- Backend: writing-memory-service IPC, preload bridge, memoryStore Zustand store
+- [ ] 07-02-PLAN.md -- UI: ContextPanel with character/timeline/fact CRUD, ProjectEditor integration, AI context injection
 
 ### Phase 8: Research Library
 **Goal**: User can manage research sources and use the Researcher agent to fact-check claims
@@ -157,7 +157,7 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
 | 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
 | 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
-| 7. Memory Store | v2.0 | 0/2 | Not started | - |
+| 7. Memory Store | v2.0 | 0/2 | Planned | - |
 | 8. Research Library | v2.0 | 0/2 | Not started | - |
 | 9. Outline & Versions | v2.0 | 0/2 | Not started | - |
 | 10. Jess Integration | v2.0 | 0/1 | Not started | - |
