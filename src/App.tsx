@@ -27,6 +27,7 @@ import {
   ConnectedAccountsPanel,
   DMFeed,
   FinancePanel,
+  WritingWorkspace,
   ErrorBoundary
 } from './components/ProtectedPanels';
 import CommandPalette from './components/CommandPalette';
@@ -42,7 +43,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -365,6 +366,7 @@ function App() {
               {currentView === 'context' && <ContextControlBoard />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
+              {currentView === 'writing' && <WritingWorkspace />}
               {currentView === 'contacts' && <ContactModal isOpen={true} onClose={() => setCurrentView('dashboard')} />}
             </Suspense>
           </PerformanceProfiler>

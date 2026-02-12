@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, Loader, MessagesSquare, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, Loader, MessagesSquare, DollarSign, PenLine } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -12,7 +12,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   </svg>
 );
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'finance';
+type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'accounts' | 'starred' | 'contacts' | 'sessions' | 'calendar' | 'templates' | 'finance' | 'writing';
 
 interface SidebarProps {
   currentView: View;
@@ -41,6 +41,7 @@ const panelIconMap: Record<string, any> = {
   schedule: Calendar,
   notifications: Bell,
   finance: DollarSign,
+  writing: PenLine,
 };
 
 // Static items removed - Context, Dev, Library, and Schedule are now managed by panel config
