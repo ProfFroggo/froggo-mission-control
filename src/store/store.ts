@@ -466,6 +466,8 @@ export const useStore = create<Store>()(
             const PHANTOM_AGENTS = ['main', 'chat-agent'];
 
             set((state: Store) => ({
+              // Also store raw sessions (previously fetched separately by fetchSessions)
+              sessions: result.sessions || [],
               gatewaySessions: processed,
               agents: state.agents.map((agent: Agent) => {
                 // Skip phantom/legacy agents
@@ -1054,23 +1056,23 @@ Start now.`;
           (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
           
           // Execute the action asynchronously
-          executeApproval(item).then((result) => {
-            const taskStatus = result.success ? 'done' : 'failed';
-            const completionTask: Task = {
+          executeApproval(item).then(async (result) => {
+            const taskData = {
               id: `task-exec-${Date.now()}`,
-              title: `${result.success ? '✅' : '❌'} ${item.type}: ${item.title}`,
-              description: result.success 
-                ? `Executed ${item.type}: ${item.content?.slice(0, 200)}` 
+              title: `${result.success ? 'Done' : 'Failed'}: ${item.type}: ${item.title}`,
+              description: result.success
+                ? `Executed ${item.type}: ${item.content?.slice(0, 200)}`
                 : `Failed to execute ${item.type}: ${result.error}\n\nContent: ${item.content?.slice(0, 200)}`,
-              status: taskStatus,
+              status: result.success ? 'done' : 'failed',
               project: 'Approvals',
-              assignedTo: 'coder',
+              assignedTo: matchTaskToAgent(item.title, item.content || ''),
               createdAt: Date.now(),
               updatedAt: Date.now(),
             };
-            set((s: Store) => ({
-              tasks: [completionTask, ...s.tasks],
-            }));
+            // Sync to DB instead of local-only state
+            await (window as any).clawdbot?.tasks?.sync?.(taskData);
+            useStore.getState().loadTasksFromDB();
+
             // Notify main session
             if (result.success) {
               gateway.sendToSession('main', `[EXECUTED] ${item.type}: "${item.title}" completed successfully`).catch(() => {});
@@ -1102,23 +1104,26 @@ Start now.`;
         const state = get();
         const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
-          // Create revision task
-          const revisionTask: Task = {
+          const revisionTask = {
             id: `task-revise-${Date.now()}`,
             title: `Revise: ${item.title}`,
             description: `Original ${item.type}:\n${item.content}\n\n---\nFeedback:\n${feedback}`,
             status: 'todo',
             project: 'Revisions',
-            assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
+            assignedTo: matchTaskToAgent(item.title, `${item.type} ${item.content || ''}`),
             createdAt: Date.now(),
             updatedAt: Date.now(),
           };
           // Remove from file-based queue
           (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
+          // Remove from local approvals list
           set((s: Store) => ({
-            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
-            tasks: [revisionTask, ...s.tasks],
+            approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id),
           }));
+          // Sync task to DB (not local-only)
+          (window as any).clawdbot?.tasks?.sync?.(revisionTask).then(() => {
+            useStore.getState().loadTasksFromDB();
+          }).catch(() => {});
           // Notify for revision
           gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch(() => {});
         }
@@ -1262,30 +1267,35 @@ gateway.on('approval.request', (payload: any) => {
   }
 });
 
+// Shared debounced task refresh -- used by both gateway.on and IPC broadcast
+const TASK_REFRESH_DEBOUNCE = 400;
+function debouncedTaskRefresh() {
+  clearTimeout((window as any).__taskRefreshTimer);
+  (window as any).__taskRefreshTimer = setTimeout(() => {
+    useStore.getState().loadTasksFromDB();
+  }, TASK_REFRESH_DEBOUNCE);
+}
+
 // Listen for task-related events for real-time updates
 // These can be triggered by the main agent after creating tasks from Discord
 gateway.on('task.created', (payload: any) => {
   console.log('[Store] Task created event received:', payload);
-  useStore.getState().loadTasksFromDB();
+  debouncedTaskRefresh();
   useStore.getState().addActivity({
     type: 'task',
-    message: `📋 New task: ${payload?.title || 'Task created'}`,
+    message: `New task: ${payload?.title || 'Task created'}`,
     timestamp: Date.now(),
   });
 });
 
 gateway.on('task.updated', (payload: any) => {
   console.log('[Store] Task updated event received:', payload);
-  // Refresh tasks on status changes (covers [TASK_START] pattern from catch-all)
-  clearTimeout((window as any).__taskRefreshTimer);
-  (window as any).__taskRefreshTimer = setTimeout(() => {
-    useStore.getState().loadTasksFromDB();
-  }, 500);
+  debouncedTaskRefresh();
 });
 
 gateway.on('tasks.refresh', () => {
   console.log('[Store] Tasks refresh event received');
-  useStore.getState().loadTasksFromDB();
+  debouncedTaskRefresh();
 });
 
 // NOTE: Previous gateway.on('*') catch-all removed in Phase 08-03.
@@ -1299,14 +1309,8 @@ gateway.on('tasks.refresh', () => {
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
   (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: any }) => {
     console.log('[Store] Gateway broadcast received:', data.event, data.payload?.id);
-    
-    // Handle task events
     if (data.event === 'task.created' || data.event === 'task.updated') {
-      // Debounce to avoid multiple rapid refreshes
-      clearTimeout((window as any).__taskRefreshTimer);
-      (window as any).__taskRefreshTimer = setTimeout(() => {
-        useStore.getState().loadTasksFromDB();
-      }, 300); // Faster than 500ms for more responsive UI
+      debouncedTaskRefresh();
     }
   });
 }
@@ -1318,10 +1322,7 @@ gateway.on('chat.message', (payload: any) => {
   // Detect task creation patterns from AI analysis
   if (typeof content === 'string' && content.includes('{"detected":true')) {
     console.log('[Store] Task detection pattern in chat message, refreshing tasks');
-    clearTimeout((window as any).__taskRefreshTimer);
-    (window as any).__taskRefreshTimer = setTimeout(() => {
-      useStore.getState().loadTasksFromDB();
-    }, 500);
+    debouncedTaskRefresh();
   }
 
   // Detect approval request patterns

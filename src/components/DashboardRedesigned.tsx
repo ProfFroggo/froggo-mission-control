@@ -77,17 +77,11 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
   useEffect(() => {
     if (connected) {
-      fetchSessions();
-      const interval = setInterval(fetchSessions, 30000);
+      loadGatewaySessions();
+      const interval = setInterval(loadGatewaySessions, 30000);
       return () => clearInterval(interval);
     }
-  }, [connected, fetchSessions]);
-
-  useEffect(() => {
-    loadGatewaySessions();
-    const interval = setInterval(loadGatewaySessions, 30000);
-    return () => clearInterval(interval);
-  }, [loadGatewaySessions]);
+  }, [connected, loadGatewaySessions]);
 
   const handleQuickAction = (label: string) => {
     if (label === 'Daily Brief') {
