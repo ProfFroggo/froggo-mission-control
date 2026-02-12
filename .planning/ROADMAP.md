@@ -50,7 +50,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Fix mechanical bugs: spawn handler, layout key, Tailwind hover, avatar grouping, JSON.parse guards, CLI strings, API key paths (FIX-02, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10) [Wave 1]
+- [x] 02-01-PLAN.md — Fix mechanical bugs: spawn handler, layout key, Tailwind hover, avatar grouping, JSON.parse guards, CLI strings, API key paths (FIX-02, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10) [Wave 1]
 - [ ] 02-02-PLAN.md — Restore missing AI IPC handlers with security treatment: fix channel name mismatch, restore generateReply + getAnalysis with prepare() (FIX-03) [Wave 2]
 
 ### Phase 3: Functional Fixes
@@ -93,6 +93,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
-| 2. Fix Broken Features | 0/2 | Not started | - |
+| 2. Fix Broken Features | 1/2 | In progress | - |
 | 3. Functional Fixes | 0/2 | Not started | - |
 | 4. Cleanup & Debloat | 0/2 | Not started | - |

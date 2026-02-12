@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 1 Security Hardening COMPLETE. All SQL injection sites eliminated. SEC-04 satisfied.
+**Current focus:** Phase 2 Fix Broken Features in progress. 02-01 complete (7 mechanical fixes). 02-02 remaining (AI IPC handlers).
 
 ## Current Position
 
-Phase: 1 of 4 (Security Hardening) -- COMPLETE
-Plan: 6 of 6 in current phase (01-01 through 01-06 all complete)
-Status: Phase complete
-Last activity: 2026-02-12 -- Completed 01-06-PLAN.md (final gap closure: calendar, conversations, tokens, sessions.db)
+Phase: 2 of 4 (Fix Broken Features)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-12 -- Completed 02-01-PLAN.md (7 mechanical fixes: spawn handler, layout, hover, avatars, JSON guards, CLI strings, API paths)
 
-Progress: [██████░░░░] 46%
+Progress: [███████░░░] 58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: ~23min
-- Total execution time: ~138min
+- Total plans completed: 7
+- Average duration: ~20min
+- Total execution time: ~143min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-security-hardening | 6/6 | ~138min | ~23min |
+| 02-fix-broken-features | 1/2 | ~5min | ~5min |
 
 **Recent Trend:**
-- Last 6 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min)
-- Trend: Consistent speed, final plan slightly longer due to sessions.db infrastructure + parallel timing issues
+- Last 7 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min)
+- Trend: Phase 2 mechanical fixes are fast due to well-researched targeted edits
 
 *Updated after each plan completion*
 
@@ -62,19 +63,23 @@ Recent decisions affecting current work:
 - sessions.db path: check ~/.openclaw/ first, fallback to ~/.clawdbot/ for legacy support
 - search:local uses shell escaping (not SQL escaping) since froggo-db is a CLI tool
 - conversations:delete uses db.transaction() for atomic multi-table cleanup
+- Keep .clawdbot/openclaw.json as legacy config fallback (line 4144 in main.ts)
+- HOVER_BG_MAP static lookup pattern for Tailwind JIT dynamic hover classes
+- IIFE wrapper for pre-filtered messages to avoid JSX tree restructuring
 
 ### Pending Todos
 
-- Phase 1 verified (5/5 success criteria passed, 2026-02-12)
-- Ready to proceed to Phase 2 (Fix Broken Features)
+- Phase 2 plan 02-01 complete (7 mechanical fixes)
+- Ready for 02-02 (restore missing AI IPC handlers)
 
 ### Blockers/Concerns
 
 - Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
 - Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
+- 02-02 requires reading main.ts.before-cleanup to recover lost AI handlers with Phase 1 security patterns
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 01-06-PLAN.md (Phase 1 complete)
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
