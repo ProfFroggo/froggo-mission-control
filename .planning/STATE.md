@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 3 Functional Fixes complete. Phase 4 needs research + planning.
+**Current focus:** Phase 4 Cleanup & Debloat in progress.
 
 ## Current Position
 
-Phase: 3 of 4 (Functional Fixes)
+Phase: 4 of 4 (Cleanup & Debloat)
 Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-12 -- Completed 03-02-PLAN.md (session dedup, phantom tasks, memo, chat cap, debounced refresh)
+Status: In progress (04-01 pending)
+Last activity: 2026-02-12 -- Completed 04-02-PLAN.md (QuickStatsWidget CSS, MorningBrief debug, SettingsPanel shortcuts)
 
-Progress: [██████████] 100% (phases 1-3 complete, phase 4 pending)
+Progress: [███████████░] 92% (11/12 plans complete, 04-01 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: ~15min
-- Total execution time: ~153min
+- Total plans completed: 11
+- Average duration: ~14min
+- Total execution time: ~155min
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [██████████] 100% (phases 1-3 complete, phase 4 pe
 | 01-security-hardening | 6/6 | ~138min | ~23min |
 | 02-fix-broken-features | 2/2 | ~7min | ~3.5min |
 | 03-functional-fixes | 2/2 | ~8min | ~4min |
+| 04-cleanup-debloat | 1/2 | ~2min | ~2min |
 
 **Recent Trend:**
-- Last 10 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min), 03-02 (~4min)
+- Last 10 plans: 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min), 03-02 (~4min), 04-02 (~2min)
 - Trend: Research-backed plans with targeted edits execute fast
 
 *Updated after each plan completion*
@@ -77,19 +78,22 @@ Recent decisions affecting current work:
 - 400ms debounce for shared task refresh (balances responsiveness and dedup)
 - Reference equality memo (prev.task === next.task) with JSON.stringify for small objects
 - 200 message cap per chat room in localStorage
+- Only replace custom CSS classes within specific components -- text-utilities.css still used by Kanban, AgentPanel, etc.
+- Keep console.error in MorningBrief (legitimate error reporting), only remove console.log debug lines
+- SettingsPanel shortcut editor saves to localStorage but App.tsx doesn't read it (cosmetic display only)
 
 ### Pending Todos
 
-- Phase 4 needs research + planning before execution
+- 04-01 plan still needs execution (remaining Phase 4 work)
 
 ### Blockers/Concerns
 
 - Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
 - Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
-- Phase 4 plan files not yet created -- need research phase
+- Pre-existing TypeScript errors in App.tsx, Dashboard.tsx, InboxPanel.tsx etc. unrelated to cleanup work
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
