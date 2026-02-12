@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 2 Fix Broken Features in progress. 02-01 complete (7 mechanical fixes). 02-02 remaining (AI IPC handlers).
+**Current focus:** Phase 2 Fix Broken Features complete. Ready for Phase 3 Functional Fixes (needs research + planning).
 
 ## Current Position
 
-Phase: 2 of 4 (Fix Broken Features)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-12 -- Completed 02-01-PLAN.md (7 mechanical fixes: spawn handler, layout, hover, avatars, JSON guards, CLI strings, API paths)
+Phase: 2 of 4 (Fix Broken Features) -- COMPLETE
+Plan: 2 of 2 in current phase -- COMPLETE
+Status: Phase complete
+Last activity: 2026-02-12 -- Completed 02-02-PLAN.md (restore AI IPC handlers: channel name fix, generateReply, getAnalysis)
 
-Progress: [███████░░░] 58%
+Progress: [████████░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: ~20min
-- Total execution time: ~143min
+- Total plans completed: 8
+- Average duration: ~18min
+- Total execution time: ~145min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-security-hardening | 6/6 | ~138min | ~23min |
-| 02-fix-broken-features | 1/2 | ~5min | ~5min |
+| 02-fix-broken-features | 2/2 | ~7min | ~3.5min |
 
 **Recent Trend:**
-- Last 7 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min)
-- Trend: Phase 2 mechanical fixes are fast due to well-researched targeted edits
+- Last 8 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min)
+- Trend: Phase 2 fixes are fast due to well-researched targeted edits with clear backup references
 
 *Updated after each plan completion*
 
@@ -66,20 +66,23 @@ Recent decisions affecting current work:
 - Keep .clawdbot/openclaw.json as legacy config fallback (line 4144 in main.ts)
 - HOVER_BG_MAP static lookup pattern for Tailwind JIT dynamic hover classes
 - IIFE wrapper for pre-filtered messages to avoid JSX tree restructuring
+- Keep Anthropic API call as-is in ai:generateReply (direct HTTP, no DB)
+- Leave ai:analyzeMessages stub unchanged (too complex, out of scope)
 
 ### Pending Todos
 
-- Phase 2 plan 02-01 complete (7 mechanical fixes)
-- Ready for 02-02 (restore missing AI IPC handlers)
+- Phase 2 complete (all 10 FIX requirements addressed)
+- Phase 3 needs research + planning before execution
+- Phase 4 needs research + planning before execution
 
 ### Blockers/Concerns
 
 - Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
 - Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
-- 02-02 requires reading main.ts.before-cleanup to recover lost AI handlers with Phase 1 security patterns
+- Phases 3 and 4 plan files not yet created -- need research phase
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
 Resume file: None
