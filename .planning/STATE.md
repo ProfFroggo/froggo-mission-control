@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 6 — Inline Feedback (in progress)
+**Current focus:** Phase 6 — Inline Feedback (complete)
 
 ## Current Position
 
 Phase: 6 of 10 (Inline Feedback)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-12 — Completed 06-01-PLAN.md (Feedback State & Logging Service)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-12 — Completed 06-02-PLAN.md (Inline Feedback UI)
 
-Progress: [████░░░░░░░░] 33% (4/12 plans)
+Progress: [█████░░░░░░░] 42% (5/12 plans)
 
 ## Performance Metrics
 
@@ -24,11 +24,12 @@ Progress: [████░░░░░░░░] 33% (4/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 4
+- Plans completed: 5
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
 - 06-01: 2min (2 tasks)
+- 06-02: 3min (3 tasks)
 
 ## Accumulated Context
 
@@ -57,6 +58,10 @@ v2 decisions (confirmed in execution):
 - JSONL per-chapter feedback logs in memory/ dir (append-only, one file per chapter)
 - feedbackStore.reset() preserves selectedAgent (user preference persists)
 - savedSelection stores editor range at send time (for reliable accept after streaming)
+- useRef for stream accumulation in FeedbackPopover (avoids stale closures)
+- Agent-specific preamble in feedback prompts (writer: style, researcher: accuracy, jess: emotional)
+- Chapter context truncated to ~16K chars around selection position
+- BubbleMenu updateDelay=0 for instant popup; selection collapse after accept to prevent flicker
 
 ### Pending Todos
 
@@ -70,6 +75,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-12T21:11:00Z
-Stopped at: Completed 06-01-PLAN.md (Feedback State & Logging Service)
+Last session: 2026-02-12T21:19:00Z
+Stopped at: Completed 06-02-PLAN.md (Inline Feedback UI) — Phase 6 complete
 Resume file: None
