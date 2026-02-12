@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 5 — Foundation (Project CRUD, TipTap editor, chapters)
+**Current focus:** Phase 5 complete. Ready for Phase 6 -- AI Sidebar.
 
 ## Current Position
 
 Phase: 5 of 10 (Foundation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-12 — Completed 05-02-PLAN.md (Writing Frontend Shell)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-12 — Completed 05-03-PLAN.md (Chapter Editor Experience)
 
-Progress: [██░░░░░░░░░░] 17% (2/12 plans)
+Progress: [███░░░░░░░░░] 25% (3/12 plans)
 
 ## Performance Metrics
 
@@ -24,9 +24,10 @@ Progress: [██░░░░░░░░░░] 17% (2/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 2
+- Plans completed: 3
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
+- 05-03: 5min (2 tasks + checkpoint skipped)
 
 ## Accumulated Context
 
@@ -48,6 +49,10 @@ v2 decisions (confirmed in execution):
 - writingStore not persisted to localStorage (document content lives on disk via IPC)
 - Writing panels use ProtectedPanels.tsx lazy load + error boundary pattern (consistent with all other panels)
 - bridge() accessor helper for safe IPC access in writingStore
+- TipTap 3.19 uses `undoRedo` (not `history`) in StarterKitOptions
+- TipTap 3.19 setContent uses options object `{ emitUpdate: false }` not boolean
+- 1500ms autosave debounce with flush on unmount
+- shouldRerenderOnTransaction: false for editor performance (critical for 10k+ word chapters)
 
 ### Pending Todos
 
@@ -61,6 +66,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-12T19:55:41Z
-Stopped at: Completed 05-02-PLAN.md (Writing Frontend Shell)
+Last session: 2026-02-12T20:05:32Z
+Stopped at: Completed 05-03-PLAN.md (Chapter Editor Experience) — Phase 5 Foundation complete
 Resume file: None
