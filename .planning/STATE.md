@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 4 Cleanup & Debloat in progress.
+**Current focus:** Phase 4 Cleanup & Debloat complete. All phases done.
 
 ## Current Position
 
 Phase: 4 of 4 (Cleanup & Debloat)
 Plan: 2 of 2 in current phase
-Status: In progress (04-01 pending)
-Last activity: 2026-02-12 -- Completed 04-02-PLAN.md (QuickStatsWidget CSS, MorningBrief debug, SettingsPanel shortcuts)
+Status: Phase complete -- ALL PHASES DONE
+Last activity: 2026-02-12 -- Completed 04-01-PLAN.md (dead code deletion, backup file cleanup)
 
-Progress: [███████████░] 92% (11/12 plans complete, 04-01 pending)
+Progress: [████████████] 100% (12/12 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: ~14min
-- Total execution time: ~155min
+- Total plans completed: 12
+- Average duration: ~13min
+- Total execution time: ~161min
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [███████████░] 92% (11/12 plans complete, 04-0
 | 01-security-hardening | 6/6 | ~138min | ~23min |
 | 02-fix-broken-features | 2/2 | ~7min | ~3.5min |
 | 03-functional-fixes | 2/2 | ~8min | ~4min |
-| 04-cleanup-debloat | 1/2 | ~2min | ~2min |
+| 04-cleanup-debloat | 2/2 | ~8min | ~4min |
 
 **Recent Trend:**
-- Last 10 plans: 01-03 (~20min), 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min), 03-02 (~4min), 04-02 (~2min)
+- Last 10 plans: 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min), 03-02 (~4min), 04-02 (~2min), 04-01 (~6min)
 - Trend: Research-backed plans with targeted edits execute fast
 
 *Updated after each plan completion*
@@ -81,19 +81,21 @@ Recent decisions affecting current work:
 - Only replace custom CSS classes within specific components -- text-utilities.css still used by Kanban, AgentPanel, etc.
 - Keep console.error in MorningBrief (legitimate error reporting), only remove console.log debug lines
 - SettingsPanel shortcut editor saves to localStorage but App.tsx doesn't read it (cosmetic display only)
+- ContentCalendar.tsx file kept (used by XPanel.tsx) but its dead ProtectedPanels export removed
+- SettingsPanel dead _notifPrefs useState AND its useEffect loader both removed together
 
 ### Pending Todos
 
-- 04-01 plan still needs execution (remaining Phase 4 work)
+- None -- all phases complete
 
 ### Blockers/Concerns
 
 - Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
 - Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
-- Pre-existing TypeScript errors in App.tsx, Dashboard.tsx, InboxPanel.tsx etc. unrelated to cleanup work
+- 24 pre-existing TypeScript errors remain (App.tsx View types, Dashboard layout types, etc.) -- predate all cleanup work
 
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 04-02-PLAN.md
+Stopped at: Completed 04-01-PLAN.md (ALL PHASES COMPLETE)
 Resume file: None
