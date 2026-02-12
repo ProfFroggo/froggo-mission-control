@@ -50,7 +50,7 @@
 - Integer phases (5, 6, 7...): Planned milestone work
 - Decimal phases (5.1, 5.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 5: Foundation** - Project CRUD, TipTap editor, chapter management, file storage
+- [x] **Phase 5: Foundation** - Project CRUD, TipTap editor, chapter management, file storage
 - [ ] **Phase 6: Inline Feedback** - Highlight-to-chat, AI alternatives, streaming, agent routing
 - [ ] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
 - [ ] **Phase 8: Research Library** - Sources, fact-checking, Researcher agent
@@ -69,12 +69,12 @@
   3. User can write prose in the TipTap editor with formatting (headings, bold, italic, lists, blockquotes, links) and changes auto-save without a manual save button
   4. User can navigate between chapters via the outline sidebar and see word counts per chapter and project total
   5. Writing workspace is accessible from the main dashboard sidebar alongside existing panels (Kanban, Chat, etc.) and projects are stored as file-based structure (markdown chapters, JSON metadata)
-**Plans**: 3 plans
+**Plans**: 3/3 complete
 
 Plans:
-- [ ] 05-01-PLAN.md -- Backend: paths, fs-validation fix, TipTap install, writing-project-service, preload bridge
-- [ ] 05-02-PLAN.md -- Frontend: writingStore, ProjectSelector, WritingWorkspace, sidebar/App.tsx wiring
-- [ ] 05-03-PLAN.md -- Editor: TipTap ChapterEditor, EditorToolbar, ChapterSidebar, ProjectEditor, autosave
+- [x] 05-01-PLAN.md -- Backend: paths, fs-validation fix, TipTap install, writing-project-service, preload bridge
+- [x] 05-02-PLAN.md -- Frontend: writingStore, ProjectSelector, WritingWorkspace, sidebar/App.tsx wiring
+- [x] 05-03-PLAN.md -- Editor: TipTap ChapterEditor, EditorToolbar, ChapterSidebar, ProjectEditor, autosave
 
 ### Phase 6: Inline Feedback
 **Goal**: User can highlight text and get AI-powered alternatives from agents, streamed in real-time
@@ -156,7 +156,7 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
-| 5. Foundation | v2.0 | 0/3 | Planned | - |
+| 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
 | 6. Inline Feedback | v2.0 | 0/3 | Not started | - |
 | 7. Memory Store | v2.0 | 0/2 | Not started | - |
 | 8. Research Library | v2.0 | 0/2 | Not started | - |
@@ -165,4 +165,4 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 
 ---
 *Roadmap created: 2026-02-12*
-*Last updated: 2026-02-12*
+*Last updated: 2026-02-12 — Phase 5 complete*

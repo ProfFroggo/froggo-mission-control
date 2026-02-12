@@ -9,24 +9,24 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 
 ### Foundation
 
-- [ ] **FOUND-01**: User can create a new writing project with title and type (memoir/novel)
-- [ ] **FOUND-02**: User can see a list of all writing projects with stats (word count, chapter count)
-- [ ] **FOUND-03**: User can open a writing project and see its chapter list
-- [ ] **FOUND-04**: User can create, rename, and delete chapters within a project
-- [ ] **FOUND-05**: User can edit chapter content in a rich text editor with markdown support
-- [ ] **FOUND-06**: Chapter content auto-saves with debounce (no manual save button needed)
-- [ ] **FOUND-07**: User can navigate between chapters via outline sidebar
-- [ ] **FOUND-08**: Writing workspace accessible from main dashboard sidebar navigation
-- [ ] **FOUND-09**: User can see word count per chapter and total project word count
-- [ ] **FOUND-10**: Writing projects stored as file-based structure (markdown chapters, JSON metadata)
+- [x] **FOUND-01**: User can create a new writing project with title and type (memoir/novel)
+- [x] **FOUND-02**: User can see a list of all writing projects with stats (word count, chapter count)
+- [x] **FOUND-03**: User can open a writing project and see its chapter list
+- [x] **FOUND-04**: User can create, rename, and delete chapters within a project
+- [x] **FOUND-05**: User can edit chapter content in a rich text editor with markdown support
+- [x] **FOUND-06**: Chapter content auto-saves with debounce (no manual save button needed)
+- [x] **FOUND-07**: User can navigate between chapters via outline sidebar
+- [x] **FOUND-08**: Writing workspace accessible from main dashboard sidebar navigation
+- [x] **FOUND-09**: User can see word count per chapter and total project word count
+- [x] **FOUND-10**: Writing projects stored as file-based structure (markdown chapters, JSON metadata)
 
 ### Editor
 
-- [ ] **EDIT-01**: Rich text editor supports headings, bold, italic, lists, blockquotes, links
-- [ ] **EDIT-02**: Editor loads from and saves to markdown files (bidirectional)
-- [ ] **EDIT-03**: Editor handles 10k+ word chapters without performance degradation
-- [ ] **EDIT-04**: User can undo/redo changes with standard keyboard shortcuts
-- [ ] **EDIT-05**: Editor toolbar shows formatting options (headings, bold, italic, lists)
+- [x] **EDIT-01**: Rich text editor supports headings, bold, italic, lists, blockquotes, links
+- [x] **EDIT-02**: Editor loads from and saves to markdown files (bidirectional)
+- [x] **EDIT-03**: Editor handles 10k+ word chapters without performance degradation
+- [x] **EDIT-04**: User can undo/redo changes with standard keyboard shortcuts
+- [x] **EDIT-05**: Editor toolbar shows formatting options (headings, bold, italic, lists)
 
 ### Inline Feedback
 
@@ -105,21 +105,21 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 5 | Pending |
-| FOUND-02 | Phase 5 | Pending |
-| FOUND-03 | Phase 5 | Pending |
-| FOUND-04 | Phase 5 | Pending |
-| FOUND-05 | Phase 5 | Pending |
-| FOUND-06 | Phase 5 | Pending |
-| FOUND-07 | Phase 5 | Pending |
-| FOUND-08 | Phase 5 | Pending |
-| FOUND-09 | Phase 5 | Pending |
-| FOUND-10 | Phase 5 | Pending |
-| EDIT-01 | Phase 5 | Pending |
-| EDIT-02 | Phase 5 | Pending |
-| EDIT-03 | Phase 5 | Pending |
-| EDIT-04 | Phase 5 | Pending |
-| EDIT-05 | Phase 5 | Pending |
+| FOUND-01 | Phase 5 | Complete |
+| FOUND-02 | Phase 5 | Complete |
+| FOUND-03 | Phase 5 | Complete |
+| FOUND-04 | Phase 5 | Complete |
+| FOUND-05 | Phase 5 | Complete |
+| FOUND-06 | Phase 5 | Complete |
+| FOUND-07 | Phase 5 | Complete |
+| FOUND-08 | Phase 5 | Complete |
+| FOUND-09 | Phase 5 | Complete |
+| FOUND-10 | Phase 5 | Complete |
+| EDIT-01 | Phase 5 | Complete |
+| EDIT-02 | Phase 5 | Complete |
+| EDIT-03 | Phase 5 | Complete |
+| EDIT-04 | Phase 5 | Complete |
+| EDIT-05 | Phase 5 | Complete |
 | FEED-01 | Phase 6 | Pending |
 | FEED-02 | Phase 6 | Pending |
 | FEED-03 | Phase 6 | Pending |
@@ -157,4 +157,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-12 after roadmap creation*
+*Last updated: 2026-02-12 — Phase 5 requirements complete*
