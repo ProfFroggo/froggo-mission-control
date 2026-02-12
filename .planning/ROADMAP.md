@@ -11,7 +11,7 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
-- [ ] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
+- [x] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
 - [ ] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
 - [ ] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
 
@@ -51,7 +51,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Fix mechanical bugs: spawn handler, layout key, Tailwind hover, avatar grouping, JSON.parse guards, CLI strings, API key paths (FIX-02, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10) [Wave 1]
-- [ ] 02-02-PLAN.md — Restore missing AI IPC handlers with security treatment: fix channel name mismatch, restore generateReply + getAnalysis with prepare() (FIX-03) [Wave 2]
+- [x] 02-02-PLAN.md — Restore missing AI IPC handlers with security treatment: fix channel name mismatch, restore generateReply + getAnalysis with prepare() (FIX-03) [Wave 2]
 
 ### Phase 3: Functional Fixes
 **Goal**: App behaves correctly under all conditions including edge cases and race conditions
@@ -93,6 +93,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
-| 2. Fix Broken Features | 1/2 | In progress | - |
+| 2. Fix Broken Features | 2/2 | Complete | 2026-02-12 |
 | 3. Functional Fixes | 0/2 | Not started | - |
 | 4. Cleanup & Debloat | 0/2 | Not started | - |
