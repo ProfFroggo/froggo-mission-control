@@ -10,7 +10,8 @@ import * as path from 'path';
 import * as os from 'os';
 
 const ALLOWED_ROOTS = [
-  path.join(os.homedir(), 'clawd'),
+  path.join(os.homedir(), 'froggo'),
+  path.join(os.homedir(), 'clawd'),           // backward-compat symlink
   path.join(os.homedir(), '.openclaw'),
   path.join(os.homedir(), 'Froggo'),
 ];
