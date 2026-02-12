@@ -15,7 +15,7 @@ import * as fs from 'fs';
 const HOME = os.homedir();
 
 // ── Core roots ──
-export const PROJECT_ROOT = process.env.FROGGO_ROOT || path.join(HOME, 'clawd');
+export const PROJECT_ROOT = process.env.FROGGO_ROOT || path.join(HOME, 'froggo');
 const AGENT_PREFIX = process.env.FROGGO_AGENT_PREFIX || 'agent-';
 
 // ── Project directories ──
@@ -26,6 +26,18 @@ export const LIBRARY_DIR  = path.join(PROJECT_ROOT, 'library');
 export const UPLOADS_DIR  = path.join(PROJECT_ROOT, 'uploads');
 export const LOGS_DIR     = path.join(PROJECT_ROOT, 'logs');
 export const REPORTS_DIR  = path.join(PROJECT_ROOT, 'reports');
+
+// ── Writing projects ──
+export const WRITING_PROJECTS_DIR = path.join(PROJECT_ROOT, 'writing-projects');
+
+export const writingProjectPath = (projectId: string) =>
+  path.join(WRITING_PROJECTS_DIR, projectId);
+
+export const writingChapterPath = (projectId: string, chapterFilename: string) =>
+  path.join(WRITING_PROJECTS_DIR, projectId, 'chapters', chapterFilename);
+
+export const writingMemoryPath = (projectId: string, filename: string) =>
+  path.join(WRITING_PROJECTS_DIR, projectId, 'memory', filename);
 
 // ── Database files ──
 export const FROGGO_DB    = path.join(DATA_DIR, 'froggo.db');
