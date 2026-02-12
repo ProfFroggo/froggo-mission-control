@@ -12,7 +12,7 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 
 - [x] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
 - [x] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
-- [ ] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
+- [x] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
 - [ ] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
 
 ## Phase Details
@@ -66,8 +66,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Fix routing and guards: 9-agent routing table, InboxPanel wiring, DMFeed error boundary, IPC null guards, notification debounce (FUNC-01 through FUNC-05) [Wave 1]
-- [ ] 03-02-PLAN.md — Fix state and performance: merge session fetches, DB-sync phantom tasks, shared debounced refresh, Kanban memo comparator, localStorage cap (FUNC-06 through FUNC-10) [Wave 2]
+- [x] 03-01-PLAN.md — Fix routing and guards: 9-agent routing table, InboxPanel wiring, DMFeed error boundary, IPC null guards, notification debounce (FUNC-01 through FUNC-05) [Wave 1]
+- [x] 03-02-PLAN.md — Fix state and performance: merge session fetches, DB-sync phantom tasks, shared debounced refresh, Kanban memo comparator, localStorage cap (FUNC-06 through FUNC-10) [Wave 2]
 
 ### Phase 4: Cleanup & Debloat
 **Goal**: Lean codebase with no dead files, dead code, or broken styling
@@ -94,5 +94,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
 | 2. Fix Broken Features | 2/2 | Complete | 2026-02-12 |
-| 3. Functional Fixes | 0/2 | Not started | - |
+| 3. Functional Fixes | 2/2 | Complete | 2026-02-12 |
 | 4. Cleanup & Debloat | 0/2 | Not started | - |

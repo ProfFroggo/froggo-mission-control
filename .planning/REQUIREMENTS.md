@@ -32,16 +32,16 @@ Requirements for this hardening milestone. Each maps to roadmap phases.
 
 ### Functional
 
-- [ ] **FUNC-01**: Fix matchTaskToAgent routing to include all 9+ agents (not just coder/researcher/writer/chief)
-- [ ] **FUNC-02**: Fix InboxPanel approval routing to use routing table instead of hardcoding to coder
-- [ ] **FUNC-03**: Wrap DMFeed in ProtectedPanels error boundary
-- [ ] **FUNC-04**: Add null guards to all clawdbot.* IPC calls that currently crash in web mode (TokenUsage, AgentTokenDetail, TaskDetail x6)
-- [ ] **FUNC-05**: Fix notification debounce collision (task/message/approval share one timer)
-- [ ] **FUNC-06**: Fix double gateway.getSessions() calls every 30s (merge fetchSessions + loadGatewaySessions)
-- [ ] **FUNC-07**: Fix phantom task creation in store (approveItem/adjustItem create unsynced tasks)
-- [ ] **FUNC-08**: Fix Kanban memo comparator to include isDeleting, isSpawning, activeSessions
-- [ ] **FUNC-09**: Add localStorage size guard to chatRoomStore (cap messages per room)
-- [ ] **FUNC-10**: Fix dual broadcast listeners causing double task reloads
+- [x] **FUNC-01**: Fix matchTaskToAgent routing to include all 9+ agents (not just coder/researcher/writer/chief)
+- [x] **FUNC-02**: Fix InboxPanel approval routing to use routing table instead of hardcoding to coder
+- [x] **FUNC-03**: Wrap DMFeed in ProtectedPanels error boundary
+- [x] **FUNC-04**: Add null guards to all clawdbot.* IPC calls that currently crash in web mode (TokenUsage, AgentTokenDetail, TaskDetail x6)
+- [x] **FUNC-05**: Fix notification debounce collision (task/message/approval share one timer)
+- [x] **FUNC-06**: Fix double gateway.getSessions() calls every 30s (merge fetchSessions + loadGatewaySessions)
+- [x] **FUNC-07**: Fix phantom task creation in store (approveItem/adjustItem create unsynced tasks)
+- [x] **FUNC-08**: Fix Kanban memo comparator to include isDeleting, isSpawning, activeSessions
+- [x] **FUNC-09**: Add localStorage size guard to chatRoomStore (cap messages per room)
+- [x] **FUNC-10**: Fix dual broadcast listeners causing double task reloads
 
 ### Cleanup
 
@@ -97,16 +97,16 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | FIX-08 | Phase 2 | 02-01 | Complete |
 | FIX-09 | Phase 2 | 02-01 | Complete |
 | FIX-10 | Phase 2 | 02-01 | Complete |
-| FUNC-01 | Phase 3 | 03-01 | Pending |
-| FUNC-02 | Phase 3 | 03-01 | Pending |
-| FUNC-03 | Phase 3 | 03-01 | Pending |
-| FUNC-04 | Phase 3 | 03-01 | Pending |
-| FUNC-05 | Phase 3 | 03-01 | Pending |
-| FUNC-06 | Phase 3 | 03-02 | Pending |
-| FUNC-07 | Phase 3 | 03-02 | Pending |
-| FUNC-08 | Phase 3 | 03-02 | Pending |
-| FUNC-09 | Phase 3 | 03-02 | Pending |
-| FUNC-10 | Phase 3 | 03-02 | Pending |
+| FUNC-01 | Phase 3 | 03-01 | Complete |
+| FUNC-02 | Phase 3 | 03-01 | Complete |
+| FUNC-03 | Phase 3 | 03-01 | Complete |
+| FUNC-04 | Phase 3 | 03-01 | Complete |
+| FUNC-05 | Phase 3 | 03-01 | Complete |
+| FUNC-06 | Phase 3 | 03-02 | Complete |
+| FUNC-07 | Phase 3 | 03-02 | Complete |
+| FUNC-08 | Phase 3 | 03-02 | Complete |
+| FUNC-09 | Phase 3 | 03-02 | Complete |
+| FUNC-10 | Phase 3 | 03-02 | Complete |
 | CLEAN-01 | Phase 4 | 04-01 | Pending |
 | CLEAN-02 | Phase 4 | 04-01 | Pending |
 | CLEAN-03 | Phase 4 | 04-01 | Pending |
