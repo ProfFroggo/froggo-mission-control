@@ -1874,59 +1874,37 @@ ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string
 
 // ============== TASK ATTACHMENTS IPC HANDLERS ==============
 ipcMain.handle('attachments:list', async (_, taskId: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id='${taskId}' ORDER BY uploaded_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Attachments] List error:', error);
-        resolve({ success: false, attachments: [] });
-        return;
-      }
-      try {
-        const attachments = JSON.parse(stdout || '[]');
-        resolve({ success: true, attachments });
-      } catch (e) {
-        safeLog.error('[Attachments] Parse error:', e);
-        resolve({ success: false, attachments: [] });
-      }
-    });
-  });
+  try {
+    const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id = ? ORDER BY uploaded_at DESC').all(taskId);
+    return { success: true, attachments };
+  } catch (error: any) {
+    safeLog.error('[Attachments] List error:', error);
+    return { success: false, attachments: [] };
+  }
 });
 
 // List ALL task attachments (for Files view)
 ipcMain.handle('attachments:listAll', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Attachments] ListAll error:', error);
-        resolve({ success: false, attachments: [] });
-        return;
-      }
-      try {
-        const attachments = JSON.parse(stdout || '[]');
-        resolve({ success: true, attachments });
-      } catch (e) {
-        safeLog.error('[Attachments] Parse error:', e);
-        resolve({ success: false, attachments: [] });
-      }
-    });
-  });
+  try {
+    const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC').all();
+    return { success: true, attachments };
+  } catch (error: any) {
+    safeLog.error('[Attachments] ListAll error:', error);
+    return { success: false, attachments: [] };
+  }
 });
 
 ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, category: string = 'deliverable', uploadedBy: string = 'user') => {
   const filename = path.basename(filePath);
-  
+
   // Get file stats
   let fileSize = 0;
   let mimeType = 'application/octet-stream';
-  
+
   try {
     const stats = fs.statSync(filePath);
     fileSize = stats.size;
-    
+
     // Simple MIME type detection based on extension
     const ext = path.extname(filePath).toLowerCase();
     const mimeTypes: Record<string, string> = {
@@ -1951,85 +1929,62 @@ ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, ca
     safeLog.error('[Attachments] File stat error:', e);
     return { success: false, error: 'File not accessible' };
   }
-  
+
   const now = Date.now();
-  const escapedPath = filePath.replace(/'/g, "''");
-  const escapedFilename = filename.replace(/'/g, "''");
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO task_attachments (task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at) VALUES ('${taskId}', '${escapedPath}', '${escapedFilename}', ${fileSize}, '${mimeType}', '${category}', '${uploadedBy}', ${now}); SELECT last_insert_rowid()"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Attachments] Add error:', error);
-        resolve({ success: false, error: error.message });
-        return;
+
+  try {
+    const result = prepare('INSERT INTO task_attachments (task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      taskId, filePath, filename, fileSize, mimeType, category, uploadedBy, now
+    );
+
+    const attachmentId = Number(result.lastInsertRowid);
+
+    // Log activity (fire-and-forget CLI call)
+    const activityCmd = `froggo-db task-activity "${taskId}" "file_attached" "Attached: ${filename} (${category})" --details "${filePath}"`;
+    exec(activityCmd, () => {});
+
+    return {
+      success: true,
+      attachment: {
+        id: attachmentId,
+        task_id: taskId,
+        file_path: filePath,
+        filename,
+        file_size: fileSize,
+        mime_type: mimeType,
+        category,
+        uploaded_by: uploadedBy,
+        uploaded_at: now
       }
-      
-      const attachmentId = parseInt(stdout.trim());
-      
-      // Log activity
-      const activityCmd = `froggo-db task-activity "${taskId}" "file_attached" "Attached: ${escapedFilename} (${category})" --details "${escapedPath}"`;
-      exec(activityCmd, () => {});
-      
-      resolve({ 
-        success: true, 
-        attachment: {
-          id: attachmentId,
-          task_id: taskId,
-          file_path: filePath,
-          filename,
-          file_size: fileSize,
-          mime_type: mimeType,
-          category,
-          uploaded_by: uploadedBy,
-          uploaded_at: now
-        }
-      });
-    });
-  });
+    };
+  } catch (error: any) {
+    safeLog.error('[Attachments] Add error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('attachments:delete', async (_, attachmentId: number) => {
-  // Get attachment info first for activity log
-  const getCmd = `sqlite3 "${froggoDbPath}" "SELECT task_id, filename FROM task_attachments WHERE id=${attachmentId}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
-      if (getError) {
-        resolve({ success: false, error: 'Attachment not found' });
-        return;
-      }
-      
-      try {
-        const attachments = JSON.parse(getStdout);
-        if (!attachments || attachments.length === 0) {
-          resolve({ success: false, error: 'Attachment not found' });
-          return;
-        }
-        
-        const { task_id, filename } = attachments[0];
-        
-        // Delete attachment
-        const deleteCmd = `sqlite3 "${froggoDbPath}" "DELETE FROM task_attachments WHERE id=${attachmentId}"`;
-        exec(deleteCmd, { timeout: 5000 }, (deleteError) => {
-          if (deleteError) {
-            resolve({ success: false, error: deleteError.message });
-            return;
-          }
-          
-          // Log activity
-          const escapedFilename = filename.replace(/'/g, "''");
-          const activityCmd = `froggo-db task-activity "${task_id}" "file_deleted" "Deleted attachment: ${escapedFilename}"`;
-          exec(activityCmd, () => {});
-          
-          resolve({ success: true });
-        });
-      } catch (e) {
-        resolve({ success: false, error: 'Parse error' });
-      }
-    });
-  });
+  try {
+    // Get attachment info first for activity log
+    const attachment = prepare('SELECT task_id, filename FROM task_attachments WHERE id = ?').get(attachmentId) as any;
+    if (!attachment) {
+      return { success: false, error: 'Attachment not found' };
+    }
+
+    const { task_id, filename } = attachment;
+
+    // Delete attachment
+    prepare('DELETE FROM task_attachments WHERE id = ?').run(attachmentId);
+
+    // Log activity (fire-and-forget CLI call)
+    const activityCmd = `froggo-db task-activity "${task_id}" "file_deleted" "Deleted attachment: ${filename}"`;
+    exec(activityCmd, () => {});
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Attachments] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('attachments:open', async (_, filePath: string) => {
@@ -2613,9 +2568,6 @@ ipcMain.handle('calendar:events:create', async (_, event: {
   const eventId = `event-${Date.now()}`;
   const now = Date.now();
   
-  // Escape strings for SQL
-  const escapeSQL = (str: string | undefined) => str ? str.replace(/'/g, "''") : '';
-  
   // Convert start_time to Unix timestamp if it's ISO string
   let start_time_ms: number;
   if (typeof event.start_time === 'string') {
@@ -2623,7 +2575,7 @@ ipcMain.handle('calendar:events:create', async (_, event: {
   } else {
     start_time_ms = event.start_time;
   }
-  
+
   // Convert end_time to Unix timestamp if provided
   let end_time_ms: number | null = null;
   if (event.end_time) {
@@ -2633,60 +2585,64 @@ ipcMain.handle('calendar:events:create', async (_, event: {
       end_time_ms = event.end_time;
     }
   }
-  
-  const title = escapeSQL(event.title);
-  const description = event.description ? escapeSQL(event.description) : '';
+
   const all_day = event.all_day ? 1 : 0;
-  const location = event.location ? escapeSQL(event.location) : '';
-  const color = event.color ? escapeSQL(event.color) : '';
-  const category = event.category ? escapeSQL(event.category) : '';
-  const status = event.status ? escapeSQL(event.status) : 'confirmed';
-  const recurrence = event.recurrence ? escapeSQL(JSON.stringify(event.recurrence)) : '';
-  const attendees = event.attendees ? escapeSQL(JSON.stringify(event.attendees)) : '';
-  const reminders = event.reminders ? escapeSQL(JSON.stringify(event.reminders)) : '';
-  const source = event.source ? escapeSQL(event.source) : 'manual';
-  const source_id = event.source_id ? escapeSQL(event.source_id) : '';
-  const task_id = event.task_id ? escapeSQL(event.task_id) : '';
-  const metadata = event.metadata ? escapeSQL(JSON.stringify(event.metadata)) : '';
-  
-  const end_time_sql = end_time_ms !== null ? end_time_ms : 'NULL';
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO calendar_events (id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata) VALUES ('${eventId}', '${title}', '${description}', ${start_time_ms}, ${end_time_sql}, ${all_day}, '${location}', '${color}', '${category}', '${status}', '${recurrence}', '${attendees}', '${reminders}', '${source}', '${source_id}', ${task_id ? `'${task_id}'` : 'NULL'}, ${now}, ${now}, '${metadata}')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Calendar] Create error:', error);
-        resolve({ success: false, error: error.message });
-        return;
+  const status = event.status || 'confirmed';
+  const source = event.source || 'manual';
+
+  try {
+    prepare(
+      'INSERT INTO calendar_events (id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      eventId,
+      event.title,
+      event.description || '',
+      start_time_ms,
+      end_time_ms,
+      all_day,
+      event.location || '',
+      event.color || '',
+      event.category || '',
+      status,
+      event.recurrence ? JSON.stringify(event.recurrence) : '',
+      event.attendees ? JSON.stringify(event.attendees) : '',
+      event.reminders ? JSON.stringify(event.reminders) : '',
+      source,
+      event.source_id || '',
+      event.task_id || null,
+      now,
+      now,
+      event.metadata ? JSON.stringify(event.metadata) : ''
+    );
+
+    return {
+      success: true,
+      event: {
+        id: eventId,
+        title: event.title,
+        description: event.description,
+        start_time: start_time_ms,
+        end_time: end_time_ms,
+        all_day,
+        location: event.location,
+        color: event.color,
+        category: event.category,
+        status: status,
+        recurrence: event.recurrence,
+        attendees: event.attendees,
+        reminders: event.reminders,
+        source: source,
+        source_id: event.source_id,
+        task_id: event.task_id,
+        created_at: now,
+        updated_at: now,
+        metadata: event.metadata
       }
-      
-      resolve({ 
-        success: true, 
-        event: {
-          id: eventId,
-          title: event.title,
-          description: event.description,
-          start_time: start_time_ms,
-          end_time: end_time_ms,
-          all_day,
-          location: event.location,
-          color: event.color,
-          category: event.category,
-          status: status,
-          recurrence: event.recurrence,
-          attendees: event.attendees,
-          reminders: event.reminders,
-          source: source,
-          source_id: event.source_id,
-          task_id: event.task_id,
-          created_at: now,
-          updated_at: now,
-          metadata: event.metadata
-        }
-      });
-    });
-  });
+    };
+  } catch (error: any) {
+    safeLog.error('[Calendar] Create error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
@@ -4025,192 +3981,161 @@ ipcMain.handle('library:upload', async () => {
   else if (['.pdf', '.doc', '.docx'].includes(ext)) category = 'document';
   else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov'].includes(ext)) category = 'media';
   
-  // Insert into database
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "
-      CREATE TABLE IF NOT EXISTS library (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        path TEXT NOT NULL,
-        category TEXT DEFAULT 'other',
-        size INTEGER,
-        mime_type TEXT,
-        created_at TEXT DEFAULT (datetime('now')),
-        updated_at TEXT DEFAULT (datetime('now')),
-        linked_tasks TEXT,
-        tags TEXT
-      );
-      INSERT INTO library (id, name, path, category, size) VALUES ('${fileId}', '${fileName.replace(/'/g, "''")}', '${destPath.replace(/'/g, "''")}', '${category}', ${stats.size});
-    "`;
-    
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-      } else {
-        resolve({ success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } });
-      }
-    });
-  });
+  // Ensure library table exists (DDL, no user params)
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS library (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      category TEXT DEFAULT 'other',
+      size INTEGER,
+      mime_type TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      linked_tasks TEXT,
+      tags TEXT
+    )`);
+
+    // Insert into database via parameterized query
+    prepare('INSERT INTO library (id, name, path, category, size) VALUES (?, ?, ?, ?, ?)').run(
+      fileId, fileName, destPath, category, stats.size
+    );
+
+    return { success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('library:delete', async (_, fileId: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get file path first
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT path FROM library WHERE id='${fileId}'" -json`, (_, stdout) => {
-      try {
-        const rows = JSON.parse(stdout || '[]');
-        if (rows.length > 0 && rows[0].path) {
-          // Delete file
-          if (fs.existsSync(rows[0].path)) {
-            fs.unlinkSync(rows[0].path);
-          }
-        }
-      } catch {}
-      
-      // Delete from database
-      exec(`sqlite3 ~/clawd/data/froggo.db "DELETE FROM library WHERE id='${fileId}'"`, (error) => {
-        resolve({ success: !error });
-      });
-    });
-  });
+    const row = prepare('SELECT path FROM library WHERE id = ?').get(fileId) as any;
+    if (row && row.path) {
+      // Delete file from disk
+      if (fs.existsSync(row.path)) {
+        fs.unlinkSync(row.path);
+      }
+    }
+
+    // Delete from database
+    prepare('DELETE FROM library WHERE id = ?').run(fileId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Library] Delete error:', error);
+    return { success: false };
+  }
 });
 
 ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
-  return new Promise((resolve) => {
+  try {
     // Get current linked tasks
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT linked_tasks FROM library WHERE id='${fileId}'"`, (_, stdout) => {
-      let linkedTasks: string[] = [];
-      try {
-        const current = stdout?.trim();
-        if (current) linkedTasks = JSON.parse(current);
-      } catch {}
-      
-      if (!linkedTasks.includes(taskId)) {
-        linkedTasks.push(taskId);
-      }
-      
-      const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE library SET linked_tasks='${JSON.stringify(linkedTasks)}', updated_at=datetime('now') WHERE id='${fileId}'"`;
-      exec(cmd, (error) => {
-        resolve({ success: !error });
-      });
-    });
-  });
+    const row = prepare('SELECT linked_tasks FROM library WHERE id = ?').get(fileId) as any;
+    let linkedTasks: string[] = [];
+    try {
+      if (row && row.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks);
+    } catch {}
+
+    if (!linkedTasks.includes(taskId)) {
+      linkedTasks.push(taskId);
+    }
+
+    prepare("UPDATE library SET linked_tasks = ?, updated_at = datetime('now') WHERE id = ?").run(
+      JSON.stringify(linkedTasks), fileId
+    );
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Library] Link error:', error);
+    return { success: false };
+  }
 });
 
 ipcMain.handle('library:view', async (_, fileId: string) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path, mime_type, name FROM library WHERE id='${fileId}'" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      try {
-        const rows = JSON.parse(stdout.trim() || '[]');
-        if (rows.length === 0) {
-          resolve({ success: false, error: 'File not found' });
-          return;
-        }
-        
-        const file = rows[0];
-        const filePath = file.path.replace('~', process.env.HOME || '');
-        
-        // Check if file exists
-        if (!fs.existsSync(filePath)) {
-          resolve({ success: false, error: 'File does not exist on disk' });
-          return;
-        }
-        
-        // For text files, read content
-        const mimeType = file.mime_type || '';
-        if (mimeType.includes('text/') || mimeType.includes('markdown') || mimeType.includes('json')) {
-          const content = fs.readFileSync(filePath, 'utf-8');
-          resolve({ 
-            success: true, 
-            content, 
-            mimeType,
-            name: file.name,
-            path: filePath,
-            viewType: 'text'
-          });
-        } else if (mimeType.startsWith('image/')) {
-          // For images, return base64
-          const buffer = fs.readFileSync(filePath);
-          const base64 = buffer.toString('base64');
-          resolve({ 
-            success: true, 
-            content: `data:${mimeType};base64,${base64}`,
-            mimeType,
-            name: file.name,
-            path: filePath,
-            viewType: 'image'
-          });
-        } else {
-          // For other files, just return metadata
-          resolve({ 
-            success: true, 
-            mimeType,
-            name: file.name,
-            path: filePath,
-            viewType: 'binary'
-          });
-        }
-      } catch (parseError: any) {
-        resolve({ success: false, error: parseError.message });
-      }
-    });
-  });
+  try {
+    // Now uses correct DB path via shared prepare() (previously had wrong path ~/Froggo/clawd/data/froggo.db)
+    const file = prepare('SELECT path, mime_type, name FROM library WHERE id = ?').get(fileId) as any;
+    if (!file) {
+      return { success: false, error: 'File not found' };
+    }
+
+    const filePath = file.path.replace('~', process.env.HOME || '');
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: 'File does not exist on disk' };
+    }
+
+    // For text files, read content
+    const mimeType = file.mime_type || '';
+    if (mimeType.includes('text/') || mimeType.includes('markdown') || mimeType.includes('json')) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return {
+        success: true,
+        content,
+        mimeType,
+        name: file.name,
+        path: filePath,
+        viewType: 'text'
+      };
+    } else if (mimeType.startsWith('image/')) {
+      // For images, return base64
+      const buffer = fs.readFileSync(filePath);
+      const base64 = buffer.toString('base64');
+      return {
+        success: true,
+        content: `data:${mimeType};base64,${base64}`,
+        mimeType,
+        name: file.name,
+        path: filePath,
+        viewType: 'image'
+      };
+    } else {
+      // For other files, just return metadata
+      return {
+        success: true,
+        mimeType,
+        name: file.name,
+        path: filePath,
+        viewType: 'binary'
+      };
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('library:download', async (_, fileId: string) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/Froggo/clawd/data/froggo.db "SELECT path, name FROM library WHERE id='${fileId}'" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      try {
-        const rows = JSON.parse(stdout.trim() || '[]');
-        if (rows.length === 0) {
-          resolve({ success: false, error: 'File not found' });
-          return;
-        }
-        
-        const file = rows[0];
-        const sourcePath = file.path.replace('~', process.env.HOME || '');
-        
-        // Check if file exists
-        if (!fs.existsSync(sourcePath)) {
-          resolve({ success: false, error: 'File does not exist on disk' });
-          return;
-        }
-        
-        // Show save dialog
-        dialog.showSaveDialog({
-          title: 'Save File',
-          defaultPath: file.name,
-        }).then((result) => {
-          if (result.canceled || !result.filePath) {
-            resolve({ success: false, error: 'Cancelled' });
-            return;
-          }
-          
-          // Copy file to chosen location
-          fs.copyFileSync(sourcePath, result.filePath);
-          resolve({ success: true, path: result.filePath });
-        }).catch((dialogError) => {
-          resolve({ success: false, error: dialogError.message });
-        });
-      } catch (parseError: any) {
-        resolve({ success: false, error: parseError.message });
-      }
+  try {
+    // Now uses correct DB path via shared prepare() (previously had wrong path ~/Froggo/clawd/data/froggo.db)
+    const file = prepare('SELECT path, name FROM library WHERE id = ?').get(fileId) as any;
+    if (!file) {
+      return { success: false, error: 'File not found' };
+    }
+
+    const sourcePath = file.path.replace('~', process.env.HOME || '');
+
+    // Check if file exists
+    if (!fs.existsSync(sourcePath)) {
+      return { success: false, error: 'File does not exist on disk' };
+    }
+
+    // Show save dialog
+    const saveResult = await dialog.showSaveDialog({
+      title: 'Save File',
+      defaultPath: file.name,
     });
-  });
+
+    if (saveResult.canceled || !saveResult.filePath) {
+      return { success: false, error: 'Cancelled' };
+    }
+
+    // Copy file to chosen location
+    fs.copyFileSync(sourcePath, saveResult.filePath);
+    return { success: true, path: saveResult.filePath };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== SHELL IPC HANDLERS ==============
