@@ -164,32 +164,6 @@ export default function SettingsPanel() {
     return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
   const [saved, setSaved] = useState(false);
-  
-  // Notification preferences state
-  const [_notifPrefs, setNotifPrefs] = useState({
-    enabled: true,
-    taskCompletions: true,
-    agentFailures: true,
-    approvalRequests: true,
-    chatMentions: true,
-    sound: true,
-    showPreviews: true,
-  });
-  
-  // Load notification preferences
-  useEffect(() => {
-    const loadNotifPrefs = async () => {
-      try {
-        const prefs = await (window as any).clawdbot?.notifications?.getPrefs();
-        if (prefs) {
-          setNotifPrefs(prefs);
-        }
-      } catch (e) {
-        console.error('Failed to load notification prefs:', e);
-      }
-    };
-    loadNotifPrefs();
-  }, []);
   const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

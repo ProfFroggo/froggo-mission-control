@@ -32,12 +32,9 @@ export async function spawnAgent(
 
   const label = options?.label || `${agent.id}-${Date.now()}`;
 
-  // Load agent prompt (fallback only - agents load their own from workspace)
-  const systemPrompt = getAgentPrompt(agentId);
-
   // Spawn via gateway
   const result = await gateway.spawnAgent(
-    `${systemPrompt}\n\n## YOUR TASK\n${task}`,
+    `## YOUR TASK\n${task}`,
     label,
     options?.model // Use provided model or gateway default
   );
@@ -121,12 +118,6 @@ export async function messageAgent(sessionKey: string, message: string): Promise
     sessionKey,
     message,
   });
-}
-
-// Embedded agent prompts (fallback only - agents load their own from workspace)
-function getAgentPrompt(agentId: string): string {
-  // Return empty string - agents load their own prompts from workspace AGENTS.md files
-  return '';
 }
 
 // Match task to best agent using ordered regex routing table

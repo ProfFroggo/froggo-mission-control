@@ -65,17 +65,8 @@ const TRIGGER_ICONS = {
   dm: Mail,
 };
 
-// const ACTION_ICONS = {
-//   reply: MessageCircle,
-//   like: '❤️',
-//   retweet: '🔁',
-//   dm: Mail,
-//   add_to_list: '📋',
-// };
-
 export default function XAutomationsPanel() {
   const [automations, setAutomations] = useState<XAutomation[]>([]);
-  const [_executions, _setExecutions] = useState<XAutomationExecution[]>([]);
   const [loading, setLoading] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingAutomation, setEditingAutomation] = useState<XAutomation | null>(null);

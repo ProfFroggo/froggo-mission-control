@@ -111,8 +111,7 @@ export default function InboxPanel() {
   // View mode state (list or priority lanes)
   type ViewMode = 'list' | 'lanes';
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [_collapsedLanes, _setCollapsedLanes] = useState<Set<string>>(new Set());
-  
+
   // Keyboard shortcuts state
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [gKeyPressed, setGKeyPressed] = useState(false);
