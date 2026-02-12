@@ -52,7 +52,7 @@
 
 - [x] **Phase 5: Foundation** - Project CRUD, TipTap editor, chapter management, file storage
 - [x] **Phase 6: Inline Feedback** - Highlight-to-chat, AI alternatives, streaming, agent routing
-- [ ] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
+- [x] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
 - [ ] **Phase 8: Research Library** - Sources, fact-checking, Researcher agent
 - [ ] **Phase 9: Outline & Versions** - Chapter navigation, drag-drop, diff comparison
 - [ ] **Phase 10: Jess Integration** - Emotional guidance, memoir-specific support
@@ -101,11 +101,11 @@ Plans:
   2. User can create, edit, and delete timeline events (date, description, chapter references) in the context panel
   3. User can create, edit, and delete verified facts (claim, source, status) in the context panel
   4. Memory store data is automatically included in AI agent context for feedback requests, and persists as JSON files per project
-**Plans**: 2 plans
+**Plans**: 2/2 complete
 
 Plans:
-- [ ] 07-01-PLAN.md -- Backend: writing-memory-service IPC, preload bridge, memoryStore Zustand store
-- [ ] 07-02-PLAN.md -- UI: ContextPanel with character/timeline/fact CRUD, ProjectEditor integration, AI context injection
+- [x] 07-01-PLAN.md -- Backend: writing-memory-service IPC, preload bridge, memoryStore Zustand store
+- [x] 07-02-PLAN.md -- UI: ContextPanel with character/timeline/fact CRUD, ProjectEditor integration, AI context injection
 
 ### Phase 8: Research Library
 **Goal**: User can manage research sources and use the Researcher agent to fact-check claims
@@ -157,11 +157,11 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
 | 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
 | 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
-| 7. Memory Store | v2.0 | 0/2 | Planned | - |
+| 7. Memory Store | v2.0 | 2/2 | Complete | 2026-02-12 |
 | 8. Research Library | v2.0 | 0/2 | Not started | - |
 | 9. Outline & Versions | v2.0 | 0/2 | Not started | - |
 | 10. Jess Integration | v2.0 | 0/1 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-12*
-*Last updated: 2026-02-12 — Phase 6 complete*
+*Last updated: 2026-02-12 — Phase 7 complete*
