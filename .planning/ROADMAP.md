@@ -10,7 +10,7 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 - Integer phases (1, 2, 3, 4): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
+- [x] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
 - [ ] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
 - [ ] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
 - [ ] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
@@ -32,10 +32,10 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 Plans:
 - [x] 01-01-PLAN.md — Remove credentials and PII from source (SEC-01, SEC-02, SEC-07) [Wave 1]
 - [x] 01-02-PLAN.md — Lock down attack surface (SEC-03, SEC-04 partial, SEC-05, SEC-06) [Wave 2]
-- [ ] 01-03-PLAN.md — Gap closure: Migrate notification-settings + snooze handlers to prepare() [Wave 3, gap_closure]
-- [ ] 01-04-PLAN.md — Gap closure: Migrate message folder + conversation pin handlers to prepare() [Wave 4, gap_closure]
-- [ ] 01-05-PLAN.md — Gap closure: Migrate task/attachment/library/inbox handlers to prepare() [Wave 5, gap_closure]
-- [ ] 01-06-PLAN.md — Gap closure: Migrate calendar/conversation/chat/sessions.db + final sweep [Wave 6, gap_closure]
+- [x] 01-03-PLAN.md — Gap closure: Migrate notification-settings + snooze handlers to prepare() [Wave 3, gap_closure]
+- [x] 01-04-PLAN.md — Gap closure: Migrate message folder + conversation pin handlers to prepare() [Wave 4, gap_closure]
+- [x] 01-05-PLAN.md — Gap closure: Migrate task/attachment/library/inbox handlers to prepare() [Wave 5, gap_closure]
+- [x] 01-06-PLAN.md — Gap closure: Migrate calendar/conversation/chat/sessions.db + final sweep [Wave 6, gap_closure]
 
 ### Phase 2: Fix Broken Features
 **Goal**: Every feature works and every data indicator reflects live reality
@@ -92,7 +92,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Hardening | 2/6 | Gap closure in progress | - |
+| 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
 | 2. Fix Broken Features | 0/2 | Not started | - |
 | 3. Functional Fixes | 0/2 | Not started | - |
 | 4. Cleanup & Debloat | 0/2 | Not started | - |
