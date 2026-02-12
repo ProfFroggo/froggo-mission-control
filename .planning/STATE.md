@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 1 gap closure -- 53 SQL injection sites remain (21 eliminated by 01-03)
+**Current focus:** Phase 1 gap closure -- 32 SQL injection sites remain (42 eliminated by 01-01 through 01-04)
 
 ## Current Position
 
 Phase: 1 of 4 (Security Hardening) -- GAP CLOSURE
-Plan: 3 of 6 in current phase (01-01 through 01-03 complete, 01-04 through 01-06 remaining)
+Plan: 4 of 6 in current phase (01-01 through 01-04 complete, 01-05 through 01-06 remaining)
 Status: In progress
-Last activity: 2026-02-12 -- Completed 01-03-PLAN.md (notification-settings + snooze handlers)
+Last activity: 2026-02-12 -- Completed 01-04-PLAN.md (folder + pin handlers)
 
-Progress: [███░░░░░░░] 23%
+Progress: [████░░░░░░] 31%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: ~25min
-- Total execution time: ~74min
+- Total plans completed: 4
+- Average duration: ~22min
+- Total execution time: ~87min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-security-hardening | 3/6 | ~74min | ~25min |
+| 01-security-hardening | 4/6 | ~87min | ~22min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min)
-- Trend: Consistent speed on SQL injection migrations
+- Last 5 plans: 01-01 (~45min), 01-02 (~9min), 01-03 (~20min), 01-04 (~13min)
+- Trend: Accelerating -- folder/pin migration faster due to established pattern
 
 *Updated after each plan completion*
 
@@ -54,10 +54,11 @@ Recent decisions affecting current work:
 - Security.db gets its own lazy better-sqlite3 connection via getSecurityDb()
 - Use db.prepare() directly (not cached) for dynamic SET clauses to avoid statement cache bloat
 - Use db.transaction() for multi-step operations (snooze:unset) for atomicity
+- Reuse single prepared statement in loops (pins:reorder) for efficiency
 
 ### Pending Todos
 
-- Gap closure plans 01-04 through 01-06 address remaining 53 SQL injection sites
+- Gap closure plans 01-05 and 01-06 address remaining 32 SQL injection sites
 - After gap closure: re-run verification to confirm SEC-04 satisfied
 
 ### Blockers/Concerns
@@ -68,5 +69,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-12
-Stopped at: Completed 01-03-PLAN.md
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
