@@ -13,7 +13,7 @@ Take Froggo.app from "functional but leaking" to production-grade in four waves.
 - [x] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
 - [x] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
 - [x] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
-- [ ] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
+- [x] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
 
 ## Phase Details
 
@@ -82,8 +82,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Delete dead code and files (CLEAN-01 through CLEAN-05) [Wave 1]
-- [ ] 04-02-PLAN.md — Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08) [Wave 1]
+- [x] 04-01-PLAN.md — Delete dead code and files (CLEAN-01 through CLEAN-05) [Wave 1]
+- [x] 04-02-PLAN.md — Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08) [Wave 1]
 
 ## Progress
 
@@ -95,4 +95,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
 | 2. Fix Broken Features | 2/2 | Complete | 2026-02-12 |
 | 3. Functional Fixes | 2/2 | Complete | 2026-02-12 |
-| 4. Cleanup & Debloat | 0/2 | Not started | - |
+| 4. Cleanup & Debloat | 2/2 | Complete | 2026-02-12 |
