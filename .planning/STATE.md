@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 5 complete (verified). Next: Phase 6 — Inline Feedback
+**Current focus:** Phase 6 — Inline Feedback (in progress)
 
 ## Current Position
 
-Phase: 5 of 10 (Foundation)
-Plan: 3 of 3 in current phase
-Status: Phase complete (verified 15/15)
-Last activity: 2026-02-12 — Completed 05-03-PLAN.md (Chapter Editor Experience)
+Phase: 6 of 10 (Inline Feedback)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-12 — Completed 06-01-PLAN.md (Feedback State & Logging Service)
 
-Progress: [███░░░░░░░░░] 25% (3/12 plans)
+Progress: [████░░░░░░░░] 33% (4/12 plans)
 
 ## Performance Metrics
 
@@ -24,10 +24,11 @@ Progress: [███░░░░░░░░░] 25% (3/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 3
+- Plans completed: 4
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
+- 06-01: 2min (2 tasks)
 
 ## Accumulated Context
 
@@ -53,6 +54,9 @@ v2 decisions (confirmed in execution):
 - TipTap 3.19 setContent uses options object `{ emitUpdate: false }` not boolean
 - 1500ms autosave debounce with flush on unmount
 - shouldRerenderOnTransaction: false for editor performance (critical for 10k+ word chapters)
+- JSONL per-chapter feedback logs in memory/ dir (append-only, one file per chapter)
+- feedbackStore.reset() preserves selectedAgent (user preference persists)
+- savedSelection stores editor range at send time (for reliable accept after streaming)
 
 ### Pending Todos
 
@@ -66,6 +70,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-12T20:05:32Z
-Stopped at: Completed 05-03-PLAN.md (Chapter Editor Experience) — Phase 5 Foundation complete
+Last session: 2026-02-12T21:11:00Z
+Stopped at: Completed 06-01-PLAN.md (Feedback State & Logging Service)
 Resume file: None
