@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-12)
 ## Current Position
 
 Phase: 5 of 10 (Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-12 — Completed 05-01-PLAN.md (Backend Foundation)
+Last activity: 2026-02-12 — Completed 05-02-PLAN.md (Writing Frontend Shell)
 
-Progress: [█░░░░░░░░░░░] 8% (1/12 plans)
+Progress: [██░░░░░░░░░░] 17% (2/12 plans)
 
 ## Performance Metrics
 
@@ -24,8 +24,9 @@ Progress: [█░░░░░░░░░░░] 8% (1/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 1
+- Plans completed: 2
 - 05-01: 3min (3 tasks)
+- 05-02: 4min (2 tasks)
 
 ## Accumulated Context
 
@@ -43,7 +44,10 @@ v2 decisions (confirmed in execution):
 - TipTap v3.19.0 as rich text editor (installed, confirmed)
 - File-based storage for writing projects (project.json + chapters.json + .md files on disk)
 - No @tiptap/markdown (beta) -- markdown for import/export only via custom converter
-- Separate writingStore (not merged into store.ts) -- to be created in Plan 02
+- Separate writingStore (not merged into store.ts) -- confirmed in Plan 02
+- writingStore not persisted to localStorage (document content lives on disk via IPC)
+- Writing panels use ProtectedPanels.tsx lazy load + error boundary pattern (consistent with all other panels)
+- bridge() accessor helper for safe IPC access in writingStore
 
 ### Pending Todos
 
@@ -57,6 +61,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-12T19:50:10Z
-Stopped at: Completed 05-01-PLAN.md (Backend Foundation)
+Last session: 2026-02-12T19:55:41Z
+Stopped at: Completed 05-02-PLAN.md (Writing Frontend Shell)
 Resume file: None
