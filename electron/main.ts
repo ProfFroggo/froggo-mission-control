@@ -4075,11 +4075,12 @@ ipcMain.handle('shell:openPath', async (_, filePath: string) => {
 
 // ============== SEARCH IPC HANDLERS ==============
 ipcMain.handle('search:local', async (_, query: string) => {
-  const escapedQuery = query.replace(/'/g, "''");
-  
+  // Shell-escape query for CLI argument (not SQL)
+  const escapedQuery = query.replace(/'/g, "'\\''");
+
   return new Promise((resolve) => {
     // Search froggo-db for tasks, facts, and messages with JSON output
-    const cmd = `froggo-db search "${escapedQuery}" --limit 20 --json`;
+    const cmd = `froggo-db search '${escapedQuery}' --limit 20 --json`;
     
     exec(cmd, { timeout: 15000 }, (error, stdout) => {
       if (error) {
@@ -6171,29 +6172,21 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 });
 
 ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const escapedSkill = skill.replace(/'/g, "''");
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES ('${escapedSkill}', 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    prepare("INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES (?, 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')").run(skill);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: string, proficiency: number) => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  const escapedSkill = skillName.replace(/'/g, "''");
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE skill_evolution SET proficiency = ${proficiency}, updated_at = datetime('now') WHERE skill_name = '${escapedSkill}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    prepare("UPDATE skill_evolution SET proficiency = ?, updated_at = datetime('now') WHERE skill_name = ?").run(proficiency, skillName);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('agents:search', async (_, query: string) => {
@@ -6687,42 +6680,29 @@ ipcMain.handle('get-circuit-status', async () => {
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
 ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => {
   const session = msg.sessionKey || 'dashboard';
-  const escapedContent = msg.content.replace(/'/g, "''");
   const ts = new Date(msg.timestamp).toISOString();
-  
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('${ts}', '${session}', 'dashboard', '${msg.role}', '${escapedContent}')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error, error: error?.message });
-    });
-  });
+  try {
+    prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, 'dashboard', msg.role, msg.content);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: string) => {
   const session = sessionKey || 'dashboard';
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id, timestamp, role, content FROM messages WHERE session_key='${session}' AND channel='dashboard' ORDER BY timestamp DESC LIMIT ${limit}" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, messages: [] });
-        return;
-      }
-      try {
-        const rows = JSON.parse(stdout || '[]');
-        const messages = rows.reverse().map((r: any) => ({
-          id: `db-${r.id}`,
-          role: r.role,
-          content: r.content,
-          timestamp: new Date(r.timestamp).getTime(),
-        }));
-        resolve({ success: true, messages });
-      } catch {
-        resolve({ success: true, messages: [] });
-      }
-    });
-  });
+  try {
+    const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, 'dashboard', limit) as any[];
+    const messages = rows.reverse().map((r: any) => ({
+      id: `db-${r.id}`,
+      role: r.role,
+      content: r.content,
+      timestamp: new Date(r.timestamp).getTime(),
+    }));
+    return { success: true, messages };
+  } catch {
+    return { success: true, messages: [] };
+  }
 });
 
 ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {
