@@ -1033,227 +1033,192 @@ ipcMain.handle('tasks:sync', async (_, task: {
 
 // Get notification settings for a specific conversation
 ipcMain.handle('notification-settings:get', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Get error:', error);
-        resolve({ success: false, settings: null });
-        return;
-      }
-      
-      try {
-        const settings = JSON.parse(stdout || '[]');
-        resolve({ success: true, settings: settings[0] || null });
-      } catch (e) {
-        safeLog.error('[NotificationSettings] Parse error:', e);
-        resolve({ success: false, settings: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+    return { success: true, settings: row || null };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Get error:', error);
+    return { success: false, settings: null };
+  }
 });
 
 // Set/update notification settings for a conversation
 ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settings: any) => {
-  // First check if settings exist
-  const checkCmd = `sqlite3 "${froggoDbPath}" "SELECT id FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(checkCmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Check error:', error);
-        resolve({ success: false, error: error.message });
-        return;
+  try {
+    // Check if settings exist
+    const existing = prepare('SELECT id FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+
+    if (existing) {
+      // UPDATE existing settings — build dynamic SET clause with parameterized values
+      const setParts: string[] = [];
+      const params: any[] = [];
+
+      if (settings.notification_level !== undefined) {
+        setParts.push('notification_level = ?'); params.push(settings.notification_level);
       }
-      
-      const existing = JSON.parse(stdout || '[]');
-      const isUpdate = existing.length > 0;
-      
-      // Build SQL based on update or insert
-      let cmd: string;
-      
-      if (isUpdate) {
-        // UPDATE existing settings
-        const setParts: string[] = [];
-        
-        if (settings.notification_level !== undefined) 
-          setParts.push(`notification_level = '${settings.notification_level}'`);
-        if (settings.sound_enabled !== undefined) 
-          setParts.push(`sound_enabled = ${settings.sound_enabled ? 1 : 0}`);
-        if (settings.sound_type !== undefined) 
-          setParts.push(`sound_type = '${settings.sound_type}'`);
-        if (settings.desktop_notifications !== undefined) 
-          setParts.push(`desktop_notifications = ${settings.desktop_notifications ? 1 : 0}`);
-        if (settings.quiet_hours_enabled !== undefined) 
-          setParts.push(`quiet_hours_enabled = ${settings.quiet_hours_enabled ? 1 : 0}`);
-        if (settings.quiet_start !== undefined) 
-          setParts.push(`quiet_start = '${settings.quiet_start}'`);
-        if (settings.quiet_end !== undefined) 
-          setParts.push(`quiet_end = '${settings.quiet_end}'`);
-        if (settings.keyword_alerts !== undefined) 
-          setParts.push(`keyword_alerts = '${JSON.stringify(settings.keyword_alerts).replace(/'/g, "''")}'`);
-        if (settings.priority_level !== undefined) 
-          setParts.push(`priority_level = '${settings.priority_level}'`);
-        if (settings.mute_until !== undefined) 
-          setParts.push(`mute_until = ${settings.mute_until ? `'${settings.mute_until}'` : 'NULL'}`);
-        if (settings.notification_frequency !== undefined) 
-          setParts.push(`notification_frequency = '${settings.notification_frequency}'`);
-        if (settings.show_message_preview !== undefined) 
-          setParts.push(`show_message_preview = ${settings.show_message_preview ? 1 : 0}`);
-        if (settings.badge_count_enabled !== undefined) 
-          setParts.push(`badge_count_enabled = ${settings.badge_count_enabled ? 1 : 0}`);
-        if (settings.notes !== undefined) 
-          setParts.push(`notes = '${(settings.notes || '').replace(/'/g, "''")}'`);
-        
-        if (setParts.length === 0) {
-          resolve({ success: false, error: 'No updates provided' });
-          return;
-        }
-        
-        cmd = `sqlite3 "${froggoDbPath}" "UPDATE conversation_notification_settings SET ${setParts.join(', ')} WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-      } else {
-        // INSERT new settings
-        const notificationLevel = settings.notification_level || 'all';
-        const soundEnabled = settings.sound_enabled !== undefined ? (settings.sound_enabled ? 1 : 0) : 1;
-        const soundType = settings.sound_type || 'default';
-        const desktopNotifications = settings.desktop_notifications !== undefined ? (settings.desktop_notifications ? 1 : 0) : 1;
-        const quietHoursEnabled = settings.quiet_hours_enabled ? 1 : 0;
-        const quietStart = settings.quiet_start || 'NULL';
-        const quietEnd = settings.quiet_end || 'NULL';
-        const keywordAlerts = settings.keyword_alerts ? `'${JSON.stringify(settings.keyword_alerts).replace(/'/g, "''")}'` : 'NULL';
-        const priorityLevel = settings.priority_level || 'normal';
-        const muteUntil = settings.mute_until ? `'${settings.mute_until}'` : 'NULL';
-        const notificationFrequency = settings.notification_frequency || 'instant';
-        const showMessagePreview = settings.show_message_preview !== undefined ? (settings.show_message_preview ? 1 : 0) : 1;
-        const badgeCountEnabled = settings.badge_count_enabled !== undefined ? (settings.badge_count_enabled ? 1 : 0) : 1;
-        const notes = settings.notes ? `'${settings.notes.replace(/'/g, "''")}'` : 'NULL';
-        
-        cmd = `sqlite3 "${froggoDbPath}" "INSERT INTO conversation_notification_settings (session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, notes) VALUES ('${sessionKey.replace(/'/g, "''")}', '${notificationLevel}', ${soundEnabled}, '${soundType}', ${desktopNotifications}, ${quietHoursEnabled}, ${quietStart}, ${quietEnd}, ${keywordAlerts}, '${priorityLevel}', ${muteUntil}, '${notificationFrequency}', ${showMessagePreview}, ${badgeCountEnabled}, ${notes})"`;
+      if (settings.sound_enabled !== undefined) {
+        setParts.push('sound_enabled = ?'); params.push(settings.sound_enabled ? 1 : 0);
       }
-      
-      exec(cmd, { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error('[NotificationSettings] Set error:', error);
-          resolve({ success: false, error: error.message });
-          return;
-        }
-        
-        resolve({ success: true });
-      });
-    });
-  });
+      if (settings.sound_type !== undefined) {
+        setParts.push('sound_type = ?'); params.push(settings.sound_type);
+      }
+      if (settings.desktop_notifications !== undefined) {
+        setParts.push('desktop_notifications = ?'); params.push(settings.desktop_notifications ? 1 : 0);
+      }
+      if (settings.quiet_hours_enabled !== undefined) {
+        setParts.push('quiet_hours_enabled = ?'); params.push(settings.quiet_hours_enabled ? 1 : 0);
+      }
+      if (settings.quiet_start !== undefined) {
+        setParts.push('quiet_start = ?'); params.push(settings.quiet_start);
+      }
+      if (settings.quiet_end !== undefined) {
+        setParts.push('quiet_end = ?'); params.push(settings.quiet_end);
+      }
+      if (settings.keyword_alerts !== undefined) {
+        setParts.push('keyword_alerts = ?'); params.push(JSON.stringify(settings.keyword_alerts));
+      }
+      if (settings.priority_level !== undefined) {
+        setParts.push('priority_level = ?'); params.push(settings.priority_level);
+      }
+      if (settings.mute_until !== undefined) {
+        setParts.push('mute_until = ?'); params.push(settings.mute_until || null);
+      }
+      if (settings.notification_frequency !== undefined) {
+        setParts.push('notification_frequency = ?'); params.push(settings.notification_frequency);
+      }
+      if (settings.show_message_preview !== undefined) {
+        setParts.push('show_message_preview = ?'); params.push(settings.show_message_preview ? 1 : 0);
+      }
+      if (settings.badge_count_enabled !== undefined) {
+        setParts.push('badge_count_enabled = ?'); params.push(settings.badge_count_enabled ? 1 : 0);
+      }
+      if (settings.notes !== undefined) {
+        setParts.push('notes = ?'); params.push(settings.notes || '');
+      }
+
+      if (setParts.length === 0) {
+        return { success: false, error: 'No updates provided' };
+      }
+
+      params.push(sessionKey);
+      db.prepare('UPDATE conversation_notification_settings SET ' + setParts.join(', ') + ' WHERE session_key = ?').run(...params);
+    } else {
+      // INSERT new settings
+      const notificationLevel = settings.notification_level || 'all';
+      const soundEnabled = settings.sound_enabled !== undefined ? (settings.sound_enabled ? 1 : 0) : 1;
+      const soundType = settings.sound_type || 'default';
+      const desktopNotifications = settings.desktop_notifications !== undefined ? (settings.desktop_notifications ? 1 : 0) : 1;
+      const quietHoursEnabled = settings.quiet_hours_enabled ? 1 : 0;
+      const quietStart = settings.quiet_start || null;
+      const quietEnd = settings.quiet_end || null;
+      const keywordAlerts = settings.keyword_alerts ? JSON.stringify(settings.keyword_alerts) : null;
+      const priorityLevel = settings.priority_level || 'normal';
+      const muteUntil = settings.mute_until || null;
+      const notificationFrequency = settings.notification_frequency || 'instant';
+      const showMessagePreview = settings.show_message_preview !== undefined ? (settings.show_message_preview ? 1 : 0) : 1;
+      const badgeCountEnabled = settings.badge_count_enabled !== undefined ? (settings.badge_count_enabled ? 1 : 0) : 1;
+      const notes = settings.notes || null;
+
+      prepare('INSERT INTO conversation_notification_settings (session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+        sessionKey, notificationLevel, soundEnabled, soundType, desktopNotifications,
+        quietHoursEnabled, quietStart, quietEnd, keywordAlerts, priorityLevel,
+        muteUntil, notificationFrequency, showMessagePreview, badgeCountEnabled, notes
+      );
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Set error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete conversation-specific settings
 ipcMain.handle('notification-settings:delete', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Delete error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_notification_settings WHERE session_key = ?').run(sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get global notification defaults
 ipcMain.handle('notification-settings:global-defaults', async () => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM global_notification_defaults WHERE id = 1" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Get global defaults error:', error);
-        resolve({ success: false, defaults: null });
-        return;
-      }
-      
-      try {
-        const defaults = JSON.parse(stdout || '[]');
-        resolve({ success: true, defaults: defaults[0] || null });
-      } catch (e) {
-        safeLog.error('[NotificationSettings] Parse error:', e);
-        resolve({ success: false, defaults: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM global_notification_defaults WHERE id = 1').get();
+    return { success: true, defaults: row || null };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Get global defaults error:', error);
+    return { success: false, defaults: null };
+  }
 });
 
 // Update global notification defaults
 ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults: any) => {
-  const setParts: string[] = [];
-  
-  if (defaults.default_notification_level !== undefined) 
-    setParts.push(`default_notification_level = '${defaults.default_notification_level}'`);
-  if (defaults.default_sound_enabled !== undefined) 
-    setParts.push(`default_sound_enabled = ${defaults.default_sound_enabled ? 1 : 0}`);
-  if (defaults.default_sound_type !== undefined) 
-    setParts.push(`default_sound_type = '${defaults.default_sound_type}'`);
-  if (defaults.default_desktop_notifications !== undefined) 
-    setParts.push(`default_desktop_notifications = ${defaults.default_desktop_notifications ? 1 : 0}`);
-  if (defaults.quiet_hours_enabled !== undefined) 
-    setParts.push(`quiet_hours_enabled = ${defaults.quiet_hours_enabled ? 1 : 0}`);
-  if (defaults.quiet_start !== undefined) 
-    setParts.push(`quiet_start = '${defaults.quiet_start}'`);
-  if (defaults.quiet_end !== undefined) 
-    setParts.push(`quiet_end = '${defaults.quiet_end}'`);
-  if (defaults.default_priority_level !== undefined) 
-    setParts.push(`default_priority_level = '${defaults.default_priority_level}'`);
-  if (defaults.do_not_disturb_enabled !== undefined) 
-    setParts.push(`do_not_disturb_enabled = ${defaults.do_not_disturb_enabled ? 1 : 0}`);
-  if (defaults.dnd_until !== undefined) 
-    setParts.push(`dnd_until = ${defaults.dnd_until ? `'${defaults.dnd_until}'` : 'NULL'}`);
-  if (defaults.enable_batching !== undefined) 
-    setParts.push(`enable_batching = ${defaults.enable_batching ? 1 : 0}`);
-  if (defaults.batch_interval_minutes !== undefined) 
-    setParts.push(`batch_interval_minutes = ${defaults.batch_interval_minutes}`);
-  
-  if (setParts.length === 0) {
-    return { success: false, error: 'No updates provided' };
+  try {
+    const setParts: string[] = [];
+    const params: any[] = [];
+
+    if (defaults.default_notification_level !== undefined) {
+      setParts.push('default_notification_level = ?'); params.push(defaults.default_notification_level);
+    }
+    if (defaults.default_sound_enabled !== undefined) {
+      setParts.push('default_sound_enabled = ?'); params.push(defaults.default_sound_enabled ? 1 : 0);
+    }
+    if (defaults.default_sound_type !== undefined) {
+      setParts.push('default_sound_type = ?'); params.push(defaults.default_sound_type);
+    }
+    if (defaults.default_desktop_notifications !== undefined) {
+      setParts.push('default_desktop_notifications = ?'); params.push(defaults.default_desktop_notifications ? 1 : 0);
+    }
+    if (defaults.quiet_hours_enabled !== undefined) {
+      setParts.push('quiet_hours_enabled = ?'); params.push(defaults.quiet_hours_enabled ? 1 : 0);
+    }
+    if (defaults.quiet_start !== undefined) {
+      setParts.push('quiet_start = ?'); params.push(defaults.quiet_start);
+    }
+    if (defaults.quiet_end !== undefined) {
+      setParts.push('quiet_end = ?'); params.push(defaults.quiet_end);
+    }
+    if (defaults.default_priority_level !== undefined) {
+      setParts.push('default_priority_level = ?'); params.push(defaults.default_priority_level);
+    }
+    if (defaults.do_not_disturb_enabled !== undefined) {
+      setParts.push('do_not_disturb_enabled = ?'); params.push(defaults.do_not_disturb_enabled ? 1 : 0);
+    }
+    if (defaults.dnd_until !== undefined) {
+      setParts.push('dnd_until = ?'); params.push(defaults.dnd_until || null);
+    }
+    if (defaults.enable_batching !== undefined) {
+      setParts.push('enable_batching = ?'); params.push(defaults.enable_batching ? 1 : 0);
+    }
+    if (defaults.batch_interval_minutes !== undefined) {
+      setParts.push('batch_interval_minutes = ?'); params.push(defaults.batch_interval_minutes);
+    }
+
+    if (setParts.length === 0) {
+      return { success: false, error: 'No updates provided' };
+    }
+
+    db.prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Set global defaults error:', error);
+    return { success: false, error: error.message };
   }
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE global_notification_defaults SET ${setParts.join(', ')} WHERE id = 1"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Set global defaults error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      resolve({ success: true });
-    });
-  });
 });
 
 // Get effective settings (with global fallback)
 ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: string) => {
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT * FROM effective_notification_settings WHERE session_key = '${sessionKey.replace(/'/g, "''")}'" -json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[NotificationSettings] Get effective error:', error);
-        resolve({ success: false, settings: null });
-        return;
-      }
-      
-      try {
-        const settings = JSON.parse(stdout || '[]');
-        resolve({ success: true, settings: settings[0] || null });
-      } catch (e) {
-        safeLog.error('[NotificationSettings] Parse error:', e);
-        resolve({ success: false, settings: null });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT * FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
+    return { success: true, settings: row || null };
+  } catch (error: any) {
+    safeLog.error('[NotificationSettings] Get effective error:', error);
+    return { success: false, settings: null };
+  }
 });
 
 // Quick mute conversation
