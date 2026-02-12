@@ -2663,104 +2663,59 @@ ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
   task_id?: string;
   metadata?: any;
 }) => {
-  // Build UPDATE SET clause
+  // Build dynamic SET clause with parameterized values
   const setParts: string[] = [];
-  const escapeSQL = (str: string | undefined) => str ? str.replace(/'/g, "''") : '';
-  
-  if (updates.title !== undefined) {
-    setParts.push(`title='${escapeSQL(updates.title)}'`);
-  }
-  if (updates.description !== undefined) {
-    setParts.push(`description='${escapeSQL(updates.description)}'`);
-  }
+  const params: any[] = [];
+
+  if (updates.title !== undefined) { setParts.push('title = ?'); params.push(updates.title); }
+  if (updates.description !== undefined) { setParts.push('description = ?'); params.push(updates.description); }
   if (updates.start_time !== undefined) {
-    const start_ms = typeof updates.start_time === 'string' 
+    const start_ms = typeof updates.start_time === 'string'
       ? new Date(updates.start_time).getTime()
       : updates.start_time;
-    setParts.push(`start_time=${start_ms}`);
+    setParts.push('start_time = ?'); params.push(start_ms);
   }
   if (updates.end_time !== undefined) {
     const end_ms = typeof updates.end_time === 'string'
       ? new Date(updates.end_time).getTime()
       : updates.end_time;
-    setParts.push(`end_time=${end_ms}`);
+    setParts.push('end_time = ?'); params.push(end_ms);
   }
-  if (updates.all_day !== undefined) {
-    setParts.push(`all_day=${updates.all_day ? 1 : 0}`);
-  }
-  if (updates.location !== undefined) {
-    setParts.push(`location='${escapeSQL(updates.location)}'`);
-  }
-  if (updates.color !== undefined) {
-    setParts.push(`color='${escapeSQL(updates.color)}'`);
-  }
-  if (updates.category !== undefined) {
-    setParts.push(`category='${escapeSQL(updates.category)}'`);
-  }
-  if (updates.status !== undefined) {
-    setParts.push(`status='${escapeSQL(updates.status)}'`);
-  }
-  if (updates.recurrence !== undefined) {
-    setParts.push(`recurrence='${escapeSQL(JSON.stringify(updates.recurrence))}'`);
-  }
-  if (updates.attendees !== undefined) {
-    setParts.push(`attendees='${escapeSQL(JSON.stringify(updates.attendees))}'`);
-  }
-  if (updates.reminders !== undefined) {
-    setParts.push(`reminders='${escapeSQL(JSON.stringify(updates.reminders))}'`);
-  }
-  if (updates.source !== undefined) {
-    setParts.push(`source='${escapeSQL(updates.source)}'`);
-  }
-  if (updates.source_id !== undefined) {
-    setParts.push(`source_id='${escapeSQL(updates.source_id)}'`);
-  }
-  if (updates.task_id !== undefined) {
-    if (updates.task_id) {
-      setParts.push(`task_id='${escapeSQL(updates.task_id)}'`);
-    } else {
-      setParts.push(`task_id=NULL`);
-    }
-  }
-  if (updates.metadata !== undefined) {
-    setParts.push(`metadata='${escapeSQL(JSON.stringify(updates.metadata))}'`);
-  }
-  
+  if (updates.all_day !== undefined) { setParts.push('all_day = ?'); params.push(updates.all_day ? 1 : 0); }
+  if (updates.location !== undefined) { setParts.push('location = ?'); params.push(updates.location); }
+  if (updates.color !== undefined) { setParts.push('color = ?'); params.push(updates.color); }
+  if (updates.category !== undefined) { setParts.push('category = ?'); params.push(updates.category); }
+  if (updates.status !== undefined) { setParts.push('status = ?'); params.push(updates.status); }
+  if (updates.recurrence !== undefined) { setParts.push('recurrence = ?'); params.push(JSON.stringify(updates.recurrence)); }
+  if (updates.attendees !== undefined) { setParts.push('attendees = ?'); params.push(JSON.stringify(updates.attendees)); }
+  if (updates.reminders !== undefined) { setParts.push('reminders = ?'); params.push(JSON.stringify(updates.reminders)); }
+  if (updates.source !== undefined) { setParts.push('source = ?'); params.push(updates.source); }
+  if (updates.source_id !== undefined) { setParts.push('source_id = ?'); params.push(updates.source_id); }
+  if (updates.task_id !== undefined) { setParts.push('task_id = ?'); params.push(updates.task_id || null); }
+  if (updates.metadata !== undefined) { setParts.push('metadata = ?'); params.push(JSON.stringify(updates.metadata)); }
+
   if (setParts.length === 0) {
     return { success: false, error: 'No updates provided' };
   }
-  
+
   // Add updated_at timestamp
-  setParts.push(`updated_at=${Date.now()}`);
-  
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE calendar_events SET ${setParts.join(', ')} WHERE id='${eventId}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Calendar] Update error:', error);
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      
-      // Fetch updated event
-      const getCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata FROM calendar_events WHERE id='${eventId}'" -json`;
-      
-      exec(getCmd, { timeout: 5000 }, (getError, getStdout) => {
-        if (getError) {
-          resolve({ success: true, event: null });
-          return;
-        }
-        
-        try {
-          const events = JSON.parse(getStdout || '[]');
-          resolve({ success: true, event: events[0] || null });
-        } catch (e) {
-          resolve({ success: true, event: null });
-        }
-      });
-    });
-  });
+  setParts.push('updated_at = ?');
+  params.push(Date.now());
+  params.push(eventId); // WHERE param
+
+  try {
+    db.prepare(`UPDATE calendar_events SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
+
+    // Fetch updated event
+    const updatedEvent = prepare(
+      'SELECT id, title, description, start_time, end_time, all_day, location, color, category, status, recurrence, attendees, reminders, source, source_id, task_id, created_at, updated_at, metadata FROM calendar_events WHERE id = ?'
+    ).get(eventId);
+
+    return { success: true, event: updatedEvent || null };
+  } catch (error: any) {
+    safeLog.error('[Calendar] Update error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('calendar:events:delete', async (_, eventId: string) => {
@@ -2847,68 +2802,51 @@ ipcMain.handle('email:send', async (_, options: { to: string; subject: string; b
 
 // ============== INBOX IPC HANDLERS (froggo-db backed) ==============
 // Add inbox item with custom metadata (used for Stage 2 email items)
-ipcMain.handle('inbox:addWithMetadata', async (_, item: { 
-  type: string; 
-  title: string; 
-  content: string; 
-  context?: string; 
+ipcMain.handle('inbox:addWithMetadata', async (_, item: {
+  type: string;
+  title: string;
+  content: string;
+  context?: string;
   channel?: string;
   metadata?: string;
 }) => {
   safeLog.log('[Inbox:addWithMetadata] Adding item:', item.title);
-  
-  return new Promise((resolve) => {
-    const now = Date.now();
-    const escapedTitle = item.title.replace(/'/g, "''");
-    const escapedContent = item.content.replace(/'/g, "''");
-    const escapedContext = (item.context || '').replace(/'/g, "''");
-    const escapedMetadata = (item.metadata || '{}').replace(/'/g, "''");
-    
-    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES ('${item.type}', '${escapedTitle}', '${escapedContent}', '${escapedContext}', 'pending', '${item.channel || 'system'}', '${escapedMetadata}', datetime('now'))"`;
-    
-    exec(sqlCmd, { timeout: 10000 }, (error) => {
-      if (error) {
-        safeLog.error('[Inbox:addWithMetadata] Error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Inbox:addWithMetadata] Added successfully');
-        resolve({ success: true });
-      }
-    });
-  });
+
+  try {
+    prepare(
+      "INSERT INTO inbox (type, title, content, context, status, source_channel, metadata, created) VALUES (?, ?, ?, ?, 'pending', ?, ?, datetime('now'))"
+    ).run(
+      item.type,
+      item.title,
+      item.content,
+      item.context || '',
+      item.channel || 'system',
+      item.metadata || '{}'
+    );
+
+    safeLog.log('[Inbox:addWithMetadata] Added successfully');
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Inbox:addWithMetadata] Error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('inbox:list', async (_, status?: string) => {
   // Default to 'pending' if no status specified - we only want pending items in the inbox
   const effectiveStatus = status || 'pending';
-  
-  return new Promise((resolve) => {
-    // Query directly via sqlite3
-    const sqlCmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE status='${effectiveStatus}' ORDER BY created DESC LIMIT 50" -json`;
-    
-    safeLog.log('[Inbox:list] Executing query for status:', effectiveStatus);
-    safeLog.log('[Inbox:list] Command:', sqlCmd);
-    
-    exec(sqlCmd, { timeout: 5000 }, (err, jsonOut, stderr) => {
-      if (err) {
-        safeLog.error('[Inbox:list] Exec error:', err);
-        safeLog.error('[Inbox:list] Stderr:', stderr);
-        resolve({ success: false, items: [], error: err.message });
-      } else {
-        try {
-          safeLog.log('[Inbox:list] Raw output length:', jsonOut?.length || 0);
-          const items = JSON.parse(jsonOut || '[]');
-          safeLog.log('[Inbox:list] SUCCESS - Parsed', items.length, 'items with status:', effectiveStatus);
-          safeLog.log('[Inbox:list] First item:', items[0] ? JSON.stringify(items[0]).substring(0, 100) : 'none');
-          resolve({ success: true, items });
-        } catch (e) {
-          safeLog.error('[Inbox:list] JSON Parse error:', e);
-          safeLog.error('[Inbox:list] Raw output:', jsonOut);
-          resolve({ success: false, items: [], error: (e as Error).message });
-        }
-      }
-    });
-  });
+
+  try {
+    safeLog.log('[Inbox:list] Executing parameterized query for status:', effectiveStatus);
+
+    const items = prepare('SELECT * FROM inbox WHERE status = ? ORDER BY created DESC LIMIT 50').all(effectiveStatus);
+
+    safeLog.log('[Inbox:list] SUCCESS - Found', (items as any[]).length, 'items with status:', effectiveStatus);
+    return { success: true, items };
+  } catch (error: any) {
+    safeLog.error('[Inbox:list] Error:', error);
+    return { success: false, items: [], error: error.message };
+  }
 });
 
 ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; content: string; context?: string; channel?: string }) => {
@@ -3033,101 +2971,72 @@ ipcMain.handle('inbox:listRevisions', async () => {
 // This creates a new pending item with the revised content and marks the original as 'revised'
 ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedContent: string, revisedTitle?: string) => {
   safeLog.log(`[Inbox] Submit revision for item ${originalId}`);
-  
-  return new Promise((resolve) => {
-    // First, get the original item
-    exec(`sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${originalId}" -json`, (getErr, getOut) => {
-      if (getErr) {
-        safeLog.error('[Inbox] Get original error:', getErr);
-        resolve({ success: false, error: 'Failed to get original item' });
-        return;
-      }
-      
-      try {
-        const items = JSON.parse(getOut || '[]');
-        if (items.length === 0) {
-          resolve({ success: false, error: 'Original item not found' });
-          return;
-        }
-        
-        const original = items[0];
-        const newTitle = revisedTitle || `[Revised] ${original.title}`;
-        const escapedTitle = newTitle.replace(/'/g, "''");
-        const escapedContent = revisedContent.replace(/'/g, "''");
-        const context = `Revision of inbox item #${originalId}. Original feedback: ${(original.feedback || 'none').replace(/'/g, "''")}`;
-        
-        // Create new pending item with revised content
-        const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('${original.type}', '${escapedTitle}', '${escapedContent}', '${context}', 'pending', '${original.source_channel || 'revision'}', datetime('now'))"`;
-        
-        exec(insertCmd, { timeout: 5000 }, (insertErr) => {
-          if (insertErr) {
-            safeLog.error('[Inbox] Insert revision error:', insertErr);
-            resolve({ success: false, error: insertErr.message });
-            return;
-          }
-          
-          // Mark original as 'revised' (completed state)
-          const updateCmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE inbox SET status='revised', reviewed_at=datetime('now') WHERE id=${originalId}"`;
-          
-          exec(updateCmd, { timeout: 5000 }, (updateErr) => {
-            if (updateErr) {
-              safeLog.error('[Inbox] Update original error:', updateErr);
-              // Still return success since the revision was created
-            }
-            
-            safeLog.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
-            
-            // Notify frontend of inbox update
-            safeSend('inbox-updated', { revision: true, originalId });
-            
-            resolve({ success: true, message: 'Revision submitted for approval' });
-          });
-        });
-      } catch (e: any) {
-        safeLog.error('[Inbox] Parse error:', e);
-        resolve({ success: false, error: e.message });
-      }
-    });
-  });
+
+  try {
+    // Get the original item
+    const original = prepare('SELECT * FROM inbox WHERE id = ?').get(originalId) as any;
+    if (!original) {
+      return { success: false, error: 'Original item not found' };
+    }
+
+    const newTitle = revisedTitle || `[Revised] ${original.title}`;
+    const context = `Revision of inbox item #${originalId}. Original feedback: ${original.feedback || 'none'}`;
+
+    // Create new pending item with revised content
+    prepare(
+      "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', ?, datetime('now'))"
+    ).run(
+      original.type,
+      newTitle,
+      revisedContent,
+      context,
+      original.source_channel || 'revision'
+    );
+
+    // Mark original as 'revised' (completed state)
+    try {
+      prepare("UPDATE inbox SET status = 'revised', reviewed_at = datetime('now') WHERE id = ?").run(originalId);
+    } catch (updateErr: any) {
+      safeLog.error('[Inbox] Update original error:', updateErr);
+      // Still return success since the revision was created
+    }
+
+    safeLog.log(`[Inbox] Revision submitted: original #${originalId} -> new pending item`);
+
+    // Notify frontend of inbox update
+    safeSend('inbox-updated', { revision: true, originalId });
+
+    return { success: true, message: 'Revision submitted for approval' };
+  } catch (error: any) {
+    safeLog.error('[Inbox] Revision error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get revision details for a specific item (includes original content and feedback)
 ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
-  return new Promise((resolve) => {
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT * FROM inbox WHERE id=${itemId} AND status='needs-revision'" -json`;
-    
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
+  try {
+    const item = prepare("SELECT * FROM inbox WHERE id = ? AND status = 'needs-revision'").get(itemId) as any;
+    if (!item) {
+      return { success: false, error: 'Item not found or not in needs-revision status' };
+    }
+
+    return {
+      success: true,
+      item: {
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        originalContent: item.content,
+        feedback: item.feedback,
+        context: item.context,
+        created: item.created,
+        sourceChannel: item.source_channel,
       }
-      
-      try {
-        const items = JSON.parse(stdout || '[]');
-        if (items.length === 0) {
-          resolve({ success: false, error: 'Item not found or not in needs-revision status' });
-          return;
-        }
-        
-        const item = items[0];
-        resolve({
-          success: true,
-          item: {
-            id: item.id,
-            type: item.type,
-            title: item.title,
-            originalContent: item.content,
-            feedback: item.feedback,
-            context: item.context,
-            created: item.created,
-            sourceChannel: item.source_channel,
-          }
-        });
-      } catch {
-        resolve({ success: false, error: 'Failed to parse item' });
-      }
-    });
-  });
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== INBOX FILTER & SEARCH IPC HANDLERS ==============
@@ -3149,11 +3058,14 @@ ipcMain.handle('inbox:toggleStar', async (_, messageId: string) => {
 });
 
 ipcMain.handle('inbox:markRead', async (_, messageId: string, isRead: boolean = true) => {
-  // Also update comms_cache directly for consistency
-  const escapedId = messageId.replace(/'/g, "''");
-  const dbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-  runMsgCmd(`sqlite3 "${dbPath}" "UPDATE comms_cache SET is_read=${isRead ? 1 : 0} WHERE external_id='${escapedId}'"`, 2000).catch(() => {});
+  // Update comms_cache directly via parameterized query
+  try {
+    prepare('UPDATE comms_cache SET is_read = ? WHERE external_id = ?').run(isRead ? 1 : 0, messageId);
+  } catch {
+    // comms_cache update is best-effort
+  }
 
+  // Also run inbox-filter.sh for any additional side-effects
   return new Promise((resolve) => {
     const cmd = `~/clawd/scripts/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
@@ -3242,20 +3154,18 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
 
 ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
-    const criteriaJson = JSON.stringify(criteria).replace(/'/g, "\\'");
-    const cmd = `echo '${criteriaJson}' | ~/clawd/scripts/inbox-filter.sh filter`;
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-        return;
-      }
-      try {
-        const results = stdout.trim().split('\n').filter(Boolean);
-        resolve({ success: true, results });
-      } catch {
-        resolve({ success: false, error: 'Failed to parse filter results' });
-      }
-    });
+    // Pass criteria via stdin using execSync input option to avoid shell injection
+    const { execSync } = require('child_process');
+    try {
+      const result = execSync(
+        `${path.join(os.homedir(), 'clawd', 'scripts', 'inbox-filter.sh')} filter`,
+        { input: JSON.stringify(criteria), encoding: 'utf-8', timeout: 10000 }
+      );
+      const results = result.trim().split('\n').filter(Boolean);
+      resolve({ success: true, results });
+    } catch (error: any) {
+      resolve({ success: false, error: error.message || 'Filter failed' });
+    }
   });
 });
 
@@ -4662,16 +4572,15 @@ async function refreshCommsBackground() {
   // Helper to get last fetch state
   const getFetchState = async (platform: string, account = ''): Promise<string | null> => {
     try {
-      const raw = await runMsgCmd(`sqlite3 "${db}" "SELECT last_message_ts FROM comms_fetch_state WHERE platform='${platform}' AND account='${account.replace(/'/g, "''")}'"`  , 2000);
-      return raw?.trim() || null;
+      const row = prepare('SELECT last_message_ts FROM comms_fetch_state WHERE platform = ? AND account = ?').get(platform, account) as any;
+      return row?.last_message_ts || null;
     } catch { return null; }
   };
 
   // Helper to update fetch state
   const updateFetchState = async (platform: string, account: string, lastTs: string) => {
     try {
-      const escaped = account.replace(/'/g, "''");
-      await runMsgCmd(`sqlite3 "${db}" "INSERT OR REPLACE INTO comms_fetch_state (platform, account, last_fetch_at, last_message_ts) VALUES ('${platform}', '${escaped}', datetime('now'), '${lastTs}')"`, 2000);
+      prepare("INSERT OR REPLACE INTO comms_fetch_state (platform, account, last_fetch_at, last_message_ts) VALUES (?, ?, datetime('now'), ?)").run(platform, account, lastTs);
     } catch (e) {
       safeLog.error(`[CommsPolling] Failed to update fetch state for ${platform}:${account}`, e);
     }
@@ -5070,145 +4979,92 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
 ipcMain.handle('conversations:archive', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Archive:', sessionKey);
   const ARCHIVE_FOLDER_ID = 4;
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (${ARCHIVE_FOLDER_ID}, '${escapedKey}', 'user')"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Conversations] Archive error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Conversations] Archived:', sessionKey);
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(ARCHIVE_FOLDER_ID, sessionKey, 'user');
+    safeLog.log('[Conversations] Archived:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Archive error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Unarchive a conversation (remove from Archive folder)
 ipcMain.handle('conversations:unarchive', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Unarchive:', sessionKey);
   const ARCHIVE_FOLDER_ID = 4;
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE folder_id = ${ARCHIVE_FOLDER_ID} AND session_key = '${escapedKey}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Conversations] Unarchive error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Conversations] Unarchived:', sessionKey);
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(ARCHIVE_FOLDER_ID, sessionKey);
+    safeLog.log('[Conversations] Unarchived:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Unarchive error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Get archived conversations (with message details)
 ipcMain.handle('conversations:archived', async () => {
   safeLog.log('[Conversations] Get archived list');
   const ARCHIVE_FOLDER_ID = 4;
-  
-  return new Promise((resolve) => {
-    // Get archived session keys with metadata
-    const cmd = `sqlite3 "${froggoDbPath}" "SELECT cf.session_key, cf.added_at, COUNT(c.id) as message_count, MAX(c.timestamp) as last_message FROM conversation_folders cf LEFT JOIN comms_cache c ON (c.platform || ':' || c.sender) = cf.session_key WHERE cf.folder_id = ${ARCHIVE_FOLDER_ID} GROUP BY cf.session_key ORDER BY cf.added_at DESC" -json`;
-    
-    exec(cmd, { timeout: 10000 }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Conversations] Archived list error:', error);
-        resolve({ success: false, conversations: [] });
-        return;
-      }
-      
-      try {
-        const conversations = JSON.parse(stdout || '[]');
-        safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
-        resolve({ success: true, conversations });
-      } catch (e) {
-        safeLog.error('[Conversations] Parse error:', e);
-        resolve({ success: false, conversations: [] });
-      }
-    });
-  });
+  try {
+    const conversations = prepare(
+      `SELECT cf.session_key, cf.added_at, COUNT(c.id) as message_count, MAX(c.timestamp) as last_message
+       FROM conversation_folders cf
+       LEFT JOIN comms_cache c ON (c.platform || ':' || c.sender) = cf.session_key
+       WHERE cf.folder_id = ?
+       GROUP BY cf.session_key
+       ORDER BY cf.added_at DESC`
+    ).all(ARCHIVE_FOLDER_ID);
+    safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
+    return { success: true, conversations };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Archived list error:', error);
+    return { success: false, conversations: [] };
+  }
 });
 
 // Check if a conversation is archived
 ipcMain.handle('conversations:isArchived', async (_, sessionKey: string) => {
   const ARCHIVE_FOLDER_ID = 4;
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  const cmd = `sqlite3 "${froggoDbPath}" "SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ${ARCHIVE_FOLDER_ID} AND session_key = '${escapedKey}'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 3000 }, (error, stdout) => {
-      if (error) {
-        resolve({ isArchived: false });
-      } else {
-        const count = parseInt(stdout.trim() || '0', 10);
-        resolve({ isArchived: count > 0 });
-      }
-    });
-  });
+  try {
+    const row = prepare('SELECT COUNT(*) as count FROM conversation_folders WHERE folder_id = ? AND session_key = ?').get(ARCHIVE_FOLDER_ID, sessionKey) as any;
+    return { isArchived: (row?.count || 0) > 0 };
+  } catch {
+    return { isArchived: false };
+  }
 });
 
 // Mark conversation as read (update all messages in session)
 ipcMain.handle('conversations:markRead', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Mark as read:', sessionKey);
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  
-  // Update all messages in comms_cache for this session
-  const cmd = `sqlite3 "${froggoDbPath}" "UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = '${escapedKey}' AND (is_read IS NULL OR is_read = 0)"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      if (error) {
-        safeLog.error('[Conversations] Mark read error:', error);
-        resolve({ success: false, error: error.message });
-      } else {
-        safeLog.log('[Conversations] Marked as read:', sessionKey);
-        resolve({ success: true });
-      }
-    });
-  });
+  try {
+    prepare("UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = ? AND (is_read IS NULL OR is_read = 0)").run(sessionKey);
+    safeLog.log('[Conversations] Marked as read:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Mark read error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Delete conversation (remove from all folders and delete messages)
 ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
   safeLog.log('[Conversations] Delete:', sessionKey);
-  const escapedKey = sessionKey.replace(/'/g, "''");
-  
-  // Delete from conversation_folders, comms_cache, and any other related tables
-  const cmds = [
-    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_folders WHERE session_key = '${escapedKey}'"`,
-    `sqlite3 "${froggoDbPath}" "DELETE FROM comms_cache WHERE (platform || ':' || sender) = '${escapedKey}'"`,
-    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_snoozes WHERE session_id = '${escapedKey}'"`,
-    `sqlite3 "${froggoDbPath}" "DELETE FROM conversation_pins WHERE session_key = '${escapedKey}'"`,
-    // notification_settings might not exist, ignore error
-    `sqlite3 "${froggoDbPath}" "DELETE FROM notification_settings WHERE session_key = '${escapedKey}'" 2>/dev/null || true`,
-  ];
-  
-  return new Promise((resolve) => {
-    // Execute all delete commands sequentially
-    const execSequential = (commands: string[], index = 0) => {
-      if (index >= commands.length) {
-        safeLog.log('[Conversations] Deleted:', sessionKey);
-        resolve({ success: true });
-        return;
-      }
-      
-      exec(commands[index], { timeout: 5000 }, (error) => {
-        if (error) {
-          safeLog.error(`[Conversations] Delete error (step ${index}):`, error);
-          resolve({ success: false, error: error.message });
-        } else {
-          execSequential(commands, index + 1);
-        }
-      });
-    };
-    
-    execSequential(cmds);
-  });
+  try {
+    db.transaction(() => {
+      prepare('DELETE FROM conversation_folders WHERE session_key = ?').run(sessionKey);
+      prepare("DELETE FROM comms_cache WHERE (platform || ':' || sender) = ?").run(sessionKey);
+      prepare('DELETE FROM conversation_snoozes WHERE session_id = ?').run(sessionKey);
+      prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
+      try { prepare('DELETE FROM notification_settings WHERE session_key = ?').run(sessionKey); } catch { /* table may not exist */ }
+    })();
+    safeLog.log('[Conversations] Deleted:', sessionKey);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Conversations] Delete error:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // ============== EMAIL IPC HANDLERS ==============
@@ -5525,20 +5381,20 @@ async function runImportantEmailCheck() {
           results.push(important);
           processedEmailIds.add(id);
           
-          // Create inbox item
-          const title = important.amount 
+          // Create inbox item via parameterized query
+          const title = important.amount
             ? `${important.subject.slice(0, 50)} (${important.amount})`
             : important.subject.slice(0, 60);
           const content = `From: ${important.from}\nReason: ${important.reason}\nAccount: ${acct}`;
-          const escapedTitle = title.replace(/"/g, '\\"').replace(/'/g, "''");
-          const escapedContent = content.replace(/"/g, '\\"').replace(/'/g, "''");
-          
-          const insertCmd = `sqlite3 ~/clawd/data/froggo.db "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES ('email', '${escapedTitle}', '${escapedContent}', '${important.priority} priority', 'pending', 'email', datetime('now'))"`;
-          
-          exec(insertCmd, { timeout: 5000 }, (err) => {
-            if (err) safeLog.error('[Email] Failed to create inbox item:', err);
-            else safeLog.log(`[Email] Created inbox item: ${title}`);
-          });
+
+          try {
+            prepare(
+              "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', 'email', datetime('now'))"
+            ).run('email', title, content, `${important.priority} priority`);
+            safeLog.log(`[Email] Created inbox item: ${title}`);
+          } catch (err: any) {
+            safeLog.error('[Email] Failed to create inbox item:', err);
+          }
           
           newInboxItems.push(title);
         }
