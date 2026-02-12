@@ -115,11 +115,11 @@ Plans:
   1. User can add research sources (title, author, type, URL, notes) to a per-project library stored in SQLite
   2. User can link sources to facts in the memory store and mark facts as verified/disputed/needs-source
   3. User can highlight a claim in the editor and ask the Researcher agent to fact-check it, receiving source-backed verification
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md -- Backend: writing-research-service (SQLite), paths, preload bridge, fact status extension
+- [ ] 08-02-PLAN.md -- UI: researchStore, SourceList/SourceForm, ContextPanel 4th tab, fact-source linking, Fact Check action
 
 ### Phase 9: Outline & Versions
 **Goal**: User can reorganize chapters and compare version history before and after major edits
@@ -158,7 +158,7 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 | 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
 | 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
 | 7. Memory Store | v2.0 | 2/2 | Complete | 2026-02-12 |
-| 8. Research Library | v2.0 | 0/2 | Not started | - |
+| 8. Research Library | v2.0 | 0/2 | Planned | - |
 | 9. Outline & Versions | v2.0 | 0/2 | Not started | - |
 | 10. Jess Integration | v2.0 | 0/1 | Not started | - |
 
