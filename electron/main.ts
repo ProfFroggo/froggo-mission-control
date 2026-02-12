@@ -893,7 +893,7 @@ ipcMain.handle('voice:getModelUrl', async () => {
 // Load ElevenLabs API key from env file if not in environment
 let elevenlabsApiKey = process.env.ELEVENLABS_API_KEY || '';
 try {
-  const envPath = path.join(os.homedir(), '.clawdbot', 'elevenlabs.env');
+  const envPath = path.join(os.homedir(), '.openclaw', 'elevenlabs.env');
   if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, 'utf-8');
     const match = content.match(/ELEVENLABS_API_KEY=(.+)/);
@@ -4131,7 +4131,7 @@ ipcMain.handle('search:local', async (_, query: string) => {
 // Load Anthropic API key from environment, key file, or openclaw config
 let anthropicApiKey = process.env.ANTHROPIC_API_KEY || '';
 try {
-  const keyPath = path.join(os.homedir(), '.clawdbot', 'anthropic.key');
+  const keyPath = path.join(os.homedir(), '.openclaw', 'anthropic.key');
   if (!anthropicApiKey && fs.existsSync(keyPath)) {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
@@ -4177,7 +4177,7 @@ if (!anthropicApiKey) {
 // Load OpenAI API key from environment or config (for Whisper transcription)
 let openaiApiKey = process.env.OPENAI_API_KEY || '';
 try {
-  const keyPath = path.join(os.homedir(), '.clawdbot', 'openai.key');
+  const keyPath = path.join(os.homedir(), '.openclaw', 'openai.key');
   if (!openaiApiKey && fs.existsSync(keyPath)) {
     openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
@@ -6256,10 +6256,10 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
   try {
     const result = await new Promise<string>((resolve, reject) => {
       exec(
-        `/opt/homebrew/bin/spawn-agent-with-retry.py notify "${agentId}" "Task assigned: ${taskId}"`,
-        { 
-          encoding: 'utf-8', 
-          timeout: 10000,
+        `openclaw agent --agent "${agentId}" --message "Task assigned: ${taskId}" --json`,
+        {
+          encoding: 'utf-8',
+          timeout: 30000,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
         (error, stdout, stderr) => {
