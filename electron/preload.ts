@@ -601,6 +601,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
   widgetAPI: {
     scanManifest: (agentId: string) => ipcRenderer.invoke('widget:scan-manifest', agentId),
   },
+  // Finance Module
+  finance: {
+    getTransactions: (limit?: number) => ipcRenderer.invoke('finance:getTransactions', limit),
+    getBudgetStatus: (budgetType: 'family' | 'crypto') => ipcRenderer.invoke('finance:getBudgetStatus', budgetType),
+    uploadCSV: (csvContent: string, filename: string) => ipcRenderer.invoke('finance:uploadCSV', csvContent, filename),
+  },
 });
 
 // Add to clawdbot object - chat message persistence

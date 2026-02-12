@@ -26,6 +26,7 @@ import {
   AnalyticsDashboard,
   ConnectedAccountsPanel,
   DMFeed,
+  FinancePanel,
   ErrorBoundary
 } from './components/ProtectedPanels';
 import CommandPalette from './components/CommandPalette';
@@ -347,6 +348,7 @@ function App() {
               {currentView === 'dashboard' && <Dashboard onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />}
               {currentView === 'kanban' && <Kanban />}
               {currentView === 'agents' && <AgentPanel />}
+              {currentView === 'finance' && <FinancePanel />}
               {currentView === 'chat' && <ChatPanel />}
               {currentView === 'agentdms' && <DMFeed />}
               {currentView === 'meetings' && <MeetingsPanel />}
