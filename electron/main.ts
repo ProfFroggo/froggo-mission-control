@@ -16,6 +16,7 @@ import { registerXAutomationsHandlers } from './x-automations-service';
 import { registerWritingProjectHandlers } from './writing-project-service';
 import { registerWritingFeedbackHandlers } from './writing-feedback-service';
 import { registerWritingMemoryHandlers } from './writing-memory-service';
+import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-research-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
@@ -382,6 +383,9 @@ function createWindow() {
 
   // Register Writing Memory handlers
   registerWritingMemoryHandlers();
+
+  // Register Writing Research handlers
+  registerWritingResearchHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
@@ -824,6 +828,8 @@ app.on('will-quit', () => {
   }
   // Clean up dashboard agents
   shutdownDashboardAgents();
+  // Close research database connections
+  closeAllResearchDbs();
   // Close database connections
   closeDb();
 });
