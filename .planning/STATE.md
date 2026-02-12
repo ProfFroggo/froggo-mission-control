@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 7 — Memory Store (in progress)
+**Current focus:** Phase 7 — Memory Store (complete)
 
 ## Current Position
 
 Phase: 7 of 10 (Memory Store)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-12 — Completed 07-01-PLAN.md (Memory Store Infrastructure)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-12 — Completed 07-02-PLAN.md (Memory Store UI & Integration)
 
-Progress: [██████░░░░░░] 50% (6/12 plans)
+Progress: [███████░░░░░] 58% (7/12 plans)
 
 ## Performance Metrics
 
@@ -24,13 +24,14 @@ Progress: [██████░░░░░░] 50% (6/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 6
+- Plans completed: 7
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
 - 06-01: 2min (2 tasks)
 - 06-02: 3min (3 tasks)
 - 07-01: 3min (2 tasks)
+- 07-02: 3min (2 tasks)
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ v2 decisions (confirmed in execution):
 - BubbleMenu updateDelay=0 for instant popup; selection collapse after accept to prevent flicker
 - JSON array files per project for memory storage (characters.json, timeline.json, facts.json)
 - Re-list after mutation in memoryStore (simpler than optimistic updates, local I/O is fast)
+- Cap memory context to ~2000 chars in AI prompts (prevents bloat)
+- Inline form editing in context panel (form replaces card in-place, consistent with ChapterListItem)
 
 ### Pending Todos
 
@@ -78,6 +81,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-12T22:08:00Z
-Stopped at: Completed 07-01-PLAN.md (Memory Store Infrastructure)
+Last session: 2026-02-12T22:13:00Z
+Stopped at: Completed 07-02-PLAN.md (Memory Store UI & Integration)
 Resume file: None
