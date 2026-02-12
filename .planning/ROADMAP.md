@@ -50,8 +50,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Fix data paths and CLI references (FIX-01, FIX-09, FIX-10 — repoint all DB/file paths to live locations, replace clawdbot CLI refs)
-- [ ] 02-02: Fix broken UI and IPC (FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-07, FIX-08 — spawn handler, missing AI IPC, layout key, Tailwind classes, avatar grouping, JSON.parse guard)
+- [ ] 02-01-PLAN.md — Fix mechanical bugs: spawn handler, layout key, Tailwind hover, avatar grouping, JSON.parse guards, CLI strings, API key paths (FIX-02, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10) [Wave 1]
+- [ ] 02-02-PLAN.md — Restore missing AI IPC handlers with security treatment: fix channel name mismatch, restore generateReply + getAnalysis with prepare() (FIX-03) [Wave 2]
 
 ### Phase 3: Functional Fixes
 **Goal**: App behaves correctly under all conditions including edge cases and race conditions
