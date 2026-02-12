@@ -86,12 +86,11 @@ Plans:
   3. User can accept an alternative (replaces highlighted text) or dismiss, and the interaction is logged per chapter
   4. User can select which agent (Writer, Researcher, Jess) to send feedback to, and agent sessions persist within the project
   5. AI context includes current chapter content, project outline, and memory store data (when available), communicated via existing OpenClaw Gateway WebSocket
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md -- Backend: feedbackStore, writing-feedback-service, preload bridge, main.ts wiring
+- [ ] 06-02-PLAN.md -- UI: FeedbackPopover, AgentPicker, FeedbackAlternative, BubbleMenu in ChapterEditor, streaming
 
 ### Phase 7: Memory Store
 **Goal**: User can maintain character profiles, timeline events, and verified facts that are automatically injected into AI context
@@ -157,7 +156,7 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
 | 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
-| 6. Inline Feedback | v2.0 | 0/3 | Not started | - |
+| 6. Inline Feedback | v2.0 | 0/2 | Planned | - |
 | 7. Memory Store | v2.0 | 0/2 | Not started | - |
 | 8. Research Library | v2.0 | 0/2 | Not started | - |
 | 9. Outline & Versions | v2.0 | 0/2 | Not started | - |
