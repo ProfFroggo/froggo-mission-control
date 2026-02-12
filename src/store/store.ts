@@ -927,7 +927,7 @@ export const useStore = create<Store>()(
             ),
           }));
 
-          // IMMEDIATELY spawn agent via spawn-agent-with-retry (don't wait for DB triggers)
+          // IMMEDIATELY spawn agent via openclaw CLI (don't wait for DB triggers)
           try {
             await (window as any).clawdbot?.agents?.spawnForTask?.(taskId, agentId);
           } catch (spawnErr) {
