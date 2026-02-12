@@ -1,7 +1,7 @@
 {
-  "name": "clawd-dashboard",
-  "version": "0.1.0",
-  "description": "Clawdbot Dashboard - Agent Management & Task Tracking",
+  "name": "froggo-dashboard",
+  "version": "1.0.0",
+  "description": "Froggo Dashboard - Agent Management & Task Tracking",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,9 @@
     "electron:compile": "tsc -p tsconfig.electron.json && cp electron/agent-registry.json dist-electron/agent-registry.json",
     "electron:dev": "npm run electron:compile && ./start.sh",
     "deploy": "bash deploy.sh",
-    "electron:build": "npm run electron:compile && vite build && electron-builder",
+    "electron:build": "npm run build:prod",
+    "build:dev": "npm run electron:compile && vite build && electron-builder --config electron-builder.dev.js",
+    "build:prod": "npm run electron:compile && vite build && electron-builder --config electron-builder.prod.js",
     "start": "./start.sh",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -70,40 +72,5 @@
     "vitest": "^4.0.18",
     "wait-on": "^7.2.0",
     "ws": "^8.19.0"
-  },
-  "build": {
-    "appId": "com.clawdbot.froggo",
-    "productName": "Froggo",
-    "npmRebuild": false,
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*"
-    ],
-    "asar": false,
-    "extraResources": [
-      {
-        "from": "public/models",
-        "to": "models",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "mac": {
-      "category": "public.app-category.productivity",
-      "target": "dir",
-      "icon": "build/icon.icns",
-      "extendInfo": {
-        "NSMicrophoneUsageDescription": "Froggo uses your microphone for voice commands and meeting transcription.",
-        "NSCameraUsageDescription": "Froggo uses your camera for video chat and visual context during voice conversations.",
-        "NSSpeechRecognitionUsageDescription": "Froggo uses speech recognition for voice commands."
-      }
-    },
-    "extraMetadata": {
-      "main": "dist-electron/main.js"
-    }
   }
 }
