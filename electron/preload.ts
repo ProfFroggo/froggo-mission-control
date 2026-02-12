@@ -633,6 +633,26 @@ contextBridge.exposeInMainWorld('clawdbot', {
       history: (projectId: string, chapterId: string) =>
         ipcRenderer.invoke('writing:feedback:history', projectId, chapterId),
     },
+    memory: {
+      characters: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:memory:characters:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:memory:characters:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:memory:characters:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:characters:delete', projectId, id),
+      },
+      timeline: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:memory:timeline:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:memory:timeline:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:memory:timeline:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:timeline:delete', projectId, id),
+      },
+      facts: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:memory:facts:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:memory:facts:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:memory:facts:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:facts:delete', projectId, id),
+      },
+    },
   },
 });
 
