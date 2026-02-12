@@ -93,9 +93,9 @@ export default function QuickStatsWidget() {
               busyAgents.map(agent => (
                 <div key={agent.id} className="flex items-center gap-2 text-xs overflow-hidden">
                   <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
-                  <span className="text-clawd-text agent-name flex-shrink">{agent.name}</span>
+                  <span className="text-clawd-text truncate min-w-0 shrink">{agent.name}</span>
                   {agent.currentTaskId && (
-                    <span className="ml-auto text-clawd-text-dim text-truncate flex-1">
+                    <span className="ml-auto text-clawd-text-dim truncate flex-1">
                       {tasks.find(t => t.id === agent.currentTaskId)?.title}
                     </span>
                   )}
@@ -113,8 +113,8 @@ export default function QuickStatsWidget() {
                 </div>
                 {subagentSessions.slice(0, 2).map(session => (
                   <div key={session.key} className="flex items-center gap-2 text-xs overflow-hidden">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse no-shrink" />
-                    <span className="text-clawd-text session-name flex-fill">{session.displayName}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+                    <span className="text-clawd-text truncate min-w-0 flex-1">{session.displayName}</span>
                   </div>
                 ))}
               </div>
@@ -162,14 +162,14 @@ export default function QuickStatsWidget() {
               recentActivities.map((activity) => (
                 <div key={activity.id} className="text-xs overflow-hidden">
                   <div className="flex items-start gap-2 min-w-0">
-                    <span className="no-shrink">
+                    <span className="shrink-0">
                       {activity.type === 'chat' ? '💬' : 
                        activity.type === 'task' ? '✅' : 
                        activity.type === 'agent' ? '🤖' : '⚙️'}
                     </span>
-                    <div className="flex-fill">
-                      <p className="text-clawd-text message-preview">{activity.message}</p>
-                      <p className="text-clawd-text-dim no-wrap">{formatTimeAgo(activity.timestamp)}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-clawd-text line-clamp-2">{activity.message}</p>
+                      <p className="text-clawd-text-dim whitespace-nowrap">{formatTimeAgo(activity.timestamp)}</p>
                     </div>
                   </div>
                 </div>
