@@ -19,6 +19,12 @@ import { initXApiTokens } from './x-api-client';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
 import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
 import { validateFsPath } from './fs-validation';
+import {
+  PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
+  REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
+  OPENCLAW_CONFIG_LEGACY, LOCAL_BIN, FROGGO_DB_CLI, TGCLI, DISCORDCLI,
+  CLAUDE_CLI, SHELL_PATH, agentWorkspace, verifyPaths,
+} from './paths';
 
 // ============== AGENT REGISTRY ==============
 interface AgentRegistryEntry {
@@ -79,7 +85,7 @@ function getAgentsFromDB(): any[] {
       identityName: r.name || r.id,
       identityEmoji: '🤖',
       description: r.role || r.description || '',
-      workspace: `~/clawd-${r.id}`,
+      workspace: agentWorkspace(r.id),
       model: '',
       isDefault: r.id === 'froggo',
     }));
@@ -91,8 +97,8 @@ function getAgentsFromDB(): any[] {
 
 ipcMain.handle('gateway:getToken', async () => {
   const configPaths = [
-    path.join(os.homedir(), '.openclaw', 'openclaw.json'),
-    path.join(os.homedir(), '.clawdbot', 'openclaw.json'),
+    OPENCLAW_CONFIG,
+    OPENCLAW_CONFIG_LEGACY,
   ];
   for (const cfgPath of configPaths) {
     try {
@@ -446,7 +452,7 @@ function safeSend(channel: string, ...args: any[]) {
 
 // Task notification file watcher
 let taskNotifyWatcher: fs.FSWatcher | null = null;
-const taskNotifyPath = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
+const taskNotifyPath = path.join(DATA_DIR, 'task-notify.json');
 let lastTaskNotifyMtime = 0;
 
 // Helper function to emit task events for real-time Dashboard updates
@@ -463,7 +469,7 @@ function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
     const fullPayload = { ...task, ...payload };
 
     // Write to notification file for file watcher (backup method)
-    const notifyFile = path.join(os.homedir(), 'clawd', 'data', 'task-notify.json');
+    const notifyFile = path.join(DATA_DIR, 'task-notify.json');
     const notification = {
       event: eventType,
       task: fullPayload,
@@ -1726,7 +1732,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 });
 
 // ============== SUBTASKS IPC HANDLERS ==============
-const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+const froggoDbPath = FROGGO_DB;
 
 ipcMain.handle('subtasks:list', async (_, taskId: string) => {
   try {
@@ -2075,7 +2081,7 @@ ipcMain.handle('attachments:open', async (_, filePath: string) => {
 
 ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
   // Run auto-detection via helper script
-  const cmd = `${path.join(os.homedir(), 'clawd', 'scripts', 'attachment-helper.sh')} detect "${taskId}"`;
+  const cmd = `${path.join(SCRIPTS_DIR, 'attachment-helper.sh')} detect "${taskId}"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
@@ -2925,7 +2931,7 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
 
 ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; content: string; context?: string; channel?: string }) => {
   // Run injection detection on content
-  const injectionScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'injection-detect.sh');
+  const injectionScriptPath = path.join(SCRIPTS_DIR, 'injection-detect.sh');
 
   return new Promise((resolve) => {
     // Escape content for shell - use base64 to avoid shell injection issues
@@ -3116,7 +3122,7 @@ ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
 // ============== INBOX FILTER & SEARCH IPC HANDLERS ==============
 ipcMain.handle('inbox:toggleStar', async (_, messageId: string) => {
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh toggle-star "${messageId}"`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh toggle-star "${messageId}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3141,7 +3147,7 @@ ipcMain.handle('inbox:markRead', async (_, messageId: string, isRead: boolean = 
 
   // Also run inbox-filter.sh for any additional side-effects
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh mark-read "${messageId}" "${isRead ? '1' : '0'}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3158,7 +3164,7 @@ ipcMain.handle('inbox:markRead', async (_, messageId: string, isRead: boolean = 
 
 ipcMain.handle('inbox:addTag', async (_, messageId: string, tag: string) => {
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh add-tag "${messageId}" "${tag}"`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh add-tag "${messageId}" "${tag}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3175,7 +3181,7 @@ ipcMain.handle('inbox:addTag', async (_, messageId: string, tag: string) => {
 
 ipcMain.handle('inbox:removeTag', async (_, messageId: string, tag: string) => {
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh remove-tag "${messageId}" "${tag}"`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh remove-tag "${messageId}" "${tag}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3192,7 +3198,7 @@ ipcMain.handle('inbox:removeTag', async (_, messageId: string, tag: string) => {
 
 ipcMain.handle('inbox:setProject', async (_, messageId: string, project: string) => {
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh set-project "${messageId}" "${project}"`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh set-project "${messageId}" "${project}"`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3209,7 +3215,7 @@ ipcMain.handle('inbox:setProject', async (_, messageId: string, project: string)
 
 ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh search "${query}" ${limit}`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh search "${query}" ${limit}`;
     exec(cmd, { timeout: 10000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3232,7 +3238,7 @@ ipcMain.handle('inbox:filter', async (_, criteria: any) => {
     const { execSync } = require('child_process');
     try {
       const result = execSync(
-        `${path.join(os.homedir(), 'clawd', 'scripts', 'inbox-filter.sh')} filter`,
+        `${path.join(SCRIPTS_DIR, 'inbox-filter.sh')} filter`,
         { input: JSON.stringify(criteria), encoding: 'utf-8', timeout: 10000 }
       );
       const results = result.trim().split('\n').filter(Boolean);
@@ -3245,7 +3251,7 @@ ipcMain.handle('inbox:filter', async (_, criteria: any) => {
 
 ipcMain.handle('inbox:getSuggestions', async (_, type: 'senders' | 'projects' | 'tags' | 'platforms') => {
   return new Promise((resolve) => {
-    const cmd = `~/clawd/scripts/inbox-filter.sh suggestions ${type}`;
+    const cmd = `${SCRIPTS_DIR}/inbox-filter.sh suggestions ${type}`;
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error) {
         resolve({ success: false, error: error.message });
@@ -3430,7 +3436,7 @@ ipcMain.handle('screenshot:navigate', async (_, view: string) => {
 });
 
 // ============== SCHEDULE IPC HANDLERS ==============
-const scheduleDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+const scheduleDbPath = FROGGO_DB;
 
 ipcMain.handle('schedule:list', async () => {
   safeLog.log('[Schedule:list] Called');
@@ -3791,7 +3797,7 @@ ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
 });
 
 // ============== MEDIA UPLOAD IPC HANDLERS ==============
-const uploadsDir = path.join(os.homedir(), 'clawd', 'uploads');
+const uploadsDir = UPLOADS_DIR;
 
 // Ensure uploads directory exists
 if (!fs.existsSync(uploadsDir)) {
@@ -3872,7 +3878,7 @@ ipcMain.handle('media:cleanup', async () => {
 });
 
 // ============== LIBRARY IPC HANDLERS ==============
-const libraryDir = path.join(os.homedir(), 'clawd', 'library');
+const libraryDir = LIBRARY_DIR;
 
 ipcMain.handle('library:list', async (_, category?: string) => {
   // Ensure library directory exists
@@ -4214,8 +4220,8 @@ try {
 if (!anthropicApiKey) {
   try {
     const ocConfigs = [
-      path.join(os.homedir(), '.openclaw', 'openclaw.json'),
-      path.join(os.homedir(), '.clawdbot', 'openclaw.json'),
+      OPENCLAW_CONFIG,
+      OPENCLAW_CONFIG_LEGACY,
     ];
     for (const cfgPath of ocConfigs) {
       if (!anthropicApiKey && fs.existsSync(cfgPath)) {
@@ -4272,7 +4278,7 @@ ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; descrip
     }
     
     const result = await new Promise<string>((resolve, reject) => {
-      execFile('/Users/worker/.local/bin/froggo-db', args, {
+      execFile(FROGGO_DB_CLI, args, {
         timeout: 5000,
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
       }, (error, stdout, stderr) => {
@@ -4598,12 +4604,12 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) =
 
 // Comms cache configuration
 const COMMS_CACHE_TTL_MS = 30 * 1000; // 30 seconds - keep inbox live for ADHD-friendly real-time updates
-const FROGGO_DB_PATH = '/Users/worker/.local/bin/froggo-db';
+const FROGGO_DB_PATH = FROGGO_DB_CLI;
 
 // Helper to run command and return promise (shared)
 const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
   return new Promise((resolve) => {
-    const fullPath = `/opt/homebrew/bin:/usr/bin:/bin:/Users/worker/.local/bin:${process.env.PATH || ''}`;
+    const fullPath = `${SHELL_PATH}:${process.env.PATH || ''}`;
     exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
@@ -4619,7 +4625,7 @@ const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
 // Check comms cache freshness
 const getCommsCacheAge = async (): Promise<number> => {
   try {
-    const raw = await runMsgCmd(`sqlite3 ~/clawd/data/froggo.db "SELECT MAX(fetched_at) FROM comms_cache"`, 2000);
+    const raw = await runMsgCmd(`sqlite3 "${FROGGO_DB}" "SELECT MAX(fetched_at) FROM comms_cache"`, 2000);
     if (raw && raw.trim()) {
       const lastFetch = new Date(raw.trim()).getTime();
       return Date.now() - lastFetch;
@@ -4716,7 +4722,7 @@ const writeCommsToCache = async (messages: any[]): Promise<void> => {
 
 // ============== COMMS DB INIT: Create tables for incremental fetch & AI analysis ==============
 const initCommsDbTables = async () => {
-  const db = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const dbFile = FROGGO_DB;
   const tables = [
     `CREATE TABLE IF NOT EXISTS comms_fetch_state (
       platform TEXT NOT NULL,
@@ -4743,7 +4749,7 @@ const initCommsDbTables = async () => {
   ];
   for (const sql of tables) {
     try {
-      await runMsgCmd(`sqlite3 "${db}" "${sql.replace(/\n/g, ' ')}"`, 5000);
+      await runMsgCmd(`sqlite3 "${dbFile}" "${sql.replace(/\n/g, ' ')}"`, 5000);
     } catch (e) {
       safeLog.error('[CommsDB] Table creation error:', e);
     }
@@ -4764,9 +4770,9 @@ async function refreshCommsBackground() {
   safeLog.log('[CommsPolling] Background refresh starting...');
 
   const allMessages: any[] = [];
-  const db = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const dbFile = FROGGO_DB;
   const WACLI_PATH = '/opt/homebrew/bin/wacli';
-  const DISCORDCLI_PATH = '/Users/worker/.local/bin/discordcli';
+  const DISCORDCLI_PATH = DISCORDCLI;
 
   const relativeTime = (dateStr: string): string => {
     if (!dateStr) return '';
@@ -4839,7 +4845,7 @@ async function refreshCommsBackground() {
     } catch (e) { safeLog.error('[CommsPolling] WhatsApp error:', e); }
 
     // ===== TELEGRAM (from cache) =====
-    const tgCachePath = path.join(os.homedir(), 'clawd', 'data', 'telegram-cache.json');
+    const tgCachePath = path.join(DATA_DIR, 'telegram-cache.json');
     const TELEGRAM_SPAM_KEYWORDS = [
       'bc.game', 'casino', 'betting', 'airdrop', 'giveaway',
       'crypto wizard', 'alpha private', 'vip lounge', 'mystic dao',
@@ -4976,7 +4982,7 @@ app.on('ready', () => {
 // ============== INBOX HISTORICAL DATA CHECK ==============
 ipcMain.handle('inbox:check-history', async () => {
   try {
-    const inboxLauncherPath = path.join(os.homedir(), 'clawd', 'tools', 'inbox-launcher.js');
+    const inboxLauncherPath = path.join(TOOLS_DIR, 'inbox-launcher.js');
     const result = await runMsgCmd(`node "${inboxLauncherPath}" check`, 5000);
     const status = JSON.parse(result);
     safeLog.log('[Inbox] Historical data check:', status);
@@ -4989,7 +4995,7 @@ ipcMain.handle('inbox:check-history', async () => {
 
 ipcMain.handle('inbox:trigger-backfill', async (_, days = 60) => {
   try {
-    const inboxLauncherPath = path.join(os.homedir(), 'clawd', 'tools', 'inbox-launcher.js');
+    const inboxLauncherPath = path.join(TOOLS_DIR, 'inbox-launcher.js');
     // Trigger in background
     safeLog.log('[Inbox] Triggering historical backfill:', days, 'days');
     exec(`node "${inboxLauncherPath}" ensure`, (error, stdout) => {
@@ -5014,7 +5020,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
   let archivedKeys: Set<string> = new Set();
   if (!includeArchived) {
     try {
-      const archivedRaw = await runMsgCmd(`sqlite3 ~/clawd/data/froggo.db "SELECT session_key FROM conversation_folders WHERE folder_id = 4"`, 3000);
+      const archivedRaw = await runMsgCmd(`sqlite3 "${FROGGO_DB}" "SELECT session_key FROM conversation_folders WHERE folder_id = 4"`, 3000);
       if (archivedRaw) {
         const keys = archivedRaw.trim().split('\n').filter((k: string) => k.length > 0);
         archivedKeys = new Set<string>(keys);
@@ -5075,7 +5081,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
   
   const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
     return new Promise((resolve) => {
-      exec(cmd, { timeout, env: { ...process.env, PATH: `/opt/homebrew/bin:/Users/worker/.local/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+      exec(cmd, { timeout, env: { ...process.env, PATH: `${SHELL_PATH}:${process.env.PATH || ''}` } }, (error, stdout) => {
         if (error) resolve('');
         else resolve(stdout);
       });
@@ -5107,7 +5113,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       }
     } else if (platform === 'telegram') {
       const chatId = messageId.replace('tg-', '');
-      const raw = await runCmd(`/Users/worker/.local/bin/tgcli messages ${chatId} --limit ${lim}`, 5000);
+      const raw = await runCmd(`${TGCLI} messages ${chatId} --limit ${lim}`, 5000);
       if (raw) {
         const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
         for (const line of lines.reverse()) {
@@ -5124,7 +5130,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       }
     } else if (platform === 'discord') {
       const channelId = messageId.replace('discord-', '');
-      const raw = await runCmd(`/Users/worker/.local/bin/discordcli messages ${channelId} --limit ${lim}`, 5000);
+      const raw = await runCmd(`${DISCORDCLI} messages ${channelId} --limit ${lim}`, 5000);
       if (raw) {
         const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
         for (const line of lines.reverse()) {
@@ -5413,7 +5419,7 @@ ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: 
 
 // Track processed email IDs to avoid duplicates
 const processedEmailIds = new Set<string>();
-const processedEmailsFile = path.join(os.homedir(), 'clawd', 'data', 'processed-emails.json');
+const processedEmailsFile = path.join(DATA_DIR, 'processed-emails.json');
 
 // Load processed emails on startup
 try {
@@ -6137,7 +6143,7 @@ ipcMain.handle('exec:run', async (_, command: string) => {
   const execAsync = promisify(exec);
 
   // Use the clawd workspace as default cwd for git commands
-  const workDir = path.join(process.env.HOME || '', 'clawd');
+  const workDir = PROJECT_ROOT;
 
   const result = await secureExec(
     command,
@@ -6146,7 +6152,7 @@ ipcMain.handle('exec:run', async (_, command: string) => {
         maxBuffer: 1024 * 1024,
         timeout: 30000,
         cwd: workDir,
-        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/Users/worker/.local/bin:${process.env.PATH || '/usr/bin:/bin'}` },
+        env: { ...process.env, PATH: `${SHELL_PATH}:${process.env.PATH || ''}` },
       });
     },
     'exec',
@@ -6192,7 +6198,7 @@ ipcMain.handle('agents:getMetrics', async () => {
   const registry = getAgentRegistry();
   const agents = Object.keys(registry).filter(id => id !== 'froggo'); // skip alias duplicate
   const metrics: Record<string, any> = {};
-  const metricsScriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'agent-metrics.sh');
+  const metricsScriptPath = path.join(SCRIPTS_DIR, 'agent-metrics.sh');
 
   for (const agentId of agents) {
     try {
@@ -6267,7 +6273,7 @@ ipcMain.handle('agents:getMetrics', async () => {
 ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   safeLog.log(`[agents:getDetails] Called with agentId: ${agentId}`);
   debugLog(`[agents:getDetails] Called with agentId: ${agentId}`);
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const froggoDbPath = FROGGO_DB;
   
   // Agent ID aliases - some agents have multiple IDs that map to the same DB records
   const agentAliases: Record<string, string[]> = {
@@ -6344,15 +6350,15 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
 
   // Load AGENT.md
   try {
-    const agentMdPath = path.join(os.homedir(), 'clawd', 'agents', agentId, 'AGENT.md');
+    const agentMdPath = path.join(PROJECT_ROOT, 'agents', agentId, 'AGENT.md');
     agentRules = fs.readFileSync(agentMdPath, 'utf-8');
   } catch (e) {
     try {
       const altPaths = [
-        path.join(os.homedir(), 'clawd', 'agents', agentId.toLowerCase(), 'AGENT.md'),
-        path.join(os.homedir(), 'clawd', 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
+        path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'),
+        path.join(PROJECT_ROOT, 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'),
         // Try all aliases (e.g. froggo -> main)
-        ...dbIds.filter(id => id !== agentId).map(id => path.join(os.homedir(), 'clawd', 'agents', id, 'AGENT.md')),
+        ...dbIds.filter(id => id !== agentId).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md')),
       ];
       for (const altPath of altPaths) {
         if (fs.existsSync(altPath)) {
@@ -6403,7 +6409,7 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
 });
 
 ipcMain.handle('agents:search', async (_, query: string) => {
-  const froggoDbPath = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
+  const froggoDbPath = FROGGO_DB;
   
   const registry = getAgentRegistry();
   const agentDefinitions: Record<string, { role: string; description: string; capabilities: string[] }> = {};
@@ -6617,7 +6623,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
 
 // ============== AGENT CREATION (full onboarding) ==============
 ipcMain.handle('agents:create', async (_, config: { id: string; name: string; role: string; emoji: string; color: string; personality: string; voice?: string }) => {
-  const script = path.join(os.homedir(), 'clawd', 'scripts', 'agent-onboard-full.sh');
+  const script = path.join(SCRIPTS_DIR, 'agent-onboard-full.sh');
 
   // Sanitize inputs — shell-safe single-quote escaping
   const esc = (s: string) => s.replace(/'/g, "'\\''");
@@ -6822,7 +6828,7 @@ ipcMain.handle('get-performance-report', async (_, args?: { days?: number }) => 
   try {
     const days = args?.days || 30;
     const result = execSync(
-      `/Users/worker/.local/bin/froggo-db performance-report --days ${days} --json`,
+      `${FROGGO_DB_CLI} performance-report --days ${days} --json`,
       {
         encoding: 'utf-8',
         timeout: 10000,
@@ -6839,7 +6845,7 @@ ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: numb
   try {
     const days = args.days || 30;
     const result = execSync(
-      `/Users/worker/.local/bin/froggo-db agent-audit ${args.agentId} --days ${days} --json`,
+      `${FROGGO_DB_CLI} agent-audit ${args.agentId} --days ${days} --json`,
       {
         encoding: 'utf-8',
         timeout: 10000,
@@ -6905,7 +6911,7 @@ ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: s
 
 ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {
   const session = sessionKey || 'dashboard';
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "DELETE FROM messages WHERE session_key='${session}' AND channel='dashboard'"`;
+  const cmd = `sqlite3 "${FROGGO_DB}" "DELETE FROM messages WHERE session_key='${session}' AND channel='dashboard'"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error) => {
@@ -6934,7 +6940,7 @@ ${conversationContext}
 Suggestions:`;
 
     // Use claude CLI in non-interactive mode
-    const claudeCmd = `/Users/worker/.local/bin/claude --print "${prompt.replace(/"/g, '\\"')}"`;
+    const claudeCmd = `${CLAUDE_CLI} --print "${prompt.replace(/"/g, '\\"')}"`;
     
     safeLog.log('[SuggestedReplies] Generating suggestions...');
     
@@ -7073,7 +7079,7 @@ ipcMain.handle('starred:search', async (_, query: string, limit?: number) => {
 
 // Get starred stats
 ipcMain.handle('starred:stats', async () => {
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) as total FROM starred_messages; SELECT category, COUNT(*) as count FROM starred_messages GROUP BY category;"`;
+  const cmd = `sqlite3 "${FROGGO_DB}" "SELECT COUNT(*) as total FROM starred_messages; SELECT category, COUNT(*) as count FROM starred_messages GROUP BY category;"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 5000 }, (error, stdout) => {
@@ -7090,7 +7096,7 @@ ipcMain.handle('starred:stats', async () => {
 
 // Check if a message is starred
 ipcMain.handle('starred:check', async (_, messageId: number) => {
-  const cmd = `sqlite3 ~/clawd/data/froggo.db "SELECT id FROM starred_messages WHERE message_id=${messageId}"`;
+  const cmd = `sqlite3 "${FROGGO_DB}" "SELECT id FROM starred_messages WHERE message_id=${messageId}"`;
   
   return new Promise((resolve) => {
     exec(cmd, { timeout: 2000 }, (error, stdout) => {
@@ -7235,7 +7241,7 @@ ipcMain.handle('security:runAudit', async () => {
     safeLog.log('[Security] Running AI security audit...');
     
     // Call security audit script
-    const scriptPath = path.join(os.homedir(), 'clawd', 'scripts', 'security-audit.sh');
+    const scriptPath = path.join(SCRIPTS_DIR, 'security-audit.sh');
     const result = execSync(`bash "${scriptPath}"`, { 
       encoding: 'utf-8', 
       maxBuffer: 10 * 1024 * 1024,
@@ -7403,7 +7409,7 @@ ipcMain.handle('dashboardAgents:status', async () => {
 // ============== HR REPORTS ==============
 ipcMain.handle('hrReports:list', async () => {
   try {
-    const reportsDir = path.join(os.homedir(), 'clawd', 'reports', 'hr');
+    const reportsDir = path.join(REPORTS_DIR, 'hr');
     if (!fs.existsSync(reportsDir)) {
       return { success: true, reports: [] };
     }
@@ -7431,7 +7437,7 @@ ipcMain.handle('hrReports:list', async () => {
 
 ipcMain.handle('hrReports:read', async (_, filename: string) => {
   try {
-    const reportsDir = path.join(os.homedir(), 'clawd', 'reports', 'hr');
+    const reportsDir = path.join(REPORTS_DIR, 'hr');
     const filePath = path.join(reportsDir, path.basename(filename)); // Security: basename only
     if (!fs.existsSync(filePath)) {
       return { success: false, error: 'Report not found' };
