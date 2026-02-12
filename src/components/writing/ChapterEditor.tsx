@@ -59,8 +59,8 @@ export default function ChapterEditor() {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        // History extension (undo/redo) comes with StarterKit
-        history: {
+        // Undo/redo extension comes with StarterKit
+        undoRedo: {
           depth: 100,
         },
       }),
@@ -97,7 +97,7 @@ export default function ChapterEditor() {
     const currentContent = editor.getHTML();
     if (activeChapterContent !== null && activeChapterContent !== currentContent) {
       isSettingContent.current = true;
-      editor.commands.setContent(activeChapterContent, false);
+      editor.commands.setContent(activeChapterContent, { emitUpdate: false });
       isSettingContent.current = false;
     }
   }, [activeChapterId]); // eslint-disable-line react-hooks/exhaustive-deps — intentionally only on chapter switch
