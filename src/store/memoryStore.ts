@@ -22,7 +22,7 @@ export interface VerifiedFact {
   id: string;
   claim: string;
   source: string;
-  status: 'unverified' | 'verified' | 'disputed';
+  status: 'unverified' | 'verified' | 'disputed' | 'needs-source';
 }
 
 interface MemoryState {

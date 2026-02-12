@@ -653,6 +653,21 @@ contextBridge.exposeInMainWorld('clawdbot', {
         delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:facts:delete', projectId, id),
       },
     },
+    research: {
+      sources: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:research:sources:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:research:sources:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:research:sources:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:research:sources:delete', projectId, id),
+      },
+      links: {
+        forFact: (projectId: string, factId: string) => ipcRenderer.invoke('writing:research:links:forFact', projectId, factId),
+        forSource: (projectId: string, sourceId: string) => ipcRenderer.invoke('writing:research:links:forSource', projectId, sourceId),
+        link: (projectId: string, factId: string, sourceId: string, notes?: string) => ipcRenderer.invoke('writing:research:links:link', projectId, factId, sourceId, notes),
+        unlink: (projectId: string, factId: string, sourceId: string) => ipcRenderer.invoke('writing:research:links:unlink', projectId, factId, sourceId),
+        cleanup: (projectId: string, validFactIds: string[]) => ipcRenderer.invoke('writing:research:links:cleanup', projectId, validFactIds),
+      },
+    },
   },
 });
 

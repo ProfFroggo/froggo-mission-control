@@ -7,12 +7,14 @@ const statusBadge: Record<string, string> = {
   verified: 'bg-green-500/20 text-green-400',
   unverified: 'bg-yellow-500/20 text-yellow-400',
   disputed: 'bg-red-500/20 text-red-400',
+  'needs-source': 'bg-blue-500/20 text-blue-400',
 };
 
 const statusLabel: Record<string, string> = {
   verified: 'V',
   unverified: '?',
   disputed: 'D',
+  'needs-source': 'S',
 };
 
 export default function FactList() {
