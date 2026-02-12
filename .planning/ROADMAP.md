@@ -66,8 +66,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Fix routing and guards (FUNC-01, FUNC-02, FUNC-03, FUNC-04, FUNC-05 — agent routing table, error boundaries, null guards, notification debounce)
-- [ ] 03-02: Fix state and performance bugs (FUNC-06, FUNC-07, FUNC-08, FUNC-09, FUNC-10 — deduplicate gateway calls, fix phantom tasks, memo comparator, localStorage cap, double listeners)
+- [ ] 03-01-PLAN.md — Fix routing and guards: 9-agent routing table, InboxPanel wiring, DMFeed error boundary, IPC null guards, notification debounce (FUNC-01 through FUNC-05) [Wave 1]
+- [ ] 03-02-PLAN.md — Fix state and performance: merge session fetches, DB-sync phantom tasks, shared debounced refresh, Kanban memo comparator, localStorage cap (FUNC-06 through FUNC-10) [Wave 2]
 
 ### Phase 4: Cleanup & Debloat
 **Goal**: Lean codebase with no dead files, dead code, or broken styling
