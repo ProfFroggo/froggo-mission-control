@@ -7449,3 +7449,53 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
     return { success: false, error: error.message };
   }
 });
+// ============== FINANCE MODULE ==============
+
+ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
+  try {
+    const cmd = `froggo-db finance-transactions --limit ${limit} --format json`;
+    const result = await execPromise(cmd, { timeout: 10000 });
+    const transactions = JSON.parse(result.stdout);
+    return { success: true, transactions };
+  } catch (error: any) {
+    safeLog.error('[Finance] Get transactions error:', error.message);
+    return { success: false, transactions: [], error: error.message };
+  }
+});
+
+ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'crypto') => {
+  try {
+    const cmd = `froggo-db finance-budget-status --type ${budgetType} --format json`;
+    const result = await execPromise(cmd, { timeout: 10000 });
+    const budget = JSON.parse(result.stdout);
+    return { success: true, budget };
+  } catch (error: any) {
+    safeLog.error('[Finance] Get budget status error:', error.message);
+    return { success: false, budget: null, error: error.message };
+  }
+});
+
+ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: string) => {
+  try {
+    // Write CSV to temp file
+    const tmpPath = path.join(app.getPath('temp'), `upload-${Date.now()}.csv`);
+    fs.writeFileSync(tmpPath, csvContent, 'utf-8');
+    
+    // Upload via CLI
+    const cmd = `froggo-db finance-upload "${tmpPath}" --format json`;
+    const result = await execPromise(cmd, { timeout: 30000 });
+    
+    // Clean up temp file
+    fs.unlinkSync(tmpPath);
+    
+    const uploadResult = JSON.parse(result.stdout);
+    return { 
+      success: true, 
+      imported: uploadResult.imported || 0,
+      skipped: uploadResult.skipped || 0
+    };
+  } catch (error: any) {
+    safeLog.error('[Finance] Upload CSV error:', error.message);
+    return { success: false, imported: 0, skipped: 0, error: error.message };
+  }
+});
