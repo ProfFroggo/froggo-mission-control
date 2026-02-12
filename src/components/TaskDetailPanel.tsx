@@ -27,7 +27,6 @@ interface TaskDetailPanelProps {
 
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
-  const [_loading, _setLoading] = useState(false);
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
@@ -45,9 +44,6 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
-  const [_showAgentWarning, _setShowAgentWarning] = useState(false);
-  const [_activeAgentSession, _setActiveAgentSession] = useState<any>(null);
-
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
   const isRemoteAgent = task?.assignedTo && !assignedAgent && !['', 'none', 'unassigned'].includes(task.assignedTo);

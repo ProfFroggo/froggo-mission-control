@@ -38,7 +38,6 @@ export default function CodeAgentDashboard() {
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [tasks, setTasks] = useState<DevTask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [_totalCost, _setTotalCost] = useState(0);
   const [totalTokens, setTotalTokens] = useState(0);
 
   const loadData = useCallback(async () => {
@@ -137,13 +136,6 @@ export default function CodeAgentDashboard() {
     const interval = setInterval(loadData, 60000); // Refresh every minute
     return () => clearInterval(interval);
   }, [loadData]);
-
-  // const formatDuration = (ms: number) => {
-  //   const hours = Math.floor(ms / 3600000);
-  //   const minutes = Math.floor((ms % 3600000) / 60000);
-  //   if (hours > 0) return `${hours}h ${minutes}m`;
-  //   return `${minutes}m`;
-  // };
 
   const formatTimeAgo = (timestamp: number) => {
     const diff = Date.now() - timestamp;

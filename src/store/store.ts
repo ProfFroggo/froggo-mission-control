@@ -215,7 +215,6 @@ interface Store {
   approveItem: (id: string) => void;
   rejectItem: (id: string) => void;
   adjustItem: (id: string, feedback: string) => void;
-  clearCompletedApprovals: () => void;
   loadApprovals: () => Promise<void>;
 
   // X drafts
@@ -1128,10 +1127,6 @@ Start now.`;
           gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch(() => {});
         }
       },
-      clearCompletedApprovals: () => set((s: Store) => ({
-        approvals: s.approvals.filter(a => a.status === 'pending')
-      })),
-
       loadApprovals: async () => {
         try {
           get().setLoading('approvals', true);
