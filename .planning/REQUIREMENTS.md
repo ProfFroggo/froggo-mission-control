@@ -41,12 +41,12 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 
 ### Memory Store
 
-- [ ] **MEM-01**: User can create/edit/delete character profiles (name, relationship, description, traits)
-- [ ] **MEM-02**: User can create/edit/delete timeline events (date, description, chapter refs)
-- [ ] **MEM-03**: User can create/edit/delete verified facts (claim, source, status)
-- [ ] **MEM-04**: Memory store displays in context panel alongside editor
-- [ ] **MEM-05**: Memory store data is automatically injected into AI agent context for feedback
-- [ ] **MEM-06**: Memory store persists as JSON files per project
+- [x] **MEM-01**: User can create/edit/delete character profiles (name, relationship, description, traits)
+- [x] **MEM-02**: User can create/edit/delete timeline events (date, description, chapter refs)
+- [x] **MEM-03**: User can create/edit/delete verified facts (claim, source, status)
+- [x] **MEM-04**: Memory store displays in context panel alongside editor
+- [x] **MEM-05**: Memory store data is automatically injected into AI agent context for feedback
+- [x] **MEM-06**: Memory store persists as JSON files per project
 
 ### Research Library
 
@@ -128,12 +128,12 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | FEED-06 | Phase 6 | Complete |
 | FEED-07 | Phase 6 | Complete |
 | FEED-08 | Phase 6 | Complete |
-| MEM-01 | Phase 7 | Pending |
-| MEM-02 | Phase 7 | Pending |
-| MEM-03 | Phase 7 | Pending |
-| MEM-04 | Phase 7 | Pending |
-| MEM-05 | Phase 7 | Pending |
-| MEM-06 | Phase 7 | Pending |
+| MEM-01 | Phase 7 | Complete |
+| MEM-02 | Phase 7 | Complete |
+| MEM-03 | Phase 7 | Complete |
+| MEM-04 | Phase 7 | Complete |
+| MEM-05 | Phase 7 | Complete |
+| MEM-06 | Phase 7 | Complete |
 | RES-01 | Phase 8 | Pending |
 | RES-02 | Phase 8 | Pending |
 | RES-03 | Phase 8 | Pending |
@@ -157,4 +157,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-12 — Phase 6 requirements complete*
+*Last updated: 2026-02-12 — Phase 7 requirements complete*
