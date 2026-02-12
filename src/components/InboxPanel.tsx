@@ -9,6 +9,7 @@ import { calculatePriorityScore, getPriorityLevel } from '../lib/priorityScoring
 import AIAssistancePanel from './AIAssistancePanel';
 import IconBadge from './IconBadge';
 import MarkdownMessage from './MarkdownMessage';
+import { matchTaskToAgent } from '../lib/agents';
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -672,7 +673,7 @@ export default function InboxPanel() {
         description: item.content,
         status: 'in-progress',
         project: projectMap[item.type] || 'Approved',
-        assignedTo: 'coder', // Never assign to main/froggo - use coder for execution
+        assignedTo: matchTaskToAgent(item.title, item.content || ''),
         metadata,
       };
       
@@ -877,7 +878,7 @@ export default function InboxPanel() {
         status: 'in-progress',
         project: item.type === 'tweet' || item.type === 'reply' ? 'X' : 
                  item.type === 'email' ? 'Email' : 'Revisions',
-        assignedTo: item.type === 'tweet' || item.type === 'reply' ? 'writer' : 'coder', // Never assign to main/froggo
+        assignedTo: matchTaskToAgent(item.title, `${item.type} ${item.content || ''}`),
       };
       
       const result = await window.clawdbot?.tasks.sync(taskData);
