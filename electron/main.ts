@@ -354,6 +354,11 @@ function createWindow() {
     },
   });
 
+  // Dev vs Prod visual differentiation
+  const isDevApp = app.getName().includes('Dev') || isDev;
+  const appVersion = app.getVersion();
+  mainWindow.setTitle(isDevApp ? `Froggo [DEV] v${appVersion}` : `Froggo v${appVersion}`);
+
   // Setup notification handlers
   setupNotificationHandlers(mainWindow);
 
@@ -721,7 +726,59 @@ app.whenReady().then(() => {
   initializeDashboardAgents().catch(err => {
     safeLog.error('[Main] Failed to initialize dashboard agents:', err);
   });
+
+  // Check for updates (prod only, non-blocking)
+  if (!isDev && !app.getName().includes('Dev')) {
+    checkForUpdates().catch(() => {});
+  }
 });
+
+// Update checker — compares local version to latest GitHub Release
+async function checkForUpdates(): Promise<void> {
+  const https = await import('https');
+  return new Promise((resolve) => {
+    const req = https.get('https://api.github.com/repos/ProfFroggo/froggo_bot/releases/latest', {
+      headers: { 'User-Agent': 'Froggo-App', Accept: 'application/vnd.github.v3+json' },
+      timeout: 10000,
+    }, (res) => {
+      let data = '';
+      res.on('data', (chunk: string) => { data += chunk; });
+      res.on('end', async () => {
+        try {
+          const release = JSON.parse(data);
+          const remoteVersion = (release.tag_name || '').replace(/^v/, '');
+          const localVersion = app.getVersion();
+          if (remoteVersion && remoteVersion !== localVersion && isNewerVersion(remoteVersion, localVersion)) {
+            const { response } = await dialog.showMessageBox({
+              type: 'info',
+              title: 'Update Available',
+              message: `Froggo v${remoteVersion} is available (you have v${localVersion}).`,
+              buttons: ['View Release', 'Later'],
+              defaultId: 0,
+              cancelId: 1,
+            });
+            if (response === 0) {
+              shell.openExternal(release.html_url || `https://github.com/ProfFroggo/froggo_bot/releases/tag/v${remoteVersion}`);
+            }
+          }
+        } catch {}
+        resolve();
+      });
+    });
+    req.on('error', () => resolve());
+    req.on('timeout', () => { req.destroy(); resolve(); });
+  });
+}
+
+function isNewerVersion(remote: string, local: string): boolean {
+  const r = remote.split('.').map(Number);
+  const l = local.split('.').map(Number);
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    if ((r[i] || 0) > (l[i] || 0)) return true;
+    if ((r[i] || 0) < (l[i] || 0)) return false;
+  }
+  return false;
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -4163,7 +4220,7 @@ if (!anthropicApiKey) {
     for (const cfgPath of ocConfigs) {
       if (!anthropicApiKey && fs.existsSync(cfgPath)) {
         const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
-        // Check models.providers.*.apiKey, providers.*, and plugins.entries.smartrouter.config
+        // Check models.providers.*.apiKey and providers.*
         const providerSources = [
           cfg.models?.providers || {},
           cfg.providers || {},
@@ -4176,11 +4233,6 @@ if (!anthropicApiKey) {
             if (prov?.config?.anthropicApiKey?.startsWith('sk-ant')) { anthropicApiKey = prov.config.anthropicApiKey; break; }
           }
           if (anthropicApiKey) break;
-        }
-        // Also check smartrouter plugin config
-        if (!anthropicApiKey) {
-          const srKey = cfg.plugins?.entries?.smartrouter?.config?.anthropicApiKey;
-          if (srKey?.startsWith('sk-ant')) anthropicApiKey = srKey;
         }
         if (anthropicApiKey) break;
       }
