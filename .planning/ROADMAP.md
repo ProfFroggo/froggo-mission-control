@@ -107,11 +107,13 @@
   3. User can click "Send to editor" on an AI chat message and see the content inserted into the current chapter at the cursor position or end of document
   4. User can close and reopen the app, and chat history, pane sizes, and collapse states are all preserved
   5. Layout renders correctly at window widths from 1024px to 1920px+ without overflow or broken panes
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 11-01: TBD
-- [ ] 11-02: TBD
+- [ ] 11-01-PLAN.md — Chat stores, pendingInsert mechanism, shared context utility, chat history IPC
+- [ ] 11-02-PLAN.md — Install npm packages, 3-pane resizable layout, CSS
+- [ ] 11-03-PLAN.md — ChatPane/ChatMessage/ChatInput components, gateway streaming, editor insertion
+- [ ] 11-04-PLAN.md — Session key fix, copy/retry actions, persistence verification, human verify
 
 ### Phase 12: Setup Wizard
 **Goal**: User can create a new book project through a conversational AI wizard that plans the story arc, chapter outline, themes, and characters before writing begins
@@ -138,7 +140,7 @@ Phases execute in numeric order: 11 -> 11.1 -> 11.2 -> 12
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
 | 5-10 | v2.0 | 12/12 | Complete | 2026-02-13 |
-| 11. Chat Pane + 3-Pane Layout | v2.1 | 0/TBD | Not started | - |
+| 11. Chat Pane + 3-Pane Layout | v2.1 | 0/4 | Planned | - |
 | 12. Setup Wizard | v2.1 | 0/TBD | Not started | - |
 
 ---
