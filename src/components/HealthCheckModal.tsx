@@ -526,7 +526,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
                   <div className="flex items-start gap-2">
                     <AlertCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-red-300 text-sm">{issue.title}</div>
+                      <div className="font-medium text-error text-sm">{issue.title}</div>
                       <div className="text-xs text-error/70 mt-0.5">{issue.description}</div>
                       <div className="flex items-center gap-1 mt-1.5 text-xs text-success">
                         <ArrowRight size={12} /> {issue.action}
@@ -542,7 +542,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
                   <div className="flex items-start gap-2">
                     <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-yellow-300 text-sm">{issue.title}</div>
+                      <div className="font-medium text-warning text-sm">{issue.title}</div>
                       <div className="text-xs text-warning/70 mt-0.5">{issue.description}</div>
                       <div className="flex items-center gap-1 mt-1.5 text-xs text-success">
                         <ArrowRight size={12} /> {issue.action}
@@ -558,7 +558,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
                   <div className="flex items-start gap-2">
                     <Flag size={16} className="text-info mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-blue-300 text-sm">{issue.title}</div>
+                      <div className="font-medium text-info text-sm">{issue.title}</div>
                       <div className="text-xs text-info/70 mt-0.5">{issue.description}</div>
                       <div className="flex items-center gap-1 mt-1.5 text-xs text-success">
                         <ArrowRight size={12} /> {issue.action}
@@ -589,7 +589,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
           {phase === 'done' && issues.length === 0 && (
             <div className="text-center py-8">
               <Sparkles size={32} className="text-success mx-auto mb-3" />
-              <div className="font-medium text-green-300">Board is healthy!</div>
+              <div className="font-medium text-success">Board is healthy!</div>
               <div className="text-sm text-clawd-text-dim mt-1">No issues found</div>
             </div>
           )}
@@ -599,7 +599,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
             <div className="space-y-3">
               <div className="text-center py-4">
                 <CheckCircle size={32} className="text-success mx-auto mb-2" />
-                <div className="font-medium text-green-300">Cleanup complete!</div>
+                <div className="font-medium text-success">Cleanup complete!</div>
               </div>
               <div className="bg-clawd-bg rounded-lg p-3 space-y-1">
                 {executionLog.filter(l => l.startsWith('✓') || l.startsWith('Skipped')).map((log, idx) => (

@@ -116,7 +116,7 @@ const SYSTEM_ACCOUNT: Account = {
   color: 'text-review',
 };
 
-const EMAIL_COLORS = ['text-orange-400', 'text-info', 'text-emerald-400', 'text-rose-400', 'text-amber-400'];
+const EMAIL_COLORS = ['text-warning', 'text-info', 'text-emerald-400', 'text-rose-400', 'text-amber-400'];
 
 // Build accounts from gateway channels + discovered email accounts
 function buildAccountsFromSources(
@@ -188,7 +188,7 @@ const FOLDERS: Folder[] = [
 
 function platformColor(p: string): string {
   const map: Record<string, string> = {
-    email: 'text-orange-400', whatsapp: 'text-success', telegram: 'text-sky-400',
+    email: 'text-warning', whatsapp: 'text-success', telegram: 'text-sky-400',
     discord: 'text-indigo-400', twitter: 'text-clawd-text-dim', system: 'text-review'
   };
   return map[p] || 'text-clawd-text-dim';
@@ -627,7 +627,7 @@ function CenterPane({
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-[10px] text-orange-400 bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-[10px] text-warning bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
@@ -765,7 +765,7 @@ function InboxDashboard({
             <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
-            <div className="text-2xl font-bold text-orange-400">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
+            <div className="text-2xl font-bold text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
             <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
@@ -1145,7 +1145,7 @@ function RightPane({
             <Sparkles size={13} className="text-clawd-accent flex-shrink-0" />
             <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
               aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
-              aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-orange-400' :
+              aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-warning' :
               aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
               'bg-gray-500/20 text-gray-400'
             }`}>
