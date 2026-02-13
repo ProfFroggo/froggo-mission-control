@@ -7820,3 +7820,187 @@ ipcMain.handle('x:research:reject', async (_, data: { id: string; reason?: strin
     return { success: false, error: error.message };
   }
 });
+
+// ── X/Twitter Plan Tab ──
+
+ipcMain.handle('x:plan:create', async (_, data: { 
+  researchIdeaId: string; 
+  title: string; 
+  contentType: string; 
+  threadLength: number;
+  description: string;
+  proposedBy: string;
+}) => {
+  try {
+    const { researchIdeaId, title, contentType, threadLength, description, proposedBy } = data;
+    const id = `plan-${Date.now()}`;
+    const now = Date.now();
+    
+    // Create database entry
+    const stmt = prepare(`
+      INSERT INTO x_content_plans (id, research_idea_id, title, content_type, thread_length, proposed_by, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'proposed', ?)
+    `);
+    stmt.run(id, researchIdeaId, title, contentType, threadLength, proposedBy, now);
+    
+    // Create markdown file
+    const dateStr = new Date(now).toISOString().split('T')[0];
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
+    const filename = `${dateStr}-${slug}.md`;
+    const filePath = path.join(homedir(), 'froggo', 'x-content', 'plans', filename);
+    
+    const fileContent = `---
+id: ${id}
+type: plan
+research_idea_id: ${researchIdeaId}
+title: ${title}
+content_type: ${contentType}
+thread_length: ${threadLength}
+proposed_by: ${proposedBy}
+status: proposed
+created_at: ${new Date(now).toISOString()}
+---
+
+# ${title}
+
+## Content Type
+${contentType}
+
+## Thread Length
+${threadLength} tweet${threadLength > 1 ? 's' : ''}
+
+## Description
+${description}
+`;
+    
+    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    
+    // Update database with file path
+    prepare('UPDATE x_content_plans SET file_path = ? WHERE id = ?').run(filePath, id);
+    
+    // Git commit
+    execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "feat: Add content plan '${title}' (${contentType}, ${threadLength} tweets, proposed by ${proposedBy})"`, {
+      encoding: 'utf-8'
+    });
+    
+    safeLog.log(`[X/Plan] Created content plan: ${id}`);
+    return { success: true, id, filePath };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] Create error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:plan:list', async (_, filters?: { status?: string; contentType?: string; limit?: number }) => {
+  try {
+    let query = 'SELECT * FROM x_content_plans WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.contentType) {
+      query += ' AND content_type = ?';
+      params.push(filters.contentType);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const plans = stmt.all(...params);
+    
+    return { success: true, plans };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] List error:', error.message);
+    return { success: false, plans: [], error: error.message };
+  }
+});
+
+ipcMain.handle('x:plan:approve', async (_, data: { id: string; approvedBy: string }) => {
+  try {
+    const { id, approvedBy } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_content_plans 
+      SET status = 'approved', approved_by = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    const result = stmt.run(approvedBy, now, id);
+    
+    if (result.changes === 0) {
+      throw new Error('Content plan not found');
+    }
+    
+    // Update file
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    if (plan && plan.file_path && fs.existsSync(plan.file_path)) {
+      let content = fs.readFileSync(plan.file_path, 'utf-8');
+      content = content.replace(/status: proposed/, 'status: approved');
+      content = content.replace(/^---\n/, `---\napproved_by: ${approvedBy}\napproved_at: ${new Date(now).toISOString()}\n`);
+      fs.writeFileSync(plan.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(plan.file_path);
+      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "approve: Content plan ${id} (approved by ${approvedBy})"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Plan] Approved content plan: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] Approve error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:plan:reject', async (_, data: { id: string; reason?: string }) => {
+  try {
+    const { id, reason } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_content_plans 
+      SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
+      WHERE id = ?
+    `);
+    const result = stmt.run(now, reason || '', id);
+    
+    if (result.changes === 0) {
+      throw new Error('Content plan not found');
+    }
+    
+    // Update file
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    if (plan && plan.file_path && fs.existsSync(plan.file_path)) {
+      let content = fs.readFileSync(plan.file_path, 'utf-8');
+      content = content.replace(/status: proposed/, 'status: rejected');
+      if (reason) {
+        content = content.replace(/^---\n/, `---\nrejection_reason: ${reason}\nrejected_at: ${new Date(now).toISOString()}\n`);
+      }
+      fs.writeFileSync(plan.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(plan.file_path);
+      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "reject: Content plan ${id}${reason ? ': ' + reason : ''}"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Plan] Rejected content plan: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] Reject error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
