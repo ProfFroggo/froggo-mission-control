@@ -659,6 +659,15 @@ contextBridge.exposeInMainWorld('clawdbot', {
     delete: (data: { id: string }) =>
       ipcRenderer.invoke('x:schedule:delete', data),
   },
+  xMention: {
+    fetch: () => ipcRenderer.invoke('x:mention:fetch'),
+    list: (filters?: { replyStatus?: string; limit?: number; offset?: number }) =>
+      ipcRenderer.invoke('x:mention:list', filters),
+    update: (data: { id: string; replyStatus?: string; repliedAt?: number; repliedWithId?: string; notes?: string }) =>
+      ipcRenderer.invoke('x:mention:update', data),
+    reply: (data: { mentionId: string; replyText: string; tweetId: string }) =>
+      ipcRenderer.invoke('x:mention:reply', data),
+  },
   // Writing Module
   writing: {
     project: {
