@@ -1,10 +1,11 @@
 import { useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, ShieldCheck } from 'lucide-react';
 import { gateway } from '../../lib/gateway';
 import { useWritingStore } from '../../store/writingStore';
 import { useFeedbackStore } from '../../store/feedbackStore';
 import { useMemoryStore } from '../../store/memoryStore';
+import { useResearchStore } from '../../store/researchStore';
 import AgentPicker from './AgentPicker';
 import FeedbackAlternative from './FeedbackAlternative';
 
@@ -127,6 +128,59 @@ function parseAlternatives(response: string): string[] {
   return parts.slice(1).map(p => p.trim()).filter(Boolean).slice(0, 3);
 }
 
+function buildFactCheckPrompt(
+  claim: string,
+  chapterContent: string | null,
+  sources: { title: string; author: string; type: string }[],
+  facts: { claim: string; source: string; status: string }[],
+): string {
+  const sourcesList = sources.length > 0
+    ? sources.map((s) => `- "${s.title}" by ${s.author} (${s.type})`).join('\n')
+    : '(no sources in library yet)';
+
+  const factsList = facts.length > 0
+    ? facts.map((f) => `- [${f.status}] ${f.claim}`).join('\n')
+    : '(no facts recorded yet)';
+
+  // Truncate chapter context around claim position
+  let contextWindow = '(no chapter content available)';
+  if (chapterContent) {
+    const idx = chapterContent.indexOf(claim.slice(0, 40));
+    const start = Math.max(0, (idx >= 0 ? idx : 0) - 4000);
+    const end = Math.min(chapterContent.length, (idx >= 0 ? idx : 0) + 4000);
+    contextWindow = chapterContent.slice(start, end);
+    if (start > 0) contextWindow = '...' + contextWindow;
+    if (end < chapterContent.length) contextWindow += '...';
+  }
+
+  return [
+    'You are a meticulous research editor focused on accuracy and fact-checking.',
+    '',
+    '## Task',
+    'The user has highlighted a claim and wants you to fact-check it.',
+    '',
+    '### Claim to Verify',
+    `"${claim}"`,
+    '',
+    '### Chapter Context',
+    contextWindow,
+    '',
+    '### Research Library (existing sources)',
+    sourcesList,
+    '',
+    '### Known Facts',
+    factsList,
+    '',
+    '## Response Format',
+    'Respond with:',
+    '1. **Verdict:** VERIFIED | DISPUTED | NEEDS MORE RESEARCH',
+    '2. **Confidence:** HIGH | MEDIUM | LOW',
+    '3. **Explanation:** Brief explanation of your finding',
+    '4. **Suggested Sources:** If you can identify specific sources that would help verify this claim',
+    '5. **Suggested Status:** What status this fact should have (verified/disputed/needs-source)',
+  ].join('\n');
+}
+
 export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
   const {
     selectedAgent, instructions, streaming, streamContent, alternatives, error, savedSelection,
@@ -136,6 +190,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
   const { activeProjectId, activeChapterId, activeChapterContent, activeProject } = useWritingStore();
   const { characters, timeline, facts } = useMemoryStore();
+  const { sources } = useResearchStore();
 
   // Use ref for accumulating stream content (closures capture stale state)
   const accumulatedRef = useRef('');
@@ -203,6 +258,63 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     }
   };
 
+  const handleFactCheck = async () => {
+    const claim = getSelectedText(editor);
+    if (!claim || streaming) return;
+
+    // Save selection
+    const { from, to } = editor.state.selection;
+    setSavedSelection({ from, to });
+
+    // Force researcher agent for fact-checking
+    setSelectedAgent('researcher');
+    setStreaming(true);
+    setStreamContent('');
+    setAlternatives([]);
+    setError(null);
+    accumulatedRef.current = '';
+
+    const sessionKey = `agent:researcher:writing:${activeProjectId}`;
+    const prompt = buildFactCheckPrompt(claim, activeChapterContent, sources, facts);
+
+    try {
+      await gateway.sendChatWithCallbacks(prompt, sessionKey, {
+        onDelta: (delta) => {
+          accumulatedRef.current += delta;
+          setStreamContent(accumulatedRef.current);
+        },
+        onEnd: () => {
+          // Fact-check results are displayed as raw stream content (no alternative parsing)
+          setStreamContent(accumulatedRef.current);
+          setStreaming(false);
+
+          // Log as fact-check interaction
+          try {
+            (window as any).clawdbot?.writing?.feedback?.log(activeProjectId, {
+              type: 'fact-check',
+              chapterId: activeChapterId,
+              agentId: 'researcher',
+              selectedText: claim,
+              instructions: '(fact-check)',
+              result: accumulatedRef.current,
+              accepted: null,
+              selectionRange: { from, to },
+            });
+          } catch {
+            // Logging failure should not block UX
+          }
+        },
+        onError: (err) => {
+          setError(typeof err === 'string' ? err : 'An error occurred');
+          setStreaming(false);
+        },
+      });
+    } catch (e: any) {
+      setError(e.message || 'Failed to send');
+      setStreaming(false);
+    }
+  };
+
   const handleAccept = (alternativeText: string) => {
     // Use saved selection if available (selection may have shifted during streaming)
     const range = savedSelection || {
@@ -250,8 +362,19 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       className="bg-clawd-surface border border-clawd-border rounded-lg shadow-lg p-3 min-w-[320px] max-w-[480px]"
       onMouseDown={(e) => e.preventDefault()}
     >
-      {/* Agent picker row */}
-      <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={streaming} />
+      {/* Agent picker row + fact check */}
+      <div className="flex items-center justify-between">
+        <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={streaming} />
+        <button
+          onClick={handleFactCheck}
+          disabled={streaming}
+          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-clawd-text-dim hover:text-clawd-accent hover:bg-clawd-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Fact-check highlighted claim"
+        >
+          <ShieldCheck className="w-3 h-3" />
+          <span>Fact Check</span>
+        </button>
+      </div>
 
       {/* Instruction input + send button */}
       <div className="flex gap-2 mt-2">
