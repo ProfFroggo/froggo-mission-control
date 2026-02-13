@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 12 of 12 (Setup Wizard)
-Plan: -- (not yet planned)
-Status: Ready to plan
-Last activity: 2026-02-13 -- Phase 11 verified and complete
+Plan: 01 of 04 complete
+Status: In progress
+Last activity: 2026-02-13 -- Completed 12-01-PLAN.md
 
-Progress: [############################........] 15/26 v2.1 reqs complete
+Progress: [#############################.......] 16/26 v2.1 reqs complete
 
 ## Performance Metrics
 
@@ -66,6 +66,8 @@ v2.1 decisions:
 - Session key format: agent:{id}:writing:{projectId}:{feedback|chat} for full isolation
 - Collapse state persisted separately from layout in localStorage (writing-collapsed key)
 - Retry removes assistant + preceding user message and prefills input
+- ProjectMeta.type and WritingProject.type changed from union to string for genre flexibility (WIZARD-11)
+- Wizard state stored in _wizard-state/{sessionId}/ under WRITING_PROJECTS_DIR
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ v2.1 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-13T03:19:05Z
-Stopped at: Completed 11-04-PLAN.md (Phase 11 complete)
+Last session: 2026-02-13T03:49:12Z
+Stopped at: Completed 12-01-PLAN.md
 Resume file: None
