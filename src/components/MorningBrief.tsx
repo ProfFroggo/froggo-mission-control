@@ -446,7 +446,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               </div>
               <ul className="space-y-1 text-sm">
                 {brief.urgentItems.map((item, i) => (
-                  <li key={i} className="text-red-300">• {item}</li>
+                  <li key={i} className="text-error">• {item}</li>
                 ))}
               </ul>
             </div>
