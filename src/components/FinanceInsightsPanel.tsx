@@ -109,11 +109,11 @@ export default function FinanceInsightsPanel() {
   const getSeverityStyles = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-error-subtle border-error-border text-red-300';
+        return 'bg-error-subtle border-error-border text-error';
       case 'warning':
-        return 'bg-yellow-500/10 border-warning-border text-yellow-300';
+        return 'bg-yellow-500/10 border-warning-border text-warning';
       default:
-        return 'bg-info-subtle border-info-border text-blue-300';
+        return 'bg-info-subtle border-info-border text-info';
     }
   };
 
@@ -147,13 +147,13 @@ export default function FinanceInsightsPanel() {
   if (error) {
     return (
       <div className="bg-error-subtle border border-error-border rounded-lg p-4">
-        <div className="flex items-center gap-2 text-red-300">
+        <div className="flex items-center gap-2 text-error">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
         </div>
         <button
           onClick={loadInsights}
-          className="mt-2 text-sm text-error hover:text-red-300"
+          className="mt-2 text-sm text-error hover:text-error"
         >
           Retry
         </button>
