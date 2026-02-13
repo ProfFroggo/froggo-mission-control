@@ -6,6 +6,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Typography from '@tiptap/extension-typography';
 import Link from '@tiptap/extension-link';
+import { Selection } from '@tiptap/extensions';
+import { Markdown } from '@tiptap/markdown';
 import EditorToolbar from './EditorToolbar';
 import FeedbackPopover from './FeedbackPopover';
 import { useWritingStore } from '../../store/writingStore';
@@ -20,9 +22,11 @@ export default function ChapterEditor() {
     activeChapterContent,
     chapterDirty,
     chapterLoading,
+    pendingInsert,
     saveChapter,
     setChapterDirty,
     setActiveChapterContent,
+    clearPendingInsert,
   } = useWritingStore();
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,6 +82,8 @@ export default function ChapterEditor() {
           class: 'editor-link',
         },
       }),
+      Selection,
+      Markdown,
     ],
     content: activeChapterContent || '',
     shouldRerenderOnTransaction: false,
@@ -103,6 +109,38 @@ export default function ChapterEditor() {
       isSettingContent.current = false;
     }
   }, [activeChapterId]); // eslint-disable-line react-hooks/exhaustive-deps — intentionally only on chapter switch
+
+  // Watch pendingInsert from chat pane and insert content into editor
+  useEffect(() => {
+    if (!pendingInsert || !editor || editor.isDestroyed) return;
+
+    switch (pendingInsert.mode) {
+      case 'append':
+        editor.chain().focus('end')
+          .insertContent(pendingInsert.content, { contentType: 'markdown' })
+          .run();
+        break;
+      case 'cursor':
+        editor.chain().focus()
+          .insertContent(pendingInsert.content, { contentType: 'markdown' })
+          .run();
+        break;
+      case 'replace':
+        if (!editor.state.selection.empty) {
+          const { from, to } = editor.state.selection;
+          editor.chain().focus()
+            .insertContentAt({ from, to }, pendingInsert.content, { contentType: 'markdown' })
+            .run();
+        } else {
+          // Fallback to append if no selection
+          editor.chain().focus('end')
+            .insertContent(pendingInsert.content, { contentType: 'markdown' })
+            .run();
+        }
+        break;
+    }
+    clearPendingInsert();
+  }, [pendingInsert]); // eslint-disable-line react-hooks/exhaustive-deps — intentionally only on pendingInsert change
 
   // Cleanup: flush save on unmount
   useEffect(() => {
