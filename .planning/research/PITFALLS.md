@@ -1,474 +1,473 @@
-# Pitfalls Research: AI Writing System for Froggo Dashboard
+# Domain Pitfalls: v2.1 Writing UX Redesign
 
-**Domain:** AI-collaborative long-form writing module (memoirs/novels) inside existing Electron dashboard
-**Researched:** 2026-02-12
-**Overall Confidence:** HIGH (verified against existing codebase, TipTap GitHub issues, Electron docs)
+**Domain:** Adding AI-powered setup wizard, 3-pane layout, and conversational content generation to existing TipTap writing module
+**Researched:** 2026-02-13
+**Overall Confidence:** HIGH (verified against existing codebase + TipTap docs + community issues)
+**Scope:** Pitfalls specific to ADDING these features to the existing v2.0 system. See v2.0 PITFALLS for foundational pitfalls (TipTap memory leaks, CSS scoping, etc.) which were already addressed.
 
 ---
 
-## Critical Pitfalls (will definitely bite you)
+## Critical Pitfalls
 
-### C1: TipTap Memory Leak on Editor Destroy (React)
+### C1: Setup Wizard AI Produces Unstructured or Inconsistent Data
 
-**What goes wrong:** TipTap stores `dom.editor = this` on the root DOM element, creating a circular reference that prevents garbage collection when the editor is destroyed. In a dashboard where users navigate between writing and other panels, the editor component mounts/unmounts repeatedly. Each mount leaks the entire editor instance, ProseMirror state, and document content. With 10k+ word chapters, this means tens of megabytes leaked per navigation.
+**What goes wrong:** The setup wizard is a multi-turn AI conversation that must produce structured output (chapter outline, characters, timeline events, story arc). The existing `createProject()` in `writing-project-service.ts` creates a bare project with just `{id, title, type}`. The wizard needs to populate `chapters.json`, `memory/characters.json`, `memory/timeline.json`, and potentially a new `project.json` with story arc data -- all from free-form AI conversation. Without structured output enforcement, the AI returns prose descriptions instead of parseable data structures. Each turn may contradict previous turns. The user says "actually, change the protagonist's name" and the AI acknowledges it in text but the previously-extracted character JSON still has the old name.
 
 **Warning signs:**
-- Memory usage climbs steadily as user switches between Writing panel and other panels (Kanban, Chat, etc.)
-- Electron renderer process exceeds 500MB after 30 minutes of use
-- `performance.memory.usedJSHeapSize` grows monotonically
+- Wizard completes but `characters.json` is empty or has only 1 character when 5 were discussed
+- Chapter titles extracted from conversation don't match what user agreed to
+- Timeline events have inconsistent date formats or missing fields
+- User edits a character during wizard and the final output has both old and new versions
+- `JSON.parse()` failures in the extraction step because AI returned markdown instead of JSON
 
 **Prevention:**
-- Use TipTap v2.5+ which includes the fix (commit: "fix(core): dereference editor from DOM element on destroy")
-- Always call `editor.destroy()` in React `useEffect` cleanup
-- Verify with a test: mount editor, unmount, force GC, check heap snapshot -- the editor should be collected
-- Consider keeping the editor mounted but hidden (CSS `display: none`) rather than unmounting when switching panels, to avoid the mount/unmount cycle entirely
+- Do NOT parse free-form conversation into structured data at the end. Instead, maintain a running "wizard state" object that is updated after each AI turn using structured output extraction (tool calls or JSON schema enforcement)
+- Use the OpenClaw gateway's existing `sendChatWithCallbacks` pattern but add a post-processing step after each `onEnd` that extracts structured updates from the AI response
+- Define a clear schema for wizard state: `{ title, type, storyArc, chapters: [{title, summary}], characters: [{name, relationship, traits}], timeline: [{date, description}] }`
+- Show the user a live preview of extracted structure alongside the conversation (e.g., a sidebar showing "Chapters so far: 1. X, 2. Y") so they can catch extraction errors in real-time
+- On wizard completion, validate the final structure before writing to disk. If validation fails, show the user what's missing and let them fix it in a form, not by continuing the AI conversation
+- Consider using Claude's tool-use capability: define tools like `update_chapter_outline`, `add_character`, `modify_character` that the AI calls during conversation, producing guaranteed-schema output
 
-**Which phase:** Phase 1 (Foundation). Get this right from day one or every later phase compounds the leak.
+**Which phase:** Setup Wizard phase. This is the core technical challenge of the wizard.
 
-**Confidence:** HIGH -- verified via [TipTap issue #5654](https://github.com/ueberdosis/tiptap/issues/5654) and [issue #538](https://github.com/ueberdosis/tiptap/issues/538)
+**Confidence:** HIGH -- verified via [OpenAI Structured Outputs docs](https://platform.openai.com/docs/guides/structured-outputs) and [Agenta's guide to structured outputs](https://agenta.ai/blog/the-guide-to-structured-outputs-and-function-calling-with-llms). The problem of LLMs producing inconsistent JSON is well-documented across all providers.
 
 ---
 
-### C2: TipTap + React Re-render Storm Kills Typing Performance
+### C2: Focus War Between Chat Pane and TipTap Editor
 
-**What goes wrong:** By default, TipTap re-renders the React component tree on EVERY transaction -- every keystroke, every caret movement, every selection change. In the existing dashboard, store.ts (1347 lines) uses Zustand with a flat structure. If the writing module's state (current chapter, cursor position, word count, AI feedback panel state) lands in the same store, a keystroke in the editor triggers re-renders across unrelated dashboard components. On a 10k-word chapter, typing becomes visibly laggy (1s+ per keystroke reported in [issue #4491](https://github.com/ueberdosis/tiptap/issues/4491)).
+**What goes wrong:** The v2.1 3-pane layout places an AI chat input directly alongside the TipTap editor. The existing `ChapterEditor.tsx` uses `BubbleMenu` (line 131-147) which shows/hides based on text selection state. When the user clicks the chat input to type a message, the editor loses focus, the selection collapses, and the BubbleMenu disappears. Worse, when the user clicks back into the editor, TipTap's focus behavior in Firefox restores the cursor to the *last known position* rather than where they clicked ([TipTap issue #5980](https://github.com/ueberdosis/tiptap/issues/5980)). The existing `FeedbackPopover.tsx` already has a workaround for this (`onMouseDown={(e) => e.preventDefault()}` at line 409 and `savedSelection` state at lines 249-250), but a persistent chat pane cannot use `preventDefault` on every interaction -- the user needs to actually type in the chat input.
 
 **Warning signs:**
-- Typing lag that gets worse as document grows
-- React DevTools showing 50+ component re-renders per keystroke
-- CPU spikes on every keypress in the Performance tab
+- User highlights text in editor, clicks chat pane to ask about it, selection disappears
+- BubbleMenu flickers or vanishes when chat input receives focus
+- After using chat, clicking back into editor puts cursor at wrong position
+- User can't copy text from editor and reference it in chat -- selection is lost on focus change
+- Existing inline feedback stops working because BubbleMenu's `shouldShow` returns false when editor isn't focused
 
 **Prevention:**
-- Set `shouldRerenderOnTransaction: false` on the TipTap editor (default in v3.0+, must be explicit in v2.x)
-- Use `useEditorState()` hook for components that need editor state, not the editor instance directly
-- Create a SEPARATE Zustand store for writing state (`useWritingStore`) -- do NOT merge into existing `store.ts`
-- Use Zustand selectors everywhere: `useWritingStore(s => s.wordCount)` not `useWritingStore()`
-- Avoid `ReactNodeViewRenderer` for custom nodes if possible -- it creates React-managed DOM nodes inside ProseMirror's DOM, which is expensive at scale
+- Use TipTap's Focus extension to keep selection visually highlighted even when editor loses focus. The existing `ChapterEditor.tsx` does not import this extension
+- Store editor selection in writingStore (`lastEditorSelection: {from, to}`) on every selection change. When chat needs to reference selected text, read from store, not from live editor state
+- Make BubbleMenu's `shouldShow` check the stored selection, not just `editor.state.selection.empty`. This decouples BubbleMenu visibility from DOM focus
+- For the chat pane: when the user clicks "insert into editor" on an AI response, restore focus with `editor.chain().focus().insertContentAt(storedSelection, content).run()`
+- Consider making BubbleMenu and chat pane mutually exclusive: if chat pane is open and visible, suppress BubbleMenu entirely and show a "selected text" indicator in the chat pane instead. This eliminates the focus conflict
+- Test explicitly in Firefox (existing bug with focus restoration)
 
-**Which phase:** Phase 1 (Foundation). Architecture decision that cannot be retrofitted.
+**Which phase:** 3-Pane Layout phase. Must be solved before chat-to-editor content flow works.
 
-**Confidence:** HIGH -- verified via [TipTap performance docs](https://tiptap.dev/docs/guides/performance), [React performance demo](https://tiptap.dev/docs/examples/advanced/react-performance), [TipTap 2.5 release notes](https://tiptap.dev/blog/release-notes/say-hello-to-tiptap-2-5-our-most-performant-editor-yet)
+**Confidence:** HIGH -- verified via [TipTap Focus extension docs](https://tiptap.dev/docs/editor/extensions/functionality/focus), [TipTap issue #4963](https://github.com/ueberdosis/tiptap/discussions/4963) (keeping selection visible when focus leaves), [TipTap issue #5980](https://github.com/ueberdosis/tiptap/issues/5980) (Firefox cursor bug), and the existing `FeedbackPopover.tsx` which already demonstrates this exact problem.
 
 ---
 
-### C3: Adding More IPC Handlers to the 7451-Line main.ts Monolith
+### C3: Chat-to-Editor Content Insertion Corrupts Document or Undo History
 
-**What goes wrong:** `electron/main.ts` is already 7451 lines with 238 `ipcMain` references. The writing module needs file operations (read/write chapters, version management, project metadata), AI streaming, and autosave -- easily 30-50 more IPC handlers. Adding these to main.ts makes it even harder to maintain, increases the chance of naming collisions (e.g., `fs:readFile` already exists in preload.ts for a different purpose), and makes the file nearly impossible to review in PRs.
+**What goes wrong:** The conversational writing flow means AI generates prose in the chat pane, and the user clicks "Insert" to add it to the editor. The naive implementation calls `editor.commands.insertContent(aiHtml)`. Problems: (1) If the AI output contains HTML that doesn't conform to the TipTap schema, it is silently dropped (the v2.0 PITFALLS C4 schema issue). (2) The insertion lands at whatever position the cursor happens to be at, which may not be where the user intended. (3) The insertion is a single undo step, but if the AI generated 3 paragraphs, the user can't undo just one paragraph. (4) If the user was in the middle of typing when they click "Insert", the insertion splits their current paragraph. (5) The existing autosave (`AUTOSAVE_DELAY = 1500ms` in `ChapterEditor.tsx` line 15) fires during or immediately after insertion, potentially saving a half-inserted state.
 
 **Warning signs:**
-- main.ts exceeds 8000 lines
-- Multiple developers can't work on Electron handlers without merge conflicts
-- Debugging any IPC issue requires reading through thousands of lines
-- Handler naming starts getting creative to avoid collisions (`writing:fs:readFile` vs `fs:readFile`)
+- AI generates a heading + 3 paragraphs in chat, user clicks Insert, only 2 paragraphs appear (schema stripped the heading because it was nested wrong)
+- Content inserts in the middle of a sentence because cursor was positioned there
+- Ctrl+Z after accepting AI content undoes the entire multi-paragraph insertion as one atomic operation, or worse, undoes only part of it
+- Autosave triggers between individual insertContentAt commands if insertion is done in multiple steps
+- Content appears without proper paragraph breaks (AI HTML has `<br>` but TipTap expects `<p>` nodes)
 
 **Prevention:**
-- Create `electron/writing-service.ts` as a separate module with all writing-related IPC handlers
-- Register handlers from main.ts with a single import: `import { registerWritingHandlers } from './writing-service'`
-- Follow the existing pattern from `x-automations-service.ts` and `calendar-service.ts` which already use this modular approach
-- Namespace all writing IPC channels: `writing:*` prefix
+- Parse AI HTML through TipTap's schema BEFORE insertion: create a temporary editor instance or use `editor.schema.nodeFromJSON()` to validate. Show the user a preview of what will be inserted
+- Always insert at a well-defined position: end of current chapter, after current paragraph, or at a user-placed "insertion marker". Never insert at raw cursor position
+- Wrap the insertion in a single ProseMirror transaction with a descriptive label for undo: `editor.chain().focus().insertContentAt(position, content, {updateSelection: true}).run()`
+- Auto-save the version BEFORE AI insertion (call `writing:version:save` with label "Before AI insert") so the user can always restore
+- Sanitize AI HTML: strip any elements not in the TipTap schema, convert `<br>` to paragraph breaks, normalize heading levels
+- For multi-paragraph insertions, insert as a single content block, not paragraph-by-paragraph. TipTap's `insertContent` handles arrays: `editor.commands.insertContent([{type: 'paragraph', content: ...}, ...])`
 
-**Which phase:** Phase 1 (Foundation). The module boundary must be established before writing any handlers.
+**Which phase:** Conversational Writing Flow phase. This is the most complex interaction in the entire redesign.
 
-**Confidence:** HIGH -- verified by reading the actual codebase. The pattern already exists (see `registerXAutomationsHandlers` imported in main.ts line 15).
+**Confidence:** HIGH -- verified via [TipTap insertContent docs](https://tiptap.dev/docs/editor/api/commands/content/insert-content), [TipTap content streaming discussion #5563](https://github.com/ueberdosis/tiptap/discussions/5563), and existing `FeedbackPopover.tsx` `handleAccept()` (line 364-380) which already demonstrates the insertion pattern but for small text replacements, not multi-paragraph blocks.
 
 ---
 
-### C4: Schema-Enforced Content Loss in Markdown Round-Trips
+### C4: Existing 2-Pane Layout Code Fights the New 3-Pane Layout
 
-**What goes wrong:** ProseMirror enforces a strict document schema. Content that doesn't conform to the schema is SILENTLY DROPPED. When converting Markdown to TipTap's internal representation and back, certain constructs get lost: nested formatting (bold inside italic inside link), HTML embedded in markdown, custom syntax, footnotes, some table structures. For a memoir/novel project, losing a paragraph because of an unusual markdown construct is catastrophic.
+**What goes wrong:** The current `ProjectEditor.tsx` renders a 2-pane layout: `ChapterSidebar` (fixed 256px via `w-64`) + editor (flex-1). The `ContextPanel` and `VersionPanel` are toggled with state and render conditionally as additional panes (lines 66-67). The v2.1 redesign adds a persistent chat pane as the middle column, making it chapters | chat | editor. But the existing code treats the right-side panels (`ContextPanel`, `VersionPanel`) as overlays that are mutually exclusive (lines 16-17: toggling one closes the other). Attempting to add a chat pane to this architecture means: (1) The chat pane competes with ContextPanel/VersionPanel for right-side space, (2) The `flex-1` on the editor div (line 27) doesn't account for a fixed-width or resizable chat pane, (3) The panel toggle buttons (lines 39-64) are positioned `absolute top-2 right-2` inside the editor div and will overlap with the new pane boundary.
 
 **Warning signs:**
-- User pastes content from another editor and some formatting disappears
-- Saving and reopening a chapter produces slightly different content
-- Markdown files on disk don't match what the editor shows
-- Automated tests comparing "save then load" show diffs
+- Chat pane and ContextPanel render on top of each other
+- Editor width calculation is wrong -- content area is too narrow or overflows
+- Panel toggle buttons float over the chat pane
+- Opening VersionPanel closes the chat pane (because of the mutual exclusion logic)
+- On narrow screens, the 3-pane layout crushes all panes to unusable widths
 
 **Prevention:**
-- Store content as TipTap JSON (ProseMirror document tree), NOT as markdown. Markdown is for export/import only
-- Define the schema up front and test all supported constructs before building features on top
-- Write automated roundtrip tests: create document in editor -> serialize -> deserialize -> compare
-- When importing markdown, show a preview diff to the user before committing
-- Use `@tiptap/pm/markdown` or `tiptap-markdown` for conversion, but treat it as lossy and warn users
-- Never auto-convert user's existing markdown files without explicit confirmation
+- Replace the current layout architecture entirely rather than bolting onto it. The current `ProjectEditor.tsx` is only 70 lines -- it's cheap to rewrite
+- Use `react-resizable-panels` (by Brian Vaughn) for the 3-pane layout. It handles min/max constraints, persistence, keyboard accessibility, and resize handles. The existing code uses no resizing library
+- Define clear layout structure: `PanelGroup direction="horizontal"` with 3 panels: chapters (min 180px, default 240px, collapsible), chat (min 280px, default 35%), editor (min 300px, default 50%)
+- Move ContextPanel and VersionPanel into the editor pane as tabs/drawers, not as additional flex children of the root layout. The 3-pane layout is chapters | chat | editor+context
+- Remove the mutual exclusion logic between ContextPanel and VersionPanel -- they should be tabs within the editor's right section, not competing panes
+- Set `minSize` constraints on all panels to prevent the TipTap editor from being crushed below its minimum usable width (~300px)
+- Persist panel sizes to localStorage so users don't have to re-resize every session
 
-**Which phase:** Phase 1 (Foundation). Storage format is the most fundamental decision and cannot be changed later without data migration.
+**Which phase:** 3-Pane Layout phase. This is the foundational layout change that everything else sits on top of.
 
-**Confidence:** HIGH -- verified via [TipTap FAQ](https://tiptap.dev/docs/guides/faq), [TipTap Schema docs](https://tiptap.dev/docs/editor/core-concepts/schema), [tiptap-markdown npm](https://www.npmjs.com/package/tiptap-markdown)
+**Confidence:** HIGH -- verified by reading `ProjectEditor.tsx` (the actual code) and [react-resizable-panels docs](https://github.com/bvaughn/react-resizable-panels). Known issues with dynamic panels: [issue #372](https://github.com/bvaughn/react-resizable-panels/issues/372), [issue #323](https://github.com/bvaughn/react-resizable-panels/issues/323).
 
 ---
 
-## High Risk Pitfalls (likely to encounter)
+## High Risk Pitfalls
 
-### H1: AI Streaming Responses Cause Cursor Jumps and Edit Conflicts
+### H1: Wizard State Lost on Navigation or App Restart
 
-**What goes wrong:** When AI generates inline suggestions or rewrites, the streaming response inserts tokens into the document while the user may still be typing nearby. ProseMirror tracks positions as integer offsets from the start of the document. Inserting content at position X shifts all positions after X. If the user's cursor is at position X+50, it jumps to X+50+insertedLength. Worse, if the user types during an AI insertion, their keystroke targets the wrong position.
+**What goes wrong:** The setup wizard is a multi-turn AI conversation that might take 10-30 minutes. The user is 15 turns into planning their book structure when they accidentally click the sidebar to check a task on the Kanban board. The current `WritingWorkspace.tsx` checks `activeProjectId` and renders either `ProjectSelector` or `ProjectEditor` -- there is no concept of a "wizard in progress" state. Navigating away from the writing panel destroys the wizard component and all accumulated state. Similarly, if the Electron app crashes or the user quits, the wizard conversation and extracted structure are lost.
 
 **Warning signs:**
-- User's cursor teleports to unexpected location during AI response
-- Characters appear in the wrong place while AI is streaming
-- Document corruption: AI output interleaved with user keystrokes
-- Undo stack becomes nonsensical (undoing one character undoes an AI paragraph)
+- User navigates away from writing panel and returns to find wizard reset to step 1
+- App crash during wizard loses 20 minutes of planning conversation
+- User clicks "Back to projects" and wizard state is gone with no confirmation dialog
+- Wizard conversation history (the AI messages) cannot be resumed because the gateway session was single-use
 
 **Prevention:**
-- NEVER stream AI responses directly into the user's editing position. Use a separate "suggestion panel" or "ghost text" that the user explicitly accepts
-- If inserting into the document, use ProseMirror's `Mapping` to track position changes across transactions
-- Buffer the complete AI response, then insert atomically as a single transaction
-- Use TipTap's built-in `streamContent` command with `updateSelection: false` if streaming is required
-- Wrap AI insertions in a distinct transaction group so they undo as a single unit
-- Consider a read-only "AI suggestion" mark/decoration that renders inline but isn't part of the editable content until accepted
+- Persist wizard state to disk after every AI turn. Use a `wizard-state.json` file in the project directory: `~/froggo/writing-projects/{projectId}/wizard-state.json`
+- The wizard state should include: current step, accumulated structured data (chapters, characters, etc.), conversation history (messages array), and wizard completion status
+- On mount, check if `wizard-state.json` exists and is incomplete -- offer to resume
+- Use the gateway session key pattern: `agent:writer:writing:{projectId}:wizard`. The OpenClaw gateway preserves session history, so resuming the session key resumes the conversation context
+- Add an "are you sure?" confirmation when navigating away from an in-progress wizard
+- Mark the project as `status: 'setup'` in `project.json` so the UI knows to show the wizard instead of the editor when opening this project
+- On wizard completion, delete `wizard-state.json` and update project status to `'active'`
 
-**Which phase:** Phase 2 (AI Feedback Loop). This is the core interaction and must be designed carefully.
+**Which phase:** Setup Wizard phase. Must be designed into the wizard from the start, not bolted on.
 
-**Confidence:** MEDIUM -- based on ProseMirror position tracking model (well-documented) and [TipTap streamContent API](https://tiptap.dev/docs/content-ai/capabilities/text-generation/stream), but specific implementation details depend on exact UI design.
+**Confidence:** HIGH -- the navigation pattern is verified by reading `WritingWorkspace.tsx` (which has no wizard state awareness) and `writingStore.ts` (which has no persistence for in-progress creation state).
 
 ---
 
-### H2: Context Window Mismanagement for Long Documents
+### H2: Gateway Session Key Collision Between Chat Pane and Inline Feedback
 
-**What goes wrong:** A 1000-page novel is ~250k-500k tokens. Even with Claude's 200k context window, you cannot send the whole book for feedback on a single paragraph. Teams typically make one of two mistakes: (1) send too little context (just the paragraph) and get generic, plot-inconsistent feedback, or (2) send too much context (entire book) and get high latency + high cost + degraded quality (LLMs perform worst on information in the middle of long contexts).
+**What goes wrong:** The existing `FeedbackPopover.tsx` uses session keys like `agent:writer:writing:{projectId}` (line 258). The new chat pane will also need a gateway session for conversational writing. If both use the same session key pattern, they share conversation history. This means: (1) The inline feedback prompt pollutes the chat conversation context, (2) The chat conversation's instructions about "write chapter 3" appear when the user next highlights text for inline feedback, (3) The gateway's `chat.history` returns an interleaved mess of feedback requests and chat messages. The existing `FeedbackPopover` already switches agents (writer/researcher/jess) on the same session pattern, which somewhat works because each agent gets its own session key. But the chat pane might use the same agents.
 
 **Warning signs:**
-- AI feedback contradicts established character traits or plot points
-- AI suggestions are generic ("Show, don't tell") rather than specific to the narrative
-- API costs spike because entire chapters are sent for single-sentence feedback
-- Response latency exceeds 30 seconds, breaking the writing flow
+- User asks for feedback on a paragraph, and the AI response references a previous chat conversation about chapter structure
+- Chat pane shows inline feedback exchanges in its history
+- Switching agents in the chat pane resets the session unexpectedly
+- Gateway `sessions.list` shows dozens of stale sessions from both feedback and chat interactions
 
 **Prevention:**
-- Build a hierarchical context system: book outline -> chapter summary -> nearby paragraphs -> selected text
-- Store per-character, per-location, per-plot-thread summaries in a "memory store" (SQLite table)
-- Send context in layers: system prompt (book metadata + character sheet) + RAG (relevant memory entries) + local context (surrounding 2-3 paragraphs) + selected text
-- Set a token budget per request (e.g., 8k context + 2k response) and let the context builder prioritize
-- Track which context was sent so the user can see "AI knows about: [characters A, B], [chapters 1-3 summary]"
-- Let users pin context manually ("Always include this when reviewing chapter 5")
+- Use distinct session key namespaces: `agent:{agent}:writing:{projectId}:feedback` for inline feedback and `agent:{agent}:writing:{projectId}:chat` for the chat pane
+- Update the existing `FeedbackPopover.tsx` session key (line 258) to include the `:feedback` suffix
+- Consider whether the chat pane should maintain a single persistent session per project (carries context across the entire writing session) vs. fresh sessions per interaction (no context bleed). Persistent is better for "write chapter 3" style long conversations
+- The wizard should also have its own session namespace: `agent:{agent}:writing:{projectId}:wizard`
+- Clean up stale sessions: when a project is closed, optionally call `sessions.delete` on the chat session to prevent session buildup
 
-**Which phase:** Phase 3 (Memory & Context). But the data model for memory stores should be designed in Phase 1.
+**Which phase:** 3-Pane Layout phase (when chat pane is created). But the session key refactor of `FeedbackPopover` should happen in the layout phase too, before adding the chat pane.
 
-**Confidence:** HIGH -- verified via [context window management research](https://www.getmaxim.ai/articles/context-window-management-strategies-for-long-context-ai-agents-and-chatbots/), [Datagrid attention analysis](https://datagrid.com/blog/optimize-ai-agent-context-windows-attention), known LLM "lost in the middle" phenomenon.
+**Confidence:** HIGH -- verified by reading `FeedbackPopover.tsx` line 258 and `gateway.ts` `sendChatWithCallbacks` method. The session key pattern is critical to gateway behavior.
 
 ---
 
-### H3: SQLite Contention Between Dashboard and Writing Module
+### H3: AI Chat Generates Content in Wrong Format for TipTap
 
-**What goes wrong:** The existing `database.ts` opens `froggo.db` (26MB, 173 tables) with WAL mode and a prepared statement cache. Adding writing-related tables (projects, chapters, versions, AI feedback, memory stores) to this same database means: (1) autosave writes from the editor compete with task/session reads from other panels, (2) the external `froggo-db` CLI and `agent-dispatcher` also access this file, creating multi-process write contention, (3) large BLOB columns (chapter content as JSON) bloat the main DB file.
+**What goes wrong:** The AI in the chat pane generates prose as markdown (because that is the natural output format of LLMs). But the existing `ChapterEditor.tsx` works with TipTap's internal HTML representation. The existing `saveChapter` stores content as-is (line 329 of `writing-project-service.ts` writes raw content to `.md` files). There is a format mismatch: (1) AI outputs markdown, (2) TipTap expects HTML, (3) Files on disk are `.md` but contain HTML from TipTap. If the chat-to-editor flow naively inserts AI markdown into TipTap, it renders as literal markdown syntax (asterisks visible, hash signs visible). If it converts markdown to HTML first, the conversion may produce HTML that doesn't match TipTap's schema.
 
 **Warning signs:**
-- "database is locked" errors during autosave
-- Dashboard panels (Kanban, Chat) stutter when writing module autosaves
-- froggo.db grows to 100MB+ due to chapter version history
-- WAL checkpoint starvation: `-wal` file grows unbounded because the dashboard holds long-read transactions
+- Inserted text shows raw markdown: `**bold text**` appears literally with asterisks
+- Headings from AI appear as `# Chapter Title` instead of formatted headings
+- Bullet lists from AI appear as lines starting with `- ` instead of actual list items
+- Some markdown constructs (tables, footnotes, code blocks) crash the insertion because TipTap's StarterKit schema doesn't support them
 
 **Prevention:**
-- Create a SEPARATE database file: `writing.db` in the data directory
-- Open it as a separate `better-sqlite3` connection in `database.ts` (follow the lazy pattern used for `scheduleDb` and `securityDb`)
-- Keep WAL mode on both databases
-- Use transactions for autosave (batch chapter content + metadata in one write)
-- Set `busy_timeout` to 5000ms on the writing DB to handle contention gracefully
-- Store chapter content as JSON text, not BLOBs -- better for inspection and debugging
-- Implement periodic vacuuming for the writing DB (version history accumulates)
+- Build a dedicated `markdownToTipTap(markdown: string): string` utility that converts AI markdown to TipTap-compatible HTML. Use a library like `marked` or `markdown-it` for the markdown-to-HTML step, then validate the resulting HTML against TipTap's schema
+- Alternatively, instruct the AI to output HTML directly in the system prompt: "Output content as HTML using only these tags: p, h1-h3, strong, em, ul, ol, li, blockquote, a". This is simpler but less natural for the AI
+- The safest approach: convert AI markdown to a ProseMirror document node using TipTap's markdown extension (`tiptap-markdown`), which handles the schema mapping. But note the v2.0 PITFALLS warning about lossy conversion
+- Whichever approach, write tests that cover: headings, bold, italic, lists, blockquotes, links, and importantly, UNSUPPORTED constructs (tables, code blocks, images) -- verify these degrade gracefully instead of crashing
+- The existing `.md` files on disk already contain HTML (from TipTap's `getHTML()`), not real markdown. Acknowledge this naming inconsistency and either rename to `.html` or document that "`.md` files contain TipTap HTML"
 
-**Which phase:** Phase 1 (Foundation). Database architecture must be decided before any data is written.
+**Which phase:** Conversational Writing Flow phase. But the conversion utility should be built and tested during the 3-Pane Layout phase when the chat pane is being created.
 
-**Confidence:** HIGH -- verified by reading `database.ts` and understanding the multi-process access pattern (dashboard + froggo-db CLI + dispatcher all touch froggo.db).
+**Confidence:** HIGH -- verified by reading `ChapterEditor.tsx` (uses `getHTML()`), `writing-project-service.ts` (stores to `.md` files), and the TipTap StarterKit configuration (lines 62-81 of `ChapterEditor.tsx` which defines the supported schema).
 
 ---
 
-### H4: Tailwind Preflight CSS Strips Editor Formatting
+### H4: Wizard Conversation Doesn't Know About Existing Project Data
 
-**What goes wrong:** Tailwind's Preflight CSS reset strips default styling from all HTML elements: headings become unstyled, lists lose bullets, blockquotes lose styling. Inside a rich text editor, this means the user types a heading and it looks identical to body text. The fix is `@tailwindcss/typography` with `prose` classes, but this can conflict with the existing dashboard's 2967 lines of custom CSS that already override Tailwind defaults.
+**What goes wrong:** If the wizard is designed only for new projects, it works fine. But users will want to "re-plan" or "extend" an existing project -- add new chapters to an existing outline, introduce new characters after writing 5 chapters, restructure the story arc. The wizard AI has no context about what already exists in the project unless it's explicitly provided. The existing memory store (`characters.json`, `timeline.json`, `facts.json`) and chapter list need to be injected into the wizard's system prompt. Without this, the AI suggests characters that already exist, proposes chapters that overlap with written ones, or contradicts established plot points.
 
 **Warning signs:**
-- Headings in the editor look like plain text
-- Bullet lists show no bullets
-- The editor content area looks completely unstyled
-- Applying `prose` class to editor breaks styling in nearby dashboard components
-- Editor toolbar styling conflicts with existing dashboard button styles
+- AI suggests a character named "Sarah" when "Sarah" already exists in `characters.json` with different traits
+- AI proposes 12 chapters when 8 already exist and are partially written
+- Wizard creates duplicate entries in memory stores (two versions of the same character)
+- User asks to "add 3 more chapters" and gets a complete rewrite of the outline
 
 **Prevention:**
-- Scope ALL editor styles under a specific class: `.writing-editor .ProseMirror { ... }`
-- Use `@tailwindcss/typography` but apply `prose` ONLY to the `.ProseMirror` content div, not the wrapper
-- Test with existing dashboard CSS loaded -- the editor must look correct alongside Kanban, Chat, etc.
-- Use TipTap's `editorProps.attributes.class` to apply prose classes directly to the editor DOM
-- Create `src/writing-editor.css` as a scoped stylesheet imported only by the writing module
-- Verify that the existing `--clawd-*` CSS variables don't conflict with prose plugin colors
+- Build the wizard to work in two modes: "new project" (blank slate) and "extend project" (existing context)
+- For "extend project" mode, inject existing data into the system prompt:
+  - Project title and type from `project.json`
+  - Existing chapter titles and word counts from `chapters.json`
+  - All characters from `memory/characters.json`
+  - Timeline from `memory/timeline.json`
+  - Key facts from `memory/facts.json`
+- Format this context clearly: "This project already has the following structure: [chapters], [characters], [timeline]. The user wants to extend/modify this."
+- When the wizard produces updates, use UPSERT logic for characters (match by name, update if exists, create if new) rather than blind INSERT
+- For chapters, distinguish between "proposed new chapters" and "existing chapters" in the wizard state
 
-**Which phase:** Phase 1 (Foundation). CSS architecture affects every visual element built afterward.
+**Which phase:** Setup Wizard phase, but specifically the "extend existing project" variant which should be Phase 2 of the wizard (after basic new-project wizard works).
 
-**Confidence:** HIGH -- verified via [TipTap + Tailwind discussion](https://github.com/ueberdosis/tiptap/discussions/2960), [TipTap styling docs](https://tiptap.dev/docs/editor/getting-started/style-editor), and the existing dashboard CSS (2967 lines across 6 files).
+**Confidence:** MEDIUM -- the new project flow is straightforward, but the "extend" flow is where complexity lives. Existing memory store APIs (in `writing-memory-service.ts`) don't have upsert logic -- they only have create/update/delete with explicit IDs.
 
 ---
 
-### H5: Electron Main Process Blocking on File I/O
+## Medium Risk Pitfalls
 
-**What goes wrong:** The existing main.ts uses synchronous `fs.readFileSync` in several places and `execSync` for CLI calls. If the writing module follows this pattern for chapter saves (especially large chapters with version snapshots), the Electron main process blocks, freezing the entire UI. A 50k-word chapter serialized to JSON is ~200KB; writing it synchronously takes 5-20ms which seems fine, but combined with version snapshots, project metadata updates, and memory store writes, a save operation could block for 100ms+.
+### M1: Chat Pane Scroll Position Fights with TipTap Editor Scroll
+
+**What goes wrong:** Both the chat pane (message list) and the TipTap editor have independent scroll containers. When the user scrolls in the chat pane, the mouse wheel event might bubble to the editor if the chat reaches its scroll boundary. On macOS with elastic scrolling, overscroll in one pane can appear to move the other. Additionally, when AI generates a response in the chat pane and the chat auto-scrolls to the bottom, this can steal scroll focus from the editor where the user was reading.
 
 **Warning signs:**
-- Brief UI freeze every time autosave triggers
-- "Not responding" in Activity Monitor during large file operations
-- Clicking buttons during save results in delayed response
-- Performance profiler shows main thread blocked on `fs.writeFileSync`
+- User scrolls to the end of chat messages and the editor starts scrolling too
+- Chat auto-scroll after AI response causes visible "jump" in the editor pane
+- Scrolling feels "sticky" at the boundary between panes
+- Trackpad momentum scrolling passes through pane boundaries
 
 **Prevention:**
-- Use async `fs.promises.writeFile` for ALL writing module file operations
-- Debounce autosave to at most once per 5 seconds
-- For version snapshots, write in background: create temp file, then atomic rename
-- Consider using `worker_threads` for heavy serialization (JSON.stringify of large documents)
-- Use `ipcMain.handle` (async) not `ipcMain.on` (can tempt synchronous handling)
-- For the writing DB, `better-sqlite3` is inherently synchronous -- keep transactions small and use WAL mode
+- Ensure both scroll containers have `overflow-y: auto` with no scroll propagation to parent. Use `overscroll-behavior: contain` CSS property on both panes
+- For chat auto-scroll, only auto-scroll if the user was already at the bottom of the chat (track scroll position relative to scrollHeight). If the user scrolled up to read earlier messages, don't auto-scroll
+- Test with macOS trackpad specifically -- elastic/momentum scrolling is the worst case
 
-**Which phase:** Phase 1 (Foundation). I/O patterns are established early and hard to change.
+**Which phase:** 3-Pane Layout phase.
 
-**Confidence:** HIGH -- verified by reading main.ts (uses `readFileSync` and `execSync` in multiple places) and [Electron performance docs](https://www.electronjs.org/docs/latest/tutorial/performance).
+**Confidence:** HIGH -- this is a known issue with any multi-scroll-container layout.
 
 ---
 
-## Medium Risk Pitfalls (watch for these)
+### M2: Wizard Populates Memory Store But Bypasses Existing CRUD Validation
 
-### M1: State Management Pollution Between Writing and Dashboard
-
-**What goes wrong:** The existing `store.ts` is a single Zustand store with connection state, tasks, sessions, agents, approvals, activities, drafts, and gateway listeners -- all mixed together. If writing state (open chapters, editor content, AI conversation history, unsaved changes flag) gets added to this store, every writing-related state change triggers selector re-evaluation across ALL dashboard components. The store also uses `persist` middleware, which would serialize chapter content to localStorage on every change.
+**What goes wrong:** The wizard needs to bulk-create characters, timeline events, and chapters from the AI conversation output. The existing memory service (`writing-memory-service.ts`) has individual CRUD operations: `createCharacter` creates one character at a time, reading the full JSON array, appending, and writing back. If the wizard calls `createCharacter` 8 times in sequence, it reads and rewrites `characters.json` 8 times. Worse, if any single write fails mid-sequence (disk full, permission error), the memory store is left in a partial state with 4 of 8 characters created.
 
 **Warning signs:**
-- localStorage grows to megabytes (chapter content persisted alongside settings)
-- Opening the writing panel slows down Kanban board rendering
-- "Maximum call stack size exceeded" from deep-cloning large chapter content in Zustand immer middleware
-- Dashboard feels slower even when writing panel is closed
+- Wizard completion takes 5+ seconds because of sequential file I/O for each entity
+- Partial wizard state: 5 characters created but 0 timeline events because the timeline write failed
+- Race condition: wizard writes `characters.json` while the ContextPanel is reading it for display
+- Duplicate characters if wizard is re-run after a partial failure
 
 **Prevention:**
-- Create `src/store/writingStore.ts` as a completely separate Zustand store
-- Do NOT use `persist` middleware for document content (use explicit save-to-DB instead)
-- Only persist lightweight writing preferences (last opened project, panel layout)
-- Use React context or a dedicated WritingProvider for editor-specific state
-- Keep the writing store's interface narrow: the dashboard should only know "is there unsaved work?" (for the window close prompt), nothing more
+- Add a bulk-create IPC handler: `writing:memory:bulk-populate` that takes the entire wizard output and writes all files atomically (characters, timeline, facts, chapters) in a single operation
+- Use a transaction pattern: write all files to temp locations first, then rename them all at once. If any write fails, none are committed
+- Add a `writing:project:setup-complete` IPC handler that takes the full wizard output and does everything: create chapters, populate memory, update project metadata
+- Keep the individual CRUD operations for manual editing, but use the bulk operation for wizard output
+- Validate the wizard output against schemas before any writes
 
-**Which phase:** Phase 1 (Foundation).
+**Which phase:** Setup Wizard phase.
 
-**Confidence:** HIGH -- verified by reading store.ts structure and Zustand best practices for [store splitting](https://zustand.docs.pmnd.rs/guides/slices-pattern).
+**Confidence:** HIGH -- verified by reading `writing-memory-service.ts` which does individual file reads/writes with no batch support.
 
 ---
 
-### M2: Undo/Redo Breaks When AI Modifies Document
+### M3: New 3-Pane Layout Breaks on Small Screens and Panel Resize
 
-**What goes wrong:** ProseMirror maintains an undo/redo history as a stack of transactions. When AI inserts, replaces, or restructures content, those changes go onto the same undo stack. If the user writes a paragraph, AI rewrites it, user continues writing, then hits Ctrl+Z -- they might undo their own words and keep the AI rewrite, or undo the AI rewrite and lose their own words. The undo history becomes unpredictable.
+**What goes wrong:** The current layout works at full desktop width because `ChapterSidebar` is fixed at 256px and the editor takes the rest. The 3-pane layout adds a chat pane (minimum ~280px for usable chat), so the minimum total width is ~256 + 280 + 300 = 836px. On a 13" MacBook at default resolution, the window might be 1200px, leaving only ~664px for editor + chat after the sidebar. If the user resizes panels unevenly, the TipTap editor can be crushed to a width where the toolbar wraps, the BubbleMenu doesn't fit, and text is nearly unreadable.
 
 **Warning signs:**
-- Ctrl+Z after AI edit produces unexpected result
-- User cannot "go back" to their version after accepting AI suggestion
-- Undo requires 15+ presses to reverse a single AI operation
-- Users report "I lost my text and can't get it back"
+- Editor toolbar wraps to 2 lines when editor pane is narrow
+- BubbleMenu extends outside the editor pane boundary
+- Text in editor is crushed to 10 words per line
+- Chat pane is too narrow for message bubbles
+- Panels can be resized to 0px width, completely hiding content with no way to restore
 
 **Prevention:**
-- Separate AI changes into their own history group using ProseMirror's `appendTransaction` with history metadata
-- Before any AI modification, save a named snapshot ("Before AI rewrite of paragraph 3")
-- Implement a chapter-level "versions" panel that shows save points, not just undo stack
-- Consider making AI suggestions out-of-band (in a side panel) rather than in-document edits
-- If AI edits in-document, batch all AI changes as a single undo step
+- Set minimum panel widths: sidebar 180px (collapsible to 0), chat 280px, editor 300px
+- Make the sidebar collapsible (with a toggle button) to reclaim space. When collapsed, only show a thin icon strip or nothing
+- Use `react-resizable-panels` which supports `minSize` (as percentage) and `collapsible` props
+- Add a "layout preset" system: "Focus" (sidebar collapsed, chat hidden, editor full), "Write" (sidebar + chat + editor), "Plan" (sidebar + chat, no editor). This lets users switch without manual resizing
+- Persist panel sizes to localStorage so the user's preferred layout survives restarts
+- Test at 1024px window width -- this is the minimum reasonable desktop width
 
-**Which phase:** Phase 2 (AI Feedback Loop).
+**Which phase:** 3-Pane Layout phase.
 
-**Confidence:** MEDIUM -- based on ProseMirror history plugin behavior (well-documented), but exact UX depends on how AI integration is designed.
+**Confidence:** HIGH -- verified via [react-resizable-panels known issues](https://github.com/bvaughn/react-resizable-panels/issues/323) and basic arithmetic on the current layout widths.
 
 ---
 
-### M3: File Watching Conflicts Between Editor and External Agents
+### M4: Chat Session Context Grows Unbounded During Long Writing Sessions
 
-**What goes wrong:** If chapters are stored as files (markdown or JSON), external agents (writer, researcher) might edit them directly. The editor needs to detect these changes and reload, but: (1) fs.watch / chokidar fires duplicate events, (2) the editor's own saves trigger the watcher, creating a feedback loop, (3) if both the editor and an agent write simultaneously, one overwrites the other.
+**What goes wrong:** The chat pane maintains a persistent gateway session for the writing conversation. Over a 4-hour writing session, the user sends 50+ messages to the AI. The OpenClaw gateway accumulates the full conversation history in the session. Each message includes the system prompt with chapter context, memory context, and the AI's response. After 50 exchanges, the session context could exceed 200k tokens, causing: (1) API errors from exceeding context limits, (2) Degraded AI quality (lost-in-the-middle effect), (3) Slow response times, (4) High token costs.
 
 **Warning signs:**
-- Chapter content reverts to a previous version after agent edit
-- Editor reloads in a loop (save triggers watch, watch triggers reload, reload triggers save)
-- "File has been modified externally" dialog appearing constantly
-- Agent's edits silently overwritten by the next autosave
+- AI responses get slower over a long session (>15 messages)
+- AI "forgets" instructions from early in the conversation
+- Gateway returns error about token limits
+- Token usage per message increases over time (visible in analytics)
 
 **Prevention:**
-- Use SQLite (writing.db) as the canonical store instead of flat files -- eliminates file watching entirely
-- If files are needed for agent access, use a "last-write-wins with notification" model:
-  - Store a `last_modified_by` field
-  - On conflict, show both versions and let user merge
-- Debounce file watch events (ignore events within 1s of own writes)
-- Set a "write lock" flag when the editor has unsaved changes to warn agents
-- Better: have agents write to a "suggestions" table in the DB, not directly to chapter content
+- Don't rely on the gateway's built-in session history for long conversations. Instead, manage context explicitly
+- Build a "conversation summarizer" that periodically (every 10 messages) creates a summary of the conversation so far and starts a fresh session with that summary as context
+- Set a maximum conversation length (e.g., 20 messages) and auto-summarize when exceeded
+- Show the user a "context indicator" (e.g., "AI remembers last 15 messages") so they understand the limitation
+- For each message, explicitly construct the context: system prompt + conversation summary + last N messages + current chapter excerpt. Don't let the gateway auto-accumulate
+- Consider using the existing feedback pattern: each message is a standalone request with full context, rather than a persistent conversation. This is simpler but loses conversational flow
 
-**Which phase:** Phase 2-3 (AI Feedback + Multi-Agent). But the storage architecture decision (DB vs files) happens in Phase 1.
+**Which phase:** Conversational Writing Flow phase.
 
-**Confidence:** MEDIUM -- depends on whether flat files or DB storage is chosen.
+**Confidence:** MEDIUM -- depends on how the OpenClaw gateway handles session history truncation (may already have built-in limits, but the existing `gateway.ts` has a 180-second timeout per request which suggests it expects bounded interactions, not long sessions).
 
 ---
 
-### M4: Navigation and Routing Conflicts
+### M5: Existing `writingStore.ts` State Shape Doesn't Support 3-Pane Layout
 
-**What goes wrong:** The existing App.tsx uses a simple `useState<View>` for navigation with a flat view type union (24 views currently). Adding the writing module introduces nested navigation (project list -> project -> chapter -> editor) that doesn't fit the flat model. Attempting to shoehorn it produces URL-less navigation that breaks back/forward, can't deep-link to a specific chapter, and loses context on panel switch.
+**What goes wrong:** The current `writingStore.ts` tracks: projects list, active project, active chapter ID/content, chapter loading/dirty state. The 3-pane layout needs additional state: chat messages, chat input, chat streaming state, wizard state, panel sizes, layout mode, insertion preview, selected text for chat reference. If all this lands in `writingStore`, the store becomes bloated and every chat keystroke triggers re-renders in the chapter sidebar and editor through Zustand's subscription mechanism.
 
 **Warning signs:**
-- User navigates to Chapter 5, switches to Kanban, switches back -- lands on project list instead of Chapter 5
-- No way to "bookmark" or deep-link to a specific chapter
-- Writing panel needs its own breadcrumb/back navigation that fights with the dashboard sidebar
+- Typing in chat input causes visible re-render flicker in the chapter sidebar
+- Store has 40+ state fields and 20+ actions
+- Multiple components subscribe to the whole store instead of selectors
+- Chat state persistence conflicts with chapter state persistence
 
 **Prevention:**
-- Treat the writing module as a single View (`writing`) in App.tsx, but manage sub-navigation internally
-- Store writing navigation state in the writing store: `{ projectId, chapterId, view: 'list' | 'editor' | 'outline' }`
-- Persist the writing navigation state so switching panels and back restores position
-- Don't add 10 new entries to the View type -- add one and let the writing module handle its own routing
+- Create separate stores for each pane's local state:
+  - `writingStore.ts` -- project/chapter state (already exists)
+  - `chatStore.ts` -- chat messages, input, streaming state, session management
+  - `wizardStore.ts` -- wizard step, accumulated structure, conversation history
+- Share cross-cutting state through a thin coordination layer, not by merging stores. Example: "current chapter ID" lives in `writingStore`, and `chatStore` reads it via `useWritingStore(s => s.activeChapterId)` to contextualize chat requests
+- The existing `feedbackStore.ts` is a good pattern -- it's small, focused, and independent. Follow this pattern for new stores
+- Use Zustand selectors religiously: `useChatStore(s => s.messages)` not `useChatStore()`
 
-**Which phase:** Phase 1 (Foundation).
+**Which phase:** 3-Pane Layout phase (when creating the chat pane). But the store architecture decision should be made before writing any chat component code.
 
-**Confidence:** HIGH -- verified by reading App.tsx (line 44) and the existing View type pattern.
+**Confidence:** HIGH -- verified by reading `writingStore.ts` (269 lines, already substantial) and `feedbackStore.ts` (51 lines, good example of focused store).
 
 ---
 
-### M5: ProseMirror Large Document Lag with Custom Node Views
+## Integration-Specific Pitfalls
 
-**What goes wrong:** If you use `ReactNodeViewRenderer` for custom blocks (AI feedback annotations, inline comments, track changes markers), each custom node creates a React component inside ProseMirror's DOM. With 100+ AI feedback markers across a 10k-word chapter, you have 100+ React component trees being mounted, updated, and reconciled on every transaction. This is the documented cause of [TipTap issue #4492](https://github.com/ueberdosis/tiptap/issues/4492).
+### I1: Wizard Output Doesn't Match Existing `createProject` / `createChapter` Flow
 
-**Warning signs:**
-- Editor becomes sluggish as more AI annotations are added
-- Performance is fine with 5 annotations but terrible with 50
-- React DevTools shows NodeView components re-rendering constantly
-- Memory usage grows with annotation count
+**What goes wrong:** Currently, `ProjectSelector.tsx` calls `createProject(title, type)` which creates a bare project directory structure. Then `ChapterSidebar.tsx` calls `createChapter(title)` one at a time. The wizard needs to do both in one atomic operation: create project with all chapters, characters, and timeline pre-populated. But the existing IPC handlers are designed for incremental, user-driven creation. The wizard would need to call `createProject`, then call `createChapter` N times, then call `createCharacter` M times -- a sequence of 20+ IPC round-trips that can fail partway through.
 
 **Prevention:**
-- Use ProseMirror Decorations (lightweight DOM manipulations) instead of ReactNodeViewRenderer for annotations
-- If React components are needed for annotation UI, render them in a separate overlay positioned absolutely, not inside the ProseMirror DOM
-- Limit the number of visible annotations (collapse/hide resolved ones)
-- Use `shouldUpdate` in NodeView to prevent unnecessary re-renders
-- Benchmark with realistic annotation density early (50+ per chapter)
+- Create a new IPC handler: `writing:project:create-from-wizard` that takes the full wizard output and creates everything in one call
+- This handler should: create project dir, write `project.json` with enhanced metadata (story arc, themes), write `chapters.json` with all chapters, create all chapter `.md` files (empty or with AI-generated content), write `memory/characters.json`, write `memory/timeline.json`
+- Return success only if everything was created. On any failure, clean up partial state (delete the project directory)
+- Keep the existing `createProject` for manual creation (for users who don't want the wizard)
+- The `ProjectSelector.tsx` should offer two paths: "New Project" (existing manual flow) and "New Project with AI" (wizard flow)
 
-**Which phase:** Phase 2 (AI Feedback Loop). But the annotation rendering strategy should be decided in Phase 1.
+**Which phase:** Setup Wizard phase.
 
-**Confidence:** HIGH -- verified via [TipTap issue #4492](https://github.com/ueberdosis/tiptap/issues/4492) and [ProseMirror performance discussions](https://discuss.prosemirror.net/t/need-help-to-improve-editor-performance/8860).
+**Confidence:** HIGH -- verified by reading the existing creation flow in `writing-project-service.ts` and `writingStore.ts`.
 
 ---
 
-### M6: Preload.ts Bridge Becomes Unmaintainable
+### I2: Chat Pane Reuses `gateway.sendChatWithCallbacks` But Needs Different UX Semantics
 
-**What goes wrong:** The existing `preload.ts` is already 607 lines of IPC bridge definitions. Every new IPC handler in the main process needs a corresponding preload bridge entry AND a TypeScript type. With 30-50 new writing handlers, preload.ts grows past 700 lines, type definitions drift out of sync, and developers forget to add the bridge entry (handler works in dev mode but fails in production builds where contextBridge is enforced).
-
-**Warning signs:**
-- "window.clawdbot.writing is undefined" errors in production but not dev
-- Type mismatch between what preload exposes and what renderer expects
-- Preload.ts exceeds 800 lines
-- New developers can't find where to add IPC bridges
+**What goes wrong:** The existing `FeedbackPopover.tsx` uses `gateway.sendChatWithCallbacks` for one-shot request/response interactions (highlight text, send prompt, get alternatives). The chat pane needs a conversational interaction (persistent session, message history, streaming display, user can send follow-ups). The gateway API is the same, but the UX layer is completely different. If the chat pane tries to reuse the FeedbackPopover's pattern, it will: (1) not show conversation history, (2) lose context between messages, (3) not handle the case where the user sends a new message while a previous response is still streaming.
 
 **Prevention:**
-- Create the writing IPC bridge as a separate object and merge it at the preload level:
-  ```typescript
-  // preload-writing.ts
-  export const writingBridge = { ... };
-  // preload.ts
-  import { writingBridge } from './preload-writing';
-  contextBridge.exposeInMainWorld('clawdbot', { ...existingBridge, writing: writingBridge });
-  ```
-- Generate TypeScript types from the bridge definition so they can't drift
-- Write a test that verifies all `ipcMain.handle('writing:*')` channels have corresponding preload entries
+- Build the chat pane's gateway interaction as a new module (`src/lib/writingChat.ts`) that wraps `gateway.sendChatWithCallbacks` with conversational semantics:
+  - Maintains a local message history (array of `{role, content, timestamp}`)
+  - Queues outgoing messages if a response is still streaming
+  - Constructs context-aware prompts that include conversation history
+  - Handles session persistence and resumption
+- Do NOT modify the FeedbackPopover or its gateway interaction -- they serve a different purpose and work well as-is
+- The chat pane should manage its own `runId` tracking (the gateway returns a `runId` from `sendChatWithCallbacks`). The existing gateway already has `runCallbacks` per runId, so concurrent feedback and chat requests won't interfere at the gateway level
 
-**Which phase:** Phase 1 (Foundation).
+**Which phase:** Conversational Writing Flow phase.
 
-**Confidence:** HIGH -- verified by reading preload.ts (607 lines, single monolithic bridge).
+**Confidence:** HIGH -- verified by reading `gateway.ts` `sendChatWithCallbacks` (line 677) and `FeedbackPopover.tsx` `handleSend` (line 244).
 
 ---
 
-## Scope Creep Warnings (specific to this project)
+### I3: Existing `project.json` Schema Lacks Wizard/Setup Metadata
 
-### S1: Building Full Version Control Before Having Content
+**What goes wrong:** The current `ProjectMeta` in `writing-project-service.ts` (line 20) is: `{id, title, type, createdAt, updatedAt}`. The wizard needs to store: story arc, themes, target audience, tone, setting, time period, and wizard completion status. If these are added as new fields to `project.json`, existing projects (created before v2.1) won't have them, causing `undefined` access errors. If a new file is created (e.g., `project-meta.json`), there are now two sources of truth for project metadata.
 
-**The trap:** Engineering a git-like version control system for chapters (branches, merges, diffs, conflict resolution) before anyone has written a single chapter. This is tempting because "1000 pages will need versioning" but premature.
+**Prevention:**
+- Extend `ProjectMeta` with optional fields: `storyArc?: string`, `themes?: string[]`, `tone?: string`, `setting?: string`, `wizardComplete?: boolean`. All new fields must be optional to maintain backward compatibility with existing projects
+- Add a migration check: when `getProject()` loads a project that was created pre-v2.1 (no wizard fields), treat it as `wizardComplete: true` (skip wizard for legacy projects)
+- Validate the extended schema on read: if a field is missing, use a default value rather than crashing
+- Do NOT create a separate metadata file -- keep everything in `project.json` to maintain a single source of truth
 
-**Reality check:** For the first 6 months, the user will have maybe 10-50 chapters. Simple "save snapshot with timestamp" is sufficient. Git-like branching is needed when multiple agents edit simultaneously, which is Phase 4+ territory.
+**Which phase:** Setup Wizard phase (schema extension happens when wizard is built).
 
-**Guideline:** Phase 1 should implement: save current version, list previous versions, restore a version. That's it. No branching, no merging, no diffs.
-
----
-
-### S2: Over-Engineering the Memory Store Before Having Real Content
-
-**The trap:** Building a sophisticated RAG system with vector embeddings, semantic search, character relationship graphs, and plot thread tracking before a single chapter exists. You don't know what metadata matters until real content reveals it.
-
-**Reality check:** Start with manual "character notes" and "plot notes" as structured text fields. Add semantic search later when you have 50+ chapters and can measure what the AI actually needs.
-
-**Guideline:** Phase 1-2: structured text notes (key-value pairs). Phase 3: basic full-text search. Phase 4+: consider embeddings if full-text search proves insufficient.
+**Confidence:** HIGH -- verified by reading the `ProjectMeta` interface in `writing-project-service.ts`.
 
 ---
 
-### S3: Multi-Agent Collaboration Before Single-User Writing Works
+## Scope Creep Warnings (Specific to v2.1)
 
-**The trap:** Designing the system for 5 agents (writer, editor, researcher, fact-checker, style coach) collaborating simultaneously before the basic write-and-get-feedback loop works for one human and one AI.
+### S1: Building a Full Chat UI Framework Instead of a Simple Message List
 
-**Reality check:** The feedback loop between one user typing and one AI responding is the core value proposition. If that interaction is clunky, adding more agents makes it 5x clunkier.
+**The trap:** Building a complete chat system with message editing, deletion, reactions, threading, file attachments, message search, and typing indicators for the writing chat pane. Looking at the existing `ChatPanel.tsx` (the main dashboard chat) and thinking "let's reuse/extend that."
 
-**Guideline:** Phase 1-2: one human, one AI agent. Phase 3: memory stores (still one agent uses them). Phase 4+: multi-agent after the single-agent experience is polished.
+**Reality check:** The writing chat pane is a focused tool for "tell the AI what to write." It needs: a message input, a scrollable message list, streaming response display, and an "insert into editor" button on AI messages. That's it.
 
----
-
-### S4: Building a Custom Markdown Editor Instead of Using TipTap's Built-in Capabilities
-
-**The trap:** Because the project involves markdown files, building a split-pane markdown editor (code on left, preview on right) instead of using TipTap as a WYSIWYG editor with markdown import/export. This is scope creep disguised as a "requirement."
-
-**Reality check:** For memoir/novel writing, WYSIWYG is superior. The user should see formatted text, not markdown syntax. Markdown is a storage/export format, not an authoring interface.
-
-**Guideline:** TipTap as WYSIWYG editor. Markdown import for existing content. Markdown/DOCX export for publishing. Never show raw markdown to the writer.
+**Guideline:** Build the simplest possible chat component. If it works well, iterate. Do NOT import or extend the existing ChatPanel -- it has 15+ features the writing chat doesn't need and carries gateway/session complexity that will pollute the writing module.
 
 ---
 
-### S5: Premature Performance Optimization for 1000 Pages
+### S2: AI-Powered Chapter Ordering and Story Arc Visualization
 
-**The trap:** Building lazy-loading, virtual scrolling, document sharding, and server-side rendering before the editor has loaded its first 10-page chapter. ProseMirror handles 10k-word documents fine without optimization.
+**The trap:** The wizard produces a chapter outline, so naturally the next step is to build an interactive story arc visualization with draggable plot points, tension curves, character appearance tracking, and timeline views.
 
-**Reality check:** Performance optimization is needed when: (a) a single chapter exceeds 50k words (unlikely for typical memoir chapters), or (b) the project index exceeds 500 chapters. Neither will happen in the first 3 months.
+**Reality check:** The existing `ChapterSidebar.tsx` already has drag-and-drop reordering via `@dnd-kit`. A simple numbered list of chapters with "move up/down" is sufficient for the AI-planned outline. Visualization is a v3 feature.
 
-**Guideline:** Optimize when you measure a problem, not when you imagine one. The exception: the React re-render prevention (C2) should be done from day one because it's nearly free and prevents a certain problem.
+**Guideline:** Wizard outputs chapter titles and summaries. They appear in `ChapterSidebar` exactly like manually-created chapters. No new visualization components.
 
 ---
 
-### S6: Rebuilding the Dashboard Shell to Accommodate Writing
+### S3: Real-Time AI Streaming Into the Editor (Ghost Text / Copilot Style)
 
-**The trap:** Deciding that the writing module needs a "different layout" (full-screen, distraction-free, custom sidebar) and rebuilding the App.tsx shell, Sidebar, and TopBar to support multiple layout modes. This cascades into refactoring every existing panel.
+**The trap:** Instead of the chat-then-insert flow, building a Copilot-style inline completion where the AI streams text directly into the editor as the user writes. This was explicitly identified as an anti-feature in the v2.0 research ("AI autocomplete/ghost text -- destroys creative voice") and is listed in PROJECT.md's Out of Scope.
 
-**Reality check:** The writing module should be ONE panel in the existing shell. It renders full-width in its panel area, just like ChatPanel or KanbanPanel. "Distraction-free mode" can be a simple CSS toggle that hides the sidebar, not a new layout system.
+**Reality check:** The v2.1 design is deliberate: AI generates content in the chat pane, user reviews it, then explicitly inserts it. This preserves the user's creative agency. Ghost text bypasses this review step.
 
-**Guideline:** Phase 1: writing module renders inside existing panel system. Phase 2: add a "focus mode" toggle (hides sidebar + topbar via CSS class). Never rebuild the shell.
+**Guideline:** NO ghost text. NO inline streaming. Content always flows: Chat -> Review -> Insert. This is a design principle, not a technical limitation.
+
+---
+
+### S4: Multi-Agent Chat Rooms for Collaborative Planning
+
+**The trap:** The wizard uses one agent, but since there are multiple agents (writer, researcher, jess), building a "planning room" where all three discuss the book structure simultaneously.
+
+**Reality check:** Multi-agent conversations are exponentially harder to manage (who speaks next, conflicting suggestions, UI for 3+ simultaneous streams). The wizard should use one agent (writer) with access to memory/research context. Individual agents can be consulted in separate sessions.
+
+**Guideline:** One agent per conversation. The chat pane has an agent picker (similar to `FeedbackPopover`'s `AgentPicker`). Switching agents starts a new session. No simultaneous multi-agent output.
 
 ---
 
 ## Phase-Specific Risk Summary
 
 | Phase | Highest Risks | Must-Address Pitfalls |
-|-------|--------------|----------------------|
-| Phase 1: Foundation | C1, C2, C3, C4, H3, H4, H5, M1, M4, M6 | Memory leak prevention, separate store, separate DB, separate IPC module, CSS scoping, storage format decision |
-| Phase 2: AI Feedback | H1, H2, M2, M5 | Streaming insertion strategy, context window budgeting, undo history grouping, annotation rendering |
-| Phase 3: Memory & Context | H2 (deepens), S2 | Avoid over-engineering memory stores, start with structured text not vector DB |
-| Phase 4: Multi-Agent | M3, S3 | Agent write coordination, don't build before single-agent works |
-| Phase 5+: Scale | S5 | Optimize only when measured |
+|-------|---------------|----------------------|
+| Setup Wizard | C1, H1, H4, M2, I1, I3 | Structured data extraction from AI conversation, wizard state persistence, bulk creation handler, project schema extension |
+| 3-Pane Layout | C2, C4, M1, M3, M5, H2 | Focus management between chat and editor, layout architecture rewrite, panel sizing, store architecture, session key namespacing |
+| Conversational Writing Flow | C3, H3, M4, I2 | Content insertion format/corruption, markdown-to-TipTap conversion, context window management, chat gateway wrapper |
 
 ---
 
 ## Sources
 
 ### TipTap / ProseMirror
-- [TipTap Memory Leak #5654](https://github.com/ueberdosis/tiptap/issues/5654)
-- [TipTap Memory Leak #538](https://github.com/ueberdosis/tiptap/issues/538)
-- [TipTap Large Document Perf #4491](https://github.com/ueberdosis/tiptap/issues/4491)
-- [TipTap ReactNodeView Perf #4492](https://github.com/ueberdosis/tiptap/issues/4492)
-- [TipTap Performance Guide](https://tiptap.dev/docs/guides/performance)
-- [TipTap React Performance Demo](https://tiptap.dev/docs/examples/advanced/react-performance)
-- [TipTap 2.5 Release (Performance)](https://tiptap.dev/blog/release-notes/say-hello-to-tiptap-2-5-our-most-performant-editor-yet)
-- [TipTap Schema / FAQ (content loss)](https://tiptap.dev/docs/guides/faq)
-- [TipTap Stream Content API](https://tiptap.dev/docs/content-ai/capabilities/text-generation/stream)
-- [TipTap + Tailwind Discussion](https://github.com/ueberdosis/tiptap/discussions/2960)
-- [TipTap Styling Docs](https://tiptap.dev/docs/editor/getting-started/style-editor)
-- [ProseMirror Performance Discussion](https://discuss.prosemirror.net/t/need-help-to-improve-editor-performance/8860)
+- [TipTap Focus Extension](https://tiptap.dev/docs/editor/extensions/functionality/focus)
+- [TipTap BubbleMenu Extension](https://tiptap.dev/docs/editor/extensions/functionality/bubble-menu)
+- [TipTap insertContent Command](https://tiptap.dev/docs/editor/api/commands/content/insert-content)
+- [TipTap streamContent API](https://tiptap.dev/docs/content-ai/capabilities/generation/text-generation/stream)
+- [TipTap Focus in Firefox #5980](https://github.com/ueberdosis/tiptap/issues/5980)
+- [TipTap Selection When Unfocused #4963](https://github.com/ueberdosis/tiptap/discussions/4963)
+- [TipTap Streaming Markdown #5563](https://github.com/ueberdosis/tiptap/discussions/5563)
+- [TipTap Dropdown in BubbleMenu #4145](https://github.com/ueberdosis/tiptap/discussions/4145)
 
-### Electron
-- [Electron Performance Guide](https://www.electronjs.org/docs/latest/tutorial/performance)
-- [Blocking Electron Main Process (Medium)](https://medium.com/actualbudget/the-horror-of-blocking-electrons-main-process-351bf11a763c)
+### Layout
+- [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)
+- [Unstable Multi-Panel Widths #323](https://github.com/bvaughn/react-resizable-panels/issues/323)
+- [Dynamic Panel Adding #372](https://github.com/bvaughn/react-resizable-panels/issues/372)
 
-### Context / AI
-- [Context Window Management Strategies](https://www.getmaxim.ai/articles/context-window-management-strategies-for-long-context-ai-agents-and-chatbots/)
-- [AI Agent Context Window Optimization (Datagrid)](https://datagrid.com/blog/optimize-ai-agent-context-windows-attention)
-- [LLMs with Largest Context Windows](https://codingscape.com/blog/llms-with-largest-context-windows)
+### AI / Structured Output
+- [OpenAI Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs)
+- [Agenta Guide to Structured Outputs](https://agenta.ai/blog/the-guide-to-structured-outputs-and-function-calling-with-llms)
+- [Thoughtbot: Consistent Data from LLM with JSON Schema](https://thoughtbot.com/blog/get-consistent-data-from-your-llm-with-json-schema)
 
-### State Management
-- [Zustand Slices Pattern](https://zustand.docs.pmnd.rs/guides/slices-pattern)
-- [Zustand Multiple Stores Discussion](https://github.com/pmndrs/zustand/discussions/2496)
-
-### SQLite / better-sqlite3
-- [SQLite WAL Mode](https://sqlite.org/wal.html)
-- [better-sqlite3 Concurrency](https://wchargin.com/better-sqlite3/performance.html)
+### Codebase (verified by direct reading)
+- `src/components/writing/ChapterEditor.tsx` -- TipTap editor with BubbleMenu
+- `src/components/writing/FeedbackPopover.tsx` -- Existing AI feedback with gateway integration
+- `src/components/writing/ProjectEditor.tsx` -- Current 2-pane layout
+- `src/components/writing/ProjectSelector.tsx` -- Current project creation flow
+- `src/store/writingStore.ts` -- Writing state management
+- `src/store/feedbackStore.ts` -- Feedback state management (good pattern)
+- `src/lib/gateway.ts` -- WebSocket gateway client
+- `electron/writing-project-service.ts` -- File-based project/chapter CRUD
+- `electron/writing-memory-service.ts` -- Characters/timeline/facts storage
+- `electron/writing-version-service.ts` -- Version snapshots
+- `electron/paths.ts` -- Centralized path resolver

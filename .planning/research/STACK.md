@@ -1,428 +1,374 @@
-# Stack Research: Writing System
+# Stack Research: v2.1 AI-Powered Writing UX Redesign
 
-**Project:** Froggo.app v2.0 — AI-Collaborative Long-Form Writing Module
-**Researched:** 2026-02-12
-**Overall Confidence:** HIGH (verified via official docs, npm, and multiple sources)
+**Project:** Froggo.app v2.1 -- Conversational AI Book Creation System
+**Researched:** 2026-02-13
+**Overall Confidence:** HIGH (verified via npm registry, official docs, and codebase inspection)
+**Scope:** Stack ADDITIONS for v2.1 only. Existing stack (React 18, TipTap 3.19.0, Zustand, Tailwind, Electron 28, OpenClaw Gateway) is validated and unchanged.
 
 ---
 
-## Recommended Additions
+## Summary of New Dependencies
 
-| Library | Version | Purpose | Why This One |
+| Library | Version | Purpose | New Install? |
 |---------|---------|---------|-------------|
-| `@tiptap/react` | ^3.19.0 | Rich text editor React bindings | Best DX wrapper over ProseMirror; headless, extensible, proven at scale |
-| `@tiptap/pm` | ^3.19.0 | ProseMirror peer dependency | Required by TipTap |
-| `@tiptap/starter-kit` | ^3.19.0 | Core extensions bundle | Includes bold/italic/headings/lists/code/link/underline/undo-redo |
-| `@tiptap/markdown` | ^3.19.0 | Bidirectional markdown parsing | Official TipTap extension, MIT-licensed, CommonMark-compliant |
-| `@tiptap/extension-highlight` | ^3.19.0 | Text highlighting marks | Built-in multi-color highlight — foundation for inline feedback anchors |
-| `@tiptap/extension-table-of-contents` | ^3.19.0 | Heading navigation/outline | Auto-updating TOC from headings, smooth scroll, sidebar-ready |
-| `@tiptap/extension-placeholder` | ^3.19.0 | Empty editor placeholder text | UX polish for empty chapters |
-| `@tiptap/extension-character-count` | ^3.19.0 | Word/character counting | Required for word count goals and progress tracking |
-| `@tiptap/extension-typography` | ^3.19.0 | Smart typography | Auto-converts quotes, dashes, ellipses — expected in a writing tool |
-| `diff` | ^8.0.3 | Text diffing engine | Ships with TypeScript types (v8+), 7800+ dependents, battle-tested |
-| `react-diff-viewer-continued` | ^4.1.2 | Side-by-side diff UI component | Actively maintained fork, split/unified views, customizable styling |
-| `chokidar` | ^4.0.3 | File system watching | Needed for detecting external edits to chapter .md files |
+| `react-resizable-panels` | ^4.6.2 | 3-pane resizable layout | YES -- new |
+| `@tiptap/markdown` | ^3.19.0 | Markdown-to-editor content insertion | YES -- new (same TipTap ecosystem) |
 
-**Total new dependencies: 12** (10 TipTap packages from same ecosystem + 2 utility libs)
+**Total new packages: 2**
+
+Everything else needed for v2.1 is either already installed or should be built as custom components (not libraries).
+
+---
+
+## Feature 1: 3-Pane Resizable Layout
+
+### Decision: `react-resizable-panels` v4.6.2
+
+**Confidence: HIGH** -- verified via npm registry (published Feb 7 2026), GitHub, peer dependencies confirmed React 18 compatible.
+
+**What it does:** Provides `PanelGroup`, `Panel`, and `PanelResizeHandle` components for building IDE-style resizable split layouts. Horizontal and vertical orientations, min/max constraints, collapsible panels, keyboard resize, layout persistence.
+
+**Why this library:**
+- 1,551 npm dependents, most popular React resizable panel library by significant margin
+- Powers shadcn/ui's Resizable component (ecosystem validation)
+- Peer deps: `react ^18.0.0 || ^19.0.0`, `react-dom ^18.0.0 || ^19.0.0` -- exact match with project
+- Zero runtime dependencies
+- 498KB unpacked (lightweight for what it provides)
+- Built by Brian Vaughn (former React core team) -- quality code
+- Built-in layout persistence via `autoSaveId` (saves to localStorage)
+- Keyboard accessible (arrow keys resize, Enter/Space collapse)
+- CSS-in-JS agnostic -- works with Tailwind
+
+**How it maps to our 3-pane layout:**
+
+```tsx
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+
+function WritingWorkspace() {
+  return (
+    <PanelGroup direction="horizontal" autoSaveId="writing-layout">
+      {/* Left: Chapter sidebar */}
+      <Panel defaultSize={15} minSize={10} maxSize={25} collapsible>
+        <ChapterSidebar />
+      </Panel>
+
+      <PanelResizeHandle className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors" />
+
+      {/* Center: AI Chat dialogue */}
+      <Panel defaultSize={35} minSize={20}>
+        <ChatDialoguePane />
+      </Panel>
+
+      <PanelResizeHandle className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors" />
+
+      {/* Right: Content workspace (TipTap editor) */}
+      <Panel defaultSize={50} minSize={25}>
+        <ChapterEditor />
+      </Panel>
+    </PanelGroup>
+  );
+}
+```
+
+**What it replaces in current code:** The `ProjectEditor.tsx` currently uses a `flex` layout with fixed-width sidebar (`w-64`) and `flex-1` editor. This will be replaced with `PanelGroup` for user-resizable panes.
+
+### Alternatives Considered
+
+| Library | Why Not |
+|---------|---------|
+| `allotment` | 113K weekly downloads vs react-resizable-panels' dominance. Less ecosystem adoption. Functionally similar but less actively maintained. |
+| `react-split-pane` | Older library, less actively maintained. react-resizable-panels supersedes it. |
+| CSS `resize` property | No constraints, no persistence, poor UX. Not suitable for application layouts. |
+| Custom CSS Grid + drag | Would need to build constraint handling, persistence, keyboard support, collapse logic. 500+ lines of custom code to replicate what react-resizable-panels provides. |
+| `react-grid-layout` | Already installed (`^2.2.2`) but wrong tool -- it's for dashboard grids with drag-and-drop rearrangement. The writing workspace needs fixed panel positions with resizable borders, not rearrangeable tiles. |
 
 ### Installation
 
 ```bash
-# TipTap editor ecosystem
-npm install @tiptap/react @tiptap/pm @tiptap/starter-kit @tiptap/markdown \
-  @tiptap/extension-highlight @tiptap/extension-table-of-contents \
-  @tiptap/extension-placeholder @tiptap/extension-character-count \
-  @tiptap/extension-typography
-
-# Diffing and comparison
-npm install diff react-diff-viewer-continued
-
-# File watching (renderer needs none — this is Electron main process only)
-npm install chokidar
+npm install react-resizable-panels
 ```
+
+### Integration Notes
+
+- Works with existing Tailwind classes for handle styling
+- `autoSaveId` provides free layout persistence (user resizes are remembered)
+- Collapsible panels support hiding the chat pane or sidebar with double-click
+- No conflict with existing `react-grid-layout` (different use cases, different components)
 
 ---
 
-## Rich Text Editor Deep Dive
+## Feature 2: Streaming Chat That Pushes Content to Editor
 
-### Decision: TipTap v3 (not raw ProseMirror, not Slate, not Lexical)
+### Architecture Decision: Stream into chat pane, insert final content into editor
 
-**Confidence: HIGH** — verified via official TipTap docs, npm registry, GitHub releases, and multiple comparison analyses.
+**Confidence: HIGH** -- validated by TipTap community discussion on streaming markdown and existing gateway infrastructure.
 
-### Why TipTap Over Raw ProseMirror
+**The key insight:** Streaming markdown progressively into TipTap is genuinely complex (one developer reported "two weeks to get everything right"). The correct architecture is:
 
-TipTap is built on ProseMirror. Every ProseMirror capability is available through TipTap, but TipTap wraps it with a developer-friendly API. The relationship is analogous to React wrapping the DOM — you can always drop down to the lower level when needed.
+1. **Stream AI responses into the chat pane** using existing `react-markdown` for rendering
+2. **On user action** ("Accept", "Insert", drag), push the final markdown content into TipTap using `@tiptap/markdown`'s `insertContent` with `contentType: 'markdown'`
 
-**What TipTap adds over raw ProseMirror:**
-- `useEditor` and `useEditorState` React hooks (native React integration)
-- Extension system (modular, composable, configurable)
-- `ReactMarkViewRenderer` and `ReactNodeViewRenderer` for rendering React components inline
-- Built-in commands API (`editor.commands.setHighlight()`, etc.)
-- Event system (`onSelectionUpdate`, `onUpdate`, `onTransaction`)
-- Declarative `<Tiptap>` component (new in v3.18.0)
+This is a UX win, not just an engineering shortcut -- the user sees the full AI response in context, decides what to accept, and explicitly pushes content to the workspace.
 
-**What you'd have to build yourself with raw ProseMirror:**
-- React bindings
-- Extension registration system
-- Command chaining
-- Every built-in extension (bold, italic, heading, lists, etc.)
-- Plugin boilerplate for every feature
+### Chat Pane: Use existing `react-markdown` (already installed)
 
-**Verdict:** Using raw ProseMirror for this project would mean writing 2000+ lines of glue code that TipTap already provides. ProseMirror knowledge is still useful for custom extensions — TipTap doesn't hide it.
+**Confidence: HIGH** -- `react-markdown@10.1.0` is already in `package.json`.
 
-### Why TipTap Over Slate
+The chat pane renders AI streaming responses as formatted markdown. The existing `react-markdown` handles this well. No new library needed.
 
-- Slate has a slower release cycle and fewer maintained plugins
-- Slate's React integration requires more manual wiring
-- Slate lacks a built-in markdown extension
-- TipTap's extension ecosystem covers more of what we need out of the box
-- Slate's documentation is sparser
+**Why NOT Streamdown (`streamdown@2.2.0`):**
+- Streamdown is purpose-built for handling incomplete/unterminated markdown during streaming (graceful partial renders)
+- However, `react-markdown` already handles streaming adequately when you feed it accumulated content on each delta
+- Streamdown adds 69KB unpacked + brings `tailwind-merge`, `marked`, `rehype-*`, `remark-*` as transitive dependencies
+- The project already has `react-markdown` + `remark-gfm` installed and working
+- The marginal visual improvement of Streamdown's partial-syntax repair is not worth adding a dependency for the v2.1 writing chat
+- If streaming rendering quality becomes an issue later, Streamdown can be swapped in (it's a near-drop-in replacement)
 
-### Why TipTap Over Lexical (Meta)
+**How streaming works with existing infrastructure:**
 
-- Lexical has a steeper learning curve (everything is tree nodes)
-- Lexical's ecosystem is less mature (needs more time to catch Tiptap)
-- Lexical's markdown support is less developed
-- Lexical's main advantage (Facebook-scale perf) is irrelevant for single-user desktop app
-- TipTap's React integration is more natural for an existing React codebase
+The gateway already provides `sendChatWithCallbacks()` with `onDelta` callbacks. The `FeedbackPopover.tsx` demonstrates the exact pattern: accumulate deltas in a ref, update state on each delta, render accumulated content. The new chat pane will use the same pattern but render with `react-markdown` instead of raw `<pre>`.
 
-### TipTap v3 Key Capabilities (Verified)
+```tsx
+// Simplified pattern (already proven in FeedbackPopover.tsx)
+const accumulatedRef = useRef('');
 
-**Selection Tracking:**
-```typescript
-editor.on('selectionUpdate', ({ editor }) => {
-  const { from, to } = editor.state.selection;
-  const selectedText = editor.state.doc.textBetween(from, to);
-  // Use from/to to anchor floating feedback panel
-});
-```
-Confidence: HIGH (verified from official TipTap events documentation)
-
-**Inline Widgets via React Mark Views:**
-```typescript
-import { Mark } from '@tiptap/core';
-import { ReactMarkViewRenderer } from '@tiptap/react';
-import FeedbackAnchor from './FeedbackAnchor';
-
-export const InlineFeedback = Mark.create({
-  name: 'inlineFeedback',
-  addAttributes() {
-    return {
-      feedbackId: { default: null },
-      agentId: { default: null },
-    };
+await gateway.sendChatWithCallbacks(prompt, sessionKey, {
+  onDelta: (delta) => {
+    accumulatedRef.current += delta;
+    setChatContent(accumulatedRef.current);
   },
-  addMarkView() {
-    return ReactMarkViewRenderer(FeedbackAnchor);
+  onEnd: () => {
+    setFinalContent(accumulatedRef.current);
+    setStreaming(false);
   },
 });
-```
-Confidence: HIGH (verified from official TipTap React mark views documentation)
 
-**Markdown Round-Trip:**
-TipTap's `@tiptap/markdown` extension uses MarkedJS internally. Flow: Markdown string -> MarkedJS Lexer -> tokens -> extension parse handlers -> TipTap JSON. Reverse: TipTap JSON -> extension render handlers -> Markdown string. CommonMark-compliant. MIT-licensed. Currently in beta but functional.
-
-Note: The extension is in **early release/beta** — edge cases may exist. For this project, chapters are straightforward markdown (headings, paragraphs, bold/italic, lists, blockquotes, code blocks). No exotic markdown features needed, so beta status is acceptable.
-
-Confidence: MEDIUM (official docs confirm capability, but beta status means edge cases possible)
-
-**Large Document Performance:**
-TipTap's official performance demo handles 200,000+ words without performance drops. Key React optimizations:
-1. Isolate editor in its own component (prevent re-renders from sidebar state changes)
-2. Use `shouldRerenderOnTransaction: false` to prevent re-rendering on every keystroke
-3. Use `useEditorState` with selectors for toolbar state (bold active?, italic active?)
-4. Set `immediatelyRender: true` for initial render
-
-Since chapters are loaded individually (not the entire 1000-page document at once), even a 10,000-word chapter is well within TipTap's proven performance range.
-
-Confidence: HIGH (verified from official TipTap performance guide)
-
-### StarterKit Contents (What You Get Free)
-
-The `@tiptap/starter-kit` bundles these extensions:
-
-**Nodes:** Document, Paragraph, Text, Heading, Blockquote, BulletList, OrderedList, ListItem, CodeBlock, HorizontalRule, HardBreak
-
-**Marks:** Bold, Italic, Strike, Code, Link, Underline
-
-**Functionality:** Dropcursor, Gapcursor, Undo/Redo (History), ListKeymap, TrailingNode
-
-Link and Underline are new additions in v3. This covers all the basic formatting needs for a writing editor.
-
-### Additional Extensions Needed (Beyond StarterKit)
-
-| Extension | Why |
-|-----------|-----|
-| `@tiptap/markdown` | Core requirement: load/save chapters as .md files |
-| `@tiptap/extension-highlight` | Foundation for inline feedback anchors (multi-color) |
-| `@tiptap/extension-table-of-contents` | Sidebar navigation of headings within a chapter |
-| `@tiptap/extension-placeholder` | "Start writing..." UX when chapter is empty |
-| `@tiptap/extension-character-count` | Word count display for chapters |
-| `@tiptap/extension-typography` | Smart quotes, em-dashes — expected in a writing tool |
-| Custom: `InlineFeedback` mark | Custom mark extension for feedback anchors (built by us) |
-
-### Extensions We Do NOT Need
-
-| Extension | Why Not |
-|-----------|---------|
-| `@tiptap/extension-collaboration` | Single-user. No CRDT/Yjs needed. |
-| `@tiptap/extension-table` | Memoirs/novels don't need tables |
-| `@tiptap/extension-image` | Images are out of scope for text-focused MVP |
-| `@tiptap/extension-mention` | No @mention system needed in writing editor |
-| `@tiptap/extension-color` / `@tiptap/extension-text-style` | Not needed for writing — highlight extension covers annotation colors |
-| Any TipTap Cloud/Pro extensions | Local-only app, no cloud services |
-
----
-
-## Text Diffing: `diff` + `react-diff-viewer-continued`
-
-### Why Two Libraries
-
-The diffing need has two parts:
-1. **Compute the diff** between original text and AI alternative (logic layer)
-2. **Display the diff** side-by-side in the UI (presentation layer)
-
-### `diff` (jsdiff) v8.0.3
-
-**What it does:** Computes text diffs at character, word, line, or sentence level. Returns structured change objects.
-
-**Why this one:**
-- 7,800+ npm dependents (most widely used JS diff library)
-- Ships with TypeScript types since v8 (no `@types/diff` needed)
-- Supports async/abortable mode for large diffs
-- `diffWords()` is perfect for showing what changed between original and AI alternative
-- Published 1 month ago (actively maintained)
-- Zero dependencies
-
-**How we'll use it:**
-```typescript
-import { diffWords } from 'diff';
-
-const changes = diffWords(originalText, aiAlternative);
-// changes = [{ value: "Sarah ", added: false, removed: false },
-//            { value: "walked", removed: true },
-//            { value: "stormed", added: true }, ...]
+// In render:
+<ReactMarkdown remarkPlugins={[remarkGfm]}>
+  {chatContent}
+</ReactMarkdown>
 ```
 
-Confidence: HIGH (verified via npm, GitHub)
+### Editor Content Insertion: `@tiptap/markdown` v3.19.0
 
-### `react-diff-viewer-continued` v4.1.2
+**Confidence: HIGH** -- verified via npm (`@tiptap/markdown@3.19.0`), official TipTap docs, and official examples.
 
-**What it does:** React component that renders side-by-side or unified diff views with syntax highlighting support.
+**What it adds:** When the `Markdown` extension is registered with the TipTap editor, all content commands (`setContent`, `insertContent`, `insertContentAt`) accept a `contentType: 'markdown'` option. This converts markdown strings to TipTap's internal ProseMirror document format.
 
-**Why this one over alternatives:**
-- `react-diff-viewer` (original): Last published 6 years ago, unmaintained
-- `react-diff-viewer-continued`: Last published 5 days ago, actively maintained
-- `react-diff-view`: More git-oriented (unified diff format input), heavier
-- `diff2html`: Not React-native, requires extra integration
+**Why this is needed for v2.1:**
+- v2.0 stores chapters as HTML (TipTap's `getHTML()` / `setContent(html)`)
+- v2.1's chat produces markdown responses from AI agents
+- Without `@tiptap/markdown`, we'd need to convert markdown to HTML ourselves before inserting
+- With it, insertion is a single call: `editor.commands.insertContent(markdown, { contentType: 'markdown' })`
 
-**How we'll use it:** Side-by-side comparison when AI generates alternative versions of a highlighted passage. User sees original on left, alternative on right, with changes highlighted.
+**How chat content gets pushed to editor:**
 
-Confidence: HIGH (verified via npm)
+```tsx
+// User clicks "Insert" on a chat message
+const handleInsertToEditor = (markdownContent: string) => {
+  // Insert at cursor position (or end of document)
+  editor.chain()
+    .focus()
+    .insertContent(markdownContent, { contentType: 'markdown' })
+    .run();
+};
 
----
-
-## File System Watching: `chokidar` v4.0.3
-
-### Why Chokidar (Not Native fs.watch, Not Chokidar v5)
-
-**The need:** Detect when chapter .md files are edited externally (user opens in VS Code, another agent writes to the file). The editor should reload or prompt.
-
-**Why not native `fs.watch`:**
-- Unreliable event types (reports most changes as "rename")
-- Does not report filenames on macOS
-- Recursive watching not supported on Linux
-- No debouncing, no ready event, no error handling
-- Would need to build all the reliability features chokidar already has
-
-**Why chokidar v4, not v5:**
-- v5 (Nov 2025) is **ESM-only**, requires Node.js v20+
-- Electron 28's main process uses **CommonJS** (`tsconfig.electron.json` has `"module": "CommonJS"`)
-- v4 supports both ESM and CommonJS
-- v4 has minimal dependencies (reduced from 13 to 1)
-- v4 requires Node.js v14+ (Electron 28 ships Node.js 18.x, well above this)
-
-**How we'll use it:** In the Electron main process, watch the project's `chapters/` directory. On file change, notify renderer via IPC so the editor can reload or show a "file changed externally" prompt.
-
-```typescript
-// electron/writing-service.ts
-import { watch } from 'chokidar';
-
-const watcher = watch(chaptersDir, {
-  ignoreInitial: true,
-  awaitWriteFinish: { stabilityThreshold: 500 },
-});
-
-watcher.on('change', (filePath) => {
-  mainWindow.webContents.send('chapter:external-change', { filePath });
+// Or replace entire chapter content from AI-generated outline
+editor.commands.setContent(markdownContent, {
+  contentType: 'markdown',
+  emitUpdate: true,
 });
 ```
 
-Confidence: HIGH (verified CommonJS requirement from tsconfig, chokidar v4 compatibility from npm/GitHub)
+**Integration with existing ChapterEditor:**
 
----
+The `ChapterEditor.tsx` already configures TipTap with `StarterKit`, `Highlight`, `Placeholder`, `CharacterCount`, `Typography`, and `Link`. Adding the `Markdown` extension is additive:
 
-## SQLite Schema Patterns (Source/Citation Management)
+```tsx
+import { Markdown } from '@tiptap/markdown';
 
-No new library needed — the project already has `better-sqlite3` v12.6.2.
-
-### Recommended Schema for Sources Database
-
-Each writing project gets its own SQLite database at `{project}/research/sources.db`. This keeps project data isolated and portable.
-
-```sql
--- Sources: books, articles, interviews, websites
-CREATE TABLE sources (
-  id TEXT PRIMARY KEY,        -- UUID
-  project_id TEXT NOT NULL,
-  type TEXT NOT NULL,          -- 'book', 'article', 'interview', 'website', 'personal'
-  title TEXT NOT NULL,
-  author TEXT,
-  url TEXT,
-  publication_date TEXT,       -- ISO 8601
-  accessed_date TEXT,          -- When last accessed
-  notes TEXT,                  -- Markdown notes about source
-  reliability TEXT DEFAULT 'unverified',  -- 'verified', 'unverified', 'disputed'
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
--- Facts: individual claims extracted from sources
-CREATE TABLE facts (
-  id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL,
-  claim TEXT NOT NULL,          -- The factual assertion
-  source_id TEXT REFERENCES sources(id),
-  chapter_refs TEXT,            -- JSON array of chapter filenames where used
-  status TEXT DEFAULT 'unverified',  -- 'verified', 'disputed', 'retracted'
-  verified_by TEXT,             -- Agent that verified (researcher, user)
-  verified_at TEXT,
-  notes TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
--- Fact-chapter links: many-to-many
-CREATE TABLE fact_chapter_links (
-  fact_id TEXT REFERENCES facts(id),
-  chapter_filename TEXT NOT NULL,
-  text_range_start INTEGER,    -- Character offset in chapter
-  text_range_end INTEGER,
-  PRIMARY KEY (fact_id, chapter_filename)
-);
-
--- Research notes: organized by topic
-CREATE TABLE research_notes (
-  id TEXT PRIMARY KEY,
-  project_id TEXT NOT NULL,
-  topic TEXT NOT NULL,
-  content TEXT NOT NULL,        -- Markdown
-  source_ids TEXT,              -- JSON array of related source IDs
-  chapter_refs TEXT,            -- JSON array of related chapters
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
-);
-
--- Indexes
-CREATE INDEX idx_facts_status ON facts(status);
-CREATE INDEX idx_facts_source ON facts(source_id);
-CREATE INDEX idx_fcl_chapter ON fact_chapter_links(chapter_filename);
-CREATE INDEX idx_notes_topic ON research_notes(topic);
+const editor = useEditor({
+  extensions: [
+    StarterKit.configure({ ... }),
+    Markdown,  // Add this
+    Highlight,
+    Placeholder.configure({ ... }),
+    // ... rest unchanged
+  ],
+});
 ```
 
-### Why Per-Project SQLite (Not Main froggo.db)
+**Dependency:** Only `marked@^17.0.1` (transitive, via @tiptap/markdown). No conflicts with existing packages.
 
-- **Isolation:** Each writing project is self-contained and portable
-- **No schema pollution:** Writing tables don't clutter the 173-table froggo.db
-- **Backup/export:** Copy project folder = complete backup
-- **Parallel access:** No contention with task DB queries
+### Installation
 
-Confidence: HIGH (better-sqlite3 is already in the stack, schema is straightforward)
-
----
-
-## Integration Notes
-
-### How These Fit With the Existing Stack
-
-**React 18 + TipTap 3:** TipTap v3 supports React 18. The `useEditor` hook and new `<Tiptap>` declarative component work with React's rendering model. No conflicts with existing Zustand stores or component patterns.
-
-**TypeScript:** TipTap v3 ships with full TypeScript types. `diff` v8 ships with built-in types. `react-diff-viewer-continued` has TypeScript support. No `@types/*` packages needed for any of the new dependencies.
-
-**Vite:** TipTap is standard npm package, no special Vite configuration needed. Works with the existing `@vitejs/plugin-react` setup.
-
-**Tailwind CSS:** TipTap is headless — no built-in styles. All editor styling will be done with Tailwind, matching the existing dashboard aesthetic. This is a feature, not a limitation.
-
-**Zustand:** Editor state (current project, current chapter, feedback threads) should live in a dedicated Zustand store (`useWritingStore`). The TipTap editor instance itself manages document state internally — Zustand manages the application-level writing state around it.
-
-**Electron IPC:** New IPC handlers for writing operations should go in a dedicated `electron/writing-service.ts` file (per the project constraint: "new services in separate electron/*.ts files"). File I/O (read/write chapters, manage project folders) happens in the main process. Chokidar watches in the main process. TipTap runs in the renderer.
-
-**Paths:** All new paths (writing projects directory, project subdirectories) should be defined in `electron/paths.ts` following the existing pattern:
-```typescript
-export const WRITING_PROJECTS_DIR = path.join(PROJECT_ROOT, 'writing-projects');
+```bash
+npm install @tiptap/markdown
 ```
 
-**better-sqlite3:** Per-project `sources.db` files are opened/closed via the main process, same pattern as `froggo.db`. The existing `database.ts` connection manager pattern can be extended.
+---
 
-### Performance Considerations for Electron
+## Feature 3: Project Setup Wizard (Conversational AI Planner)
 
-1. **TipTap in renderer, file I/O in main process:** Keep the editor responsive by doing all disk operations through IPC. Never block the renderer with synchronous file reads.
+### Decision: Build custom components. No wizard library needed.
 
-2. **Chapter-level loading:** Only one chapter's content is in the TipTap editor at a time. Switching chapters = save current -> load next. This keeps the editor lightweight regardless of total project size.
+**Confidence: HIGH** -- based on analysis of the UX requirement vs what wizard libraries provide.
 
-3. **Debounce saves:** Auto-save on pause (500ms-1s debounce after last keystroke), not on every keystroke. Write to a temp file first, then atomic rename.
+**Why no library:**
 
-4. **Chokidar in main process only:** File watching runs in the Electron main process. Changes are communicated to the renderer via IPC events.
+The "setup wizard" described for v2.1 is NOT a traditional multi-step form wizard. It's a **conversational AI planning interface** where:
+1. User describes their book idea in natural language
+2. AI agent responds with story arc, chapter outline, themes, characters
+3. User iterates through conversation ("make chapter 3 about X instead")
+4. When satisfied, user confirms and the plan becomes the project structure
+
+This is fundamentally a **chat interface with structured output**, not a form with steps. Libraries like `react-step-wizard`, CoreUI Stepper, or MUI Stepper are designed for static multi-step forms with predefined fields and validation. They would fight the conversational UX, not help it.
+
+**What to build instead:**
+
+```
+SetupWizard (container)
+  |-- ConversationPane (scrollable chat messages)
+  |     |-- UserMessage (user's input)
+  |     |-- AgentMessage (AI response, rendered with ReactMarkdown)
+  |     |-- PlanPreview (structured plan card extracted from AI response)
+  |-- InputBar (text input + send button)
+  |-- PlanConfirmation (review & confirm generated plan)
+```
+
+The conversation is driven by the existing `gateway.sendChatWithCallbacks()` targeting a Writer agent session. The AI response includes structured plan data (JSON embedded in markdown or parsed from the response). The user confirms the plan, which creates the project structure (chapters, memory entries, project.json).
+
+**What existing infrastructure covers:**
+- `gateway.sendChatWithCallbacks()` -- streaming AI responses (existing)
+- `chatRoomStore.ts` pattern -- message list with user/agent roles (existing pattern, adaptable)
+- `writingStore.ts` -- project creation (`createProject`, `createChapter`) (existing)
+- `memoryStore.ts` -- character/timeline/fact creation (existing)
+- `react-markdown` + `remark-gfm` -- rendering AI responses (existing)
+
+**What needs to be built:**
+- `SetupWizard.tsx` component
+- `useSetupWizardStore.ts` Zustand store (conversation state, plan state, wizard stage)
+- Plan extraction logic (parse structured data from AI response)
+- Plan-to-project conversion (create chapters, memory entries from confirmed plan)
+
+**Estimated custom code:** ~400-600 lines across 3-4 files. This is less than what a wizard library would require in adapter/integration code.
 
 ---
 
-## What NOT to Add
+## What NOT to Add (and Why)
 
 | Library | Why Not |
 |---------|---------|
-| `@tiptap/extension-collaboration` / `yjs` / `y-prosemirror` | Single-user app. No CRDT needed. Adds significant complexity and bundle size for zero benefit. |
-| `marked` / `remark` / `markdown-it` | TipTap's `@tiptap/markdown` uses MarkedJS internally. Don't add a second markdown parser. The existing `react-markdown` in the dashboard is for rendering markdown in chat/task views — keep it there, use TipTap's built-in parsing for the editor. |
-| `prosemirror-*` (direct) | TipTap wraps ProseMirror. `@tiptap/pm` re-exports the ProseMirror packages. Don't install ProseMirror packages directly — version conflicts will occur. |
-| `draft-js` | Deprecated by Meta in favor of Lexical. Not a contender. |
-| `quill` | Monolithic, not headless, poor extensibility for custom inline widgets. |
-| `monaco-editor` | Code editor, not a prose editor. Wrong tool. |
-| `electron-store` | Not needed — writing project settings go in `project.json` files, structured data in SQLite. The app already manages state fine without it. |
-| `lowdb` / `nedb` | Already have better-sqlite3. Don't add a second database engine. |
-| `pdf-lib` / `epub-gen` | Out of scope for v2.0 (export deferred to v3). |
-| Any vector DB (`chromadb`, `hnswlib`) | Semantic search deferred to v3. SQLite FTS5 can handle keyword search for now. |
+| `streamdown` | Marginal improvement over existing `react-markdown` for streaming. Adds transitive deps (`tailwind-merge`, `marked`, `rehype-*`). Can upgrade later if needed. |
+| `react-step-wizard` / MUI Stepper / CoreUI Stepper | Wrong abstraction. The wizard is conversational, not form-based. These libraries impose step-based navigation that conflicts with freeform AI conversation. |
+| `@tiptap/extension-collaboration` / `yjs` | Still single-user. Chat-to-editor is a user-initiated transfer, not real-time collaboration. |
+| `ai` (Vercel AI SDK) | The project already has OpenClaw Gateway for all AI communication. Adding Vercel AI SDK would be a competing abstraction for the same functionality. The gateway's `sendChatWithCallbacks` already provides streaming. |
+| `@tanstack/react-virtual` | Would be needed if the chat history grows to thousands of messages. For the wizard conversation (10-30 messages) and per-chapter chat (50-100 messages), native scroll is sufficient. Premature optimization. |
+| `framer-motion` | Animations for panel transitions and message appearances are nice-to-have, not blocking. Can be added later. Use CSS transitions for v2.1. |
+| `tiptap-markdown` (community) | The official `@tiptap/markdown` (v3.19.0) is now available. Don't use the community fork (`tiptap-markdown@0.9.0` by aguingand). |
+| `prosemirror-markdown` (direct) | `@tiptap/markdown` wraps this internally via `marked`. Don't install ProseMirror packages directly -- version conflicts with `@tiptap/pm` will occur. |
+| Custom resizable panel implementation | `react-resizable-panels` is battle-tested, zero-dep, React 18 compatible. Building custom saves nothing and loses persistence, keyboard support, and constraint handling. |
+
+---
+
+## Installation Summary
+
+```bash
+# New for v2.1 (only 2 packages)
+npm install react-resizable-panels @tiptap/markdown
+```
+
+That's it. Two packages. Everything else is either already installed or built as custom components.
+
+---
+
+## Integration Map: How New Fits With Existing
+
+### Data Flow: Chat to Editor
+
+```
+User types in chat input
+  -> gateway.sendChatWithCallbacks(prompt, sessionKey)
+    -> onDelta: accumulate in ref, setState for ReactMarkdown render
+    -> onEnd: parse final content, enable "Insert" button
+  -> User clicks "Insert" on a chat message
+    -> editor.commands.insertContent(markdown, { contentType: 'markdown' })
+    -> TipTap's @tiptap/markdown converts to ProseMirror nodes
+    -> Content appears in editor, autosave triggers
+```
+
+### Data Flow: Setup Wizard to Project
+
+```
+User describes book in wizard chat
+  -> gateway.sendChatWithCallbacks(planPrompt, 'agent:writer:setup')
+    -> AI returns structured plan (chapters, characters, themes)
+  -> User reviews plan, clicks "Create Project"
+    -> writingStore.createProject(title, type)
+    -> For each chapter: writingStore.createChapter(title)
+    -> For each character: memoryStore via IPC
+    -> Redirect to 3-pane workspace with new project open
+```
+
+### Component Tree (v2.1)
+
+```
+WritingWorkspace
+  |-- (no project) -> ProjectSelector -> SetupWizard (NEW)
+  |-- (has project) -> ResizableLayout (NEW, replaces flex layout)
+        |-- PanelGroup (react-resizable-panels)
+              |-- Panel: ChapterSidebar (EXISTING, minor updates)
+              |-- PanelResizeHandle
+              |-- Panel: ChatDialoguePane (NEW)
+              |     |-- ChatMessageList
+              |     |-- ChatInput
+              |-- PanelResizeHandle
+              |-- Panel: ChapterEditor (EXISTING, add @tiptap/markdown)
+```
+
+### Store Changes
+
+| Store | Change |
+|-------|--------|
+| `writingStore.ts` | Add `wizardActive` state, plan data fields |
+| `feedbackStore.ts` | No change (inline feedback is orthogonal to chat pane) |
+| NEW: `chatDialogueStore.ts` | Chat messages, streaming state, per-chapter conversation history |
+| `memoryStore.ts` | No change (wizard uses existing API to create entries) |
+
+### Gateway Sessions
+
+| Session Key Pattern | Agent | Purpose |
+|--------------------|-------|---------|
+| `agent:writer:setup` | Writer | Wizard conversation for project planning |
+| `agent:writer:writing:{projectId}` | Writer | Per-project writing chat |
+| `agent:researcher:writing:{projectId}` | Researcher | Research-focused writing chat |
+| `agent:jess:writing:{projectId}` | Jess | Emotional/therapeutic writing guidance |
+
+These follow the existing pattern from `FeedbackPopover.tsx` (`agent:{agentId}:writing:{projectId}`).
 
 ---
 
 ## Version Pinning Notes
 
-All TipTap packages should use the same version constraint (`^3.19.0`) to avoid peer dependency conflicts. TipTap publishes all packages in lockstep — mixing versions causes subtle breakage.
-
-The `diff` and `react-diff-viewer-continued` packages are independent and can be versioned separately.
-
-Chokidar v4 specifically (not v5) due to the CommonJS requirement in the Electron main process.
+- `@tiptap/markdown` MUST use `^3.19.0` to match existing TipTap packages. TipTap publishes all packages in lockstep.
+- `react-resizable-panels` is independent, `^4.6.2` is safe.
+- No changes to existing package versions.
 
 ---
 
 ## Sources
 
-- [TipTap Official Documentation](https://tiptap.dev/docs)
-- [TipTap React Installation Guide](https://tiptap.dev/docs/editor/getting-started/install/react)
-- [TipTap Performance Guide](https://tiptap.dev/docs/guides/performance)
-- [TipTap StarterKit Extensions](https://tiptap.dev/docs/editor/extensions/functionality/starterkit)
-- [TipTap Markdown Extension](https://tiptap.dev/docs/editor/markdown)
-- [TipTap Highlight Extension](https://tiptap.dev/docs/editor/extensions/marks/highlight)
-- [TipTap React Mark Views](https://tiptap.dev/docs/editor/extensions/custom-extensions/mark-views/react)
-- [TipTap Events API](https://tiptap.dev/docs/editor/api/events)
-- [TipTap Table of Contents Extension](https://tiptap.dev/docs/editor/extensions/functionality/table-of-contents)
-- [TipTap v3.0 Stable Release](https://tiptap.dev/blog/release-notes/tiptap-3-0-is-stable)
-- [TipTap 2026 Roadmap](https://tiptap.dev/blog/release-notes/our-roadmap-for-2026)
-- [TipTap GitHub Releases](https://github.com/ueberdosis/tiptap/releases) — v3.19.0, Feb 3 2026
-- [@tiptap/markdown on npm](https://www.npmjs.com/package/@tiptap/markdown) — v3.19.0
-- [diff (jsdiff) on npm](https://www.npmjs.com/package/diff) — v8.0.3
-- [react-diff-viewer-continued on npm](https://www.npmjs.com/package/react-diff-viewer-continued) — v4.1.2
-- [chokidar on npm](https://www.npmjs.com/package/chokidar) — v4.0.3 (CJS+ESM), v5.0 (ESM-only)
-- [chokidar GitHub](https://github.com/paulmillr/chokidar)
-- [Liveblocks Rich Text Editor Comparison 2025](https://liveblocks.io/blog/which-rich-text-editor-framework-should-you-choose-in-2025)
-- [ProseMirror DecorationSet in React](https://medium.com/@faisalmujtaba/prosemirror-decorationset-in-react-everything-i-wish-someone-had-told-me-6262eabae7ca)
+- [react-resizable-panels on npm](https://www.npmjs.com/package/react-resizable-panels) -- v4.6.2, published Feb 7 2026
+- [react-resizable-panels GitHub](https://github.com/bvaughn/react-resizable-panels) -- by Brian Vaughn (ex-React core team)
+- [react-resizable-panels docs](https://react-resizable-panels.vercel.app/)
+- [shadcn/ui Resizable (built on react-resizable-panels)](https://ui.shadcn.com/docs/components/radix/resizable)
+- [@tiptap/markdown on npm](https://www.npmjs.com/package/@tiptap/markdown) -- v3.19.0
+- [TipTap Markdown docs](https://tiptap.dev/docs/editor/markdown)
+- [TipTap Markdown basic usage](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage)
+- [TipTap insertContent API](https://tiptap.dev/docs/editor/api/commands/content/insert-content)
+- [TipTap streaming discussion #5563](https://github.com/ueberdosis/tiptap/discussions/5563) -- community confirmation that streaming into TipTap is complex
+- [Streamdown GitHub](https://github.com/vercel/streamdown) -- evaluated but not selected
+- [npm trends: allotment vs react-resizable-panels](https://npmtrends.com/allotment-vs-react-resizable-vs-react-split-pane-vs-react-splitter-layout)
 
 ---
 
@@ -430,12 +376,9 @@ Chokidar v4 specifically (not v5) due to the CommonJS requirement in the Electro
 
 | Area | Confidence | Reason |
 |------|------------|--------|
-| TipTap as editor choice | HIGH | Verified via official docs, npm, multiple comparison analyses, v3.19.0 confirmed current |
-| TipTap selection tracking | HIGH | Verified from official events API documentation |
-| TipTap React mark views | HIGH | Verified from official custom extensions documentation |
-| TipTap markdown support | MEDIUM | Official extension exists and is MIT-licensed, but labeled "beta/early release" |
-| `diff` library | HIGH | v8.0.3 verified on npm, built-in TypeScript types confirmed |
-| `react-diff-viewer-continued` | HIGH | v4.1.2 verified on npm, published 5 days ago |
-| Chokidar v4 (not v5) | HIGH | CommonJS requirement verified from tsconfig.electron.json, v4 CJS support confirmed |
-| SQLite schema design | HIGH | Standard relational patterns, uses existing better-sqlite3 |
-| Performance claims | MEDIUM | TipTap claims 200k+ words; our use case (single chapter at a time) is well within this, but not independently benchmarked |
+| react-resizable-panels as panel library | HIGH | v4.6.2 verified on npm, React 18 peer dep confirmed, 1551 dependents, shadcn/ui adoption |
+| @tiptap/markdown for content insertion | HIGH | v3.19.0 matches existing TipTap version, official extension, `insertContent` with `contentType: 'markdown'` verified in docs |
+| No wizard library needed | HIGH | UX requirement is conversational, not form-based. Existing gateway + chat patterns cover it. |
+| Streaming in chat pane via react-markdown | HIGH | Pattern already proven in FeedbackPopover.tsx with gateway.sendChatWithCallbacks |
+| Streamdown skip decision | MEDIUM | Streamdown works with React 18 (verified peer deps), but the marginal benefit doesn't justify adding it now. Decision could be revisited. |
+| Chat-to-editor content flow | HIGH | `insertContent` with `contentType: 'markdown'` is documented in official TipTap examples |
