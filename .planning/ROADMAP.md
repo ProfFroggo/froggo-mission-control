@@ -142,10 +142,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can select Jess from the agent picker and receive emotionally attuned feedback specific to memoir writing (pacing, boundaries, tone)
   2. Jess feedback is contextually distinct from Writer feedback -- addresses emotional impact, not just prose quality
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01-PLAN.md -- Jess-specific prompt, commentary parsing, FeedbackAlternative commentary rendering
 
 ## Progress
 
