@@ -9,12 +9,12 @@ import ContextPanel from './ContextPanel';
 import VersionPanel from './VersionPanel';
 import { useWritingStore } from '../../store/writingStore';
 
-const LAYOUT_KEY = 'writing-layout';
+const LAYOUT_KEY = 'writing-layout-v2';
 const COLLAPSE_KEY = 'writing-collapsed';
-const MIN_CHAPTERS = 15;
-const MIN_CHAT = 25;
-const MIN_EDITOR = 30;
-const DEFAULT_LAYOUT: Layout = { chapters: MIN_CHAPTERS, chat: 30, editor: 55 };
+const DEFAULT_LAYOUT: Layout = { chapters: 15, chat: 30, editor: 55 };
+
+// Clean up old key on load
+try { localStorage.removeItem('writing-layout'); } catch {}
 
 function getPersistedLayout(): Layout | undefined {
   try {
@@ -22,12 +22,8 @@ function getPersistedLayout(): Layout | undefined {
     if (!saved) return undefined;
     const parsed = JSON.parse(saved);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
-      || typeof parsed.chapters !== 'number' || typeof parsed.chat !== 'number' || typeof parsed.editor !== 'number') {
-      localStorage.removeItem(LAYOUT_KEY);
-      return undefined;
-    }
-    // If any pane is below its minimum, discard stale layout and use defaults
-    if (parsed.chapters < MIN_CHAPTERS || parsed.chat < MIN_CHAT || parsed.editor < MIN_EDITOR) {
+      || typeof parsed.chapters !== 'number' || typeof parsed.chat !== 'number' || typeof parsed.editor !== 'number'
+      || parsed.chapters < 10 || parsed.chat < 20 || parsed.editor < 25) {
       localStorage.removeItem(LAYOUT_KEY);
       return undefined;
     }
@@ -65,7 +61,10 @@ export default function ProjectEditor() {
   const defaultLayout = getPersistedLayout() || DEFAULT_LAYOUT;
 
   const handleLayoutChanged = useCallback((layout: Layout) => {
-    localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+    // Only persist if panes have reasonable sizes (not mid-collapse)
+    if (layout.chapters >= 10 && layout.chat >= 20 && layout.editor >= 25) {
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+    }
   }, []);
 
   const toggleContext = () => {
@@ -135,7 +134,7 @@ export default function ProjectEditor() {
       {/* Left panel: Chapter sidebar */}
       <Panel
         id="chapters"
-        minSize={MIN_CHAPTERS}
+        minSize={15}
         maxSize={25}
         collapsible
         collapsedSize={0}
@@ -153,7 +152,7 @@ export default function ProjectEditor() {
       {/* Center panel: AI Chat */}
       <Panel
         id="chat"
-        minSize={MIN_CHAT}
+        minSize={25}
         maxSize={50}
         collapsible
         collapsedSize={0}
@@ -169,7 +168,7 @@ export default function ProjectEditor() {
       {/* Right panel: Editor workspace */}
       <Panel
         id="editor"
-        minSize={MIN_EDITOR}
+        minSize={30}
         className="h-full"
       >
         <div className="relative h-full">
