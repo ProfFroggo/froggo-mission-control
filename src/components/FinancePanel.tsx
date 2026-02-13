@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell } from 'lucide-react';
+import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell, MessageSquare } from 'lucide-react';
 import { showToast } from './Toast';
+import FinanceAgentChat from './FinanceAgentChat';
 
 interface Transaction {
   id: string;
@@ -54,6 +55,7 @@ export default function FinancePanel() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [chatOpen, setChatOpen] = useState(true); // AI chat panel
   const lastAlertCheck = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -204,17 +206,32 @@ export default function FinancePanel() {
           <DollarSign size={24} className="text-green-500" />
           <h1 className="text-xl font-semibold">Finance Manager</h1>
         </div>
-        <button
-          onClick={handleUploadClick}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-        >
-          <Upload size={16} />
-          Upload Statement
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setChatOpen(!chatOpen)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              chatOpen
+                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            <MessageSquare size={16} />
+            AI Chat
+          </button>
+          <button
+            onClick={handleUploadClick}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          >
+            <Upload size={16} />
+            Upload Statement
+          </button>
+        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto p-4">
+      {/* Main Content + Chat Split */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Finance Content */}
+        <div className={`${chatOpen ? 'w-3/5' : 'w-full'} overflow-auto p-4 transition-all`}>
         {/* Alerts & Insights (if any exist) */}
         {(alerts.length > 0 || insights.length > 0) && (
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
@@ -457,6 +474,17 @@ export default function FinancePanel() {
             )}
           </div>
         </div>
+        </div>
+
+        {/* AI Chat Panel */}
+        {chatOpen && (
+          <div className="w-2/5">
+            <FinanceAgentChat 
+              isOpen={chatOpen} 
+              onClose={() => setChatOpen(false)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Upload Modal */}
