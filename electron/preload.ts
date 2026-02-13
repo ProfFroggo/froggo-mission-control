@@ -608,6 +608,9 @@ contextBridge.exposeInMainWorld('clawdbot', {
     uploadCSV: (csvContent: string, filename: string) => ipcRenderer.invoke('finance:uploadCSV', csvContent, filename),
     getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
     getInsights: () => ipcRenderer.invoke('finance:getInsights'),
+    dismissInsight: (insightId: string) => ipcRenderer.invoke('finance:dismissInsight', insightId),
+    triggerAnalysis: (options?: { daysBack?: number; focus?: string }) => 
+      ipcRenderer.invoke('finance:triggerAnalysis', options),
   },
   financeAgent: {
     sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),

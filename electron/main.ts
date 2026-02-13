@@ -7685,6 +7685,47 @@ ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
   }
 });
 
+ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
+  try {
+    const daysBack = options?.daysBack || 7;
+    const focus = options?.focus || 'general';
+    
+    safeLog.log(`[Finance] Triggering AI analysis (${daysBack} days, focus: ${focus})`);
+    
+    // Build analysis prompt
+    let prompt = `Please analyze my financial activity from the last ${daysBack} days.`;
+    
+    if (focus === 'spending') {
+      prompt += ' Focus on spending patterns and identify areas where I could save money.';
+    } else if (focus === 'budget') {
+      prompt += ' Focus on budget health and whether I\'m on track with my goals.';
+    } else if (focus === 'anomalies') {
+      prompt += ' Focus on unusual transactions or concerning patterns.';
+    } else {
+      prompt += ' Provide a comprehensive overview including spending patterns, budget health, and recommendations.';
+    }
+    
+    // Trigger Finance Manager via agent bridge
+    const bridge = getFinanceAgentBridge();
+    const response = await bridge.sendMessage(prompt, {
+      analysisType: 'scheduled',
+      daysBack,
+      focus,
+      triggeredAt: Date.now(),
+    });
+    
+    if (response.success) {
+      safeLog.log('[Finance] Analysis completed successfully');
+      return { success: true, analysis: response.content };
+    } else {
+      throw new Error(response.error || 'Analysis failed');
+    }
+  } catch (error: any) {
+    safeLog.error('[Finance] Trigger analysis error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 // ── Finance Agent Communication ──
 
 ipcMain.handle('financeAgent:sendMessage', async (_, message: string, context?: any) => {
