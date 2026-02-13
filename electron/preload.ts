@@ -627,6 +627,17 @@ contextBridge.exposeInMainWorld('clawdbot', {
     reject: (data: { id: string; reason?: string }) => 
       ipcRenderer.invoke('x:research:reject', data),
   },
+  // X/Twitter Plan
+  xPlan: {
+    create: (data: { researchIdeaId: string; title: string; contentType: string; threadLength: number; description: string; proposedBy: string }) =>
+      ipcRenderer.invoke('x:plan:create', data),
+    list: (filters?: { status?: string; contentType?: string; limit?: number }) =>
+      ipcRenderer.invoke('x:plan:list', filters),
+    approve: (data: { id: string; approvedBy: string }) =>
+      ipcRenderer.invoke('x:plan:approve', data),
+    reject: (data: { id: string; reason?: string }) =>
+      ipcRenderer.invoke('x:plan:reject', data),
+  },
   // Writing Module
   writing: {
     project: {

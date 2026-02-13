@@ -1,5 +1,6 @@
 import type { XTab } from './XTwitterPage';
 import XResearchIdeaEditor from './XResearchIdeaEditor';
+import XPlanThreadComposer from './XPlanThreadComposer';
 
 interface XContentEditorPaneProps {
   tab: XTab;
@@ -9,6 +10,11 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
   // Research tab has full editor
   if (tab === 'research') {
     return <XResearchIdeaEditor />;
+  }
+  
+  // Plan tab has thread composer
+  if (tab === 'plan') {
+    return <XPlanThreadComposer />;
   }
 
   // Other tabs: placeholder
