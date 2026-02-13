@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 11 of 12 (Chat Pane + 3-Pane Layout)
-Plan: 01 of 04 (Data Layer)
+Plan: 02 of 04 (3-Pane Layout)
 Status: In progress
-Last activity: 2026-02-13 -- Completed 11-01-PLAN.md
+Last activity: 2026-02-13 -- Completed 11-02-PLAN.md
 
-Progress: [#########################.........] 1/4 plans complete
+Progress: [##########################........] 2/4 plans complete
 
 ## Performance Metrics
 
@@ -58,6 +58,8 @@ v2.1 decisions:
 - ChatMessage timestamp uses numeric Date.now() (consistent with feedbackStore)
 - writingContext.ts functions are pure (no hooks/store) for cross-component reuse
 - JSONL append-only format for chat history (matches feedback log pattern)
+- v4 Layout type is {[id:string]:number} object map, not number[] array
+- Panel collapse detection via onResize PanelSize.asPercentage === 0 (no onCollapse/onExpand in v4)
 
 ### Pending Todos
 
@@ -69,6 +71,6 @@ v2.1 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-13T03:06:08Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-02-13T03:07:15Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
