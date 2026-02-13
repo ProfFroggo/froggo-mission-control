@@ -4,6 +4,7 @@ import type { PanelImperativeHandle, Layout, PanelSize } from 'react-resizable-p
 import { BookOpen, History, PanelLeftClose, PanelLeftOpen, MessageSquare } from 'lucide-react';
 import ChapterSidebar from './ChapterSidebar';
 import ChapterEditor from './ChapterEditor';
+import ChatPane from './ChatPane';
 import ContextPanel from './ContextPanel';
 import VersionPanel from './VersionPanel';
 import { useWritingStore } from '../../store/writingStore';
@@ -104,7 +105,7 @@ export default function ProjectEditor() {
 
       <Separator className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors cursor-col-resize data-[resize-handle-active]:bg-clawd-accent" />
 
-      {/* Center panel: Chat placeholder (Plan 03 replaces with ChatPane) */}
+      {/* Center panel: AI Chat */}
       <Panel
         id="chat"
         minSize={15}
@@ -115,15 +116,7 @@ export default function ProjectEditor() {
         onResize={handleChatResize}
         className="h-full"
       >
-        <div className="flex flex-col h-full bg-clawd-surface border-r border-clawd-border">
-          <div className="px-3 py-2 border-b border-clawd-border flex items-center gap-2 flex-shrink-0">
-            <MessageSquare size={14} className="text-clawd-text-dim" />
-            <span className="text-xs font-medium text-clawd-text-dim">Chat</span>
-          </div>
-          <div className="flex-1 flex items-center justify-center text-clawd-text-dim text-sm">
-            Chat pane (coming soon)
-          </div>
-        </div>
+        <ChatPane />
       </Panel>
 
       <Separator className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors cursor-col-resize data-[resize-handle-active]:bg-clawd-accent" />
