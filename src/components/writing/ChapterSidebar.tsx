@@ -1,7 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import { useWritingStore } from '../../store/writingStore';
 import ChapterListItem from './ChapterListItem';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
 
 export default function ChapterSidebar() {
   const {
@@ -12,12 +27,19 @@ export default function ChapterSidebar() {
     createChapter,
     renameChapter,
     deleteChapter,
+    reorderChapters,
   } = useWritingStore();
 
   const [showAddInput, setShowAddInput] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [creating, setCreating] = useState(false);
+  const [chaptersCollapsed, setChaptersCollapsed] = useState(false);
   const addInputRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   useEffect(() => {
     if (showAddInput && addInputRef.current) {
@@ -49,6 +71,16 @@ export default function ChapterSidebar() {
   const handleCancelAdd = () => {
     setNewTitle('');
     setShowAddInput(false);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = chapters.findIndex(c => c.id === active.id);
+      const newIndex = chapters.findIndex(c => c.id === over.id);
+      const newOrder = arrayMove(chapters, oldIndex, newIndex);
+      await reorderChapters(newOrder.map(c => c.id));
+    }
   };
 
   return (
@@ -118,23 +150,39 @@ export default function ChapterSidebar() {
         )}
       </div>
 
+      {/* Chapters section header */}
+      <button
+        onClick={() => setChaptersCollapsed(!chaptersCollapsed)}
+        className="px-3 py-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-clawd-text-dim hover:text-clawd-text transition-colors flex-shrink-0"
+      >
+        <span>Chapters ({chapters.length})</span>
+        <ChevronDown
+          size={12}
+          className={`transition-transform ${chaptersCollapsed ? '-rotate-90' : ''}`}
+        />
+      </button>
+
       {/* Chapter list */}
       <div className="flex-1 overflow-y-auto">
-        {chapters.length === 0 ? (
+        {chaptersCollapsed ? null : chapters.length === 0 ? (
           <div className="px-3 py-6 text-center text-[11px] text-clawd-text-dim">
             No chapters yet. Add your first chapter.
           </div>
         ) : (
-          chapters.map((chapter) => (
-            <ChapterListItem
-              key={chapter.id}
-              chapter={chapter}
-              isActive={activeChapterId === chapter.id}
-              onSelect={() => openChapter(chapter.id)}
-              onRename={(title) => renameChapter(chapter.id, title)}
-              onDelete={() => deleteChapter(chapter.id)}
-            />
-          ))
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={chapters.map(c => c.id)} strategy={verticalListSortingStrategy}>
+              {chapters.map((chapter) => (
+                <ChapterListItem
+                  key={chapter.id}
+                  chapter={chapter}
+                  isActive={activeChapterId === chapter.id}
+                  onSelect={() => openChapter(chapter.id)}
+                  onRename={(title) => renameChapter(chapter.id, title)}
+                  onDelete={() => deleteChapter(chapter.id)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </div>
