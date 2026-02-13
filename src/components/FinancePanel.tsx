@@ -204,7 +204,7 @@ export default function FinancePanel() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-clawd-border">
         <div className="flex items-center gap-2">
-          <DollarSign size={24} className="text-green-500" />
+          <DollarSign size={24} className="text-success" />
           <h1 className="text-xl font-semibold">Finance Manager</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -242,7 +242,7 @@ export default function FinancePanel() {
         {alerts.length > 0 && (
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
             <div className="flex items-center gap-2 mb-4">
-              <Bell size={18} className="text-yellow-500" />
+              <Bell size={18} className="text-warning" />
               <h2 className="text-base font-semibold">System Alerts</h2>
             </div>
             
@@ -278,7 +278,7 @@ export default function FinancePanel() {
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <DollarSign size={20} className="text-blue-500" />
+                <DollarSign size={20} className="text-info" />
                 Family Budget
               </h2>
               <span className="text-sm text-clawd-text/60">
@@ -335,14 +335,14 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-info hover:text-blue-300 transition-colors">
+                <button className="mt-4 w-full text-sm text-info hover:text-info transition-colors">
                   View All Categories →
                 </button>
               </>
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No family budget set up</p>
-                <button className="text-info hover:text-blue-300 text-sm">
+                <button className="text-info hover:text-info text-sm">
                   Create Budget
                 </button>
               </div>
@@ -353,7 +353,7 @@ export default function FinancePanel() {
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Coins size={20} className="text-purple-500" />
+                <Coins size={20} className="text-review" />
                 Crypto Budget
               </h2>
               <span className="text-sm text-clawd-text/60">
@@ -410,14 +410,14 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-review hover:text-purple-300 transition-colors">
+                <button className="mt-4 w-full text-sm text-review hover:text-review transition-colors">
                   View All Categories →
                 </button>
               </>
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No crypto budget set up</p>
-                <button className="text-review hover:text-purple-300 text-sm">
+                <button className="text-review hover:text-review text-sm">
                   Create Budget
                 </button>
               </div>
