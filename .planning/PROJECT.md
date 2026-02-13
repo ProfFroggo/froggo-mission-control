@@ -4,24 +4,20 @@
 
 Froggo.app is an Electron desktop dashboard for managing a 15-agent OpenClaw AI orchestration platform. It controls task lifecycle (Kanban), agent spawning, multi-channel communications, voice chat, analytics, and approval workflows. Built with React + Vite + Electron, backed by SQLite and the OpenClaw gateway.
 
-This milestone adds an AI-collaborative long-form writing module — a chapter-based editor with inline feedback, multi-agent collaboration (Writer, Researcher, Jess), memory stores for character/timeline/fact consistency, and context management for 1000+ page documents.
+v2.0 added a writing module with editor, inline feedback, memory stores, and multi-agent collaboration. v2.1 redesigns the UX into an AI-powered book creation system — conversational setup wizard, 3-pane layout (chapters | AI chat | workspace), and agent-driven content flow.
 
 ## Core Value
 
-Kevin can write a complete memoir using AI-collaborative inline feedback — highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
+Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters — then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
 
-## Current Milestone: v2.0 Writing System
+## Current Milestone: v2.1 Writing UX Redesign
 
-**Goal:** Build a modular writing workspace inside Froggo.app that enables AI-collaborative long-form writing with inline feedback, multi-agent support, and consistency management.
+**Goal:** Transform the writing module from a manual editor into an AI-powered book creation system with conversational planning, 3-pane layout, and agent-driven content generation.
 
 **Target features:**
-- Project creation and chapter-based document structure
-- Rich text editor with markdown support and inline feedback (highlight → chat → iterate)
-- Multi-agent feedback (Writer for style/pacing, Researcher for fact-checking, Jess for emotional guidance)
-- Memory store (characters, timeline, facts) with consistency checking
-- Multi-tier context management for large documents
-- Research library with source tracking
-- Version history per chapter
+- Project Setup Wizard: AI agent plans the book before writing (story arc, chapter outline, themes, characters)
+- 3-pane writing layout: chapters sidebar | AI chat dialogue | content workspace
+- Conversational writing flow where AI chat drives content into the workspace
 
 ## Requirements
 
