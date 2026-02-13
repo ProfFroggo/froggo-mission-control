@@ -19,6 +19,7 @@ import { registerWritingMemoryHandlers } from './writing-memory-service';
 import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-research-service';
 import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
+import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
@@ -395,6 +396,9 @@ function createWindow() {
 
   // Register Writing Chat handlers
   registerWritingChatHandlers();
+
+  // Writing wizard state persistence
+  registerWritingWizardHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');

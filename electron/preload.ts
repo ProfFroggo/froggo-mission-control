@@ -688,6 +688,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
       appendMessage: (projectId: string, message: any) => ipcRenderer.invoke('writing:chat:appendMessage', projectId, message),
       clearHistory: (projectId: string) => ipcRenderer.invoke('writing:chat:clearHistory', projectId),
     },
+    wizard: {
+      save: (sessionId: string, state: any) => ipcRenderer.invoke('writing:wizard:save', sessionId, state),
+      load: (sessionId: string) => ipcRenderer.invoke('writing:wizard:load', sessionId),
+      list: () => ipcRenderer.invoke('writing:wizard:list'),
+      delete: (sessionId: string) => ipcRenderer.invoke('writing:wizard:delete', sessionId),
+    },
   },
 });
 
