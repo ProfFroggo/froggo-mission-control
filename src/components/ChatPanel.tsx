@@ -810,10 +810,10 @@ export default function ChatPanel() {
 
   const getStatusColor = () => {
     switch (connectionState) {
-      case 'connected': return 'bg-green-400';
+      case 'connected': return 'bg-success';
       case 'connecting':
-      case 'authenticating': return 'bg-yellow-400 animate-pulse';
-      case 'disconnected': return 'bg-red-400';
+      case 'authenticating': return 'bg-warning animate-pulse';
+      case 'disconnected': return 'bg-error';
     }
   };
 
@@ -1211,7 +1211,7 @@ export default function ChatPanel() {
 
       {/* Connection banner */}
       {!isVoiceMode && connectionState === 'disconnected' && (
-        <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2 text-sm">
+        <div className="px-4 py-2 bg-error-subtle border-t border-error-border flex items-center justify-center gap-2 text-sm">
           <WifiOff size={14} />
           <span>Disconnected from gateway</span>
           <button onClick={reconnect} className="text-clawd-accent hover:underline">
