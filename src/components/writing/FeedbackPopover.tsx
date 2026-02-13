@@ -52,6 +52,46 @@ function buildMemoryContext(
   return result.length > 2000 ? result.slice(0, 2000) + '\n...(truncated)' : result;
 }
 
+function responseFormat(agentId: string): string[] {
+  if (agentId === 'jess') {
+    return [
+      '## Response Format',
+      'Provide exactly 3 alternative versions of the highlighted text.',
+      'For each alternative, include a brief explanation of its emotional dimension.',
+      'Format each alternative as:',
+      '',
+      '### Alternative 1',
+      '[rewritten text]',
+      '',
+      '**Why:** [1-2 sentences explaining the emotional impact, boundary consideration, or tone shift this version achieves]',
+      '',
+      '### Alternative 2',
+      '[rewritten text]',
+      '',
+      '**Why:** [1-2 sentences]',
+      '',
+      '### Alternative 3',
+      '[rewritten text]',
+      '',
+      '**Why:** [1-2 sentences]',
+    ];
+  }
+  return [
+    '## Response Format',
+    'Provide exactly 3 alternative versions of the highlighted text.',
+    'Format each alternative as:',
+    '',
+    '### Alternative 1',
+    '[rewritten text]',
+    '',
+    '### Alternative 2',
+    '[rewritten text]',
+    '',
+    '### Alternative 3',
+    '[rewritten text]',
+  ];
+}
+
 function buildPrompt(
   selectedText: string,
   instructions: string,
@@ -65,7 +105,14 @@ function buildPrompt(
   const agentPreamble: Record<string, string> = {
     writer: 'You are a skilled writing editor focused on style, pacing, and narrative craft.',
     researcher: 'You are a meticulous research editor focused on accuracy, fact-checking, and clarity.',
-    jess: 'You are Jess, a compassionate editorial guide focused on emotional impact, sensitivity, and memoir-specific tone.',
+    jess: [
+      'You are Jess, a therapist and editorial guide who understands memoir as psychological integration, not just storytelling.',
+      'You focus on: emotional impact on the reader, emotional cost to the writer, pacing of sensitive disclosure,',
+      'boundary awareness (what to reveal vs. what to protect), tone calibration (honesty without trauma performance),',
+      'and the relationship between how something is written and what it does psychologically for the person writing it.',
+      'You are warm but direct. You name what you see clearly and precisely. You do not use therapy cliches or empty validation.',
+      'When you suggest alternatives, explain WHY each version handles the emotional dimension differently.',
+    ].join(' '),
   };
 
   // Truncate chapter context to ~2000 words around selection position
@@ -108,18 +155,7 @@ function buildPrompt(
     outline,
     '',
     ...(memoryContext ? ['### Story Context (Memory)', memoryContext, ''] : []),
-    '## Response Format',
-    'Provide exactly 3 alternative versions of the highlighted text.',
-    'Format each alternative as:',
-    '',
-    '### Alternative 1',
-    '[rewritten text]',
-    '',
-    '### Alternative 2',
-    '[rewritten text]',
-    '',
-    '### Alternative 3',
-    '[rewritten text]',
+    ...responseFormat(agentId),
   ].join('\n');
 }
 
@@ -388,7 +424,11 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
               handleSend();
             }
           }}
-          placeholder="How should this be rewritten?"
+          placeholder={
+            selectedAgent === 'jess' ? 'How should this feel?'
+              : selectedAgent === 'researcher' ? 'What should be checked?'
+              : 'How should this be rewritten?'
+          }
           className="flex-1 bg-clawd-bg border border-clawd-border rounded px-2 py-1.5 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent"
           disabled={streaming}
           autoFocus
