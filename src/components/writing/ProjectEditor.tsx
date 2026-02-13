@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import type { PanelImperativeHandle, Layout, PanelSize } from 'react-resizable-panels';
 import { BookOpen, History, PanelLeftClose, PanelLeftOpen, MessageSquare } from 'lucide-react';
@@ -10,6 +10,7 @@ import VersionPanel from './VersionPanel';
 import { useWritingStore } from '../../store/writingStore';
 
 const LAYOUT_KEY = 'writing-layout';
+const COLLAPSE_KEY = 'writing-collapsed';
 const DEFAULT_LAYOUT: Layout = { chapters: 15, chat: 30, editor: 55 };
 
 function getPersistedLayout(): Layout | undefined {
@@ -24,6 +25,20 @@ function getPersistedLayout(): Layout | undefined {
   } catch {
     return undefined;
   }
+}
+
+function getPersistedCollapse(): { chapters: boolean; chat: boolean } {
+  try {
+    const saved = localStorage.getItem(COLLAPSE_KEY);
+    if (!saved) return { chapters: false, chat: false };
+    return JSON.parse(saved);
+  } catch {
+    return { chapters: false, chat: false };
+  }
+}
+
+function persistCollapse(chapters: boolean, chat: boolean) {
+  localStorage.setItem(COLLAPSE_KEY, JSON.stringify({ chapters, chat }));
 }
 
 export default function ProjectEditor() {
@@ -72,14 +87,33 @@ export default function ProjectEditor() {
     }
   };
 
+  // Restore collapse state on mount
+  useEffect(() => {
+    const saved = getPersistedCollapse();
+    // Small delay to ensure panel refs are ready
+    const timer = setTimeout(() => {
+      if (saved.chapters && chaptersPanelRef.current && !chaptersPanelRef.current.isCollapsed()) {
+        chaptersPanelRef.current.collapse();
+      }
+      if (saved.chat && chatPanelRef.current && !chatPanelRef.current.isCollapsed()) {
+        chatPanelRef.current.collapse();
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Track collapse state via onResize (asPercentage 0 = collapsed)
   const handleChaptersResize = useCallback((size: PanelSize) => {
-    setIsChaptersCollapsed(size.asPercentage === 0);
-  }, []);
+    const collapsed = size.asPercentage === 0;
+    setIsChaptersCollapsed(collapsed);
+    persistCollapse(collapsed, isChatCollapsed);
+  }, [isChatCollapsed]);
 
   const handleChatResize = useCallback((size: PanelSize) => {
-    setIsChatCollapsed(size.asPercentage === 0);
-  }, []);
+    const collapsed = size.asPercentage === 0;
+    setIsChatCollapsed(collapsed);
+    persistCollapse(isChaptersCollapsed, collapsed);
+  }, [isChaptersCollapsed]);
 
   return (
     <Group

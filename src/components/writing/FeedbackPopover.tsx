@@ -222,7 +222,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     setError(null);
     accumulatedRef.current = '';
 
-    const sessionKey = `agent:${selectedAgent}:writing:${activeProjectId}`;
+    const sessionKey = `agent:${selectedAgent}:writing:${activeProjectId}:feedback`;
     const memoryContext = buildMemoryContext(characters, timeline, facts);
     const prompt = buildPrompt(
       selectedText,
@@ -287,7 +287,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     setError(null);
     accumulatedRef.current = '';
 
-    const sessionKey = `agent:researcher:writing:${activeProjectId}`;
+    const sessionKey = `agent:researcher:writing:${activeProjectId}:feedback`;
     const prompt = buildFactCheckPrompt(claim, activeChapterContent, sources, facts);
 
     try {

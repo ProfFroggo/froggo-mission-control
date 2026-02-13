@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ArrowDownToLine, Copy, Check } from 'lucide-react';
+import { ArrowDownToLine, Copy, Check, RotateCcw } from 'lucide-react';
 import { useWritingStore } from '../../store/writingStore';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
 
@@ -8,9 +8,10 @@ interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
   streamContent?: string;
+  onRetry?: (userContent: string) => void;
 }
 
-export default function ChatMessage({ message, isStreaming, streamContent }: ChatMessageProps) {
+export default function ChatMessage({ message, isStreaming, streamContent, onRetry }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
 
   const content = isStreaming ? (streamContent || '') : message.content;
@@ -88,6 +89,16 @@ export default function ChatMessage({ message, isStreaming, streamContent }: Cha
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
               {copied ? 'Copied' : 'Copy'}
             </button>
+            {onRetry && (
+              <button
+                onClick={() => onRetry(message.content)}
+                className="flex items-center gap-1 text-xs text-clawd-text-dim hover:text-clawd-text px-1.5 py-0.5 rounded hover:bg-clawd-border transition-colors"
+                title="Retry — remove this response and re-send the question"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Retry
+              </button>
+            )}
           </div>
         )}
       </div>
