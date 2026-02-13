@@ -166,15 +166,38 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | AGENT-03 | Phase 10 | Complete |
 | AGENT-04 | Phase 6 | Complete |
 | AGENT-05 | Phase 6 | Complete |
-| CHAT-01 through CHAT-10 | Pending | Pending |
-| LAYOUT-01 through LAYOUT-05 | Pending | Pending |
-| WIZARD-01 through WIZARD-11 | Pending | Pending |
+| CHAT-01 | Phase 11 | Pending |
+| CHAT-02 | Phase 11 | Pending |
+| CHAT-03 | Phase 11 | Pending |
+| CHAT-04 | Phase 11 | Pending |
+| CHAT-05 | Phase 11 | Pending |
+| CHAT-06 | Phase 11 | Pending |
+| CHAT-07 | Phase 11 | Pending |
+| CHAT-08 | Phase 11 | Pending |
+| CHAT-09 | Phase 11 | Pending |
+| CHAT-10 | Phase 11 | Pending |
+| LAYOUT-01 | Phase 11 | Pending |
+| LAYOUT-02 | Phase 11 | Pending |
+| LAYOUT-03 | Phase 11 | Pending |
+| LAYOUT-04 | Phase 11 | Pending |
+| LAYOUT-05 | Phase 11 | Pending |
+| WIZARD-01 | Phase 12 | Pending |
+| WIZARD-02 | Phase 12 | Pending |
+| WIZARD-03 | Phase 12 | Pending |
+| WIZARD-04 | Phase 12 | Pending |
+| WIZARD-05 | Phase 12 | Pending |
+| WIZARD-06 | Phase 12 | Pending |
+| WIZARD-07 | Phase 12 | Pending |
+| WIZARD-08 | Phase 12 | Pending |
+| WIZARD-09 | Phase 12 | Pending |
+| WIZARD-10 | Phase 12 | Pending |
+| WIZARD-11 | Phase 12 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 44 complete
-- v2.1 requirements: 26 total (10 CHAT + 5 LAYOUT + 11 WIZARD)
-- Unmapped: 26 (pending roadmap)
+- v2.0 requirements: 44/44 complete
+- v2.1 requirements: 26/26 mapped (15 Phase 11 + 11 Phase 12)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-13 -- v2.1 requirements added (26 new)*
+*Last updated: 2026-02-13 -- v2.1 traceability added (26 requirements mapped to Phases 11-12)*
