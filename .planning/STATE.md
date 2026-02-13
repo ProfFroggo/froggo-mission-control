@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 9 — Outline & Versions (plan 01 complete)
+**Current focus:** Phase 9 — Outline & Versions (complete)
 
 ## Current Position
 
 Phase: 9 of 10 (Outline & Versions)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-13 — Completed 09-01-PLAN.md (Chapter DnD & Collapsible)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-13 — Completed 09-02-PLAN.md (Version Snapshots)
 
-Progress: [██████████░░] 83% (10/12 plans)
+Progress: [███████████░] 92% (11/12 plans)
 
 ## Performance Metrics
 
@@ -24,7 +24,7 @@ Progress: [██████████░░] 83% (10/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 10
+- Plans completed: 11
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
@@ -35,6 +35,7 @@ Progress: [██████████░░] 83% (10/12 plans)
 - 08-01: 3min (2 tasks)
 - 08-02: 4min (2 tasks)
 - 09-01: 2min (2 tasks)
+- 09-02: 4min (2 tasks)
 
 ## Accumulated Context
 
@@ -79,6 +80,10 @@ v2 decisions (confirmed in execution):
 - Fact Check button next to AgentPicker for non-intrusive discoverability
 - GripVertical handle-only drag (listeners on handle, not whole item) for click-to-select compatibility
 - 5px PointerSensor activation constraint to prevent accidental drags
+- File-copy version snapshots (not git-based) for simplicity and debuggability
+- Strip HTML before diffing to avoid noisy tag diffs in prose
+- Flush editor content to disk before save/compare for accuracy
+- History and Context panels mutually exclusive for V1 simplicity
 
 ### Pending Todos
 
@@ -92,6 +97,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-13T00:33:55Z
-Stopped at: Completed 09-01-PLAN.md (Chapter DnD & Collapsible)
+Last session: 2026-02-13T00:37:22Z
+Stopped at: Completed 09-02-PLAN.md (Version Snapshots)
 Resume file: None
