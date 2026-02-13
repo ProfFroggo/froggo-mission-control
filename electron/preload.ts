@@ -683,6 +683,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
       diff: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:diff', projectId, chapterId, versionId),
       delete: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:delete', projectId, chapterId, versionId),
     },
+    chat: {
+      loadHistory: (projectId: string) => ipcRenderer.invoke('writing:chat:loadHistory', projectId),
+      appendMessage: (projectId: string, message: any) => ipcRenderer.invoke('writing:chat:appendMessage', projectId, message),
+      clearHistory: (projectId: string) => ipcRenderer.invoke('writing:chat:clearHistory', projectId),
+    },
   },
 });
 
