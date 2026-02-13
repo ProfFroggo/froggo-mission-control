@@ -173,8 +173,12 @@ export default function InboxPanel() {
         console.warn('[InboxPanel] Failed to load review tasks:', e);
       }
       
-      console.log('[Inbox] loadInbox setting items:', allItems.length, 'pending:', allItems.filter(i => i.status === 'pending').length);
-      setItems(allItems);
+      // BUGFIX: Filter out items currently being processed to prevent flash
+      // When items are approved/rejected, they're removed optimistically but may
+      // reappear on next poll if API hasn't finished updating. Exclude processing IDs.
+      const filteredItems = allItems.filter(i => !processingItems.has(i.id));
+      console.log('[Inbox] loadInbox setting items:', filteredItems.length, 'pending:', filteredItems.filter(i => i.status === 'pending').length, 'filtered out:', allItems.length - filteredItems.length, 'processing');
+      setItems(filteredItems);
     } catch (error) {
       console.error('Failed to load inbox:', error);
     } finally {

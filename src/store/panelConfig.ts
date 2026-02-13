@@ -27,6 +27,7 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'library', label: 'Library', visible: true, order: 14 },
   { id: 'schedule', label: 'Schedule', visible: true, order: 15 },
   { id: 'notifications', label: 'Notifications', visible: true, order: 16 },
+  { id: 'writing', label: 'Writing', visible: true, order: 17 },
 ];
 
 function loadFromStorage(): PanelConfig[] {

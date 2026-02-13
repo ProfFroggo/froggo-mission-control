@@ -26,6 +26,8 @@ const ContextControlBoardRaw = lazy(() => import('./ContextControlBoard'));
 const AnalyticsDashboardRaw = lazy(() => import('./AnalyticsDashboard'));
 const ConnectedAccountsPanelRaw = lazy(() => import('./ConnectedAccountsPanel'));
 const DMFeedRaw = lazy(() => import('./DMFeed'));
+const FinancePanelRaw = lazy(() => import('./FinancePanel'));
+const WritingWorkspaceRaw = lazy(() => import('./writing/WritingWorkspace'));
 // Wrap all panels with error boundaries
 export const Dashboard = withErrorBoundary(DashboardRaw, 'Dashboard');
 export const Kanban = withErrorBoundary(KanbanRaw, 'Kanban Board');
@@ -45,5 +47,7 @@ export const ContextControlBoard = withErrorBoundary(ContextControlBoardRaw, 'Co
 export const AnalyticsDashboard = withErrorBoundary(AnalyticsDashboardRaw, 'Analytics');
 export const ConnectedAccountsPanel = withErrorBoundary(ConnectedAccountsPanelRaw, 'Connected Accounts');
 export const DMFeed = withErrorBoundary(DMFeedRaw, 'Agent Messages');
+export const FinancePanel = withErrorBoundary(FinancePanelRaw, 'Finance Manager');
+export const WritingWorkspace = withErrorBoundary(WritingWorkspaceRaw, 'Writing Workspace');
 // Export the error boundary itself for custom usage
 export { default as ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
