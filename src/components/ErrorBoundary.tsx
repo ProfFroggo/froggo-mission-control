@@ -244,7 +244,7 @@ Timestamp: ${new Date().toISOString()}
 
               {!isCritical && errorDetails && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-warning mb-2">
+                  <h3 className="text-sm font-semibold text-yellow-600 mb-2">
                     💡 What to try
                   </h3>
                   <p className="text-sm text-clawd-text-dim">

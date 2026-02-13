@@ -425,7 +425,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                     msg.role === 'user' 
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md' 
                       : msg.role === 'assistant' 
-                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md' 
+                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md' 
                         : 'bg-warning-subtle border border-warning-border text-warning'
                   } ${
                     msg.role === 'user'
@@ -472,7 +472,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
