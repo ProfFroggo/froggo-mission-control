@@ -332,7 +332,7 @@ export const XMentionsView: React.FC = () => {
             <div className="text-center">
               <div className="text-4xl mb-2">📭</div>
               <div>No mentions found</div>
-              <div className="text-sm mt-2">Click "Fetch New" to check for mentions</div>
+              <div className="text-sm mt-2">Click &quot;Fetch New&quot; to check for mentions</div>
             </div>
           </div>
         ) : (
