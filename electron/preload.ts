@@ -601,6 +601,82 @@ contextBridge.exposeInMainWorld('clawdbot', {
   widgetAPI: {
     scanManifest: (agentId: string) => ipcRenderer.invoke('widget:scan-manifest', agentId),
   },
+  // Finance Module
+  finance: {
+    getTransactions: (limit?: number) => ipcRenderer.invoke('finance:getTransactions', limit),
+    getBudgetStatus: (budgetType: 'family' | 'crypto') => ipcRenderer.invoke('finance:getBudgetStatus', budgetType),
+    uploadCSV: (csvContent: string, filename: string) => ipcRenderer.invoke('finance:uploadCSV', csvContent, filename),
+    getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
+    getInsights: () => ipcRenderer.invoke('finance:getInsights'),
+  },
+  // Writing Module
+  writing: {
+    project: {
+      list: () => ipcRenderer.invoke('writing:project:list'),
+      create: (title: string, type: string) => ipcRenderer.invoke('writing:project:create', title, type),
+      get: (projectId: string) => ipcRenderer.invoke('writing:project:get', projectId),
+      update: (projectId: string, updates: any) => ipcRenderer.invoke('writing:project:update', projectId, updates),
+      delete: (projectId: string) => ipcRenderer.invoke('writing:project:delete', projectId),
+    },
+    chapter: {
+      list: (projectId: string) => ipcRenderer.invoke('writing:chapter:list', projectId),
+      create: (projectId: string, title: string) => ipcRenderer.invoke('writing:chapter:create', projectId, title),
+      read: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:chapter:read', projectId, chapterId),
+      save: (projectId: string, chapterId: string, content: string) => ipcRenderer.invoke('writing:chapter:save', projectId, chapterId, content),
+      rename: (projectId: string, chapterId: string, title: string) => ipcRenderer.invoke('writing:chapter:rename', projectId, chapterId, title),
+      reorder: (projectId: string, chapterIds: string[]) => ipcRenderer.invoke('writing:chapter:reorder', projectId, chapterIds),
+      delete: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:chapter:delete', projectId, chapterId),
+    },
+    feedback: {
+      log: (projectId: string, entry: any) =>
+        ipcRenderer.invoke('writing:feedback:log', projectId, entry),
+      history: (projectId: string, chapterId: string) =>
+        ipcRenderer.invoke('writing:feedback:history', projectId, chapterId),
+    },
+    memory: {
+      characters: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:memory:characters:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:memory:characters:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:memory:characters:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:characters:delete', projectId, id),
+      },
+      timeline: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:memory:timeline:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:memory:timeline:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:memory:timeline:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:timeline:delete', projectId, id),
+      },
+      facts: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:memory:facts:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:memory:facts:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:memory:facts:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:memory:facts:delete', projectId, id),
+      },
+    },
+    research: {
+      sources: {
+        list: (projectId: string) => ipcRenderer.invoke('writing:research:sources:list', projectId),
+        create: (projectId: string, data: any) => ipcRenderer.invoke('writing:research:sources:create', projectId, data),
+        update: (projectId: string, id: string, data: any) => ipcRenderer.invoke('writing:research:sources:update', projectId, id, data),
+        delete: (projectId: string, id: string) => ipcRenderer.invoke('writing:research:sources:delete', projectId, id),
+      },
+      links: {
+        forFact: (projectId: string, factId: string) => ipcRenderer.invoke('writing:research:links:forFact', projectId, factId),
+        forSource: (projectId: string, sourceId: string) => ipcRenderer.invoke('writing:research:links:forSource', projectId, sourceId),
+        link: (projectId: string, factId: string, sourceId: string, notes?: string) => ipcRenderer.invoke('writing:research:links:link', projectId, factId, sourceId, notes),
+        unlink: (projectId: string, factId: string, sourceId: string) => ipcRenderer.invoke('writing:research:links:unlink', projectId, factId, sourceId),
+        cleanup: (projectId: string, validFactIds: string[]) => ipcRenderer.invoke('writing:research:links:cleanup', projectId, validFactIds),
+      },
+    },
+    version: {
+      list: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:version:list', projectId, chapterId),
+      save: (projectId: string, chapterId: string, label?: string) => ipcRenderer.invoke('writing:version:save', projectId, chapterId, label),
+      read: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:read', projectId, chapterId, versionId),
+      restore: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:restore', projectId, chapterId, versionId),
+      diff: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:diff', projectId, chapterId, versionId),
+      delete: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:delete', projectId, chapterId, versionId),
+    },
+  },
 });
 
 // Add to clawdbot object - chat message persistence

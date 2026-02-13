@@ -1,98 +1,167 @@
-# Roadmap: Froggo.app Dashboard Hardening
+# Roadmap: Froggo.app
 
-## Overview
+## Milestones
 
-Take Froggo.app from "functional but leaking" to production-grade in four waves. Each wave leaves the app in a strictly better state: first lock down credentials and attack surface, then fix every broken data path so indicators reflect reality, then eliminate behavioral bugs under edge conditions, then strip dead weight. 35 requirements, 4 phases, quick depth.
+- [x] **v1.0 Dashboard Hardening** - Phases 1-4 (shipped 2026-02-12)
+- [x] **v2.0 Writing System** - Phases 5-10 (shipped 2026-02-13)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3, 4): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-
-- [x] **Phase 1: Security Hardening** - No credentials, tokens, or PII in source; no open attack surface
-- [x] **Phase 2: Fix Broken Features** - Every feature works, every data source points to live data
-- [x] **Phase 3: Functional Fixes** - App behaves correctly under all conditions including edge cases
-- [x] **Phase 4: Cleanup & Debloat** - Lean codebase with no dead weight
-
-## Phase Details
+<details>
+<summary>v1.0 Dashboard Hardening (Phases 1-4) - SHIPPED 2026-02-12</summary>
 
 ### Phase 1: Security Hardening
 **Goal**: No security vulnerabilities remain in shipped source code
 **Depends on**: Nothing (first phase)
 **Requirements**: SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06, SEC-07
 **Success Criteria** (what must be TRUE):
-  1. `grep -r` for known API tokens (Twitter Bearer, Gemini key, gateway token) returns zero hits in src/ and electron/
-  2. DevTools cannot be opened in the packaged Froggo.app (Cmd+Shift+I, Cmd+Option+I both do nothing)
-  3. Passing `'; DROP TABLE tasks; --` as a task title through the UI does not execute SQL injection
-  4. The filesystem IPC handlers refuse to read/write paths outside the allowed directories (~/clawd/, ~/.openclaw/)
-  5. The encryption key is loaded from environment or keychain, not from a hardcoded default string
-**Plans**: 6 plans
-
-Plans:
-- [x] 01-01-PLAN.md — Remove credentials and PII from source (SEC-01, SEC-02, SEC-07) [Wave 1]
-- [x] 01-02-PLAN.md — Lock down attack surface (SEC-03, SEC-04 partial, SEC-05, SEC-06) [Wave 2]
-- [x] 01-03-PLAN.md — Gap closure: Migrate notification-settings + snooze handlers to prepare() [Wave 3, gap_closure]
-- [x] 01-04-PLAN.md — Gap closure: Migrate message folder + conversation pin handlers to prepare() [Wave 4, gap_closure]
-- [x] 01-05-PLAN.md — Gap closure: Migrate task/attachment/library/inbox handlers to prepare() [Wave 5, gap_closure]
-- [x] 01-06-PLAN.md — Gap closure: Migrate calendar/conversation/chat/sessions.db + final sweep [Wave 6, gap_closure]
+  1. `grep -r` for known API tokens returns zero hits in src/ and electron/
+  2. DevTools cannot be opened in the packaged Froggo.app
+  3. SQL injection via task title does not execute
+  4. Filesystem IPC handlers refuse paths outside allowed directories
+  5. Encryption key loaded from environment or keychain, not hardcoded
+**Plans**: 6/6 complete
 
 ### Phase 2: Fix Broken Features
 **Goal**: Every feature works and every data indicator reflects live reality
 **Depends on**: Phase 1
-**Requirements**: FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10
-**Success Criteria** (what must be TRUE):
-  1. Agent panel, session list, and token analytics all show live data from ~/clawd/data/froggo.db and ~/.openclaw/ (no stale ~/Froggo/ or ~/.clawdbot/ reads)
-  2. Spawning an agent from the Kanban board triggers the dispatcher/openclaw CLI (not the deleted spawn-agent-with-retry.py script)
-  3. The Dashboard active-work widget renders in its correct grid position (not stacked or missing)
-  4. The tasks:list query returns non-archived tasks (not filtering on nonexistent `cancelled` column)
-  5. All CLI command references in the UI say `openclaw` (no `clawdbot` strings visible to user)
-**Plans**: 2 plans
-
-Plans:
-- [x] 02-01-PLAN.md — Fix mechanical bugs: spawn handler, layout key, Tailwind hover, avatar grouping, JSON.parse guards, CLI strings, API key paths (FIX-02, FIX-05, FIX-06, FIX-07, FIX-08, FIX-09, FIX-10) [Wave 1]
-- [x] 02-02-PLAN.md — Restore missing AI IPC handlers with security treatment: fix channel name mismatch, restore generateReply + getAnalysis with prepare() (FIX-03) [Wave 2]
+**Requirements**: FIX-01 through FIX-10
+**Plans**: 2/2 complete
 
 ### Phase 3: Functional Fixes
-**Goal**: App behaves correctly under all conditions including edge cases and race conditions
+**Goal**: App behaves correctly under all conditions including edge cases
 **Depends on**: Phase 2
-**Requirements**: FUNC-01, FUNC-02, FUNC-03, FUNC-04, FUNC-05, FUNC-06, FUNC-07, FUNC-08, FUNC-09, FUNC-10
-**Success Criteria** (what must be TRUE):
-  1. Approving a task in the inbox routes it to the correct agent based on task content (designer gets design tasks, writer gets content tasks — not everything to coder)
-  2. Opening the dashboard in a browser (web mode) without Electron does not crash on any panel — null guards catch missing IPC
-  3. Receiving a task notification and a message notification within 1 second shows both (not one overwriting the other)
-  4. Approving an item in the inbox does not create a phantom unsynced task in the local store
-  5. The Kanban board re-renders only when task data actually changes (memo comparator catches isDeleting, isSpawning, activeSessions)
-**Plans**: 2 plans
-
-Plans:
-- [x] 03-01-PLAN.md — Fix routing and guards: 9-agent routing table, InboxPanel wiring, DMFeed error boundary, IPC null guards, notification debounce (FUNC-01 through FUNC-05) [Wave 1]
-- [x] 03-02-PLAN.md — Fix state and performance: merge session fetches, DB-sync phantom tasks, shared debounced refresh, Kanban memo comparator, localStorage cap (FUNC-06 through FUNC-10) [Wave 2]
+**Requirements**: FUNC-01 through FUNC-10
+**Plans**: 2/2 complete
 
 ### Phase 4: Cleanup & Debloat
 **Goal**: Lean codebase with no dead files, dead code, or broken styling
 **Depends on**: Phase 3
-**Requirements**: CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06, CLEAN-07, CLEAN-08
+**Requirements**: CLEAN-01 through CLEAN-08
+**Plans**: 2/2 complete
+
+</details>
+
+### v2.0 Writing System (Active)
+
+**Milestone Goal:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
+
+**Phase Numbering:**
+- Integer phases (5, 6, 7...): Planned milestone work
+- Decimal phases (5.1, 5.2): Urgent insertions (marked with INSERTED)
+
+- [x] **Phase 5: Foundation** - Project CRUD, TipTap editor, chapter management, file storage
+- [x] **Phase 6: Inline Feedback** - Highlight-to-chat, AI alternatives, streaming, agent routing
+- [x] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
+- [x] **Phase 8: Research Library** - Sources, fact-checking, Researcher agent
+- [x] **Phase 9: Outline & Versions** - Chapter navigation, drag-drop, diff comparison
+- [x] **Phase 10: Jess Integration** - Emotional guidance, memoir-specific support
+
+## Phase Details
+
+### Phase 5: Foundation
+**Goal**: User can create writing projects, manage chapters, and write prose in a rich text editor with autosave
+**Depends on**: Nothing (first v2 phase; v1 dashboard is stable)
+**Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06, FOUND-07, FOUND-08, FOUND-09, FOUND-10, EDIT-01, EDIT-02, EDIT-03, EDIT-04, EDIT-05
 **Success Criteria** (what must be TRUE):
-  1. No .ts/.tsx file in src/ imports from deleted lib files (readState, queryCache, optimizedQueries, performanceMonitoring, smartAccountSelector, voiceService, api/gateway)
-  2. No .bak files exist in src/
-  3. QuickStatsWidget renders correctly with standard Tailwind classes (no custom CSS class warnings in console)
-  4. MorningBrief panel shows no debug info in production mode
-  5. Keyboard shortcuts in Settings have no collisions (each shortcut maps to exactly one action)
-**Plans**: 2 plans
+  1. User can create a writing project with title and type, and see all projects listed with word count and chapter count
+  2. User can create, rename, and delete chapters within a project
+  3. User can write prose in the TipTap editor with formatting (headings, bold, italic, lists, blockquotes, links) and changes auto-save without a manual save button
+  4. User can navigate between chapters via the outline sidebar and see word counts per chapter and project total
+  5. Writing workspace is accessible from the main dashboard sidebar alongside existing panels (Kanban, Chat, etc.) and projects are stored as file-based structure (markdown chapters, JSON metadata)
+**Plans**: 3/3 complete
 
 Plans:
-- [x] 04-01-PLAN.md — Delete dead code and files (CLEAN-01 through CLEAN-05) [Wave 1]
-- [x] 04-02-PLAN.md — Fix styling and shortcuts (CLEAN-06, CLEAN-07, CLEAN-08) [Wave 1]
+- [x] 05-01-PLAN.md -- Backend: paths, fs-validation fix, TipTap install, writing-project-service, preload bridge
+- [x] 05-02-PLAN.md -- Frontend: writingStore, ProjectSelector, WritingWorkspace, sidebar/App.tsx wiring
+- [x] 05-03-PLAN.md -- Editor: TipTap ChapterEditor, EditorToolbar, ChapterSidebar, ProjectEditor, autosave
+
+### Phase 6: Inline Feedback
+**Goal**: User can highlight text and get AI-powered alternatives from agents, streamed in real-time
+**Depends on**: Phase 5
+**Requirements**: FEED-01, FEED-02, FEED-03, FEED-04, FEED-05, FEED-06, FEED-07, FEED-08, AGENT-01, AGENT-04, AGENT-05
+**Success Criteria** (what must be TRUE):
+  1. User can highlight text in the editor and see a feedback popover with an input field
+  2. User can send feedback instructions to the Writer agent and see 2-3 alternative versions stream in real-time (not blank-then-full)
+  3. User can accept an alternative (replaces highlighted text) or dismiss, and the interaction is logged per chapter
+  4. User can select which agent (Writer, Researcher, Jess) to send feedback to, and agent sessions persist within the project
+  5. AI context includes current chapter content, project outline, and memory store data (when available), communicated via existing OpenClaw Gateway WebSocket
+**Plans**: 2/2 complete
+
+Plans:
+- [x] 06-01-PLAN.md -- Backend: feedbackStore, writing-feedback-service, preload bridge, main.ts wiring
+- [x] 06-02-PLAN.md -- UI: FeedbackPopover, AgentPicker, FeedbackAlternative, BubbleMenu in ChapterEditor, streaming
+
+### Phase 7: Memory Store
+**Goal**: User can maintain character profiles, timeline events, and verified facts that are automatically injected into AI context
+**Depends on**: Phase 6
+**Requirements**: MEM-01, MEM-02, MEM-03, MEM-04, MEM-05, MEM-06
+**Success Criteria** (what must be TRUE):
+  1. User can create, edit, and delete character profiles (name, relationship, description, traits) in the context panel alongside the editor
+  2. User can create, edit, and delete timeline events (date, description, chapter references) in the context panel
+  3. User can create, edit, and delete verified facts (claim, source, status) in the context panel
+  4. Memory store data is automatically included in AI agent context for feedback requests, and persists as JSON files per project
+**Plans**: 2/2 complete
+
+Plans:
+- [x] 07-01-PLAN.md -- Backend: writing-memory-service IPC, preload bridge, memoryStore Zustand store
+- [x] 07-02-PLAN.md -- UI: ContextPanel with character/timeline/fact CRUD, ProjectEditor integration, AI context injection
+
+### Phase 8: Research Library
+**Goal**: User can manage research sources and use the Researcher agent to fact-check claims
+**Depends on**: Phase 7
+**Requirements**: RES-01, RES-02, RES-03, RES-04, RES-05, AGENT-02
+**Success Criteria** (what must be TRUE):
+  1. User can add research sources (title, author, type, URL, notes) to a per-project library stored in SQLite
+  2. User can link sources to facts in the memory store and mark facts as verified/disputed/needs-source
+  3. User can highlight a claim in the editor and ask the Researcher agent to fact-check it, receiving source-backed verification
+**Plans**: 2/2 complete
+
+Plans:
+- [x] 08-01-PLAN.md -- Backend: writing-research-service (SQLite), paths, preload bridge, fact status extension
+- [x] 08-02-PLAN.md -- UI: researchStore, SourceList/SourceForm, ContextPanel 4th tab, fact-source linking, Fact Check action
+
+### Phase 9: Outline & Versions
+**Goal**: User can reorganize chapters and compare version history before and after major edits
+**Depends on**: Phase 5 (uses chapter structure from foundation)
+**Requirements**: OUT-01, OUT-02, OUT-03, OUT-04, OUT-05
+**Success Criteria** (what must be TRUE):
+  1. User can see the project outline as a collapsible chapter tree and reorder chapters via drag-and-drop
+  2. User can save a version snapshot of a chapter before a major edit
+  3. User can view previous versions and restore one, with a diff comparison showing what changed between versions
+**Plans**: 2/2 complete
+
+Plans:
+- [x] 09-01-PLAN.md -- DnD chapter reordering + collapsible outline sidebar
+- [x] 09-02-PLAN.md -- Version snapshots, restore, diff comparison
+
+### Phase 10: Jess Integration
+**Goal**: User can get emotional and memoir-specific guidance from Jess when writing sensitive content
+**Depends on**: Phase 6 (uses inline feedback infrastructure)
+**Requirements**: AGENT-03
+**Success Criteria** (what must be TRUE):
+  1. User can select Jess from the agent picker and receive emotionally attuned feedback specific to memoir writing (pacing, boundaries, tone)
+  2. Jess feedback is contextually distinct from Writer feedback -- addresses emotional impact, not just prose quality
+**Plans**: 1/1 complete
+
+Plans:
+- [x] 10-01-PLAN.md -- Jess-specific prompt, commentary parsing, FeedbackAlternative commentary rendering
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Security Hardening | 6/6 | Complete | 2026-02-12 |
-| 2. Fix Broken Features | 2/2 | Complete | 2026-02-12 |
-| 3. Functional Fixes | 2/2 | Complete | 2026-02-12 |
-| 4. Cleanup & Debloat | 2/2 | Complete | 2026-02-12 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
+| 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
+| 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
+| 7. Memory Store | v2.0 | 2/2 | Complete | 2026-02-12 |
+| 8. Research Library | v2.0 | 2/2 | Complete | 2026-02-13 |
+| 9. Outline & Versions | v2.0 | 2/2 | Complete | 2026-02-13 |
+| 10. Jess Integration | v2.0 | 1/1 | Complete | 2026-02-13 |
+
+---
+*Roadmap created: 2026-02-12*
+*Last updated: 2026-02-13 — Phase 10 complete, v2.0 milestone shipped*

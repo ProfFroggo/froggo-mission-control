@@ -1,7 +1,7 @@
 # Repo Cleanup Handoff — 2026-02-12
 
 ## Repo
-- **Path:** `/Users/worker/clawd-froggo/clawd-dashboard/`
+- **Path:** `/Users/worker/agent-froggo/froggo-dashboard/`
 - **Branch:** `dev` (working) / `main` (prod)
 - **Remote:** `origin` → `github.com/ProfFroggo/froggo_bot`
 
@@ -19,7 +19,7 @@
 5. **Update checker** — prod app checks GitHub Releases API on launch, shows dialog if newer version exists
 6. **Version** — bumped to `1.0.0`, package renamed to `froggo-dashboard`
 7. **Smartrouter dead code** — removed from `electron/main.ts`
-8. **Home dir cleanup** — deleted `~/clawd-coder-OLD-20260210-095300/` (87MB), `~/clawd-lead-engineer.archived/`, `~/Froggo.archived-20260129/`, `~/froggo-memory.db`, `~/froggo.db`
+8. **Home dir cleanup** — deleted `~/agent-coder-OLD-20260210-095300/` (87MB), `~/agent-lead-engineer.archived/`, `~/Froggo.archived-20260129/`, `~/froggo-memory.db`, `~/froggo.db`
 
 ## On Disk (NOT committed yet)
 
@@ -40,7 +40,7 @@
 
 ### Bash commands needed (file edits already done, just need shell):
 ```bash
-cd /Users/worker/clawd-froggo/clawd-dashboard
+cd /Users/worker/agent-froggo/froggo-dashboard
 
 # 1. Install eslint/prettier deps
 npm install

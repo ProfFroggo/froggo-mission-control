@@ -5,16 +5,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { prepare, db } from './database';
+import { FROGGO_DB, PROJECT_ROOT } from './paths';
 
 const execPromise = promisify(exec);
 
-const DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db');
-const BACKUP_DIR = path.join(os.homedir(), 'clawd', 'backups');
-const EXPORT_DIR = path.join(os.homedir(), 'clawd', 'exports');
+const DB_PATH = FROGGO_DB;
+const BACKUP_DIR = path.join(PROJECT_ROOT, 'backups');
+const EXPORT_DIR = path.join(PROJECT_ROOT, 'exports');
 
 // Ensure directories exist
 [BACKUP_DIR, EXPORT_DIR].forEach(dir => {
@@ -328,7 +328,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<string>
 
   // Optionally backup attachments
   if (options.includeAttachments) {
-    const attachmentsDir = path.join(os.homedir(), 'clawd', 'deliverables');
+    const attachmentsDir = path.join(PROJECT_ROOT, 'deliverables');
     const backupAttachmentsDir = path.join(BACKUP_DIR, `attachments-${timestamp}`);
 
     if (fs.existsSync(attachmentsDir)) {

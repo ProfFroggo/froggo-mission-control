@@ -2,100 +2,106 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-11)
+See: .planning/PROJECT.md (updated 2026-02-12)
 
-**Core value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-**Current focus:** Phase 4 Cleanup & Debloat complete. All phases done.
+**Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
+**Current focus:** Phase 10 — Jess Integration (complete)
 
 ## Current Position
 
-Phase: 4 of 4 (Cleanup & Debloat)
-Plan: 2 of 2 in current phase
-Status: Phase complete -- ALL PHASES DONE
-Last activity: 2026-02-12 -- Completed 04-01-PLAN.md (dead code deletion, backup file cleanup)
+Phase: 10 of 10 (Jess Integration)
+Plan: 1 of 1 in current phase
+Status: ALL PHASES COMPLETE
+Last activity: 2026-02-13 — Completed 10-01-PLAN.md (Jess Integration)
 
-Progress: [████████████] 100% (12/12 plans complete)
+Progress: [████████████] 100% (12/12 plans)
 
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (v1):**
 - Total plans completed: 12
 - Average duration: ~13min
 - Total execution time: ~161min
 
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-security-hardening | 6/6 | ~138min | ~23min |
-| 02-fix-broken-features | 2/2 | ~7min | ~3.5min |
-| 03-functional-fixes | 2/2 | ~8min | ~4min |
-| 04-cleanup-debloat | 2/2 | ~8min | ~4min |
-
-**Recent Trend:**
-- Last 10 plans: 01-04 (~13min), 01-05 (~20min), 01-06 (~31min), 02-01 (~5min), 02-02 (~2min), 03-01 (~4min), 03-02 (~4min), 04-02 (~2min), 04-01 (~6min)
-- Trend: Research-backed plans with targeted edits execute fast
-
-*Updated after each plan completion*
+**Velocity (v2):**
+- Plans completed: 12
+- 05-01: 3min (3 tasks)
+- 05-02: 4min (2 tasks)
+- 05-03: 5min (2 tasks + checkpoint skipped)
+- 06-01: 2min (2 tasks)
+- 06-02: 3min (3 tasks)
+- 07-01: 3min (2 tasks)
+- 07-02: 3min (2 tasks)
+- 08-01: 3min (2 tasks)
+- 08-02: 4min (2 tasks)
+- 09-01: 2min (2 tasks)
+- 09-02: 4min (2 tasks)
+- 10-01: 3min (2 tasks)
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
 
-- Wave-based execution order: security first, then broken features, then functional, then cleanup
-- Keep preload namespace as `clawdbot` (cosmetic rename deferred to v2)
-- Keep electron/main.ts as monolith (breakup deferred to v2)
-- Used Electron safeStorage (OS keychain) for secret storage instead of .env files
-- Async IPC bridge pattern for API keys (safeStorage only in main process)
-- Dynamic gog CLI discovery for Google accounts instead of hardcoded arrays
-- Empty defaults in userSettings store -- existing users unaffected via localStorage persistence
-- Keep db:exec IPC channel name unchanged -- 5+ renderer files depend on it, prepare() with params is equally safe
-- Path allowlist for FS IPC: ~/clawd/, ~/.openclaw/, ~/Froggo/
-- Security.db gets its own lazy better-sqlite3 connection via getSecurityDb()
-- Use db.prepare() directly (not cached) for dynamic SET clauses to avoid statement cache bloat
-- Use db.transaction() for multi-step operations (snooze:unset, conversations:delete) for atomicity
-- Reuse single prepared statement in loops (pins:reorder) for efficiency
-- db.exec() for DDL-only statements (CREATE TABLE IF NOT EXISTS), prepare() for DML with user data
-- execSync with input option for safe stdin piping to shell scripts (inbox:filter)
-- Number(result.lastInsertRowid) for getting inserted row ID from RunResult
-- sessions.db opened as readonly (dashboard never writes to gateway session tracking)
-- sessions.db path: check ~/.openclaw/ first, fallback to ~/.clawdbot/ for legacy support
-- search:local uses shell escaping (not SQL escaping) since froggo-db is a CLI tool
-- conversations:delete uses db.transaction() for atomic multi-table cleanup
-- Keep .clawdbot/openclaw.json as legacy config fallback (line 4144 in main.ts)
-- HOVER_BG_MAP static lookup pattern for Tailwind JIT dynamic hover classes
-- IIFE wrapper for pre-filtered messages to avoid JSX tree restructuring
-- Keep Anthropic API call as-is in ai:generateReply (direct HTTP, no DB)
-- Leave ai:analyzeMessages stub unchanged (too complex, out of scope)
-- Ordered regex routing: designer/social-manager/growth-director first (specific), coder/writer/chief last (catch-all)
-- DMFeed default export added for React.lazy() compatibility
-- Per-type debounce Map replaces single refreshTimer for independent event handling
-- loadGatewaySessions sets both gatewaySessions and sessions state (merges two IPC calls)
-- matchTaskToAgent for approval/revision routing instead of hardcoded agent names
-- 400ms debounce for shared task refresh (balances responsiveness and dedup)
-- Reference equality memo (prev.task === next.task) with JSON.stringify for small objects
-- 200 message cap per chat room in localStorage
-- Only replace custom CSS classes within specific components -- text-utilities.css still used by Kanban, AgentPanel, etc.
-- Keep console.error in MorningBrief (legitimate error reporting), only remove console.log debug lines
-- SettingsPanel shortcut editor saves to localStorage but App.tsx doesn't read it (cosmetic display only)
-- ContentCalendar.tsx file kept (used by XPanel.tsx) but its dead ProtectedPanels export removed
-- SettingsPanel dead _notifPrefs useState AND its useEffect loader both removed together
+v1 decisions carried forward:
+- Keep preload namespace as `clawdbot` (cosmetic rename deferred)
+- Keep electron/main.ts as monolith (breakup deferred)
+- New IPC handlers go in dedicated service files under electron/
+- All paths through electron/paths.ts
+
+v2 decisions (confirmed in execution):
+- TipTap v3.19.0 as rich text editor (installed, confirmed)
+- File-based storage for writing projects (project.json + chapters.json + .md files on disk)
+- No @tiptap/markdown (beta) -- markdown for import/export only via custom converter
+- Separate writingStore (not merged into store.ts) -- confirmed in Plan 02
+- writingStore not persisted to localStorage (document content lives on disk via IPC)
+- Writing panels use ProtectedPanels.tsx lazy load + error boundary pattern (consistent with all other panels)
+- bridge() accessor helper for safe IPC access in writingStore
+- TipTap 3.19 uses `undoRedo` (not `history`) in StarterKitOptions
+- TipTap 3.19 setContent uses options object `{ emitUpdate: false }` not boolean
+- 1500ms autosave debounce with flush on unmount
+- shouldRerenderOnTransaction: false for editor performance (critical for 10k+ word chapters)
+- JSONL per-chapter feedback logs in memory/ dir (append-only, one file per chapter)
+- feedbackStore.reset() preserves selectedAgent (user preference persists)
+- savedSelection stores editor range at send time (for reliable accept after streaming)
+- useRef for stream accumulation in FeedbackPopover (avoids stale closures)
+- Agent-specific preamble in feedback prompts (writer: style, researcher: accuracy, jess: psychological integration)
+- responseFormat() helper for agent-conditional prompt format (Jess gets **Why:** blocks)
+- ParsedAlternative { text, commentary? } replaces string[] for alternatives
+- Commentary extraction gated on agentId === 'jess' in parser
+- Indigo italic commentary styling matches Jess agent theme
+- Chapter context truncated to ~16K chars around selection position
+- BubbleMenu updateDelay=0 for instant popup; selection collapse after accept to prevent flicker
+- JSON array files per project for memory storage (characters.json, timeline.json, facts.json)
+- Re-list after mutation in memoryStore (simpler than optimistic updates, local I/O is fast)
+- Cap memory context to ~2000 chars in AI prompts (prevents bloat)
+- Inline form editing in context panel (form replaces card in-place, consistent with ChapterListItem)
+- Per-project research.db (not shared) for data isolation and portability
+- Synchronous better-sqlite3 API for research DB (no async wrapper needed)
+- Blue badge with 'S' label for needs-source fact status
+- Lazy-load sources on tab activation (not project open) for performance
+- Fact-check results shown as raw stream (verdict format, not alternatives)
+- Fact Check button next to AgentPicker for non-intrusive discoverability
+- GripVertical handle-only drag (listeners on handle, not whole item) for click-to-select compatibility
+- 5px PointerSensor activation constraint to prevent accidental drags
+- File-copy version snapshots (not git-based) for simplicity and debuggability
+- Strip HTML before diffing to avoid noisy tag diffs in prose
+- Flush editor content to disk before save/compare for accuracy
+- History and Context panels mutually exclusive for V1 simplicity
 
 ### Pending Todos
 
-- None -- all phases complete
+- None
 
 ### Blockers/Concerns
 
-- Must run `electron:build` (not just `npm run build`) for changes to appear in packaged app
-- Users on fresh install need to configure API keys and profile in Settings (previously hardcoded)
-- 24 pre-existing TypeScript errors remain (App.tsx View types, Dashboard layout types, etc.) -- predate all cleanup work
+- 5 pre-existing TypeScript errors in main.ts (execPromise references)
+- ~~fs-validation.ts missing ~/froggo in ALLOWED_ROOTS~~ FIXED in 05-01
+- TipTap markdown extension is beta -- store as TipTap JSON, treat markdown as import/export only
 
 ## Session Continuity
 
-Last session: 2026-02-12
-Stopped at: ALL PHASES COMPLETE — milestone verified and closed
+Last session: 2026-02-13T00:59:59Z
+Stopped at: Completed 10-01-PLAN.md (Jess Integration) -- ALL PLANS COMPLETE
 Resume file: None

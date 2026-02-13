@@ -59,7 +59,7 @@ export function prepare(sql: string): Database.Statement {
 }
 ```
 
-**Impact on FIX-01:** The library:view and library:download handlers were migrated to `prepare()` during Phase 1, which automatically uses the correct `~/clawd/data/froggo.db` path. The x-automations-service was also migrated to use `prepare()`. The only file still using its own DB_PATH is `connected-accounts-service.ts`, but it already has the correct path (`~/clawd/data/froggo.db`).
+**Impact on FIX-01:** The library:view and library:download handlers were migrated to `prepare()` during Phase 1, which automatically uses the correct `~/froggo/data/froggo.db` path. The x-automations-service was also migrated to use `prepare()`. The only file still using its own DB_PATH is `connected-accounts-service.ts`, but it already has the correct path (`~/froggo/data/froggo.db`).
 
 ### Pattern 2: Preload Bridge Namespace
 The preload.ts exposes IPC channels as `window.clawdbot.*`. This namespace is **intentional and NOT a CLI reference** -- it's the API surface for the renderer process. Renaming this would require touching 100+ call sites across the entire frontend. FIX-09 only targets literal `clawdbot` **CLI command strings** passed to exec, not the window namespace.
@@ -287,7 +287,7 @@ const keyPath = path.join(os.homedir(), '.clawdbot', 'openai.key');
 **Confidence: HIGH**
 
 Evidence:
-- `electron/main.ts` lines 3966-3967, 4020-4021: library:view and library:download now use `prepare()` from database.ts (correct path `~/clawd/data/froggo.db`)
+- `electron/main.ts` lines 3966-3967, 4020-4021: library:view and library:download now use `prepare()` from database.ts (correct path `~/froggo/data/froggo.db`)
 - `electron/x-automations-service.ts` line 2: imports `prepare` from `./database` — fully migrated
 - `electron/connected-accounts-service.ts` line 27: `DB_PATH = path.join(os.homedir(), 'clawd', 'data', 'froggo.db')` — already correct (comment says "fixed")
 - No remaining `~/Froggo/` references in executable code (only in comments and planning docs)
@@ -450,7 +450,7 @@ Evidence:
 | `sqlite3` subprocess calls | `better-sqlite3` via shared `prepare()` | Phase 1 (2026-02) | FIX-01 resolved as side-effect |
 | `spawn-agent-with-retry.py` | `openclaw agent --agent X --message "..."` | 2026-02-10 (script deleted) | FIX-02 became critical |
 | `clawdbot` CLI | `openclaw` CLI | 2026-02-02 (migration) | FIX-09 became needed |
-| `~/.clawdbot/` state dir | `~/.openclaw/` (with symlink) | 2026-02-02 (migration) | FIX-10 partially resolved |
+| `~/.openclaw/` state dir | `~/.openclaw/` (with symlink) | 2026-02-02 (migration) | FIX-10 partially resolved |
 
 ## Open Questions
 
@@ -474,7 +474,7 @@ Evidence:
 ### Primary (HIGH confidence)
 - Direct source file reads: `electron/main.ts`, `electron/preload.ts`, `electron/database.ts`, `electron/connected-accounts-service.ts`, `electron/x-automations-service.ts`, `src/components/Dashboard.tsx`, `src/components/AgentPanel.tsx`, `src/components/ChatRoomView.tsx`, `src/components/InboxPanel.tsx`, `src/components/VoiceChatPanel.tsx`, `src/components/TaskDetailPanel.tsx`, `src/utils/agentThemes.ts`
 - `electron/main.ts.before-cleanup` — backup with original AI handlers
-- Live database schema: `sqlite3 ~/clawd/data/froggo.db ".schema tasks"`
+- Live database schema: `sqlite3 ~/froggo/data/froggo.db ".schema tasks"`
 - Phase 1 planning docs: `.planning/phases/01-security-hardening/01-05-SUMMARY.md`
 
 ## Metadata

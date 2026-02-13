@@ -4,11 +4,10 @@
  * Run: npx ts-node --project tsconfig.electron.json electron/benchmark.ts
  */
 import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as os from 'os';
 import { execSync } from 'child_process';
+import { FROGGO_DB } from './paths';
 
-const dbPath = path.join(os.homedir(), 'clawd/data/froggo.db');
+const dbPath = FROGGO_DB;
 
 // --- Benchmark helpers ---
 function timeMs(fn: () => any): { result: any; ms: number } {
