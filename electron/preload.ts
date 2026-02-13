@@ -609,6 +609,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
     getInsights: () => ipcRenderer.invoke('finance:getInsights'),
   },
+  financeAgent: {
+    sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),
+    getChatHistory: () => ipcRenderer.invoke('financeAgent:getChatHistory'),
+    clearHistory: () => ipcRenderer.invoke('financeAgent:clearHistory'),
+    triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => ipcRenderer.invoke('financeAgent:triggerAnalysis', analysisType),
+    getStatus: () => ipcRenderer.invoke('financeAgent:getStatus'),
+  },
   // Writing Module
   writing: {
     project: {
