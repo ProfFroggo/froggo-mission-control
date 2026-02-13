@@ -24,8 +24,8 @@ interface Template {
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
   tweet: { icon: XIcon, color: 'text-white', label: 'Post' },
-  email: { icon: Mail, color: 'text-red-400', label: 'Email' },
-  message: { icon: MessageSquare, color: 'text-green-400', label: 'Message' },
+  email: { icon: Mail, color: 'text-error', label: 'Email' },
+  message: { icon: MessageSquare, color: 'text-success', label: 'Message' },
   generic: { icon: FileText, color: 'text-clawd-text-dim', label: 'Generic' },
 };
 
@@ -237,7 +237,7 @@ export default function LibraryTemplatesTab() {
                       className="p-1 hover:bg-clawd-border rounded"
                     >
                       {template.starred ? (
-                        <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                        <Star size={14} className="text-warning fill-yellow-400" />
                       ) : (
                         <StarOff size={14} className="text-clawd-text-dim" />
                       )}
@@ -313,7 +313,7 @@ export default function LibraryTemplatesTab() {
                             className="p-1.5 hover:bg-red-500/20 rounded"
                             title="Delete"
                           >
-                            <Trash2 size={14} className="text-red-400" />
+                            <Trash2 size={14} className="text-error" />
                           </button>
                         </>
                       )}

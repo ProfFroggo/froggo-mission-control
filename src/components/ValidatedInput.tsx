@@ -61,7 +61,7 @@ export function ValidatedInput({
         <label className="block text-sm font-medium text-clawd-text">
           {label}
           {rules.some(r => r.type === 'required') && (
-            <span className="text-red-400 ml-1">*</span>
+            <span className="text-error ml-1">*</span>
           )}
         </label>
       )}
@@ -87,8 +87,8 @@ export function ValidatedInput({
 
         {showValidation && touched && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {hasError && <AlertCircle size={16} className="text-red-400" />}
-            {isValid && <Check size={16} className="text-green-400" />}
+            {hasError && <AlertCircle size={16} className="text-error" />}
+            {isValid && <Check size={16} className="text-success" />}
           </div>
         )}
       </div>
@@ -98,7 +98,7 @@ export function ValidatedInput({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-red-400">
+        <div className="flex items-center gap-1 text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
         </div>
@@ -159,11 +159,11 @@ export function ValidatedTextarea({
           <label className="block text-sm font-medium text-clawd-text">
             {label}
             {rules.some(r => r.type === 'required') && (
-              <span className="text-red-400 ml-1">*</span>
+              <span className="text-error ml-1">*</span>
             )}
           </label>
           {showCharCount && maxLength && (
-            <span className={`text-xs ${isNearLimit ? 'text-yellow-400' : 'text-clawd-text-dim'}`}>
+            <span className={`text-xs ${isNearLimit ? 'text-warning' : 'text-clawd-text-dim'}`}>
               {charCount} / {maxLength}
             </span>
           )}
@@ -192,7 +192,7 @@ export function ValidatedTextarea({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-red-400">
+        <div className="flex items-center gap-1 text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
         </div>
@@ -247,7 +247,7 @@ export function ValidatedSelect({
         <label className="block text-sm font-medium text-clawd-text">
           {label}
           {rules.some(r => r.type === 'required') && (
-            <span className="text-red-400 ml-1">*</span>
+            <span className="text-error ml-1">*</span>
           )}
         </label>
       )}
@@ -279,7 +279,7 @@ export function ValidatedSelect({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-red-400">
+        <div className="flex items-center gap-1 text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
         </div>

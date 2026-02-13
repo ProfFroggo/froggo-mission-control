@@ -108,7 +108,7 @@ export default function WritingWorkspace() {
             </button>
             <button
               onClick={handleDiscard}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-clawd-border text-xs text-clawd-text-dim hover:text-red-400 hover:border-red-400/30 transition-colors flex-shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-clawd-border text-xs text-clawd-text-dim hover:text-error hover:border-red-400/30 transition-colors flex-shrink-0"
             >
               <Trash2 size={12} />
               Discard

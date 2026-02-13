@@ -6,9 +6,9 @@ import BaseModal, { BaseModalBody } from './BaseModal';
 import AgentAvatar from './AgentAvatar';
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} /> },
   { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} /> },
-  { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={14} /> },
+  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-yellow-500/20', icon: <Circle size={14} /> },
   { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} /> },
 ];
 

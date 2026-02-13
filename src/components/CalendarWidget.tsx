@@ -115,7 +115,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
     <div className={`bg-clawd-surface ${expanded ? 'rounded-xl' : 'rounded-2xl'} border border-clawd-border overflow-hidden`}>
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <h2 className="font-semibold flex items-center gap-2">
-          <Calendar size={16} className="text-blue-400" />
+          <Calendar size={16} className="text-info" />
           Calendar
         </h2>
         <div className="flex gap-2">
@@ -147,7 +147,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
           </div>
         ) : error ? (
           <div className="p-8 text-center text-clawd-text-dim">
-            <AlertCircle size={32} className="mx-auto mb-3 text-red-400" />
+            <AlertCircle size={32} className="mx-auto mb-3 text-error" />
             <p>{error}</p>
             <button
               onClick={fetchEvents}
@@ -186,7 +186,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium truncate">{event.title}</span>
                           {isUrgent(event.start) && (
-                            <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded flex-shrink-0 whitespace-nowrap">
+                            <span className="text-xs px-1.5 py-0.5 bg-warning-subtle text-warning rounded flex-shrink-0 whitespace-nowrap">
                               {getTimeUntil(event.start)}
                             </span>
                           )}

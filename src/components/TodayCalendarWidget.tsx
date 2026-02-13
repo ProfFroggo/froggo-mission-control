@@ -112,7 +112,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
       {/* Header */}
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Calendar size={16} className="text-blue-400" />
+          <Calendar size={16} className="text-info" />
           <div>
             <h2 className="font-semibold">Today's Schedule</h2>
             <p className="text-xs text-clawd-text-dim">{dateStr}</p>
@@ -144,7 +144,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
             <p className="text-sm text-clawd-text-dim">Loading events...</p>
           </div>
         ) : error ? (
-          <div className="p-6 text-center text-red-400">
+          <div className="p-6 text-center text-error">
             <p className="text-sm">{error}</p>
             <button 
               onClick={loadTodayEvents}
@@ -171,13 +171,13 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                 <div 
                   key={event.id} 
                   className={`p-3 hover:bg-clawd-bg/50 transition-colors ${
-                    happening ? 'bg-blue-500/10 border-l-2 border-l-blue-400' : ''
+                    happening ? 'bg-info-subtle border-l-2 border-l-blue-400' : ''
                   }`}
                 >
                   <div className="flex items-start gap-2">
                     <div className={`flex-shrink-0 w-14 text-right ${
-                      happening ? 'text-blue-400 font-semibold' :
-                      upcoming ? 'text-yellow-400 font-medium' :
+                      happening ? 'text-info font-semibold' :
+                      upcoming ? 'text-warning font-medium' :
                       'text-clawd-text-dim'
                     }`}>
                       <div className="text-xs">{timeStr}</div>
@@ -187,7 +187,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className={`font-medium truncate ${
-                            happening ? 'text-blue-400' : 'text-clawd-text'
+                            happening ? 'text-info' : 'text-clawd-text'
                           }`}>
                             {event.summary}
                             {happening && (
@@ -196,7 +196,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
                               </span>
                             )}
                             {upcoming && !happening && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">
+                              <span className="ml-2 px-1.5 py-0.5 bg-warning-subtle text-warning text-xs rounded-full">
                                 Soon
                               </span>
                             )}

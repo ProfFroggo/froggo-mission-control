@@ -110,15 +110,15 @@ export default function ProductivityHeatmap() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Total Activity</div>
-          <div className="text-2xl font-bold text-green-400">{totalActivity}</div>
+          <div className="text-2xl font-bold text-success">{totalActivity}</div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Peak Day</div>
-          <div className="text-2xl font-bold text-blue-400">{peakDay}</div>
+          <div className="text-2xl font-bold text-info">{peakDay}</div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Peak Hour</div>
-          <div className="text-2xl font-bold text-purple-400">
+          <div className="text-2xl font-bold text-review">
             {peakHour}:00 - {peakHour + 1}:00
           </div>
         </div>
@@ -200,17 +200,17 @@ export default function ProductivityHeatmap() {
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-clawd-bg rounded-lg">
             <div className="text-sm text-clawd-text-dim mb-1">Most productive day</div>
-            <div className="font-medium text-green-400">{peakDay}</div>
+            <div className="font-medium text-success">{peakDay}</div>
           </div>
           <div className="p-3 bg-clawd-bg rounded-lg">
             <div className="text-sm text-clawd-text-dim mb-1">Peak productivity time</div>
-            <div className="font-medium text-blue-400">
+            <div className="font-medium text-info">
               {peakHour}:00 - {peakHour + 1}:00
             </div>
           </div>
           <div className="p-3 bg-clawd-bg rounded-lg">
             <div className="text-sm text-clawd-text-dim mb-1">Avg activities/day</div>
-            <div className="font-medium text-purple-400">
+            <div className="font-medium text-review">
               {timeRange > 0 ? Math.round(totalActivity / timeRange) : 0}
             </div>
           </div>

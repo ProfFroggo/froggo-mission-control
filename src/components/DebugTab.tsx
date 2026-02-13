@@ -54,10 +54,10 @@ export default function DebugTab() {
   };
 
   const stateColor = {
-    connected: 'text-green-400',
-    connecting: 'text-yellow-400',
-    authenticating: 'text-yellow-400',
-    disconnected: 'text-red-400',
+    connected: 'text-success',
+    connecting: 'text-warning',
+    authenticating: 'text-warning',
+    disconnected: 'text-error',
   };
 
   const stateIcon = gwState === 'connected' ? Wifi : WifiOff;
@@ -142,7 +142,7 @@ export default function DebugTab() {
             const isError = /\berror\b/i.test(line);
             const isWarn = /\bwarn/i.test(line);
             return (
-              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-red-400' : isWarn ? 'text-yellow-400' : 'text-clawd-text-dim'}`}>
+              <div key={i} className={`py-0.5 px-2 ${isError ? 'text-error' : isWarn ? 'text-warning' : 'text-clawd-text-dim'}`}>
                 {line}
               </div>
             );

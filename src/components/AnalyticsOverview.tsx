@@ -117,7 +117,7 @@ export default function AnalyticsOverview() {
             value: sessionsCount,
             trend: sessionsCount > 0 ? 'up' : 'neutral',
             icon: MessageSquare,
-            color: 'text-blue-400',
+            color: 'text-info',
           },
           {
             label: 'Tasks Completed',
@@ -125,21 +125,21 @@ export default function AnalyticsOverview() {
             change: completionTrend > 0 ? completionTrend : undefined,
             trend: completionTrend > 0 ? 'up' : completionTrend < 0 ? 'down' : 'neutral',
             icon: Zap,
-            color: 'text-green-400',
+            color: 'text-success',
           },
           {
             label: 'Avg/Day',
             value: avgPerDay,
             trend: avgPerDay > 3 ? 'up' : avgPerDay > 0 ? 'neutral' : 'down',
             icon: Activity,
-            color: 'text-purple-400',
+            color: 'text-review',
           },
           {
             label: 'Pending Approvals',
             value: pendingApprovals,
             trend: pendingApprovals > 5 ? 'down' : 'neutral',
             icon: Clock,
-            color: 'text-yellow-400',
+            color: 'text-warning',
           },
         ]);
       } else {
@@ -150,28 +150,28 @@ export default function AnalyticsOverview() {
             value: sessionsCount,
             trend: 'neutral',
             icon: MessageSquare,
-            color: 'text-blue-400',
+            color: 'text-info',
           },
           {
             label: 'Tasks Completed',
             value: `${completedTasks}/${tasksCount}`,
             trend: completedTasks > 0 ? 'up' : 'neutral',
             icon: Zap,
-            color: 'text-green-400',
+            color: 'text-success',
           },
           {
             label: 'Pending Approvals',
             value: pendingApprovals,
             trend: pendingApprovals > 5 ? 'down' : 'neutral',
             icon: Clock,
-            color: 'text-yellow-400',
+            color: 'text-warning',
           },
           {
             label: 'Total Tasks',
             value: tasksCount,
             trend: 'neutral',
             icon: Activity,
-            color: 'text-purple-400',
+            color: 'text-review',
           },
         ]);
         setDailyData([]);
@@ -225,8 +225,8 @@ export default function AnalyticsOverview() {
                 <Icon size={20} className={stat.color} />
                 {stat.trend && (
                   <div className={`flex items-center gap-1 text-xs ${
-                    stat.trend === 'up' ? 'text-green-400' :
-                    stat.trend === 'down' ? 'text-red-400' :
+                    stat.trend === 'up' ? 'text-success' :
+                    stat.trend === 'down' ? 'text-error' :
                     'text-clawd-text-dim'
                   }`}>
                     {stat.trend === 'up' && <ArrowUp size={14} />}

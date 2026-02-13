@@ -128,7 +128,7 @@ export default function XAutomationsPanel() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500/20 rounded-xl">
-              <Zap size={24} className="text-purple-400" />
+              <Zap size={24} className="text-review" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">X Automations</h1>
@@ -184,7 +184,7 @@ export default function XAutomationsPanel() {
                   key={automation.id}
                   className={`bg-clawd-surface rounded-xl border-2 transition-all ${
                     automation.enabled 
-                      ? 'border-green-500/30 hover:border-green-500/50' 
+                      ? 'border-success-border hover:border-green-500/50' 
                       : 'border-clawd-border hover:border-clawd-border/80'
                   }`}
                 >
@@ -193,13 +193,13 @@ export default function XAutomationsPanel() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3 flex-1">
                         <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-green-500/20' : 'bg-clawd-border'}`}>
-                          {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-green-400' : 'text-clawd-text-dim'} />}
+                          {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-success' : 'text-clawd-text-dim'} />}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold">{automation.name}</h3>
                             {automation.enabled && (
-                              <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">
+                              <span className="px-2 py-0.5 text-xs bg-success-subtle text-success rounded-full">
                                 Active
                               </span>
                             )}
@@ -216,8 +216,8 @@ export default function XAutomationsPanel() {
                           onClick={() => toggleAutomation(automation.id, !automation.enabled)}
                           className={`p-2 rounded-lg transition-colors ${
                             automation.enabled 
-                              ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' 
-                              : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                              ? 'bg-warning-subtle text-warning hover:bg-yellow-500/30' 
+                              : 'bg-success-subtle text-success hover:bg-green-500/30'
                           }`}
                           title={automation.enabled ? 'Pause' : 'Activate'}
                         >
@@ -235,7 +235,7 @@ export default function XAutomationsPanel() {
                         </button>
                         <button
                           onClick={() => deleteAutomation(automation.id)}
-                          className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                          className="p-2 rounded-lg bg-error-subtle text-error hover:bg-red-500/30 transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -247,7 +247,7 @@ export default function XAutomationsPanel() {
                     <div className="flex items-center gap-3 text-sm mb-3 p-3 bg-clawd-bg rounded-lg">
                       <div className="flex items-center gap-2">
                         <span className="text-clawd-text-dim">IF</span>
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded">
+                        <span className="px-2 py-1 bg-info-subtle text-info rounded">
                           {automation.trigger_type}
                         </span>
                         {trigger.keywords && (
@@ -261,7 +261,7 @@ export default function XAutomationsPanel() {
                         <span className="text-clawd-text-dim">THEN</span>
                         <div className="flex gap-1">
                           {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
-                            <span key={i} className="px-2 py-1 bg-green-500/20 text-green-400 rounded">
+                            <span key={i} className="px-2 py-1 bg-success-subtle text-success rounded">
                               {action.type}
                             </span>
                           ))}
@@ -424,7 +424,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Trigger Section */}
           <div className="border-t border-clawd-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-sm">IF</span>
+              <span className="px-3 py-1 bg-info-subtle text-info rounded-lg text-sm">IF</span>
               Trigger
             </h3>
             
@@ -498,7 +498,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Actions Section */}
           <div className="border-t border-clawd-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">THEN</span>
+              <span className="px-3 py-1 bg-success-subtle text-success rounded-lg text-sm">THEN</span>
               Actions
             </h3>
             
@@ -560,7 +560,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                     
                     <button
                       onClick={() => setActions(actions.filter((_, i) => i !== index))}
-                      className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                      className="p-2 text-error hover:bg-red-500/20 rounded-lg transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>

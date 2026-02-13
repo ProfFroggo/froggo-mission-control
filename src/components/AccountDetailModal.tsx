@@ -57,11 +57,11 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
   const getStatusColor = () => {
     switch (account.status) {
       case 'connected':
-        return 'text-green-400';
+        return 'text-success';
       case 'error':
-        return 'text-red-400';
+        return 'text-error';
       case 'needs-reauth':
-        return 'text-yellow-400';
+        return 'text-warning';
       default:
         return 'text-clawd-text-dim';
     }
@@ -204,7 +204,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                             'Active'}
                         </div>
                       </div>
-                      <CheckCircle size={16} className="text-green-400" />
+                      <CheckCircle size={16} className="text-success" />
                     </div>
                   ))}
                 </div>
@@ -241,11 +241,11 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
 
               {/* Error Message */}
               {account.status === 'error' && account.errorMessage && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="p-4 bg-error-subtle border border-red-500/20 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle size={16} className="text-red-400 mt-0.5" />
+                    <AlertTriangle size={16} className="text-error mt-0.5" />
                     <div>
-                      <div className="font-medium text-red-400 mb-1">Connection Error</div>
+                      <div className="font-medium text-error mb-1">Connection Error</div>
                       <div className="text-sm text-red-300">{account.errorMessage}</div>
                     </div>
                   </div>
@@ -274,11 +274,11 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           {/* Permissions Tab */}
           {activeTab === 'permissions' && (
             <div className="space-y-6">
-              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Shield size={16} className="text-blue-400 mt-0.5" />
+                  <Shield size={16} className="text-info mt-0.5" />
                   <div className="flex-1">
-                    <div className="font-medium text-blue-400 mb-1">Permissions Explained</div>
+                    <div className="font-medium text-info mb-1">Permissions Explained</div>
                     <div className="text-sm text-blue-300">
                       These permissions allow Froggo to access your data securely. 
                       You can revoke access at any time.
@@ -306,7 +306,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                           </div>
                           <p className="text-sm text-clawd-text-dim">{scope.description}</p>
                         </div>
-                        <CheckCircle size={16} className="text-green-400 mt-0.5" />
+                        <CheckCircle size={16} className="text-success mt-0.5" />
                       </div>
                     </div>
                   ))}
@@ -363,7 +363,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Key size={16} className="text-clawd-text-dim" />
                       <span className="text-clawd-text-dim">Token Storage</span>
                     </div>
-                    <span className="font-medium text-green-400">
+                    <span className="font-medium text-success">
                       ✅ Encrypted
                     </span>
                   </div>
@@ -372,7 +372,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Shield size={16} className="text-clawd-text-dim" />
                       <span className="text-clawd-text-dim">OAuth Protocol</span>
                     </div>
-                    <span className="font-medium text-green-400">
+                    <span className="font-medium text-success">
                       ✅ Secure
                     </span>
                   </div>
@@ -381,7 +381,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                       <Clock size={16} className="text-clawd-text-dim" />
                       <span className="text-clawd-text-dim">Token Refresh</span>
                     </div>
-                    <span className="font-medium text-green-400">
+                    <span className="font-medium text-success">
                       ✅ Automatic
                     </span>
                   </div>
@@ -433,8 +433,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               {/* Danger Zone */}
-              <section className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <h4 className="font-medium text-red-400 mb-2">Danger Zone</h4>
+              <section className="p-4 bg-error-subtle border border-red-500/20 rounded-lg">
+                <h4 className="font-medium text-error mb-2">Danger Zone</h4>
                 <p className="text-sm text-red-300 mb-3">
                   Removing this account will revoke Froggo's access and delete all stored credentials.
                   This action cannot be undone.

@@ -381,10 +381,10 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
   const getIcon = () => {
     switch (brief?.timeOfDay) {
-      case 'morning': return <Sun className="text-yellow-400" size={32} />;
+      case 'morning': return <Sun className="text-warning" size={32} />;
       case 'afternoon': return <Sun className="text-orange-400" size={32} />;
-      case 'evening': return <Moon className="text-purple-400" size={32} />;
-      case 'night': return <Moon className="text-blue-400" size={32} />;
+      case 'evening': return <Moon className="text-review" size={32} />;
+      case 'night': return <Moon className="text-info" size={32} />;
       default: return <Sparkles className="text-clawd-accent" size={32} />;
     }
   };
@@ -439,8 +439,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-6 space-y-4">
           {/* Urgent Items */}
           {brief.urgentItems.length > 0 && (
-            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
-              <div className="flex items-center gap-2 text-red-400 mb-2">
+            <div className="p-4 bg-error-subtle border border-error-border rounded-xl">
+              <div className="flex items-center gap-2 text-error mb-2">
                 <AlertCircle size={16} />
                 <span className="font-medium">Needs attention</span>
               </div>
@@ -477,7 +477,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.weather && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Cloud size={16} className="text-blue-400" />
+                <Cloud size={16} className="text-info" />
                 <span className="font-medium">Gibraltar Weather</span>
               </div>
               <div className="space-y-1">
@@ -494,7 +494,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.overnightActivity && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Activity size={16} className="text-purple-400" />
+                <Activity size={16} className="text-review" />
                 <span className="font-medium">While You Slept</span>
               </div>
               <div className="space-y-2">
@@ -526,7 +526,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-clawd-text-dim">Active (30 min)</span>
-                  <span className="font-semibold text-green-400">{brief.sessionStats.active}</span>
+                  <span className="font-semibold text-success">{brief.sessionStats.active}</span>
                 </div>
                 
                 {/* Session Types */}
@@ -570,13 +570,13 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.agentStats && (brief.agentStats.activeAgents > 0 || brief.agentStats.busyAgents.length > 0) && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <Bot size={16} className="text-green-400" />
+                <Bot size={16} className="text-success" />
                 <span className="font-medium">Agent Activity</span>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-clawd-text-dim">Active Agents</span>
-                  <span className="font-semibold text-green-400">{brief.agentStats.activeAgents} / {brief.agentStats.totalAgents}</span>
+                  <span className="font-semibold text-success">{brief.agentStats.activeAgents} / {brief.agentStats.totalAgents}</span>
                 </div>
 
                 {/* Busy Agents */}
@@ -630,7 +630,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {brief.mentions && brief.mentions.length > 0 && (
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
-                <AtSign size={16} className="text-blue-400" />
+                <AtSign size={16} className="text-info" />
                 <span className="font-medium">Recent Mentions</span>
                 <span className="text-xs text-clawd-text-dim ml-auto">(last 24h)</span>
               </div>
@@ -664,8 +664,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* All Clear */}
           {!hasItems && (
             <div className="p-6 text-center">
-              <CheckCircle size={48} className="text-green-400 mx-auto mb-3" />
-              <p className="text-lg font-medium text-green-400">You're all caught up!</p>
+              <CheckCircle size={48} className="text-success mx-auto mb-3" />
+              <p className="text-lg font-medium text-success">You're all caught up!</p>
               <p className="text-sm text-clawd-text-dim">No pending items or upcoming events</p>
             </div>
           )}

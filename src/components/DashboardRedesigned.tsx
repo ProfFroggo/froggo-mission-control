@@ -144,8 +144,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 {/* Connection Status */}
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
                   connected 
-                    ? 'bg-green-500/20 text-green-600 dark:text-green-300 border border-green-500/30 dark:border-green-500/30' 
-                    : 'bg-red-500/20 text-red-600 dark:text-red-300 border border-red-500/30 dark:border-red-500/30'
+                    ? 'bg-green-500/20 text-success dark:text-green-300 border border-success-border dark:border-success-border' 
+                    : 'bg-red-500/20 text-red-600 dark:text-red-300 border border-error-border dark:border-error-border'
                 }`}>
                   {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
                   {connected ? 'All Systems Online' : 'Connecting...'}
@@ -161,7 +161,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Active Agents */}
                 {activeSubagents.length > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 dark:border-blue-500/30 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-info-border dark:border-info-border backdrop-blur-sm">
                     <Bot size={12} />
                     {activeSubagents.length} agent{activeSubagents.length > 1 ? 's' : ''} working
                   </div>
@@ -169,7 +169,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Completed Today */}
                 {completedToday > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 text-green-600 dark:text-green-300 border border-green-500/30 dark:border-green-500/30 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 text-success dark:text-green-300 border border-success-border dark:border-success-border backdrop-blur-sm">
                     <CheckCircle size={12} />
                     {completedToday} completed today
                   </div>
@@ -262,7 +262,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-blue-600 dark:text-blue-600 dark:text-blue-400' : 'text-clawd-text-dim'}`} />
+                <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-blue-600 dark:text-blue-600 dark:text-info' : 'text-clawd-text-dim'}`} />
                 {needsReview.length > 0 && (
                   <span className="px-2.5 py-0.5 bg-purple-500/80 text-white text-xs font-medium rounded-full">
                     {needsReview.length} review
@@ -299,7 +299,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-yellow-600 dark:text-yellow-600 dark:text-yellow-400' : 'text-clawd-text-dim'}`} />
+                <AlertTriangle size={28} className={`${urgentTasks.length > 0 ? 'text-yellow-600 dark:text-yellow-600 dark:text-warning' : 'text-clawd-text-dim'}`} />
                 {urgentTasks.length > 0 && (
                   <span className="px-2.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
                     P0
@@ -314,7 +314,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="text-sm font-medium text-clawd-text-dim">Needs Attention</div>
               
               {urgentTasks.length > 0 && (
-                <div className="mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+                <div className="mt-2 text-xs text-yellow-600 dark:text-warning">
                   {urgentTasks.length} urgent • {unassignedTasks.length} unassigned
                 </div>
               )}
@@ -332,7 +332,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           >
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-green-600 dark:text-green-400' : 'text-clawd-text-dim'}`} />
+                <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success dark:text-success' : 'text-clawd-text-dim'}`} />
                 {activeSubagents.length > 0 && (
                   <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-lg shadow-green-400/50" />
                 )}
@@ -345,7 +345,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="text-sm font-medium text-clawd-text-dim">Active Agents</div>
               
               {activeSubagents.length > 0 && (
-                <div className="mt-2 text-xs text-green-600 dark:text-green-400">
+                <div className="mt-2 text-xs text-success dark:text-success">
                   {activeSubagents.length} sub-agent{activeSubagents.length > 1 ? 's' : ''} running
                 </div>
               )}
@@ -361,10 +361,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             <div className="bg-clawd-surface/80 backdrop-blur-xl rounded-2xl border border-clawd-border/50 overflow-hidden shadow-xl">
               <div className="p-6 border-b border-clawd-border/50 flex items-center justify-between bg-gradient-to-r from-clawd-surface to-clawd-bg">
                 <h2 className="flex items-center gap-3 text-lg font-semibold">
-                  <Activity size={20} className="text-blue-600 dark:text-blue-400" />
+                  <Activity size={20} className="text-blue-600 dark:text-info" />
                   Active Work
                   {inProgressTasks.length > 0 && (
-                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-medium rounded-full">
+                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-600 dark:text-info text-xs font-medium rounded-full">
                       {inProgressTasks.length}
                     </span>
                   )}
@@ -387,7 +387,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   </div>
                 ) : [...inProgressTasks, ...needsReview].length === 0 ? (
                   <div className="p-12 text-center">
-                    <CheckCircle size={48} className="mx-auto mb-4 text-green-600 dark:text-green-400/50" />
+                    <CheckCircle size={48} className="mx-auto mb-4 text-success dark:text-success/50" />
                     <p className="text-lg font-medium text-clawd-text-dim mb-2">All caught up!</p>
                     <p className="text-sm text-clawd-text-dim mb-4">No active tasks at the moment</p>
                     <button 
@@ -420,8 +420,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               </h3>
                               <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0 ${
                                 task.status === 'review' 
-                                  ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30' 
-                                  : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                  ? 'bg-purple-500/20 text-purple-600 dark:text-review border border-purple-500/30' 
+                                  : 'bg-blue-500/20 text-blue-600 dark:text-info border border-info-border'
                               }`}>
                                 {task.status === 'in-progress' ? 'working' : task.status}
                               </span>
@@ -489,7 +489,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           >
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30">
-                <Users size={24} className="text-purple-600 dark:text-purple-400" />
+                <Users size={24} className="text-purple-600 dark:text-review" />
               </div>
               
               <div className="text-left">
@@ -569,8 +569,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         <div className="flex-1">
                           <div className="text-sm font-medium">{agent.name}</div>
                           <div className={`text-xs ${
-                            agent.status === 'busy' ? 'text-green-600 dark:text-green-400' :
-                            agent.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-clawd-text-dim'
+                            agent.status === 'busy' ? 'text-success dark:text-success' :
+                            agent.status === 'active' ? 'text-success dark:text-success' : 'text-clawd-text-dim'
                           }`}>
                             {agent.status}
                           </div>
@@ -583,7 +583,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         {activeSubagents.slice(0, 3).map((session) => (
                           <div 
                             key={session.key}
-                            className="flex items-center gap-3 p-2 rounded-lg bg-green-500/10 border border-green-500/20"
+                            className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-green-500/20"
                           >
                             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                             <div className="flex-1 min-w-0">

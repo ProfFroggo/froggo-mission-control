@@ -68,7 +68,7 @@ export default function LogsTab() {
       <div className="flex items-center gap-3">
         <button onClick={() => setPolling(!polling)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            polling ? 'bg-green-500/20 text-green-400' : 'bg-clawd-border text-clawd-text-dim'
+            polling ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim'
           }`}>
           {polling ? <Pause size={14} /> : <Play size={14} />}
           {polling ? 'Live' : 'Paused'}
@@ -112,7 +112,7 @@ export default function LogsTab() {
           const isDebug = /\bdebug\b/i.test(line);
           return (
             <div key={i} className={`py-0.5 leading-relaxed whitespace-pre-wrap break-all ${
-              isError ? 'text-red-400' : isWarn ? 'text-yellow-400' : isDebug ? 'text-blue-400/60' : 'text-clawd-text-dim'
+              isError ? 'text-error' : isWarn ? 'text-warning' : isDebug ? 'text-info/60' : 'text-clawd-text-dim'
             }`}>
               {line}
             </div>

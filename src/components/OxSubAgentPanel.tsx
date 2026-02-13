@@ -59,7 +59,7 @@ export default function OxSubAgentPanel() {
               <RefreshCw size={18} />
             </button>
             <button 
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 hover:bg-warning text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={activeCount >= maxAgents}
             >
               <Plus size={16} />
@@ -90,7 +90,7 @@ export default function OxSubAgentPanel() {
             <Bot size={48} className="mb-4 opacity-50" />
             <p>No sub-agents running</p>
             <p className="text-sm">Spawn agents to help with Bitso tasks</p>
-            <button className="mt-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm">
+            <button className="mt-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 hover:bg-warning text-white text-sm">
               <Plus size={16} />
               Spawn First Agent
             </button>

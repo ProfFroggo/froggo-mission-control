@@ -46,19 +46,19 @@ export default function ConfirmDialog({
     danger: {
       icon: Trash2,
       iconBg: 'bg-red-500/20',
-      iconColor: 'text-red-400',
+      iconColor: 'text-error',
       confirmVariant: 'danger' as const,
     },
     warning: {
       icon: AlertTriangle,
       iconBg: 'bg-yellow-500/20',
-      iconColor: 'text-yellow-400',
+      iconColor: 'text-warning',
       confirmVariant: 'primary' as const,
     },
     info: {
       icon: Info,
       iconBg: 'bg-blue-500/20',
-      iconColor: 'text-blue-400',
+      iconColor: 'text-info',
       confirmVariant: 'primary' as const,
     },
   };
@@ -137,7 +137,7 @@ export default function ConfirmDialog({
               disabled={isProcessing}
             />
             {inputValue && inputValue !== requireInput.expectedValue && (
-              <p className="text-xs text-red-400">
+              <p className="text-xs text-error">
                 Please type exactly: <code className="font-mono">{requireInput.expectedValue}</code>
               </p>
             )}

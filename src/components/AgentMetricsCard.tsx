@@ -43,11 +43,11 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
 
   // Rating badges based on completion rate
   const getRatingBadge = (rate: number) => {
-    if (rate >= 95) return { label: 'Excellent', color: 'text-green-400 bg-green-500/20 border-green-500/30' };
-    if (rate >= 85) return { label: 'Great', color: 'text-blue-400 bg-blue-500/20 border-blue-500/30' };
-    if (rate >= 70) return { label: 'Good', color: 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30' };
+    if (rate >= 95) return { label: 'Excellent', color: 'text-success bg-green-500/20 border-success-border' };
+    if (rate >= 85) return { label: 'Great', color: 'text-info bg-blue-500/20 border-info-border' };
+    if (rate >= 70) return { label: 'Good', color: 'text-warning bg-yellow-500/20 border-warning-border' };
     if (rate >= 50) return { label: 'Fair', color: 'text-orange-400 bg-orange-500/20 border-orange-500/30' };
-    return { label: 'Needs Improvement', color: 'text-red-400 bg-red-500/20 border-red-500/30' };
+    return { label: 'Needs Improvement', color: 'text-error bg-red-500/20 border-error-border' };
   };
 
   const rating = getRatingBadge(m.completionRate);
@@ -113,7 +113,7 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
         </div>
         
         {/* Completed Tasks */}
-        <div className="flex items-center gap-1 text-green-400 no-shrink no-wrap">
+        <div className="flex items-center gap-1 text-success no-shrink no-wrap">
           <CheckCircle size={14} className="no-shrink" />
           <span className="no-shrink">{m.completedTasks}</span>
         </div>
@@ -138,10 +138,10 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
         {/* Accuracy Rate (Completion Rate) */}
         <div className="bg-clawd-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <Target size={16} className="text-green-400" />
+            <Target size={16} className="text-success" />
             <span className="text-xs text-clawd-text-dim">Accuracy Rate</span>
           </div>
-          <div className="text-2xl font-bold text-green-400">
+          <div className="text-2xl font-bold text-success">
             {m.completionRate.toFixed(1)}%
           </div>
           <ProgressBar value={m.completionRate} max={100} color="bg-green-500" />
@@ -153,10 +153,10 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
         {/* Task Completion % */}
         <div className="bg-clawd-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <CheckCircle size={16} className="text-blue-400" />
+            <CheckCircle size={16} className="text-info" />
             <span className="text-xs text-clawd-text-dim">Task Completion</span>
           </div>
-          <div className="text-2xl font-bold text-blue-400">
+          <div className="text-2xl font-bold text-info">
             {m.completedTasks}
           </div>
           <ProgressBar 
@@ -172,15 +172,15 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
         {/* Avg Task Time */}
         <div className="bg-clawd-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-1">
-            <Clock size={16} className="text-purple-400" />
+            <Clock size={16} className="text-review" />
             <span className="text-xs text-clawd-text-dim">Avg Task Time</span>
           </div>
-          <div className="text-2xl font-bold text-purple-400">
+          <div className="text-2xl font-bold text-review">
             {formatAvgTime(m.avgTaskTimeHours)}
           </div>
           <div className="text-xs text-clawd-text-dim mt-2">
             {m.reviewSuccessRate > 0 && (
-              <span className="text-green-400">
+              <span className="text-success">
                 {m.reviewSuccessRate.toFixed(0)}% review pass
               </span>
             )}
@@ -193,11 +193,11 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
         {/* Recent Activity */}
         <div className="bg-clawd-bg rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Zap size={14} className="text-yellow-400" />
+            <Zap size={14} className="text-warning" />
             <span className="text-xs text-clawd-text-dim">Last 7 Days</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-yellow-400">
+            <span className="text-xl font-bold text-warning">
               {m.completedLast7Days}
             </span>
             <span className="text-xs text-clawd-text-dim">tasks completed</span>
@@ -240,7 +240,7 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
           )}
           {m.blockedTasks > 0 && (
             <div className="flex items-center gap-1">
-              <AlertCircle size={14} className="text-red-400" />
+              <AlertCircle size={14} className="text-error" />
               <span>{m.blockedTasks} blocked</span>
             </div>
           )}

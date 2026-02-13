@@ -4,14 +4,14 @@ import { gateway } from '../lib/gateway';
 
 // Channel icons and colors
 const channelConfig: Record<string, { icon: string; color: string; label: string }> = {
-  whatsapp: { icon: '💬', color: 'bg-green-500/20 text-green-400 border-green-500/30', label: 'WhatsApp' },
-  telegram: { icon: '✈️', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', label: 'Telegram' },
+  whatsapp: { icon: '💬', color: 'bg-success-subtle text-success border-success-border', label: 'WhatsApp' },
+  telegram: { icon: '✈️', color: 'bg-info-subtle text-info border-info-border', label: 'Telegram' },
   discord: { icon: '🎮', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30', label: 'Discord' },
-  webchat: { icon: '🌐', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', label: 'Webchat' },
+  webchat: { icon: '🌐', color: 'bg-review-subtle text-review border-purple-500/30', label: 'Webchat' },
   signal: { icon: '🔒', color: 'bg-blue-600/20 text-blue-300 border-blue-600/30', label: 'Signal' },
   imessage: { icon: '💬', color: 'bg-blue-400/20 text-blue-300 border-blue-400/30', label: 'iMessage' },
   slack: { icon: '💼', color: 'bg-purple-600/20 text-purple-300 border-purple-600/30', label: 'Slack' },
-  voice: { icon: '🎤', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', label: 'Voice' },
+  voice: { icon: '🎤', color: 'bg-warning-subtle text-warning border-warning-border', label: 'Voice' },
   cron: { icon: '⏰', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', label: 'Scheduled' },
   system: { icon: '⚙️', color: 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30', label: 'System' },
 };

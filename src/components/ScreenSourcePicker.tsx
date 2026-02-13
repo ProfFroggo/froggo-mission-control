@@ -110,7 +110,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
               <p className="text-sm">Loading available sources…</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12 text-red-400">
+            <div className="flex flex-col items-center justify-center py-12 text-error">
               <p className="text-sm">⚠️ {error}</p>
               <button onClick={fetchSources} className="mt-3 px-4 py-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text text-sm">
                 Retry

@@ -582,12 +582,12 @@ Respond as ${agentName(agentId)}:`;
       {/* Header */}
       <div className="p-3 border-b border-clawd-border bg-clawd-surface flex items-center gap-3">
         <div className="flex items-center gap-2 flex-1">
-          <Users size={18} className="text-green-400" />
+          <Users size={18} className="text-success" />
           <span className="font-semibold text-sm">{room.name}</span>
           {isActive && (
             <div className="flex items-center gap-1.5 ml-2">
               <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-xs text-red-400 font-medium">LIVE</span>
+              <span className="text-xs text-error font-medium">LIVE</span>
             </div>
           )}
         </div>
@@ -607,7 +607,7 @@ Respond as ${agentName(agentId)}:`;
           <div className="flex items-center gap-1">
             <button
               onClick={() => { setMuted(!muted); if (!muted) { stopSpeaking(); window.speechSynthesis.cancel(); } }}
-              className={`p-1.5 rounded-lg transition-colors ${muted ? 'text-red-400' : 'text-clawd-text-dim hover:text-clawd-text'}`}
+              className={`p-1.5 rounded-lg transition-colors ${muted ? 'text-error' : 'text-clawd-text-dim hover:text-clawd-text'}`}
             >
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>

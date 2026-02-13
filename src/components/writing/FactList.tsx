@@ -6,10 +6,10 @@ import { useResearchStore } from '../../store/researchStore';
 import FactForm from './FactForm';
 
 const statusBadge: Record<string, string> = {
-  verified: 'bg-green-500/20 text-green-400',
-  unverified: 'bg-yellow-500/20 text-yellow-400',
-  disputed: 'bg-red-500/20 text-red-400',
-  'needs-source': 'bg-blue-500/20 text-blue-400',
+  verified: 'bg-success-subtle text-success',
+  unverified: 'bg-warning-subtle text-warning',
+  disputed: 'bg-error-subtle text-error',
+  'needs-source': 'bg-info-subtle text-info',
 };
 
 const statusLabel: Record<string, string> = {

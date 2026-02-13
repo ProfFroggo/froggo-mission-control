@@ -116,7 +116,7 @@ export default function XPlanThreadComposer() {
     <div className="flex flex-col h-full bg-gray-900 p-6">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
-          <FileText className="w-5 h-5 text-blue-400" />
+          <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-white">Create Content Plan</h3>
         </div>
         <p className="text-sm text-gray-400">
@@ -138,7 +138,7 @@ export default function XPlanThreadComposer() {
             {/* Research Idea Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Based on Research Idea <span className="text-red-400">*</span>
+                Based on Research Idea <span className="text-error">*</span>
               </label>
               <select
                 value={selectedResearchId}
@@ -166,7 +166,7 @@ export default function XPlanThreadComposer() {
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Content Title <span className="text-red-400">*</span>
+                Content Title <span className="text-error">*</span>
               </label>
               <input
                 type="text"
@@ -181,7 +181,7 @@ export default function XPlanThreadComposer() {
             {/* Content Type */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Content Type <span className="text-red-400">*</span>
+                Content Type <span className="text-error">*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {CONTENT_TYPES.map((type) => (
@@ -205,7 +205,7 @@ export default function XPlanThreadComposer() {
             {/* Thread Length */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Thread Length <span className="text-red-400">*</span>
+                Thread Length <span className="text-error">*</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {THREAD_LENGTHS.map((length) => (
@@ -228,7 +228,7 @@ export default function XPlanThreadComposer() {
             {/* Description/Outline */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Content Outline <span className="text-red-400">*</span>
+                Content Outline <span className="text-error">*</span>
               </label>
               <textarea
                 value={description}

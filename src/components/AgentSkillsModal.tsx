@@ -13,10 +13,10 @@ interface AgentSkill {
 
 // Proficiency color coding
 function profColor(p: number): string {
-  if (p >= 8) return 'text-green-400 bg-green-500/10 border-green-500/30';
-  if (p >= 6) return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
-  if (p >= 4) return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-  return 'text-red-400 bg-red-500/10 border-red-500/30';
+  if (p >= 8) return 'text-success bg-success-subtle border-success-border';
+  if (p >= 6) return 'text-info bg-info-subtle border-info-border';
+  if (p >= 4) return 'text-amber-400 bg-warning/10 border-amber-500/30';
+  return 'text-error bg-error-subtle border-error-border';
 }
 
 function profLabel(p: number): string {

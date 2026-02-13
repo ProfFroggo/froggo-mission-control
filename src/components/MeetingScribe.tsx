@@ -608,7 +608,7 @@ ${transcriptText}`,
           {/* Recording info */}
           {isRecording && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-red-400">
+              <div className="flex items-center gap-2 text-error">
                 <span className="animate-pulse">●</span>
                 <span className="text-sm">Recording</span>
               </div>
@@ -631,7 +631,7 @@ ${transcriptText}`,
           )}
           
           {error && (
-            <div className="mt-3 p-2 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400">
+            <div className="mt-3 p-2 bg-error-subtle border border-error-border rounded text-sm text-error">
               {error}
             </div>
           )}
@@ -729,8 +729,8 @@ ${transcriptText}`,
             {aiSummary ? (
               <div className="bg-clawd-surface border border-clawd-border rounded-lg p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-purple-400" />
-                  <span className="text-sm font-medium text-purple-400">AI Summary</span>
+                  <Sparkles size={16} className="text-review" />
+                  <span className="text-sm font-medium text-review">AI Summary</span>
                 </div>
                 <div className="text-sm text-clawd-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
@@ -784,7 +784,7 @@ ${transcriptText}`,
             {/* Clear */}
             <button
               onClick={clearAll}
-              className="mt-6 text-sm text-clawd-text-dim hover:text-red-400 flex items-center gap-1"
+              className="mt-6 text-sm text-clawd-text-dim hover:text-error flex items-center gap-1"
             >
               <Trash2 size={14} /> Clear
             </button>

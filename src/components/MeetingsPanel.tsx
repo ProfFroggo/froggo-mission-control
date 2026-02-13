@@ -842,7 +842,7 @@ export default function MeetingsPanel() {
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-success-subtle flex items-center justify-center">
                 <Phone size={20} className="text-green-500" />
               </div>
               <div>
@@ -861,7 +861,7 @@ export default function MeetingsPanel() {
               <button
                 onClick={toggleMuted}
                 className={`p-2.5 rounded-lg transition-all ${isMuted 
-                  ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                  ? 'bg-error-subtle text-red-500 hover:bg-red-500/20' 
                   : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'}`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
@@ -916,7 +916,7 @@ export default function MeetingsPanel() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="relative">
-                              <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                              <div className="w-16 h-16 rounded-2xl bg-error-subtle flex items-center justify-center">
                                 <span className="text-3xl font-mono font-bold text-red-500">
                                   {formatDuration(elapsedTime)}
                                 </span>
@@ -995,7 +995,7 @@ export default function MeetingsPanel() {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-success-subtle flex items-center justify-center">
                           <Phone size={36} className="text-green-500" />
                         </div>
                         <h2 className="text-xl font-semibold text-clawd-text mb-2">Start a Meeting</h2>
@@ -1021,7 +1021,7 @@ export default function MeetingsPanel() {
                     {(generatingSummary || aiSummary) && (
                       <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
                         <div className="p-4 border-b border-clawd-border flex items-center gap-2">
-                          <Brain size={18} className="text-purple-400" />
+                          <Brain size={18} className="text-review" />
                           <h3 className="font-medium text-clawd-text">AI Summary</h3>
                           {generatingSummary && <Loader2 size={14} className="animate-spin text-clawd-text-dim" />}
                         </div>
@@ -1054,7 +1054,7 @@ export default function MeetingsPanel() {
                           {pendingItems.length > 0 && (
                             <button
                               onClick={approveAllPending}
-                              className="text-sm text-green-500 hover:text-green-400 flex items-center gap-1"
+                              className="text-sm text-green-500 hover:text-success flex items-center gap-1"
                             >
                               <CheckCircle2 size={14} />
                               Approve All
@@ -1103,21 +1103,21 @@ export default function MeetingsPanel() {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                        item.type === 'task' ? 'bg-blue-500/20 text-blue-400' :
-                                        item.type === 'schedule' ? 'bg-purple-500/20 text-purple-400' :
-                                        item.type === 'message' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        item.type === 'task' ? 'bg-info-subtle text-info' :
+                                        item.type === 'schedule' ? 'bg-review-subtle text-review' :
+                                        item.type === 'message' ? 'bg-warning-subtle text-warning' :
                                         'bg-clawd-border text-clawd-text-dim'
                                       }`}>
                                         {item.type}
                                       </span>
                                       {item.status === 'approved' && (
-                                        <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full flex items-center gap-1">
+                                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
                                           <Check size={10} />
                                           Approved
                                         </span>
                                       )}
                                       {item.status === 'dismissed' && (
-                                        <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full">
+                                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
                                           Dismissed
                                         </span>
                                       )}
@@ -1130,7 +1130,7 @@ export default function MeetingsPanel() {
                                     <div className="flex items-center gap-1">
                                       <button
                                         onClick={() => approveActionItem(item.id)}
-                                        className="p-2 hover:bg-green-500/10 rounded-lg text-green-500 transition-all"
+                                        className="p-2 hover:bg-success-subtle rounded-lg text-green-500 transition-all"
                                         title="Approve"
                                       >
                                         <Check size={16} />
@@ -1144,7 +1144,7 @@ export default function MeetingsPanel() {
                                       </button>
                                       <button
                                         onClick={() => dismissActionItem(item.id)}
-                                        className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 transition-all"
+                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
                                         title="Dismiss"
                                       >
                                         <XCircle size={16} />
@@ -1314,7 +1314,7 @@ export default function MeetingsPanel() {
                               <p className="text-xs text-clawd-text-dim mb-2">Tasks Created</p>
                               <ul className="space-y-1">
                                 {selectedMeeting.tasksCreated.map((task, i) => (
-                                  <li key={i} className="text-sm text-green-400 flex items-center gap-2">
+                                  <li key={i} className="text-sm text-success flex items-center gap-2">
                                     <Check size={12} />
                                     {task}
                                   </li>
@@ -1436,7 +1436,7 @@ export default function MeetingsPanel() {
                                   </span>
                                 )}
                                 {meeting.tasksCreated.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full">
                                     {meeting.tasksCreated.length} tasks
                                   </span>
                                 )}

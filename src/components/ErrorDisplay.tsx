@@ -40,21 +40,21 @@ export default function ErrorDisplay({
 
   const colors = {
     error: {
-      bg: 'bg-red-500/10',
-      border: 'border-red-500/30',
-      text: 'text-red-400',
+      bg: 'bg-error-subtle',
+      border: 'border-error-border',
+      text: 'text-error',
       iconBg: 'bg-red-500/20',
     },
     warning: {
       bg: 'bg-yellow-500/10',
-      border: 'border-yellow-500/30',
-      text: 'text-yellow-400',
+      border: 'border-warning-border',
+      text: 'text-warning',
       iconBg: 'bg-yellow-500/20',
     },
     info: {
-      bg: 'bg-blue-500/10',
-      border: 'border-blue-500/30',
-      text: 'text-blue-400',
+      bg: 'bg-info-subtle',
+      border: 'border-info-border',
+      text: 'text-info',
       iconBg: 'bg-blue-500/20',
     },
   };
@@ -214,7 +214,7 @@ export function FieldError({ error, touched }: FieldErrorProps) {
   if (!error || !touched) return null;
 
   return (
-    <div className="flex items-center gap-1 mt-1 text-xs text-red-400">
+    <div className="flex items-center gap-1 mt-1 text-xs text-error">
       <AlertCircle size={14} />
       <span>{error}</span>
     </div>

@@ -223,15 +223,15 @@ export default function TaskTrendsChart() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Total Created</div>
-          <div className="text-2xl font-bold text-blue-400">{totalCreated}</div>
+          <div className="text-2xl font-bold text-info">{totalCreated}</div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Total Completed</div>
-          <div className="text-2xl font-bold text-green-400">{totalCompleted}</div>
+          <div className="text-2xl font-bold text-success">{totalCompleted}</div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Avg Completion Rate</div>
-          <div className="text-2xl font-bold text-purple-400">{avgCompletionRate}%</div>
+          <div className="text-2xl font-bold text-review">{avgCompletionRate}%</div>
         </div>
       </div>
 

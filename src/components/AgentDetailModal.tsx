@@ -304,10 +304,10 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                   <div className="grid grid-cols-4 gap-4">
                     <div className="bg-clawd-bg rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp size={16} className="text-green-400" />
+                        <TrendingUp size={16} className="text-success" />
                         <span className="text-sm text-clawd-text-dim">Success Rate</span>
                       </div>
-                      <div className="text-3xl font-bold text-green-400">
+                      <div className="text-3xl font-bold text-success">
                         {details.totalTasks > 0 ? `${Math.round(details.successRate * 100)}%` : '—'}
                       </div>
                       <div className="text-xs text-clawd-text-dim mt-1">
@@ -317,10 +317,10 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
 
                     <div className="bg-clawd-bg rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Clock size={16} className="text-blue-400" />
+                        <Clock size={16} className="text-info" />
                         <span className="text-sm text-clawd-text-dim">Avg Time</span>
                       </div>
-                      <div className="text-3xl font-bold text-blue-400">
+                      <div className="text-3xl font-bold text-info">
                         {details.avgTime}
                       </div>
                       <div className="text-xs text-clawd-text-dim mt-1">per task completion</div>
@@ -339,10 +339,10 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
 
                     <div className="bg-clawd-bg rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Wifi size={16} className="text-purple-400" />
+                        <Wifi size={16} className="text-review" />
                         <span className="text-sm text-clawd-text-dim">Sessions</span>
                       </div>
-                      <div className="text-3xl font-bold text-purple-400">
+                      <div className="text-3xl font-bold text-review">
                         {details.activeSessions.filter(s => s.isActive).length}
                       </div>
                       <div className="text-xs text-clawd-text-dim mt-1">
@@ -357,7 +357,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                     <div className="space-y-3">
                       {[
                         { label: 'Completed', count: details.successfulTasks, color: 'bg-green-500', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
-                        { label: 'In Progress', count: details.inProgressTasks, color: 'bg-amber-500', pct: details.totalTasks > 0 ? (details.inProgressTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'In Progress', count: details.inProgressTasks, color: 'bg-warning', pct: details.totalTasks > 0 ? (details.inProgressTasks / details.totalTasks) * 100 : 0 },
                         { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-red-500', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
                       ].map((item) => (
                         <div key={item.label}>
@@ -387,7 +387,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                         <div key={skill.name} className="bg-clawd-bg rounded-lg p-4 hover:bg-clawd-border/50 transition-colors">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Award size={16} className="text-yellow-400" />
+                              <Award size={16} className="text-warning" />
                               <span className="font-medium">{skill.name}</span>
                             </div>
                             <span className="text-xs text-clawd-text-dim">{skill.lastUsed}</span>
@@ -432,16 +432,16 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                               <div className="font-medium mb-1">{task.title}</div>
                               <div className="flex items-center gap-2 text-xs text-clawd-text-dim">
                                 <span className={`px-2 py-0.5 rounded ${
-                                  task.status === 'done' ? 'bg-green-500/20 text-green-400' :
-                                  task.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-400' :
-                                  task.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                                  task.status === 'done' ? 'bg-success-subtle text-success' :
+                                  task.status === 'in-progress' ? 'bg-warning-subtle text-warning' :
+                                  task.status === 'failed' ? 'bg-error-subtle text-error' :
                                   task.status === 'blocked' ? 'bg-orange-500/20 text-orange-400' :
                                   'bg-clawd-bg0/20 text-clawd-text-dim'
                                 }`}>
                                   {task.status}
                                 </span>
                                 {task.project && (
-                                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">
+                                  <span className="px-2 py-0.5 bg-info-subtle text-info rounded">
                                     {task.project}
                                   </span>
                                 )}
@@ -451,9 +451,9 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                               </div>
                             </div>
                             {task.outcome === 'success' ? (
-                              <CheckCircle size={16} className="text-green-400 flex-shrink-0" />
+                              <CheckCircle size={16} className="text-success flex-shrink-0" />
                             ) : task.outcome === 'failed' ? (
-                              <XCircle size={16} className="text-red-400 flex-shrink-0" />
+                              <XCircle size={16} className="text-error flex-shrink-0" />
                             ) : (
                               <Clock size={16} className="text-clawd-text-dim flex-shrink-0" />
                             )}
@@ -481,12 +481,12 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                     <div className="space-y-2">
                       {details.activeSessions.map((session) => (
                         <div key={session.key} className={`bg-clawd-bg rounded-lg p-4 border ${
-                          session.isActive ? 'border-green-500/30' : 'border-clawd-border'
+                          session.isActive ? 'border-success-border' : 'border-clawd-border'
                         }`}>
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
                               {session.isActive ? (
-                                <Wifi size={16} className="text-green-400" />
+                                <Wifi size={16} className="text-success" />
                               ) : (
                                 <WifiOff size={16} className="text-clawd-text-dim" />
                               )}
@@ -494,7 +494,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                                 {session.label || session.key.slice(0, 40)}
                               </span>
                               {session.isActive && (
-                                <span className="px-1.5 py-0.5 text-[10px] bg-green-500/20 text-green-400 rounded">Active</span>
+                                <span className="px-1.5 py-0.5 text-[10px] bg-success-subtle text-success rounded">Active</span>
                               )}
                             </div>
                           </div>

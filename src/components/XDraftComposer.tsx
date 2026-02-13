@@ -144,7 +144,7 @@ export default function XDraftComposer() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-400" />
+            <FileText className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-white">Create Draft</h3>
           </div>
           {selectedPlanId && (
@@ -176,7 +176,7 @@ export default function XDraftComposer() {
             {/* Plan Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Content Plan <span className="text-red-400">*</span>
+                Content Plan <span className="text-error">*</span>
               </label>
               <select
                 value={selectedPlanId}
@@ -193,10 +193,10 @@ export default function XDraftComposer() {
               </select>
               {selectedPlan && (
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+                  <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
                     {selectedPlan.content_type}
                   </span>
-                  <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                  <span className="px-2 py-1 text-xs bg-review-subtle text-review rounded-full">
                     {selectedPlan.thread_length} tweet{selectedPlan.thread_length > 1 ? 's' : ''}
                   </span>
                 </div>
@@ -207,7 +207,7 @@ export default function XDraftComposer() {
             {selectedPlanId && (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Version <span className="text-red-400">*</span>
+                  Version <span className="text-error">*</span>
                 </label>
                 <div className="flex gap-2">
                   {['A', 'B', 'C'].map((v) => (
@@ -233,12 +233,12 @@ export default function XDraftComposer() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-medium text-gray-300">
-                    Tweets <span className="text-red-400">*</span>
+                    Tweets <span className="text-error">*</span>
                   </label>
                   {tweets.length < 10 && (
                     <button
                       onClick={addTweet}
-                      className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
+                      className="flex items-center gap-1 text-sm text-info hover:text-blue-300"
                       disabled={submitting}
                     >
                       <Plus className="w-4 h-4" />
@@ -266,7 +266,7 @@ export default function XDraftComposer() {
                               disabled={submitting}
                             />
                             <div className={`absolute bottom-2 right-2 text-xs font-mono ${
-                              isOverLimit(tweet) ? 'text-red-400' : 'text-gray-500'
+                              isOverLimit(tweet) ? 'text-error' : 'text-gray-500'
                             }`}>
                               {getCharCount(tweet)}/{TWEET_CHAR_LIMIT}
                             </div>
@@ -275,7 +275,7 @@ export default function XDraftComposer() {
                         {tweets.length > 1 && (
                           <button
                             onClick={() => removeTweet(index)}
-                            className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                            className="p-2 text-error hover:bg-red-500/20 rounded-lg transition-colors"
                             disabled={submitting}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -306,7 +306,7 @@ export default function XDraftComposer() {
                           </div>
                           <p className="text-white whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
-                            <div className="mt-2 text-blue-400 text-sm">
+                            <div className="mt-2 text-info text-sm">
                               Show this thread
                             </div>
                           )}

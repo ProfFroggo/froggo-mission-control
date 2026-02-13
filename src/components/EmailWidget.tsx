@@ -67,7 +67,7 @@ export default function EmailWidget() {
     <div className="bg-clawd-surface rounded-2xl border border-clawd-border overflow-hidden">
       <div className="p-4 border-b border-clawd-border flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Mail size={16} className="text-green-400" />
+          <Mail size={16} className="text-success" />
           <h2 className="font-semibold">Email</h2>
           {totalUnread > 0 && (
             <span className="text-xs px-1.5 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full flex-shrink-0 whitespace-nowrap">
@@ -75,7 +75,7 @@ export default function EmailWidget() {
             </span>
           )}
           {totalAction > 0 && (
-            <span className="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded-full flex-shrink-0 whitespace-nowrap">
+            <span className="text-xs px-1.5 py-0.5 bg-error-subtle text-error rounded-full flex-shrink-0 whitespace-nowrap">
               {totalAction} action
             </span>
           )}
@@ -98,7 +98,7 @@ export default function EmailWidget() {
           </div>
         ) : error ? (
           <div className="p-6 text-center text-clawd-text-dim">
-            <AlertCircle size={24} className="mx-auto mb-2 text-red-400" />
+            <AlertCircle size={24} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
             <button onClick={fetchEmail} className="mt-2 text-xs text-clawd-accent hover:underline">
               Try again
@@ -131,13 +131,13 @@ export default function EmailWidget() {
                 </div>
                 <div className="flex items-center gap-2">
                   {account.action > 0 && (
-                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full">
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
                       <Tag size={10} />
                       {account.action}
                     </span>
                   )}
                   {account.starred > 0 && (
-                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full">
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-warning-subtle text-warning rounded-full">
                       <Star size={10} />
                       {account.starred}
                     </span>

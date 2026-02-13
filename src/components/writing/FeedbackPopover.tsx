@@ -443,7 +443,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
       {/* Error state */}
       {error && (
-        <div className="mt-2 text-sm text-red-400">{error}</div>
+        <div className="mt-2 text-sm text-error">{error}</div>
       )}
     </div>
   );

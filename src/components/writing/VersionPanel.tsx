@@ -145,14 +145,14 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                     </button>
                     <button
                       onClick={() => handleRestore(v.id, v.label)}
-                      className="p-1 text-clawd-text-dim hover:text-yellow-400 rounded transition-colors"
+                      className="p-1 text-clawd-text-dim hover:text-warning rounded transition-colors"
                       title="Restore this version"
                     >
                       <RotateCcw size={13} />
                     </button>
                     <button
                       onClick={() => handleDelete(v.id, v.label)}
-                      className="p-1 text-clawd-text-dim hover:text-red-400 rounded transition-colors"
+                      className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
                       title="Delete this version"
                     >
                       <Trash2 size={13} />

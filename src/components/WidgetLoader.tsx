@@ -20,12 +20,12 @@ interface WidgetLoaderProps {
  */
 function WidgetError({ widgetName }: { widgetName: string }) {
   return (
-    <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-sm">
-      <div className="flex items-center gap-2 text-red-400">
+    <div className="rounded-lg border border-error-border bg-red-500/5 p-4 text-sm">
+      <div className="flex items-center gap-2 text-error">
         <AlertCircle size={16} />
         <span className="font-medium">Widget failed to load: {widgetName}</span>
       </div>
-      <p className="mt-1 text-xs text-red-400/70">
+      <p className="mt-1 text-xs text-error/70">
         The widget encountered an error during initialization.
       </p>
     </div>
@@ -130,10 +130,10 @@ function WidgetPlaceholder({
           <h4 className="font-semibold text-sm">{widget.name}</h4>
           <p className="text-xs text-clawd-text-dim mt-1">{widget.description}</p>
           <div className="mt-3 text-xs text-clawd-text-dim">
-            <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400">
+            <span className="px-2 py-1 rounded bg-info-subtle text-info">
               Widget: {widget.id}
             </span>
-            <span className="ml-2 px-2 py-1 rounded bg-purple-500/10 text-purple-400">
+            <span className="ml-2 px-2 py-1 rounded bg-purple-500/10 text-review">
               Agent: {agentId}
             </span>
           </div>

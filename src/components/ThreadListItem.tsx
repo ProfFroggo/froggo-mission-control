@@ -118,7 +118,7 @@ export default function ThreadListItem({
             <button
               onClick={handleStarClick}
               className={`p-1 rounded hover:bg-clawd-border transition-colors ${
-                thread.has_starred ? 'text-yellow-400' : 'text-clawd-text-dim'
+                thread.has_starred ? 'text-warning' : 'text-clawd-text-dim'
               }`}
               title={thread.has_starred ? 'Unstar' : 'Star'}
             >
