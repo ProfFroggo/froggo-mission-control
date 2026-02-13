@@ -270,10 +270,77 @@ export class FinanceAgentBridge extends EventEmitter {
    */
   async triggerAnalysis(analysisType: 'csv_upload' | 'manual' = 'manual'): Promise<AgentResponse> {
     const message = analysisType === 'csv_upload'
-      ? 'New transactions have been uploaded to the database. Please analyze them, check budgets, identify patterns or anomalies, and generate insights for the user.'
+      ? 'New transactions have been uploaded to the database. Please analyze them, check budgets, identify patterns or anomalies, and generate insights for the user. Be specific and actionable.'
       : 'Please analyze the current financial data and provide insights.';
     
-    return await this.sendMessage(message, { analysisType });
+    const response = await this.sendMessage(message, { analysisType });
+    
+    // Store the analysis as an insight in the database
+    if (response.success && response.message) {
+      try {
+        await this.storeAnalysisAsInsight(response.message, analysisType);
+      } catch (error: any) {
+        console.error('[FinanceAgentBridge] Failed to store insight:', error.message);
+      }
+    }
+    
+    return response;
+  }
+  
+  /**
+   * Store an analysis result as an insight in the database
+   */
+  private async storeAnalysisAsInsight(content: string, analysisType: string): Promise<void> {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    // Generate a unique ID
+    const id = `insight-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    
+    // Determine insight type and title based on analysis type
+    let type = 'recommendation';
+    let title = 'Financial Analysis';
+    let severity = 'info';
+    
+    if (analysisType === 'csv_upload') {
+      type = 'spending_pattern';
+      title = 'New Transactions Analysis';
+      
+      // Check for warning keywords
+      if (content.toLowerCase().includes('over budget') || content.toLowerCase().includes('overspent')) {
+        severity = 'warning';
+      }
+      if (content.toLowerCase().includes('critical') || content.toLowerCase().includes('urgent')) {
+        severity = 'critical';
+      }
+    }
+    
+    // Escape content for SQL (use parameterized query via Python script)
+    const fs = require('fs');
+    const path = require('path');
+    const tmpFile = path.join(require('os').tmpdir(), `insight-${Date.now()}.json`);
+    
+    fs.writeFileSync(tmpFile, JSON.stringify({
+      id,
+      type,
+      title,
+      content,
+      severity,
+      generated_at: Date.now()
+    }));
+    
+    // Use sqlite3 to insert (safer than string interpolation)
+    const dbPath = path.join(require('os').homedir(), 'froggo', 'data', 'froggo.db');
+    const cmd = `sqlite3 "${dbPath}" "INSERT INTO finance_ai_insights (id, type, title, content, severity, generated_at) SELECT json_extract(value, '$.id'), json_extract(value, '$.type'), json_extract(value, '$.title'), json_extract(value, '$.content'), json_extract(value, '$.severity'), json_extract(value, '$.generated_at') FROM json_each(readfile('${tmpFile}'))"`;
+    
+    try {
+      await execAsync(cmd);
+      console.log(`[FinanceAgentBridge] ✅ Stored insight: ${title}`);
+    } finally {
+      // Clean up temp file
+      fs.unlinkSync(tmpFile);
+    }
   }
   
   /**

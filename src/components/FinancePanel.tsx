@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell, MessageSquare } from 'lucide-react';
 import { showToast } from './Toast';
 import FinanceAgentChat from './FinanceAgentChat';
+import FinanceInsightsPanel from './FinanceInsightsPanel';
 
 interface Transaction {
   id: string;
@@ -232,12 +233,17 @@ export default function FinancePanel() {
       <div className="flex-1 flex overflow-hidden">
         {/* Finance Content */}
         <div className={`${chatOpen ? 'w-3/5' : 'w-full'} overflow-auto p-4 transition-all`}>
-        {/* Alerts & Insights (if any exist) */}
-        {(alerts.length > 0 || insights.length > 0) && (
+        {/* AI Insights Section */}
+        <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
+          <FinanceInsightsPanel />
+        </div>
+
+        {/* Legacy Alerts (if any exist) */}
+        {alerts.length > 0 && (
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Bell size={18} className="text-yellow-500" />
-              <h2 className="text-base font-semibold">Alerts & Insights</h2>
+              <h2 className="text-base font-semibold">System Alerts</h2>
             </div>
             
             <div className="space-y-2">
@@ -259,17 +265,6 @@ export default function FinancePanel() {
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-yellow-400">{alert.title}</div>
                     <div className="text-xs text-yellow-400/80 mt-0.5">{alert.message}</div>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Insights */}
-              {insights.slice(0, 3).map((insight, idx) => (
-                <div key={idx} className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <TrendingUp size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-blue-400">{insight.title}</div>
-                    <div className="text-xs text-blue-400/80 mt-0.5">{insight.description}</div>
                   </div>
                 </div>
               ))}
