@@ -90,7 +90,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       const result = await bridge()?.project?.create(title, type);
       if (result?.success) {
         await get().loadProjects();
-        return result.projectId || null;
+        return result.project?.id || null;
       }
     } catch (err) {
       console.error('[writingStore] createProject failed:', err);
@@ -197,7 +197,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       if (result?.success) {
         // Refresh the active project to get updated chapter list
         await get().openProject(activeProjectId);
-        return result.chapterId || null;
+        return result.chapter?.id || null;
       }
     } catch (err) {
       console.error('[writingStore] createChapter failed:', err);
