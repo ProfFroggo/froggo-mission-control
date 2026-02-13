@@ -1,10 +1,17 @@
 import type { XTab } from './XTwitterPage';
+import XResearchIdeaEditor from './XResearchIdeaEditor';
 
 interface XContentEditorPaneProps {
   tab: XTab;
 }
 
 export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
+  // Research tab has full editor
+  if (tab === 'research') {
+    return <XResearchIdeaEditor />;
+  }
+
+  // Other tabs: placeholder
   return (
     <div className="flex flex-col h-full bg-gray-900 p-4">
       <h3 className="text-lg font-semibold text-white mb-4">
