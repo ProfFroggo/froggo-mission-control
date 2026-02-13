@@ -15,7 +15,7 @@ provides:
   - Correct avatar grouping in chat rooms
   - Robust JSON.parse handling in InboxPanel
   - All CLI references use openclaw (not clawdbot)
-  - All API key paths use ~/.openclaw/ (not ~/.clawdbot/)
+  - All API key paths use ~/.openclaw/ (not ~/.openclaw/)
 affects: [02-fix-broken-features plan 02, 03-add-missing-features]
 
 # Tech tracking

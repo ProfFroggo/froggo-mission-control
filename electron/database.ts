@@ -7,11 +7,10 @@
 
 import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
-import { homedir } from 'os';
-import { join } from 'path';
+import { FROGGO_DB, SCHEDULE_DB, SECURITY_DB, SESSIONS_DB, SESSIONS_DB_LEGACY } from './paths';
 
-const FROGGO_DB_PATH = join(homedir(), 'clawd', 'data', 'froggo.db');
-const SCHEDULE_DB_PATH = join(homedir(), 'clawd', 'data', 'schedule.db');
+const FROGGO_DB_PATH = FROGGO_DB;
+const SCHEDULE_DB_PATH = SCHEDULE_DB;
 
 // Main database connection (froggo.db)
 export const db = new Database(FROGGO_DB_PATH, { fileMustExist: true });
@@ -53,7 +52,7 @@ export function getScheduleDb(): Database.Database {
 
 // Lazy security.db connection
 let securityDb: Database.Database | null = null;
-const SECURITY_DB_PATH = join(homedir(), 'clawd', 'data', 'security.db');
+const SECURITY_DB_PATH = SECURITY_DB;
 
 /**
  * Get the security database connection (lazy initialization).
@@ -70,8 +69,8 @@ export function getSecurityDb(): Database.Database {
 
 // Lazy sessions.db connection (gateway session tracking, readonly)
 let sessionsDb: Database.Database | null = null;
-const SESSIONS_DB_PATH = join(homedir(), '.openclaw', 'sessions.db');
-const SESSIONS_DB_PATH_LEGACY = join(homedir(), '.clawdbot', 'sessions.db');
+const SESSIONS_DB_PATH = SESSIONS_DB;
+const SESSIONS_DB_PATH_LEGACY = SESSIONS_DB_LEGACY;
 
 /**
  * Get the sessions database connection (lazy initialization).
