@@ -331,6 +331,7 @@ let modelServer: http.Server | null = null;
 let modelServerPort = 18799;
 
 let mainWindow: BrowserWindow | null = null;
+let floatingToolbarWindow: BrowserWindow | null = null;
 
 // Request microphone AND camera access on macOS
 if (process.platform === 'darwin') {
@@ -8558,6 +8559,116 @@ ipcMain.handle('x:mention:reply', async (_, data: {
     }
   } catch (error: any) {
     safeLog.error('[X/Mentions] Reply error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== FLOATING TOOLBAR HANDLERS ==============
+
+ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; width?: number; height?: number }) => {
+  try {
+    // Close existing floating window if any
+    if (floatingToolbarWindow && !floatingToolbarWindow.isDestroyed()) {
+      floatingToolbarWindow.close();
+      floatingToolbarWindow = null;
+    }
+    
+    // Get current screen where main window is
+    const currentDisplay = mainWindow 
+      ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
+      : require('electron').screen.getPrimaryDisplay();
+    
+    const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
+    
+    // Default dimensions and position
+    const windowWidth = data?.width || 80;
+    const windowHeight = data?.height || 400;
+    const windowX = data?.x !== undefined ? data.x : screenWidth - windowWidth - 20;
+    const windowY = data?.y !== undefined ? data.y : Math.floor((screenHeight - windowHeight) / 2);
+    
+    // Create floating toolbar window
+    floatingToolbarWindow = new BrowserWindow({
+      width: windowWidth,
+      height: windowHeight,
+      x: windowX,
+      y: windowY,
+      alwaysOnTop: true,
+      frame: false,
+      transparent: true,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      skipTaskbar: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, 'preload.js'),
+      },
+    });
+    
+    // Load the toolbar URL (we'll create a dedicated route for this)
+    const toolbarUrl = isDev
+      ? 'http://localhost:5173/#/floating-toolbar'
+      : `file://${path.join(__dirname, '../dist/index.html')}#/floating-toolbar`;
+    
+    floatingToolbarWindow.loadURL(toolbarUrl);
+    
+    // Open DevTools in development
+    if (isDev) {
+      floatingToolbarWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+    
+    // Clean up when window is closed
+    floatingToolbarWindow.on('closed', () => {
+      floatingToolbarWindow = null;
+      // Notify main window that toolbar was closed
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('toolbar:closed');
+      }
+    });
+    
+    safeLog.log('[Toolbar] Floating toolbar window created');
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Toolbar] Pop-out error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('toolbar:popIn', async () => {
+  try {
+    if (floatingToolbarWindow && !floatingToolbarWindow.isDestroyed()) {
+      floatingToolbarWindow.close();
+      floatingToolbarWindow = null;
+      
+      // Notify main window to show toolbar again
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('toolbar:popped-in');
+      }
+      
+      safeLog.log('[Toolbar] Floating toolbar closed');
+      return { success: true };
+    }
+    
+    return { success: false, error: 'No floating toolbar window' };
+  } catch (error: any) {
+    safeLog.error('[Toolbar] Pop-in error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('toolbar:getState', async () => {
+  try {
+    const isFloating = floatingToolbarWindow && !floatingToolbarWindow.isDestroyed();
+    const bounds = isFloating ? floatingToolbarWindow.getBounds() : null;
+    
+    return {
+      success: true,
+      isFloating,
+      bounds,
+    };
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });

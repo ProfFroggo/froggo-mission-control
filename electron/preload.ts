@@ -668,6 +668,20 @@ contextBridge.exposeInMainWorld('clawdbot', {
     reply: (data: { mentionId: string; replyText: string; tweetId: string }) =>
       ipcRenderer.invoke('x:mention:reply', data),
   },
+  toolbar: {
+    popOut: (data?: { x?: number; y?: number; width?: number; height?: number }) =>
+      ipcRenderer.invoke('toolbar:popOut', data),
+    popIn: () => ipcRenderer.invoke('toolbar:popIn'),
+    getState: () => ipcRenderer.invoke('toolbar:getState'),
+    onClosed: (callback: () => void) => {
+      ipcRenderer.on('toolbar:closed', callback);
+      return () => ipcRenderer.removeListener('toolbar:closed', callback);
+    },
+    onPoppedIn: (callback: () => void) => {
+      ipcRenderer.on('toolbar:popped-in', callback);
+      return () => ipcRenderer.removeListener('toolbar:popped-in', callback);
+    },
+  },
   // Writing Module
   writing: {
     project: {
