@@ -74,7 +74,15 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
 
     try {
       const prompt = buildSuggestionsPrompt(selectedItem);
+      
+      // BUGFIX: Route to Froggo's main session (not dashboard session)
+      const previousSessionKey = gateway.getSessionKey();
+      gateway.setSessionKey('main'); // Froggo's main session
+      
       const response = await gateway.sendChat(prompt);
+      
+      // Restore previous session key
+      gateway.setSessionKey(previousSessionKey);
       
       // Parse suggestions from response
       const parsed = parseSuggestions(response.content);
@@ -90,7 +98,15 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
 
     try {
       const prompt = buildSentimentPrompt(selectedItem);
+      
+      // BUGFIX: Route to Froggo's main session
+      const previousSessionKey = gateway.getSessionKey();
+      gateway.setSessionKey('main');
+      
       const response = await gateway.sendChat(prompt);
+      
+      // Restore previous session key
+      gateway.setSessionKey(previousSessionKey);
       
       // Parse sentiment analysis
       const parsed = parseSentiment(response.content);
@@ -106,7 +122,15 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
 
     try {
       const prompt = buildSummaryPrompt(selectedItem);
+      
+      // BUGFIX: Route to Froggo's main session
+      const previousSessionKey = gateway.getSessionKey();
+      gateway.setSessionKey('main');
+      
       const response = await gateway.sendChat(prompt);
+      
+      // Restore previous session key
+      gateway.setSessionKey(previousSessionKey);
       
       setSummary(response.content);
     } catch (error) {
