@@ -5,7 +5,7 @@ import { useResearchStore } from './researchStore';
 export interface WritingProject {
   id: string;
   title: string;
-  type: 'memoir' | 'novel';
+  type: string;
   chapterCount: number;
   wordCount: number;
   createdAt: number;
@@ -50,7 +50,7 @@ interface WritingState {
 
   // Actions
   loadProjects: () => Promise<void>;
-  createProject: (title: string, type: 'memoir' | 'novel') => Promise<string | null>;
+  createProject: (title: string, type: string) => Promise<string | null>;
   deleteProject: (projectId: string) => Promise<void>;
   openProject: (projectId: string) => Promise<void>;
   closeProject: () => void;

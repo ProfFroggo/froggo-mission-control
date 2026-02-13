@@ -45,6 +45,8 @@ export const writingVersionsPath = (projectId: string, chapterId: string) =>
 export const writingResearchDbPath = (projectId: string) =>
   path.join(WRITING_PROJECTS_DIR, projectId, 'research.db');
 
+export const WIZARD_STATE_DIR = path.join(WRITING_PROJECTS_DIR, '_wizard-state');
+
 // ── Database files ──
 export const FROGGO_DB    = path.join(DATA_DIR, 'froggo.db');
 export const SCHEDULE_DB  = path.join(DATA_DIR, 'schedule.db');

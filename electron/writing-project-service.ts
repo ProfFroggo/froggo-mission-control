@@ -20,7 +20,7 @@ import { WRITING_PROJECTS_DIR, writingProjectPath, writingChapterPath } from './
 interface ProjectMeta {
   id: string;
   title: string;
-  type: 'memoir' | 'novel';
+  type: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -129,7 +129,7 @@ async function listProjects() {
   }
 }
 
-async function createProject(title: string, type: 'memoir' | 'novel') {
+async function createProject(title: string, type: string) {
   try {
     const id = generateProjectId();
     const projectDir = writingProjectPath(id);
@@ -188,7 +188,7 @@ async function updateProject(projectId: string, updates: { title?: string; type?
     const meta = await readJson<ProjectMeta>(projectJsonPath);
 
     if (updates.title !== undefined) meta.title = updates.title;
-    if (updates.type !== undefined) meta.type = updates.type as 'memoir' | 'novel';
+    if (updates.type !== undefined) meta.type = updates.type;
     meta.updatedAt = new Date().toISOString();
 
     await writeJson(projectJsonPath, meta);
@@ -489,7 +489,7 @@ async function deleteChapter(projectId: string, chapterId: string) {
 export function registerWritingProjectHandlers() {
   ipcMain.handle('writing:project:list', async () => listProjects());
   ipcMain.handle('writing:project:create', async (_, title: string, type: string) =>
-    createProject(title, type as 'memoir' | 'novel'));
+    createProject(title, type));
   ipcMain.handle('writing:project:get', async (_, projectId: string) => getProject(projectId));
   ipcMain.handle('writing:project:update', async (_, projectId: string, updates: any) =>
     updateProject(projectId, updates));
