@@ -8004,3 +8004,198 @@ ipcMain.handle('x:plan:reject', async (_, data: { id: string; reason?: string })
     return { success: false, error: error.message };
   }
 });
+
+// ── X/Twitter Drafts Tab ──
+
+ipcMain.handle('x:draft:create', async (_, data: {
+  planId: string;
+  version: string;
+  content: string; // JSON for threads
+  mediaUrls?: string[];
+  proposedBy: string;
+}) => {
+  try {
+    const { planId, version, content, mediaUrls, proposedBy } = data;
+    const id = `draft-${Date.now()}-${version}`;
+    const now = Date.now();
+    
+    // Create database entry
+    const stmt = prepare(`
+      INSERT INTO x_drafts (id, plan_id, version, content, media_paths, proposed_by, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)
+    `);
+    stmt.run(id, planId, version, content, mediaUrls ? JSON.stringify(mediaUrls) : null, proposedBy, now);
+    
+    // Create markdown file
+    const dateStr = new Date(now).toISOString().split('T')[0];
+    const plan = prepare('SELECT title FROM x_content_plans WHERE id = ?').get(planId) as any;
+    const slug = (plan?.title || 'draft').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
+    const filename = `${dateStr}-${slug}-${version}.md`;
+    const filePath = path.join(homedir(), 'froggo', 'x-content', 'drafts', filename);
+    
+    // Parse content (could be single tweet or thread)
+    let parsedContent;
+    try {
+      parsedContent = JSON.parse(content);
+    } catch {
+      parsedContent = { tweets: [content] };
+    }
+    
+    const tweetsMarkdown = Array.isArray(parsedContent.tweets)
+      ? parsedContent.tweets.map((t: string, i: number) => `## Tweet ${i + 1}/${parsedContent.tweets.length}\n\n${t}\n\n_Characters: ${t.length}/280_`).join('\n')
+      : `## Single Tweet\n\n${content}\n\n_Characters: ${content.length}/280_`;
+    
+    const fileContent = `---
+id: ${id}
+type: draft
+version: ${version}
+plan_id: ${planId}
+proposed_by: ${proposedBy}
+status: draft
+created_at: ${new Date(now).toISOString()}
+---
+
+# Draft ${version}${plan ? ` - ${plan.title}` : ''}
+
+${tweetsMarkdown}
+
+${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![](${url})`).join('\n')}` : ''}
+`;
+    
+    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    
+    // Update database with file path
+    prepare('UPDATE x_drafts SET file_path = ? WHERE id = ?').run(filePath, id);
+    
+    // Git commit
+    execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "feat: Add draft ${version} for plan ${planId} (proposed by ${proposedBy})"`, {
+      encoding: 'utf-8'
+    });
+    
+    safeLog.log(`[X/Draft] Created draft: ${id}`);
+    return { success: true, id, filePath };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] Create error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: string; limit?: number }) => {
+  try {
+    let query = 'SELECT * FROM x_drafts WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.planId) {
+      query += ' AND plan_id = ?';
+      params.push(filters.planId);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const drafts = stmt.all(...params);
+    
+    // Parse JSON fields
+    const parsed = drafts.map((draft: any) => ({
+      ...draft,
+      media_paths: draft.media_paths ? JSON.parse(draft.media_paths) : []
+    }));
+    
+    return { success: true, drafts: parsed };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] List error:', error.message);
+    return { success: false, drafts: [], error: error.message };
+  }
+});
+
+ipcMain.handle('x:draft:approve', async (_, data: { id: string; approvedBy: string }) => {
+  try {
+    const { id, approvedBy } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_drafts 
+      SET status = 'approved', approved_by = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    const result = stmt.run(approvedBy, now, id);
+    
+    if (result.changes === 0) {
+      throw new Error('Draft not found');
+    }
+    
+    // Update file
+    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as any;
+    if (draft && draft.file_path && fs.existsSync(draft.file_path)) {
+      let content = fs.readFileSync(draft.file_path, 'utf-8');
+      content = content.replace(/status: draft/, 'status: approved');
+      content = content.replace(/^---\n/, `---\napproved_by: ${approvedBy}\napproved_at: ${new Date(now).toISOString()}\n`);
+      fs.writeFileSync(draft.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(draft.file_path);
+      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "approve: Draft ${id} (approved by ${approvedBy})"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Draft] Approved draft: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] Approve error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:draft:reject', async (_, data: { id: string; reason?: string }) => {
+  try {
+    const { id, reason } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_drafts 
+      SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
+      WHERE id = ?
+    `);
+    const result = stmt.run(now, reason || '', id);
+    
+    if (result.changes === 0) {
+      throw new Error('Draft not found');
+    }
+    
+    // Update file
+    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as any;
+    if (draft && draft.file_path && fs.existsSync(draft.file_path)) {
+      let content = fs.readFileSync(draft.file_path, 'utf-8');
+      content = content.replace(/status: draft/, 'status: rejected');
+      if (reason) {
+        content = content.replace(/^---\n/, `---\nrejection_reason: ${reason}\nrejected_at: ${new Date(now).toISOString()}\n`);
+      }
+      fs.writeFileSync(draft.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(draft.file_path);
+      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "reject: Draft ${id}${reason ? ': ' + reason : ''}"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Draft] Rejected draft: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] Reject error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
