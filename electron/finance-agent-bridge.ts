@@ -8,7 +8,7 @@ import { promisify } from 'util';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
-import { homedir } from 'os';
+import { homedir, tmpdir } from 'os';
 
 const execAsync = promisify(exec);
 
@@ -291,10 +291,6 @@ export class FinanceAgentBridge extends EventEmitter {
    * Store an analysis result as an insight in the database
    */
   private async storeAnalysisAsInsight(content: string, analysisType: string): Promise<void> {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    
     // Generate a unique ID
     const id = `insight-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     
@@ -317,9 +313,7 @@ export class FinanceAgentBridge extends EventEmitter {
     }
     
     // Escape content for SQL (use parameterized query via Python script)
-    const fs = require('fs');
-    const path = require('path');
-    const tmpFile = path.join(require('os').tmpdir(), `insight-${Date.now()}.json`);
+    const tmpFile = path.join(tmpdir(), `insight-${Date.now()}.json`);
     
     fs.writeFileSync(tmpFile, JSON.stringify({
       id,
@@ -331,7 +325,7 @@ export class FinanceAgentBridge extends EventEmitter {
     }));
     
     // Use sqlite3 to insert (safer than string interpolation)
-    const dbPath = path.join(require('os').homedir(), 'froggo', 'data', 'froggo.db');
+    const dbPath = path.join(homedir(), 'froggo', 'data', 'froggo.db');
     const cmd = `sqlite3 "${dbPath}" "INSERT INTO finance_ai_insights (id, type, title, content, severity, generated_at) SELECT json_extract(value, '$.id'), json_extract(value, '$.type'), json_extract(value, '$.title'), json_extract(value, '$.content'), json_extract(value, '$.severity'), json_extract(value, '$.generated_at') FROM json_each(readfile('${tmpFile}'))"`;
     
     try {
