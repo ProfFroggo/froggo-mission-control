@@ -22,6 +22,12 @@ export interface WritingChapter {
   updatedAt: number;
 }
 
+export interface PendingInsert {
+  content: string;
+  mode: 'append' | 'cursor' | 'replace';
+  sourceMessageId?: string;
+}
+
 interface WritingState {
   // Project list
   projects: WritingProject[];
@@ -36,6 +42,11 @@ interface WritingState {
   activeChapterContent: string | null;
   chapterLoading: boolean;
   chapterDirty: boolean;
+
+  // Pending insert (chat-to-editor bridge)
+  pendingInsert: PendingInsert | null;
+  setPendingInsert: (insert: PendingInsert) => void;
+  clearPendingInsert: () => void;
 
   // Actions
   loadProjects: () => Promise<void>;
@@ -68,6 +79,10 @@ export const useWritingStore = create<WritingState>((set, get) => ({
   activeChapterContent: null,
   chapterLoading: false,
   chapterDirty: false,
+  pendingInsert: null,
+
+  setPendingInsert: (insert) => set({ pendingInsert: insert }),
+  clearPendingInsert: () => set({ pendingInsert: null }),
 
   // ── Project actions ──────────────────────────────────────
 
