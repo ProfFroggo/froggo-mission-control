@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters -- then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
-**Current focus:** Phase 11 - Chat Pane + 3-Pane Layout
+**Current focus:** Phase 11 complete - Chat Pane + 3-Pane Layout
 
 ## Current Position
 
 Phase: 11 of 12 (Chat Pane + 3-Pane Layout)
-Plan: 03 of 04 (Chat Pane UI + Editor Integration)
-Status: In progress
-Last activity: 2026-02-13 -- Completed 11-03-PLAN.md
+Plan: 04 of 04 (Session Keys, Copy/Retry, Collapse Persistence)
+Status: Phase complete
+Last activity: 2026-02-13 -- Completed 11-04-PLAN.md
 
-Progress: [##############################....] 3/4 plans complete
+Progress: [####################################] 4/4 plans complete
 
 ## Performance Metrics
 
@@ -24,7 +24,7 @@ Progress: [##############################....] 3/4 plans complete
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 12
+- Plans completed: 13
 - Average duration: ~3min
 
 ## Accumulated Context
@@ -63,6 +63,9 @@ v2.1 decisions:
 - Agent preambles in ChatPane are writing-assistant focused (not edit-focused like FeedbackPopover)
 - Chat messages persist to disk after streaming completes (not during)
 - contentType:'markdown' for all AI content insertion into TipTap editor
+- Session key format: agent:{id}:writing:{projectId}:{feedback|chat} for full isolation
+- Collapse state persisted separately from layout in localStorage (writing-collapsed key)
+- Retry removes assistant + preceding user message and prefills input
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ v2.1 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-13T03:13:56Z
-Stopped at: Completed 11-03-PLAN.md
+Last session: 2026-02-13T03:19:05Z
+Stopped at: Completed 11-04-PLAN.md (Phase 11 complete)
 Resume file: None
