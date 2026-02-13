@@ -685,7 +685,7 @@ ${transcriptText}`,
           <div className="border-t border-clawd-border p-4">
             <button
               onClick={() => setShowActionItems(!showActionItems)}
-              className="flex items-center gap-2 mb-2 text-sm font-medium text-orange-400 w-full"
+              className="flex items-center gap-2 mb-2 text-sm font-medium text-warning w-full"
             >
               <ListTodo size={16} />
               Action Items ({actionItems.length})
@@ -695,7 +695,7 @@ ${transcriptText}`,
               <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-orange-500/20 rounded text-orange-300 text-[10px] shrink-0">
+                    <span className="px-1.5 py-0.5 bg-orange-500/20 rounded text-warning text-[10px] shrink-0">
                       {item.type}
                     </span>
                     <span className="text-clawd-text-dim truncate">{item.text}</span>
@@ -738,7 +738,7 @@ ${transcriptText}`,
               <button
                 onClick={generateAiSummary}
                 disabled={isSummarizing || !hasTranscript}
-                className="w-full mb-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-sm text-purple-300 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                className="w-full mb-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-sm text-review flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
                 {isSummarizing ? (
                   <><Loader2 size={16} className="animate-spin" /> Generating summary...</>
