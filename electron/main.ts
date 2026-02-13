@@ -331,6 +331,7 @@ let modelServer: http.Server | null = null;
 let modelServerPort = 18799;
 
 let mainWindow: BrowserWindow | null = null;
+let floatingToolbarWindow: BrowserWindow | null = null;
 
 // Request microphone AND camera access on macOS
 if (process.platform === 'darwin') {
@@ -7817,6 +7818,857 @@ ipcMain.handle('x:research:reject', async (_, data: { id: string; reason?: strin
     return { success: true };
   } catch (error: any) {
     safeLog.error('[X/Research] Reject error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ── X/Twitter Plan Tab ──
+
+ipcMain.handle('x:plan:create', async (_, data: { 
+  researchIdeaId: string; 
+  title: string; 
+  contentType: string; 
+  threadLength: number;
+  description: string;
+  proposedBy: string;
+}) => {
+  try {
+    const { researchIdeaId, title, contentType, threadLength, description, proposedBy } = data;
+    const id = `plan-${Date.now()}`;
+    const now = Date.now();
+    
+    // Create database entry
+    const stmt = prepare(`
+      INSERT INTO x_content_plans (id, research_idea_id, title, content_type, thread_length, proposed_by, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'proposed', ?)
+    `);
+    stmt.run(id, researchIdeaId, title, contentType, threadLength, proposedBy, now);
+    
+    // Create markdown file
+    const dateStr = new Date(now).toISOString().split('T')[0];
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
+    const filename = `${dateStr}-${slug}.md`;
+    const filePath = path.join(homedir(), 'froggo', 'x-content', 'plans', filename);
+    
+    const fileContent = `---
+id: ${id}
+type: plan
+research_idea_id: ${researchIdeaId}
+title: ${title}
+content_type: ${contentType}
+thread_length: ${threadLength}
+proposed_by: ${proposedBy}
+status: proposed
+created_at: ${new Date(now).toISOString()}
+---
+
+# ${title}
+
+## Content Type
+${contentType}
+
+## Thread Length
+${threadLength} tweet${threadLength > 1 ? 's' : ''}
+
+## Description
+${description}
+`;
+    
+    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    
+    // Update database with file path
+    prepare('UPDATE x_content_plans SET file_path = ? WHERE id = ?').run(filePath, id);
+    
+    // Git commit
+    execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "feat: Add content plan '${title}' (${contentType}, ${threadLength} tweets, proposed by ${proposedBy})"`, {
+      encoding: 'utf-8'
+    });
+    
+    safeLog.log(`[X/Plan] Created content plan: ${id}`);
+    return { success: true, id, filePath };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] Create error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:plan:list', async (_, filters?: { status?: string; contentType?: string; limit?: number }) => {
+  try {
+    let query = 'SELECT * FROM x_content_plans WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.contentType) {
+      query += ' AND content_type = ?';
+      params.push(filters.contentType);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const plans = stmt.all(...params);
+    
+    return { success: true, plans };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] List error:', error.message);
+    return { success: false, plans: [], error: error.message };
+  }
+});
+
+ipcMain.handle('x:plan:approve', async (_, data: { id: string; approvedBy: string }) => {
+  try {
+    const { id, approvedBy } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_content_plans 
+      SET status = 'approved', approved_by = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    const result = stmt.run(approvedBy, now, id);
+    
+    if (result.changes === 0) {
+      throw new Error('Content plan not found');
+    }
+    
+    // Update file
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    if (plan && plan.file_path && fs.existsSync(plan.file_path)) {
+      let content = fs.readFileSync(plan.file_path, 'utf-8');
+      content = content.replace(/status: proposed/, 'status: approved');
+      content = content.replace(/^---\n/, `---\napproved_by: ${approvedBy}\napproved_at: ${new Date(now).toISOString()}\n`);
+      fs.writeFileSync(plan.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(plan.file_path);
+      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "approve: Content plan ${id} (approved by ${approvedBy})"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Plan] Approved content plan: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] Approve error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:plan:reject', async (_, data: { id: string; reason?: string }) => {
+  try {
+    const { id, reason } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_content_plans 
+      SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
+      WHERE id = ?
+    `);
+    const result = stmt.run(now, reason || '', id);
+    
+    if (result.changes === 0) {
+      throw new Error('Content plan not found');
+    }
+    
+    // Update file
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    if (plan && plan.file_path && fs.existsSync(plan.file_path)) {
+      let content = fs.readFileSync(plan.file_path, 'utf-8');
+      content = content.replace(/status: proposed/, 'status: rejected');
+      if (reason) {
+        content = content.replace(/^---\n/, `---\nrejection_reason: ${reason}\nrejected_at: ${new Date(now).toISOString()}\n`);
+      }
+      fs.writeFileSync(plan.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(plan.file_path);
+      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "reject: Content plan ${id}${reason ? ': ' + reason : ''}"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Plan] Rejected content plan: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Plan] Reject error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ── X/Twitter Drafts Tab ──
+
+ipcMain.handle('x:draft:create', async (_, data: {
+  planId: string;
+  version: string;
+  content: string; // JSON for threads
+  mediaUrls?: string[];
+  proposedBy: string;
+}) => {
+  try {
+    const { planId, version, content, mediaUrls, proposedBy } = data;
+    const id = `draft-${Date.now()}-${version}`;
+    const now = Date.now();
+    
+    // Create database entry
+    const stmt = prepare(`
+      INSERT INTO x_drafts (id, plan_id, version, content, media_paths, proposed_by, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)
+    `);
+    stmt.run(id, planId, version, content, mediaUrls ? JSON.stringify(mediaUrls) : null, proposedBy, now);
+    
+    // Create markdown file
+    const dateStr = new Date(now).toISOString().split('T')[0];
+    const plan = prepare('SELECT title FROM x_content_plans WHERE id = ?').get(planId) as any;
+    const slug = (plan?.title || 'draft').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
+    const filename = `${dateStr}-${slug}-${version}.md`;
+    const filePath = path.join(homedir(), 'froggo', 'x-content', 'drafts', filename);
+    
+    // Parse content (could be single tweet or thread)
+    let parsedContent;
+    try {
+      parsedContent = JSON.parse(content);
+    } catch {
+      parsedContent = { tweets: [content] };
+    }
+    
+    const tweetsMarkdown = Array.isArray(parsedContent.tweets)
+      ? parsedContent.tweets.map((t: string, i: number) => `## Tweet ${i + 1}/${parsedContent.tweets.length}\n\n${t}\n\n_Characters: ${t.length}/280_`).join('\n')
+      : `## Single Tweet\n\n${content}\n\n_Characters: ${content.length}/280_`;
+    
+    const fileContent = `---
+id: ${id}
+type: draft
+version: ${version}
+plan_id: ${planId}
+proposed_by: ${proposedBy}
+status: draft
+created_at: ${new Date(now).toISOString()}
+---
+
+# Draft ${version}${plan ? ` - ${plan.title}` : ''}
+
+${tweetsMarkdown}
+
+${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![](${url})`).join('\n')}` : ''}
+`;
+    
+    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    
+    // Update database with file path
+    prepare('UPDATE x_drafts SET file_path = ? WHERE id = ?').run(filePath, id);
+    
+    // Git commit
+    execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "feat: Add draft ${version} for plan ${planId} (proposed by ${proposedBy})"`, {
+      encoding: 'utf-8'
+    });
+    
+    safeLog.log(`[X/Draft] Created draft: ${id}`);
+    return { success: true, id, filePath };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] Create error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: string; limit?: number }) => {
+  try {
+    let query = 'SELECT * FROM x_drafts WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.planId) {
+      query += ' AND plan_id = ?';
+      params.push(filters.planId);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const drafts = stmt.all(...params);
+    
+    // Parse JSON fields
+    const parsed = drafts.map((draft: any) => ({
+      ...draft,
+      media_paths: draft.media_paths ? JSON.parse(draft.media_paths) : []
+    }));
+    
+    return { success: true, drafts: parsed };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] List error:', error.message);
+    return { success: false, drafts: [], error: error.message };
+  }
+});
+
+ipcMain.handle('x:draft:approve', async (_, data: { id: string; approvedBy: string }) => {
+  try {
+    const { id, approvedBy } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_drafts 
+      SET status = 'approved', approved_by = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    const result = stmt.run(approvedBy, now, id);
+    
+    if (result.changes === 0) {
+      throw new Error('Draft not found');
+    }
+    
+    // Update file
+    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as any;
+    if (draft && draft.file_path && fs.existsSync(draft.file_path)) {
+      let content = fs.readFileSync(draft.file_path, 'utf-8');
+      content = content.replace(/status: draft/, 'status: approved');
+      content = content.replace(/^---\n/, `---\napproved_by: ${approvedBy}\napproved_at: ${new Date(now).toISOString()}\n`);
+      fs.writeFileSync(draft.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(draft.file_path);
+      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "approve: Draft ${id} (approved by ${approvedBy})"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Draft] Approved draft: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] Approve error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:draft:reject', async (_, data: { id: string; reason?: string }) => {
+  try {
+    const { id, reason } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_drafts 
+      SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
+      WHERE id = ?
+    `);
+    const result = stmt.run(now, reason || '', id);
+    
+    if (result.changes === 0) {
+      throw new Error('Draft not found');
+    }
+    
+    // Update file
+    const draft = prepare('SELECT file_path FROM x_drafts WHERE id = ?').get(id) as any;
+    if (draft && draft.file_path && fs.existsSync(draft.file_path)) {
+      let content = fs.readFileSync(draft.file_path, 'utf-8');
+      content = content.replace(/status: draft/, 'status: rejected');
+      if (reason) {
+        content = content.replace(/^---\n/, `---\nrejection_reason: ${reason}\nrejected_at: ${new Date(now).toISOString()}\n`);
+      }
+      fs.writeFileSync(draft.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(draft.file_path);
+      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "reject: Draft ${id}${reason ? ': ' + reason : ''}"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Draft] Rejected draft: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Draft] Reject error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== X/TWITTER SCHEDULE HANDLERS ==============
+
+ipcMain.handle('x:schedule:create', async (_, data: {
+  draftId: string;
+  scheduledFor: number;
+  timeSlotReason?: string;
+}) => {
+  try {
+    const { draftId, scheduledFor, timeSlotReason } = data;
+    const now = Date.now();
+    const id = `sched-${now}`;
+    
+    // Verify draft exists and is approved
+    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    if (!draft) {
+      throw new Error('Draft not found or not approved');
+    }
+    
+    // Create scheduled post
+    const stmt = prepare(`
+      INSERT INTO x_scheduled_posts (id, draft_id, scheduled_for, status, created_at, updated_at, metadata)
+      VALUES (?, ?, ?, 'scheduled', ?, ?, json(?))
+    `);
+    
+    const metadata = {
+      timeSlotReason: timeSlotReason || 'Manually selected',
+      scheduledBy: 'user'
+    };
+    
+    stmt.run(id, draftId, scheduledFor, now, now, JSON.stringify(metadata));
+    
+    safeLog.log(`[X/Schedule] Created scheduled post: ${id} for ${new Date(scheduledFor).toISOString()}`);
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Create error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:schedule:list', async (_, filters?: {
+  status?: string;
+  dateFrom?: number;
+  dateTo?: number;
+  limit?: number;
+}) => {
+  try {
+    let query = `
+      SELECT 
+        s.*,
+        d.content as draft_content,
+        d.version as draft_version,
+        d.metadata as draft_metadata
+      FROM x_scheduled_posts s
+      LEFT JOIN x_drafts d ON s.draft_id = d.id
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND s.status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.dateFrom) {
+      query += ' AND s.scheduled_for >= ?';
+      params.push(filters.dateFrom);
+    }
+    
+    if (filters?.dateTo) {
+      query += ' AND s.scheduled_for <= ?';
+      params.push(filters.dateTo);
+    }
+    
+    query += ' ORDER BY s.scheduled_for ASC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const results = stmt.all(...params);
+    
+    return { success: true, scheduled: results };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:schedule:update', async (_, data: {
+  id: string;
+  scheduledFor?: number;
+  status?: string;
+}) => {
+  try {
+    const { id, scheduledFor, status } = data;
+    const now = Date.now();
+    
+    let query = 'UPDATE x_scheduled_posts SET updated_at = ?';
+    const params: any[] = [now];
+    
+    if (scheduledFor !== undefined) {
+      query += ', scheduled_for = ?';
+      params.push(scheduledFor);
+    }
+    
+    if (status) {
+      query += ', status = ?';
+      params.push(status);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    const stmt = prepare(query);
+    const result = stmt.run(...params);
+    
+    if (result.changes === 0) {
+      throw new Error('Scheduled post not found');
+    }
+    
+    safeLog.log(`[X/Schedule] Updated scheduled post: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Update error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:schedule:delete', async (_, data: { id: string }) => {
+  try {
+    const { id } = data;
+    
+    const stmt = prepare('DELETE FROM x_scheduled_posts WHERE id = ?');
+    const result = stmt.run(id);
+    
+    if (result.changes === 0) {
+      throw new Error('Scheduled post not found');
+    }
+    
+    safeLog.log(`[X/Schedule] Deleted scheduled post: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Delete error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== X/TWITTER MENTIONS HANDLERS ==============
+
+ipcMain.handle('x:mention:fetch', async () => {
+  try {
+    // Fetch mentions from X API
+    const result = execSync('x-api mentions --count 50', {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    
+    const mentions = JSON.parse(result);
+    const now = Date.now();
+    let newCount = 0;
+    let updatedCount = 0;
+    
+    // Store in database
+    for (const mention of mentions.data || []) {
+      // Check if mention already exists
+      const existing = prepare('SELECT id FROM x_mentions WHERE tweet_id = ?').get(mention.id);
+      
+      if (!existing) {
+        // Insert new mention
+        const id = `mention-${now}-${mention.id}`;
+        const stmt = prepare(`
+          INSERT INTO x_mentions (
+            id, tweet_id, author_id, author_username, author_name,
+            text, created_at, conversation_id, in_reply_to_user_id,
+            reply_status, fetched_at, metadata
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, json(?))
+        `);
+        
+        const tweetCreatedAt = new Date(mention.created_at).getTime();
+        const metadata = {
+          public_metrics: mention.public_metrics,
+          referenced_tweets: mention.referenced_tweets,
+        };
+        
+        stmt.run(
+          id,
+          mention.id,
+          mention.author_id,
+          mention.author?.username || 'unknown',
+          mention.author?.name || 'unknown',
+          mention.text,
+          tweetCreatedAt,
+          mention.conversation_id,
+          mention.in_reply_to_user_id,
+          now,
+          JSON.stringify(metadata)
+        );
+        newCount++;
+      } else {
+        // Update metadata (public metrics may have changed)
+        const updateStmt = prepare(`
+          UPDATE x_mentions 
+          SET metadata = json_set(
+            COALESCE(metadata, '{}'),
+            '$.public_metrics',
+            json(?)
+          ),
+          fetched_at = ?
+          WHERE tweet_id = ?
+        `);
+        
+        updateStmt.run(
+          JSON.stringify(mention.public_metrics || {}),
+          now,
+          mention.id
+        );
+        updatedCount++;
+      }
+    }
+    
+    safeLog.log(`[X/Mentions] Fetched mentions: ${newCount} new, ${updatedCount} updated`);
+    return { success: true, new: newCount, updated: updatedCount };
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] Fetch error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:mention:list', async (_, filters?: {
+  replyStatus?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  try {
+    let query = `
+      SELECT * FROM x_mentions
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    
+    if (filters?.replyStatus) {
+      query += ' AND reply_status = ?';
+      params.push(filters.replyStatus);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    if (filters?.offset) {
+      query += ' OFFSET ?';
+      params.push(filters.offset);
+    }
+    
+    const stmt = prepare(query);
+    const results = stmt.all(...params);
+    
+    return { success: true, mentions: results };
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:mention:update', async (_, data: {
+  id: string;
+  replyStatus?: string;
+  repliedAt?: number;
+  repliedWithId?: string;
+  notes?: string;
+}) => {
+  try {
+    const { id, replyStatus, repliedAt, repliedWithId, notes } = data;
+    const now = Date.now();
+    
+    let query = 'UPDATE x_mentions SET updated_at = ?';
+    const params: any[] = [now];
+    
+    if (replyStatus) {
+      query += ', reply_status = ?';
+      params.push(replyStatus);
+    }
+    
+    if (repliedAt !== undefined) {
+      query += ', replied_at = ?';
+      params.push(repliedAt);
+    }
+    
+    if (repliedWithId) {
+      query += ', replied_with_id = ?';
+      params.push(repliedWithId);
+    }
+    
+    if (notes !== undefined) {
+      query += ', metadata = json_set(COALESCE(metadata, \\'{}\\'), \\'$.notes\\', ?)';
+      params.push(notes);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    const stmt = prepare(query);
+    const result = stmt.run(...params);
+    
+    if (result.changes === 0) {
+      throw new Error('Mention not found');
+    }
+    
+    safeLog.log(`[X/Mentions] Updated mention: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] Update error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:mention:reply', async (_, data: {
+  mentionId: string;
+  replyText: string;
+  tweetId: string;
+}) => {
+  try {
+    const { mentionId, replyText, tweetId } = data;
+    const now = Date.now();
+    
+    // Send reply via x-api
+    const result = execSync(`x-api reply ${tweetId} "${replyText.replace(/"/g, '\\"')}"`, {
+      encoding: 'utf-8',
+    });
+    
+    const response = JSON.parse(result);
+    
+    if (response.data?.id) {
+      // Update mention with reply info
+      const stmt = prepare(`
+        UPDATE x_mentions 
+        SET reply_status = 'replied',
+            replied_at = ?,
+            replied_with_id = ?
+        WHERE id = ?
+      `);
+      
+      stmt.run(now, response.data.id, mentionId);
+      
+      safeLog.log(`[X/Mentions] Replied to mention: ${mentionId}`);
+      return { success: true, tweetId: response.data.id };
+    } else {
+      throw new Error('Failed to post reply');
+    }
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] Reply error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== FLOATING TOOLBAR HANDLERS ==============
+
+ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; width?: number; height?: number }) => {
+  try {
+    // Close existing floating window if any
+    if (floatingToolbarWindow && !floatingToolbarWindow.isDestroyed()) {
+      floatingToolbarWindow.close();
+      floatingToolbarWindow = null;
+    }
+    
+    // Get current screen where main window is
+    const currentDisplay = mainWindow 
+      ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
+      : require('electron').screen.getPrimaryDisplay();
+    
+    const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
+    
+    // Default dimensions and position
+    const windowWidth = data?.width || 80;
+    const windowHeight = data?.height || 400;
+    const windowX = data?.x !== undefined ? data.x : screenWidth - windowWidth - 20;
+    const windowY = data?.y !== undefined ? data.y : Math.floor((screenHeight - windowHeight) / 2);
+    
+    // Create floating toolbar window
+    floatingToolbarWindow = new BrowserWindow({
+      width: windowWidth,
+      height: windowHeight,
+      x: windowX,
+      y: windowY,
+      alwaysOnTop: true,
+      frame: false,
+      transparent: true,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      skipTaskbar: true,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, 'preload.js'),
+      },
+    });
+    
+    // Load the toolbar URL (we'll create a dedicated route for this)
+    const toolbarUrl = isDev
+      ? 'http://localhost:5173/#/floating-toolbar'
+      : `file://${path.join(__dirname, '../dist/index.html')}#/floating-toolbar`;
+    
+    floatingToolbarWindow.loadURL(toolbarUrl);
+    
+    // Open DevTools in development
+    if (isDev) {
+      floatingToolbarWindow.webContents.openDevTools({ mode: 'detach' });
+    }
+    
+    // Clean up when window is closed
+    floatingToolbarWindow.on('closed', () => {
+      floatingToolbarWindow = null;
+      // Notify main window that toolbar was closed
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('toolbar:closed');
+      }
+    });
+    
+    safeLog.log('[Toolbar] Floating toolbar window created');
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Toolbar] Pop-out error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('toolbar:popIn', async () => {
+  try {
+    if (floatingToolbarWindow && !floatingToolbarWindow.isDestroyed()) {
+      floatingToolbarWindow.close();
+      floatingToolbarWindow = null;
+      
+      // Notify main window to show toolbar again
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('toolbar:popped-in');
+      }
+      
+      safeLog.log('[Toolbar] Floating toolbar closed');
+      return { success: true };
+    }
+    
+    return { success: false, error: 'No floating toolbar window' };
+  } catch (error: any) {
+    safeLog.error('[Toolbar] Pop-in error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('toolbar:getState', async () => {
+  try {
+    const isFloating = floatingToolbarWindow && !floatingToolbarWindow.isDestroyed();
+    const bounds = isFloating ? floatingToolbarWindow.getBounds() : null;
+    
+    return {
+      success: true,
+      isFloating,
+      bounds,
+    };
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });

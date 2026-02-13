@@ -16,13 +16,38 @@ interface ResearchIdea {
   created_at: number;
 }
 
+interface ContentPlan {
+  id: string;
+  research_idea_id: string;
+  title: string;
+  content_type: string;
+  thread_length: number;
+  proposed_by: string;
+  created_at: number;
+}
+
+interface Draft {
+  id: string;
+  plan_id: string;
+  version: string;
+  content: string;
+  proposed_by: string;
+  created_at: number;
+}
+
+type QueueItem = (ResearchIdea | ContentPlan | Draft) & { itemType: 'research' | 'plan' | 'draft' };
+
 export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
-  const [items, setItems] = useState<ResearchIdea[]>([]);
+  const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (tab === 'research') {
       loadResearchIdeas();
+    } else if (tab === 'plan') {
+      loadContentPlans();
+    } else if (tab === 'drafts') {
+      loadDrafts();
     } else {
       setItems([]);
     }
@@ -34,25 +59,66 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       const result = await (window as any).clawdbot.xResearch.list({ status: 'proposed', limit: 20 });
       
       if (result.success) {
-        setItems(result.ideas || []);
+        setItems((result.ideas || []).map((idea: any) => ({ ...idea, itemType: 'research' as const })));
       }
     } catch (error) {
-      console.error('[XApprovalQueue] Load error:', error);
+      console.error('[XApprovalQueue] Load research error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const loadContentPlans = async () => {
     try {
-      const result = await (window as any).clawdbot.xResearch.approve({
+      setLoading(true);
+      const result = await (window as any).clawdbot.xPlan.list({ status: 'proposed', limit: 20 });
+      
+      if (result.success) {
+        setItems((result.plans || []).map((plan: any) => ({ ...plan, itemType: 'plan' as const })));
+      }
+    } catch (error) {
+      console.error('[XApprovalQueue] Load plans error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDrafts = async () => {
+    try {
+      setLoading(true);
+      const result = await (window as any).clawdbot.xDraft.list({ status: 'draft', limit: 20 });
+      
+      if (result.success) {
+        setItems((result.drafts || []).map((draft: any) => ({ ...draft, itemType: 'draft' as const })));
+      }
+    } catch (error) {
+      console.error('[XApprovalQueue] Load drafts error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async (id: string, itemType: 'research' | 'plan' | 'draft') => {
+    try {
+      const api = itemType === 'research' 
+        ? (window as any).clawdbot.xResearch 
+        : itemType === 'plan'
+        ? (window as any).clawdbot.xPlan
+        : (window as any).clawdbot.xDraft;
+      
+      const result = await api.approve({
         id,
         approvedBy: 'kevin', // TODO: Get from user context
       });
 
       if (result.success) {
-        showToast('success', 'Research idea approved');
-        loadResearchIdeas(); // Refresh list
+        const itemLabel = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
+        showToast('success', `${itemLabel} approved`);
+        
+        // Refresh appropriate list
+        if (tab === 'research') loadResearchIdeas();
+        else if (tab === 'plan') loadContentPlans();
+        else if (tab === 'drafts') loadDrafts();
       } else {
         throw new Error(result.error || 'Failed to approve');
       }
@@ -62,18 +128,29 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (id: string, itemType: 'research' | 'plan' | 'draft') => {
     const reason = prompt('Rejection reason (optional):');
     
     try {
-      const result = await (window as any).clawdbot.xResearch.reject({
+      const api = itemType === 'research' 
+        ? (window as any).clawdbot.xResearch 
+        : itemType === 'plan'
+        ? (window as any).clawdbot.xPlan
+        : (window as any).clawdbot.xDraft;
+      
+      const result = await api.reject({
         id,
         reason: reason || undefined,
       });
 
       if (result.success) {
-        showToast('success', 'Research idea rejected');
-        loadResearchIdeas(); // Refresh list
+        const itemLabel = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
+        showToast('success', `${itemLabel} rejected`);
+        
+        // Refresh appropriate list
+        if (tab === 'research') loadResearchIdeas();
+        else if (tab === 'plan') loadContentPlans();
+        else if (tab === 'drafts') loadDrafts();
       } else {
         throw new Error(result.error || 'Failed to reject');
       }
@@ -120,10 +197,69 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-300 mb-3 line-clamp-4">{item.description}</p>
+                {/* Badges for plans */}
+                {item.itemType === 'plan' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+                      {(item as ContentPlan).content_type}
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                      {(item as ContentPlan).thread_length} tweet{(item as ContentPlan).thread_length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
                 
-                {/* Citations */}
-                {item.citations && item.citations.length > 0 && (
+                {/* Badges for drafts */}
+                {item.itemType === 'draft' && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                      Version {(item as Draft).version}
+                    </span>
+                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                      {(() => {
+                        try {
+                          const parsed = JSON.parse((item as Draft).content);
+                          return parsed.tweets?.length || 1;
+                        } catch {
+                          return 1;
+                        }
+                      })()} tweet{(() => {
+                        try {
+                          const parsed = JSON.parse((item as Draft).content);
+                          return (parsed.tweets?.length || 1) > 1 ? 's' : '';
+                        } catch {
+                          return '';
+                        }
+                      })()}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Content preview */}
+                {item.itemType === 'draft' ? (
+                  <div className="text-sm text-gray-300 mb-3 space-y-2">
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse((item as Draft).content);
+                        return (parsed.tweets || []).slice(0, 2).map((tweet: string, idx: number) => (
+                          <div key={idx} className="p-2 bg-gray-900 rounded border border-gray-700">
+                            <span className="text-xs text-gray-500">Tweet {idx + 1}:</span>
+                            <p className="line-clamp-2">{tweet}</p>
+                          </div>
+                        ));
+                      } catch {
+                        return <p className="line-clamp-4">{(item as Draft).content}</p>;
+                      }
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-300 mb-3 line-clamp-4">
+                    {'description' in item ? item.description : ''}
+                  </p>
+                )}
+                
+                {/* Citations (research only) */}
+                {item.itemType === 'research' && 'citations' in item && item.citations && item.citations.length > 0 && (
                   <div className="mb-3 pb-3 border-b border-gray-700">
                     <p className="text-xs font-medium text-gray-400 mb-2">Citations:</p>
                     <div className="space-y-1">
@@ -148,14 +284,14 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleApprove(item.id)}
+                    onClick={() => handleApprove(item.id, item.itemType)}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Approve
                   </button>
                   <button
-                    onClick={() => handleReject(item.id)}
+                    onClick={() => handleReject(item.id, item.itemType)}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
                   >
                     <XCircle className="w-4 h-4" />

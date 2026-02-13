@@ -627,6 +627,61 @@ contextBridge.exposeInMainWorld('clawdbot', {
     reject: (data: { id: string; reason?: string }) => 
       ipcRenderer.invoke('x:research:reject', data),
   },
+  // X/Twitter Plan
+  xPlan: {
+    create: (data: { researchIdeaId: string; title: string; contentType: string; threadLength: number; description: string; proposedBy: string }) =>
+      ipcRenderer.invoke('x:plan:create', data),
+    list: (filters?: { status?: string; contentType?: string; limit?: number }) =>
+      ipcRenderer.invoke('x:plan:list', filters),
+    approve: (data: { id: string; approvedBy: string }) =>
+      ipcRenderer.invoke('x:plan:approve', data),
+    reject: (data: { id: string; reason?: string }) =>
+      ipcRenderer.invoke('x:plan:reject', data),
+  },
+  // X/Twitter Drafts
+  xDraft: {
+    create: (data: { planId: string; version: string; content: string; mediaUrls?: string[]; proposedBy: string }) =>
+      ipcRenderer.invoke('x:draft:create', data),
+    list: (filters?: { status?: string; planId?: string; limit?: number }) =>
+      ipcRenderer.invoke('x:draft:list', filters),
+    approve: (data: { id: string; approvedBy: string }) =>
+      ipcRenderer.invoke('x:draft:approve', data),
+    reject: (data: { id: string; reason?: string }) =>
+      ipcRenderer.invoke('x:draft:reject', data),
+  },
+  xSchedule: {
+    create: (data: { draftId: string; scheduledFor: number; timeSlotReason?: string }) =>
+      ipcRenderer.invoke('x:schedule:create', data),
+    list: (filters?: { status?: string; dateFrom?: number; dateTo?: number; limit?: number }) =>
+      ipcRenderer.invoke('x:schedule:list', filters),
+    update: (data: { id: string; scheduledFor?: number; status?: string }) =>
+      ipcRenderer.invoke('x:schedule:update', data),
+    delete: (data: { id: string }) =>
+      ipcRenderer.invoke('x:schedule:delete', data),
+  },
+  xMention: {
+    fetch: () => ipcRenderer.invoke('x:mention:fetch'),
+    list: (filters?: { replyStatus?: string; limit?: number; offset?: number }) =>
+      ipcRenderer.invoke('x:mention:list', filters),
+    update: (data: { id: string; replyStatus?: string; repliedAt?: number; repliedWithId?: string; notes?: string }) =>
+      ipcRenderer.invoke('x:mention:update', data),
+    reply: (data: { mentionId: string; replyText: string; tweetId: string }) =>
+      ipcRenderer.invoke('x:mention:reply', data),
+  },
+  toolbar: {
+    popOut: (data?: { x?: number; y?: number; width?: number; height?: number }) =>
+      ipcRenderer.invoke('toolbar:popOut', data),
+    popIn: () => ipcRenderer.invoke('toolbar:popIn'),
+    getState: () => ipcRenderer.invoke('toolbar:getState'),
+    onClosed: (callback: () => void) => {
+      ipcRenderer.on('toolbar:closed', callback);
+      return () => ipcRenderer.removeListener('toolbar:closed', callback);
+    },
+    onPoppedIn: (callback: () => void) => {
+      ipcRenderer.on('toolbar:popped-in', callback);
+      return () => ipcRenderer.removeListener('toolbar:popped-in', callback);
+    },
+  },
   // Writing Module
   writing: {
     project: {

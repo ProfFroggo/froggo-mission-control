@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, Loader, MessagesSquare, DollarSign, PenLine } from 'lucide-react';
+import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, MessagesSquare, DollarSign, PenLine } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
@@ -46,21 +46,14 @@ const panelIconMap: Record<string, any> = {
 
 // Static items removed - Context, Dev, Library, and Schedule are now managed by panel config
 
-interface SystemStatus {
-  watcherRunning: boolean;
-  killSwitchOn: boolean;
-}
-
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange }: SidebarProps) {
   const [expanded, setExpanded] = useState(true); // Open by default
   const [inboxCount, setInboxCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
-  const [sysStatus, setSysStatus] = useState<SystemStatus>({ watcherRunning: false, killSwitchOn: true });
   const { connected, tasks, activities } = useStore();
   const { panels: panelConfig, openEditModal } = usePanelConfigStore();
   const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
-  const [inProgressTasks, setInProgressTasks] = useState(0);
   
   const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
 
@@ -114,22 +107,6 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     loadInboxCount();
     loadUnreadMsgCount();
     const interval = setInterval(() => { loadInboxCount(); loadUnreadMsgCount(); }, 15000); // Poll every 15s
-    return () => clearInterval(interval);
-  }, []);
-
-  // System status polling
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const result = await (window as any).clawdbot?.system?.status();
-        if (result?.success) {
-          setSysStatus(result.status);
-          setInProgressTasks(result.status.inProgressTasks || 0);
-        }
-      } catch {}
-    };
-    check();
-    const interval = setInterval(check, 10000);
     return () => clearInterval(interval);
   }, []);
   
@@ -221,52 +198,9 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         </div>
       </nav>
 
-      {/* Bottom section - condensed 2-line layout */}
-      <div className="p-2 border-t border-clawd-border space-y-1" role="group" aria-label="Settings and status">
-        {/* Line 1: Status indicators */}
-        <div className={`flex items-center gap-2 px-2 py-1 ${expanded ? '' : 'justify-center'}`} role="status" aria-live="polite">
-          <span 
-            className={`w-2 h-2 rounded-full transition-colors flex-shrink-0 ${connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`}
-            aria-hidden="true"
-            title={connected ? 'Connected' : 'Connecting...'}
-          />
-          {expanded && (
-            <div className="flex items-center gap-2 text-[10px] font-medium">
-              <span className={`${connected ? 'text-green-400' : 'text-clawd-text-dim'}`}>Online</span>
-              <span className={`${sysStatus.watcherRunning ? 'text-green-400' : 'text-red-400'}`}>
-                {sysStatus.watcherRunning ? 'Watcher' : 'Watcher ✗'}
-              </span>
-              {sysStatus.killSwitchOn && (
-                <span className="text-red-400">Blocked</span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Focus mode + counters */}
-        {expanded && (
-          <div className="flex items-center gap-2 px-2 py-1">
-            {focusMode && (
-              <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
-            )}
-            <div className="flex items-center gap-2 ml-auto">
-              {inboxCount > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-yellow-400" title={`${inboxCount} pending inbox items`}>
-                  <Inbox size={12} />
-                  <span className="tabular-nums">{inboxCount}</span>
-                </span>
-              )}
-              {inProgressTasks > 0 && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-400" title={`${inProgressTasks} tasks in progress`}>
-                  <Loader size={12} className="animate-spin" />
-                  <span className="tabular-nums">{inProgressTasks}</span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Line 2: Action icons in a compact horizontal row */}
+      {/* Bottom section */}
+      <div className="p-2 border-t border-clawd-border space-y-1" role="group" aria-label="Settings">
+        {/* Action icons in a compact horizontal row */}
         <div className={`flex items-center ${expanded ? 'justify-between' : 'justify-center'} gap-0.5 px-1`}>
           {/* Edit Panels - only visible when expanded */}
           {expanded && (
