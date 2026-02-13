@@ -106,17 +106,17 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
       {reminders.map((reminder) => (
         <div
           key={reminder.session_id}
-          className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer"
+          className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer"
           onClick={() => handleReminderClick(reminder.session_id)}
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <Bell className="w-5 h-5 text-yellow-600 dark:text-warning animate-ring" />
+              <Bell className="w-5 h-5 text-yellow-600 animate-ring" />
             </div>
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 text-sm">
+                <h4 className="font-semibold text-yellow-900 text-sm">
                   Snoozed Conversation
                 </h4>
                 <button
@@ -124,17 +124,17 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
                     e.stopPropagation();
                     dismissReminder(reminder.session_id);
                   }}
-                  className="text-yellow-600 dark:text-warning hover:text-yellow-800 dark:hover:text-yellow-200"
+                  className="text-yellow-600 hover:text-yellow-800"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
               
-              <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
+              <p className="text-sm text-yellow-800 mb-2">
                 {reminder.snooze_reason || 'This conversation needs your attention'}
               </p>
               
-              <div className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300">
+              <div className="flex items-center gap-2 text-xs text-yellow-700">
                 <Clock className="w-3 h-3" />
                 <span>
                   Session: {formatSessionId(reminder.session_id)}
@@ -143,7 +143,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
             </div>
           </div>
           
-          <div className="mt-3 text-xs text-yellow-600 dark:text-warning text-center">
+          <div className="mt-3 text-xs text-yellow-600 text-center">
             Click to view conversation
           </div>
         </div>

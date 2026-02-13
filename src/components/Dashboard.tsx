@@ -869,7 +869,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   
                   {showActivityStream && (
                     <div className="bg-clawd-bg/20">
-                      <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-clawd-border/30 dark:divide-gray-800">
+                      <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-clawd-border/30">
                         {/* Sessions */}
                         <div className="p-6">
                           <h4 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wider mb-4 flex items-center gap-2">

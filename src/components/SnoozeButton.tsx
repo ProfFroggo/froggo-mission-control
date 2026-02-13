@@ -105,7 +105,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
     return (
       <button
         onClick={handleUnsnooze}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-600 dark:text-warning rounded hover:bg-yellow-500/30 transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-600 rounded hover:bg-yellow-500/30 transition-colors"
         title="Click to unsnooze"
       >
         <Clock className="w-3 h-3" />
@@ -130,12 +130,12 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-clawd-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-clawd-text dark:text-white">
+              <h3 className="text-lg font-semibold text-clawd-text">
                 Snooze Conversation
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-clawd-text-dim hover:text-clawd-text-dim dark:hover:text-clawd-text-dim"
+                className="text-clawd-text-dim hover:text-clawd-text-dim"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -143,7 +143,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Reason input */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-clawd-text dark:text-clawd-text-dim mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Reason (optional)
               </label>
               <input
@@ -157,7 +157,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Quick options */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-clawd-text dark:text-clawd-text-dim mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Quick Snooze
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -175,7 +175,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Custom date/time */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-clawd-text dark:text-clawd-text-dim mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Custom Time
               </label>
               <div className="flex gap-2">

@@ -485,7 +485,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {room.agents.map(id => (
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white dark:border-gray-900" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
@@ -651,7 +651,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
                         ? 'bg-clawd-accent text-white rounded-tr-md'
-                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border dark:border-gray-800'} rounded-tl-md shadow-sm`
+                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border'} rounded-tl-md shadow-sm`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
