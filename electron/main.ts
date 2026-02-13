@@ -8199,3 +8199,153 @@ ipcMain.handle('x:draft:reject', async (_, data: { id: string; reason?: string }
     return { success: false, error: error.message };
   }
 });
+
+// ============== X/TWITTER SCHEDULE HANDLERS ==============
+
+ipcMain.handle('x:schedule:create', async (_, data: {
+  draftId: string;
+  scheduledFor: number;
+  timeSlotReason?: string;
+}) => {
+  try {
+    const { draftId, scheduledFor, timeSlotReason } = data;
+    const now = Date.now();
+    const id = `sched-${now}`;
+    
+    // Verify draft exists and is approved
+    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    if (!draft) {
+      throw new Error('Draft not found or not approved');
+    }
+    
+    // Create scheduled post
+    const stmt = prepare(`
+      INSERT INTO x_scheduled_posts (id, draft_id, scheduled_for, status, created_at, updated_at, metadata)
+      VALUES (?, ?, ?, 'scheduled', ?, ?, json(?))
+    `);
+    
+    const metadata = {
+      timeSlotReason: timeSlotReason || 'Manually selected',
+      scheduledBy: 'user'
+    };
+    
+    stmt.run(id, draftId, scheduledFor, now, now, JSON.stringify(metadata));
+    
+    safeLog.log(`[X/Schedule] Created scheduled post: ${id} for ${new Date(scheduledFor).toISOString()}`);
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Create error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:schedule:list', async (_, filters?: {
+  status?: string;
+  dateFrom?: number;
+  dateTo?: number;
+  limit?: number;
+}) => {
+  try {
+    let query = `
+      SELECT 
+        s.*,
+        d.content as draft_content,
+        d.version as draft_version,
+        d.metadata as draft_metadata
+      FROM x_scheduled_posts s
+      LEFT JOIN x_drafts d ON s.draft_id = d.id
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND s.status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters?.dateFrom) {
+      query += ' AND s.scheduled_for >= ?';
+      params.push(filters.dateFrom);
+    }
+    
+    if (filters?.dateTo) {
+      query += ' AND s.scheduled_for <= ?';
+      params.push(filters.dateTo);
+    }
+    
+    query += ' ORDER BY s.scheduled_for ASC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const results = stmt.all(...params);
+    
+    return { success: true, scheduled: results };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:schedule:update', async (_, data: {
+  id: string;
+  scheduledFor?: number;
+  status?: string;
+}) => {
+  try {
+    const { id, scheduledFor, status } = data;
+    const now = Date.now();
+    
+    let query = 'UPDATE x_scheduled_posts SET updated_at = ?';
+    const params: any[] = [now];
+    
+    if (scheduledFor !== undefined) {
+      query += ', scheduled_for = ?';
+      params.push(scheduledFor);
+    }
+    
+    if (status) {
+      query += ', status = ?';
+      params.push(status);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    const stmt = prepare(query);
+    const result = stmt.run(...params);
+    
+    if (result.changes === 0) {
+      throw new Error('Scheduled post not found');
+    }
+    
+    safeLog.log(`[X/Schedule] Updated scheduled post: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Update error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:schedule:delete', async (_, data: { id: string }) => {
+  try {
+    const { id } = data;
+    
+    const stmt = prepare('DELETE FROM x_scheduled_posts WHERE id = ?');
+    const result = stmt.run(id);
+    
+    if (result.changes === 0) {
+      throw new Error('Scheduled post not found');
+    }
+    
+    safeLog.log(`[X/Schedule] Deleted scheduled post: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Delete error:', error.message);
+    return { success: false, error: error.message };
+  }
+});

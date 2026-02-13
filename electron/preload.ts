@@ -649,6 +649,16 @@ contextBridge.exposeInMainWorld('clawdbot', {
     reject: (data: { id: string; reason?: string }) =>
       ipcRenderer.invoke('x:draft:reject', data),
   },
+  xSchedule: {
+    create: (data: { draftId: string; scheduledFor: number; timeSlotReason?: string }) =>
+      ipcRenderer.invoke('x:schedule:create', data),
+    list: (filters?: { status?: string; dateFrom?: number; dateTo?: number; limit?: number }) =>
+      ipcRenderer.invoke('x:schedule:list', filters),
+    update: (data: { id: string; scheduledFor?: number; status?: string }) =>
+      ipcRenderer.invoke('x:schedule:update', data),
+    delete: (data: { id: string }) =>
+      ipcRenderer.invoke('x:schedule:delete', data),
+  },
   // Writing Module
   writing: {
     project: {
