@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles } from 'lucide-react';
+import { Bot, Flag, Calendar, AlertTriangle, ArrowUp, Circle, ArrowDown, MessageSquare, Edit3, Send, Loader2, Sparkles, Upload, X } from 'lucide-react';
 import { useStore, TaskStatus, TaskPriority } from '../store/store';
 import { gateway } from '../lib/gateway';
 import BaseModal, { BaseModalBody } from './BaseModal';
@@ -59,6 +59,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const [reviewerId, setReviewerId] = useState<string>('froggo'); // Default to Froggo as reviewer
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
 
   // Chat mode state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -158,11 +159,15 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, mode, conversationComplete, extractedData]);
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
+    // Generate task ID first so we can use it for file attachments
+    const taskId = `task-${Date.now()}`;
+
     const newTask = {
+      id: taskId, // Pre-generate ID for file attachment
       title: title.trim(),
       description: description.trim() || undefined,
       project,
@@ -175,6 +180,54 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     };
 
     addTask(newTask);
+
+    // Attach files if any were selected (background operation, don't block modal close)
+    if (selectedFiles.length > 0 && (window as any).clawdbot?.exec && (window as any).clawdbot?.fs && (window as any).clawdbot?.tasks?.attachments) {
+      // Do file uploads in background
+      (async () => {
+        const deliverablePath = `${(window as any).require('os').homedir()}/clawd/deliverables/${taskId}`;
+        
+        // Create directory
+        try {
+          await (window as any).clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
+        } catch (err) {
+          console.error('Failed to create deliverables directory:', err);
+          return;
+        }
+
+        // Upload each file
+        for (const file of selectedFiles) {
+          try {
+            const filePath = `${deliverablePath}/${file.name}`;
+            
+            // Read file as base64
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                const result = event.target?.result as string;
+                const base64Data = result.split(',')[1];
+                resolve(base64Data);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+
+            // Write file
+            await (window as any).clawdbot.fs.writeBase64(filePath, base64);
+
+            // Add attachment record
+            await (window as any).clawdbot.tasks.attachments.add(
+              taskId,
+              filePath,
+              'deliverable',
+              'user'
+            );
+          } catch (error) {
+            console.error(`Error uploading file ${file.name}:`, error);
+          }
+        }
+      })();
+    }
 
     // Trigger post-creation review
     triggerOrchestratorReview(newTask);
@@ -351,6 +404,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setDueDate('');
     setAssignedTo('');
     setReviewerId('froggo'); // Reset to default reviewer
+    setSelectedFiles([]); // Clear file selections
     setChatMessages([]);
     setChatInput('');
     setExtractedData({});
@@ -717,6 +771,68 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 </div>
                 <p className="text-xs text-clawd-text-dim mt-2">
                   📌 Default: Froggo (agent reviewer for all tasks)
+                </p>
+              </div>
+
+              {/* File Attachments */}
+              <div>
+                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <Upload size={14} /> Attach Files (Optional)
+                </label>
+                <div className="space-y-2">
+                  {/* File Input */}
+                  <div>
+                    <input
+                      type="file"
+                      id="task-file-input"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setSelectedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                          e.target.value = ''; // Reset input
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="task-file-input"
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50 transition-colors cursor-pointer text-sm"
+                    >
+                      <Upload size={16} />
+                      Choose Files
+                    </label>
+                  </div>
+
+                  {/* Selected Files List */}
+                  {selectedFiles.length > 0 && (
+                    <div className="space-y-1">
+                      {selectedFiles.map((file, index) => (
+                        <div
+                          key={`${file.name}-${index}`}
+                          className="flex items-center justify-between gap-2 px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-sm"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Upload size={14} className="flex-shrink-0 text-clawd-text-dim" />
+                            <span className="truncate">{file.name}</span>
+                            <span className="text-xs text-clawd-text-dim flex-shrink-0">
+                              ({(file.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                            className="p-1 hover:bg-error/20 hover:text-error rounded transition-colors flex-shrink-0"
+                            title="Remove file"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-clawd-text-dim mt-1">
+                  Files will be attached after task creation
                 </p>
               </div>
 
