@@ -3,6 +3,7 @@ import {
   Plus, MessageSquare, CheckCircle, Search, Zap, Send, X, UserPlus, Brain,
   ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff,
   Video, Users, ListTodo, Play, Pause, Square, ArrowRight, Sparkles, Monitor, Camera, CameraOff,
+  ExternalLink,
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
@@ -853,6 +854,25 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   }, [dragging]);
 
   const toggleCollapse = () => setState(prev => ({ ...prev, isCollapsed: !prev.isCollapsed }));
+  
+  const handlePopOut = async () => {
+    try {
+      const result = await window.electron.toolbar.popOut({
+        width: state.isCollapsed ? 80 : 360,
+        height: 400,
+      });
+      
+      if (result.success) {
+        showToast('success', 'Toolbar Popped Out', 'Toolbar is now floating and always-on-top');
+      } else {
+        showToast('error', 'Pop-out Failed', result.error || 'Could not create floating window');
+      }
+    } catch (error) {
+      console.error('Pop-out error:', error);
+      showToast('error', 'Pop-out Failed', 'An error occurred');
+    }
+  };
+  
   const resetPosition = () => {
     setState(DEFAULT_STATE);
     showToast('success', 'Position Reset', 'Toolbar moved to default position');
@@ -1210,6 +1230,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 {activeCall.agentName}
               </span>
             )}
+            <button onClick={handlePopOut} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Pop out as floating window">
+              <ExternalLink size={14} className="text-clawd-text-dim" />
+            </button>
             <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Expand toolbar">
               <ChevronLeft size={16} className="text-clawd-text-dim" />
             </button>
@@ -1288,6 +1311,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             </button>
 
             <div className="w-px h-6 bg-clawd-border mx-0.5" />
+            <button onClick={handlePopOut} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Pop out as floating window">
+              <ExternalLink size={14} className="text-clawd-text-dim" />
+            </button>
             <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Collapse toolbar">
               <ChevronRight size={16} className="text-clawd-text-dim" />
             </button>

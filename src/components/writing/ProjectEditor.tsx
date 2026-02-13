@@ -11,21 +11,32 @@ import { useWritingStore } from '../../store/writingStore';
 
 const LAYOUT_KEY = 'writing-layout';
 const COLLAPSE_KEY = 'writing-collapsed';
-const DEFAULT_LAYOUT: Layout = { chapters: 15, chat: 30, editor: 55 };
+const MIN_CHAPTERS = 15;
+const MIN_CHAT = 25;
+const MIN_EDITOR = 30;
+const DEFAULT_LAYOUT: Layout = { chapters: MIN_CHAPTERS, chat: 30, editor: 55 };
 
 function getPersistedLayout(): Layout | undefined {
   try {
     const saved = localStorage.getItem(LAYOUT_KEY);
     if (!saved) return undefined;
     const parsed = JSON.parse(saved);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      && typeof parsed.chapters === 'number' && typeof parsed.chat === 'number' && typeof parsed.editor === 'number'
-      && parsed.chapters >= 5 && parsed.chat >= 5 && parsed.editor >= 20) {
-      return parsed as Layout;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
+      || typeof parsed.chapters !== 'number' || typeof parsed.chat !== 'number' || typeof parsed.editor !== 'number') {
+      localStorage.removeItem(LAYOUT_KEY);
+      return undefined;
     }
-    // Stale or invalid layout — clear it
-    localStorage.removeItem(LAYOUT_KEY);
-    return undefined;
+    // Clamp to minimums — stale layouts may have values below current mins
+    const chapters = Math.max(parsed.chapters, MIN_CHAPTERS);
+    const chat = Math.max(parsed.chat, MIN_CHAT);
+    const editor = Math.max(parsed.editor, MIN_EDITOR);
+    // Normalize so they sum to 100
+    const total = chapters + chat + editor;
+    return {
+      chapters: (chapters / total) * 100,
+      chat: (chat / total) * 100,
+      editor: (editor / total) * 100,
+    };
   } catch {
     localStorage.removeItem(LAYOUT_KEY);
     return undefined;
@@ -129,7 +140,7 @@ export default function ProjectEditor() {
       {/* Left panel: Chapter sidebar */}
       <Panel
         id="chapters"
-        minSize={15}
+        minSize={MIN_CHAPTERS}
         maxSize={25}
         collapsible
         collapsedSize={0}
@@ -137,7 +148,7 @@ export default function ProjectEditor() {
         onResize={handleChaptersResize}
         className="h-full"
       >
-        <div className="h-full overflow-hidden [&>div]:!w-full" style={{ minWidth: 200 }}>
+        <div className="h-full overflow-hidden [&>div]:!w-full">
           <ChapterSidebar />
         </div>
       </Panel>
@@ -147,7 +158,7 @@ export default function ProjectEditor() {
       {/* Center panel: AI Chat */}
       <Panel
         id="chat"
-        minSize={25}
+        minSize={MIN_CHAT}
         maxSize={50}
         collapsible
         collapsedSize={0}
@@ -155,9 +166,7 @@ export default function ProjectEditor() {
         onResize={handleChatResize}
         className="h-full"
       >
-        <div className="h-full" style={{ minWidth: 350 }}>
-          <ChatPane />
-        </div>
+        <ChatPane />
       </Panel>
 
       <Separator className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors cursor-col-resize data-[resize-handle-active]:bg-clawd-accent" />
@@ -165,7 +174,7 @@ export default function ProjectEditor() {
       {/* Right panel: Editor workspace */}
       <Panel
         id="editor"
-        minSize={25}
+        minSize={MIN_EDITOR}
         className="h-full"
       >
         <div className="relative h-full">
