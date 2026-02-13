@@ -4,6 +4,8 @@ import XPlanThreadComposer from './XPlanThreadComposer';
 import XDraftComposer from './XDraftComposer';
 import { XCalendarView } from './XCalendarView';
 import { XMentionsView } from './XMentionsView';
+import { XReplyGuyView } from './XReplyGuyView';
+import { XContentMixTracker } from './XContentMixTracker';
 
 interface XContentEditorPaneProps {
   tab: XTab;
@@ -33,6 +35,16 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
   // Mentions tab has mentions view
   if (tab === 'mentions') {
     return <XMentionsView />;
+  }
+  
+  // Reply Guy tab has reply guy view
+  if (tab === 'reply-guy') {
+    return <XReplyGuyView />;
+  }
+  
+  // Automations tab has content mix tracker
+  if (tab === 'automations') {
+    return <XContentMixTracker />;
   }
 
   // Other tabs: placeholder

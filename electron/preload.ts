@@ -682,6 +682,14 @@ contextBridge.exposeInMainWorld('clawdbot', {
       return () => ipcRenderer.removeListener('toolbar:popped-in', callback);
     },
   },
+  xReplyGuy: {
+    listHotMentions: (filters?: { minLikes?: number; minRetweets?: number; limit?: number }) =>
+      ipcRenderer.invoke('x:replyGuy:listHotMentions', filters),
+    createQuickDraft: (data: { mentionId: string; replyText: string; fastTrack?: boolean }) =>
+      ipcRenderer.invoke('x:replyGuy:createQuickDraft', data),
+    postNow: (data: { draftId: string }) =>
+      ipcRenderer.invoke('x:replyGuy:postNow', data),
+  },
   // Writing Module
   writing: {
     project: {
