@@ -3,7 +3,7 @@ import { Editor } from '@tiptap/react';
 import { Send, Loader2, ShieldCheck } from 'lucide-react';
 import { gateway } from '../../lib/gateway';
 import { useWritingStore } from '../../store/writingStore';
-import { useFeedbackStore } from '../../store/feedbackStore';
+import { useFeedbackStore, type ParsedAlternative } from '../../store/feedbackStore';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useResearchStore } from '../../store/researchStore';
 import AgentPicker from './AgentPicker';
@@ -159,9 +159,19 @@ function buildPrompt(
   ].join('\n');
 }
 
-function parseAlternatives(response: string): string[] {
+function parseAlternatives(response: string, agentId?: string): ParsedAlternative[] {
   const parts = response.split(/###\s*Alternative\s*\d+\s*/i);
-  return parts.slice(1).map(p => p.trim()).filter(Boolean).slice(0, 3);
+  return parts.slice(1).map(p => {
+    if (agentId === 'jess') {
+      const whyMatch = p.match(/\*\*Why:\*\*\s*([\s\S]*?)$/i);
+      if (whyMatch) {
+        const text = p.slice(0, whyMatch.index).trim();
+        const commentary = whyMatch[1].trim();
+        return { text, commentary };
+      }
+    }
+    return { text: p.trim() };
+  }).filter(a => a.text).slice(0, 3);
 }
 
 function buildFactCheckPrompt(
@@ -264,7 +274,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           setStreamContent(accumulatedRef.current);
         },
         onEnd: () => {
-          const parsed = parseAlternatives(accumulatedRef.current);
+          const parsed = parseAlternatives(accumulatedRef.current, selectedAgent);
           setAlternatives(parsed);
           setStreaming(false);
 
@@ -453,7 +463,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       {!streaming && alternatives.length > 0 && (
         <div className="mt-2 space-y-2">
           {alternatives.map((alt, i) => (
-            <FeedbackAlternative key={i} index={i} text={alt} onAccept={handleAccept} />
+            <FeedbackAlternative key={i} index={i} text={alt.text} commentary={alt.commentary} onAccept={handleAccept} />
           ))}
           <button
             onClick={handleDismiss}
