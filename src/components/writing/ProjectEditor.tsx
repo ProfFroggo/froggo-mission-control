@@ -129,7 +129,7 @@ export default function ProjectEditor() {
       {/* Left panel: Chapter sidebar */}
       <Panel
         id="chapters"
-        minSize={10}
+        minSize={15}
         maxSize={25}
         collapsible
         collapsedSize={0}
@@ -137,7 +137,7 @@ export default function ProjectEditor() {
         onResize={handleChaptersResize}
         className="h-full"
       >
-        <div className="h-full overflow-hidden [&>div]:!w-full">
+        <div className="h-full overflow-hidden [&>div]:!w-full" style={{ minWidth: 200 }}>
           <ChapterSidebar />
         </div>
       </Panel>
@@ -147,7 +147,7 @@ export default function ProjectEditor() {
       {/* Center panel: AI Chat */}
       <Panel
         id="chat"
-        minSize={15}
+        minSize={25}
         maxSize={50}
         collapsible
         collapsedSize={0}
@@ -155,7 +155,9 @@ export default function ProjectEditor() {
         onResize={handleChatResize}
         className="h-full"
       >
-        <ChatPane />
+        <div className="h-full" style={{ minWidth: 350 }}>
+          <ChatPane />
+        </div>
       </Panel>
 
       <Separator className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors cursor-col-resize data-[resize-handle-active]:bg-clawd-accent" />
