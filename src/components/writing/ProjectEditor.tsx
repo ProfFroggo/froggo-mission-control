@@ -18,11 +18,16 @@ function getPersistedLayout(): Layout | undefined {
     const saved = localStorage.getItem(LAYOUT_KEY);
     if (!saved) return undefined;
     const parsed = JSON.parse(saved);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      && typeof parsed.chapters === 'number' && typeof parsed.chat === 'number' && typeof parsed.editor === 'number'
+      && parsed.chapters >= 5 && parsed.chat >= 5 && parsed.editor >= 20) {
       return parsed as Layout;
     }
+    // Stale or invalid layout — clear it
+    localStorage.removeItem(LAYOUT_KEY);
     return undefined;
   } catch {
+    localStorage.removeItem(LAYOUT_KEY);
     return undefined;
   }
 }
