@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2 } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';
 
 interface Insight {
@@ -14,6 +14,7 @@ interface Insight {
 export default function FinanceInsightsPanel() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,9 +45,34 @@ export default function FinanceInsightsPanel() {
     }
   };
 
+  const triggerAnalysis = async () => {
+    try {
+      setAnalyzing(true);
+      showToast('info', 'Analyzing finances...', 'This may take a moment');
+      
+      const result = await window.electron.finance.triggerAnalysis({
+        daysBack: 7,
+        focus: 'general'
+      });
+      
+      if (result?.success) {
+        showToast('success', 'Analysis complete!', 'New insights generated');
+        // Reload insights to show new analysis
+        await loadInsights();
+      } else {
+        throw new Error(result?.error || 'Analysis failed');
+      }
+    } catch (err: any) {
+      console.error('[FinanceInsights] Analysis error:', err);
+      showToast('error', 'Analysis failed', err.message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const dismissInsight = async (insightId: string) => {
     try {
-      const result = await (window as any).clawdbot?.invoke('finance:dismissInsight', insightId);
+      const result = await window.electron.finance.dismissInsight(insightId);
       
       if (result?.success) {
         // Remove from UI
@@ -155,6 +181,15 @@ export default function FinanceInsightsPanel() {
             {insights.length}
           </span>
         </h3>
+        <button
+          onClick={triggerAnalysis}
+          disabled={analyzing}
+          className="px-3 py-1.5 bg-clawd-accent hover:bg-clawd-accent/90 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+          title="Run AI analysis on recent transactions"
+        >
+          <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
+          {analyzing ? 'Analyzing...' : 'Run Analysis'}
+        </button>
       </div>
 
       {insights.map((insight) => (
