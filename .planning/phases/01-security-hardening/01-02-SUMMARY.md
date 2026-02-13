@@ -85,7 +85,7 @@ Disabled DevTools in production, migrated all targeted SQL injection vectors to 
 
 ### SEC-05: Filesystem IPC Restricted
 - Created `electron/fs-validation.ts` with `isAllowedPath()` and `validateFsPath()`
-- Allowed roots: `~/clawd/`, `~/.openclaw/`, `~/Froggo/`
+- Allowed roots: `~/froggo/`, `~/.openclaw/`, `~/Froggo/`
 - Handles `~` expansion and path traversal via `path.resolve()`
 - All 3 FS handlers (`fs:writeBase64`, `fs:readFile`, `fs:append`) validate before any I/O
 
@@ -95,7 +95,7 @@ Disabled DevTools in production, migrated all targeted SQL injection vectors to 
 - Channel name `db:exec` preserved (5+ renderer files depend on it)
 
 ### database.ts Enhancement
-- Added `getSecurityDb()` lazy-init connection for `~/clawd/data/security.db`
+- Added `getSecurityDb()` lazy-init connection for `~/froggo/data/security.db`
 - Added security.db cleanup in `closeDb()`
 
 ## Deviations from Plan

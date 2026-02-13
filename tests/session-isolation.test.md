@@ -27,7 +27,7 @@
 
 ```bash
 # Terminal 1: Start dashboard
-cd ~/clawd/clawd-dashboard
+cd ~/froggo/froggo-dashboard
 npm run dev
 
 # Terminal 2: Monitor gateway logs
