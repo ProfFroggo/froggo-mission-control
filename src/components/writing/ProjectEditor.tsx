@@ -26,17 +26,12 @@ function getPersistedLayout(): Layout | undefined {
       localStorage.removeItem(LAYOUT_KEY);
       return undefined;
     }
-    // Clamp to minimums — stale layouts may have values below current mins
-    const chapters = Math.max(parsed.chapters, MIN_CHAPTERS);
-    const chat = Math.max(parsed.chat, MIN_CHAT);
-    const editor = Math.max(parsed.editor, MIN_EDITOR);
-    // Normalize so they sum to 100
-    const total = chapters + chat + editor;
-    return {
-      chapters: (chapters / total) * 100,
-      chat: (chat / total) * 100,
-      editor: (editor / total) * 100,
-    };
+    // If any pane is below its minimum, discard stale layout and use defaults
+    if (parsed.chapters < MIN_CHAPTERS || parsed.chat < MIN_CHAT || parsed.editor < MIN_EDITOR) {
+      localStorage.removeItem(LAYOUT_KEY);
+      return undefined;
+    }
+    return parsed as Layout;
   } catch {
     localStorage.removeItem(LAYOUT_KEY);
     return undefined;
