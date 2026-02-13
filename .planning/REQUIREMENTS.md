@@ -1,11 +1,14 @@
-# Requirements: Writing System v2.0
+# Requirements: Writing System
 
-**Defined:** 2026-02-12
-**Core Value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
+**Defined:** 2026-02-12 (v2.0), updated 2026-02-13 (v2.1)
+**Core Value:** Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters -- then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
 
-## v2 Requirements
+## v2 Requirements (Complete)
 
-Requirements for writing system milestone. Each maps to roadmap phases.
+All v2.0 requirements shipped 2026-02-13. 44/44 complete.
+
+<details>
+<summary>v2.0 requirements (44 complete)</summary>
 
 ### Foundation
 
@@ -72,6 +75,47 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 - [x] **AGENT-04**: Each agent has project-scoped sessions (context persists within project)
 - [x] **AGENT-05**: Agent communication uses existing OpenClaw Gateway WebSocket
 
+</details>
+
+## v2.1 Requirements
+
+Requirements for Writing UX Redesign milestone. Scoped from research (2026-02-13).
+
+### Chat Infrastructure
+
+- [ ] **CHAT-01**: User can chat with AI agents (Writer, Researcher, Jess) in a persistent chat pane alongside the editor
+- [ ] **CHAT-02**: AI responses stream in real-time (token by token) in the chat pane
+- [ ] **CHAT-03**: User can select which agent to chat with via agent picker in chat header
+- [ ] **CHAT-04**: Chat history persists across sessions (per-project, stored to disk)
+- [ ] **CHAT-05**: AI context includes current chapter content, project outline, and memory store data
+- [ ] **CHAT-06**: User can insert AI-generated content from chat into the editor with one click ("Send to editor")
+- [ ] **CHAT-07**: Content insertion validates against TipTap schema via markdown conversion and inserts at cursor or end of chapter
+- [ ] **CHAT-08**: User can copy and retry chat messages
+- [ ] **CHAT-09**: Chat maintains multi-turn conversation context via gateway sessions
+- [ ] **CHAT-10**: Chat pane uses separate gateway sessions from inline feedback (no context contamination)
+
+### Three-Pane Layout
+
+- [ ] **LAYOUT-01**: Writing workspace uses 3-pane layout: chapters sidebar | AI chat pane | content workspace
+- [ ] **LAYOUT-02**: Panes are resizable via drag handles (react-resizable-panels)
+- [ ] **LAYOUT-03**: Chat pane and chapters sidebar are individually collapsible
+- [ ] **LAYOUT-04**: Pane sizes and collapse state persist across sessions (localStorage)
+- [ ] **LAYOUT-05**: Layout works at window widths from 1024px to 1920px+
+
+### Setup Wizard
+
+- [ ] **WIZARD-01**: User can start a new book project through a conversational AI wizard that guides planning (story arc, chapters, themes, characters)
+- [ ] **WIZARD-02**: User can provide a brain dump / free-form description of their book idea as the starting point
+- [ ] **WIZARD-03**: Wizard generates character profiles from the planning conversation and populates memory store
+- [ ] **WIZARD-04**: Wizard generates a chapter outline from the planning conversation
+- [ ] **WIZARD-05**: Wizard generates story arc / plot structure summary
+- [ ] **WIZARD-06**: User can review and edit the proposed plan (characters, chapters, arc) before creating the project
+- [ ] **WIZARD-07**: User can skip the wizard and use quick-create (existing title + type form remains)
+- [ ] **WIZARD-08**: Wizard state persists across navigation and app restarts (resume mid-wizard)
+- [ ] **WIZARD-09**: Wizard uses agent-specialized prompts (Jess for memoir emotional arc, Writer for novel plot structure)
+- [ ] **WIZARD-10**: On completion, wizard atomically creates project with chapters, characters, and timeline populated from conversation
+- [ ] **WIZARD-11**: User can select or let AI infer the genre/type beyond memoir/novel
+
 ## v3 Requirements
 
 Deferred to future milestone. Tracked but not in current roadmap.
@@ -88,6 +132,9 @@ Deferred to future milestone. Tracked but not in current roadmap.
 - **ADV-08**: Focus/distraction-free writing mode
 - **ADV-09**: Sensitivity/boundary annotations for memoir content
 - **ADV-10**: Style guide enforcement via AI
+- **ADV-11**: Drag content from chat to editor (DnD between panes)
+- **ADV-12**: Outline-to-beats-to-prose pipeline (beat expansion via chat)
+- **ADV-13**: Cross-chapter context in chat (chapter summaries as context)
 
 ## Out of Scope
 
@@ -96,8 +143,11 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | Real-time multi-user collaboration | Single-user workflow, CRDT complexity unjustified |
 | AI autocomplete/ghost text | Research confirms it destroys creative voice -- anti-feature |
 | AI-generated first drafts | User writes, AI assists -- never the other way around |
-| Custom markdown editor (split-pane) | TipTap WYSIWYG is better for prose writing |
-| Gamification (streaks, badges) | Research shows it pressures and stresses writers |
+| "Generate entire book" button | Results are generic and soulless; keep human in the loop |
+| Auto-replacing editor content | AI results are suggestions, not overwrites (Shape of AI pattern) |
+| Multi-agent chat rooms | One agent at a time; agent switching is sufficient |
+| Custom AI model selection | Gateway model routing handles this already |
+| Complex plot structure templates | Let agent suggest structure conversationally, not force templates |
 | electron/main.ts monolith breakup | Separate effort, not writing-related |
 | preload namespace rename | Cosmetic, deferred |
 
@@ -105,56 +155,26 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 5 | Complete |
-| FOUND-02 | Phase 5 | Complete |
-| FOUND-03 | Phase 5 | Complete |
-| FOUND-04 | Phase 5 | Complete |
-| FOUND-05 | Phase 5 | Complete |
-| FOUND-06 | Phase 5 | Complete |
-| FOUND-07 | Phase 5 | Complete |
-| FOUND-08 | Phase 5 | Complete |
-| FOUND-09 | Phase 5 | Complete |
-| FOUND-10 | Phase 5 | Complete |
-| EDIT-01 | Phase 5 | Complete |
-| EDIT-02 | Phase 5 | Complete |
-| EDIT-03 | Phase 5 | Complete |
-| EDIT-04 | Phase 5 | Complete |
-| EDIT-05 | Phase 5 | Complete |
-| FEED-01 | Phase 6 | Complete |
-| FEED-02 | Phase 6 | Complete |
-| FEED-03 | Phase 6 | Complete |
-| FEED-04 | Phase 6 | Complete |
-| FEED-05 | Phase 6 | Complete |
-| FEED-06 | Phase 6 | Complete |
-| FEED-07 | Phase 6 | Complete |
-| FEED-08 | Phase 6 | Complete |
-| MEM-01 | Phase 7 | Complete |
-| MEM-02 | Phase 7 | Complete |
-| MEM-03 | Phase 7 | Complete |
-| MEM-04 | Phase 7 | Complete |
-| MEM-05 | Phase 7 | Complete |
-| MEM-06 | Phase 7 | Complete |
-| RES-01 | Phase 8 | Complete |
-| RES-02 | Phase 8 | Complete |
-| RES-03 | Phase 8 | Complete |
-| RES-04 | Phase 8 | Complete |
-| RES-05 | Phase 8 | Complete |
-| OUT-01 | Phase 9 | Complete |
-| OUT-02 | Phase 9 | Complete |
-| OUT-03 | Phase 9 | Complete |
-| OUT-04 | Phase 9 | Complete |
-| OUT-05 | Phase 9 | Complete |
+| FOUND-01 through FOUND-10 | Phase 5 | Complete |
+| EDIT-01 through EDIT-05 | Phase 5 | Complete |
+| FEED-01 through FEED-08 | Phase 6 | Complete |
+| MEM-01 through MEM-06 | Phase 7 | Complete |
+| RES-01 through RES-05 | Phase 8 | Complete |
+| OUT-01 through OUT-05 | Phase 9 | Complete |
 | AGENT-01 | Phase 6 | Complete |
 | AGENT-02 | Phase 8 | Complete |
 | AGENT-03 | Phase 10 | Complete |
 | AGENT-04 | Phase 6 | Complete |
 | AGENT-05 | Phase 6 | Complete |
+| CHAT-01 through CHAT-10 | Pending | Pending |
+| LAYOUT-01 through LAYOUT-05 | Pending | Pending |
+| WIZARD-01 through WIZARD-11 | Pending | Pending |
 
 **Coverage:**
-- v2 requirements: 44 total
-- Mapped to phases: 44
-- Unmapped: 0
+- v2.0 requirements: 44 complete
+- v2.1 requirements: 26 total (10 CHAT + 5 LAYOUT + 11 WIZARD)
+- Unmapped: 26 (pending roadmap)
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-13 — All v2.0 requirements complete*
+*Last updated: 2026-02-13 -- v2.1 requirements added (26 new)*
