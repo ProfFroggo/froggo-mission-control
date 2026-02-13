@@ -104,17 +104,17 @@ Requirements for Writing UX Redesign milestone. Scoped from research (2026-02-13
 
 ### Setup Wizard
 
-- [ ] **WIZARD-01**: User can start a new book project through a conversational AI wizard that guides planning (story arc, chapters, themes, characters)
-- [ ] **WIZARD-02**: User can provide a brain dump / free-form description of their book idea as the starting point
-- [ ] **WIZARD-03**: Wizard generates character profiles from the planning conversation and populates memory store
-- [ ] **WIZARD-04**: Wizard generates a chapter outline from the planning conversation
-- [ ] **WIZARD-05**: Wizard generates story arc / plot structure summary
-- [ ] **WIZARD-06**: User can review and edit the proposed plan (characters, chapters, arc) before creating the project
-- [ ] **WIZARD-07**: User can skip the wizard and use quick-create (existing title + type form remains)
-- [ ] **WIZARD-08**: Wizard state persists across navigation and app restarts (resume mid-wizard)
-- [ ] **WIZARD-09**: Wizard uses agent-specialized prompts (Jess for memoir emotional arc, Writer for novel plot structure)
-- [ ] **WIZARD-10**: On completion, wizard atomically creates project with chapters, characters, and timeline populated from conversation
-- [ ] **WIZARD-11**: User can select or let AI infer the genre/type beyond memoir/novel
+- [x] **WIZARD-01**: User can start a new book project through a conversational AI wizard that guides planning (story arc, chapters, themes, characters)
+- [x] **WIZARD-02**: User can provide a brain dump / free-form description of their book idea as the starting point
+- [x] **WIZARD-03**: Wizard generates character profiles from the planning conversation and populates memory store
+- [x] **WIZARD-04**: Wizard generates a chapter outline from the planning conversation
+- [x] **WIZARD-05**: Wizard generates story arc / plot structure summary
+- [x] **WIZARD-06**: User can review and edit the proposed plan (characters, chapters, arc) before creating the project
+- [x] **WIZARD-07**: User can skip the wizard and use quick-create (existing title + type form remains)
+- [x] **WIZARD-08**: Wizard state persists across navigation and app restarts (resume mid-wizard)
+- [x] **WIZARD-09**: Wizard uses agent-specialized prompts (Jess for memoir emotional arc, Writer for novel plot structure)
+- [x] **WIZARD-10**: On completion, wizard atomically creates project with chapters, characters, and timeline populated from conversation
+- [x] **WIZARD-11**: User can select or let AI infer the genre/type beyond memoir/novel
 
 ## v3 Requirements
 
@@ -181,23 +181,23 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | LAYOUT-03 | Phase 11 | Complete |
 | LAYOUT-04 | Phase 11 | Complete |
 | LAYOUT-05 | Phase 11 | Complete |
-| WIZARD-01 | Phase 12 | Pending |
-| WIZARD-02 | Phase 12 | Pending |
-| WIZARD-03 | Phase 12 | Pending |
-| WIZARD-04 | Phase 12 | Pending |
-| WIZARD-05 | Phase 12 | Pending |
-| WIZARD-06 | Phase 12 | Pending |
-| WIZARD-07 | Phase 12 | Pending |
-| WIZARD-08 | Phase 12 | Pending |
-| WIZARD-09 | Phase 12 | Pending |
-| WIZARD-10 | Phase 12 | Pending |
-| WIZARD-11 | Phase 12 | Pending |
+| WIZARD-01 | Phase 12 | Complete |
+| WIZARD-02 | Phase 12 | Complete |
+| WIZARD-03 | Phase 12 | Complete |
+| WIZARD-04 | Phase 12 | Complete |
+| WIZARD-05 | Phase 12 | Complete |
+| WIZARD-06 | Phase 12 | Complete |
+| WIZARD-07 | Phase 12 | Complete |
+| WIZARD-08 | Phase 12 | Complete |
+| WIZARD-09 | Phase 12 | Complete |
+| WIZARD-10 | Phase 12 | Complete |
+| WIZARD-11 | Phase 12 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 44/44 complete
-- v2.1 requirements: 15/26 complete (Phase 11), 11 pending (Phase 12)
+- v2.1 requirements: 26/26 complete (Phase 11: 15, Phase 12: 11)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-13 -- v2.1 traceability added (26 requirements mapped to Phases 11-12)*
+*Last updated: 2026-02-13 -- v2.1 milestone complete (all 26 requirements done)*

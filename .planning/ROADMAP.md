@@ -93,7 +93,7 @@
 - Decimal phases (11.1, 11.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 11: Chat Pane + 3-Pane Layout** - Persistent AI chat alongside the editor in a resizable 3-pane layout with chat-to-editor content flow
-- [ ] **Phase 12: Setup Wizard** - Conversational AI wizard that plans a book (arc, chapters, characters) before writing begins
+- [x] **Phase 12: Setup Wizard** - Conversational AI wizard that plans a book (arc, chapters, characters) before writing begins
 
 ## Phase Details
 
@@ -125,13 +125,13 @@ Plans:
   3. On wizard completion, the project is created with chapters, characters, and timeline pre-populated in the memory store -- no manual re-entry needed
   4. User can quit mid-wizard, restart the app, and resume the wizard conversation where they left off
   5. User can skip the wizard entirely and use quick-create (existing title + type form) for any project
-**Plans**: 4 plans
+**Plans**: 4/4 complete
 
 Plans:
-- [ ] 12-01-PLAN.md — Wizard foundation: store, Zod schemas, prompts, IPC service, preload bridge, type flexibility
-- [ ] 12-02-PLAN.md — Wizard UI: SetupWizard orchestrator, WizardChat with streaming, routing, ProjectSelector button
-- [ ] 12-03-PLAN.md — Review + creation: WizardReview form, WizardPlanPreview, atomic createFromWizard IPC
-- [ ] 12-04-PLAN.md — Integration: wire review/preview into wizard, resume logic, human verify
+- [x] 12-01-PLAN.md — Wizard foundation: store, Zod schemas, prompts, IPC service, preload bridge, type flexibility
+- [x] 12-02-PLAN.md — Wizard UI: SetupWizard orchestrator, WizardChat with streaming, routing, ProjectSelector button
+- [x] 12-03-PLAN.md — Review + creation: WizardReview form, WizardPlanPreview, atomic createFromWizard IPC
+- [x] 12-04-PLAN.md — Integration: wire review/preview into wizard, resume logic, human verify
 
 ## Progress
 
@@ -143,8 +143,8 @@ Phases execute in numeric order: 11 -> 11.1 -> 11.2 -> 12
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
 | 5-10 | v2.0 | 12/12 | Complete | 2026-02-13 |
 | 11. Chat Pane + 3-Pane Layout | v2.1 | 4/4 | Complete | 2026-02-13 |
-| 12. Setup Wizard | v2.1 | 0/4 | Planned | - |
+| 12. Setup Wizard | v2.1 | 4/4 | Complete | 2026-02-13 |
 
 ---
 *Roadmap created: 2026-02-12*
-*Last updated: 2026-02-13 -- Phase 11 complete*
+*Last updated: 2026-02-13 -- Phase 12 complete, v2.1 milestone complete*
