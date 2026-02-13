@@ -616,6 +616,17 @@ contextBridge.exposeInMainWorld('clawdbot', {
     triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => ipcRenderer.invoke('financeAgent:triggerAnalysis', analysisType),
     getStatus: () => ipcRenderer.invoke('financeAgent:getStatus'),
   },
+  // X/Twitter Research
+  xResearch: {
+    propose: (data: { title: string; description: string; citations: string[]; proposedBy: string }) => 
+      ipcRenderer.invoke('x:research:propose', data),
+    list: (filters?: { status?: string; limit?: number }) => 
+      ipcRenderer.invoke('x:research:list', filters),
+    approve: (data: { id: string; approvedBy: string }) => 
+      ipcRenderer.invoke('x:research:approve', data),
+    reject: (data: { id: string; reason?: string }) => 
+      ipcRenderer.invoke('x:research:reject', data),
+  },
   // Writing Module
   writing: {
     project: {
