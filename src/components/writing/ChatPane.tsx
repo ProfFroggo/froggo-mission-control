@@ -25,7 +25,7 @@ export default function ChatPane() {
   const {
     messages, streaming, streamContent, selectedAgent, error,
     setStreaming, setStreamContent, addMessage, setError, setInput,
-    clearMessages, loadMessages,
+    removeMessagesFrom, clearMessages, loadMessages,
   } = useChatPaneStore();
 
   const { activeProjectId, activeChapterContent, activeProject } = useWritingStore();
@@ -71,6 +71,23 @@ export default function ChatPane() {
       // Clear failure is non-critical
     }
   }, [activeProjectId, clearMessages]);
+
+  const handleRetry = useCallback((assistantMessageId: string) => {
+    const idx = messages.findIndex((m) => m.id === assistantMessageId);
+    if (idx < 0) return;
+
+    // Find the preceding user message
+    const userIdx = idx - 1;
+    const userMsg = userIdx >= 0 && messages[userIdx].role === 'user' ? messages[userIdx] : null;
+
+    // Remove the assistant message and the user message before it
+    removeMessagesFrom(userMsg ? userIdx : idx);
+
+    // Prefill the input with the user message content
+    if (userMsg) {
+      setInput(userMsg.content);
+    }
+  }, [messages, removeMessagesFrom, setInput]);
 
   const handleSendMessage = useCallback(async (text: string) => {
     if (!activeProjectId || streaming) return;
@@ -198,7 +215,11 @@ export default function ChatPane() {
         ) : (
           <>
             {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                onRetry={msg.role === 'assistant' ? () => handleRetry(msg.id) : undefined}
+              />
             ))}
             {streaming && (
               <ChatMessage

@@ -25,6 +25,7 @@ interface ChatPaneState {
   addMessage: (msg: ChatMessage) => void;
   setError: (error: string | null) => void;
   markInserted: (messageId: string) => void;
+  removeMessagesFrom: (index: number) => void;
   clearMessages: () => void;
   loadMessages: (messages: ChatMessage[]) => void;
 }
@@ -49,6 +50,8 @@ export const useChatPaneStore = create<ChatPaneState>((set) => ({
         m.id === messageId ? { ...m, insertedToEditor: true } : m
       ),
     })),
+  removeMessagesFrom: (index) =>
+    set((s) => ({ messages: s.messages.slice(0, index) })),
   clearMessages: () => set({ messages: [], streamContent: '', error: null }),
   loadMessages: (messages) => set({ messages }),
 }));
