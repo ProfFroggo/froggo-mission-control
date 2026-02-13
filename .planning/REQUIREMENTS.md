@@ -1,127 +1,160 @@
-# Requirements: Froggo.app Dashboard Hardening
+# Requirements: Writing System v2.0
 
-**Defined:** 2026-02-11
-**Core Value:** Kevin can trust that Froggo.app is secure, reliable, and honest -- every button works, every indicator reflects reality.
-
-## v1 Requirements
-
-Requirements for this hardening milestone. Each maps to roadmap phases.
-
-### Security
-
-- [x] **SEC-01**: No hardcoded API tokens in source code (Twitter Bearer/Access, Gemini key, Gateway token)
-- [x] **SEC-02**: No PII in source code (emails, phone numbers, employer info)
-- [x] **SEC-03**: DevTools disabled in production builds
-- [x] **SEC-04**: All SQL queries use parameterized inputs (156 prepare() calls, zero shell-exec sqlite3)
-- [x] **SEC-05**: Filesystem IPC handlers (fs:writeBase64, fs:readFile, fs:append) restricted to safe paths
-- [x] **SEC-06**: db:exec handler cannot execute arbitrary SQL beyond safe SELECT patterns
-- [x] **SEC-07**: Encryption key not using hardcoded default (`default-key-change-me-in-production`)
-
-### Broken Features
-
-- [x] **FIX-01**: Fix wrong DB path ~/Froggo/clawd/data/ -> ~/clawd/data/ in 4 files (library, x-automations, connected-accounts, main.ts)
-- [x] **FIX-02**: Fix agents:spawnForTask to use dispatcher/openclaw instead of deleted spawn-agent-with-retry.py
-- [x] **FIX-03**: Register missing AI IPC handlers (ai:generate-content, ai:generateReply, ai:getAnalysis) or remove from preload
-- [x] **FIX-04**: Fix tasks:list WHERE clause bug (cancelled=0 -> archived=0)
-- [x] **FIX-05**: Fix Dashboard.tsx DEFAULT_LAYOUT key (id: -> i: for active-work widget)
-- [x] **FIX-06**: Fix AgentPanel dynamic Tailwind hover classes (use lookup map)
-- [x] **FIX-07**: Fix ChatRoomView filtered message index mismatch for avatar grouping
-- [x] **FIX-08**: Guard InboxPanel JSON.parse(metadata) with try/catch
-- [x] **FIX-09**: Replace all `clawdbot` CLI refs with `openclaw` in 4 frontend files (VoiceChat x2, InboxPanel, TaskDetail)
-- [x] **FIX-10**: Fix stale ~/.clawdbot/ paths in main.ts (ElevenLabs, Anthropic key, OpenAI key, sessions.db x3)
-
-### Functional
-
-- [x] **FUNC-01**: Fix matchTaskToAgent routing to include all 9+ agents (not just coder/researcher/writer/chief)
-- [x] **FUNC-02**: Fix InboxPanel approval routing to use routing table instead of hardcoding to coder
-- [x] **FUNC-03**: Wrap DMFeed in ProtectedPanels error boundary
-- [x] **FUNC-04**: Add null guards to all clawdbot.* IPC calls that currently crash in web mode (TokenUsage, AgentTokenDetail, TaskDetail x6)
-- [x] **FUNC-05**: Fix notification debounce collision (task/message/approval share one timer)
-- [x] **FUNC-06**: Fix double gateway.getSessions() calls every 30s (merge fetchSessions + loadGatewaySessions)
-- [x] **FUNC-07**: Fix phantom task creation in store (approveItem/adjustItem create unsynced tasks)
-- [x] **FUNC-08**: Fix Kanban memo comparator to include isDeleting, isSpawning, activeSessions
-- [x] **FUNC-09**: Add localStorage size guard to chatRoomStore (cap messages per room)
-- [x] **FUNC-10**: Fix dual broadcast listeners causing double task reloads
-
-### Cleanup
-
-- [x] **CLEAN-01**: Delete dead lib files (readState.ts, queryCache.ts, optimizedQueries.ts, performanceMonitoring.ts, smartAccountSelector.ts, voiceService.ts, api/gateway.ts)
-- [x] **CLEAN-02**: Delete dead panel exports from ProtectedPanels (ThreePaneInbox, CommsInbox, UnifiedCommsInbox, CalendarPanel, ContentCalendar)
-- [x] **CLEAN-03**: Remove dead state/functions from store (clearCompletedApprovals, sessions field, getAgentPrompt always-empty)
-- [x] **CLEAN-04**: Remove dead code from components (commented functions, unused imports, unused state vars with _ prefix)
-- [x] **CLEAN-05**: Delete .bak files from src/ (agentContext.ts.bak, geminiLiveService blobs, panelConfig backup)
-- [x] **CLEAN-06**: Fix non-standard CSS classes in QuickStatsWidget (no-shrink, flex-fill, message-preview, no-wrap)
-- [x] **CLEAN-07**: Remove debug info from MorningBrief production UI
-- [x] **CLEAN-08**: Fix conflicting keyboard shortcuts in Settings (Cmd+6 and Cmd+7 collisions)
+**Defined:** 2026-02-12
+**Core Value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
 
 ## v2 Requirements
 
+Requirements for writing system milestone. Each maps to roadmap phases.
+
+### Foundation
+
+- [x] **FOUND-01**: User can create a new writing project with title and type (memoir/novel)
+- [x] **FOUND-02**: User can see a list of all writing projects with stats (word count, chapter count)
+- [x] **FOUND-03**: User can open a writing project and see its chapter list
+- [x] **FOUND-04**: User can create, rename, and delete chapters within a project
+- [x] **FOUND-05**: User can edit chapter content in a rich text editor with markdown support
+- [x] **FOUND-06**: Chapter content auto-saves with debounce (no manual save button needed)
+- [x] **FOUND-07**: User can navigate between chapters via outline sidebar
+- [x] **FOUND-08**: Writing workspace accessible from main dashboard sidebar navigation
+- [x] **FOUND-09**: User can see word count per chapter and total project word count
+- [x] **FOUND-10**: Writing projects stored as file-based structure (markdown chapters, JSON metadata)
+
+### Editor
+
+- [x] **EDIT-01**: Rich text editor supports headings, bold, italic, lists, blockquotes, links
+- [x] **EDIT-02**: Editor loads from and saves to markdown files (bidirectional)
+- [x] **EDIT-03**: Editor handles 10k+ word chapters without performance degradation
+- [x] **EDIT-04**: User can undo/redo changes with standard keyboard shortcuts
+- [x] **EDIT-05**: Editor toolbar shows formatting options (headings, bold, italic, lists)
+
+### Inline Feedback
+
+- [x] **FEED-01**: User can highlight text in the editor and see a feedback popover
+- [x] **FEED-02**: User can type feedback/instructions in the popover and send to an AI agent
+- [x] **FEED-03**: AI agent responds with 2-3 alternative versions of the highlighted text
+- [x] **FEED-04**: User can accept an alternative (replaces highlighted text) or dismiss
+- [x] **FEED-05**: User can select which agent to send feedback to (Writer, Researcher, Jess)
+- [x] **FEED-06**: AI response streams in real-time (not blank screen then full response)
+- [x] **FEED-07**: Feedback interactions are logged per chapter (JSONL append-only)
+- [x] **FEED-08**: AI context includes current chapter, outline, and memory store data
+
+### Memory Store
+
+- [x] **MEM-01**: User can create/edit/delete character profiles (name, relationship, description, traits)
+- [x] **MEM-02**: User can create/edit/delete timeline events (date, description, chapter refs)
+- [x] **MEM-03**: User can create/edit/delete verified facts (claim, source, status)
+- [x] **MEM-04**: Memory store displays in context panel alongside editor
+- [x] **MEM-05**: Memory store data is automatically injected into AI agent context for feedback
+- [x] **MEM-06**: Memory store persists as JSON files per project
+
+### Research Library
+
+- [x] **RES-01**: User can add research sources (title, author, type, URL, notes)
+- [x] **RES-02**: User can link sources to specific facts in the memory store
+- [x] **RES-03**: User can mark facts as verified/disputed/needs-source
+- [x] **RES-04**: Research data stored in per-project SQLite database
+- [x] **RES-05**: Researcher agent can be asked to fact-check highlighted claims
+
+### Outline & Versions
+
+- [ ] **OUT-01**: User can see project outline with collapsible chapter tree
+- [ ] **OUT-02**: User can reorder chapters via drag-and-drop
+- [ ] **OUT-03**: User can save version snapshots of chapters before major edits
+- [ ] **OUT-04**: User can view and restore previous chapter versions
+- [ ] **OUT-05**: Version comparison shows differences between versions
+
+### Agent Integration
+
+- [x] **AGENT-01**: Writer agent provides style, pacing, and narrative feedback
+- [x] **AGENT-02**: Researcher agent provides fact-checking and source verification
+- [ ] **AGENT-03**: Jess agent provides emotional guidance and memoir-specific support
+- [x] **AGENT-04**: Each agent has project-scoped sessions (context persists within project)
+- [x] **AGENT-05**: Agent communication uses existing OpenClaw Gateway WebSocket
+
+## v3 Requirements
+
 Deferred to future milestone. Tracked but not in current roadmap.
 
-### Modularity
+### Advanced Features
 
-- **MOD-01**: Break electron/main.ts into domain-specific modules (tasks, agents, inbox, etc.)
-- **MOD-02**: Consolidate competing account services (JSON file vs SQLite) into one
-- **MOD-03**: Rename preload namespace from `clawdbot` to `openclaw`
-- **MOD-04**: Implement notification channel stubs (email, Discord, Telegram marked "coming soon")
+- **ADV-01**: PDF/ePub export for publication-ready manuscripts
+- **ADV-02**: Vector search for semantic retrieval across chapters
+- **ADV-03**: Story arc visualization across chapters
+- **ADV-04**: Auto-detection of characters/events from chapter text
+- **ADV-05**: Timeline visualization (chronological + narrative order)
+- **ADV-06**: Character relationship graphs
+- **ADV-07**: Writing session statistics and productivity tracking
+- **ADV-08**: Focus/distraction-free writing mode
+- **ADV-09**: Sensitivity/boundary annotations for memoir content
+- **ADV-10**: Style guide enforcement via AI
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| New UI features | This is hardening, not feature development |
-| UI redesign | Only fixing broken/inconsistent elements |
-| electron/main.ts breakup | Too large for quick depth -- tracked as MOD-01 for v2 |
-| preload namespace rename | Cosmetic change touching every component -- tracked as MOD-03 |
-| Voice chat LLM token waste | Requires architectural change to calendar/email checks |
-| sendChat race condition fix | Known, complex, affects core gateway -- needs careful approach |
+| Real-time multi-user collaboration | Single-user workflow, CRDT complexity unjustified |
+| AI autocomplete/ghost text | Research confirms it destroys creative voice -- anti-feature |
+| AI-generated first drafts | User writes, AI assists -- never the other way around |
+| Custom markdown editor (split-pane) | TipTap WYSIWYG is better for prose writing |
+| Gamification (streaks, badges) | Research shows it pressures and stresses writers |
+| electron/main.ts monolith breakup | Separate effort, not writing-related |
+| preload namespace rename | Cosmetic, deferred |
 
 ## Traceability
 
-| Requirement | Phase | Plan | Status |
-|-------------|-------|------|--------|
-| SEC-01 | Phase 1 | 01-01 | Complete |
-| SEC-02 | Phase 1 | 01-01 | Complete |
-| SEC-03 | Phase 1 | 01-02 | Complete |
-| SEC-04 | Phase 1 | 01-02, 01-03, 01-04, 01-05, 01-06 | Complete |
-| SEC-05 | Phase 1 | 01-02 | Complete |
-| SEC-06 | Phase 1 | 01-02 | Complete |
-| SEC-07 | Phase 1 | 01-01 | Complete |
-| FIX-01 | Phase 2 | 02-01 | Complete |
-| FIX-02 | Phase 2 | 02-01 | Complete |
-| FIX-03 | Phase 2 | 02-02 | Complete |
-| FIX-04 | Phase 2 | 02-01 | Complete |
-| FIX-05 | Phase 2 | 02-01 | Complete |
-| FIX-06 | Phase 2 | 02-01 | Complete |
-| FIX-07 | Phase 2 | 02-01 | Complete |
-| FIX-08 | Phase 2 | 02-01 | Complete |
-| FIX-09 | Phase 2 | 02-01 | Complete |
-| FIX-10 | Phase 2 | 02-01 | Complete |
-| FUNC-01 | Phase 3 | 03-01 | Complete |
-| FUNC-02 | Phase 3 | 03-01 | Complete |
-| FUNC-03 | Phase 3 | 03-01 | Complete |
-| FUNC-04 | Phase 3 | 03-01 | Complete |
-| FUNC-05 | Phase 3 | 03-01 | Complete |
-| FUNC-06 | Phase 3 | 03-02 | Complete |
-| FUNC-07 | Phase 3 | 03-02 | Complete |
-| FUNC-08 | Phase 3 | 03-02 | Complete |
-| FUNC-09 | Phase 3 | 03-02 | Complete |
-| FUNC-10 | Phase 3 | 03-02 | Complete |
-| CLEAN-01 | Phase 4 | 04-01 | Complete |
-| CLEAN-02 | Phase 4 | 04-01 | Complete |
-| CLEAN-03 | Phase 4 | 04-01 | Complete |
-| CLEAN-04 | Phase 4 | 04-01 | Complete |
-| CLEAN-05 | Phase 4 | 04-01 | Complete |
-| CLEAN-06 | Phase 4 | 04-02 | Complete |
-| CLEAN-07 | Phase 4 | 04-02 | Complete |
-| CLEAN-08 | Phase 4 | 04-02 | Complete |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FOUND-01 | Phase 5 | Complete |
+| FOUND-02 | Phase 5 | Complete |
+| FOUND-03 | Phase 5 | Complete |
+| FOUND-04 | Phase 5 | Complete |
+| FOUND-05 | Phase 5 | Complete |
+| FOUND-06 | Phase 5 | Complete |
+| FOUND-07 | Phase 5 | Complete |
+| FOUND-08 | Phase 5 | Complete |
+| FOUND-09 | Phase 5 | Complete |
+| FOUND-10 | Phase 5 | Complete |
+| EDIT-01 | Phase 5 | Complete |
+| EDIT-02 | Phase 5 | Complete |
+| EDIT-03 | Phase 5 | Complete |
+| EDIT-04 | Phase 5 | Complete |
+| EDIT-05 | Phase 5 | Complete |
+| FEED-01 | Phase 6 | Complete |
+| FEED-02 | Phase 6 | Complete |
+| FEED-03 | Phase 6 | Complete |
+| FEED-04 | Phase 6 | Complete |
+| FEED-05 | Phase 6 | Complete |
+| FEED-06 | Phase 6 | Complete |
+| FEED-07 | Phase 6 | Complete |
+| FEED-08 | Phase 6 | Complete |
+| MEM-01 | Phase 7 | Complete |
+| MEM-02 | Phase 7 | Complete |
+| MEM-03 | Phase 7 | Complete |
+| MEM-04 | Phase 7 | Complete |
+| MEM-05 | Phase 7 | Complete |
+| MEM-06 | Phase 7 | Complete |
+| RES-01 | Phase 8 | Complete |
+| RES-02 | Phase 8 | Complete |
+| RES-03 | Phase 8 | Complete |
+| RES-04 | Phase 8 | Complete |
+| RES-05 | Phase 8 | Complete |
+| OUT-01 | Phase 9 | Pending |
+| OUT-02 | Phase 9 | Pending |
+| OUT-03 | Phase 9 | Pending |
+| OUT-04 | Phase 9 | Pending |
+| OUT-05 | Phase 9 | Pending |
+| AGENT-01 | Phase 6 | Complete |
+| AGENT-02 | Phase 8 | Complete |
+| AGENT-03 | Phase 10 | Pending |
+| AGENT-04 | Phase 6 | Complete |
+| AGENT-05 | Phase 6 | Complete |
 
 **Coverage:**
-- v1 requirements: 35 total
-- Mapped to phases: 35
-- Mapped to plans: 35
+- v2 requirements: 44 total
+- Mapped to phases: 44
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-02-11*
-*Last updated: 2026-02-12 -- all v1 requirements complete*
+*Requirements defined: 2026-02-12*
+*Last updated: 2026-02-13 — Phase 8 requirements complete*

@@ -47,7 +47,7 @@
 ## Quick Start
 
 ```bash
-cd ~/clawd/ox-lite-dashboard
+cd ~/froggo/ox-lite-dashboard
 npm install
 npm run electron:dev
 ```

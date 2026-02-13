@@ -25,7 +25,7 @@ decisions:
     choice: "Open sessions.db as readonly with fileMustExist"
     reason: "Dashboard never writes to gateway session tracking database"
   - id: sessions-db-path-fallback
-    choice: "Check ~/.openclaw/sessions.db first, fallback to ~/.clawdbot/sessions.db"
+    choice: "Check ~/.openclaw/sessions.db first, fallback to ~/.openclaw/sessions.db"
     reason: "Support both OpenClaw and legacy Clawdbot installations"
   - id: search-shell-escape
     choice: "Replace SQL escaping with POSIX shell escaping in search:local"

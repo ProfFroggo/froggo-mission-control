@@ -6,7 +6,7 @@
 
 ## Summary
 
-This research investigates 10 functional bugs (FUNC-01 through FUNC-10) in the Froggo.app dashboard codebase at `~/clawd/clawd-dashboard/`. Every finding comes from reading the actual source code -- no library research was needed since these are all bugs in existing code patterns.
+This research investigates 10 functional bugs (FUNC-01 through FUNC-10) in the Froggo.app dashboard codebase at `~/froggo/froggo-dashboard/`. Every finding comes from reading the actual source code -- no library research was needed since these are all bugs in existing code patterns.
 
 The bugs fall into three categories:
 1. **Routing logic** (FUNC-01, FUNC-02): Agent routing hardcoded to 4 agents instead of 9+
@@ -165,7 +165,7 @@ export function matchTaskToAgent(taskTitle: string, taskDescription: string): st
 }
 ```
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/lib/agents.ts`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/lib/agents.ts`
 **Lines:** 133-158
 
 ---
@@ -202,8 +202,8 @@ assignedTo: matchTaskToAgent(item.title, `${item.type} ${item.content || ''}`),
 ```
 
 **Files:**
-- `/Users/worker/clawd/clawd-dashboard/src/components/InboxPanel.tsx` lines 675, 880
-- `/Users/worker/clawd/clawd-dashboard/src/store/store.ts` lines 1067, 1112
+- `/Users/worker/froggo/froggo-dashboard/src/components/InboxPanel.tsx` lines 675, 880
+- `/Users/worker/froggo/froggo-dashboard/src/store/store.ts` lines 1067, 1112
 
 ---
 
@@ -222,7 +222,7 @@ export const DMFeed = withErrorBoundary(DMFeedRaw, 'Agent Messages');
 
 **Then update any imports of DMFeed to use the protected version.**
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/components/ProtectedPanels.tsx`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/components/ProtectedPanels.tsx`
 
 ---
 
@@ -319,7 +319,7 @@ destroy() {
 }
 ```
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/lib/notificationService.ts`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/lib/notificationService.ts`
 **Lines:** 63 (property), 189-209 (handlers), 664-676 (destroy)
 
 ---
@@ -380,10 +380,10 @@ useEffect(() => {
 ```
 
 **Files affected:**
-- `/Users/worker/clawd/clawd-dashboard/src/store/store.ts` lines 343-356, 360-420
-- `/Users/worker/clawd/clawd-dashboard/src/components/Dashboard.tsx` lines 228-240
-- `/Users/worker/clawd/clawd-dashboard/src/components/DashboardRedesigned.tsx` lines 78-90
-- `/Users/worker/clawd/clawd-dashboard/src/components/AgentPanel.tsx` line 85
+- `/Users/worker/froggo/froggo-dashboard/src/store/store.ts` lines 343-356, 360-420
+- `/Users/worker/froggo/froggo-dashboard/src/components/Dashboard.tsx` lines 228-240
+- `/Users/worker/froggo/froggo-dashboard/src/components/DashboardRedesigned.tsx` lines 78-90
+- `/Users/worker/froggo/froggo-dashboard/src/components/AgentPanel.tsx` line 85
 
 ---
 
@@ -436,7 +436,7 @@ useStore.getState().addActivity({
 
 **Same pattern applies to `adjustItem` (lines 1105-1121) which creates `task-revise-*` phantom tasks.**
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/store/store.ts`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/store/store.ts`
 **Lines:** 1057-1073 (approveItem), 1105-1121 (adjustItem)
 
 ---
@@ -474,7 +474,7 @@ const TaskCard = memo(function TaskCard({ ... }: TaskCardProps) {
 
 **Note:** The callbacks (`onDragStart`, `onDragEnd`, etc.) should be memoized in the parent with `useCallback`, OR excluded from the comparator since they don't affect visual output. The comparator above intentionally skips callback comparison.
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/components/Kanban.tsx`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/components/Kanban.tsx`
 **Line:** 984
 
 ---
@@ -525,7 +525,7 @@ partialize: (state) => ({
 }),
 ```
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/store/chatRoomStore.ts`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/store/chatRoomStore.ts`
 **Lines:** 73-80 (addMessage), 122-130 (partialize)
 
 ---
@@ -584,7 +584,7 @@ if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadc
 }
 ```
 
-**File:** `/Users/worker/clawd/clawd-dashboard/src/store/store.ts`
+**File:** `/Users/worker/froggo/froggo-dashboard/src/store/store.ts`
 **Lines:** 1267-1312
 
 ## State of the Art

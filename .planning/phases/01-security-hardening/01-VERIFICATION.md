@@ -144,7 +144,7 @@ re_verification:
 Plans 01-03 through 01-06 also delivered:
 - **Atomicity:** Added db.transaction() for multi-step operations (snooze:unset, conversations:delete)
 - **Input validation:** Added limit sanitization (snooze:history clamped to 1-100)
-- **Bug fixes:** Fixed wrong DB paths in library:view/download (~/Froggo/clawd/ -> ~/clawd/data/)
+- **Bug fixes:** Fixed wrong DB paths in library:view/download (~/Froggo/clawd/ -> ~/froggo/data/)
 - **Readability:** Flattened 4-level nested callbacks to flat synchronous code (pin handlers)
 - **Consistency:** Migrated all handlers to same pattern (prepare() with ? params)
 

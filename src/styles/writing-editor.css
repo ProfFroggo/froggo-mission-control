@@ -1,0 +1,100 @@
+/* Writing editor styles — scoped under .writing-editor to prevent
+   Tailwind's CSS reset from stripping ProseMirror formatting */
+
+.writing-editor .ProseMirror {
+  outline: none;
+  min-height: 400px;
+  padding: 1.5rem 2rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--clawd-text, #fafafa);
+}
+
+.writing-editor .ProseMirror p {
+  margin-bottom: 0.75em;
+}
+
+.writing-editor .ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.writing-editor .ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.writing-editor .ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.writing-editor .ProseMirror ul,
+.writing-editor .ProseMirror ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.writing-editor .ProseMirror ul { list-style-type: disc; }
+.writing-editor .ProseMirror ol { list-style-type: decimal; }
+
+.writing-editor .ProseMirror li {
+  margin-bottom: 0.25em;
+}
+
+.writing-editor .ProseMirror blockquote {
+  border-left: 3px solid var(--clawd-accent, #22c55e);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 0.75em;
+  color: var(--clawd-text-dim, #a1a1aa);
+  font-style: italic;
+}
+
+.writing-editor .ProseMirror a {
+  color: var(--clawd-accent, #22c55e);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.writing-editor .ProseMirror strong { font-weight: 700; }
+.writing-editor .ProseMirror em { font-style: italic; }
+
+.writing-editor .ProseMirror code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.15em 0.3em;
+  border-radius: 3px;
+}
+
+.writing-editor .ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--clawd-border, #2a2a2a);
+  margin: 1.5em 0;
+}
+
+/* Placeholder text for empty editor */
+.writing-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--clawd-text-dim, #a1a1aa);
+  pointer-events: none;
+  height: 0;
+  opacity: 0.5;
+}
+
+/* No focus ring — editor uses its own visual cues */
+.writing-editor .ProseMirror:focus {
+  outline: none;
+}
