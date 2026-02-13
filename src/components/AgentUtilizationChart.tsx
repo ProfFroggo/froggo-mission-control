@@ -54,7 +54,7 @@ export default function AgentUtilizationChart() {
           <p className="text-sm text-success">Completed: {data.tasksCompleted}</p>
           <p className="text-sm text-warning">In Progress: {data.tasksInProgress}</p>
           <p className="text-sm text-review">Completion Rate: {data.completionRate}%</p>
-          <p className="text-sm text-orange-400">Avg Time: {data.avgCompletionTime.toFixed(1)}h</p>
+          <p className="text-sm text-warning">Avg Time: {data.avgCompletionTime.toFixed(1)}h</p>
           <p className="text-sm text-pink-400">Total Time: {data.totalTimeSpent.toFixed(1)}h</p>
         </div>
       );
@@ -127,10 +127,10 @@ export default function AgentUtilizationChart() {
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
-            <Clock size={16} className="text-orange-400" />
+            <Clock size={16} className="text-warning" />
             Total Hours
           </div>
-          <div className="text-2xl font-bold text-orange-400">
+          <div className="text-2xl font-bold text-warning">
             {totalHours.toFixed(1)}h
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function AgentUtilizationChart() {
                 <td className="p-3 text-right text-clawd-text-dim">
                   {agent.avgCompletionTime.toFixed(1)}h
                 </td>
-                <td className="p-3 text-right text-orange-400">
+                <td className="p-3 text-right text-warning">
                   {agent.totalTimeSpent.toFixed(1)}h
                 </td>
               </tr>

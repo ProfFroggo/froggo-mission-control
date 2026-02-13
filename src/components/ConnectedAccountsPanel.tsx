@@ -66,7 +66,7 @@ const DATA_TYPE_COLORS: Record<string, string> = {
   email: 'bg-info-subtle text-info border-info-border',
   calendar: 'bg-success-subtle text-success border-success-border',
   drive: 'bg-review-subtle text-review border-purple-500/30',
-  contacts: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  contacts: 'bg-orange-500/20 text-warning border-orange-500/30',
   tasks: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
 };
 
@@ -318,7 +318,7 @@ export default function ConnectedAccountsPanel() {
             <span className="text-2xl">🤖</span>
             <div className="flex-1">
               <h3 className="font-semibold text-info mb-1">Smart Account Selection</h3>
-              <p className="text-sm text-blue-300">
+              <p className="text-sm text-info">
                 <strong>No default accounts!</strong> Froggo intelligently chooses which account to use based on context.
                 Every account is equal - selection is context-aware and intelligent.
               </p>
@@ -326,7 +326,7 @@ export default function ConnectedAccountsPanel() {
           </div>
           
           <details className="mt-3">
-            <summary className="text-sm font-medium text-info cursor-pointer hover:text-blue-300">
+            <summary className="text-sm font-medium text-info cursor-pointer hover:text-info">
               📋 View Selection Rules (7 Priority Levels)
             </summary>
             <div className="mt-3 space-y-2">
@@ -344,7 +344,7 @@ export default function ConnectedAccountsPanel() {
                   <div className="flex-1">
                     <div className="text-sm font-medium">{rule.rule}</div>
                     <div className="text-xs text-clawd-text-dim">{rule.description}</div>
-                    <div className="text-xs text-blue-300 mt-1">Example: {rule.example}</div>
+                    <div className="text-xs text-info mt-1">Example: {rule.example}</div>
                   </div>
                 </div>
               ))}
