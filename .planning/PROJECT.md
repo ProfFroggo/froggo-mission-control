@@ -42,18 +42,11 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 
 ### Active
 
-- [ ] Writing project creation, selection, and file-based storage
-- [ ] Chapter editor with rich text and markdown support
-- [ ] Inline feedback system (highlight → chat → iterate with AI alternatives)
-- [ ] Writer agent integration for style, pacing, and narrative feedback
-- [ ] Researcher agent integration for fact-checking and source tracking
-- [ ] Jess agent integration for emotional/memoir-specific guidance
-- [ ] Memory store: character profiles, timeline events, verified facts
-- [ ] Multi-tier context management (hot/warm/cold/archived)
-- [ ] Research library with source database
-- [ ] Chapter versioning
-- [ ] Outline mode with chapter navigation
-- [ ] Consistency checking across chapters
+- [ ] Project Setup Wizard with AI-powered book planning (story arc, chapters, themes, characters)
+- [ ] 3-pane writing layout (chapters sidebar | AI chat dialogue | content workspace)
+- [ ] Conversational writing flow (AI chat drives content into workspace)
+- [ ] Agent-driven content generation (chat produces prose, user reviews in workspace)
+- [ ] Setup wizard populates memory store (characters, timeline from planning conversation)
 
 ### Out of Scope
 
@@ -63,6 +56,7 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 - Story arc visualization — defer to v3
 - electron/main.ts monolith breakup — tracked but separate effort
 - preload namespace rename (clawdbot → openclaw) — cosmetic, deferred
+- AI autocomplete/ghost text — destroys creative voice (anti-feature from v2.0 research)
 
 ## Context
 
@@ -114,4 +108,4 @@ Chief produced a comprehensive writing system design (`agent-chief/writing-syste
 | TipTap or ProseMirror for editor | Need selection tracking and inline widget support | — Pending |
 
 ---
-*Last updated: 2026-02-12 after milestone v2.0 initialization*
+*Last updated: 2026-02-13 after milestone v2.1 initialization*
