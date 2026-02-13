@@ -42,8 +42,22 @@
 
 ---
 
-## v2.1 — Writing UX Redesign (Active)
+## v2.1 — Writing UX Redesign (Complete)
 
-**Started:** 2026-02-13
-**Goal:** Transform writing module into AI-powered book creation system with conversational planning, 3-pane layout, and agent-driven content generation
-**Phases:** Starting at Phase 11 (continues from v2.0)
+**Completed:** 2026-02-13
+**Duration:** ~32min across 8 plans
+**Phases:** 2 (Chat Pane + 3-Pane Layout → Setup Wizard)
+**Requirements:** 26/26 complete
+
+**Summary:** Transformed the writing module into an AI-powered book creation system. Added conversational AI chat in a persistent 3-pane layout (chapters | AI chat | workspace) and a setup wizard that plans books before writing begins.
+
+**Key outcomes:**
+- 3-pane resizable layout with drag handles and collapsible panes
+- Persistent AI chat with streaming responses and agent switching (Writer, Researcher, Jess)
+- Chat-to-editor content insertion (send AI prose to TipTap with one click)
+- Conversational setup wizard with brain dump → AI planning → review → create flow
+- Atomic project creation populating chapters, characters, and timeline from wizard
+- Wizard state persistence for resume-on-restart
+- Genre flexibility beyond memoir/novel
+
+**Last phase:** Phase 12 (Setup Wizard)
