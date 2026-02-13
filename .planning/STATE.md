@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 9 — Outline & Versions (complete, verified 3/3)
+**Current focus:** Phase 10 — Jess Integration (complete)
 
 ## Current Position
 
-Phase: 9 of 10 (Outline & Versions)
-Plan: 2 of 2 in current phase
-Status: Phase complete (verified 3/3 must-haves)
-Last activity: 2026-02-13 — Phase 9 verified (3/3 must-haves passed)
+Phase: 10 of 10 (Jess Integration)
+Plan: 1 of 1 in current phase
+Status: ALL PHASES COMPLETE
+Last activity: 2026-02-13 — Completed 10-01-PLAN.md (Jess Integration)
 
-Progress: [███████████░] 92% (11/12 plans)
+Progress: [████████████] 100% (12/12 plans)
 
 ## Performance Metrics
 
@@ -24,7 +24,7 @@ Progress: [███████████░] 92% (11/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 11
+- Plans completed: 12
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
@@ -36,6 +36,7 @@ Progress: [███████████░] 92% (11/12 plans)
 - 08-02: 4min (2 tasks)
 - 09-01: 2min (2 tasks)
 - 09-02: 4min (2 tasks)
+- 10-01: 3min (2 tasks)
 
 ## Accumulated Context
 
@@ -65,7 +66,11 @@ v2 decisions (confirmed in execution):
 - feedbackStore.reset() preserves selectedAgent (user preference persists)
 - savedSelection stores editor range at send time (for reliable accept after streaming)
 - useRef for stream accumulation in FeedbackPopover (avoids stale closures)
-- Agent-specific preamble in feedback prompts (writer: style, researcher: accuracy, jess: emotional)
+- Agent-specific preamble in feedback prompts (writer: style, researcher: accuracy, jess: psychological integration)
+- responseFormat() helper for agent-conditional prompt format (Jess gets **Why:** blocks)
+- ParsedAlternative { text, commentary? } replaces string[] for alternatives
+- Commentary extraction gated on agentId === 'jess' in parser
+- Indigo italic commentary styling matches Jess agent theme
 - Chapter context truncated to ~16K chars around selection position
 - BubbleMenu updateDelay=0 for instant popup; selection collapse after accept to prevent flicker
 - JSON array files per project for memory storage (characters.json, timeline.json, facts.json)
@@ -97,6 +102,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-13T00:37:22Z
-Stopped at: Completed 09-02-PLAN.md (Version Snapshots)
+Last session: 2026-02-13T00:59:59Z
+Stopped at: Completed 10-01-PLAN.md (Jess Integration) -- ALL PLANS COMPLETE
 Resume file: None
