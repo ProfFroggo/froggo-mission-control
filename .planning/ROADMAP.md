@@ -4,6 +4,7 @@
 
 - [x] **v1.0 Dashboard Hardening** - Phases 1-4 (shipped 2026-02-12)
 - [x] **v2.0 Writing System** - Phases 5-10 (shipped 2026-02-13)
+- [ ] **v2.1 Writing UX Redesign** - Phases 11-12 (in progress)
 
 ## Phases
 
@@ -42,126 +43,104 @@
 
 </details>
 
-### v2.0 Writing System (Active)
-
-**Milestone Goal:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-
-**Phase Numbering:**
-- Integer phases (5, 6, 7...): Planned milestone work
-- Decimal phases (5.1, 5.2): Urgent insertions (marked with INSERTED)
-
-- [x] **Phase 5: Foundation** - Project CRUD, TipTap editor, chapter management, file storage
-- [x] **Phase 6: Inline Feedback** - Highlight-to-chat, AI alternatives, streaming, agent routing
-- [x] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
-- [x] **Phase 8: Research Library** - Sources, fact-checking, Researcher agent
-- [x] **Phase 9: Outline & Versions** - Chapter navigation, drag-drop, diff comparison
-- [x] **Phase 10: Jess Integration** - Emotional guidance, memoir-specific support
-
-## Phase Details
+<details>
+<summary>v2.0 Writing System (Phases 5-10) - SHIPPED 2026-02-13</summary>
 
 ### Phase 5: Foundation
 **Goal**: User can create writing projects, manage chapters, and write prose in a rich text editor with autosave
 **Depends on**: Nothing (first v2 phase; v1 dashboard is stable)
-**Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06, FOUND-07, FOUND-08, FOUND-09, FOUND-10, EDIT-01, EDIT-02, EDIT-03, EDIT-04, EDIT-05
-**Success Criteria** (what must be TRUE):
-  1. User can create a writing project with title and type, and see all projects listed with word count and chapter count
-  2. User can create, rename, and delete chapters within a project
-  3. User can write prose in the TipTap editor with formatting (headings, bold, italic, lists, blockquotes, links) and changes auto-save without a manual save button
-  4. User can navigate between chapters via the outline sidebar and see word counts per chapter and project total
-  5. Writing workspace is accessible from the main dashboard sidebar alongside existing panels (Kanban, Chat, etc.) and projects are stored as file-based structure (markdown chapters, JSON metadata)
+**Requirements**: FOUND-01 through FOUND-10, EDIT-01 through EDIT-05
 **Plans**: 3/3 complete
-
-Plans:
-- [x] 05-01-PLAN.md -- Backend: paths, fs-validation fix, TipTap install, writing-project-service, preload bridge
-- [x] 05-02-PLAN.md -- Frontend: writingStore, ProjectSelector, WritingWorkspace, sidebar/App.tsx wiring
-- [x] 05-03-PLAN.md -- Editor: TipTap ChapterEditor, EditorToolbar, ChapterSidebar, ProjectEditor, autosave
 
 ### Phase 6: Inline Feedback
 **Goal**: User can highlight text and get AI-powered alternatives from agents, streamed in real-time
 **Depends on**: Phase 5
-**Requirements**: FEED-01, FEED-02, FEED-03, FEED-04, FEED-05, FEED-06, FEED-07, FEED-08, AGENT-01, AGENT-04, AGENT-05
-**Success Criteria** (what must be TRUE):
-  1. User can highlight text in the editor and see a feedback popover with an input field
-  2. User can send feedback instructions to the Writer agent and see 2-3 alternative versions stream in real-time (not blank-then-full)
-  3. User can accept an alternative (replaces highlighted text) or dismiss, and the interaction is logged per chapter
-  4. User can select which agent (Writer, Researcher, Jess) to send feedback to, and agent sessions persist within the project
-  5. AI context includes current chapter content, project outline, and memory store data (when available), communicated via existing OpenClaw Gateway WebSocket
+**Requirements**: FEED-01 through FEED-08, AGENT-01, AGENT-04, AGENT-05
 **Plans**: 2/2 complete
-
-Plans:
-- [x] 06-01-PLAN.md -- Backend: feedbackStore, writing-feedback-service, preload bridge, main.ts wiring
-- [x] 06-02-PLAN.md -- UI: FeedbackPopover, AgentPicker, FeedbackAlternative, BubbleMenu in ChapterEditor, streaming
 
 ### Phase 7: Memory Store
 **Goal**: User can maintain character profiles, timeline events, and verified facts that are automatically injected into AI context
 **Depends on**: Phase 6
-**Requirements**: MEM-01, MEM-02, MEM-03, MEM-04, MEM-05, MEM-06
-**Success Criteria** (what must be TRUE):
-  1. User can create, edit, and delete character profiles (name, relationship, description, traits) in the context panel alongside the editor
-  2. User can create, edit, and delete timeline events (date, description, chapter references) in the context panel
-  3. User can create, edit, and delete verified facts (claim, source, status) in the context panel
-  4. Memory store data is automatically included in AI agent context for feedback requests, and persists as JSON files per project
+**Requirements**: MEM-01 through MEM-06
 **Plans**: 2/2 complete
-
-Plans:
-- [x] 07-01-PLAN.md -- Backend: writing-memory-service IPC, preload bridge, memoryStore Zustand store
-- [x] 07-02-PLAN.md -- UI: ContextPanel with character/timeline/fact CRUD, ProjectEditor integration, AI context injection
 
 ### Phase 8: Research Library
 **Goal**: User can manage research sources and use the Researcher agent to fact-check claims
 **Depends on**: Phase 7
-**Requirements**: RES-01, RES-02, RES-03, RES-04, RES-05, AGENT-02
-**Success Criteria** (what must be TRUE):
-  1. User can add research sources (title, author, type, URL, notes) to a per-project library stored in SQLite
-  2. User can link sources to facts in the memory store and mark facts as verified/disputed/needs-source
-  3. User can highlight a claim in the editor and ask the Researcher agent to fact-check it, receiving source-backed verification
+**Requirements**: RES-01 through RES-05, AGENT-02
 **Plans**: 2/2 complete
-
-Plans:
-- [x] 08-01-PLAN.md -- Backend: writing-research-service (SQLite), paths, preload bridge, fact status extension
-- [x] 08-02-PLAN.md -- UI: researchStore, SourceList/SourceForm, ContextPanel 4th tab, fact-source linking, Fact Check action
 
 ### Phase 9: Outline & Versions
 **Goal**: User can reorganize chapters and compare version history before and after major edits
-**Depends on**: Phase 5 (uses chapter structure from foundation)
-**Requirements**: OUT-01, OUT-02, OUT-03, OUT-04, OUT-05
-**Success Criteria** (what must be TRUE):
-  1. User can see the project outline as a collapsible chapter tree and reorder chapters via drag-and-drop
-  2. User can save a version snapshot of a chapter before a major edit
-  3. User can view previous versions and restore one, with a diff comparison showing what changed between versions
+**Depends on**: Phase 5
+**Requirements**: OUT-01 through OUT-05
 **Plans**: 2/2 complete
-
-Plans:
-- [x] 09-01-PLAN.md -- DnD chapter reordering + collapsible outline sidebar
-- [x] 09-02-PLAN.md -- Version snapshots, restore, diff comparison
 
 ### Phase 10: Jess Integration
 **Goal**: User can get emotional and memoir-specific guidance from Jess when writing sensitive content
-**Depends on**: Phase 6 (uses inline feedback infrastructure)
+**Depends on**: Phase 6
 **Requirements**: AGENT-03
-**Success Criteria** (what must be TRUE):
-  1. User can select Jess from the agent picker and receive emotionally attuned feedback specific to memoir writing (pacing, boundaries, tone)
-  2. Jess feedback is contextually distinct from Writer feedback -- addresses emotional impact, not just prose quality
 **Plans**: 1/1 complete
 
+</details>
+
+### v2.1 Writing UX Redesign (Active)
+
+**Milestone Goal:** Transform the writing module into an AI-powered book creation system with conversational AI chat driving content into the editor, and a setup wizard that plans the book before writing begins.
+
+**Phase Numbering:**
+- Integer phases (11, 12): Planned milestone work
+- Decimal phases (11.1, 11.2): Urgent insertions (marked with INSERTED)
+
+- [ ] **Phase 11: Chat Pane + 3-Pane Layout** - Persistent AI chat alongside the editor in a resizable 3-pane layout with chat-to-editor content flow
+- [ ] **Phase 12: Setup Wizard** - Conversational AI wizard that plans a book (arc, chapters, characters) before writing begins
+
+## Phase Details
+
+### Phase 11: Chat Pane + 3-Pane Layout
+**Goal**: User can chat with AI agents in a persistent pane alongside the editor, within a resizable 3-pane layout, and insert AI-generated content into the editor
+**Depends on**: Phase 10 (uses v2.0 writing infrastructure: TipTap editor, gateway streaming, agent sessions, memory store)
+**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, CHAT-08, CHAT-09, CHAT-10, LAYOUT-01, LAYOUT-02, LAYOUT-03, LAYOUT-04, LAYOUT-05
+**Success Criteria** (what must be TRUE):
+  1. User can open the writing workspace and see a 3-pane layout (chapters sidebar, AI chat pane, content workspace) with drag-resizable and collapsible panes
+  2. User can select an agent (Writer, Researcher, Jess) and send messages in the chat pane, with AI responses streaming in token by token
+  3. User can click "Send to editor" on an AI chat message and see the content inserted into the current chapter at the cursor position or end of document
+  4. User can close and reopen the app, and chat history, pane sizes, and collapse states are all preserved
+  5. Layout renders correctly at window widths from 1024px to 1920px+ without overflow or broken panes
+**Plans**: TBD
+
 Plans:
-- [x] 10-01-PLAN.md -- Jess-specific prompt, commentary parsing, FeedbackAlternative commentary rendering
+- [ ] 11-01: TBD
+- [ ] 11-02: TBD
+
+### Phase 12: Setup Wizard
+**Goal**: User can create a new book project through a conversational AI wizard that plans the story arc, chapter outline, themes, and characters before writing begins
+**Depends on**: Phase 11 (uses chat infrastructure, gateway patterns, and 3-pane layout for the resulting project)
+**Requirements**: WIZARD-01, WIZARD-02, WIZARD-03, WIZARD-04, WIZARD-05, WIZARD-06, WIZARD-07, WIZARD-08, WIZARD-09, WIZARD-10, WIZARD-11
+**Success Criteria** (what must be TRUE):
+  1. User can start a new book and enter a brain dump description, then converse with an AI agent that proposes a story arc, chapter outline, and character profiles
+  2. User can review the proposed plan (chapters, characters, arc) and edit any element before confirming project creation
+  3. On wizard completion, the project is created with chapters, characters, and timeline pre-populated in the memory store -- no manual re-entry needed
+  4. User can quit mid-wizard, restart the app, and resume the wizard conversation where they left off
+  5. User can skip the wizard entirely and use quick-create (existing title + type form) for any project
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: TBD
+- [ ] 12-02: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
+Phases execute in numeric order: 11 -> 11.1 -> 11.2 -> 12
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-4 | v1.0 | 12/12 | Complete | 2026-02-12 |
-| 5. Foundation | v2.0 | 3/3 | Complete | 2026-02-12 |
-| 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
-| 7. Memory Store | v2.0 | 2/2 | Complete | 2026-02-12 |
-| 8. Research Library | v2.0 | 2/2 | Complete | 2026-02-13 |
-| 9. Outline & Versions | v2.0 | 2/2 | Complete | 2026-02-13 |
-| 10. Jess Integration | v2.0 | 1/1 | Complete | 2026-02-13 |
+| 5-10 | v2.0 | 12/12 | Complete | 2026-02-13 |
+| 11. Chat Pane + 3-Pane Layout | v2.1 | 0/TBD | Not started | - |
+| 12. Setup Wizard | v2.1 | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-02-12*
-*Last updated: 2026-02-13 — Phase 10 complete, v2.0 milestone shipped*
+*Last updated: 2026-02-13 -- v2.1 milestone phases added (11-12)*
