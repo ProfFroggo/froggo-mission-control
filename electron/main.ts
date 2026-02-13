@@ -8502,7 +8502,7 @@ ipcMain.handle('x:mention:update', async (_, data: {
     }
     
     if (notes !== undefined) {
-      query += ', metadata = json_set(COALESCE(metadata, \\'{}\\'), \\'$.notes\\', ?)';
+      query += ", metadata = json_set(COALESCE(metadata, '{}'), '$.notes', ?)";
       params.push(notes);
     }
     
