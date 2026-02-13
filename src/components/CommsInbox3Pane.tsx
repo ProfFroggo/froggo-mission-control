@@ -540,7 +540,7 @@ function CenterPane({
   };
 
   return (
-    <div className="flex-1 min-w-[300px] max-w-[440px] bg-clawd-bg border-r border-clawd-border flex flex-col">
+    <div className="w-[400px] flex-shrink-0 bg-clawd-bg border-r border-clawd-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-clawd-border">
         <div className="flex items-center justify-between mb-2">
