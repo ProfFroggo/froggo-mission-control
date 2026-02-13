@@ -8672,3 +8672,204 @@ ipcMain.handle('toolbar:getState', async () => {
     return { success: false, error: error.message };
   }
 });
+
+// ============== X/TWITTER REPLY GUY HANDLERS ==============
+
+ipcMain.handle('x:replyGuy:listHotMentions', async (_, filters?: {
+  minLikes?: number;
+  minRetweets?: number;
+  limit?: number;
+}) => {
+  try {
+    // Get mentions with engagement metrics
+    let query = `
+      SELECT 
+        m.*,
+        json_extract(m.metadata, '$.public_metrics.like_count') as like_count,
+        json_extract(m.metadata, '$.public_metrics.retweet_count') as retweet_count,
+        json_extract(m.metadata, '$.public_metrics.reply_count') as reply_count
+      FROM x_mentions m
+      WHERE m.reply_status = 'pending'
+    `;
+    
+    const params: any[] = [];
+    
+    if (filters?.minLikes) {
+      query += ' AND like_count >= ?';
+      params.push(filters.minLikes);
+    }
+    
+    if (filters?.minRetweets) {
+      query += ' AND retweet_count >= ?';
+      params.push(filters.minRetweets);
+    }
+    
+    query += ' ORDER BY (like_count + retweet_count * 2) DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    } else {
+      query += ' LIMIT 50';
+    }
+    
+    const stmt = prepare(query);
+    const results = stmt.all(...params);
+    
+    return { success: true, mentions: results };
+  } catch (error: any) {
+    safeLog.error('[X/ReplyGuy] List hot mentions error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:replyGuy:createQuickDraft', async (_, data: {
+  mentionId: string;
+  replyText: string;
+  fastTrack?: boolean;
+}) => {
+  try {
+    const { mentionId, replyText, fastTrack } = data;
+    const now = Date.now();
+    const id = `draft-${now}`;
+    
+    // Get mention details
+    const mention = prepare('SELECT * FROM x_mentions WHERE id = ?').get(mentionId) as any;
+    if (!mention) {
+      throw new Error('Mention not found');
+    }
+    
+    // Create draft with fast-track flag
+    const draftStmt = prepare(`
+      INSERT INTO x_drafts (
+        id, plan_id, version, content, status, proposed_by, created_at, updated_at, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, json(?))
+    `);
+    
+    const content = JSON.stringify({
+      tweets: [{ text: replyText }],
+      replyTo: mention.tweet_id,
+      inReplyToUser: mention.author_username,
+    });
+    
+    const metadata = {
+      fastTrack: fastTrack || false,
+      mentionId,
+      createdVia: 'reply-guy',
+    };
+    
+    // If fast-track, auto-approve
+    const status = fastTrack ? 'approved' : 'draft';
+    
+    draftStmt.run(
+      id,
+      null, // No plan_id for reply guy drafts
+      'A',
+      content,
+      status,
+      'reply-guy',
+      now,
+      now,
+      JSON.stringify(metadata)
+    );
+    
+    // Create draft file
+    const draftPath = path.join(os.homedir(), 'froggo', 'x-content', 'drafts', `${id}.md`);
+    const draftContent = `---
+id: ${id}
+mention_id: ${mentionId}
+reply_to: ${mention.tweet_id}
+in_reply_to_user: @${mention.author_username}
+status: ${status}
+fast_track: ${fastTrack}
+created_at: ${new Date(now).toISOString()}
+---
+
+# Reply Guy Draft
+
+## Original Tweet
+@${mention.author_username}: ${mention.text}
+
+## Reply
+${replyText}
+`;
+    
+    fs.writeFileSync(draftPath, draftContent, 'utf-8');
+    
+    // Git commit
+    execSync(`cd ~/froggo/x-content && git add drafts/${id}.md && git commit -m "draft: Reply Guy quick draft ${id}"`, {
+      encoding: 'utf-8'
+    });
+    
+    safeLog.log(`[X/ReplyGuy] Created quick draft: ${id} (fast-track: ${fastTrack})`);
+    return { success: true, id, draftPath };
+  } catch (error: any) {
+    safeLog.error('[X/ReplyGuy] Create quick draft error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:replyGuy:postNow', async (_, data: {
+  draftId: string;
+}) => {
+  try {
+    const { draftId } = data;
+    const now = Date.now();
+    
+    // Get draft
+    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    if (!draft) {
+      throw new Error('Draft not found or not approved');
+    }
+    
+    // Parse content
+    const content = JSON.parse(draft.content);
+    const replyText = content.tweets[0].text;
+    const replyTo = content.replyTo;
+    
+    if (!replyTo) {
+      throw new Error('No reply_to tweet_id found');
+    }
+    
+    // Post via x-api
+    const result = execSync(`x-api reply ${replyTo} "${replyText.replace(/"/g, '\\"')}"`, {
+      encoding: 'utf-8',
+    });
+    
+    const response = JSON.parse(result);
+    
+    if (response.data?.id) {
+      // Update draft as posted
+      const updateStmt = prepare(`
+        UPDATE x_drafts 
+        SET status = 'posted',
+            metadata = json_set(COALESCE(metadata, '{}'), '$.postedAt', ?, '$.postedId', ?)
+        WHERE id = ?
+      `);
+      
+      updateStmt.run(now, response.data.id, draftId);
+      
+      // Update mention as replied
+      const metadata = draft.metadata ? JSON.parse(draft.metadata) : {};
+      if (metadata.mentionId) {
+        const mentionStmt = prepare(`
+          UPDATE x_mentions 
+          SET reply_status = 'replied',
+              replied_at = ?,
+              replied_with_id = ?
+          WHERE id = ?
+        `);
+        
+        mentionStmt.run(now, response.data.id, metadata.mentionId);
+      }
+      
+      safeLog.log(`[X/ReplyGuy] Posted draft ${draftId}: ${response.data.id}`);
+      return { success: true, tweetId: response.data.id };
+    } else {
+      throw new Error('Failed to post tweet');
+    }
+  } catch (error: any) {
+    safeLog.error('[X/ReplyGuy] Post now error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
