@@ -898,7 +898,7 @@ export default function ChatPanel() {
           <button
             onClick={() => setIsVoiceMode(!isVoiceMode)}
             className={`p-2 rounded-lg transition-colors ${
-              isVoiceMode ? 'bg-purple-500/20 text-purple-400' : 'bg-clawd-border text-clawd-text-dim hover:text-purple-400'
+              isVoiceMode ? 'bg-review-subtle text-review' : 'bg-clawd-border text-clawd-text-dim hover:text-review'
             }`}
             title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
           >
@@ -932,7 +932,7 @@ export default function ChatPanel() {
           <div className="w-px h-5 bg-clawd-border mx-1" />
           <button
             onClick={startTeamMeeting}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-warning text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
             title="Start Team Meeting — All agents join"
           >
             <UsersRound size={15} />
@@ -1211,7 +1211,7 @@ export default function ChatPanel() {
 
       {/* Connection banner */}
       {!isVoiceMode && connectionState === 'disconnected' && (
-        <div className="px-4 py-2 bg-red-500/20 border-t border-red-500/30 flex items-center justify-center gap-2 text-sm">
+        <div className="px-4 py-2 bg-red-500/20 border-t border-error-border flex items-center justify-center gap-2 text-sm">
           <WifiOff size={14} />
           <span>Disconnected from gateway</span>
           <button onClick={reconnect} className="text-clawd-accent hover:underline">

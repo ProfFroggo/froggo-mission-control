@@ -98,8 +98,8 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       </div>
 
       {/* Info */}
-      <div className="p-4 bg-blue-500/10 border-b border-clawd-border">
-        <p className="text-sm text-blue-400">
+      <div className="p-4 bg-info-subtle border-b border-clawd-border">
+        <p className="text-sm text-info">
           Assigning {sessionKeys.length} conversation{sessionKeys.length !== 1 ? 's' : ''} to selected folders
         </p>
       </div>

@@ -232,10 +232,10 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'in-progress': return 'text-blue-400';
-      case 'review': return 'text-yellow-400';
-      case 'blocked': return 'text-red-400';
-      case 'done': return 'text-green-400';
+      case 'in-progress': return 'text-info';
+      case 'review': return 'text-warning';
+      case 'blocked': return 'text-error';
+      case 'done': return 'text-success';
       default: return 'text-clawd-text-muted';
     }
   };
@@ -265,7 +265,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                   )}
                   {task.priority && (
                     <span className="flex items-center gap-1">
-                      {task.priority === 'p0' && <AlertTriangle size={12} className="text-red-400" />}
+                      {task.priority === 'p0' && <AlertTriangle size={12} className="text-error" />}
                       {task.priority}
                     </span>
                   )}

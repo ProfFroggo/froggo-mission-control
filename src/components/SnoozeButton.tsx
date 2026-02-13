@@ -105,7 +105,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
     return (
       <button
         onClick={handleUnsnooze}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-500/30 transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-600 dark:text-warning rounded hover:bg-yellow-500/30 transition-colors"
         title="Click to unsnooze"
       >
         <Clock className="w-3 h-3" />

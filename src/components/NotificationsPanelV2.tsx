@@ -20,21 +20,21 @@ import {
 } from '../lib/notificationService';
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
-  task_complete: { icon: CheckCircle, color: 'text-green-400 bg-green-500/10', label: 'Task Complete' },
+  task_complete: { icon: CheckCircle, color: 'text-success bg-success-subtle', label: 'Task Complete' },
   task_deadline: { icon: Clock3, color: 'text-orange-400 bg-orange-500/10', label: 'Deadline' },
-  agent_update: { icon: Bot, color: 'text-purple-400 bg-purple-500/10', label: 'Agent Update' },
-  message_arrival: { icon: MessageSquare, color: 'text-blue-400 bg-blue-500/10', label: 'Message' },
-  approval_pending: { icon: AlertCircle, color: 'text-yellow-400 bg-yellow-500/10', label: 'Approval' },
+  agent_update: { icon: Bot, color: 'text-review bg-purple-500/10', label: 'Agent Update' },
+  message_arrival: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Message' },
+  approval_pending: { icon: AlertCircle, color: 'text-warning bg-yellow-500/10', label: 'Approval' },
   calendar_event: { icon: Calendar, color: 'text-pink-400 bg-pink-500/10', label: 'Event' },
-  system_alert: { icon: AlertTriangle, color: 'text-red-400 bg-red-500/10', label: 'Alert' },
+  system_alert: { icon: AlertTriangle, color: 'text-error bg-error-subtle', label: 'Alert' },
   skill_learned: { icon: Star, color: 'text-cyan-400 bg-cyan-500/10', label: 'Skill' },
-  error: { icon: XCircle, color: 'text-red-400 bg-red-500/10', label: 'Error' },
+  error: { icon: XCircle, color: 'text-error bg-error-subtle', label: 'Error' },
 };
 
 const priorityBadges: Record<string, { color: string; label: string }> = {
   urgent: { color: 'bg-red-500 text-white', label: 'Urgent' },
   high: { color: 'bg-orange-500 text-white', label: 'High' },
-  normal: { color: 'bg-blue-500/20 text-blue-400', label: 'Normal' },
+  normal: { color: 'bg-info-subtle text-info', label: 'Normal' },
   low: { color: 'bg-clawd-bg0/20 text-clawd-text-dim', label: 'Low' },
 };
 
@@ -343,7 +343,7 @@ export default function NotificationsPanelV2() {
                   key={notif.id}
                   className={`p-4 rounded-xl border transition-all cursor-pointer ${
                     notif.priority === 'urgent'
-                      ? 'bg-red-500/5 border-red-500/30 shadow-lg'
+                      ? 'bg-red-500/5 border-error-border shadow-lg'
                       : notif.read
                       ? 'bg-clawd-bg border-clawd-border opacity-60'
                       : 'bg-clawd-surface border-clawd-border shadow-card hover:shadow-card-hover'
@@ -362,7 +362,7 @@ export default function NotificationsPanelV2() {
                           </span>
                         )}
                         {notif.actionable && (
-                          <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded flex-shrink-0 whitespace-nowrap">
+                          <span className="px-1.5 py-0.5 bg-info-subtle text-info text-xs rounded flex-shrink-0 whitespace-nowrap">
                             Action required
                           </span>
                         )}
@@ -403,7 +403,7 @@ export default function NotificationsPanelV2() {
                             e.stopPropagation();
                             handleMarkRead(notif.id);
                           }}
-                          className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-green-500/30 transition-colors"
                           title="Mark as read"
                         >
                           <Check size={16} />

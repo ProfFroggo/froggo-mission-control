@@ -611,9 +611,9 @@ ${skillData.instructions}
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            {suggestion.skillType === 'code' && <Code size={16} className="text-blue-400" />}
-                            {suggestion.skillType === 'research' && <Search size={16} className="text-purple-400" />}
-                            {suggestion.skillType === 'content' && <Edit3 size={16} className="text-green-400" />}
+                            {suggestion.skillType === 'code' && <Code size={16} className="text-info" />}
+                            {suggestion.skillType === 'research' && <Search size={16} className="text-review" />}
+                            {suggestion.skillType === 'content' && <Edit3 size={16} className="text-success" />}
                             <h4 className="font-semibold">{suggestion.name}</h4>
                             <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-border text-clawd-text-dim">
                               {suggestion.category}

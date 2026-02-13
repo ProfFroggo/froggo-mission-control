@@ -199,13 +199,13 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
             {currentSnooze && (
               <div className={`mb-4 p-3 rounded-lg border-2 ${
                 isExpired 
-                  ? 'bg-red-500/10 border-red-500/30' 
-                  : 'bg-yellow-500/10 border-yellow-500/30'
+                  ? 'bg-error-subtle border-error-border' 
+                  : 'bg-yellow-500/10 border-warning-border'
               }`}>
                 <div className="flex items-start gap-2">
-                  <AlertCircle size={16} className={isExpired ? 'text-red-400 mt-0.5' : 'text-yellow-400 mt-0.5'} />
+                  <AlertCircle size={16} className={isExpired ? 'text-error mt-0.5' : 'text-warning mt-0.5'} />
                   <div className="flex-1">
-                    <p className={`font-medium ${isExpired ? 'text-red-400' : 'text-yellow-400'}`}>
+                    <p className={`font-medium ${isExpired ? 'text-error' : 'text-warning'}`}>
                       {isExpired ? '⏰ Reminder!' : 'Currently Snoozed'}
                     </p>
                     <p className="text-sm text-clawd-text-dim mt-1">
@@ -221,7 +221,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                     onClick={handleUnsnooze}
                     disabled={submitting}
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 rounded-lg transition-colors text-sm disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-red-500/20 rounded-lg transition-colors text-sm disabled:opacity-50"
                   >
                     <Trash2 size={14} />
                     Remove
@@ -302,8 +302,8 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <p className="text-sm text-red-400">{error}</p>
+              <div className="mb-4 p-3 bg-error-subtle border border-error-border rounded-lg">
+                <p className="text-sm text-error">{error}</p>
               </div>
             )}
           </>

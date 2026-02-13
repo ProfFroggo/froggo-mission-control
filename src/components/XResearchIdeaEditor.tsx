@@ -71,7 +71,7 @@ export default function XResearchIdeaEditor() {
     <div className="flex flex-col h-full bg-gray-900 p-6">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
-          <FileText className="w-5 h-5 text-blue-400" />
+          <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-white">Propose Research Idea</h3>
         </div>
         <p className="text-sm text-gray-400">
@@ -83,7 +83,7 @@ export default function XResearchIdeaEditor() {
         {/* Title */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Title <span className="text-red-400">*</span>
+            Title <span className="text-error">*</span>
           </label>
           <input
             type="text"
@@ -98,7 +98,7 @@ export default function XResearchIdeaEditor() {
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Description <span className="text-red-400">*</span>
+            Description <span className="text-error">*</span>
           </label>
           <textarea
             value={description}
@@ -116,7 +116,7 @@ export default function XResearchIdeaEditor() {
         {/* Citations */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Citations <span className="text-red-400">*</span>
+            Citations <span className="text-error">*</span>
           </label>
           <div className="space-y-2">
             {citations.map((citation, index) => (
@@ -132,7 +132,7 @@ export default function XResearchIdeaEditor() {
                 {citations.length > 1 && (
                   <button
                     onClick={() => handleRemoveCitation(index)}
-                    className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                    className="p-2 text-error hover:bg-red-500/20 rounded-lg transition-colors"
                     disabled={submitting}
                   >
                     <X className="w-5 h-5" />
@@ -143,7 +143,7 @@ export default function XResearchIdeaEditor() {
           </div>
           <button
             onClick={handleAddCitation}
-            className="mt-3 flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            className="mt-3 flex items-center gap-2 text-sm text-info hover:text-blue-300 transition-colors"
             disabled={submitting}
           >
             <Plus className="w-4 h-4" />

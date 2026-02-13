@@ -118,23 +118,23 @@ export default function TimeTrackingPanel() {
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Total Time</div>
-          <div className="text-2xl font-bold text-blue-400">
+          <div className="text-2xl font-bold text-info">
             {formatDuration(totalTime)}
           </div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Avg Time/Task</div>
-          <div className="text-2xl font-bold text-green-400">
+          <div className="text-2xl font-bold text-success">
             {formatDuration(avgTime)}
           </div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Active Tasks</div>
-          <div className="text-2xl font-bold text-yellow-400">{activeTasksCount}</div>
+          <div className="text-2xl font-bold text-warning">{activeTasksCount}</div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Tracked Tasks</div>
-          <div className="text-2xl font-bold text-purple-400">{tasks.length}</div>
+          <div className="text-2xl font-bold text-review">{tasks.length}</div>
         </div>
       </div>
 
@@ -208,10 +208,10 @@ export default function TimeTrackingPanel() {
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
                         task.status === 'done'
-                          ? 'bg-green-500/20 text-green-400'
+                          ? 'bg-success-subtle text-success'
                           : task.status === 'in-progress'
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-blue-500/20 text-blue-400'
+                          ? 'bg-warning-subtle text-warning'
+                          : 'bg-info-subtle text-info'
                       }`}
                     >
                       {task.status}

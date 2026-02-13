@@ -35,7 +35,7 @@ interface IconWrapperProps {
  * Usage:
  * ```tsx
  * <IconWrapper icon={Plus} size="sm" />
- * <IconWrapper icon={AlertTriangle} size="md" className="text-red-400" />
+ * <IconWrapper icon={AlertTriangle} size="md" className="text-error" />
  * ```
  */
 export function IconWrapper({ icon: Icon, size = 'sm', className = '', customSize }: IconWrapperProps) {
@@ -65,7 +65,7 @@ interface IconTextProps {
  * Usage:
  * ```tsx
  * <IconText icon={Plus} iconSize="sm">Add Task</IconText>
- * <IconText icon={User} spacing="tight" iconClassName="text-blue-400">3 users</IconText>
+ * <IconText icon={User} spacing="tight" iconClassName="text-info">3 users</IconText>
  * ```
  */
 export function IconText({ 
@@ -128,7 +128,7 @@ export function IconButton({
   const variantClass = {
     default: '',
     primary: 'bg-clawd-accent text-white hover:bg-clawd-accent/90',
-    danger: 'text-red-400 hover:bg-red-500/20',
+    danger: 'text-error hover:bg-red-500/20',
     ghost: 'hover:bg-transparent hover:text-clawd-accent',
   }[variant];
   
@@ -156,7 +156,7 @@ interface IconBadgeProps {
  * 
  * Usage:
  * ```tsx
- * <IconBadge icon={User} className="bg-blue-500/20 text-blue-400" />
+ * <IconBadge icon={User} className="bg-info-subtle text-info" />
  * <IconBadge icon={AlertTriangle} size="lg" iconSize="md" className="bg-red-500/20" />
  * ```
  */

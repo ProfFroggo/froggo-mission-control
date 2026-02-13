@@ -212,7 +212,7 @@ export default function FinancePanel() {
             onClick={() => setChatOpen(!chatOpen)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               chatOpen
-                ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                ? 'bg-success-subtle text-success hover:bg-green-500/30'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
@@ -249,22 +249,22 @@ export default function FinancePanel() {
             <div className="space-y-2">
               {/* Critical alerts first */}
               {alerts.filter(a => a.severity === 'critical').map((alert) => (
-                <div key={alert.id} className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                  <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <div key={alert.id} className="flex items-start gap-2 p-3 bg-error-subtle border border-error-border rounded-lg">
+                  <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-red-400">{alert.title}</div>
-                    <div className="text-xs text-red-400/80 mt-0.5">{alert.message}</div>
+                    <div className="font-medium text-sm text-error">{alert.title}</div>
+                    <div className="text-xs text-error/80 mt-0.5">{alert.message}</div>
                   </div>
                 </div>
               ))}
               
               {/* Warning alerts */}
               {alerts.filter(a => a.severity === 'warning').map((alert) => (
-                <div key={alert.id} className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div key={alert.id} className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-warning-border rounded-lg">
+                  <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-yellow-400">{alert.title}</div>
-                    <div className="text-xs text-yellow-400/80 mt-0.5">{alert.message}</div>
+                    <div className="font-medium text-sm text-warning">{alert.title}</div>
+                    <div className="text-xs text-warning/80 mt-0.5">{alert.message}</div>
                   </div>
                 </div>
               ))}
@@ -320,7 +320,7 @@ export default function FinancePanel() {
                             <span>{getCategoryEmoji(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={percentage >= 90 ? 'text-red-400' : ''}>
+                          <span className={percentage >= 90 ? 'text-error' : ''}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
                         </div>
@@ -335,14 +335,14 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                <button className="mt-4 w-full text-sm text-info hover:text-blue-300 transition-colors">
                   View All Categories →
                 </button>
               </>
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No family budget set up</p>
-                <button className="text-blue-400 hover:text-blue-300 text-sm">
+                <button className="text-info hover:text-blue-300 text-sm">
                   Create Budget
                 </button>
               </div>
@@ -395,7 +395,7 @@ export default function FinancePanel() {
                             <span>{getCategoryEmoji(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={percentage >= 90 ? 'text-red-400' : ''}>
+                          <span className={percentage >= 90 ? 'text-error' : ''}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
                         </div>
@@ -410,14 +410,14 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-purple-400 hover:text-purple-300 transition-colors">
+                <button className="mt-4 w-full text-sm text-review hover:text-purple-300 transition-colors">
                   View All Categories →
                 </button>
               </>
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No crypto budget set up</p>
-                <button className="text-purple-400 hover:text-purple-300 text-sm">
+                <button className="text-review hover:text-purple-300 text-sm">
                   Create Budget
                 </button>
               </div>
@@ -454,7 +454,7 @@ export default function FinancePanel() {
                         </div>
                       </div>
                     </div>
-                    <div className={`text-lg font-semibold ${tx.amount < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    <div className={`text-lg font-semibold ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
                       {tx.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(tx.amount), tx.currency)}
                     </div>
                   </div>

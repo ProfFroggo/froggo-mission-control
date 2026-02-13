@@ -36,7 +36,7 @@ export default function OxWorkload() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'p0': return 'bg-red-500';
-      case 'p1': return 'bg-amber-500';
+      case 'p1': return 'bg-warning';
       case 'p2': return 'bg-blue-500';
       default: return 'bg-slate-500';
     }
@@ -115,7 +115,7 @@ export default function OxWorkload() {
                               </div>
                               <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-amber-500 transition-all"
+                                  className="h-full bg-warning transition-all"
                                   style={{ width: `${(progress.done / progress.total) * 100}%` }}
                                 />
                               </div>

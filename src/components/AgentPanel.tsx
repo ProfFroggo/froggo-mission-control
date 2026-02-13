@@ -162,12 +162,12 @@ export default function AgentPanel() {
           </div>
           <div className="icon-text gap-2">
             {compareAgents.length >= 2 && (
-              <button onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-purple-400 border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition-colors text-sm">
+              <button onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-review border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition-colors text-sm">
                 <GitCompare size={15} className="flex-shrink-0" /> Compare ({compareAgents.length})
               </button>
             )}
             <button onClick={() => setShowAnalytics(!showAnalytics)}
-              className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'border-clawd-border hover:bg-clawd-border/50'}`}>
+              className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-clawd-border hover:bg-clawd-border/50'}`}>
               <BarChart3 size={15} className="flex-shrink-0" /> Analytics
             </button>
             <button onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-clawd-border disabled:opacity-50" title="Refresh">
@@ -192,10 +192,10 @@ export default function AgentPanel() {
                 const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
                 const formatTokens = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
                 return [
-                  { val: activeAgentCount, label: 'Active Agents', color: 'text-green-400' },
+                  { val: activeAgentCount, label: 'Active Agents', color: 'text-success' },
                   { val: activeSubagents.length, label: 'Active Sub-Agents', color: 'text-amber-400' },
-                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-blue-400' },
-                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-purple-400' },
+                  { val: gatewaySessions.length, label: 'Total Sessions', color: 'text-info' },
+                  { val: formatTokens(totalTokens), label: 'Total Tokens', color: 'text-review' },
                 ];
               })().map((s, i) => (
                 <div key={i} className="rounded-lg border border-clawd-border p-4">
@@ -220,7 +220,7 @@ export default function AgentPanel() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest">Core Agents</h2>
             {compareAgents.length > 0 && (
-              <span className="text-xs px-2 py-0.5 text-purple-400 border border-purple-500/30 rounded-full">
+              <span className="text-xs px-2 py-0.5 text-review border border-purple-500/30 rounded-full">
                 {compareAgents.length} selected
               </span>
             )}
@@ -277,9 +277,9 @@ export default function AgentPanel() {
                           {/* Trust tier badge */}
                           {agent.trust_tier && (
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              agent.trust_tier === 'master' ? 'bg-purple-500/20 text-purple-400' :
-                              agent.trust_tier === 'expert' ? 'bg-amber-500/20 text-amber-400' :
-                              agent.trust_tier === 'journeyman' ? 'bg-blue-500/20 text-blue-400' :
+                              agent.trust_tier === 'master' ? 'bg-review-subtle text-review' :
+                              agent.trust_tier === 'expert' ? 'bg-warning/20 text-amber-400' :
+                              agent.trust_tier === 'journeyman' ? 'bg-info-subtle text-info' :
                               'bg-gray-500/20 text-gray-400'
                             }`}>
                               {agent.trust_tier === 'master' ? 'Master' :
@@ -290,7 +290,7 @@ export default function AgentPanel() {
                           )}
                           {/* Lifecycle status badges for non-active agents */}
                           {agent.status === 'suspended' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-500/20 text-red-400">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-error-subtle text-error">
                               Suspended
                             </span>
                           )}
@@ -300,7 +300,7 @@ export default function AgentPanel() {
                             </span>
                           )}
                           {agent.status === 'draft' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-yellow-500/20 text-yellow-400">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-warning-subtle text-warning">
                               Draft
                             </span>
                           )}
@@ -328,7 +328,7 @@ export default function AgentPanel() {
 
                     {/* Current task */}
                     {currentTask && (
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-500/20 bg-amber-500/5 text-sm mb-3">
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber-500/20 bg-warning/5 text-sm mb-3">
                         <Zap size={14} className="text-amber-400 flex-shrink-0" />
                         <span className="truncate">{currentTask.title}</span>
                       </div>
@@ -352,7 +352,7 @@ export default function AgentPanel() {
                       )}
                       {agent.status === 'busy' && agent.sessionKey && (
                         <button onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors">
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
                           <Square size={12} /> Stop
                         </button>
                       )}
@@ -368,7 +368,7 @@ export default function AgentPanel() {
                         <MessageSquare size={14} />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
-                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-purple-400 bg-purple-500/10' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
+                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-purple-500/10' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
                         title="Compare">
                         <GitCompare size={14} />
                       </button>
@@ -429,19 +429,19 @@ export default function AgentPanel() {
               {realSubagents.map((session) => (
                 <div key={session.key}
                   className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
-                    session.isActive ? 'border-green-500/30 bg-green-500/5' : 'border-clawd-border'
+                    session.isActive ? 'border-success-border bg-green-500/5' : 'border-clawd-border'
                   }`}>
                   <span className="text-xl no-shrink">🤖</span>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
                       <span className="font-medium session-name flex-shrink">{session.displayName}</span>
                       {session.label && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded no-shrink no-wrap">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-blue-500/20 rounded no-shrink no-wrap">
                           {session.label}
                         </span>
                       )}
                       <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-green-400 animate-pulse' : 'bg-clawd-bg0'}`} />
-                      {session.isActive && <span className="text-[10px] text-green-400 no-shrink no-wrap">Active</span>}
+                      {session.isActive && <span className="text-[10px] text-success no-shrink no-wrap">Active</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-clawd-text-dim overflow-hidden">
                       <span className="no-shrink">{session.model?.split('/').pop() || 'unknown'}</span>
@@ -450,7 +450,7 @@ export default function AgentPanel() {
                     </div>
                   </div>
                   <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded ${
-                    session.isActive ? 'text-green-400 border border-green-500/20' : 'text-clawd-text-dim border border-clawd-border'
+                    session.isActive ? 'text-success border border-green-500/20' : 'text-clawd-text-dim border border-clawd-border'
                   }`}>
                     {session.isActive ? 'Running' : 'Idle'}
                   </span>
@@ -484,11 +484,11 @@ export default function AgentPanel() {
                   </div>
                   {agent.status === 'busy' ? (
                     <button onClick={() => updateAgentStatus(agent.id, 'idle')}
-                      className="px-2 py-1 text-xs text-red-400 border border-red-500/30 rounded hover:bg-red-500/10 transition-colors">
+                      className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors">
                       Stop
                     </button>
                   ) : (
-                    <span className="text-xs text-green-400">
+                    <span className="text-xs text-success">
                       <CheckCircle size={14} className="inline mr-1" /> Done
                     </span>
                   )}

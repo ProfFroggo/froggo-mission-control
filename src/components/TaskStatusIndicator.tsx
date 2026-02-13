@@ -231,9 +231,9 @@ const TaskStatusIndicator = memo(function TaskStatusIndicator({
       
       {showLabel && (
         <span className={`text-xs font-medium ${
-          statusInfo.status === 'active' ? 'text-green-400' :
-          statusInfo.status === 'paused' ? 'text-yellow-400' :
-          statusInfo.status === 'stuck' ? 'text-red-400' :
+          statusInfo.status === 'active' ? 'text-success' :
+          statusInfo.status === 'paused' ? 'text-warning' :
+          statusInfo.status === 'stuck' ? 'text-error' :
           'text-clawd-text-dim'
         }`}>
           {config.label}

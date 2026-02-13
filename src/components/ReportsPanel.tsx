@@ -164,19 +164,19 @@ export default function ReportsPanel() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Tasks Created</div>
-                <div className="text-3xl font-bold text-blue-400">
+                <div className="text-3xl font-bold text-info">
                   {weeklyReport.tasksCreated}
                 </div>
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Tasks Completed</div>
-                <div className="text-3xl font-bold text-green-400">
+                <div className="text-3xl font-bold text-success">
                   {weeklyReport.tasksCompleted}
                 </div>
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Completion Rate</div>
-                <div className="text-3xl font-bold text-purple-400">
+                <div className="text-3xl font-bold text-review">
                   {weeklyReport.completionRate}%
                 </div>
               </div>
@@ -191,19 +191,19 @@ export default function ReportsPanel() {
             {/* Highlights */}
             <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-yellow-400" />
+                <Award size={16} className="text-warning" />
                 Highlights
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-clawd-bg rounded-xl">
                   <div className="text-sm text-clawd-text-dim mb-2">Top Performer</div>
-                  <div className="text-xl font-bold text-yellow-400">
+                  <div className="text-xl font-bold text-warning">
                     {weeklyReport.topAgent}
                   </div>
                 </div>
                 <div className="p-4 bg-clawd-bg rounded-xl">
                   <div className="text-sm text-clawd-text-dim mb-2">Most Active Project</div>
-                  <div className="text-xl font-bold text-blue-400">
+                  <div className="text-xl font-bold text-info">
                     {weeklyReport.topProject}
                   </div>
                 </div>
@@ -247,19 +247,19 @@ export default function ReportsPanel() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Tasks Created</div>
-                <div className="text-3xl font-bold text-blue-400">
+                <div className="text-3xl font-bold text-info">
                   {monthlyReport.tasksCreated}
                 </div>
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Tasks Completed</div>
-                <div className="text-3xl font-bold text-green-400">
+                <div className="text-3xl font-bold text-success">
                   {monthlyReport.tasksCompleted}
                 </div>
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Completion Rate</div>
-                <div className="text-3xl font-bold text-purple-400">
+                <div className="text-3xl font-bold text-review">
                   {monthlyReport.completionRate}%
                 </div>
               </div>
@@ -274,7 +274,7 @@ export default function ReportsPanel() {
             {/* Agent Performance */}
             <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-yellow-400" />
+                <Award size={16} className="text-warning" />
                 Agent Performance
               </h3>
               <div className="space-y-3">
@@ -292,13 +292,13 @@ export default function ReportsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-clawd-text-dim">Completion Rate</div>
-                        <div className="font-medium text-green-400">
+                        <div className="font-medium text-success">
                           {agent.completionRate}%
                         </div>
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Avg Time</div>
-                        <div className="font-medium text-blue-400">
+                        <div className="font-medium text-info">
                           {agent.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
@@ -335,13 +335,13 @@ export default function ReportsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-clawd-text-dim">Completed</div>
-                        <div className="font-medium text-green-400">
+                        <div className="font-medium text-success">
                           {project.completedTasks}
                         </div>
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Avg Time</div>
-                        <div className="font-medium text-blue-400">
+                        <div className="font-medium text-info">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>

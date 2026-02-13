@@ -76,7 +76,7 @@ export default function OxDashboard() {
               <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${
                   task.status === 'done' ? 'bg-green-500' :
-                  task.status === 'in-progress' ? 'bg-amber-500' :
+                  task.status === 'in-progress' ? 'bg-warning' :
                   task.status === 'review' ? 'bg-purple-500' : 'bg-slate-500'
                 }`} />
                 <h3 className="flex-1 font-medium text-white truncate">{task.title}</h3>

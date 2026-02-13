@@ -46,9 +46,9 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
 
   const outcomeIcon = (outcome: string | null) => {
     switch (outcome) {
-      case 'passed': return <CheckCircle size={14} className="text-green-400" />;
+      case 'passed': return <CheckCircle size={14} className="text-success" />;
       case 'needs-work': return <AlertCircle size={14} className="text-amber-400" />;
-      case 'failed': return <AlertCircle size={14} className="text-red-400" />;
+      case 'failed': return <AlertCircle size={14} className="text-error" />;
       default: return <Clock size={14} className="text-clawd-text-dim" />;
     }
   };
@@ -108,8 +108,8 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
                       <Target size={12} className="text-clawd-text-dim" />
                       <div className="flex items-center gap-1 text-xs">
                         <span className="text-clawd-text-dim">{entry.skill_before}</span>
-                        <TrendingUp size={10} className={entry.skill_after > entry.skill_before ? 'text-green-400' : 'text-clawd-text-dim'} />
-                        <span className={entry.skill_after > entry.skill_before ? 'text-green-400 font-medium' : 'text-clawd-text-dim'}>{entry.skill_after}</span>
+                        <TrendingUp size={10} className={entry.skill_after > entry.skill_before ? 'text-success' : 'text-clawd-text-dim'} />
+                        <span className={entry.skill_after > entry.skill_before ? 'text-success font-medium' : 'text-clawd-text-dim'}>{entry.skill_after}</span>
                       </div>
                     </div>
                   )}

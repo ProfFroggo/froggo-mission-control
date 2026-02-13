@@ -18,10 +18,10 @@ interface VipSender {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'boss', label: 'Boss', emoji: '👔', color: 'text-purple-400' },
-  { value: 'client', label: 'Client', emoji: '💼', color: 'text-blue-400' },
+  { value: 'boss', label: 'Boss', emoji: '👔', color: 'text-review' },
+  { value: 'client', label: 'Client', emoji: '💼', color: 'text-info' },
   { value: 'stakeholder', label: 'Stakeholder', emoji: '🎯', color: 'text-orange-400' },
-  { value: 'team', label: 'Team', emoji: '👥', color: 'text-green-400' },
+  { value: 'team', label: 'Team', emoji: '👥', color: 'text-success' },
   { value: 'family', label: 'Family', emoji: '❤️', color: 'text-pink-400' },
 ];
 
@@ -176,7 +176,7 @@ export default function VIPSettingsPanel() {
       <div className="flex items-center justify-between p-6 border-b border-slate-800/50">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Star className="text-yellow-400" size={24} />
+            <Star className="text-warning" size={24} />
             VIP Senders
           </h2>
           <p className="text-sm text-clawd-text-dim mt-1">
@@ -185,8 +185,8 @@ export default function VIPSettingsPanel() {
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 
-                   text-blue-400 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-info-subtle hover:bg-blue-500/20 
+                   text-info rounded-lg transition-colors"
         >
           <Plus size={16} />
           Add VIP
@@ -296,8 +296,8 @@ export default function VIPSettingsPanel() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUpdate(vip.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20
-                                 text-green-400 rounded transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-success-subtle hover:bg-green-500/20
+                                 text-success rounded transition-colors"
                       >
                         <Save size={14} />
                         Save
@@ -317,13 +317,13 @@ export default function VIPSettingsPanel() {
                   <div>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Star className="text-yellow-400" size={20} />
+                        <Star className="text-warning" size={20} />
                         <span className="text-lg font-semibold text-white">{vip.label}</span>
                         <span className={`text-sm ${catInfo.color}`}>
                           {catInfo.emoji} {catInfo.label}
                         </span>
                         {vip.auto_detected === 1 && (
-                          <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                          <span className="text-xs px-2 py-0.5 bg-info-subtle text-info rounded">
                             🤖 Auto
                           </span>
                         )}
@@ -331,7 +331,7 @@ export default function VIPSettingsPanel() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => startEdit(vip)}
-                          className="p-1.5 text-clawd-text-dim hover:text-blue-400 hover:bg-blue-500/10 rounded
+                          className="p-1.5 text-clawd-text-dim hover:text-info hover:bg-info-subtle rounded
                                    transition-colors"
                           title="Edit"
                         >
@@ -339,7 +339,7 @@ export default function VIPSettingsPanel() {
                         </button>
                         <button
                           onClick={() => handleRemove(vip.id, vip.label)}
-                          className="p-1.5 text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10 rounded
+                          className="p-1.5 text-clawd-text-dim hover:text-error hover:bg-error-subtle rounded
                                    transition-colors"
                           title="Remove"
                         >
@@ -350,11 +350,11 @@ export default function VIPSettingsPanel() {
 
                     <div className="space-y-1 text-sm">
                       <div className="flex items-center gap-2 text-clawd-text-dim">
-                        <span className="font-mono text-blue-400">{vip.identifier}</span>
+                        <span className="font-mono text-info">{vip.identifier}</span>
                         <span className="text-clawd-text-dim">({vip.identifier_type})</span>
                       </div>
                       <div className="text-clawd-text-dim">
-                        Priority boost: <span className="text-yellow-400 font-semibold">+{vip.priority_boost}</span>
+                        Priority boost: <span className="text-warning font-semibold">+{vip.priority_boost}</span>
                       </div>
                       {vip.notes && (
                         <div className="text-clawd-text-dim italic">{vip.notes}</div>
@@ -388,7 +388,7 @@ export default function VIPSettingsPanel() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">
-                  Identifier <span className="text-red-400">*</span>
+                  Identifier <span className="text-error">*</span>
                 </label>
                 <input
                   type="text"
@@ -420,7 +420,7 @@ export default function VIPSettingsPanel() {
 
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">
-                  Label <span className="text-red-400">*</span>
+                  Label <span className="text-error">*</span>
                 </label>
                 <input
                   type="text"

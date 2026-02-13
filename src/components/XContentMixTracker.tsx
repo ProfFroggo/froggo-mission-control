@@ -240,7 +240,7 @@ export const XContentMixTracker: React.FC = () => {
         <div className="flex items-center gap-2 mb-1">
           {status === 'on-target' ? (
             <>
-              <Check className="text-green-600" size={20} />
+              <Check className="text-success" size={20} />
               <span className="font-medium text-green-900">Content Mix On Target</span>
             </>
           ) : status === 'minor-deviation' ? (

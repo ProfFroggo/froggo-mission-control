@@ -43,42 +43,42 @@ const ERROR_PATTERNS: ErrorPattern[] = [
     title: 'Connection Problem',
     message: 'Unable to connect to the server.',
     suggestion: 'Check your internet connection and try again.',
-    icon: <Network size={32} className="text-red-400" />
+    icon: <Network size={32} className="text-error" />
   },
   {
     test: /Failed to fetch/i,
     title: 'Network Error',
     message: 'Could not retrieve data from the server.',
     suggestion: 'The server might be down. Try again in a few moments.',
-    icon: <Wifi size={32} className="text-red-400" />
+    icon: <Wifi size={32} className="text-error" />
   },
   {
     test: /timeout/i,
     title: 'Request Timeout',
     message: 'The request took too long to complete.',
     suggestion: 'The server might be slow. Try refreshing the page.',
-    icon: <Clock size={32} className="text-yellow-400" />
+    icon: <Clock size={32} className="text-warning" />
   },
   {
     test: /is not a function/i,
     title: 'Code Error',
     message: 'Something unexpected happened in the application.',
     suggestion: 'Try refreshing the page. If this persists, please report it.',
-    icon: <Code size={32} className="text-purple-400" />
+    icon: <Code size={32} className="text-review" />
   },
   {
     test: /Cannot access.*before initialization/i,
     title: 'Loading Error',
     message: 'A component tried to use data before it was ready.',
     suggestion: 'Refresh the page to restart the loading process.',
-    icon: <RefreshCw size={32} className="text-blue-400" />
+    icon: <RefreshCw size={32} className="text-info" />
   },
   {
     test: /Maximum update depth exceeded/i,
     title: 'Infinite Loop',
     message: 'A component got stuck in an update loop.',
     suggestion: 'Refresh the page. If this keeps happening, please report it.',
-    icon: <AlertTriangle size={32} className="text-red-400" />
+    icon: <AlertTriangle size={32} className="text-error" />
   },
   {
     test: /WebSocket/i,
@@ -92,14 +92,14 @@ const ERROR_PATTERNS: ErrorPattern[] = [
     title: 'Storage Error',
     message: 'Unable to save or load local data.',
     suggestion: 'Check if you have enough storage space or try clearing browser cache.',
-    icon: <Database size={32} className="text-yellow-400" />
+    icon: <Database size={32} className="text-warning" />
   },
   {
     test: /permission denied/i,
     title: 'Permission Denied',
     message: 'The app does not have permission to perform this action.',
     suggestion: 'Check your browser permissions and try again.',
-    icon: <Lock size={32} className="text-red-400" />
+    icon: <Lock size={32} className="text-error" />
   }
 ];
 
@@ -119,7 +119,7 @@ const getErrorDetails = (error: Error): ErrorPattern => {
     message: 'An unexpected error occurred.',
     suggestion: 'Try refreshing the page. If the problem persists, please contact support.',
     test: /.*/,
-    icon: <AlertTriangle size={32} className="text-red-400" />
+    icon: <AlertTriangle size={32} className="text-error" />
   };
 };
 
@@ -213,7 +213,7 @@ Timestamp: ${new Date().toISOString()}
             {/* Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center">
-                {errorDetails?.icon || <AlertTriangle size={40} className="text-red-400" />}
+                {errorDetails?.icon || <AlertTriangle size={40} className="text-error" />}
               </div>
             </div>
 
@@ -244,7 +244,7 @@ Timestamp: ${new Date().toISOString()}
 
               {!isCritical && errorDetails && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
+                  <h3 className="text-sm font-semibold text-yellow-600 dark:text-warning mb-2">
                     💡 What to try
                   </h3>
                   <p className="text-sm text-clawd-text-dim">
@@ -259,7 +259,7 @@ Timestamp: ${new Date().toISOString()}
               <div className="bg-clawd-surface border border-clawd-border rounded-lg p-4 mb-6">
                 {isDevelopment && (
                   <div className="mb-4">
-                    <p className="text-sm font-mono text-red-400 mb-2">
+                    <p className="text-sm font-mono text-error mb-2">
                       {error.toString()}
                     </p>
                     {errorInfo && (
@@ -267,7 +267,7 @@ Timestamp: ${new Date().toISOString()}
                         <summary className="cursor-pointer hover:text-clawd-text font-medium mb-2">
                           🔧 Stack Trace (dev mode)
                         </summary>
-                        <pre className="mt-2 overflow-auto max-h-64 whitespace-pre-wrap bg-red-500/10 border border-red-500/20 rounded p-3 text-red-400">
+                        <pre className="mt-2 overflow-auto max-h-64 whitespace-pre-wrap bg-error-subtle border border-red-500/20 rounded p-3 text-error">
                           {errorInfo.componentStack}
                         </pre>
                       </details>

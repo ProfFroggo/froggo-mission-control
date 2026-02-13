@@ -99,9 +99,9 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
 // Task quick-status options
 const TASK_STATUSES = [
   { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-gray-400' },
-  { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-blue-400' },
-  { label: 'Review', value: 'review', icon: Search, color: 'text-yellow-400' },
-  { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-green-400' },
+  { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-info' },
+  { label: 'Review', value: 'review', icon: Search, color: 'text-warning' },
+  { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-success' },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -181,9 +181,9 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
         <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
       </div>
       {activeCall && (
-        <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2">
+        <div className="mb-2 p-2 bg-error-subtle border border-red-500/20 rounded-lg flex items-center gap-2">
           <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-          <span className="text-xs text-red-400">In call with {activeCall.agentName}</span>
+          <span className="text-xs text-error">In call with {activeCall.agentName}</span>
         </div>
       )}
       <div className="space-y-1">
@@ -193,7 +193,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
             onClick={() => onSelect(agent)}
             className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
               activeCall?.agentId === agent.id
-                ? 'bg-red-500/10 border border-red-500/30'
+                ? 'bg-error-subtle border border-error-border'
                 : 'hover:bg-clawd-border'
             }`}
           >
@@ -203,7 +203,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
               <div className="text-[10px] text-clawd-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
-              <PhoneOff size={14} className="text-red-400" />
+              <PhoneOff size={14} className="text-error" />
             )}
           </button>
         ))}
@@ -1042,17 +1042,17 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           {/* Controls bar */}
           <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-clawd-border bg-clawd-bg/50">
             <button onClick={toggleCallMute} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-red-500/20 text-red-400' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-error-subtle text-error' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
               title={callMuted ? 'Unmute' : 'Mute'}>
               {callMuted ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
             <button onClick={toggleCallScreen} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-green-500/20 text-green-400' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
               title="Share Screen">
               <Monitor size={16} />
             </button>
             <button onClick={toggleCallCamera} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-green-500/20 text-green-400' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
+              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'} disabled:opacity-30`}
               title="Camera">
               {callVideoMode === 'camera' ? <CameraOff size={16} /> : <Camera size={16} />}
             </button>
@@ -1225,7 +1225,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
             {activeCall && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-400">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error">
                 <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>

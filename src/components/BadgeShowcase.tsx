@@ -120,11 +120,11 @@ export default function BadgeShowcase() {
         </div>
 
         {/* Status indicator */}
-        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+        <div className="p-4 bg-success-subtle border border-success-border rounded-xl">
           <div className="flex items-center gap-2">
-            <CheckCircle size={16} className="text-green-400" />
+            <CheckCircle size={16} className="text-success" />
             <div>
-              <div className="font-medium text-green-400">All badges rendering correctly</div>
+              <div className="font-medium text-success">All badges rendering correctly</div>
               <div className="text-sm text-clawd-text-dim">Icons are properly centered using flexbox alignment</div>
             </div>
           </div>

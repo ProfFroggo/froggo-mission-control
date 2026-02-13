@@ -32,13 +32,13 @@ export const CircuitBreakerStatus: React.FC = () => {
 
   return (
     <div className="p-3 rounded-lg bg-red-900/20 border border-red-700/30">
-      <div className="text-xs font-medium text-red-400 mb-2">Circuit Breakers Tripped</div>
+      <div className="text-xs font-medium text-error mb-2">Circuit Breakers Tripped</div>
       {tripped.map(([agent, state]) => {
         const timeLeft = state.suspended_until ? Math.ceil((state.suspended_until - Date.now()) / 60000) : 0;
         return (
           <div key={agent} className="flex items-center justify-between text-xs py-1">
             <span className="text-gray-300">{agent}</span>
-            <span className={state.state === 'open' ? 'text-red-400' : 'text-yellow-400'}>
+            <span className={state.state === 'open' ? 'text-error' : 'text-warning'}>
               {state.state === 'open' ? 'SUSPENDED' : 'TRIAL'}
               {state.suspended_until && timeLeft > 0 && ` (${timeLeft}m left)`}
             </span>

@@ -83,11 +83,11 @@ export default function FinanceInsightsPanel() {
   const getSeverityStyles = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-500/10 border-red-500/30 text-red-300';
+        return 'bg-error-subtle border-error-border text-red-300';
       case 'warning':
-        return 'bg-yellow-500/10 border-yellow-500/30 text-yellow-300';
+        return 'bg-yellow-500/10 border-warning-border text-yellow-300';
       default:
-        return 'bg-blue-500/10 border-blue-500/30 text-blue-300';
+        return 'bg-info-subtle border-info-border text-blue-300';
     }
   };
 
@@ -120,14 +120,14 @@ export default function FinanceInsightsPanel() {
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+      <div className="bg-error-subtle border border-error-border rounded-lg p-4">
         <div className="flex items-center gap-2 text-red-300">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
         </div>
         <button
           onClick={loadInsights}
-          className="mt-2 text-sm text-red-400 hover:text-red-300"
+          className="mt-2 text-sm text-error hover:text-red-300"
         >
           Retry
         </button>
@@ -149,9 +149,9 @@ export default function FinanceInsightsPanel() {
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-yellow-400" />
+          <Lightbulb className="w-5 h-5 text-warning" />
           AI Insights
-          <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded-full">
+          <span className="px-2 py-0.5 text-xs bg-warning-subtle text-warning rounded-full">
             {insights.length}
           </span>
         </h3>

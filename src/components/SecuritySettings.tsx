@@ -198,10 +198,10 @@ export default function SecuritySettings() {
   // Severity badge color
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'critical': return 'bg-error-subtle text-error border-error-border';
       case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'low': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'medium': return 'bg-warning-subtle text-warning border-warning-border';
+      case 'low': return 'bg-info-subtle text-info border-info-border';
       case 'info': return 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30';
       default: return 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30';
     }
@@ -331,7 +331,7 @@ export default function SecuritySettings() {
                   </div>
                   <button
                     onClick={() => handleDeleteKey(key.id)}
-                    className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                    className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
                     title="Delete key"
                   >
                     <Trash2 size={16} />
@@ -389,9 +389,9 @@ export default function SecuritySettings() {
                       <span className="text-xs text-clawd-text-dim">{log.category}</span>
                       <span className={`text-xs px-2 py-0.5 rounded ${
                         log.status === 'resolved' 
-                          ? 'bg-green-500/20 text-green-400' 
+                          ? 'bg-success-subtle text-success' 
                           : log.status === 'acknowledged'
-                          ? 'bg-blue-500/20 text-blue-400'
+                          ? 'bg-info-subtle text-info'
                           : 'bg-clawd-bg0/20 text-clawd-text-dim'
                       }`}>
                         {log.status}
@@ -413,13 +413,13 @@ export default function SecuritySettings() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => updateAuditStatus(log.id, 'acknowledged')}
-                        className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition-colors"
+                        className="px-2 py-1 text-xs bg-info-subtle text-info rounded hover:bg-blue-500/30 transition-colors"
                       >
                         Acknowledge
                       </button>
                       <button
                         onClick={() => updateAuditStatus(log.id, 'resolved')}
-                        className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 transition-colors"
+                        className="px-2 py-1 text-xs bg-success-subtle text-success rounded hover:bg-green-500/30 transition-colors"
                       >
                         Resolve
                       </button>

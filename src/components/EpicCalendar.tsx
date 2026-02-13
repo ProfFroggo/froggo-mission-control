@@ -1417,7 +1417,7 @@ function EventModal({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-error-subtle rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
                   Delete Event
@@ -1469,7 +1469,7 @@ function DeleteConfirmDialog({
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-start gap-4 mb-4">
-          <div className="p-3 bg-red-500/10 rounded-full">
+          <div className="p-3 bg-error-subtle rounded-full">
             <Trash2 size={24} className="text-red-500" />
           </div>
           <div>

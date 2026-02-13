@@ -51,28 +51,28 @@ export default function IconBadge({
  */
 export const BadgePresets = {
   // Notification types
-  taskComplete: { color: 'text-green-400 bg-green-500/10' },
+  taskComplete: { color: 'text-success bg-success-subtle' },
   taskDeadline: { color: 'text-orange-400 bg-orange-500/10' },
-  agentUpdate: { color: 'text-purple-400 bg-purple-500/10' },
-  messageArrival: { color: 'text-blue-400 bg-blue-500/10' },
-  approvalPending: { color: 'text-yellow-400 bg-yellow-500/10' },
+  agentUpdate: { color: 'text-review bg-purple-500/10' },
+  messageArrival: { color: 'text-info bg-info-subtle' },
+  approvalPending: { color: 'text-warning bg-yellow-500/10' },
   calendarEvent: { color: 'text-pink-400 bg-pink-500/10' },
-  systemAlert: { color: 'text-red-400 bg-red-500/10' },
+  systemAlert: { color: 'text-error bg-error-subtle' },
   skillLearned: { color: 'text-cyan-400 bg-cyan-500/10' },
-  error: { color: 'text-red-400 bg-red-500/10' },
+  error: { color: 'text-error bg-error-subtle' },
   
   // Approval types
   tweet: { color: 'text-sky-400 bg-sky-500/20' },
-  reply: { color: 'text-blue-400 bg-blue-500/20' },
-  email: { color: 'text-green-400 bg-green-500/20' },
-  message: { color: 'text-purple-400 bg-purple-500/20' },
-  task: { color: 'text-yellow-400 bg-yellow-500/20' },
-  action: { color: 'text-green-400 bg-green-500/20' },
+  reply: { color: 'text-info bg-blue-500/20' },
+  email: { color: 'text-success bg-green-500/20' },
+  message: { color: 'text-review bg-purple-500/20' },
+  task: { color: 'text-warning bg-yellow-500/20' },
+  action: { color: 'text-success bg-green-500/20' },
   
   // Channels
   discord: { color: 'text-[#5865F2] bg-[#5865F2]/20' },
   telegram: { color: 'text-[#229ED9] bg-[#229ED9]/20' },
   whatsapp: { color: 'text-[#25D366] bg-[#25D366]/20' },
-  webchat: { color: 'text-purple-400 bg-purple-500/20' },
+  webchat: { color: 'text-review bg-purple-500/20' },
   agents: { color: 'text-orange-400 bg-orange-500/20' },
 } as const;

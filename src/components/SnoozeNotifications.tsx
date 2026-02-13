@@ -111,7 +111,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <Bell className="w-5 h-5 text-yellow-600 dark:text-yellow-400 animate-ring" />
+              <Bell className="w-5 h-5 text-yellow-600 dark:text-warning animate-ring" />
             </div>
             
             <div className="flex-1 min-w-0">
@@ -124,7 +124,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
                     e.stopPropagation();
                     dismissReminder(reminder.session_id);
                   }}
-                  className="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
+                  className="text-yellow-600 dark:text-warning hover:text-yellow-800 dark:hover:text-yellow-200"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -143,7 +143,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
             </div>
           </div>
           
-          <div className="mt-3 text-xs text-yellow-600 dark:text-yellow-400 text-center">
+          <div className="mt-3 text-xs text-yellow-600 dark:text-warning text-center">
             Click to view conversation
           </div>
         </div>

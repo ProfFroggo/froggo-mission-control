@@ -48,11 +48,11 @@ function SortableSession({ sessionKey, children }: { sessionKey: string; childre
 
 const CHANNELS: { id: ChannelFilter; label: string; icon: string; color: string }[] = [
   { id: 'all', label: 'All', icon: '📋', color: 'text-clawd-text' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'text-green-400' },
-  { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'text-blue-400' },
-  { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-purple-400' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: '💬', color: 'text-success' },
+  { id: 'telegram', label: 'Telegram', icon: '✈️', color: 'text-info' },
+  { id: 'discord', label: 'Discord', icon: '🎮', color: 'text-review' },
   { id: 'webchat', label: 'Webchat', icon: '💻', color: 'text-clawd-text-dim' },
-  { id: 'agents', label: 'Agents', icon: '🤖', color: 'text-yellow-400' },
+  { id: 'agents', label: 'Agents', icon: '🤖', color: 'text-warning' },
 ];
 
 export default function SessionsFilter() {
@@ -555,7 +555,7 @@ export default function SessionsFilter() {
               className={`p-2 rounded-lg transition-colors ${
                 showSnoozed 
                   ? 'hover:bg-clawd-border' 
-                  : 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                  : 'bg-info-subtle text-info border border-info-border'
               }`}
               title={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
             >
@@ -605,7 +605,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkMarkRead}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-success-subtle text-success border border-success-border hover:bg-green-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckSquare size={14} />
                   Mark Read ({selectedSessions.size})
@@ -613,7 +613,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkFolderAssign}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-info-subtle text-info border border-info-border hover:bg-blue-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FolderPlus size={14} />
                   Assign to Folders
@@ -621,7 +621,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkArchive}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500/10 text-warning border border-warning-border hover:bg-yellow-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Archive size={14} />
                   Archive ({selectedSessions.size})
@@ -629,7 +629,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkDelete}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={14} />
                   Delete ({selectedSessions.size})
@@ -761,19 +761,19 @@ export default function SessionsFilter() {
                           </span>
                         )}
                         {isMuted && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-warning border border-warning-border rounded-full text-xs">
                             <BellOff size={14} />
                             Muted
                           </span>
                         )}
                         {isSnoozeExpired && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-full text-xs animate-pulse">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-error-subtle text-error border border-error-border rounded-full text-xs animate-pulse">
                             <AlertCircle size={14} />
                             Reminder
                           </span>
                         )}
                         {isSnoozed && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-info-subtle text-info border border-info-border rounded-full text-xs">
                             <Moon size={14} />
                             Snoozed
                           </span>
@@ -830,7 +830,7 @@ export default function SessionsFilter() {
                           e.stopPropagation();
                           setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isSnoozed ? 'text-blue-400' : ''} ${isSnoozeExpired ? 'text-red-400 animate-pulse' : ''}`}
+                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                         title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
                       >
                         {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
@@ -840,7 +840,7 @@ export default function SessionsFilter() {
                           e.stopPropagation();
                           setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isMuted ? 'text-yellow-400' : ''}`}
+                        className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                         title="Notification settings"
                       >
                         {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
@@ -918,19 +918,19 @@ export default function SessionsFilter() {
                             <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-warning border border-warning-border rounded-full text-xs">
                                 <BellOff size={14} />
                                 Muted
                               </span>
                             )}
                             {isSnoozeExpired && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/10 text-red-400 border border-red-500/30 rounded-full text-xs animate-pulse">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-error-subtle text-error border border-error-border rounded-full text-xs animate-pulse">
                                 <AlertCircle size={14} />
                                 Reminder
                               </span>
                             )}
                             {isSnoozed && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-info-subtle text-info border border-info-border rounded-full text-xs">
                                 <Moon size={14} />
                                 Snoozed
                               </span>
@@ -987,7 +987,7 @@ export default function SessionsFilter() {
                               e.stopPropagation();
                               setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isSnoozed ? 'text-blue-400' : ''} ${isSnoozeExpired ? 'text-red-400 animate-pulse' : ''}`}
+                            className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                             title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
                           >
                             {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
@@ -997,7 +997,7 @@ export default function SessionsFilter() {
                               e.stopPropagation();
                               setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isMuted ? 'text-yellow-400' : ''}`}
+                            className={`p-2 hover:bg-clawd-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                             title="Notification settings"
                           >
                             {isMuted ? <BellOff size={14} /> : <Bell size={14} />}

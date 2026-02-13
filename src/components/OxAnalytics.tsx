@@ -150,7 +150,7 @@ export default function OxAnalytics() {
               <div key={task.id} className="flex items-center gap-3 text-sm">
                 <div className={`w-2 h-2 rounded-full ${
                   task.status === 'done' ? 'bg-green-500' :
-                  task.status === 'in-progress' ? 'bg-amber-500' : 'bg-slate-500'
+                  task.status === 'in-progress' ? 'bg-warning' : 'bg-slate-500'
                 }`} />
                 <span className="flex-1 text-slate-300 truncate">{task.title}</span>
                 <span className="text-xs text-slate-500 capitalize">{task.status}</span>
