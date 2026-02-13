@@ -98,3 +98,14 @@
 .writing-editor .ProseMirror:focus {
   outline: none;
 }
+
+/* Selection highlight for blurred editor (TipTap Selection extension) */
+.writing-editor .ProseMirror .selection {
+  background-color: rgba(34, 197, 94, 0.15);
+  border-radius: 2px;
+}
+
+/* Resizable panel separator */
+[data-panel-group-id] [data-resize-handle] {
+  transition: background-color 150ms ease;
+}
