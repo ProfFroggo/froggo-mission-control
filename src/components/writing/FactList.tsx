@@ -1,6 +1,8 @@
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { useEffect } from 'react';
+import { Pencil, Trash2, Plus, Link2 } from 'lucide-react';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
+import { useResearchStore } from '../../store/researchStore';
 import FactForm from './FactForm';
 
 const statusBadge: Record<string, string> = {
@@ -20,6 +22,14 @@ const statusLabel: Record<string, string> = {
 export default function FactList() {
   const { facts, editingId, setEditingId, addFact, updateFact, deleteFact } = useMemoryStore();
   const { activeProjectId } = useWritingStore();
+  const { factSourceMap, loadAllFactLinks } = useResearchStore();
+
+  // Load linked source counts when facts change
+  useEffect(() => {
+    if (activeProjectId && facts.length > 0) {
+      loadAllFactLinks(activeProjectId, facts.map((f) => f.id));
+    }
+  }, [activeProjectId, facts, loadAllFactLinks]);
 
   if (!activeProjectId) return null;
 
@@ -56,6 +66,12 @@ export default function FactList() {
                   >
                     {statusLabel[fact.status] ?? '?'}
                   </span>
+                  {(factSourceMap[fact.id]?.length || 0) > 0 && (
+                    <span className="flex items-center gap-0.5 text-[9px] text-clawd-text-dim flex-shrink-0" title={`${factSourceMap[fact.id].length} linked source(s)`}>
+                      <Link2 size={9} />
+                      {factSourceMap[fact.id].length}
+                    </span>
+                  )}
                   <span className="text-[10px] text-clawd-text line-clamp-2">{fact.claim}</span>
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
