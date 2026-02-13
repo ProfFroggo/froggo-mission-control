@@ -1,11 +1,16 @@
 import { create } from 'zustand';
 
+export interface ParsedAlternative {
+  text: string;
+  commentary?: string;
+}
+
 interface FeedbackState {
   selectedAgent: string;       // 'writer' | 'researcher' | 'jess'
   instructions: string;
   streaming: boolean;
   streamContent: string;       // raw accumulated stream text
-  alternatives: string[];      // parsed alternatives (set on stream end)
+  alternatives: ParsedAlternative[];  // parsed alternatives (set on stream end)
   error: string | null;
   savedSelection: { from: number; to: number } | null;
 
@@ -13,7 +18,7 @@ interface FeedbackState {
   setInstructions: (text: string) => void;
   setStreaming: (streaming: boolean) => void;
   setStreamContent: (content: string) => void;
-  setAlternatives: (alts: string[]) => void;
+  setAlternatives: (alts: ParsedAlternative[]) => void;
   setError: (error: string | null) => void;
   setSavedSelection: (sel: { from: number; to: number } | null) => void;
   reset: () => void;
