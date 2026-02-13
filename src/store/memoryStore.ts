@@ -30,7 +30,7 @@ interface MemoryState {
   timeline: TimelineEvent[];
   facts: VerifiedFact[];
   loading: boolean;
-  activeTab: 'characters' | 'timeline' | 'facts';
+  activeTab: 'characters' | 'timeline' | 'facts' | 'sources';
   editingId: string | null;
 
   // Bulk load
@@ -38,7 +38,7 @@ interface MemoryState {
   clearMemory: () => void;
 
   // Tab / editing UI state
-  setActiveTab: (tab: 'characters' | 'timeline' | 'facts') => void;
+  setActiveTab: (tab: 'characters' | 'timeline' | 'facts' | 'sources') => void;
   setEditingId: (id: string | null) => void;
 
   // Characters

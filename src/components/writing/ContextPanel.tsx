@@ -1,13 +1,15 @@
-import { Loader2, Users, Clock, CheckCircle } from 'lucide-react';
+import { Loader2, Users, Clock, CheckCircle, BookMarked } from 'lucide-react';
 import { useMemoryStore } from '../../store/memoryStore';
 import CharacterList from './CharacterList';
 import TimelineList from './TimelineList';
 import FactList from './FactList';
+import SourceList from './SourceList';
 
 const tabs = [
   { key: 'characters' as const, label: 'Characters', icon: Users },
   { key: 'timeline' as const, label: 'Timeline', icon: Clock },
   { key: 'facts' as const, label: 'Facts', icon: CheckCircle },
+  { key: 'sources' as const, label: 'Sources', icon: BookMarked },
 ];
 
 export default function ContextPanel() {
@@ -44,6 +46,7 @@ export default function ContextPanel() {
             {activeTab === 'characters' && <CharacterList />}
             {activeTab === 'timeline' && <TimelineList />}
             {activeTab === 'facts' && <FactList />}
+            {activeTab === 'sources' && <SourceList />}
           </>
         )}
       </div>
