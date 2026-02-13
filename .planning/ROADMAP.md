@@ -3,7 +3,7 @@
 ## Milestones
 
 - [x] **v1.0 Dashboard Hardening** - Phases 1-4 (shipped 2026-02-12)
-- [ ] **v2.0 Writing System** - Phases 5-10 (in progress)
+- [x] **v2.0 Writing System** - Phases 5-10 (shipped 2026-02-13)
 
 ## Phases
 
@@ -55,7 +55,7 @@
 - [x] **Phase 7: Memory Store** - Characters, timeline, facts, context injection
 - [x] **Phase 8: Research Library** - Sources, fact-checking, Researcher agent
 - [x] **Phase 9: Outline & Versions** - Chapter navigation, drag-drop, diff comparison
-- [ ] **Phase 10: Jess Integration** - Emotional guidance, memoir-specific support
+- [x] **Phase 10: Jess Integration** - Emotional guidance, memoir-specific support
 
 ## Phase Details
 
@@ -142,10 +142,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can select Jess from the agent picker and receive emotionally attuned feedback specific to memoir writing (pacing, boundaries, tone)
   2. Jess feedback is contextually distinct from Writer feedback -- addresses emotional impact, not just prose quality
-**Plans**: 1 plan
+**Plans**: 1/1 complete
 
 Plans:
-- [ ] 10-01-PLAN.md -- Jess-specific prompt, commentary parsing, FeedbackAlternative commentary rendering
+- [x] 10-01-PLAN.md -- Jess-specific prompt, commentary parsing, FeedbackAlternative commentary rendering
 
 ## Progress
 
@@ -160,8 +160,8 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 | 7. Memory Store | v2.0 | 2/2 | Complete | 2026-02-12 |
 | 8. Research Library | v2.0 | 2/2 | Complete | 2026-02-13 |
 | 9. Outline & Versions | v2.0 | 2/2 | Complete | 2026-02-13 |
-| 10. Jess Integration | v2.0 | 0/1 | Not started | - |
+| 10. Jess Integration | v2.0 | 1/1 | Complete | 2026-02-13 |
 
 ---
 *Roadmap created: 2026-02-12*
-*Last updated: 2026-02-13 — Phase 9 complete*
+*Last updated: 2026-02-13 — Phase 10 complete, v2.0 milestone shipped*
