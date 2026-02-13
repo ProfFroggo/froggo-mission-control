@@ -624,6 +624,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
       get: (projectId: string) => ipcRenderer.invoke('writing:project:get', projectId),
       update: (projectId: string, updates: any) => ipcRenderer.invoke('writing:project:update', projectId, updates),
       delete: (projectId: string) => ipcRenderer.invoke('writing:project:delete', projectId),
+      createFromWizard: (wizardData: any) => ipcRenderer.invoke('writing:project:createFromWizard', wizardData),
     },
     chapter: {
       list: (projectId: string) => ipcRenderer.invoke('writing:chapter:list', projectId),
