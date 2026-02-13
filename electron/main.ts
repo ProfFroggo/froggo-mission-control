@@ -7668,7 +7668,7 @@ ipcMain.handle('x:research:propose', async (_, data: { title: string; descriptio
     const dateStr = new Date(now).toISOString().split('T')[0];
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
     const filename = `${dateStr}-${slug}.md`;
-    const filePath = path.join(homedir(), 'froggo', 'x-content', 'research', filename);
+    const filePath = path.join(os.homedir(), 'froggo', 'x-content', 'research', filename);
     
     const fileContent = `---
 id: ${id}
