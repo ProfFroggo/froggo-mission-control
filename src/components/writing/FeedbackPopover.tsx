@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Send, Loader2, ShieldCheck } from 'lucide-react';
 import { gateway } from '../../lib/gateway';
+import { buildMemoryContext } from '../../lib/writingContext';
 import { useWritingStore } from '../../store/writingStore';
 import { useFeedbackStore, type ParsedAlternative } from '../../store/feedbackStore';
 import { useMemoryStore } from '../../store/memoryStore';
@@ -16,40 +17,6 @@ interface FeedbackPopoverProps {
 function getSelectedText(editor: Editor): string {
   const { from, to } = editor.state.selection;
   return editor.state.doc.textBetween(from, to, ' ');
-}
-
-function buildMemoryContext(
-  characters: { name: string; relationship: string; description: string }[],
-  timeline: { date: string; description: string }[],
-  facts: { claim: string; source: string; status: string }[],
-): string {
-  const sections: string[] = [];
-
-  if (characters.length > 0) {
-    sections.push(
-      '### Characters',
-      ...characters.map((c) => `- **${c.name}** (${c.relationship}): ${c.description}`),
-    );
-  }
-
-  if (timeline.length > 0) {
-    sections.push(
-      '### Timeline',
-      ...timeline.map((t) => `- **${t.date}**: ${t.description}`),
-    );
-  }
-
-  if (facts.length > 0) {
-    const statusIcon: Record<string, string> = { verified: 'V', disputed: 'D', unverified: '?' };
-    sections.push(
-      '### Verified Facts',
-      ...facts.map((f) => `- [${statusIcon[f.status] ?? '?'}] ${f.claim} (source: ${f.source})`),
-    );
-  }
-
-  const result = sections.join('\n');
-  // Cap to ~2000 chars to avoid bloating prompt
-  return result.length > 2000 ? result.slice(0, 2000) + '\n...(truncated)' : result;
 }
 
 function responseFormat(agentId: string): string[] {
@@ -255,7 +222,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     setError(null);
     accumulatedRef.current = '';
 
-    const sessionKey = `agent:${selectedAgent}:writing:${activeProjectId}`;
+    const sessionKey = `agent:${selectedAgent}:writing:${activeProjectId}:feedback`;
     const memoryContext = buildMemoryContext(characters, timeline, facts);
     const prompt = buildPrompt(
       selectedText,
@@ -320,7 +287,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
     setError(null);
     accumulatedRef.current = '';
 
-    const sessionKey = `agent:researcher:writing:${activeProjectId}`;
+    const sessionKey = `agent:researcher:writing:${activeProjectId}:feedback`;
     const prompt = buildFactCheckPrompt(claim, activeChapterContent, sources, facts);
 
     try {

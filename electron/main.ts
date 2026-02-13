@@ -18,12 +18,15 @@ import { registerWritingFeedbackHandlers } from './writing-feedback-service';
 import { registerWritingMemoryHandlers } from './writing-memory-service';
 import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-research-service';
 import { registerWritingVersionHandlers } from './writing-version-service';
+import { registerWritingChatHandlers } from './writing-chat-service';
+import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
 import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
 import { validateFsPath } from './fs-validation';
+import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
 import {
   PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
   REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
@@ -391,6 +394,12 @@ function createWindow() {
   // Register Writing Version handlers
   registerWritingVersionHandlers();
 
+  // Register Writing Chat handlers
+  registerWritingChatHandlers();
+
+  // Writing wizard state persistence
+  registerWritingWizardHandlers();
+
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
     mainWindow.loadURL('http://localhost:5173');
@@ -751,6 +760,11 @@ app.whenReady().then(() => {
   // Initialize persistent dashboard agent sessions
   initializeDashboardAgents().catch(err => {
     safeLog.error('[Main] Failed to initialize dashboard agents:', err);
+  });
+
+  // Initialize Finance Agent Bridge
+  initializeFinanceAgentBridge().catch(err => {
+    safeLog.error('[Main] Failed to initialize Finance Agent Bridge:', err);
   });
 
   // Check for updates (prod only, non-blocking)
@@ -7472,6 +7486,11 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
   }
 });
 // ============== FINANCE MODULE ==============
+const execPromise = (cmd: string, opts?: { timeout?: number }) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  return promisify(exec)(cmd, opts);
+};
 
 ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
   try {
@@ -7511,6 +7530,16 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: stri
     fs.unlinkSync(tmpPath);
     
     const uploadResult = JSON.parse(result.stdout);
+    
+    // Trigger AI analysis in background (don't block response)
+    if (uploadResult.imported > 0) {
+      safeLog.info(`[Finance] Triggering AI analysis for ${uploadResult.imported} new transactions`);
+      const bridge = getFinanceAgentBridge();
+      bridge.triggerAnalysis('csv_upload').catch(err => {
+        safeLog.error('[Finance] AI analysis failed:', err.message);
+      });
+    }
+    
     return { 
       success: true, 
       imported: uploadResult.imported || 0,
@@ -7543,5 +7572,79 @@ ipcMain.handle('finance:getInsights', async () => {
   } catch (error: any) {
     safeLog.error('[Finance] Get insights error:', error.message);
     return { success: false, insights: [], error: error.message };
+  }
+});
+
+ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
+  try {
+    const stmt = prepare(`
+      UPDATE finance_ai_insights 
+      SET dismissed = 1, dismissed_at = ? 
+      WHERE id = ?
+    `);
+    stmt.run(Date.now(), insightId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Finance] Dismiss insight error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ── Finance Agent Communication ──
+
+ipcMain.handle('financeAgent:sendMessage', async (_, message: string, context?: any) => {
+  try {
+    safeLog.log('[FinanceAgent] Sending message to Finance Manager:', message.substring(0, 100));
+    const bridge = getFinanceAgentBridge();
+    const response = await bridge.sendMessage(message, context);
+    return response;
+  } catch (error: any) {
+    safeLog.error('[FinanceAgent] Send message error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('financeAgent:getChatHistory', async () => {
+  try {
+    const bridge = getFinanceAgentBridge();
+    const history = bridge.getChatHistory();
+    return { success: true, messages: history };
+  } catch (error: any) {
+    safeLog.error('[FinanceAgent] Get chat history error:', error.message);
+    return { success: false, messages: [], error: error.message };
+  }
+});
+
+ipcMain.handle('financeAgent:clearHistory', async () => {
+  try {
+    const bridge = getFinanceAgentBridge();
+    await bridge.clearChatHistory();
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[FinanceAgent] Clear history error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('financeAgent:triggerAnalysis', async (_, analysisType?: 'csv_upload' | 'manual') => {
+  try {
+    safeLog.log('[FinanceAgent] Triggering analysis:', analysisType || 'manual');
+    const bridge = getFinanceAgentBridge();
+    const response = await bridge.triggerAnalysis(analysisType);
+    return response;
+  } catch (error: any) {
+    safeLog.error('[FinanceAgent] Trigger analysis error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('financeAgent:getStatus', async () => {
+  try {
+    const bridge = getFinanceAgentBridge();
+    const status = bridge.getStatus();
+    return { success: true, status };
+  } catch (error: any) {
+    safeLog.error('[FinanceAgent] Get status error:', error.message);
+    return { success: false, error: error.message };
   }
 });

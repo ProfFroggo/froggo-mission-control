@@ -1,0 +1,280 @@
+import { useState, useEffect, useRef } from 'react';
+import { Send, Loader2, X, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
+import { showToast } from './Toast';
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'agent';
+  content: string;
+  timestamp: number;
+  context?: any;
+}
+
+interface FinanceAgentChatProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgentChatProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadChatHistory();
+      inputRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const loadChatHistory = async () => {
+    try {
+      setInitializing(true);
+      const result = await (window as any).clawdbot?.financeAgent?.getChatHistory();
+      
+      if (result?.success) {
+        setMessages(result.messages || []);
+      } else {
+        console.error('[FinanceChat] Error loading history:', result?.error);
+      }
+    } catch (error) {
+      console.error('[FinanceChat] Load history error:', error);
+    } finally {
+      setInitializing(false);
+    }
+  };
+
+  const sendMessage = async () => {
+    const message = inputMessage.trim();
+    if (!message || loading) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Add user message immediately for UX
+      const userMessage: ChatMessage = {
+        id: `msg-${Date.now()}-user`,
+        role: 'user',
+        content: message,
+        timestamp: Date.now()
+      };
+      setMessages(prev => [...prev, userMessage]);
+      setInputMessage('');
+
+      // Send to agent
+      const result = await (window as any).clawdbot?.financeAgent?.sendMessage(message);
+      
+      if (result?.success && result.message) {
+        // Add agent response
+        const agentMessage: ChatMessage = {
+          id: `msg-${Date.now()}-agent`,
+          role: 'agent',
+          content: result.message,
+          timestamp: Date.now()
+        };
+        setMessages(prev => [...prev, agentMessage]);
+      } else {
+        throw new Error(result?.error || 'Failed to get response from Finance Manager');
+      }
+    } catch (error: any) {
+      console.error('[FinanceChat] Send message error:', error);
+      setError(error.message || 'Failed to send message');
+      showToast('error', 'Failed to send message to Finance Manager');
+    } finally {
+      setLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const clearHistory = async () => {
+    if (!confirm('Clear all chat history? This cannot be undone.')) return;
+
+    try {
+      const result = await (window as any).clawdbot?.financeAgent?.clearHistory();
+      if (result?.success) {
+        setMessages([]);
+        showToast('success', 'Chat history cleared');
+      } else {
+        throw new Error(result?.error || 'Failed to clear history');
+      }
+    } catch (error: any) {
+      console.error('[FinanceChat] Clear history error:', error);
+      showToast('error', 'Failed to clear chat history');
+    }
+  };
+
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    
+    if (isToday) {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="flex flex-col h-full bg-gray-900 border-l border-gray-700">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-green-400" />
+          <h3 className="text-lg font-semibold text-white">Finance Manager</h3>
+          <span className="px-2 py-0.5 text-xs bg-green-500/20 text-green-400 rounded-full">AI</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <button
+              onClick={clearHistory}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              title="Clear chat history"
+            >
+              <Trash2 className="w-4 h-4 text-gray-400" />
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {initializing ? (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />
+            <span>Loading chat...</span>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-3">
+            <MessageSquare className="w-12 h-12 text-gray-600" />
+            <div>
+              <p className="font-medium text-gray-300">Start a conversation</p>
+              <p className="text-sm mt-1">Ask the Finance Manager about your finances</p>
+            </div>
+            <div className="mt-4 p-3 bg-gray-800 rounded-lg text-xs text-left space-y-1 max-w-xs">
+              <p className="text-gray-300 font-medium">Try asking:</p>
+              <p className="text-gray-400">"How much did I spend this month?"</p>
+              <p className="text-gray-400">"Show me my biggest expenses"</p>
+              <p className="text-gray-400">"Am I on track with my budget?"</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    msg.role === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800 text-gray-100'
+                  }`}
+                >
+                  <div className="text-sm whitespace-pre-wrap break-words">
+                    {msg.content}
+                  </div>
+                  <div
+                    className={`text-xs mt-1 ${
+                      msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
+                    }`}
+                  >
+                    {formatTimestamp(msg.timestamp)}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] rounded-lg p-3 bg-gray-800 text-gray-100">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Finance Manager is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="mx-4 mb-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm text-red-300">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-xs text-red-400 hover:text-red-300 mt-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="p-4 border-t border-gray-700">
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask about your finances..."
+            className="flex-1 bg-gray-800 text-white placeholder-gray-400 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading || initializing}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!inputMessage.trim() || loading || initializing}
+            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Press Enter to send • Shift+Enter for new line
+        </p>
+      </div>
+    </div>
+  );
+}

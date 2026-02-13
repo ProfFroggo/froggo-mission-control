@@ -13,14 +13,14 @@
 import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import { WRITING_PROJECTS_DIR, writingProjectPath, writingChapterPath } from './paths';
+import { WRITING_PROJECTS_DIR, writingProjectPath, writingChapterPath, writingMemoryPath } from './paths';
 
 // ── Types ──
 
 interface ProjectMeta {
   id: string;
   title: string;
-  type: 'memoir' | 'novel';
+  type: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -129,7 +129,7 @@ async function listProjects() {
   }
 }
 
-async function createProject(title: string, type: 'memoir' | 'novel') {
+async function createProject(title: string, type: string) {
   try {
     const id = generateProjectId();
     const projectDir = writingProjectPath(id);
@@ -147,6 +147,101 @@ async function createProject(title: string, type: 'memoir' | 'novel') {
     return { success: true, project: meta };
   } catch (e: any) {
     console.error('[writing] createProject error:', e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+async function createProjectFromWizard(wizardData: {
+  title: string;
+  type: string;
+  genre: string;
+  premise: string;
+  themes: string[];
+  storyArc: string;
+  chapters: { title: string; synopsis: string }[];
+  characters: { name: string; role: string; description: string; traits: string[] }[];
+  timeline: { date: string; description: string }[];
+}) {
+  const id = generateProjectId();
+  const projectDir = writingProjectPath(id);
+  const now = new Date().toISOString();
+
+  try {
+    // Create directory structure
+    await ensureDir(projectDir);
+    await ensureDir(path.join(projectDir, 'chapters'));
+    await ensureDir(path.join(projectDir, 'memory'));
+    await ensureDir(path.join(projectDir, 'versions'));
+
+    // Write project.json with extended metadata
+    const meta: ProjectMeta & Record<string, unknown> = {
+      id,
+      title: wizardData.title,
+      type: wizardData.type,
+      genre: wizardData.genre,
+      premise: wizardData.premise,
+      themes: wizardData.themes,
+      storyArc: wizardData.storyArc,
+      wizardComplete: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await writeJson(path.join(projectDir, 'project.json'), meta);
+
+    // Write chapters.json and empty chapter markdown files
+    const chapters = wizardData.chapters.map((ch, i) => {
+      const position = i + 1;
+      const paddedPos = String(position).padStart(2, '0');
+      const filename = `${paddedPos}-${slugify(ch.title)}.md`;
+      return {
+        id: generateChapterId(),
+        title: ch.title,
+        filename,
+        position,
+        synopsis: ch.synopsis,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+    await writeJson(path.join(projectDir, 'chapters.json'), chapters);
+    for (const ch of chapters) {
+      await fs.promises.writeFile(writingChapterPath(id, ch.filename), '', 'utf-8');
+    }
+
+    // Write characters.json into memory/
+    const characters = wizardData.characters.map((c) => ({
+      id: `char-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      name: c.name,
+      relationship: c.role,
+      description: c.description,
+      traits: c.traits,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    await writeJson(writingMemoryPath(id, 'characters.json'), characters);
+
+    // Write timeline.json into memory/
+    const timeline = wizardData.timeline.map((t, i) => ({
+      id: `evt-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 8)}`,
+      date: t.date,
+      description: t.description,
+      chapterRefs: [] as string[],
+      position: i,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    await writeJson(writingMemoryPath(id, 'timeline.json'), timeline);
+
+    console.log(`[writing] Created wizard project: ${id} (${chapters.length} chapters, ${characters.length} chars, ${timeline.length} events)`);
+    return { success: true, project: meta };
+  } catch (e: any) {
+    // Rollback: clean up partial project directory
+    try {
+      await fs.promises.rm(projectDir, { recursive: true, force: true });
+    } catch {
+      // best-effort rollback
+    }
+    console.error('[writing] createProjectFromWizard error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -188,7 +283,7 @@ async function updateProject(projectId: string, updates: { title?: string; type?
     const meta = await readJson<ProjectMeta>(projectJsonPath);
 
     if (updates.title !== undefined) meta.title = updates.title;
-    if (updates.type !== undefined) meta.type = updates.type as 'memoir' | 'novel';
+    if (updates.type !== undefined) meta.type = updates.type;
     meta.updatedAt = new Date().toISOString();
 
     await writeJson(projectJsonPath, meta);
@@ -489,7 +584,9 @@ async function deleteChapter(projectId: string, chapterId: string) {
 export function registerWritingProjectHandlers() {
   ipcMain.handle('writing:project:list', async () => listProjects());
   ipcMain.handle('writing:project:create', async (_, title: string, type: string) =>
-    createProject(title, type as 'memoir' | 'novel'));
+    createProject(title, type));
+  ipcMain.handle('writing:project:createFromWizard', async (_, wizardData) =>
+    createProjectFromWizard(wizardData));
   ipcMain.handle('writing:project:get', async (_, projectId: string) => getProject(projectId));
   ipcMain.handle('writing:project:update', async (_, projectId: string, updates: any) =>
     updateProject(projectId, updates));
