@@ -7472,6 +7472,11 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
   }
 });
 // ============== FINANCE MODULE ==============
+const execPromise = (cmd: string, opts?: { timeout?: number }) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  return promisify(exec)(cmd, opts);
+};
 
 ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
   try {
