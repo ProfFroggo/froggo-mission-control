@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters -- then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
-**Current focus:** Phase 11 complete - Chat Pane + 3-Pane Layout
+**Current focus:** Phase 12 - Setup Wizard
 
 ## Current Position
 
-Phase: 11 of 12 (Chat Pane + 3-Pane Layout)
-Plan: 04 of 04 (Session Keys, Copy/Retry, Collapse Persistence)
-Status: Phase complete
-Last activity: 2026-02-13 -- Completed 11-04-PLAN.md
+Phase: 12 of 12 (Setup Wizard)
+Plan: -- (not yet planned)
+Status: Ready to plan
+Last activity: 2026-02-13 -- Phase 11 verified and complete
 
-Progress: [####################################] 4/4 plans complete
+Progress: [############################........] 15/26 v2.1 reqs complete
 
 ## Performance Metrics
 
