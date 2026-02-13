@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useMemoryStore } from './memoryStore';
+import { useResearchStore } from './researchStore';
 
 export interface WritingProject {
   id: string;
@@ -153,6 +154,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       chapterDirty: false,
     });
     useMemoryStore.getState().clearMemory();
+    useResearchStore.getState().clearSources();
   },
 
   // ── Chapter actions ──────────────────────────────────────
