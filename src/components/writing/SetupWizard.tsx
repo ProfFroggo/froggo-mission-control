@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Wand2, X, ArrowRight, BookOpen, BookText, Type, Loader2, CheckCircle, Sparkles } from 'lucide-react';
 import { useWizardStore } from '../../store/wizardStore';
 import { getWizardAgent } from '../../lib/wizardPrompts';
 import WizardChat from './WizardChat';
 import WizardReview from './WizardReview';
+import WizardPlanPreview from './WizardPlanPreview';
 
 export default function SetupWizard() {
   const {
@@ -15,6 +16,8 @@ export default function SetupWizard() {
     setSelectedAgent,
     cancelWizard,
     messages,
+    plan,
+    reset,
   } = useWizardStore();
 
   const [customType, setCustomType] = useState('');
@@ -37,6 +40,14 @@ export default function SetupWizard() {
     if (!brainDump.trim()) return;
     setStep('conversation');
   };
+
+  // Auto-redirect on completion
+  useEffect(() => {
+    if (step === 'complete') {
+      const timer = setTimeout(() => reset(), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [step, reset]);
 
   // -- braindump step --
   if (step === 'braindump') {
@@ -170,9 +181,16 @@ export default function SetupWizard() {
           </div>
         </div>
 
-        {/* Chat area */}
-        <div className="flex-1 min-h-0">
-          <WizardChat />
+        {/* Chat + optional plan preview sidebar */}
+        <div className="flex-1 min-h-0 flex">
+          <div className="flex-1 min-h-0">
+            <WizardChat />
+          </div>
+          {plan && (
+            <div className="w-[280px] flex-shrink-0 border-l border-clawd-border overflow-y-auto p-2">
+              <WizardPlanPreview />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -189,7 +207,7 @@ export default function SetupWizard() {
       <div className="h-full flex items-center justify-center bg-clawd-bg">
         <div className="text-center p-8">
           <Loader2 size={32} className="mx-auto text-clawd-accent animate-spin mb-4" />
-          <p className="text-clawd-text text-sm font-medium">Creating project...</p>
+          <p className="text-clawd-text text-sm font-medium">Creating your project...</p>
         </div>
       </div>
     );
