@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 12 of 12 (Setup Wizard)
-Plan: 01 of 04 complete
+Plan: 02 of 04 complete
 Status: In progress
-Last activity: 2026-02-13 -- Completed 12-01-PLAN.md
+Last activity: 2026-02-13 -- Completed 12-02-PLAN.md
 
-Progress: [#############################.......] 16/26 v2.1 reqs complete
+Progress: [##############################......] 17/26 v2.1 reqs complete
 
 ## Performance Metrics
 
@@ -68,6 +68,9 @@ v2.1 decisions:
 - Retry removes assistant + preceding user message and prefills input
 - ProjectMeta.type and WritingProject.type changed from union to string for genre flexibility (WIZARD-11)
 - Wizard state stored in _wizard-state/{sessionId}/ under WRITING_PROJECTS_DIR
+- WizardChat uses inline textarea (no agent picker) since agent is chosen in braindump step
+- Generate Plan requires minimum 2 messages before enabling
+- Separate gateway session keys: wizard (conversation) vs wizard-extract (extraction)
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ v2.1 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-13T03:49:12Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-02-13T03:58:03Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
