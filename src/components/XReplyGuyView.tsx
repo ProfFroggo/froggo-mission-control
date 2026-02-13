@@ -131,7 +131,7 @@ export const XReplyGuyView: React.FC = () => {
             <div className="text-sm text-gray-500">{mention.author_name}</div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 text-xs font-medium text-warning bg-orange-100 px-2 py-1 rounded">
               <TrendingUp size={12} />
               {engagementScore}
             </div>
@@ -158,7 +158,7 @@ export const XReplyGuyView: React.FC = () => {
             href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
+            className="text-info hover:underline"
           >
             View on X →
           </a>
@@ -190,7 +190,7 @@ export const XReplyGuyView: React.FC = () => {
                     className="rounded"
                   />
                   <span className="flex items-center gap-1">
-                    <Zap size={12} className="text-orange-500" />
+                    <Zap size={12} className="text-warning" />
                     Fast-track (skip approval)
                   </span>
                 </label>
@@ -218,7 +218,7 @@ export const XReplyGuyView: React.FC = () => {
             </div>
             
             {fastTrack && (
-              <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded flex items-center gap-1">
+              <div className="text-xs text-warning bg-orange-50 p-2 rounded flex items-center gap-1">
                 <Zap size={12} />
                 Fast-track enabled: Draft will be auto-approved and ready to post immediately
               </div>
@@ -243,7 +243,7 @@ export const XReplyGuyView: React.FC = () => {
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <TrendingUp className="text-orange-500" size={20} />
+            <TrendingUp className="text-warning" size={20} />
             <div className="text-lg font-semibold text-gray-900">Reply Guy</div>
           </div>
           <button
