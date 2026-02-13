@@ -129,11 +129,11 @@ Plans:
   1. User can see the project outline as a collapsible chapter tree and reorder chapters via drag-and-drop
   2. User can save a version snapshot of a chapter before a major edit
   3. User can view previous versions and restore one, with a diff comparison showing what changed between versions
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md -- DnD chapter reordering + collapsible outline sidebar
+- [ ] 09-02-PLAN.md -- Version snapshots, restore, diff comparison
 
 ### Phase 10: Jess Integration
 **Goal**: User can get emotional and memoir-specific guidance from Jess when writing sensitive content
@@ -159,7 +159,7 @@ Phases execute in numeric order: 5 -> 5.1 -> 5.2 -> 6 -> ... -> 10
 | 6. Inline Feedback | v2.0 | 2/2 | Complete | 2026-02-12 |
 | 7. Memory Store | v2.0 | 2/2 | Complete | 2026-02-12 |
 | 8. Research Library | v2.0 | 2/2 | Complete | 2026-02-13 |
-| 9. Outline & Versions | v2.0 | 0/2 | Not started | - |
+| 9. Outline & Versions | v2.0 | 0/2 | Planned | - |
 | 10. Jess Integration | v2.0 | 0/1 | Not started | - |
 
 ---
