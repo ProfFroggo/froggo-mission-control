@@ -50,11 +50,11 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 
 ### Research Library
 
-- [ ] **RES-01**: User can add research sources (title, author, type, URL, notes)
-- [ ] **RES-02**: User can link sources to specific facts in the memory store
-- [ ] **RES-03**: User can mark facts as verified/disputed/needs-source
-- [ ] **RES-04**: Research data stored in per-project SQLite database
-- [ ] **RES-05**: Researcher agent can be asked to fact-check highlighted claims
+- [x] **RES-01**: User can add research sources (title, author, type, URL, notes)
+- [x] **RES-02**: User can link sources to specific facts in the memory store
+- [x] **RES-03**: User can mark facts as verified/disputed/needs-source
+- [x] **RES-04**: Research data stored in per-project SQLite database
+- [x] **RES-05**: Researcher agent can be asked to fact-check highlighted claims
 
 ### Outline & Versions
 
@@ -67,7 +67,7 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 ### Agent Integration
 
 - [x] **AGENT-01**: Writer agent provides style, pacing, and narrative feedback
-- [ ] **AGENT-02**: Researcher agent provides fact-checking and source verification
+- [x] **AGENT-02**: Researcher agent provides fact-checking and source verification
 - [ ] **AGENT-03**: Jess agent provides emotional guidance and memoir-specific support
 - [x] **AGENT-04**: Each agent has project-scoped sessions (context persists within project)
 - [x] **AGENT-05**: Agent communication uses existing OpenClaw Gateway WebSocket
@@ -134,18 +134,18 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | MEM-04 | Phase 7 | Complete |
 | MEM-05 | Phase 7 | Complete |
 | MEM-06 | Phase 7 | Complete |
-| RES-01 | Phase 8 | Pending |
-| RES-02 | Phase 8 | Pending |
-| RES-03 | Phase 8 | Pending |
-| RES-04 | Phase 8 | Pending |
-| RES-05 | Phase 8 | Pending |
+| RES-01 | Phase 8 | Complete |
+| RES-02 | Phase 8 | Complete |
+| RES-03 | Phase 8 | Complete |
+| RES-04 | Phase 8 | Complete |
+| RES-05 | Phase 8 | Complete |
 | OUT-01 | Phase 9 | Pending |
 | OUT-02 | Phase 9 | Pending |
 | OUT-03 | Phase 9 | Pending |
 | OUT-04 | Phase 9 | Pending |
 | OUT-05 | Phase 9 | Pending |
 | AGENT-01 | Phase 6 | Complete |
-| AGENT-02 | Phase 8 | Pending |
+| AGENT-02 | Phase 8 | Complete |
 | AGENT-03 | Phase 10 | Pending |
 | AGENT-04 | Phase 6 | Complete |
 | AGENT-05 | Phase 6 | Complete |
@@ -157,4 +157,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-12 — Phase 7 requirements complete*
+*Last updated: 2026-02-13 — Phase 8 requirements complete*
