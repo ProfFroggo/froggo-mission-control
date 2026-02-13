@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 11 of 12 (Chat Pane + 3-Pane Layout)
-Plan: -- (not yet planned)
-Status: Ready to plan
-Last activity: 2026-02-13 -- Roadmap created for v2.1
+Plan: 01 of 04 (Data Layer)
+Status: In progress
+Last activity: 2026-02-13 -- Completed 11-01-PLAN.md
 
-Progress: [########################..........] 24/26 reqs mapped, 0 plans complete
+Progress: [#########################.........] 1/4 plans complete
 
 ## Performance Metrics
 
@@ -55,6 +55,9 @@ v2.1 decisions:
 - pendingInsert in writingStore for chat-to-editor communication
 - Chat history persisted to disk per project
 - Wizard state persisted to wizard-state.json for resume-on-restart
+- ChatMessage timestamp uses numeric Date.now() (consistent with feedbackStore)
+- writingContext.ts functions are pure (no hooks/store) for cross-component reuse
+- JSONL append-only format for chat history (matches feedback log pattern)
 
 ### Pending Todos
 
@@ -66,6 +69,6 @@ v2.1 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: Roadmap created for v2.1
+Last session: 2026-02-13T03:06:08Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
