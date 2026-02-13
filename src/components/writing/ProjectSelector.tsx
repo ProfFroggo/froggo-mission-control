@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWritingStore, WritingProject } from '../../store/writingStore';
-import { Plus, BookOpen, BookText, Trash2, X } from 'lucide-react';
+import { useWizardStore } from '../../store/wizardStore';
+import { Plus, BookOpen, BookText, Trash2, X, Wand2 } from 'lucide-react';
 
 function relativeTime(ts: number): string {
   const now = Date.now();
@@ -25,6 +26,8 @@ export default function ProjectSelector() {
     deleteProject,
     openProject,
   } = useWritingStore();
+
+  const { startWizard } = useWizardStore();
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -61,13 +64,22 @@ export default function ProjectSelector() {
               {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors"
-          >
-            {showForm ? <X size={16} /> : <Plus size={16} />}
-            {showForm ? 'Cancel' : 'New Project'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={startWizard}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors"
+            >
+              <Wand2 size={16} />
+              Plan with AI
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-clawd-border text-clawd-text-dim text-sm font-medium hover:border-clawd-accent transition-colors"
+            >
+              {showForm ? <X size={16} /> : <Plus size={16} />}
+              {showForm ? 'Cancel' : 'New Project'}
+            </button>
+          </div>
         </div>
 
         {/* Create form */}

@@ -5,7 +5,7 @@ import { useResearchStore } from './researchStore';
 export interface WritingProject {
   id: string;
   title: string;
-  type: 'memoir' | 'novel';
+  type: string;
   chapterCount: number;
   wordCount: number;
   createdAt: number;
@@ -20,6 +20,12 @@ export interface WritingChapter {
   wordCount: number;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface PendingInsert {
+  content: string;
+  mode: 'append' | 'cursor' | 'replace';
+  sourceMessageId?: string;
 }
 
 interface WritingState {
@@ -37,9 +43,14 @@ interface WritingState {
   chapterLoading: boolean;
   chapterDirty: boolean;
 
+  // Pending insert (chat-to-editor bridge)
+  pendingInsert: PendingInsert | null;
+  setPendingInsert: (insert: PendingInsert) => void;
+  clearPendingInsert: () => void;
+
   // Actions
   loadProjects: () => Promise<void>;
-  createProject: (title: string, type: 'memoir' | 'novel') => Promise<string | null>;
+  createProject: (title: string, type: string) => Promise<string | null>;
   deleteProject: (projectId: string) => Promise<void>;
   openProject: (projectId: string) => Promise<void>;
   closeProject: () => void;
@@ -68,6 +79,10 @@ export const useWritingStore = create<WritingState>((set, get) => ({
   activeChapterContent: null,
   chapterLoading: false,
   chapterDirty: false,
+  pendingInsert: null,
+
+  setPendingInsert: (insert) => set({ pendingInsert: insert }),
+  clearPendingInsert: () => set({ pendingInsert: null }),
 
   // ── Project actions ──────────────────────────────────────
 
@@ -90,7 +105,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       const result = await bridge()?.project?.create(title, type);
       if (result?.success) {
         await get().loadProjects();
-        return result.projectId || null;
+        return result.project?.id || null;
       }
     } catch (err) {
       console.error('[writingStore] createProject failed:', err);
@@ -197,7 +212,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       if (result?.success) {
         // Refresh the active project to get updated chapter list
         await get().openProject(activeProjectId);
-        return result.chapterId || null;
+        return result.chapter?.id || null;
       }
     } catch (err) {
       console.error('[writingStore] createChapter failed:', err);

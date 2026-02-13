@@ -609,6 +609,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
     getInsights: () => ipcRenderer.invoke('finance:getInsights'),
   },
+  financeAgent: {
+    sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),
+    getChatHistory: () => ipcRenderer.invoke('financeAgent:getChatHistory'),
+    clearHistory: () => ipcRenderer.invoke('financeAgent:clearHistory'),
+    triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => ipcRenderer.invoke('financeAgent:triggerAnalysis', analysisType),
+    getStatus: () => ipcRenderer.invoke('financeAgent:getStatus'),
+  },
   // Writing Module
   writing: {
     project: {
@@ -617,6 +624,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
       get: (projectId: string) => ipcRenderer.invoke('writing:project:get', projectId),
       update: (projectId: string, updates: any) => ipcRenderer.invoke('writing:project:update', projectId, updates),
       delete: (projectId: string) => ipcRenderer.invoke('writing:project:delete', projectId),
+      createFromWizard: (wizardData: any) => ipcRenderer.invoke('writing:project:createFromWizard', wizardData),
     },
     chapter: {
       list: (projectId: string) => ipcRenderer.invoke('writing:chapter:list', projectId),
@@ -675,6 +683,17 @@ contextBridge.exposeInMainWorld('clawdbot', {
       restore: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:restore', projectId, chapterId, versionId),
       diff: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:diff', projectId, chapterId, versionId),
       delete: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:delete', projectId, chapterId, versionId),
+    },
+    chat: {
+      loadHistory: (projectId: string) => ipcRenderer.invoke('writing:chat:loadHistory', projectId),
+      appendMessage: (projectId: string, message: any) => ipcRenderer.invoke('writing:chat:appendMessage', projectId, message),
+      clearHistory: (projectId: string) => ipcRenderer.invoke('writing:chat:clearHistory', projectId),
+    },
+    wizard: {
+      save: (sessionId: string, state: any) => ipcRenderer.invoke('writing:wizard:save', sessionId, state),
+      load: (sessionId: string) => ipcRenderer.invoke('writing:wizard:load', sessionId),
+      list: () => ipcRenderer.invoke('writing:wizard:list'),
+      delete: (sessionId: string) => ipcRenderer.invoke('writing:wizard:delete', sessionId),
     },
   },
 });
