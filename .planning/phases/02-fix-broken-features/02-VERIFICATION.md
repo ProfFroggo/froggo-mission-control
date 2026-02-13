@@ -18,7 +18,7 @@ score: 5/5 must-haves verified
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Agent panel, session list, and token analytics show live data from ~/clawd/data/froggo.db and ~/.openclaw/ | ✓ VERIFIED | database.ts uses correct paths: `~/clawd/data/froggo.db`, `~/.openclaw/sessions.db` with `.clawdbot/` legacy fallback. All API key reads use `~/.openclaw/` (elevenlabs.env, anthropic.key, openai.key at lines 896, 4134, 4180). Comments confirm FIX-01 path corrections in connected-accounts-service.ts and main.ts. |
+| 1 | Agent panel, session list, and token analytics show live data from ~/froggo/data/froggo.db and ~/.openclaw/ | ✓ VERIFIED | database.ts uses correct paths: `~/froggo/data/froggo.db`, `~/.openclaw/sessions.db` with `.clawdbot/` legacy fallback. All API key reads use `~/.openclaw/` (elevenlabs.env, anthropic.key, openai.key at lines 896, 4134, 4180). Comments confirm FIX-01 path corrections in connected-accounts-service.ts and main.ts. |
 | 2 | Spawning an agent from the Kanban board triggers openclaw CLI (not deleted script) | ✓ VERIFIED | `agents:spawnForTask` handler at line 6399-6424 calls `openclaw agent --agent "${agentId}" --message "Task assigned: ${taskId}" --json`. Zero references to `spawn-agent-with-retry.py` in active code (only in .planning/ and .before-cleanup backup). |
 | 3 | Dashboard active-work widget renders in correct grid position | ✓ VERIFIED | Dashboard.tsx line 71: `{ i: 'active-work', x: 0, y: 9, w: 8, h: 8 }` uses correct `i:` key for react-grid-layout (not `id:`). All 14 layout items use `i:`. |
 | 4 | tasks:list query returns non-archived tasks (not filtering on nonexistent cancelled column) | ✓ VERIFIED | main.ts line 1350: `(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)`. Both columns exist in schema. Research confirms FIX-04 was resolved in Phase 1. |
@@ -35,7 +35,7 @@ score: 5/5 must-haves verified
 | `src/components/AgentPanel.tsx` | HOVER_BG_MAP static lookup | ✓ VERIFIED | Lines 20-36: HOVER_BG_MAP with 16 color mappings. Line 366: Uses `HOVER_BG_MAP[theme.bg]`. No dynamic `hover:${theme.` patterns. (400+ lines, substantive) |
 | `src/components/ChatRoomView.tsx` | Pre-filtered messages for avatar grouping | ✓ VERIFIED | Lines 613-617: `displayedMessages` pre-filter. Line 621: `displayedMessages[idx - 1]` for prev reference (not room.messages). (800+ lines, substantive) |
 | `src/components/InboxPanel.tsx` | Guarded JSON.parse + openclaw CLI | ✓ VERIFIED | All 11 JSON.parse(item.metadata) calls wrapped in try/catch (lines 43, 199, 229, 511, 552, 633, 663, 726, 798, 858, 1372, 1653, 1731). No raw JSON.parse without guards. (2000+ lines, substantive) |
-| `electron/database.ts` | Correct DB paths | ✓ VERIFIED | Lines 13-14: `~/clawd/data/froggo.db` and `~/clawd/data/schedule.db`. Line 73: `~/.openclaw/sessions.db` primary, line 74: `.clawdbot/sessions.db` legacy fallback. (130 lines, substantive) |
+| `electron/database.ts` | Correct DB paths | ✓ VERIFIED | Lines 13-14: `~/froggo/data/froggo.db` and `~/froggo/data/schedule.db`. Line 73: `~/.openclaw/sessions.db` primary, line 74: `.clawdbot/sessions.db` legacy fallback. (130 lines, substantive) |
 
 ### Key Link Verification
 
@@ -54,7 +54,7 @@ Phase 2 requirements (FIX-01 through FIX-10):
 
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| FIX-01: Fix DB paths | ✓ SATISFIED | database.ts uses ~/clawd/data/. Comments confirm library/x-automations/connected-accounts path fixes. |
+| FIX-01: Fix DB paths | ✓ SATISFIED | database.ts uses ~/froggo/data/. Comments confirm library/x-automations/connected-accounts path fixes. |
 | FIX-02: Fix spawn handler | ✓ SATISFIED | agents:spawnForTask calls openclaw CLI, not deleted Python script. |
 | FIX-03: AI IPC handlers | ✓ SATISFIED | ai:generate-content (channel name fixed), ai:generateReply, ai:getAnalysis all registered with prepare() queries. |
 | FIX-04: tasks:list query | ✓ SATISFIED | Uses (cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0). Both columns exist. |

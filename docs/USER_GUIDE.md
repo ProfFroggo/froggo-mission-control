@@ -969,7 +969,7 @@ Froggo backs up daily:
 - Full database backup (3 AM)
 - Incremental backups (9 AM, 3 PM, 9 PM)
 - 30 days retention
-- Stored locally: `~/clawd/backups/`
+- Stored locally: `~/froggo/backups/`
 
 **Restore:**
 1. Settings > Data & Privacy > Restore
@@ -1154,9 +1154,9 @@ See [KEYBOARD_SHORTCUTS_REFERENCE.md](./KEYBOARD_SHORTCUTS_REFERENCE.md) for com
 ### Data Storage
 
 All data stored locally in:
-- SQLite Database: `~/clawd/data/froggo.db`
-- Backups: `~/clawd/backups/`
-- Logs: `~/clawd/logs/`
+- SQLite Database: `~/froggo/data/froggo.db`
+- Backups: `~/froggo/backups/`
+- Logs: `~/froggo/logs/`
 - Voice Models: `~/Library/Application Support/Froggo/models/`
 
 ### Privacy Policy

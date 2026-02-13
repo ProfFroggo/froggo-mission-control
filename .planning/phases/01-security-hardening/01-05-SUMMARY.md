@@ -65,7 +65,7 @@ completed: 2026-02-12
 ## Accomplishments
 - Eliminated ~20 SQL injection sites across task, attachment, library, and inbox handlers
 - Removed 14 `.replace(/'/g, "''")` manual escaping calls
-- Fixed bug in library:view and library:download that used wrong DB path (`~/Froggo/clawd/data/froggo.db` instead of `~/clawd/data/froggo.db`)
+- Fixed bug in library:view and library:download that used wrong DB path (`~/Froggo/clawd/data/froggo.db` instead of `~/froggo/data/froggo.db`)
 - Converted async shell-exec patterns to synchronous prepare() calls (faster, more reliable)
 - Made inbox:filter safe by using execSync with stdin input option instead of shell echo pipe
 
