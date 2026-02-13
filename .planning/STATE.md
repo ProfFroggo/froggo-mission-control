@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 12 of 12 (Setup Wizard)
-Plan: 02 of 04 complete
+Plan: 03 of 04 complete
 Status: In progress
-Last activity: 2026-02-13 -- Completed 12-02-PLAN.md
+Last activity: 2026-02-13 -- Completed 12-03-PLAN.md
 
-Progress: [##############################......] 17/26 v2.1 reqs complete
+Progress: [################################....] 18/26 v2.1 reqs complete
 
 ## Performance Metrics
 
@@ -71,6 +71,9 @@ v2.1 decisions:
 - WizardChat uses inline textarea (no agent picker) since agent is chosen in braindump step
 - Generate Plan requires minimum 2 messages before enabling
 - Separate gateway session keys: wizard (conversation) vs wizard-extract (extraction)
+- Characters stored with 'relationship' field in memory (mapped from wizard 'role')
+- project.json extended with genre, premise, themes, storyArc, wizardComplete for wizard projects
+- Atomic creation with rollback: rm -rf on partial project directory if any write fails
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ v2.1 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-13T03:58:03Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-02-13T03:59:29Z
+Stopped at: Completed 12-03-PLAN.md
 Resume file: None
