@@ -7533,7 +7533,7 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: stri
     
     // Trigger AI analysis in background (don't block response)
     if (uploadResult.imported > 0) {
-      safeLog.info(`[Finance] Triggering AI analysis for ${uploadResult.imported} new transactions`);
+      safeLog.log(`[Finance] Triggering AI analysis for ${uploadResult.imported} new transactions`);
       const bridge = getFinanceAgentBridge();
       bridge.triggerAnalysis('csv_upload').catch(err => {
         safeLog.error('[Finance] AI analysis failed:', err.message);
