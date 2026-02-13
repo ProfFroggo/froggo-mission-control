@@ -426,7 +426,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md' 
                       : msg.role === 'assistant' 
                         ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md' 
-                        : 'bg-yellow-500/10 border border-yellow-500/20 text-warning'
+                        : 'bg-warning-subtle border border-warning-border text-warning'
                   } ${
                     msg.role === 'user'
                       ? showAvatar 
