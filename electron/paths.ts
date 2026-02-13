@@ -39,6 +39,9 @@ export const writingChapterPath = (projectId: string, chapterFilename: string) =
 export const writingMemoryPath = (projectId: string, filename: string) =>
   path.join(WRITING_PROJECTS_DIR, projectId, 'memory', filename);
 
+export const writingVersionsPath = (projectId: string, chapterId: string) =>
+  path.join(WRITING_PROJECTS_DIR, projectId, 'versions', chapterId);
+
 export const writingResearchDbPath = (projectId: string) =>
   path.join(WRITING_PROJECTS_DIR, projectId, 'research.db');
 

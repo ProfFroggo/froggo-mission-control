@@ -17,6 +17,7 @@ import { registerWritingProjectHandlers } from './writing-project-service';
 import { registerWritingFeedbackHandlers } from './writing-feedback-service';
 import { registerWritingMemoryHandlers } from './writing-memory-service';
 import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-research-service';
+import { registerWritingVersionHandlers } from './writing-version-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
@@ -386,6 +387,9 @@ function createWindow() {
 
   // Register Writing Research handlers
   registerWritingResearchHandlers();
+
+  // Register Writing Version handlers
+  registerWritingVersionHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');

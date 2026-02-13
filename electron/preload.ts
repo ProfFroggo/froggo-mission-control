@@ -668,6 +668,14 @@ contextBridge.exposeInMainWorld('clawdbot', {
         cleanup: (projectId: string, validFactIds: string[]) => ipcRenderer.invoke('writing:research:links:cleanup', projectId, validFactIds),
       },
     },
+    version: {
+      list: (projectId: string, chapterId: string) => ipcRenderer.invoke('writing:version:list', projectId, chapterId),
+      save: (projectId: string, chapterId: string, label?: string) => ipcRenderer.invoke('writing:version:save', projectId, chapterId, label),
+      read: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:read', projectId, chapterId, versionId),
+      restore: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:restore', projectId, chapterId, versionId),
+      diff: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:diff', projectId, chapterId, versionId),
+      delete: (projectId: string, chapterId: string, versionId: string) => ipcRenderer.invoke('writing:version:delete', projectId, chapterId, versionId),
+    },
   },
 });
 
