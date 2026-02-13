@@ -1,0 +1,95 @@
+import { useState, useRef, useEffect, ReactElement } from 'react';
+
+interface ThreePaneLayoutProps {
+  children: [ReactElement, ReactElement, ReactElement];
+}
+
+export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
+  const [leftWidth, setLeftWidth] = useState(30); // % of viewport
+  const [centerWidth, setCenterWidth] = useState(40);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState<'left' | 'right' | null>(null);
+  const [startX, setStartX] = useState(0);
+  const [startWidths, setStartWidths] = useState<[number, number]>([30, 40]);
+
+  const handleMouseDown = (divider: 'left' | 'right', e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(divider);
+    setStartX(e.clientX);
+    setStartWidths([leftWidth, centerWidth]);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragging || !containerRef.current) return;
+
+      const containerWidth = containerRef.current.offsetWidth;
+      const deltaX = e.clientX - startX;
+      const deltaPercent = (deltaX / containerWidth) * 100;
+
+      if (dragging === 'left') {
+        const newLeftWidth = Math.max(15, Math.min(50, startWidths[0] + deltaPercent));
+        const newCenterWidth = startWidths[1] - deltaPercent;
+        
+        if (newCenterWidth >= 20 && newCenterWidth <= 60) {
+          setLeftWidth(newLeftWidth);
+          setCenterWidth(newCenterWidth);
+        }
+      } else if (dragging === 'right') {
+        const newCenterWidth = Math.max(20, Math.min(60, startWidths[1] + deltaPercent));
+        setCenterWidth(newCenterWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDragging(null);
+    };
+
+    if (dragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragging, startX, startWidths]);
+
+  const rightWidth = 100 - leftWidth - centerWidth;
+
+  return (
+    <div ref={containerRef} className="flex h-full">
+      {/* Left Pane (Agent Chat) */}
+      <div style={{ width: `${leftWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden">
+        {children[0]}
+      </div>
+
+      {/* Left Divider */}
+      <div
+        onMouseDown={(e) => handleMouseDown('left', e)}
+        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-500/50 transition-colors ${
+          dragging === 'left' ? 'bg-blue-500' : 'bg-transparent'
+        }`}
+      />
+
+      {/* Center Pane (Content Editor) */}
+      <div style={{ width: `${centerWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden">
+        {children[1]}
+      </div>
+
+      {/* Right Divider */}
+      <div
+        onMouseDown={(e) => handleMouseDown('right', e)}
+        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-500/50 transition-colors ${
+          dragging === 'right' ? 'bg-blue-500' : 'bg-transparent'
+        }`}
+      />
+
+      {/* Right Pane (Approval Queue) */}
+      <div style={{ width: `${rightWidth}%` }} className="flex-1 overflow-hidden">
+        {children[2]}
+      </div>
+    </div>
+  );
+}
