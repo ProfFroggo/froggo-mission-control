@@ -329,29 +329,29 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
                           connected 
-                            ? 'bg-green-500/20 text-green-300 border border-success-border' 
-                            : 'bg-red-500/20 text-red-300 border border-error-border'
+                            ? 'bg-green-500/20 text-success border border-success-border' 
+                            : 'bg-red-500/20 text-error border border-error-border'
                         }`}>
                           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
                           {connected ? 'All Systems Online' : 'Connecting...'}
                         </div>
 
                         {urgentCount > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30 backdrop-blur-sm animate-pulse">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/20 text-warning border border-orange-500/30 backdrop-blur-sm animate-pulse">
                             <AlertTriangle size={12} />
                             {urgentCount} urgent {urgentCount === 1 ? 'item' : 'items'}
                           </div>
                         )}
 
                         {activeSubagents.length > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-info-border backdrop-blur-sm">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-info border border-info-border backdrop-blur-sm">
                             <Bot size={12} />
                             {activeSubagents.length} agent{activeSubagents.length > 1 ? 's' : ''} working
                           </div>
                         )}
 
                         {completedToday > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-success-border backdrop-blur-sm">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 text-success border border-success-border backdrop-blur-sm">
                             <CheckCircle size={12} />
                             {completedToday} completed today
                           </div>
@@ -450,7 +450,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   className="w-full h-full p-6 text-left hover:bg-clawd-bg/30 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-orange-400' : 'text-clawd-text-dim'}`} />
+                    <Inbox size={28} className={`${pendingApprovals.length > 0 ? 'text-warning' : 'text-clawd-text-dim'}`} />
                     {pendingApprovals.length > 0 && (
                       <span className="px-3 py-1 bg-orange-500 text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
                         {pendingApprovals.length}
@@ -465,7 +465,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   <div className="text-sm font-medium text-clawd-text-dim mb-3">Pending Approvals</div>
                   
                   {pendingApprovals.length > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-orange-400 font-medium">
+                    <div className="flex items-center gap-2 text-xs text-warning font-medium">
                       <Zap size={14} />
                       Action required
                     </div>
