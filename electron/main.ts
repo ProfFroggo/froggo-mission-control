@@ -7530,6 +7530,16 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: stri
     fs.unlinkSync(tmpPath);
     
     const uploadResult = JSON.parse(result.stdout);
+    
+    // Trigger AI analysis in background (don't block response)
+    if (uploadResult.imported > 0) {
+      safeLog.info(`[Finance] Triggering AI analysis for ${uploadResult.imported} new transactions`);
+      const bridge = getFinanceAgentBridge();
+      bridge.triggerAnalysis('csv_upload').catch(err => {
+        safeLog.error('[Finance] AI analysis failed:', err.message);
+      });
+    }
+    
     return { 
       success: true, 
       imported: uploadResult.imported || 0,
@@ -7562,6 +7572,21 @@ ipcMain.handle('finance:getInsights', async () => {
   } catch (error: any) {
     safeLog.error('[Finance] Get insights error:', error.message);
     return { success: false, insights: [], error: error.message };
+  }
+});
+
+ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
+  try {
+    const stmt = prepare(`
+      UPDATE finance_ai_insights 
+      SET dismissed = 1, dismissed_at = ? 
+      WHERE id = ?
+    `);
+    stmt.run(Date.now(), insightId);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Finance] Dismiss insight error:', error.message);
+    return { success: false, error: error.message };
   }
 });
 
