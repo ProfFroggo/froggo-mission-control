@@ -58,11 +58,11 @@ Requirements for writing system milestone. Each maps to roadmap phases.
 
 ### Outline & Versions
 
-- [ ] **OUT-01**: User can see project outline with collapsible chapter tree
-- [ ] **OUT-02**: User can reorder chapters via drag-and-drop
-- [ ] **OUT-03**: User can save version snapshots of chapters before major edits
-- [ ] **OUT-04**: User can view and restore previous chapter versions
-- [ ] **OUT-05**: Version comparison shows differences between versions
+- [x] **OUT-01**: User can see project outline with collapsible chapter tree
+- [x] **OUT-02**: User can reorder chapters via drag-and-drop
+- [x] **OUT-03**: User can save version snapshots of chapters before major edits
+- [x] **OUT-04**: User can view and restore previous chapter versions
+- [x] **OUT-05**: Version comparison shows differences between versions
 
 ### Agent Integration
 
@@ -139,11 +139,11 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | RES-03 | Phase 8 | Complete |
 | RES-04 | Phase 8 | Complete |
 | RES-05 | Phase 8 | Complete |
-| OUT-01 | Phase 9 | Pending |
-| OUT-02 | Phase 9 | Pending |
-| OUT-03 | Phase 9 | Pending |
-| OUT-04 | Phase 9 | Pending |
-| OUT-05 | Phase 9 | Pending |
+| OUT-01 | Phase 9 | Complete |
+| OUT-02 | Phase 9 | Complete |
+| OUT-03 | Phase 9 | Complete |
+| OUT-04 | Phase 9 | Complete |
+| OUT-05 | Phase 9 | Complete |
 | AGENT-01 | Phase 6 | Complete |
 | AGENT-02 | Phase 8 | Complete |
 | AGENT-03 | Phase 10 | Pending |
@@ -157,4 +157,4 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-02-12*
-*Last updated: 2026-02-13 — Phase 8 requirements complete*
+*Last updated: 2026-02-13 — Phase 9 requirements complete*
