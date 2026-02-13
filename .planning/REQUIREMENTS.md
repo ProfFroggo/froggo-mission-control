@@ -83,24 +83,24 @@ Requirements for Writing UX Redesign milestone. Scoped from research (2026-02-13
 
 ### Chat Infrastructure
 
-- [ ] **CHAT-01**: User can chat with AI agents (Writer, Researcher, Jess) in a persistent chat pane alongside the editor
-- [ ] **CHAT-02**: AI responses stream in real-time (token by token) in the chat pane
-- [ ] **CHAT-03**: User can select which agent to chat with via agent picker in chat header
-- [ ] **CHAT-04**: Chat history persists across sessions (per-project, stored to disk)
-- [ ] **CHAT-05**: AI context includes current chapter content, project outline, and memory store data
-- [ ] **CHAT-06**: User can insert AI-generated content from chat into the editor with one click ("Send to editor")
-- [ ] **CHAT-07**: Content insertion validates against TipTap schema via markdown conversion and inserts at cursor or end of chapter
-- [ ] **CHAT-08**: User can copy and retry chat messages
-- [ ] **CHAT-09**: Chat maintains multi-turn conversation context via gateway sessions
-- [ ] **CHAT-10**: Chat pane uses separate gateway sessions from inline feedback (no context contamination)
+- [x] **CHAT-01**: User can chat with AI agents (Writer, Researcher, Jess) in a persistent chat pane alongside the editor
+- [x] **CHAT-02**: AI responses stream in real-time (token by token) in the chat pane
+- [x] **CHAT-03**: User can select which agent to chat with via agent picker in chat header
+- [x] **CHAT-04**: Chat history persists across sessions (per-project, stored to disk)
+- [x] **CHAT-05**: AI context includes current chapter content, project outline, and memory store data
+- [x] **CHAT-06**: User can insert AI-generated content from chat into the editor with one click ("Send to editor")
+- [x] **CHAT-07**: Content insertion validates against TipTap schema via markdown conversion and inserts at cursor or end of chapter
+- [x] **CHAT-08**: User can copy and retry chat messages
+- [x] **CHAT-09**: Chat maintains multi-turn conversation context via gateway sessions
+- [x] **CHAT-10**: Chat pane uses separate gateway sessions from inline feedback (no context contamination)
 
 ### Three-Pane Layout
 
-- [ ] **LAYOUT-01**: Writing workspace uses 3-pane layout: chapters sidebar | AI chat pane | content workspace
-- [ ] **LAYOUT-02**: Panes are resizable via drag handles (react-resizable-panels)
-- [ ] **LAYOUT-03**: Chat pane and chapters sidebar are individually collapsible
-- [ ] **LAYOUT-04**: Pane sizes and collapse state persist across sessions (localStorage)
-- [ ] **LAYOUT-05**: Layout works at window widths from 1024px to 1920px+
+- [x] **LAYOUT-01**: Writing workspace uses 3-pane layout: chapters sidebar | AI chat pane | content workspace
+- [x] **LAYOUT-02**: Panes are resizable via drag handles (react-resizable-panels)
+- [x] **LAYOUT-03**: Chat pane and chapters sidebar are individually collapsible
+- [x] **LAYOUT-04**: Pane sizes and collapse state persist across sessions (localStorage)
+- [x] **LAYOUT-05**: Layout works at window widths from 1024px to 1920px+
 
 ### Setup Wizard
 
@@ -166,21 +166,21 @@ Deferred to future milestone. Tracked but not in current roadmap.
 | AGENT-03 | Phase 10 | Complete |
 | AGENT-04 | Phase 6 | Complete |
 | AGENT-05 | Phase 6 | Complete |
-| CHAT-01 | Phase 11 | Pending |
-| CHAT-02 | Phase 11 | Pending |
-| CHAT-03 | Phase 11 | Pending |
-| CHAT-04 | Phase 11 | Pending |
-| CHAT-05 | Phase 11 | Pending |
-| CHAT-06 | Phase 11 | Pending |
-| CHAT-07 | Phase 11 | Pending |
-| CHAT-08 | Phase 11 | Pending |
-| CHAT-09 | Phase 11 | Pending |
-| CHAT-10 | Phase 11 | Pending |
-| LAYOUT-01 | Phase 11 | Pending |
-| LAYOUT-02 | Phase 11 | Pending |
-| LAYOUT-03 | Phase 11 | Pending |
-| LAYOUT-04 | Phase 11 | Pending |
-| LAYOUT-05 | Phase 11 | Pending |
+| CHAT-01 | Phase 11 | Complete |
+| CHAT-02 | Phase 11 | Complete |
+| CHAT-03 | Phase 11 | Complete |
+| CHAT-04 | Phase 11 | Complete |
+| CHAT-05 | Phase 11 | Complete |
+| CHAT-06 | Phase 11 | Complete |
+| CHAT-07 | Phase 11 | Complete |
+| CHAT-08 | Phase 11 | Complete |
+| CHAT-09 | Phase 11 | Complete |
+| CHAT-10 | Phase 11 | Complete |
+| LAYOUT-01 | Phase 11 | Complete |
+| LAYOUT-02 | Phase 11 | Complete |
+| LAYOUT-03 | Phase 11 | Complete |
+| LAYOUT-04 | Phase 11 | Complete |
+| LAYOUT-05 | Phase 11 | Complete |
 | WIZARD-01 | Phase 12 | Pending |
 | WIZARD-02 | Phase 12 | Pending |
 | WIZARD-03 | Phase 12 | Pending |
@@ -195,7 +195,7 @@ Deferred to future milestone. Tracked but not in current roadmap.
 
 **Coverage:**
 - v2.0 requirements: 44/44 complete
-- v2.1 requirements: 26/26 mapped (15 Phase 11 + 11 Phase 12)
+- v2.1 requirements: 15/26 complete (Phase 11), 11 pending (Phase 12)
 - Unmapped: 0
 
 ---
