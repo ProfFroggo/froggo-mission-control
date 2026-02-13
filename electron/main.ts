@@ -8349,3 +8349,215 @@ ipcMain.handle('x:schedule:delete', async (_, data: { id: string }) => {
     return { success: false, error: error.message };
   }
 });
+
+// ============== X/TWITTER MENTIONS HANDLERS ==============
+
+ipcMain.handle('x:mention:fetch', async () => {
+  try {
+    // Fetch mentions from X API
+    const result = execSync('x-api mentions --count 50', {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    
+    const mentions = JSON.parse(result);
+    const now = Date.now();
+    let newCount = 0;
+    let updatedCount = 0;
+    
+    // Store in database
+    for (const mention of mentions.data || []) {
+      // Check if mention already exists
+      const existing = prepare('SELECT id FROM x_mentions WHERE tweet_id = ?').get(mention.id);
+      
+      if (!existing) {
+        // Insert new mention
+        const id = `mention-${now}-${mention.id}`;
+        const stmt = prepare(`
+          INSERT INTO x_mentions (
+            id, tweet_id, author_id, author_username, author_name,
+            text, created_at, conversation_id, in_reply_to_user_id,
+            reply_status, fetched_at, metadata
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, json(?))
+        `);
+        
+        const tweetCreatedAt = new Date(mention.created_at).getTime();
+        const metadata = {
+          public_metrics: mention.public_metrics,
+          referenced_tweets: mention.referenced_tweets,
+        };
+        
+        stmt.run(
+          id,
+          mention.id,
+          mention.author_id,
+          mention.author?.username || 'unknown',
+          mention.author?.name || 'unknown',
+          mention.text,
+          tweetCreatedAt,
+          mention.conversation_id,
+          mention.in_reply_to_user_id,
+          now,
+          JSON.stringify(metadata)
+        );
+        newCount++;
+      } else {
+        // Update metadata (public metrics may have changed)
+        const updateStmt = prepare(`
+          UPDATE x_mentions 
+          SET metadata = json_set(
+            COALESCE(metadata, '{}'),
+            '$.public_metrics',
+            json(?)
+          ),
+          fetched_at = ?
+          WHERE tweet_id = ?
+        `);
+        
+        updateStmt.run(
+          JSON.stringify(mention.public_metrics || {}),
+          now,
+          mention.id
+        );
+        updatedCount++;
+      }
+    }
+    
+    safeLog.log(`[X/Mentions] Fetched mentions: ${newCount} new, ${updatedCount} updated`);
+    return { success: true, new: newCount, updated: updatedCount };
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] Fetch error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:mention:list', async (_, filters?: {
+  replyStatus?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  try {
+    let query = `
+      SELECT * FROM x_mentions
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    
+    if (filters?.replyStatus) {
+      query += ' AND reply_status = ?';
+      params.push(filters.replyStatus);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    if (filters?.offset) {
+      query += ' OFFSET ?';
+      params.push(filters.offset);
+    }
+    
+    const stmt = prepare(query);
+    const results = stmt.all(...params);
+    
+    return { success: true, mentions: results };
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:mention:update', async (_, data: {
+  id: string;
+  replyStatus?: string;
+  repliedAt?: number;
+  repliedWithId?: string;
+  notes?: string;
+}) => {
+  try {
+    const { id, replyStatus, repliedAt, repliedWithId, notes } = data;
+    const now = Date.now();
+    
+    let query = 'UPDATE x_mentions SET updated_at = ?';
+    const params: any[] = [now];
+    
+    if (replyStatus) {
+      query += ', reply_status = ?';
+      params.push(replyStatus);
+    }
+    
+    if (repliedAt !== undefined) {
+      query += ', replied_at = ?';
+      params.push(repliedAt);
+    }
+    
+    if (repliedWithId) {
+      query += ', replied_with_id = ?';
+      params.push(repliedWithId);
+    }
+    
+    if (notes !== undefined) {
+      query += ', metadata = json_set(COALESCE(metadata, \\'{}\\'), \\'$.notes\\', ?)';
+      params.push(notes);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(id);
+    
+    const stmt = prepare(query);
+    const result = stmt.run(...params);
+    
+    if (result.changes === 0) {
+      throw new Error('Mention not found');
+    }
+    
+    safeLog.log(`[X/Mentions] Updated mention: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] Update error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:mention:reply', async (_, data: {
+  mentionId: string;
+  replyText: string;
+  tweetId: string;
+}) => {
+  try {
+    const { mentionId, replyText, tweetId } = data;
+    const now = Date.now();
+    
+    // Send reply via x-api
+    const result = execSync(`x-api reply ${tweetId} "${replyText.replace(/"/g, '\\"')}"`, {
+      encoding: 'utf-8',
+    });
+    
+    const response = JSON.parse(result);
+    
+    if (response.data?.id) {
+      // Update mention with reply info
+      const stmt = prepare(`
+        UPDATE x_mentions 
+        SET reply_status = 'replied',
+            replied_at = ?,
+            replied_with_id = ?
+        WHERE id = ?
+      `);
+      
+      stmt.run(now, response.data.id, mentionId);
+      
+      safeLog.log(`[X/Mentions] Replied to mention: ${mentionId}`);
+      return { success: true, tweetId: response.data.id };
+    } else {
+      throw new Error('Failed to post reply');
+    }
+  } catch (error: any) {
+    safeLog.error('[X/Mentions] Reply error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
