@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-12)
 
 **Core value:** Kevin can write a complete memoir using AI-collaborative inline feedback -- highlight any passage, get contextual alternatives from the right agent, and maintain consistency across hundreds of chapters.
-**Current focus:** Phase 8 — Research Library (complete, verified 3/3)
+**Current focus:** Phase 9 — Outline & Versions (plan 01 complete)
 
 ## Current Position
 
-Phase: 8 of 10 (Research Library)
-Plan: 2 of 2 in current phase
-Status: Phase complete (verified 3/3 must-haves)
-Last activity: 2026-02-13 — Phase 8 verified (3/3 must-haves passed)
+Phase: 9 of 10 (Outline & Versions)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-13 — Completed 09-01-PLAN.md (Chapter DnD & Collapsible)
 
-Progress: [█████████░░░] 75% (9/12 plans)
+Progress: [██████████░░] 83% (10/12 plans)
 
 ## Performance Metrics
 
@@ -24,7 +24,7 @@ Progress: [█████████░░░] 75% (9/12 plans)
 - Total execution time: ~161min
 
 **Velocity (v2):**
-- Plans completed: 9
+- Plans completed: 10
 - 05-01: 3min (3 tasks)
 - 05-02: 4min (2 tasks)
 - 05-03: 5min (2 tasks + checkpoint skipped)
@@ -34,6 +34,7 @@ Progress: [█████████░░░] 75% (9/12 plans)
 - 07-02: 3min (2 tasks)
 - 08-01: 3min (2 tasks)
 - 08-02: 4min (2 tasks)
+- 09-01: 2min (2 tasks)
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ v2 decisions (confirmed in execution):
 - Lazy-load sources on tab activation (not project open) for performance
 - Fact-check results shown as raw stream (verdict format, not alternatives)
 - Fact Check button next to AgentPicker for non-intrusive discoverability
+- GripVertical handle-only drag (listeners on handle, not whole item) for click-to-select compatibility
+- 5px PointerSensor activation constraint to prevent accidental drags
 
 ### Pending Todos
 
@@ -89,6 +92,6 @@ v2 decisions (confirmed in execution):
 
 ## Session Continuity
 
-Last session: 2026-02-13T00:05:42Z
-Stopped at: Completed 08-02-PLAN.md (Research Library Frontend)
+Last session: 2026-02-13T00:33:55Z
+Stopped at: Completed 09-01-PLAN.md (Chapter DnD & Collapsible)
 Resume file: None
