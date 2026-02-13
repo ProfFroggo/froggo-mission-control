@@ -7648,3 +7648,175 @@ ipcMain.handle('financeAgent:getStatus', async () => {
     return { success: false, error: error.message };
   }
 });
+
+// ── X/Twitter Research Tab ──
+
+ipcMain.handle('x:research:propose', async (_, data: { title: string; description: string; citations: string[]; proposedBy: string }) => {
+  try {
+    const { title, description, citations, proposedBy } = data;
+    const id = `research-${Date.now()}`;
+    const now = Date.now();
+    
+    // Create database entry
+    const stmt = prepare(`
+      INSERT INTO x_research_ideas (id, title, description, citations, proposed_by, status, created_at)
+      VALUES (?, ?, ?, ?, ?, 'proposed', ?)
+    `);
+    stmt.run(id, title, description, JSON.stringify(citations), proposedBy, now);
+    
+    // Create markdown file
+    const dateStr = new Date(now).toISOString().split('T')[0];
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
+    const filename = `${dateStr}-${slug}.md`;
+    const filePath = path.join(homedir(), 'froggo', 'x-content', 'research', filename);
+    
+    const fileContent = `---
+id: ${id}
+type: research
+title: ${title}
+proposed_by: ${proposedBy}
+status: proposed
+created_at: ${new Date(now).toISOString()}
+---
+
+# ${title}
+
+${description}
+
+## Citations
+
+${citations.map(url => `- ${url}`).join('\n')}
+`;
+    
+    fs.writeFileSync(filePath, fileContent, 'utf-8');
+    
+    // Update database with file path
+    prepare('UPDATE x_research_ideas SET file_path = ? WHERE id = ?').run(filePath, id);
+    
+    // Git commit
+    execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "feat: Add research idea '${title}' (proposed by ${proposedBy})"`, {
+      encoding: 'utf-8'
+    });
+    
+    safeLog.log(`[X/Research] Created research idea: ${id}`);
+    return { success: true, id, filePath };
+  } catch (error: any) {
+    safeLog.error('[X/Research] Propose error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?: number }) => {
+  try {
+    let query = 'SELECT * FROM x_research_ideas';
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' WHERE status = ?';
+      params.push(filters.status);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const stmt = prepare(query);
+    const ideas = stmt.all(...params);
+    
+    // Parse JSON fields
+    const parsed = ideas.map((idea: any) => ({
+      ...idea,
+      citations: idea.citations ? JSON.parse(idea.citations) : []
+    }));
+    
+    return { success: true, ideas: parsed };
+  } catch (error: any) {
+    safeLog.error('[X/Research] List error:', error.message);
+    return { success: false, ideas: [], error: error.message };
+  }
+});
+
+ipcMain.handle('x:research:approve', async (_, data: { id: string; approvedBy: string }) => {
+  try {
+    const { id, approvedBy } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_research_ideas 
+      SET status = 'approved', approved_by = ?, updated_at = ?
+      WHERE id = ?
+    `);
+    const result = stmt.run(approvedBy, now, id);
+    
+    if (result.changes === 0) {
+      throw new Error('Research idea not found');
+    }
+    
+    // Update file (add approval metadata)
+    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as any;
+    if (idea && idea.file_path && fs.existsSync(idea.file_path)) {
+      let content = fs.readFileSync(idea.file_path, 'utf-8');
+      content = content.replace(/status: proposed/, 'status: approved');
+      content = content.replace(/^---\n/, `---\napproved_by: ${approvedBy}\napproved_at: ${new Date(now).toISOString()}\n---\n`);
+      fs.writeFileSync(idea.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(idea.file_path);
+      execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "approve: Research idea ${id} (approved by ${approvedBy})"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Research] Approved research idea: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Research] Approve error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:research:reject', async (_, data: { id: string; reason?: string }) => {
+  try {
+    const { id, reason } = data;
+    const now = Date.now();
+    
+    // Update database
+    const stmt = prepare(`
+      UPDATE x_research_ideas 
+      SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
+      WHERE id = ?
+    `);
+    const result = stmt.run(now, reason || '', id);
+    
+    if (result.changes === 0) {
+      throw new Error('Research idea not found');
+    }
+    
+    // Update file
+    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as any;
+    if (idea && idea.file_path && fs.existsSync(idea.file_path)) {
+      let content = fs.readFileSync(idea.file_path, 'utf-8');
+      content = content.replace(/status: proposed/, 'status: rejected');
+      if (reason) {
+        content = content.replace(/^---\n/, `---\nrejection_reason: ${reason}\nrejected_at: ${new Date(now).toISOString()}\n---\n`);
+      }
+      fs.writeFileSync(idea.file_path, content, 'utf-8');
+      
+      // Git commit
+      const filename = path.basename(idea.file_path);
+      execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "reject: Research idea ${id}"`, {
+        encoding: 'utf-8'
+      });
+    }
+    
+    safeLog.log(`[X/Research] Rejected research idea: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Research] Reject error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
