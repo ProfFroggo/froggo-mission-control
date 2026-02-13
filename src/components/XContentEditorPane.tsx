@@ -2,6 +2,7 @@ import type { XTab } from './XTwitterPage';
 import XResearchIdeaEditor from './XResearchIdeaEditor';
 import XPlanThreadComposer from './XPlanThreadComposer';
 import XDraftComposer from './XDraftComposer';
+import { XCalendarView } from './XCalendarView';
 
 interface XContentEditorPaneProps {
   tab: XTab;
@@ -21,6 +22,11 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
   // Drafts tab has draft composer
   if (tab === 'drafts') {
     return <XDraftComposer />;
+  }
+  
+  // Calendar tab has calendar view
+  if (tab === 'calendar') {
+    return <XCalendarView />;
   }
 
   // Other tabs: placeholder
