@@ -111,12 +111,12 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <Bell className="w-5 h-5 text-yellow-600 animate-ring" />
+              <Bell className="w-5 h-5 text-warning animate-ring" />
             </div>
             
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
-                <h4 className="font-semibold text-yellow-900 text-sm">
+                <h4 className="font-semibold text-warning text-sm">
                   Snoozed Conversation
                 </h4>
                 <button
@@ -124,17 +124,17 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
                     e.stopPropagation();
                     dismissReminder(reminder.session_id);
                   }}
-                  className="text-yellow-600 hover:text-yellow-800"
+                  className="text-warning hover:text-warning"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
               
-              <p className="text-sm text-yellow-800 mb-2">
+              <p className="text-sm text-warning mb-2">
                 {reminder.snooze_reason || 'This conversation needs your attention'}
               </p>
               
-              <div className="flex items-center gap-2 text-xs text-yellow-700">
+              <div className="flex items-center gap-2 text-xs text-warning">
                 <Clock className="w-3 h-3" />
                 <span>
                   Session: {formatSessionId(reminder.session_id)}
@@ -143,7 +143,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
             </div>
           </div>
           
-          <div className="mt-3 text-xs text-yellow-600 text-center">
+          <div className="mt-3 text-xs text-warning text-center">
             Click to view conversation
           </div>
         </div>
