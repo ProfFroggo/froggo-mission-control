@@ -8573,6 +8573,17 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
       floatingToolbarWindow = null;
     }
     
+    // Load saved position/size if available
+    const configPath = path.join(os.homedir(), 'froggo', 'config', 'floating-toolbar.json');
+    let savedBounds = null;
+    try {
+      if (fs.existsSync(configPath)) {
+        savedBounds = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      }
+    } catch (error) {
+      // Ignore errors reading saved position
+    }
+    
     // Get current screen where main window is
     const currentDisplay = mainWindow 
       ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
@@ -8580,11 +8591,11 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
     
-    // Default dimensions and position
-    const windowWidth = data?.width || 80;
-    const windowHeight = data?.height || 400;
-    const windowX = data?.x !== undefined ? data.x : screenWidth - windowWidth - 20;
-    const windowY = data?.y !== undefined ? data.y : Math.floor((screenHeight - windowHeight) / 2);
+    // Use provided position, or saved position, or default
+    const windowWidth = data?.width || savedBounds?.width || 80;
+    const windowHeight = data?.height || savedBounds?.height || 400;
+    const windowX = data?.x !== undefined ? data.x : (savedBounds?.x !== undefined ? savedBounds.x : screenWidth - windowWidth - 20);
+    const windowY = data?.y !== undefined ? data.y : (savedBounds?.y !== undefined ? savedBounds.y : Math.floor((screenHeight - windowHeight) / 2));
     
     // Create floating toolbar window
     floatingToolbarWindow = new BrowserWindow({
@@ -8619,8 +8630,28 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
       floatingToolbarWindow.webContents.openDevTools({ mode: 'detach' });
     }
     
+    // Save position on move or resize
+    const savePosition = () => {
+      if (!floatingToolbarWindow || floatingToolbarWindow.isDestroyed()) return;
+      const bounds = floatingToolbarWindow.getBounds();
+      const configPath = path.join(os.homedir(), 'froggo', 'config', 'floating-toolbar.json');
+      try {
+        const configDir = path.dirname(configPath);
+        if (!fs.existsSync(configDir)) {
+          fs.mkdirSync(configDir, { recursive: true });
+        }
+        fs.writeFileSync(configPath, JSON.stringify(bounds, null, 2), 'utf-8');
+      } catch (error) {
+        safeLog.error('[Toolbar] Error saving position:', error);
+      }
+    };
+    
+    floatingToolbarWindow.on('moved', savePosition);
+    floatingToolbarWindow.on('resized', savePosition);
+    
     // Clean up when window is closed
     floatingToolbarWindow.on('closed', () => {
+      savePosition(); // Save final position before closing
       floatingToolbarWindow = null;
       // Notify main window that toolbar was closed
       if (mainWindow && !mainWindow.isDestroyed()) {
