@@ -7848,7 +7848,7 @@ ipcMain.handle('x:plan:create', async (_, data: {
     const dateStr = new Date(now).toISOString().split('T')[0];
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
     const filename = `${dateStr}-${slug}.md`;
-    const filePath = path.join(homedir(), 'froggo', 'x-content', 'plans', filename);
+    const filePath = path.join(os.homedir(), 'froggo', 'x-content', 'plans', filename);
     
     const fileContent = `---
 id: ${id}
@@ -8032,7 +8032,7 @@ ipcMain.handle('x:draft:create', async (_, data: {
     const plan = prepare('SELECT title FROM x_content_plans WHERE id = ?').get(planId) as any;
     const slug = (plan?.title || 'draft').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
     const filename = `${dateStr}-${slug}-${version}.md`;
-    const filePath = path.join(homedir(), 'froggo', 'x-content', 'drafts', filename);
+    const filePath = path.join(os.homedir(), 'froggo', 'x-content', 'drafts', filename);
     
     // Parse content (could be single tweet or thread)
     let parsedContent;
@@ -8661,7 +8661,7 @@ ipcMain.handle('toolbar:popIn', async () => {
 ipcMain.handle('toolbar:getState', async () => {
   try {
     const isFloating = floatingToolbarWindow && !floatingToolbarWindow.isDestroyed();
-    const bounds = isFloating ? floatingToolbarWindow.getBounds() : null;
+    const bounds = isFloating ? floatingToolbarWindow!.getBounds() : null;
     
     return {
       success: true,
