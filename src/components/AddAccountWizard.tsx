@@ -335,7 +335,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
                 <div className="flex items-start gap-2 text-sm">
                   <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
-                  <div className="text-blue-300">
+                  <div className="text-info">
                     You can always add or remove services later from account settings
                   </div>
                 </div>
@@ -387,7 +387,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
                     <div className="flex items-start gap-2 text-sm">
                       <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
-                      <div className="text-blue-300">
+                      <div className="text-info">
                         <strong>Permissions requested:</strong>
                         <ul className="mt-2 space-y-1">
                           {selectedDataTypes.map(type => (
@@ -403,7 +403,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <div className="flex items-start gap-2">
                       <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-yellow-300">
+                      <div className="text-sm text-warning">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
                           {provider === 'icloud' && 
@@ -472,7 +472,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             <div className="mt-6 p-4 bg-error-subtle border border-red-500/20 rounded-lg">
               <div className="flex items-start gap-2">
                 <AlertTriangle size={16} className="text-error mt-0.5" />
-                <div className="text-sm text-red-300">{error}</div>
+                <div className="text-sm text-error">{error}</div>
               </div>
             </div>
           )}
