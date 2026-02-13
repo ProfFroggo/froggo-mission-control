@@ -4,20 +4,11 @@
 
 Froggo.app is an Electron desktop dashboard for managing a 15-agent OpenClaw AI orchestration platform. It controls task lifecycle (Kanban), agent spawning, multi-channel communications, voice chat, analytics, and approval workflows. Built with React + Vite + Electron, backed by SQLite and the OpenClaw gateway.
 
-v2.0 added a writing module with editor, inline feedback, memory stores, and multi-agent collaboration. v2.1 redesigns the UX into an AI-powered book creation system — conversational setup wizard, 3-pane layout (chapters | AI chat | workspace), and agent-driven content flow.
+v2.0 added a writing module with editor, inline feedback, memory stores, and multi-agent collaboration. v2.1 redesigned the UX into an AI-powered book creation system with a conversational setup wizard, 3-pane layout (chapters | AI chat | workspace), and agent-driven content flow.
 
 ## Core Value
 
 Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters — then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
-
-## Current Milestone: v2.1 Writing UX Redesign
-
-**Goal:** Transform the writing module from a manual editor into an AI-powered book creation system with conversational planning, 3-pane layout, and agent-driven content generation.
-
-**Target features:**
-- Project Setup Wizard: AI agent plans the book before writing (story arc, chapter outline, themes, characters)
-- 3-pane writing layout: chapters sidebar | AI chat dialogue | content workspace
-- Conversational writing flow where AI chat drives content into the workspace
 
 ## Requirements
 
@@ -39,44 +30,42 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 - ✓ All broken features fixed (paths, spawn, CLI refs) — v1
 - ✓ Functional fixes (routing, guards, debounce, memo) — v1
 - ✓ Dead code cleanup — v1
+- ✓ Writing projects with chapter-based editor and autosave — v2.0
+- ✓ Inline feedback with streaming AI alternatives (Writer, Researcher, Jess) — v2.0
+- ✓ Memory store (characters, timeline, facts) with AI context injection — v2.0
+- ✓ Research library with per-project SQLite and fact-checking — v2.0
+- ✓ Chapter outline with drag-and-drop reordering — v2.0
+- ✓ Version snapshots with diff comparison — v2.0
+- ✓ 3-pane resizable layout (chapters | AI chat | workspace) — v2.1
+- ✓ Persistent AI chat with streaming responses and agent switching — v2.1
+- ✓ Chat-to-editor content insertion — v2.1
+- ✓ Conversational setup wizard (brain dump → AI planning → review → create) — v2.1
+- ✓ Atomic project creation from wizard (chapters, characters, timeline) — v2.1
+- ✓ Genre flexibility beyond memoir/novel — v2.1
 
 ### Active
 
-- [ ] Project Setup Wizard with AI-powered book planning (story arc, chapters, themes, characters)
-- [ ] 3-pane writing layout (chapters sidebar | AI chat dialogue | content workspace)
-- [ ] Conversational writing flow (AI chat drives content into workspace)
-- [ ] Agent-driven content generation (chat produces prose, user reviews in workspace)
-- [ ] Setup wizard populates memory store (characters, timeline from planning conversation)
+(No active requirements — next milestone not yet defined)
 
 ### Out of Scope
 
-- Real-time multi-user collaboration (CRDT/OT) — single-user workflow for now
-- PDF/ePub export — defer to v3
-- Vector search for semantic retrieval — defer to v3
-- Story arc visualization — defer to v3
+- Real-time multi-user collaboration (CRDT/OT) — single-user workflow
+- AI autocomplete/ghost text — destroys creative voice (anti-feature from research)
+- AI-generated first drafts — user writes, AI assists
+- "Generate entire book" button — results are generic, keep human in loop
 - electron/main.ts monolith breakup — tracked but separate effort
 - preload namespace rename (clawdbot → openclaw) — cosmetic, deferred
-- AI autocomplete/ghost text — destroys creative voice (anti-feature from v2.0 research)
 
 ## Context
 
-### Design Document (2026-02-10)
-
-Chief produced a comprehensive writing system design (`agent-chief/writing-system-design.md`) covering:
-- Agent workflow requirements (Writer, Researcher, Jess)
-- Project structure (file-based with SQLite for structured data)
-- Multi-tier context management for 1000+ page documents
-- Inline feedback system (core innovation)
-- Dashboard layout with left sidebar, center workspace, right context panel
-- 6-phase implementation plan
-
-### Key Architecture Facts
+### Architecture
 
 - Existing dashboard: React + TypeScript + Vite + Electron + Tailwind + Zustand
-- Rich text editor needed: TipTap or ProseMirror (selection tracking, inline widgets)
+- Rich text editor: TipTap v3.19.0 with Selection and Markdown extensions
 - File-based chapters (markdown, git-friendly) + SQLite for structured data (sources, facts)
-- OpenClaw Gateway integration for agent communication
-- 200k token context window budget: ~60k hot + ~30k warm + ~20k cold + ~90k working space
+- OpenClaw Gateway integration for agent communication (WebSocket)
+- 3-pane layout: react-resizable-panels v4.6.2
+- Gateway session key isolation: 4 distinct keys (chat, feedback, wizard, wizard-extract)
 
 ### Dev Guide Rules
 
@@ -88,13 +77,13 @@ Chief produced a comprehensive writing system design (`agent-chief/writing-syste
 
 ## Constraints
 
-- **Stack**: React + TypeScript + Electron (existing) — new deps only where essential (rich text editor)
+- **Stack**: React + TypeScript + Electron (existing) — new deps only where essential
 - **Architecture**: New IPC handlers in dedicated service files, not main.ts
 - **Paths**: All new paths through `electron/paths.ts`
 - **Branching**: Feature branches off `dev`, PRs to `dev`
 - **DB**: File-based for chapters (markdown), SQLite for structured data
 - **Backward compatible**: Existing dashboard features must keep working
-- **Single user**: No multi-user collaboration in this milestone
+- **Single user**: No multi-user collaboration
 
 ## Key Decisions
 
@@ -103,9 +92,16 @@ Chief produced a comprehensive writing system design (`agent-chief/writing-syste
 | Keep preload namespace as `clawdbot` | Renaming would touch every component for cosmetic gain | ✓ Good (v1) |
 | Keep electron/main.ts as monolith | Breakup is too large for hardening scope | ✓ Good (v1) |
 | Move credentials to env vars / keychain | Industry standard, no hardcoded secrets | ✓ Good (v1) |
-| File-based chapters + SQLite for structured data | Markdown is git-friendly and AI-parseable, SQLite for queries | — Pending |
-| Inline feedback as core UX pattern | Replaces traditional comments/track-changes for AI collaboration | — Pending |
-| TipTap or ProseMirror for editor | Need selection tracking and inline widget support | — Pending |
+| File-based chapters + SQLite for structured data | Markdown is git-friendly and AI-parseable, SQLite for queries | ✓ Good (v2.0) |
+| Inline feedback as core UX pattern | Replaces traditional comments/track-changes for AI collaboration | ✓ Good (v2.0) |
+| TipTap v3.19.0 for editor | Selection tracking, inline widgets, markdown extension support | ✓ Good (v2.0) |
+| Separate Zustand stores per feature | chatPaneStore, wizardStore, feedbackStore — isolated concerns | ✓ Good (v2.1) |
+| react-resizable-panels v4 for layout | Lightweight, well-maintained, supports collapse detection | ✓ Good (v2.1) |
+| Gateway session key namespacing | 4 distinct keys prevent context contamination across features | ✓ Good (v2.1) |
+| pendingInsert bridge pattern | Decoupled cross-pane content flow via Zustand | ✓ Good (v2.1) |
+| Prompt-level JSON extraction for wizard | No tool-calling needed, Zod validates AI output | ✓ Good (v2.1) |
+| Atomic project creation with rollback | rm -rf on partial directory if any write fails | ✓ Good (v2.1) |
+| ProjectMeta.type as string (not union) | Genre flexibility for wizard, existing values still valid | ✓ Good (v2.1) |
 
 ---
-*Last updated: 2026-02-13 after milestone v2.1 initialization*
+*Last updated: 2026-02-13 after v2.1 milestone completion*
