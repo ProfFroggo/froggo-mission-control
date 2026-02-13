@@ -336,7 +336,7 @@ export default function MeetingsPanel() {
     if (!window.clawdbot?.exec?.run) return;
     setLoadingPastMeetings(true);
     try {
-      const listResult = await window.clawdbot?.exec.run('ls -1 $HOME/clawd/meetings/*.md 2>/dev/null || echo ""');
+      const listResult = await window.clawdbot?.exec.run('ls -1 $HOME/froggo/meetings/*.md 2>/dev/null || echo ""');
       if (!listResult.success || !listResult.stdout.trim()) {
         setPastMeetings([]);
         setLoadingPastMeetings(false);
@@ -411,7 +411,7 @@ export default function MeetingsPanel() {
     const dateStr = now.toISOString().slice(0, 10);
     const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
     const filename = `${dateStr}-${timeStr}.md`;
-    const filepath = `$HOME/clawd/meetings/${filename}`;
+    const filepath = `$HOME/froggo/meetings/${filename}`;
     const approvedItems = actionItems.filter(i => i.status === 'approved');
     const lines: string[] = [
       `# Meeting Notes - ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
@@ -428,7 +428,7 @@ export default function MeetingsPanel() {
     const content = lines.join('\n');
     const base64Content = btoa(unescape(encodeURIComponent(content)));
     try {
-      const result = await window.clawdbot?.exec.run(`mkdir -p $HOME/clawd/meetings && echo "${base64Content}" | base64 -d > "${filepath}"`);
+      const result = await window.clawdbot?.exec.run(`mkdir -p $HOME/froggo/meetings && echo "${base64Content}" | base64 -d > "${filepath}"`);
       if (result.success) return filepath;
     } catch (err) {
       console.error('[Meeting] Save error:', err);
@@ -1397,7 +1397,7 @@ export default function MeetingsPanel() {
                       <div className="text-center py-12 bg-clawd-surface border border-clawd-border rounded-2xl">
                         <Calendar size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
                         <p className="text-clawd-text-dim">No past meetings found</p>
-                        <p className="text-sm text-clawd-text-dim/60 mt-1">Meetings are saved to ~/clawd/meetings/</p>
+                        <p className="text-sm text-clawd-text-dim/60 mt-1">Meetings are saved to ~/froggo/meetings/</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
