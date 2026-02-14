@@ -423,22 +423,16 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                   {/* Message Bubble */}
                   <div className={`px-4 py-3 transition-all ${
                     msg.role === 'user' 
-                      ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md' 
+                      ? 'bg-clawd-accent/10 border border-clawd-accent/30' 
                       : msg.role === 'assistant' 
-                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md' 
+                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border shadow-sm' 
                         : 'bg-warning-subtle border border-warning-border text-warning'
                   } ${
                     msg.role === 'user'
-                      ? showAvatar 
-                        ? 'rounded-2xl rounded-tr-sm' 
-                        : isLastInGroup 
-                          ? 'rounded-2xl rounded-tr-sm' 
-                          : 'rounded-2xl rounded-tr-md'
-                      : showAvatar 
-                        ? 'rounded-2xl rounded-tl-sm' 
-                        : isLastInGroup 
-                          ? 'rounded-2xl rounded-tl-sm' 
-                          : 'rounded-2xl rounded-tl-md'
+                      ? 'rounded-2xl rounded-tr-sm'
+                      : msg.role === 'assistant'
+                        ? 'rounded-2xl rounded-tl-sm'
+                        : 'rounded-2xl'
                   }`}>
                     {msg.role === 'user' ? (
                       <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -472,7 +466,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
                 </div>
               </div>
@@ -491,7 +485,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -516,16 +510,16 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={sessionKey ? "Type your message... (Shift+Enter for new line)" : "Waiting for connection..."}
-              className="flex-1 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent resize-none"
+              className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors"
               rows={2}
               disabled={sending || !sessionKey}
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || sending || !sessionKey}
-              className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
             >
-              <Send size={16} />
+              <Send size={20} />
             </button>
           </div>
           <div className="mt-2 flex items-center justify-between">

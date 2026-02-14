@@ -650,8 +650,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <div
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
-                        ? 'bg-clawd-accent text-white rounded-tr-md'
-                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border'} rounded-tl-md shadow-sm`
+                        ? 'bg-clawd-accent/10 border border-clawd-accent/30 rounded-tr-sm'
+                        : `bg-clawd-surface/90 backdrop-blur-sm border ${theme?.border || 'border-clawd-border'} rounded-tl-sm shadow-sm`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
@@ -793,14 +793,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               onKeyDown={handleKeyDown}
               placeholder={`Message the room... (use @name to mention)`}
               rows={1}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-xl px-4 py-3 resize-none focus:outline-none focus:border-clawd-accent"
+              className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors"
             />
           </div>
 
           <button
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0}
-            className="p-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             <Send size={20} />
           </button>
