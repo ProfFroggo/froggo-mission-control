@@ -138,30 +138,30 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
   if (!isOpen) return null;
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 border-l border-gray-700">
+    <div className="flex flex-col h-full bg-clawd-surface border-l border-clawd-border">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-success" />
-          <h3 className="text-lg font-semibold text-white">Finance Manager</h3>
+          <h3 className="text-lg font-semibold text-clawd-text">Finance Manager</h3>
           <span className="px-2 py-0.5 text-xs bg-success-subtle text-success rounded-full">AI</span>
         </div>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
             <button
               onClick={clearHistory}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-clawd-bg-alt rounded-lg transition-colors"
               title="Clear chat history"
             >
-              <Trash2 className="w-4 h-4 text-gray-400" />
+              <Trash2 className="w-4 h-4 text-clawd-text-dim" />
             </button>
           )}
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-clawd-bg-alt rounded-lg transition-colors"
             >
-              <X className="w-4 h-4 text-gray-400" />
+              <X className="w-4 h-4 text-clawd-text-dim" />
             </button>
           )}
         </div>
@@ -170,22 +170,22 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {initializing ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-clawd-text-dim">
             <Loader2 className="w-6 h-6 animate-spin mr-2" />
             <span>Loading chat...</span>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 space-y-3">
-            <MessageSquare className="w-12 h-12 text-gray-600" />
+          <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim space-y-3">
+            <MessageSquare className="w-12 h-12 text-clawd-text-dim" />
             <div>
-              <p className="font-medium text-gray-300">Start a conversation</p>
+              <p className="font-medium text-clawd-text">Start a conversation</p>
               <p className="text-sm mt-1">Ask the Finance Manager about your finances</p>
             </div>
-            <div className="mt-4 p-3 bg-gray-800 rounded-lg text-xs text-left space-y-1 max-w-xs">
-              <p className="text-gray-300 font-medium">Try asking:</p>
-              <p className="text-gray-400">"How much did I spend this month?"</p>
-              <p className="text-gray-400">"Show me my biggest expenses"</p>
-              <p className="text-gray-400">"Am I on track with my budget?"</p>
+            <div className="mt-4 p-3 bg-clawd-bg-alt rounded-lg text-xs text-left space-y-1 max-w-xs">
+              <p className="text-clawd-text font-medium">Try asking:</p>
+              <p className="text-clawd-text-dim">"How much did I spend this month?"</p>
+              <p className="text-clawd-text-dim">"Show me my biggest expenses"</p>
+              <p className="text-clawd-text-dim">"Am I on track with my budget?"</p>
             </div>
           </div>
         ) : (
@@ -199,7 +199,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
                   className={`max-w-[80%] rounded-lg p-3 ${
                     msg.role === 'user'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 text-gray-100'
+                      : 'bg-clawd-bg-alt text-clawd-text'
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap break-words">
@@ -207,7 +207,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
                   </div>
                   <div
                     className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-info' : 'text-gray-500'
+                      msg.role === 'user' ? 'text-info' : 'text-clawd-text-dim'
                     }`}
                   >
                     {formatTimestamp(msg.timestamp)}
@@ -217,7 +217,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-lg p-3 bg-gray-800 text-gray-100">
+                <div className="max-w-[80%] rounded-lg p-3 bg-clawd-bg-alt text-clawd-text">
                   <div className="flex items-center gap-2 text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Finance Manager is thinking...</span>
@@ -247,7 +247,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-clawd-border">
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -256,13 +256,13 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask about your finances..."
-            className="flex-1 bg-gray-800 text-white placeholder-gray-400 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={loading || initializing}
           />
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
-            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -271,7 +271,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-clawd-text-dim mt-2">
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>
