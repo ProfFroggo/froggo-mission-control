@@ -16,7 +16,7 @@ const MeetingsPanelRaw = lazy(() => import('./MeetingsPanel'));
 const VoiceChatPanelRaw = lazy(() => import('./VoiceChatPanel'));
 const SettingsPanelRaw = lazy(() => import('./EnhancedSettingsPanel'));
 const NotificationsPanelRaw = lazy(() => import('./NotificationsPanelV2'));
-const XPanelRaw = lazy(() => import('./XPanel'));
+const XPanelRaw = lazy(() => import('./XTwitterPage'));
 const InboxPanelRaw = lazy(() => import('./InboxPanel'));
 const CommsInbox3PaneRaw = lazy(() => import('./CommsInbox3Pane'));
 const LibraryPanelRaw = lazy(() => import('./LibraryPanel'));
