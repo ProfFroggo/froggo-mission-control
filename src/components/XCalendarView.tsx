@@ -261,8 +261,8 @@ export const XCalendarView: React.FC = () => {
                           key={post.id}
                           className="bg-blue-100 border border-blue-300 rounded p-1 mb-1 text-xs group relative"
                         >
-                          <div className="font-medium text-blue-900">{preview}</div>
-                          <div className="text-blue-600 text-[10px]">
+                          <div className="font-medium text-info">{preview}</div>
+                          <div className="text-info text-[10px]">
                             {new Date(post.scheduled_for).toLocaleTimeString('en-US', { 
                               hour: '2-digit', 
                               minute: '2-digit' 
@@ -379,7 +379,7 @@ export const XCalendarView: React.FC = () => {
                     minute: '2-digit'
                   })}
                 </div>
-                <div className="text-xs font-medium text-blue-600">
+                <div className="text-xs font-medium text-info">
                   {idx === 0 ? '⭐ Best' : `#${idx + 1}`}
                 </div>
               </div>
