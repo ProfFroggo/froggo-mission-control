@@ -207,7 +207,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
                   </div>
                   <div
                     className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-blue-200' : 'text-gray-500'
+                      msg.role === 'user' ? 'text-info' : 'text-gray-500'
                     }`}
                   >
                     {formatTimestamp(msg.timestamp)}
@@ -235,10 +235,10 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
         <div className="mx-4 mb-2 p-3 bg-red-500/20 border border-error-border rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-error mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm text-red-300">{error}</p>
+            <p className="text-sm text-error">{error}</p>
             <button
               onClick={() => setError(null)}
-              className="text-xs text-error hover:text-red-300 mt-1"
+              className="text-xs text-error hover:text-error mt-1"
             >
               Dismiss
             </button>
