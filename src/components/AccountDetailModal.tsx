@@ -246,7 +246,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                     <AlertTriangle size={16} className="text-error mt-0.5" />
                     <div>
                       <div className="font-medium text-error mb-1">Connection Error</div>
-                      <div className="text-sm text-red-300">{account.errorMessage}</div>
+                      <div className="text-sm text-error">{account.errorMessage}</div>
                     </div>
                   </div>
                 </div>
@@ -279,7 +279,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
                   <Shield size={16} className="text-info mt-0.5" />
                   <div className="flex-1">
                     <div className="font-medium text-info mb-1">Permissions Explained</div>
-                    <div className="text-sm text-blue-300">
+                    <div className="text-sm text-info">
                       These permissions allow Froggo to access your data securely. 
                       You can revoke access at any time.
                     </div>
@@ -435,7 +435,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               {/* Danger Zone */}
               <section className="p-4 bg-error-subtle border border-red-500/20 rounded-lg">
                 <h4 className="font-medium text-error mb-2">Danger Zone</h4>
-                <p className="text-sm text-red-300 mb-3">
+                <p className="text-sm text-error mb-3">
                   Removing this account will revoke Froggo's access and delete all stored credentials.
                   This action cannot be undone.
                 </p>
