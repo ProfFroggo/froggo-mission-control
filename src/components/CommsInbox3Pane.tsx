@@ -1565,12 +1565,12 @@ export default function CommsInbox3Pane() {
       );
     }
 
-    // Sort: unread first, then by timestamp (oldest first, like WhatsApp)
+    // Sort: unread first, then by timestamp (newest first)
     filtered.sort((a, b) => {
       if (!a.is_read && b.is_read) return -1;
       if (a.is_read && !b.is_read) return 1;
-      // Oldest messages first (WhatsApp-style: new messages at bottom)
-      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      // Newest messages first
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
 
     return filtered;
