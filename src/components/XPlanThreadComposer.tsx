@@ -117,18 +117,18 @@ export default function XPlanThreadComposer() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-5 h-5 text-info" />
-          <h3 className="text-lg font-semibold text-white">Create Content Plan</h3>
+          <h3 className="text-lg font-semibold text-clawd-text">Create Content Plan</h3>
         </div>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-clawd-text-dim">
           Turn approved research into a content plan with thread structure.
         </p>
       </div>
 
       {researchIdeas.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-400">
+          <div className="text-center text-clawd-text-dim">
             <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-            <p className="font-medium text-gray-300">No approved research ideas</p>
+            <p className="font-medium text-clawd-text">No approved research ideas</p>
             <p className="text-sm mt-1">Research ideas must be approved before creating plans</p>
           </div>
         </div>
@@ -137,13 +137,13 @@ export default function XPlanThreadComposer() {
           <div className="flex-1 overflow-y-auto space-y-6">
             {/* Research Idea Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Based on Research Idea <span className="text-error">*</span>
               </label>
               <select
                 value={selectedResearchId}
                 onChange={(e) => setSelectedResearchId(e.target.value)}
-                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={submitting}
               >
                 <option value="">Select a research idea...</option>
@@ -154,8 +154,8 @@ export default function XPlanThreadComposer() {
                 ))}
               </select>
               {selectedResearchId && (
-                <div className="mt-2 p-3 bg-gray-800 rounded-lg">
-                  <p className="text-xs text-gray-400">
+                <div className="mt-2 p-3 bg-clawd-bg-alt rounded-lg">
+                  <p className="text-xs text-clawd-text-dim">
                     {researchIdeas.find(i => i.id === selectedResearchId)?.description.slice(0, 200)}
                     {(researchIdeas.find(i => i.id === selectedResearchId)?.description.length || 0) > 200 ? '...' : ''}
                   </p>
@@ -165,7 +165,7 @@ export default function XPlanThreadComposer() {
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Content Title <span className="text-error">*</span>
               </label>
               <input
@@ -173,14 +173,14 @@ export default function XPlanThreadComposer() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., AI Agents for Productivity - Complete Guide"
-                className="w-full bg-gray-800 text-white placeholder-gray-500 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={submitting}
               />
             </div>
 
             {/* Content Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Content Type <span className="text-error">*</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -190,8 +190,8 @@ export default function XPlanThreadComposer() {
                     onClick={() => setContentType(type.value)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
                       contentType === type.value
-                        ? 'border-blue-500 bg-blue-500/20 text-white'
-                        : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                        ? 'border-blue-500 bg-blue-500/20 text-clawd-text'
+                        : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
                     }`}
                     disabled={submitting}
                   >
@@ -204,7 +204,7 @@ export default function XPlanThreadComposer() {
 
             {/* Thread Length */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Thread Length <span className="text-error">*</span>
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -214,8 +214,8 @@ export default function XPlanThreadComposer() {
                     onClick={() => setThreadLength(length.value)}
                     className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                       threadLength === length.value
-                        ? 'border-blue-500 bg-blue-500/20 text-white'
-                        : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                        ? 'border-blue-500 bg-blue-500/20 text-clawd-text'
+                        : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
                     }`}
                     disabled={submitting}
                   >
@@ -227,7 +227,7 @@ export default function XPlanThreadComposer() {
 
             {/* Description/Outline */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Content Outline <span className="text-error">*</span>
               </label>
               <textarea
@@ -235,14 +235,14 @@ export default function XPlanThreadComposer() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={`Outline the ${threadLength === 1 ? 'tweet' : 'thread'}...\n\n${threadLength > 1 ? 'Example:\nTweet 1: Hook - grab attention\nTweet 2: Problem statement\nTweet 3: Solution\n...' : 'Keep it concise and impactful.'}`}
                 rows={threadLength === 1 ? 6 : 12}
-                className="w-full bg-gray-800 text-white placeholder-gray-500 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-sm"
+                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-sm"
                 disabled={submitting}
               />
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-clawd-text-dim">
                   {description.length} characters
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-clawd-text-dim">
                   ~{Math.ceil(description.length / 280)} tweet{Math.ceil(description.length / 280) !== 1 ? 's' : ''} worth of content
                 </p>
               </div>
@@ -250,11 +250,11 @@ export default function XPlanThreadComposer() {
           </div>
 
           {/* Submit Button */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
+          <div className="mt-6 pt-6 border-t border-clawd-border">
             <button
               onClick={handleSubmit}
               disabled={submitting || !selectedResearchId || !title.trim() || !description.trim()}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>

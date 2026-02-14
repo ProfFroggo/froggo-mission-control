@@ -145,28 +145,28 @@ export default function XDraftComposer() {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-info" />
-            <h3 className="text-lg font-semibold text-white">Create Draft</h3>
+            <h3 className="text-lg font-semibold text-clawd-text">Create Draft</h3>
           </div>
           {selectedPlanId && (
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-clawd-text text-sm rounded-lg transition-colors"
             >
               <Eye className="w-4 h-4" />
               {showPreview ? 'Hide' : 'Show'} Preview
             </button>
           )}
         </div>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-clawd-text-dim">
           Turn approved content plan into final draft with A/B versions.
         </p>
       </div>
 
       {contentPlans.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-400">
+          <div className="text-center text-clawd-text-dim">
             <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-600" />
-            <p className="font-medium text-gray-300">No approved content plans</p>
+            <p className="font-medium text-clawd-text">No approved content plans</p>
             <p className="text-sm mt-1">Content plans must be approved before drafting</p>
           </div>
         </div>
@@ -175,13 +175,13 @@ export default function XDraftComposer() {
           <div className="flex-1 overflow-y-auto space-y-6">
             {/* Plan Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-clawd-text mb-2">
                 Content Plan <span className="text-error">*</span>
               </label>
               <select
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={submitting}
               >
                 <option value="">Select a content plan...</option>
@@ -206,7 +206,7 @@ export default function XDraftComposer() {
             {/* Version Selector */}
             {selectedPlanId && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-clawd-text mb-2">
                   Version <span className="text-error">*</span>
                 </label>
                 <div className="flex gap-2">
@@ -216,8 +216,8 @@ export default function XDraftComposer() {
                       onClick={() => setVersion(v)}
                       className={`px-6 py-2 rounded-lg border-2 transition-colors ${
                         version === v
-                          ? 'border-blue-500 bg-blue-500/20 text-white'
-                          : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
+                          ? 'border-blue-500 bg-blue-500/20 text-clawd-text'
+                          : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
                       }`}
                       disabled={submitting}
                     >
@@ -232,7 +232,7 @@ export default function XDraftComposer() {
             {selectedPlanId && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-gray-300">
+                  <label className="text-sm font-medium text-clawd-text">
                     Tweets <span className="text-error">*</span>
                   </label>
                   {tweets.length < 10 && (
@@ -258,15 +258,15 @@ export default function XDraftComposer() {
                               onChange={(e) => handleTweetChange(index, e.target.value)}
                               placeholder={`Tweet ${index + 1}/${tweets.length}...`}
                               rows={3}
-                              className={`w-full bg-gray-800 text-white placeholder-gray-500 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
+                              className={`w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
                                 isOverLimit(tweet)
                                   ? 'border-red-500 focus:ring-red-500'
-                                  : 'border-gray-700 focus:ring-blue-500'
+                                  : 'border-clawd-border focus:ring-blue-500'
                               }`}
                               disabled={submitting}
                             />
                             <div className={`absolute bottom-2 right-2 text-xs font-mono ${
-                              isOverLimit(tweet) ? 'text-error' : 'text-gray-500'
+                              isOverLimit(tweet) ? 'text-error' : 'text-clawd-text-dim'
                             }`}>
                               {getCharCount(tweet)}/{TWEET_CHAR_LIMIT}
                             </div>
@@ -290,21 +290,21 @@ export default function XDraftComposer() {
 
             {/* Preview */}
             {showPreview && selectedPlanId && (
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-white mb-3">Preview (X/Twitter Style)</h4>
+              <div className="bg-clawd-bg-alt border border-clawd-border rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-clawd-text mb-3">Preview (X/Twitter Style)</h4>
                 <div className="space-y-3">
                   {tweets.filter(t => t.trim()).map((tweet, index) => (
                     <div key={index} className="bg-black rounded-lg p-4 border border-gray-800">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-white font-semibold">K</span>
+                          <span className="text-clawd-text font-semibold">K</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-white">Kevin MacArthur</span>
-                            <span className="text-gray-500 text-sm">@kevin • now</span>
+                            <span className="font-semibold text-clawd-text">Kevin MacArthur</span>
+                            <span className="text-clawd-text-dim text-sm">@kevin • now</span>
                           </div>
-                          <p className="text-white whitespace-pre-wrap break-words">{tweet}</p>
+                          <p className="text-clawd-text whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
                             <div className="mt-2 text-info text-sm">
                               Show this thread
@@ -320,11 +320,11 @@ export default function XDraftComposer() {
           </div>
 
           {/* Submit Button */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
+          <div className="mt-6 pt-6 border-t border-clawd-border">
             <button
               onClick={handleSubmit}
               disabled={submitting || !selectedPlanId || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>

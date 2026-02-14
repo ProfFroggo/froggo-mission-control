@@ -82,7 +82,7 @@ export default function XResearchIdeaEditor() {
       <div className="flex-1 overflow-y-auto space-y-6">
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-clawd-text mb-2">
             Title <span className="text-error">*</span>
           </label>
           <input
@@ -90,14 +90,14 @@ export default function XResearchIdeaEditor() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., AI Agents for Content Creation"
-            className="w-full bg-gray-800 text-white placeholder-gray-500 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={submitting}
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-clawd-text mb-2">
             Description <span className="text-error">*</span>
           </label>
           <textarea
@@ -105,17 +105,17 @@ export default function XResearchIdeaEditor() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the research idea, key insights, and why it's relevant..."
             rows={8}
-            className="w-full bg-gray-800 text-white placeholder-gray-500 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             disabled={submitting}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-clawd-text-dim mt-1">
             {description.length} characters
           </p>
         </div>
 
         {/* Citations */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-clawd-text mb-2">
             Citations <span className="text-error">*</span>
           </label>
           <div className="space-y-2">
@@ -126,7 +126,7 @@ export default function XResearchIdeaEditor() {
                   value={citation}
                   onChange={(e) => handleCitationChange(index, e.target.value)}
                   placeholder="https://example.com/article"
-                  className="flex-1 bg-gray-800 text-white placeholder-gray-500 border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={submitting}
                 />
                 {citations.length > 1 && (
