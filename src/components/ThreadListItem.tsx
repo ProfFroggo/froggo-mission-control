@@ -98,7 +98,7 @@ export default function ThreadListItem({
               <span className="text-xs">{thread.message_count}</span>
               {thread.unreplied_count > 0 && (
                 <div className="relative ml-1" title={`${thread.unreplied_count} awaiting reply`}>
-                  <Reply size={14} className="text-orange-500" />
+                  <Reply size={14} className="text-warning" />
                 </div>
               )}
             </div>
@@ -163,7 +163,7 @@ export default function ThreadListItem({
               </span>
             )}
             {thread.unreplied_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs bg-orange-500/20 text-warning px-2 py-0.5 rounded-full">
                 {thread.unreplied_count} awaiting reply
               </span>
             )}

@@ -199,7 +199,7 @@ export default function SecuritySettings() {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical': return 'bg-error-subtle text-error border-error-border';
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      case 'high': return 'bg-orange-500/20 text-warning border-orange-500/30';
       case 'medium': return 'bg-warning-subtle text-warning border-warning-border';
       case 'low': return 'bg-info-subtle text-info border-info-border';
       case 'info': return 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30';
@@ -213,7 +213,7 @@ export default function SecuritySettings() {
       {alerts.length > 0 && (
         <section>
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-orange-400" />
+            <AlertTriangle size={16} className="text-warning" />
             Active Security Alerts
           </h2>
           <div className="space-y-2">
