@@ -21,9 +21,9 @@ interface ScheduledItem {
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
   tweet: { icon: XIcon, color: 'text-white', bg: 'bg-white/10' },
-  email: { icon: Mail, color: 'text-red-400', bg: 'bg-red-500/20' },
-  message: { icon: MessageSquare, color: 'text-green-400', bg: 'bg-green-500/20' },
-  post: { icon: Calendar, color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  email: { icon: Mail, color: 'text-error', bg: 'bg-red-500/20' },
+  message: { icon: MessageSquare, color: 'text-success', bg: 'bg-green-500/20' },
+  post: { icon: Calendar, color: 'text-review', bg: 'bg-purple-500/20' },
 };
 
 export default function ContentCalendar() {
@@ -112,7 +112,7 @@ export default function ContentCalendar() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500/20 rounded-xl">
-              <Calendar size={24} className="text-purple-400" />
+              <Calendar size={24} className="text-review" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">Content Calendar</h1>

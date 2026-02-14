@@ -384,7 +384,7 @@ export default function XAutomationsTab() {
                       </div>
                       <button
                         onClick={() => removeAction(index)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-error hover:text-red-300"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -530,7 +530,7 @@ export default function XAutomationsTab() {
                       <h3 className="text-lg font-semibold">{automation.name}</h3>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         automation.enabled
-                          ? 'bg-green-500/20 text-green-400'
+                          ? 'bg-success-subtle text-success'
                           : 'bg-clawd-bg0/20 text-clawd-text-dim'
                       }`}>
                         {automation.enabled ? 'Active' : 'Disabled'}
@@ -546,7 +546,7 @@ export default function XAutomationsTab() {
                       onClick={() => toggleAutomation(automation.id, automation.enabled)}
                       className={`p-2 rounded-lg transition-colors ${
                         automation.enabled
-                          ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                          ? 'bg-success-subtle text-success hover:bg-green-500/30'
                           : 'bg-clawd-bg0/20 text-clawd-text-dim hover:bg-clawd-bg0/30'
                       }`}
                       title={automation.enabled ? 'Disable' : 'Enable'}
@@ -569,7 +569,7 @@ export default function XAutomationsTab() {
                     </button>
                     <button
                       onClick={() => deleteAutomation(automation.id)}
-                      className="p-2 rounded-lg hover:bg-clawd-border text-red-400 transition-colors"
+                      className="p-2 rounded-lg hover:bg-clawd-border text-error transition-colors"
                       title="Delete"
                     >
                       <Trash2 size={16} />

@@ -50,19 +50,19 @@ const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
 
 // Risk level styling
 const riskStyles: Record<string, { bg: string; text: string; border: string }> = {
-  critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/50' },
+  critical: { bg: 'bg-red-500/20', text: 'text-error', border: 'border-red-500/50' },
   high: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/50' },
-  medium: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/50' },
-  low: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/50' },
+  medium: { bg: 'bg-yellow-500/20', text: 'text-warning', border: 'border-yellow-500/50' },
+  low: { bg: 'bg-blue-500/20', text: 'text-info', border: 'border-blue-500/50' },
 };
 
 const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string }> = {
   tweet: { icon: Send, color: 'text-sky-400 bg-sky-500/20', label: 'Tweet' },
-  reply: { icon: MessageSquare, color: 'text-blue-400 bg-blue-500/20', label: 'Reply' },
-  email: { icon: Mail, color: 'text-green-400 bg-green-500/20', label: 'Email' },
-  message: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/20', label: 'Message' },
-  task: { icon: Bot, color: 'text-yellow-400 bg-yellow-500/20', label: 'Task' },
-  action: { icon: Play, color: 'text-green-400 bg-green-500/20', label: 'Action' },
+  reply: { icon: MessageSquare, color: 'text-info bg-blue-500/20', label: 'Reply' },
+  email: { icon: Mail, color: 'text-success bg-green-500/20', label: 'Email' },
+  message: { icon: MessageSquare, color: 'text-review bg-purple-500/20', label: 'Message' },
+  task: { icon: Bot, color: 'text-warning bg-yellow-500/20', label: 'Task' },
+  action: { icon: Play, color: 'text-success bg-green-500/20', label: 'Action' },
 };
 
 // Helper component for shortcut rows
@@ -1524,9 +1524,9 @@ export default function InboxPanel() {
                       </div>
                     </div>
                     <div className={`text-xs px-2 py-1 rounded ${
-                      item.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                      item.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                      'bg-blue-500/20 text-blue-400'
+                      item.status === 'approved' ? 'bg-success-subtle text-success' :
+                      item.status === 'rejected' ? 'bg-error-subtle text-error' :
+                      'bg-info-subtle text-info'
                     }`}>
                       {item.status}
                     </div>
@@ -1565,7 +1565,7 @@ export default function InboxPanel() {
               </button>
               <button
                 onClick={confirmReject}
-                className="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded text-sm transition-colors"
+                className="px-4 py-2 bg-error-subtle text-error hover:bg-red-500/30 rounded text-sm transition-colors"
               >
                 Reject
               </button>
@@ -1881,7 +1881,7 @@ export default function InboxPanel() {
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-yellow-500/20 rounded-lg">
-                <AlertTriangle size={24} className="text-yellow-400" />
+                <AlertTriangle size={24} className="text-warning" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">Agent Still Active</h3>
@@ -1890,7 +1890,7 @@ export default function InboxPanel() {
             </div>
 
             {/* Warning Content */}
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+            <div className="bg-yellow-500/10 border border-warning-border rounded-lg p-4 mb-4">
               <p className="text-sm text-yellow-200 mb-2">
                 ⚠️ An agent is currently working on this task
               </p>

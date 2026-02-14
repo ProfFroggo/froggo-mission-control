@@ -50,11 +50,11 @@ export default function AgentUtilizationChart() {
       return (
         <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{data.agentName}</p>
-          <p className="text-sm text-blue-400">Assigned: {data.tasksAssigned}</p>
-          <p className="text-sm text-green-400">Completed: {data.tasksCompleted}</p>
-          <p className="text-sm text-yellow-400">In Progress: {data.tasksInProgress}</p>
-          <p className="text-sm text-purple-400">Completion Rate: {data.completionRate}%</p>
-          <p className="text-sm text-orange-400">Avg Time: {data.avgCompletionTime.toFixed(1)}h</p>
+          <p className="text-sm text-info">Assigned: {data.tasksAssigned}</p>
+          <p className="text-sm text-success">Completed: {data.tasksCompleted}</p>
+          <p className="text-sm text-warning">In Progress: {data.tasksInProgress}</p>
+          <p className="text-sm text-review">Completion Rate: {data.completionRate}%</p>
+          <p className="text-sm text-warning">Avg Time: {data.avgCompletionTime.toFixed(1)}h</p>
           <p className="text-sm text-pink-400">Total Time: {data.totalTimeSpent.toFixed(1)}h</p>
         </div>
       );
@@ -109,7 +109,7 @@ export default function AgentUtilizationChart() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
-            <Award size={16} className="text-yellow-400" />
+            <Award size={16} className="text-warning" />
             Top Performer
           </div>
           <div className="text-xl font-bold">
@@ -123,14 +123,14 @@ export default function AgentUtilizationChart() {
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1">Total Tasks</div>
-          <div className="text-2xl font-bold text-blue-400">{totalTasks}</div>
+          <div className="text-2xl font-bold text-info">{totalTasks}</div>
         </div>
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
-            <Clock size={16} className="text-orange-400" />
+            <Clock size={16} className="text-warning" />
             Total Hours
           </div>
-          <div className="text-2xl font-bold text-orange-400">
+          <div className="text-2xl font-bold text-warning">
             {totalHours.toFixed(1)}h
           </div>
         </div>
@@ -207,16 +207,16 @@ export default function AgentUtilizationChart() {
                     <span className="font-medium">{agent.agentName}</span>
                   </div>
                 </td>
-                <td className="p-3 text-right text-blue-400">{agent.tasksAssigned}</td>
-                <td className="p-3 text-right text-green-400">{agent.tasksCompleted}</td>
+                <td className="p-3 text-right text-info">{agent.tasksAssigned}</td>
+                <td className="p-3 text-right text-success">{agent.tasksCompleted}</td>
                 <td className="p-3 text-right">
                   <span
                     className={
                       agent.completionRate >= 80
-                        ? 'text-green-400'
+                        ? 'text-success'
                         : agent.completionRate >= 50
-                        ? 'text-yellow-400'
-                        : 'text-red-400'
+                        ? 'text-warning'
+                        : 'text-error'
                     }
                   >
                     {agent.completionRate}%
@@ -225,7 +225,7 @@ export default function AgentUtilizationChart() {
                 <td className="p-3 text-right text-clawd-text-dim">
                   {agent.avgCompletionTime.toFixed(1)}h
                 </td>
-                <td className="p-3 text-right text-orange-400">
+                <td className="p-3 text-right text-warning">
                   {agent.totalTimeSpent.toFixed(1)}h
                 </td>
               </tr>

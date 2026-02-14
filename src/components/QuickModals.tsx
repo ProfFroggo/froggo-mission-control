@@ -81,7 +81,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     >
       <BaseModalHeader
         title="Calendar - Next 3 Days"
-        icon={<Calendar size={20} className="text-blue-400" />}
+        icon={<Calendar size={20} className="text-info" />}
         onClose={onClose}
       />
       
@@ -101,7 +101,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
         {loading ? (
           <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-red-400">{error}</div>
+          <div className="p-8 text-center text-error">{error}</div>
         ) : events.length === 0 ? (
           <div className="p-8 text-center text-clawd-text-dim">No events</div>
         ) : (
@@ -186,7 +186,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
     >
       <BaseModalHeader
         title="Unread Emails"
-        icon={<Mail size={20} className="text-green-400" />}
+        icon={<Mail size={20} className="text-success" />}
         onClose={onClose}
       />
       
@@ -206,7 +206,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
         {loading ? (
           <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-red-400">{error}</div>
+          <div className="p-8 text-center text-error">{error}</div>
         ) : emails.length === 0 ? (
           <div className="p-8 text-center text-clawd-text-dim">No unread emails</div>
         ) : (
@@ -304,7 +304,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
           <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
         ) : error ? (
           <div className="p-8 text-center text-clawd-text-dim">
-            <AlertCircle size={24} className="mx-auto mb-2 text-yellow-400" />
+            <AlertCircle size={24} className="mx-auto mb-2 text-warning" />
             <p>{error}</p>
             <p className="text-xs mt-2">X API may need setup</p>
           </div>
@@ -384,7 +384,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
     >
       <BaseModalHeader
         title="Recent Messages"
-        icon={<MessageSquare size={20} className="text-purple-400" />}
+        icon={<MessageSquare size={20} className="text-review" />}
         onClose={onClose}
       />
       
@@ -404,7 +404,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
         {loading ? (
           <div className="p-8 text-center text-clawd-text-dim">Loading...</div>
         ) : error ? (
-          <div className="p-8 text-center text-red-400">{error}</div>
+          <div className="p-8 text-center text-error">{error}</div>
         ) : messages.length === 0 ? (
           <div className="p-8 text-center text-clawd-text-dim">
             <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />

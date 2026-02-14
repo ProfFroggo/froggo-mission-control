@@ -68,9 +68,9 @@ export default function WeatherWidget() {
 
   const getWeatherColor = (description: string) => {
     const desc = description.toLowerCase();
-    if (desc.includes('rain') || desc.includes('shower')) return 'text-blue-400';
+    if (desc.includes('rain') || desc.includes('shower')) return 'text-info';
     if (desc.includes('snow') || desc.includes('sleet')) return 'text-cyan-300';
-    if (desc.includes('clear') || desc.includes('sunny')) return 'text-yellow-400';
+    if (desc.includes('clear') || desc.includes('sunny')) return 'text-warning';
     if (desc.includes('cloud') || desc.includes('overcast')) return 'text-clawd-text-dim';
     return 'text-clawd-text-dim';
   };
@@ -108,7 +108,7 @@ export default function WeatherWidget() {
           </div>
         ) : error ? (
           <div className="text-center py-6 text-clawd-text-dim">
-            <AlertCircle size={32} className="mx-auto mb-2 text-red-400" />
+            <AlertCircle size={32} className="mx-auto mb-2 text-error" />
             <p className="text-sm">{error}</p>
             <button onClick={fetchWeather} className="mt-2 text-xs text-clawd-accent hover:underline">
               Try again
@@ -128,14 +128,14 @@ export default function WeatherWidget() {
             {/* Today's High/Low */}
             <div className="flex items-center gap-4 pt-4 border-t border-clawd-border">
               <div className="flex items-center gap-2 flex-1">
-                <ArrowUp size={16} className="text-red-400" />
+                <ArrowUp size={16} className="text-error" />
                 <div>
                   <div className="text-xs text-clawd-text-dim">High</div>
                   <div className="text-lg font-semibold">{today.maxtempC}°</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-1">
-                <ArrowDown size={16} className="text-blue-400" />
+                <ArrowDown size={16} className="text-info" />
                 <div>
                   <div className="text-xs text-clawd-text-dim">Low</div>
                   <div className="text-lg font-semibold">{today.mintempC}°</div>
@@ -186,9 +186,9 @@ export default function WeatherWidget() {
                             {avgCondition}
                           </span>
                           <div className="flex items-center gap-2 text-sm">
-                            <span className="text-red-400/80">{day.maxtempC}°</span>
+                            <span className="text-error/80">{day.maxtempC}°</span>
                             <span className="text-clawd-text-dim">/</span>
-                            <span className="text-blue-400/80">{day.mintempC}°</span>
+                            <span className="text-info/80">{day.mintempC}°</span>
                           </div>
                         </div>
                       );

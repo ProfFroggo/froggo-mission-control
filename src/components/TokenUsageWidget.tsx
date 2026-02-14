@@ -112,10 +112,10 @@ export default function TokenUsageWidget() {
       return (
         <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{data.agent}</p>
-          <p className="text-sm text-blue-400">Input: {data.inputTokens.toLocaleString()}</p>
-          <p className="text-sm text-purple-400">Output: {data.outputTokens.toLocaleString()}</p>
-          <p className="text-sm text-green-400">Total: {data.totalTokens.toLocaleString()}</p>
-          <p className="text-sm text-yellow-400">Calls: {data.calls}</p>
+          <p className="text-sm text-info">Input: {data.inputTokens.toLocaleString()}</p>
+          <p className="text-sm text-review">Output: {data.outputTokens.toLocaleString()}</p>
+          <p className="text-sm text-success">Total: {data.totalTokens.toLocaleString()}</p>
+          <p className="text-sm text-warning">Calls: {data.calls}</p>
           <p className="text-sm text-orange-400">Cost: ${data.cost.toFixed(4)}</p>
         </div>
       );
@@ -183,10 +183,10 @@ export default function TokenUsageWidget() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
-            <Zap size={16} className="text-yellow-400" />
+            <Zap size={16} className="text-warning" />
             Total Tokens
           </div>
-          <div className="text-2xl font-bold text-yellow-400">
+          <div className="text-2xl font-bold text-warning">
             {totalTokens.toLocaleString()}
           </div>
           <div className="text-sm text-clawd-text-dim mt-1">
@@ -196,10 +196,10 @@ export default function TokenUsageWidget() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
-            <DollarSign size={16} className="text-green-400" />
+            <DollarSign size={16} className="text-success" />
             Total Cost
           </div>
-          <div className="text-2xl font-bold text-green-400">
+          <div className="text-2xl font-bold text-success">
             ${totalCost.toFixed(2)}
           </div>
           <div className="text-sm text-clawd-text-dim mt-1">
@@ -209,7 +209,7 @@ export default function TokenUsageWidget() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4">
           <div className="text-sm text-clawd-text-dim mb-1 flex items-center gap-2">
-            <TrendingUp size={16} className="text-blue-400" />
+            <TrendingUp size={16} className="text-info" />
             Top Consumer
           </div>
           <div className="text-xl font-bold">
@@ -267,7 +267,7 @@ export default function TokenUsageWidget() {
       {/* Budget Status Section */}
       <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
         <h3 className="text-sm font-medium text-clawd-text-dim mb-4 flex items-center gap-2">
-          <Shield size={16} className="text-blue-400" />
+          <Shield size={16} className="text-info" />
           Budget Status
         </h3>
         <div className="space-y-4">
@@ -322,7 +322,7 @@ export default function TokenUsageWidget() {
                         {agent.agent}
                       </span>
                       {budget.over_budget && (
-                        <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full font-medium">
+                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full font-medium">
                           OVER BUDGET
                         </span>
                       )}

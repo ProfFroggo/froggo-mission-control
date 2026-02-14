@@ -25,7 +25,7 @@ export default function XTabBar({ activeTab, onTabChange }: XTabBarProps) {
           onClick={() => onTabChange(tab.id)}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             activeTab === tab.id
-              ? 'bg-blue-500/20 text-blue-400 font-medium'
+              ? 'bg-info-subtle text-info font-medium'
               : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
           }`}
         >

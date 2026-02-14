@@ -201,10 +201,10 @@ export default function UsageStatsPanel() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
-            <MessageSquare size={20} className="text-blue-400" />
-            <TrendingUp size={16} className="text-green-400" />
+            <MessageSquare size={20} className="text-info" />
+            <TrendingUp size={16} className="text-success" />
           </div>
-          <div className="text-3xl font-bold text-blue-400 mb-1">
+          <div className="text-3xl font-bold text-info mb-1">
             {stats.totalMessages.toLocaleString()}
           </div>
           <div className="text-sm text-clawd-text-dim">Total Messages</div>
@@ -215,10 +215,10 @@ export default function UsageStatsPanel() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
-            <Users size={20} className="text-purple-400" />
-            <MessageCircle size={16} className="text-blue-400" />
+            <Users size={20} className="text-review" />
+            <MessageCircle size={16} className="text-info" />
           </div>
-          <div className="text-3xl font-bold text-purple-400 mb-1">
+          <div className="text-3xl font-bold text-review mb-1">
             {stats.totalConversations}
           </div>
           <div className="text-sm text-clawd-text-dim">Conversations</div>
@@ -229,10 +229,10 @@ export default function UsageStatsPanel() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
-            <Phone size={20} className="text-green-400" />
-            <Activity size={16} className="text-yellow-400" />
+            <Phone size={20} className="text-success" />
+            <Activity size={16} className="text-warning" />
           </div>
-          <div className="text-3xl font-bold text-green-400 mb-1">
+          <div className="text-3xl font-bold text-success mb-1">
             {topChannel?.channel || 'N/A'}
           </div>
           <div className="text-sm text-clawd-text-dim">Top Channel</div>
@@ -243,10 +243,10 @@ export default function UsageStatsPanel() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
-            <Mail size={20} className="text-orange-400" />
-            <TrendingUp size={16} className="text-green-400" />
+            <Mail size={20} className="text-warning" />
+            <TrendingUp size={16} className="text-success" />
           </div>
-          <div className="text-3xl font-bold text-orange-400 mb-1">
+          <div className="text-3xl font-bold text-warning mb-1">
             {stats.avgResponseTime.toFixed(1)}m
           </div>
           <div className="text-sm text-clawd-text-dim">Avg Response Time</div>
@@ -391,8 +391,8 @@ export default function UsageStatsPanel() {
               stats.messagesPerDay[stats.messagesPerDay.length - 1].count >
                 stats.messagesPerDay[0].count ? (
                 <>
-                  <TrendingUp size={20} className="text-green-400" />
-                  <span className="text-green-400">Increasing</span>
+                  <TrendingUp size={20} className="text-success" />
+                  <span className="text-success">Increasing</span>
                 </>
               ) : (
                 <span className="text-clawd-text-dim">Stable</span>

@@ -42,7 +42,7 @@ export default function OxTaskInbox() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'p0': return 'bg-red-500';
-      case 'p1': return 'bg-amber-500';
+      case 'p1': return 'bg-warning';
       case 'p2': return 'bg-blue-500';
       default: return 'bg-slate-500';
     }

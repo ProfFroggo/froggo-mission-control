@@ -897,8 +897,8 @@ Be thorough but only include real people, not generic references.`;
         {/* Status Message - Positioned absolutely over modal */}
         {saveStatus !== 'idle' && (
           <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 z-10 ${
-            saveStatus === 'success' ? 'bg-green-500/20 border border-green-500/50 text-green-400' :
-            saveStatus === 'error' ? 'bg-red-500/20 border border-red-500/50 text-red-400' :
+            saveStatus === 'success' ? 'bg-green-500/20 border border-green-500/50 text-success' :
+            saveStatus === 'error' ? 'bg-red-500/20 border border-red-500/50 text-error' :
             'bg-clawd-surface border border-clawd-border'
           }`}>
             {saveStatus === 'success' ? <CheckCircle size={16} /> :

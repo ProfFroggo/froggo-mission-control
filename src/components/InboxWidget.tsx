@@ -55,7 +55,7 @@ export default function InboxWidget() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="flex items-center gap-2 text-red-400 mb-2">
+        <div className="flex items-center gap-2 text-error mb-2">
           <AlertCircle size={20} />
           <span className="text-sm">{error}</span>
         </div>
@@ -68,7 +68,7 @@ export default function InboxWidget() {
       <div className="flex items-center justify-between mb-4">
         <Inbox 
           size={28} 
-          className={unreadCount > 0 ? 'text-blue-400' : 'text-clawd-text-dim'} 
+          className={unreadCount > 0 ? 'text-info' : 'text-clawd-text-dim'} 
         />
         {unreadCount > 0 && (
           <span className="px-3 py-1 bg-blue-500 text-white text-sm font-bold rounded-full animate-pulse shadow-lg">
@@ -86,14 +86,14 @@ export default function InboxWidget() {
       </div>
       
       {unreadCount > 0 && (
-        <div className="flex items-center gap-2 text-xs text-blue-400 font-medium">
+        <div className="flex items-center gap-2 text-xs text-info font-medium">
           <Inbox size={14} />
           Needs attention
         </div>
       )}
       
       {unreadCount === 0 && (
-        <div className="text-xs text-green-400">
+        <div className="text-xs text-success">
           All caught up!
         </div>
       )}

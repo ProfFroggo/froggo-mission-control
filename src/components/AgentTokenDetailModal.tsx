@@ -168,16 +168,16 @@ export default function AgentTokenDetailModal({
                     <td className="py-2 px-3 text-clawd-text-dim">
                       {truncateModel(entry.model)}
                     </td>
-                    <td className="py-2 px-3 text-right text-blue-400">
+                    <td className="py-2 px-3 text-right text-info">
                       {entry.input_tokens.toLocaleString()}
                     </td>
-                    <td className="py-2 px-3 text-right text-purple-400">
+                    <td className="py-2 px-3 text-right text-review">
                       {entry.output_tokens.toLocaleString()}
                     </td>
-                    <td className="py-2 px-3 text-right text-green-400 font-medium">
+                    <td className="py-2 px-3 text-right text-success font-medium">
                       {entry.total_tokens.toLocaleString()}
                     </td>
-                    <td className="py-2 px-3 text-right text-yellow-400">
+                    <td className="py-2 px-3 text-right text-warning">
                       ${entry.cost.toFixed(4)}
                     </td>
                   </tr>
@@ -203,13 +203,13 @@ export default function AgentTokenDetailModal({
               )}
               <div>
                 <div className="text-xs text-clawd-text-dim mb-1">Total Tokens</div>
-                <div className="text-lg font-semibold text-green-400">
+                <div className="text-lg font-semibold text-success">
                   {totalTokens.toLocaleString()}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-clawd-text-dim mb-1">Total Cost</div>
-                <div className="text-lg font-semibold text-yellow-400">
+                <div className="text-lg font-semibold text-warning">
                   ${totalCost.toFixed(4)}
                 </div>
               </div>

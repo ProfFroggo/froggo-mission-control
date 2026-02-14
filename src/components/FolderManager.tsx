@@ -403,7 +403,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       </button>
                       <button
                         onClick={() => handleDelete(folder.id, folder.name)}
-                        className="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors"
+                        className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
                         title="Delete folder"
                       >
                         <Trash2 size={14} />

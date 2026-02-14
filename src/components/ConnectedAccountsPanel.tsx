@@ -63,10 +63,10 @@ const DATA_TYPE_ICONS: Record<string, any> = {
 
 // Data type color mapping
 const DATA_TYPE_COLORS: Record<string, string> = {
-  email: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  calendar: 'bg-green-500/20 text-green-400 border-green-500/30',
-  drive: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  contacts: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  email: 'bg-info-subtle text-info border-info-border',
+  calendar: 'bg-success-subtle text-success border-success-border',
+  drive: 'bg-review-subtle text-review border-purple-500/30',
+  contacts: 'bg-orange-500/20 text-warning border-orange-500/30',
   tasks: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
 };
 
@@ -313,12 +313,12 @@ export default function ConnectedAccountsPanel() {
         {panelTab === 'accounts' && <>
 
         {/* Smart Selection Rules */}
-        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+        <div className="mb-6 p-4 bg-info-subtle border border-blue-500/20 rounded-xl">
           <div className="flex items-start gap-3 mb-3">
             <span className="text-2xl">🤖</span>
             <div className="flex-1">
-              <h3 className="font-semibold text-blue-400 mb-1">Smart Account Selection</h3>
-              <p className="text-sm text-blue-300">
+              <h3 className="font-semibold text-info mb-1">Smart Account Selection</h3>
+              <p className="text-sm text-info">
                 <strong>No default accounts!</strong> Froggo intelligently chooses which account to use based on context.
                 Every account is equal - selection is context-aware and intelligent.
               </p>
@@ -326,7 +326,7 @@ export default function ConnectedAccountsPanel() {
           </div>
           
           <details className="mt-3">
-            <summary className="text-sm font-medium text-blue-400 cursor-pointer hover:text-blue-300">
+            <summary className="text-sm font-medium text-info cursor-pointer hover:text-info">
               📋 View Selection Rules (7 Priority Levels)
             </summary>
             <div className="mt-3 space-y-2">
@@ -340,11 +340,11 @@ export default function ConnectedAccountsPanel() {
                 { priority: 7, rule: 'Context-Free', description: 'No context available - suggests adding more info', example: 'Last resort - indicates missing context' },
               ].map((rule) => (
                 <div key={rule.priority} className="flex gap-3 p-2 bg-clawd-bg rounded">
-                  <div className="text-blue-400 font-bold text-sm w-6">{rule.priority}</div>
+                  <div className="text-info font-bold text-sm w-6">{rule.priority}</div>
                   <div className="flex-1">
                     <div className="text-sm font-medium">{rule.rule}</div>
                     <div className="text-xs text-clawd-text-dim">{rule.description}</div>
-                    <div className="text-xs text-blue-300 mt-1">Example: {rule.example}</div>
+                    <div className="text-xs text-info mt-1">Example: {rule.example}</div>
                   </div>
                 </div>
               ))}
@@ -421,11 +421,11 @@ export default function ConnectedAccountsPanel() {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium">{account.email}</h3>
                         {account.authStatus === 'connected' ? (
-                          <CheckCircle size={16} className="text-green-400" />
+                          <CheckCircle size={16} className="text-success" />
                         ) : account.authStatus === 'expired' ? (
-                          <AlertTriangle size={16} className="text-yellow-400" />
+                          <AlertTriangle size={16} className="text-warning" />
                         ) : (
-                          <XCircle size={16} className="text-red-400" />
+                          <XCircle size={16} className="text-error" />
                         )}
                       </div>
 
@@ -473,7 +473,7 @@ export default function ConnectedAccountsPanel() {
                           e.stopPropagation();
                           handleRemove(account.id);
                         }}
-                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                        className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
                         title="Remove account"
                       >
                         <Trash2 size={16} />
@@ -530,18 +530,18 @@ export default function ConnectedAccountsPanel() {
               <div className="flex items-center gap-2">
                 {selectedAccount.authStatus === 'connected' ? (
                   <>
-                    <CheckCircle size={16} className="text-green-400" />
-                    <span className="text-green-400">Connected</span>
+                    <CheckCircle size={16} className="text-success" />
+                    <span className="text-success">Connected</span>
                   </>
                 ) : selectedAccount.authStatus === 'expired' ? (
                   <>
-                    <AlertTriangle size={16} className="text-yellow-400" />
-                    <span className="text-yellow-400">Token Expired</span>
+                    <AlertTriangle size={16} className="text-warning" />
+                    <span className="text-warning">Token Expired</span>
                   </>
                 ) : (
                   <>
-                    <XCircle size={16} className="text-red-400" />
-                    <span className="text-red-400">Connection Error</span>
+                    <XCircle size={16} className="text-error" />
+                    <span className="text-error">Connection Error</span>
                   </>
                 )}
               </div>
@@ -579,7 +579,7 @@ export default function ConnectedAccountsPanel() {
                 <div className="space-y-1">
                   {selectedAccount.grantedScopes.map((scope, idx) => (
                     <div key={idx} className="text-sm text-clawd-text-dim flex items-center gap-2">
-                      <CheckCircle size={14} className="text-green-400" />
+                      <CheckCircle size={14} className="text-success" />
                       <code className="text-xs">{scope}</code>
                     </div>
                   ))}
@@ -627,9 +627,9 @@ export default function ConnectedAccountsPanel() {
                   <div className="flex justify-between">
                     <span className="text-clawd-text-dim">Status:</span>
                     <span className={
-                      selectedAccount.lastSyncStatus === 'success' ? 'text-green-400' :
-                      selectedAccount.lastSyncStatus === 'partial' ? 'text-yellow-400' :
-                      'text-red-400'
+                      selectedAccount.lastSyncStatus === 'success' ? 'text-success' :
+                      selectedAccount.lastSyncStatus === 'partial' ? 'text-warning' :
+                      'text-error'
                     }>
                       {selectedAccount.lastSyncStatus.charAt(0).toUpperCase() + selectedAccount.lastSyncStatus.slice(1)}
                     </span>
@@ -659,7 +659,7 @@ export default function ConnectedAccountsPanel() {
                   handleRemove(selectedAccount.id);
                   setShowDetailModal(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/30 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-red-500/30 transition-colors"
               >
                 <Trash2 size={16} />
                 Disconnect
@@ -714,7 +714,7 @@ export default function ConnectedAccountsPanel() {
                           {type.supportedDataTypes.join(', ')}
                         </div>
                         {!type.available && type.requiresSkill && (
-                          <div className="text-xs text-red-400 mt-1">
+                          <div className="text-xs text-error mt-1">
                             Requires '{type.skillName}' skill (not installed)
                           </div>
                         )}

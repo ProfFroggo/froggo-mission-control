@@ -21,10 +21,10 @@ interface LibraryFile {
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  draft: { icon: FileText, color: 'text-blue-400 bg-blue-500/10', label: 'Drafts' },
-  document: { icon: FileText, color: 'text-green-400 bg-green-500/10', label: 'Documents' },
-  media: { icon: Image, color: 'text-purple-400 bg-purple-500/10', label: 'Media' },
-  strategy: { icon: FileText, color: 'text-amber-400 bg-amber-500/10', label: 'Strategy' },
+  draft: { icon: FileText, color: 'text-info bg-info-subtle', label: 'Drafts' },
+  document: { icon: FileText, color: 'text-success bg-success-subtle', label: 'Documents' },
+  media: { icon: Image, color: 'text-review bg-purple-500/10', label: 'Media' },
+  strategy: { icon: FileText, color: 'text-amber-400 bg-warning/10', label: 'Strategy' },
   research: { icon: FileText, color: 'text-cyan-400 bg-cyan-500/10', label: 'Research' },
   other: { icon: File, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
 };
@@ -409,7 +409,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
                         title="Delete"
                       >
-                        <Trash2 size={16} className="text-red-400" />
+                        <Trash2 size={16} className="text-error" />
                       </button>
                     </div>
                   </div>

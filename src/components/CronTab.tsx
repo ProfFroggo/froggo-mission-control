@@ -201,7 +201,7 @@ export default function CronTab() {
                       <span>{formatSchedule(job.schedule)}</span>
                       <span>Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
                       {job.state.lastStatus && (
-                        <span className={job.state.lastStatus === 'ok' ? 'text-green-400' : job.state.lastStatus === 'error' ? 'text-red-400' : 'text-clawd-text-dim'}>
+                        <span className={job.state.lastStatus === 'ok' ? 'text-success' : job.state.lastStatus === 'error' ? 'text-error' : 'text-clawd-text-dim'}>
                           Last: {job.state.lastStatus} {formatTimeAgo(job.state.lastRunAtMs)}
                         </span>
                       )}
@@ -211,7 +211,7 @@ export default function CronTab() {
                     <button onClick={e => { e.stopPropagation(); runJob(job.id); }} className="p-2 hover:bg-clawd-border rounded-lg text-clawd-text-dim hover:text-clawd-accent" title="Run now">
                       <Play size={14} />
                     </button>
-                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} className="p-2 hover:bg-red-500/20 rounded-lg text-clawd-text-dim hover:text-red-400" title="Delete">
+                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} className="p-2 hover:bg-red-500/20 rounded-lg text-clawd-text-dim hover:text-error" title="Delete">
                       <Trash2 size={14} />
                     </button>
                     {isExpanded ? <ChevronDown size={16} className="text-clawd-text-dim" /> : <ChevronRight size={16} className="text-clawd-text-dim" />}
@@ -233,7 +233,7 @@ export default function CronTab() {
                       </div>
                     )}
                     {job.state.lastError && (
-                      <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 flex items-start gap-2">
+                      <div className="mb-4 p-3 bg-error-subtle border border-red-500/20 rounded-lg text-sm text-error flex items-start gap-2">
                         <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                         {job.state.lastError}
                       </div>
@@ -249,9 +249,9 @@ export default function CronTab() {
                               run.status === 'ok' ? 'bg-green-400' : run.status === 'error' ? 'bg-red-400' : 'bg-gray-400'
                             }`} />
                             <span className="text-clawd-text-dim w-24 flex-shrink-0">{new Date(run.ts).toLocaleTimeString()}</span>
-                            <span className={run.status === 'error' ? 'text-red-400' : ''}>{run.status}</span>
+                            <span className={run.status === 'error' ? 'text-error' : ''}>{run.status}</span>
                             {run.durationMs && <span className="text-clawd-text-dim">{(run.durationMs / 1000).toFixed(1)}s</span>}
-                            {run.error && <span className="text-red-400 truncate">{run.error}</span>}
+                            {run.error && <span className="text-error truncate">{run.error}</span>}
                           </div>
                         ))}
                       </div>

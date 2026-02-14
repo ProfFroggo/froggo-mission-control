@@ -444,7 +444,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Header */}
       <div className={`p-4 border-b flex items-center gap-3 ${
         isTeamMeeting
-          ? 'bg-amber-500/10 border-amber-500/30'
+          ? 'bg-warning/10 border-amber-500/30'
           : 'bg-clawd-surface border-clawd-border'
       }`}>
         <button
@@ -456,7 +456,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         </button>
         <div className="flex items-center gap-2">
           {isTeamMeeting ? (
-            <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center shadow-md">
               <UsersRound size={20} className="text-white" />
             </div>
           ) : (
@@ -485,7 +485,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {room.agents.map(id => (
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white dark:border-gray-900" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
@@ -526,7 +526,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => setVoiceMode(!voiceMode)}
             className={`p-2 rounded-lg transition-colors ${
               voiceMode
-                ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50'
+                ? 'bg-success-subtle text-success ring-1 ring-green-500/50'
                 : 'text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border'
             }`}
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
@@ -542,8 +542,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             }}
             className={`p-2 rounded-lg transition-colors ${
               isTeamMeeting
-                ? 'text-amber-400 hover:text-red-400 hover:bg-red-500/10'
-                : 'text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10'
+                ? 'text-amber-400 hover:text-error hover:bg-error-subtle'
+                : 'text-clawd-text-dim hover:text-error hover:bg-error-subtle'
             }`}
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
           >
@@ -563,7 +563,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           <div className="text-center py-16 text-clawd-text-dim">
             {isTeamMeeting ? (
               <>
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
                   <UsersRound size={40} className="text-amber-500" />
                 </div>
                 <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started 🏢</p>
@@ -587,7 +587,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     <button
                       key={i}
                       onClick={() => setInput(q)}
-                      className="px-3 py-1.5 text-xs bg-amber-500/10 border border-amber-500/30 rounded-lg hover:border-amber-500 transition-colors"
+                      className="px-3 py-1.5 text-xs bg-warning/10 border border-amber-500/30 rounded-lg hover:border-amber-500 transition-colors"
                     >
                       {q}
                     </button>
@@ -651,7 +651,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
                         ? 'bg-clawd-accent text-white rounded-tr-md'
-                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border dark:border-gray-800'} rounded-tl-md shadow-sm`
+                        : `bg-clawd-surface border ${theme?.border || 'border-clawd-border'} rounded-tl-md shadow-sm`
                     }`}
                   >
                     {msg.streaming && !msg.content ? (
@@ -838,7 +838,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-clawd-text-dim'}`}>{agent.name}</span>
                       <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-green-500/20 text-green-400' : 'bg-clawd-bg text-clawd-text-dim'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success-subtle text-success' : 'bg-clawd-bg text-clawd-text-dim'}`}>
                       {inRoom ? 'In room' : 'Add'}
                     </span>
                   </button>

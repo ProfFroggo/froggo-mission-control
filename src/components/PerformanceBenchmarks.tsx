@@ -242,13 +242,13 @@ export default function PerformanceBenchmarks() {
       return (
         <ArrowUp
           size={16}
-          className={positive ? 'text-green-400' : 'text-red-400'}
+          className={positive ? 'text-success' : 'text-error'}
         />
       );
     return (
       <ArrowDown
         size={16}
-        className={positive ? 'text-red-400' : 'text-green-400'}
+        className={positive ? 'text-error' : 'text-success'}
       />
     );
   };
@@ -329,12 +329,12 @@ export default function PerformanceBenchmarks() {
                 className={`text-sm font-medium ${
                   metric.trend === 'up'
                     ? metric.positive
-                      ? 'text-green-400'
-                      : 'text-red-400'
+                      ? 'text-success'
+                      : 'text-error'
                     : metric.trend === 'down'
                     ? metric.positive
-                      ? 'text-red-400'
-                      : 'text-green-400'
+                      ? 'text-error'
+                      : 'text-success'
                     : 'text-clawd-text-dim'
                 }`}
               >
@@ -485,9 +485,9 @@ export default function PerformanceBenchmarks() {
                 key={metric.label}
                 className={`p-3 rounded-lg ${
                   isPositive
-                    ? 'bg-green-500/10 border border-green-500/20'
+                    ? 'bg-success-subtle border border-green-500/20'
                     : isNegative
-                    ? 'bg-red-500/10 border border-red-500/20'
+                    ? 'bg-error-subtle border border-red-500/20'
                     : 'bg-clawd-bg border border-clawd-border'
                 }`}
               >
@@ -498,9 +498,9 @@ export default function PerformanceBenchmarks() {
                     <span
                       className={
                         isPositive
-                          ? 'text-green-400'
+                          ? 'text-success'
                           : isNegative
-                          ? 'text-red-400'
+                          ? 'text-error'
                           : 'text-clawd-text-dim'
                       }
                     >

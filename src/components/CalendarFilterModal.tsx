@@ -204,7 +204,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         <div className="p-6 border-b border-clawd-border flex items-center justify-between bg-clawd-surface sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-xl">
-              <Calendar size={20} className="text-blue-400" />
+              <Calendar size={20} className="text-info" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">Calendar Sources</h3>

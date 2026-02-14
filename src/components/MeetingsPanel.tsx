@@ -842,8 +842,8 @@ export default function MeetingsPanel() {
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <Phone size={20} className="text-green-500" />
+              <div className="w-10 h-10 rounded-xl bg-success-subtle flex items-center justify-center">
+                <Phone size={20} className="text-success" />
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-clawd-text">Meetings</h1>
@@ -861,7 +861,7 @@ export default function MeetingsPanel() {
               <button
                 onClick={toggleMuted}
                 className={`p-2.5 rounded-lg transition-all ${isMuted 
-                  ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                  ? 'bg-error-subtle text-error hover:bg-red-500/20' 
                   : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'}`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
@@ -880,7 +880,7 @@ export default function MeetingsPanel() {
               onClick={() => { setActiveView('current'); setSelectedMeeting(null); }}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
                 activeView === 'current' 
-                  ? 'border-green-500 text-green-500' 
+                  ? 'border-green-500 text-success' 
                   : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
               }`}
             >
@@ -890,7 +890,7 @@ export default function MeetingsPanel() {
               onClick={() => setActiveView('history')}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
                 activeView === 'history' 
-                  ? 'border-green-500 text-green-500' 
+                  ? 'border-green-500 text-success' 
                   : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
               }`}
             >
@@ -916,8 +916,8 @@ export default function MeetingsPanel() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="relative">
-                              <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                                <span className="text-3xl font-mono font-bold text-red-500">
+                              <div className="w-16 h-16 rounded-2xl bg-error-subtle flex items-center justify-center">
+                                <span className="text-3xl font-mono font-bold text-error">
                                   {formatDuration(elapsedTime)}
                                 </span>
                               </div>
@@ -995,8 +995,8 @@ export default function MeetingsPanel() {
                       </div>
                     ) : (
                       <div className="text-center py-8">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                          <Phone size={36} className="text-green-500" />
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-success-subtle flex items-center justify-center">
+                          <Phone size={36} className="text-success" />
                         </div>
                         <h2 className="text-xl font-semibold text-clawd-text mb-2">Start a Meeting</h2>
                         <p className="text-clawd-text-dim mb-6 max-w-md mx-auto">
@@ -1021,7 +1021,7 @@ export default function MeetingsPanel() {
                     {(generatingSummary || aiSummary) && (
                       <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
                         <div className="p-4 border-b border-clawd-border flex items-center gap-2">
-                          <Brain size={18} className="text-purple-400" />
+                          <Brain size={18} className="text-review" />
                           <h3 className="font-medium text-clawd-text">AI Summary</h3>
                           {generatingSummary && <Loader2 size={14} className="animate-spin text-clawd-text-dim" />}
                         </div>
@@ -1045,7 +1045,7 @@ export default function MeetingsPanel() {
                       <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
                         <div className="p-4 border-b border-clawd-border flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <ListTodo size={18} className="text-orange-400" />
+                            <ListTodo size={18} className="text-warning" />
                             <h3 className="font-medium text-clawd-text">Action Items</h3>
                             <span className="text-xs px-2 py-0.5 bg-clawd-bg rounded-full text-clawd-text-dim">
                               {pendingItems.length} pending • {approvedItems.length} approved
@@ -1054,7 +1054,7 @@ export default function MeetingsPanel() {
                           {pendingItems.length > 0 && (
                             <button
                               onClick={approveAllPending}
-                              className="text-sm text-green-500 hover:text-green-400 flex items-center gap-1"
+                              className="text-sm text-success hover:text-success flex items-center gap-1"
                             >
                               <CheckCircle2 size={14} />
                               Approve All
@@ -1103,21 +1103,21 @@ export default function MeetingsPanel() {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                        item.type === 'task' ? 'bg-blue-500/20 text-blue-400' :
-                                        item.type === 'schedule' ? 'bg-purple-500/20 text-purple-400' :
-                                        item.type === 'message' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        item.type === 'task' ? 'bg-info-subtle text-info' :
+                                        item.type === 'schedule' ? 'bg-review-subtle text-review' :
+                                        item.type === 'message' ? 'bg-warning-subtle text-warning' :
                                         'bg-clawd-border text-clawd-text-dim'
                                       }`}>
                                         {item.type}
                                       </span>
                                       {item.status === 'approved' && (
-                                        <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full flex items-center gap-1">
+                                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
                                           <Check size={10} />
                                           Approved
                                         </span>
                                       )}
                                       {item.status === 'dismissed' && (
-                                        <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded-full">
+                                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
                                           Dismissed
                                         </span>
                                       )}
@@ -1130,7 +1130,7 @@ export default function MeetingsPanel() {
                                     <div className="flex items-center gap-1">
                                       <button
                                         onClick={() => approveActionItem(item.id)}
-                                        className="p-2 hover:bg-green-500/10 rounded-lg text-green-500 transition-all"
+                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
                                         title="Approve"
                                       >
                                         <Check size={16} />
@@ -1144,7 +1144,7 @@ export default function MeetingsPanel() {
                                       </button>
                                       <button
                                         onClick={() => dismissActionItem(item.id)}
-                                        className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 transition-all"
+                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
                                         title="Dismiss"
                                       >
                                         <XCircle size={16} />
@@ -1314,7 +1314,7 @@ export default function MeetingsPanel() {
                               <p className="text-xs text-clawd-text-dim mb-2">Tasks Created</p>
                               <ul className="space-y-1">
                                 {selectedMeeting.tasksCreated.map((task, i) => (
-                                  <li key={i} className="text-sm text-green-400 flex items-center gap-2">
+                                  <li key={i} className="text-sm text-success flex items-center gap-2">
                                     <Check size={12} />
                                     {task}
                                   </li>
@@ -1409,7 +1409,7 @@ export default function MeetingsPanel() {
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div>
-                                <p className="font-medium text-clawd-text group-hover:text-green-500 transition-all">
+                                <p className="font-medium text-clawd-text group-hover:text-success transition-all">
                                   {meeting.title || meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                                 </p>
                                 <div className="flex items-center gap-3 text-sm text-clawd-text-dim">
@@ -1421,7 +1421,7 @@ export default function MeetingsPanel() {
                                   )}
                                 </div>
                               </div>
-                              <ChevronRight size={16} className="text-clawd-text-dim group-hover:text-green-500 transition-all" />
+                              <ChevronRight size={16} className="text-clawd-text-dim group-hover:text-success transition-all" />
                             </div>
                             {meeting.transcript.length > 0 && (
                               <p className="text-sm text-clawd-text-dim line-clamp-2 mt-2">
@@ -1431,12 +1431,12 @@ export default function MeetingsPanel() {
                             {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0) && (
                               <div className="flex gap-2 mt-3">
                                 {meeting.actionItems.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-orange-500/20 text-warning rounded-full">
                                     {meeting.actionItems.length} action items
                                   </span>
                                 )}
                                 {meeting.tasksCreated.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full">
                                     {meeting.tasksCreated.length} tasks
                                   </span>
                                 )}

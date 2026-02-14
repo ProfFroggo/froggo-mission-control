@@ -24,10 +24,10 @@ const icons = {
 };
 
 const colors = {
-  success: 'bg-green-500/10 border-green-500/30 text-green-400',
-  error: 'bg-red-500/10 border-red-500/30 text-red-400',
-  warning: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
-  info: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+  success: 'bg-success-subtle border-success-border text-success',
+  error: 'bg-error-subtle border-error-border text-error',
+  warning: 'bg-yellow-500/10 border-warning-border text-warning',
+  info: 'bg-info-subtle border-info-border text-info',
 };
 
 function ToastItem({ toast, onDismiss }: ToastProps) {

@@ -18,11 +18,11 @@ interface UnifiedNotification {
 }
 
 const sourceConfig: Record<string, { icon: any; color: string; label: string }> = {
-  inbox: { icon: Inbox, color: 'text-yellow-400 bg-yellow-500/10', label: 'Inbox' },
-  whatsapp: { icon: MessageSquare, color: 'text-green-400 bg-green-500/10', label: 'WhatsApp' },
-  telegram: { icon: MessageSquare, color: 'text-blue-400 bg-blue-500/10', label: 'Telegram' },
-  discord: { icon: MessageSquare, color: 'text-purple-400 bg-purple-500/10', label: 'Discord' },
-  email: { icon: Mail, color: 'text-red-400 bg-red-500/10', label: 'Email' },
+  inbox: { icon: Inbox, color: 'text-warning bg-yellow-500/10', label: 'Inbox' },
+  whatsapp: { icon: MessageSquare, color: 'text-success bg-success-subtle', label: 'WhatsApp' },
+  telegram: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Telegram' },
+  discord: { icon: MessageSquare, color: 'text-review bg-purple-500/10', label: 'Discord' },
+  email: { icon: Mail, color: 'text-error bg-error-subtle', label: 'Email' },
   calendar: { icon: Calendar, color: 'text-orange-400 bg-orange-500/10', label: 'Calendar' },
   system: { icon: Bell, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'System' },
 };
@@ -198,7 +198,7 @@ export default function NotificationsPanel() {
                   key={notif.id}
                   className={`p-4 rounded-xl border transition-all ${
                     notif.urgent
-                      ? 'bg-red-500/5 border-red-500/30'
+                      ? 'bg-red-500/5 border-error-border'
                       : notif.read
                       ? 'bg-clawd-bg border-clawd-border opacity-60'
                       : 'bg-clawd-surface border-clawd-border shadow-card'
@@ -211,7 +211,7 @@ export default function NotificationsPanel() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium">{notif.title}</span>
                         {notif.urgent && (
-                          <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded">
+                          <span className="px-1.5 py-0.5 bg-error-subtle text-error text-xs rounded">
                             Urgent
                           </span>
                         )}
@@ -231,7 +231,7 @@ export default function NotificationsPanel() {
                       {notif.actionable && (
                         <button
                           onClick={() => handleApprove(notif)}
-                          className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-green-500/30 transition-colors"
                           title="Approve"
                         >
                           <Check size={16} />

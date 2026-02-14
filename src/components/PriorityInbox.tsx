@@ -23,7 +23,7 @@ export function PriorityIndicator({
   const configs = {
     critical: {
       color: 'bg-red-500',
-      textColor: 'text-red-400',
+      textColor: 'text-error',
       label: 'Critical',
       icon: Zap,
       pulse: true
@@ -37,7 +37,7 @@ export function PriorityIndicator({
     },
     normal: {
       color: 'bg-blue-500',
-      textColor: 'text-blue-400',
+      textColor: 'text-info',
       label: 'Normal',
       icon: TrendingUp,
       pulse: false
@@ -168,7 +168,7 @@ export function PriorityStats({ stats }: { stats: any }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">Critical</div>
-          <div className="text-2xl font-bold text-red-400">{stats.critical || 0}</div>
+          <div className="text-2xl font-bold text-error">{stats.critical || 0}</div>
         </div>
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">High</div>
@@ -176,7 +176,7 @@ export function PriorityStats({ stats }: { stats: any }) {
         </div>
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">Normal</div>
-          <div className="text-2xl font-bold text-blue-400">{stats.normal || 0}</div>
+          <div className="text-2xl font-bold text-info">{stats.normal || 0}</div>
         </div>
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">Low</div>
@@ -191,7 +191,7 @@ export function PriorityStats({ stats }: { stats: any }) {
         </div>
         <div className="flex items-center justify-between text-xs mt-1">
           <span className="text-clawd-text-dim">Learning</span>
-          <span className="text-green-400 font-medium">{stats.learnedSenders || 0} senders</span>
+          <span className="text-success font-medium">{stats.learnedSenders || 0} senders</span>
         </div>
       </div>
     </div>

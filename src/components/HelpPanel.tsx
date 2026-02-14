@@ -120,7 +120,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
         <div className="p-6 border-b border-clawd-border flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-xl">
-              <HelpCircle size={24} className="text-blue-400" />
+              <HelpCircle size={24} className="text-info" />
             </div>
             <div>
               <h2 className="text-xl font-semibold">Help & Documentation</h2>
@@ -399,7 +399,7 @@ function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () =
             {article.content.split('\n')[0]}
           </p>
           {article.videoUrl && (
-            <div className="flex items-center gap-1 mt-2 text-xs text-blue-400">
+            <div className="flex items-center gap-1 mt-2 text-xs text-info">
               <Video size={14} />
               <span>Video available</span>
             </div>
@@ -444,11 +444,11 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
             href={article.videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl hover:bg-blue-500/20 transition-colors"
+            className="flex items-center gap-2 p-4 bg-info-subtle border border-info-border rounded-xl hover:bg-blue-500/20 transition-colors"
           >
-            <Video size={20} className="text-blue-400" />
-            <span className="font-medium text-blue-400">Watch Video Tutorial</span>
-            <ExternalLink size={16} className="ml-auto text-blue-400" />
+            <Video size={20} className="text-info" />
+            <span className="font-medium text-info">Watch Video Tutorial</span>
+            <ExternalLink size={16} className="ml-auto text-info" />
           </a>
         )}
 
@@ -545,7 +545,7 @@ function QuickTipsView({ tips }: { tips: QuickTip[] }) {
 function ShortcutsView() {
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+      <div className="p-4 bg-info-subtle border border-info-border rounded-xl">
         <p className="text-sm">
           <strong>Tip:</strong> Press <kbd className="px-2 py-1 bg-clawd-bg border border-clawd-border rounded text-xs">⌘?</kbd> anytime to view the full keyboard shortcuts reference.
         </p>

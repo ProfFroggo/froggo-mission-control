@@ -52,7 +52,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
   return (
     <>
       <header 
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-clawd-surface/80 backdrop-blur-xl border-b border-white/[0.08] dark:border-gray-800/50 transition-all duration-200" 
+        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-clawd-surface/80 backdrop-blur-xl border-b border-white/[0.08]/50 transition-all duration-200" 
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}
@@ -65,14 +65,14 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         {/* Right: Counters only */}
         <div className="no-drag flex items-center gap-3">
           {status.pendingInbox > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-yellow-400" title={`${status.pendingInbox} pending inbox items`}>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning" title={`${status.pendingInbox} pending inbox items`}>
               <Inbox size={12} aria-hidden="true" />
               <span className="tabular-nums">{status.pendingInbox}</span>
             </span>
           )}
 
           {status.inProgressTasks > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-400" title={`${status.inProgressTasks} tasks in progress`}>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-info" title={`${status.inProgressTasks} tasks in progress`}>
               <Loader size={12} className="animate-spin" aria-hidden="true" />
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>

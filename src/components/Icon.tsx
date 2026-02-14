@@ -10,7 +10,7 @@
  * 
  * Usage:
  *   <Icon icon={CheckCircle} size="sm" />
- *   <Icon icon={Bot} size="lg" className="text-blue-400" />
+ *   <Icon icon={Bot} size="lg" className="text-info" />
  */
 
 import { LucideIcon } from 'lucide-react';
@@ -117,7 +117,7 @@ export function IconButton({
   const variantClasses = {
     default: 'bg-clawd-surface border border-clawd-border hover:bg-clawd-border',
     ghost: 'hover:bg-clawd-border',
-    danger: 'text-red-400 hover:bg-red-500/10 hover:border-red-500/30',
+    danger: 'text-error hover:bg-error-subtle hover:border-error-border',
   };
 
   return (

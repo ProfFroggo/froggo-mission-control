@@ -152,9 +152,9 @@ export default function TokenSummaryWidget() {
 
       {/* Status indicator */}
       <div className={`mt-3 pt-3 border-t border-clawd-border flex items-center gap-2 text-xs ${
-        status === 'good' ? 'text-green-400' :
-        status === 'warning' ? 'text-yellow-400' :
-        'text-red-400'
+        status === 'good' ? 'text-success' :
+        status === 'warning' ? 'text-warning' :
+        'text-error'
       }`}>
         {status === 'good' ? (
           <>

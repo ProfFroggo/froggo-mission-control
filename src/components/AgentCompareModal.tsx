@@ -170,7 +170,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-green-500' : ''}`}>
-                        <div className="text-3xl font-bold text-green-400 mb-1">
+                        <div className="text-3xl font-bold text-success mb-1">
                           {Math.round(agentData.successRate * 100)}%
                         </div>
                         <div className="text-xs text-clawd-text-dim">
@@ -195,7 +195,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className="bg-clawd-bg rounded-lg p-4">
-                        <div className="text-3xl font-bold text-blue-400 mb-1">
+                        <div className="text-3xl font-bold text-info mb-1">
                           {agentData.avgTime}
                         </div>
                         <div className="text-xs text-clawd-text-dim">
@@ -221,7 +221,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-purple-500' : ''}`}>
-                        <div className="text-3xl font-bold text-purple-400 mb-1">
+                        <div className="text-3xl font-bold text-review mb-1">
                           {agentData.totalTasks}
                         </div>
                         <div className="text-xs text-clawd-text-dim">
@@ -281,7 +281,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
                     return (
                       <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-yellow-500' : ''}`}>
-                        <div className="text-3xl font-bold text-yellow-400 mb-1">
+                        <div className="text-3xl font-bold text-warning mb-1">
                           {agentData.recentActivity}
                         </div>
                         <div className="text-xs text-clawd-text-dim">
@@ -294,8 +294,8 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
               </div>
 
               {/* Summary */}
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                <h3 className="text-sm font-semibold mb-2 text-blue-400">Summary</h3>
+              <div className="bg-info-subtle border border-info-border rounded-lg p-4">
+                <h3 className="text-sm font-semibold mb-2 text-info">Summary</h3>
                 <div className="text-sm space-y-1">
                   {getWinner('successRate') && (
                     <div>

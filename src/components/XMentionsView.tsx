@@ -144,7 +144,7 @@ export const XMentionsView: React.FC = () => {
             href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
+            className="text-info hover:underline"
           >
             View on X →
           </a>
@@ -262,7 +262,7 @@ export const XMentionsView: React.FC = () => {
             ) : (
               <button
                 onClick={() => setSelectedMention(mention.id)}
-                className="px-3 py-1 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50"
+                className="px-3 py-1 text-sm border border-blue-500 text-info rounded hover:bg-blue-50"
               >
                 💬 Reply
               </button>

@@ -6232,8 +6232,19 @@ ipcMain.handle('agents:getRegistry', async () => {
 });
 
 ipcMain.handle('agents:getMetrics', async () => {
-  const registry = getAgentRegistry();
-  const agents = Object.keys(registry).filter(id => id !== 'froggo'); // skip alias duplicate
+  // Get active agents from database (source of truth) instead of JSON registry
+  // This fixes issue where JSON had outdated IDs (lead_engineer vs senior-coder, etc.)
+  let agents: string[] = [];
+  try {
+    const rows = prepare(`SELECT id FROM agent_registry WHERE status = 'active' ORDER BY id`).all() as any[];
+    agents = rows.map(r => r.id).filter(id => id !== 'froggo'); // skip alias duplicate
+  } catch (e) {
+    safeLog.error('[agents:getMetrics] Failed to load agents from DB:', e);
+    // Fallback to registry if DB fails
+    const registry = getAgentRegistry();
+    agents = Object.keys(registry).filter(id => id !== 'froggo');
+  }
+  
   const metrics: Record<string, any> = {};
   const metricsScriptPath = path.join(SCRIPTS_DIR, 'agent-metrics.sh');
 
@@ -6301,6 +6312,89 @@ ipcMain.handle('agents:getMetrics', async () => {
         successRate: 0, 
         avgTime: 'N/A' 
       };
+    }
+  }
+  
+  // Special handling for Clara (reviewer agent) - she doesn't get tasks assigned,
+  // she reviews other agents' work. Calculate her metrics based on reviews performed.
+  if (agents.includes('clara')) {
+    try {
+      const reviewMetrics = prepare(`
+        SELECT 
+          COUNT(*) as total_reviews,
+          SUM(CASE WHEN reviewStatus = 'approved' THEN 1 ELSE 0 END) as approved,
+          SUM(CASE WHEN reviewStatus = 'rejected' THEN 1 ELSE 0 END) as rejected,
+          SUM(CASE WHEN reviewStatus = 'pending' THEN 1 ELSE 0 END) as pending,
+          ROUND(
+            CAST(SUM(CASE WHEN reviewStatus = 'approved' THEN 1 ELSE 0 END) AS FLOAT) / 
+            NULLIF(SUM(CASE WHEN reviewStatus IN ('approved', 'rejected') THEN 1 ELSE 0 END), 0) * 100,
+            1
+          ) as approval_rate
+        FROM tasks
+        WHERE reviewerId = 'clara' AND reviewStatus IS NOT NULL
+      `).get() as any;
+      
+      const recentReviews = prepare(`
+        SELECT COUNT(*) as recent_reviews
+        FROM tasks
+        WHERE reviewerId = 'clara' 
+          AND reviewStatus IN ('approved', 'rejected')
+          AND updated_at > (strftime('%s','now') - 7*24*60*60) * 1000
+      `).get() as any;
+      
+      metrics['clara'] = {
+        // Clara's "tasks" are reviews
+        totalTasks: reviewMetrics.total_reviews || 0,
+        completedTasks: (reviewMetrics.approved || 0) + (reviewMetrics.rejected || 0),
+        inProgressTasks: reviewMetrics.pending || 0,
+        reviewTasks: reviewMetrics.pending || 0,
+        blockedTasks: 0,
+        
+        // Clara's completion rate is approval rate
+        completionRate: reviewMetrics.approval_rate || 0,
+        avgTaskTimeHours: 0, // Not applicable for reviews
+        reviewSuccessRate: reviewMetrics.approval_rate || 0,
+        
+        // Recent activity
+        completedLast7Days: recentReviews.recent_reviews || 0,
+        
+        // Priority breakdown (not applicable for reviewer)
+        p0Tasks: 0,
+        p1Tasks: 0,
+        p2Tasks: 0,
+        p3Tasks: 0,
+        
+        // Subtask metrics (not applicable)
+        totalSubtasks: 0,
+        completedSubtasks: 0,
+        subtaskCompletionRate: 0,
+        
+        // Activity metrics
+        totalActivities: reviewMetrics.total_reviews || 0,
+        completionActions: (reviewMetrics.approved || 0) + (reviewMetrics.rejected || 0),
+        blockedActions: 0,
+        progressUpdates: 0,
+        lastActivityTimestamp: null,
+        
+        // Performance trend (not implemented for Clara yet)
+        performanceTrend: [],
+        
+        // Legacy compatibility
+        successRate: (reviewMetrics.approval_rate || 0) / 100,
+        avgTime: 'N/A',
+        
+        // Clara-specific metrics
+        claraMetrics: {
+          totalReviews: reviewMetrics.total_reviews || 0,
+          approved: reviewMetrics.approved || 0,
+          rejected: reviewMetrics.rejected || 0,
+          pending: reviewMetrics.pending || 0,
+          approvalRate: reviewMetrics.approval_rate || 0,
+        },
+      };
+    } catch (e) {
+      safeLog.error('Failed to get Clara review metrics:', e);
+      // Keep Clara's metrics from the script (even if they're all zeros)
     }
   }
 

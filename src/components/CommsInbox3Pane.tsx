@@ -102,7 +102,7 @@ interface AIAnalysis {
 const DEFAULT_EMAIL_ACCOUNTS: Account[] = [];
 
 const PLATFORM_ICON_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  whatsapp: { icon: <MessageCircle size={16} />, color: 'text-green-400', label: 'WhatsApp' },
+  whatsapp: { icon: <MessageCircle size={16} />, color: 'text-success', label: 'WhatsApp' },
   telegram: { icon: <Send size={16} />, color: 'text-sky-400', label: 'Telegram' },
   discord: { icon: <Gamepad2 size={16} />, color: 'text-indigo-400', label: 'Discord' },
   twitter: { icon: <XIcon size={16} />, color: 'text-clawd-text-dim', label: 'X DMs' },
@@ -113,10 +113,10 @@ const SYSTEM_ACCOUNT: Account = {
   label: 'System',
   platform: 'system',
   icon: <ActivityIcon size={16} />,
-  color: 'text-purple-400',
+  color: 'text-review',
 };
 
-const EMAIL_COLORS = ['text-orange-400', 'text-blue-400', 'text-emerald-400', 'text-rose-400', 'text-amber-400'];
+const EMAIL_COLORS = ['text-warning', 'text-info', 'text-emerald-400', 'text-rose-400', 'text-amber-400'];
 
 // Build accounts from gateway channels + discovered email accounts
 function buildAccountsFromSources(
@@ -164,7 +164,7 @@ function buildAccountsFromSources(
 function buildAccountsFallback(): Account[] {
   return [
     ...DEFAULT_EMAIL_ACCOUNTS,
-    { id: 'whatsapp', label: 'WhatsApp', platform: 'whatsapp', icon: <MessageCircle size={16} />, color: 'text-green-400' },
+    { id: 'whatsapp', label: 'WhatsApp', platform: 'whatsapp', icon: <MessageCircle size={16} />, color: 'text-success' },
     { id: 'telegram', label: 'Telegram', platform: 'telegram', icon: <Send size={16} />, color: 'text-sky-400' },
     { id: 'discord', label: 'Discord', platform: 'discord', icon: <Gamepad2 size={16} />, color: 'text-indigo-400' },
     { id: 'twitter', label: 'X DMs', platform: 'twitter', icon: <XIcon size={16} />, color: 'text-clawd-text-dim' },
@@ -188,8 +188,8 @@ const FOLDERS: Folder[] = [
 
 function platformColor(p: string): string {
   const map: Record<string, string> = {
-    email: 'text-orange-400', whatsapp: 'text-green-400', telegram: 'text-sky-400',
-    discord: 'text-indigo-400', twitter: 'text-clawd-text-dim', system: 'text-purple-400'
+    email: 'text-warning', whatsapp: 'text-success', telegram: 'text-sky-400',
+    discord: 'text-indigo-400', twitter: 'text-clawd-text-dim', system: 'text-review'
   };
   return map[p] || 'text-clawd-text-dim';
 }
@@ -540,7 +540,7 @@ function CenterPane({
   };
 
   return (
-    <div className="flex-1 min-w-[300px] max-w-[440px] bg-clawd-bg border-r border-clawd-border flex flex-col">
+    <div className="w-[400px] flex-shrink-0 bg-clawd-bg border-r border-clawd-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-clawd-border">
         <div className="flex items-center justify-between mb-2">
@@ -622,19 +622,19 @@ function CenterPane({
                         </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
-                        <span className="text-[10px] text-blue-400 bg-blue-500/15 rounded px-1 py-0.5 font-medium" title="Unread messages">
+                        <span className="text-[10px] text-info bg-blue-500/15 rounded px-1 py-0.5 font-medium" title="Unread messages">
                           {conv.unread_count} unread
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-[10px] text-orange-400 bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-[10px] text-warning bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
                       )}
                       {conv.has_attachment && <Paperclip size={10} className="text-clawd-text-dim flex-shrink-0" />}
                       {conv.is_starred && (
-                        <Star size={10} className="text-yellow-400 flex-shrink-0" fill="currentColor" />
+                        <Star size={10} className="text-warning flex-shrink-0" fill="currentColor" />
                       )}
                     </div>
                   </div>
@@ -645,7 +645,7 @@ function CenterPane({
                       <button
                         onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
                         className={`p-1 rounded hover:bg-clawd-border transition-opacity ${
-                          conv.is_starred ? 'text-yellow-400' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
+                          conv.is_starred ? 'text-warning' : 'text-clawd-text-dim opacity-0 group-hover:opacity-100'
                         }`}
                         title={conv.is_starred ? 'Unstar' : 'Star'}
                       >
@@ -761,11 +761,11 @@ function InboxDashboard({
             <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Unread</div>
           </div>
           <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
-            <div className="text-2xl font-bold text-red-400">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
+            <div className="text-2xl font-bold text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
             <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
-            <div className="text-2xl font-bold text-orange-400">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
+            <div className="text-2xl font-bold text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
             <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-clawd-surface rounded-lg p-3 border border-clawd-border">
@@ -1144,15 +1144,15 @@ function RightPane({
           <div className="flex items-center gap-2 mb-1.5">
             <Sparkles size={13} className="text-clawd-accent flex-shrink-0" />
             <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-              aiAnalysis.triage === 'urgent' ? 'bg-red-500/20 text-red-400' :
-              aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-orange-400' :
-              aiAnalysis.triage === 'fyi' ? 'bg-blue-500/20 text-blue-400' :
+              aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
+              aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-warning' :
+              aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
               'bg-gray-500/20 text-gray-400'
             }`}>
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
             {!aiAnalysis.reply_needed && (
-              <span className="text-[10px] text-green-400 bg-green-500/15 px-1.5 py-0.5 rounded font-medium">
+              <span className="text-[10px] text-success bg-green-500/15 px-1.5 py-0.5 rounded font-medium">
                 No reply needed
               </span>
             )}
@@ -1183,7 +1183,7 @@ function RightPane({
                 <button
                   key={i}
                   onClick={() => onCreateEvent?.(event)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors"
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-purple-500/10 text-review border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors"
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
                 >
                   <CalendarPlus size={10} />
@@ -1203,7 +1203,7 @@ function RightPane({
           /* System activity detail */
           <div className="bg-clawd-surface rounded-lg p-4 border border-clawd-border">
             <div className="flex items-center gap-2 mb-3 pb-3 border-b border-clawd-border">
-              <ActivityIcon size={14} className="text-purple-400" />
+              <ActivityIcon size={14} className="text-review" />
               <span className="font-semibold text-sm">{conversation.name || 'System'}</span>
               <span className="text-xs text-clawd-text-dim ml-auto">{conversation.relativeTime}</span>
             </div>
@@ -1565,12 +1565,12 @@ export default function CommsInbox3Pane() {
       );
     }
 
-    // Sort: unread first, then by timestamp (oldest first, like WhatsApp)
+    // Sort: unread first, then by timestamp (newest first)
     filtered.sort((a, b) => {
       if (!a.is_read && b.is_read) return -1;
       if (a.is_read && !b.is_read) return 1;
-      // Oldest messages first (WhatsApp-style: new messages at bottom)
-      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      // Newest messages first
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
 
     return filtered;

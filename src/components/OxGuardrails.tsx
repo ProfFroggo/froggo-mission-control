@@ -48,7 +48,7 @@ export default function OxGuardrails() {
           <button
             onClick={saveSettings}
             disabled={!hasChanges}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-600 hover:bg-warning text-white text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save size={16} />
             Save Changes

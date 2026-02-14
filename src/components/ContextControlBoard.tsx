@@ -172,7 +172,7 @@ export default function ContextControlBoard() {
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-purple-500/20 rounded-xl">
-            <Sparkles size={24} className="text-purple-400" />
+            <Sparkles size={24} className="text-review" />
           </div>
           <div>
             <h1 className="text-xl font-semibold">Context Control</h1>
@@ -243,7 +243,7 @@ export default function ContextControlBoard() {
                     <div className="flex items-center gap-2">
                       <FileText size={16} className="text-clawd-accent" />
                       <span className="font-medium">{selectedFile.name}</span>
-                      {hasChanges && <span className="text-xs text-yellow-400">• Unsaved</span>}
+                      {hasChanges && <span className="text-xs text-warning">• Unsaved</span>}
                     </div>
                     <div className="flex gap-2">
                       {editing ? (
@@ -334,7 +334,7 @@ export default function ContextControlBoard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded text-xs ${
-                      agent.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                      agent.status === 'active' ? 'bg-success-subtle text-success' :
                       agent.status === 'idle' ? 'bg-gray-500/20 text-gray-400' :
                       'bg-clawd-bg0/20 text-clawd-text-dim'
                     }`}>

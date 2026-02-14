@@ -532,7 +532,7 @@ export default function XPanel() {
               <div className="p-4 border-b border-clawd-border">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <Search size={20} className="text-blue-400" />
+                    <Search size={20} className="text-info" />
                   </div>
                   <div>
                     <h3 className="font-semibold">Research Agent</h3>
@@ -631,7 +631,7 @@ export default function XPanel() {
                 <div className="p-4 border-b border-clawd-border">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-500/20 rounded-lg">
-                      <FileText size={20} className="text-green-400" />
+                      <FileText size={20} className="text-success" />
                     </div>
                     <div>
                       <h3 className="font-semibold">Planning Agent</h3>
@@ -828,7 +828,7 @@ export default function XPanel() {
                   
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm ${planComposeText.length > 260 ? 'text-yellow-500' : planComposeText.length > 280 ? 'text-red-500' : 'text-clawd-text-dim'}`}>
+                      <span className={`text-sm ${planComposeText.length > 260 ? 'text-warning' : planComposeText.length > 280 ? 'text-error' : 'text-clawd-text-dim'}`}>
                         {planComposeText.length}/280
                       </span>
                       
@@ -1033,7 +1033,7 @@ export default function XPanel() {
                   <p className="whitespace-pre-wrap mb-4">{draft.text}</p>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      draft.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                      draft.status === 'pending' ? 'bg-yellow-500/20 text-warning' :
                       'bg-clawd-border text-clawd-text-dim'
                     }`}>
                       {draft.status}
@@ -1051,7 +1051,7 @@ export default function XPanel() {
                       </button>
                       <button
                         onClick={() => handleDelete(draft.id)}
-                        className="p-2 hover:bg-clawd-border text-red-400 rounded-lg transition-colors"
+                        className="p-2 hover:bg-clawd-border text-error rounded-lg transition-colors"
                         title="Delete"
                       >
                         <Trash2 size={16} />
@@ -1125,22 +1125,22 @@ export default function XPanel() {
           <div className="max-w-2xl mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 text-center">
-                <Heart size={24} className="mx-auto mb-2 text-red-400" />
+                <Heart size={24} className="mx-auto mb-2 text-error" />
                 <div className="text-2xl font-bold">{stats?.totalLikes?.toLocaleString() ?? '--'}</div>
                 <div className="text-sm text-clawd-text-dim">Total Likes</div>
               </div>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 text-center">
-                <Repeat size={24} className="mx-auto mb-2 text-green-400" />
+                <Repeat size={24} className="mx-auto mb-2 text-success" />
                 <div className="text-2xl font-bold">{stats?.totalRetweets?.toLocaleString() ?? '--'}</div>
                 <div className="text-sm text-clawd-text-dim">Reposts</div>
               </div>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 text-center">
-                <MessageCircle size={24} className="mx-auto mb-2 text-blue-400" />
+                <MessageCircle size={24} className="mx-auto mb-2 text-info" />
                 <div className="text-2xl font-bold">{stats?.totalReplies?.toLocaleString() ?? '--'}</div>
                 <div className="text-sm text-clawd-text-dim">Replies</div>
               </div>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 text-center">
-                <Eye size={24} className="mx-auto mb-2 text-purple-400" />
+                <Eye size={24} className="mx-auto mb-2 text-review" />
                 <div className="text-2xl font-bold">{stats?.totalViews?.toLocaleString() ?? '--'}</div>
                 <div className="text-sm text-clawd-text-dim">Views</div>
               </div>

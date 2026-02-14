@@ -39,7 +39,7 @@ export function ReadStateBadge({
       {(hasUnread || showZero) && (
         <div className={`
           inline-flex items-center justify-center rounded-full flex-shrink-0
-          ${hasUnread ? 'bg-blue-500/20 text-blue-400 font-semibold' : 'bg-clawd-border text-clawd-text-dim'}
+          ${hasUnread ? 'bg-info-subtle text-info font-semibold' : 'bg-clawd-border text-clawd-text-dim'}
           ${sizeClasses[size]}
         `}>
           <Mail size={iconSizes[size]} className="flex-shrink-0" />
