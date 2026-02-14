@@ -243,10 +243,10 @@ export default function UsageStatsPanel() {
 
         <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
-            <Mail size={20} className="text-orange-400" />
+            <Mail size={20} className="text-warning" />
             <TrendingUp size={16} className="text-success" />
           </div>
-          <div className="text-3xl font-bold text-orange-400 mb-1">
+          <div className="text-3xl font-bold text-warning mb-1">
             {stats.avgResponseTime.toFixed(1)}m
           </div>
           <div className="text-sm text-clawd-text-dim">Avg Response Time</div>

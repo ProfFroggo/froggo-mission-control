@@ -828,7 +828,7 @@ export default function XPanel() {
                   
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm ${planComposeText.length > 260 ? 'text-yellow-500' : planComposeText.length > 280 ? 'text-red-500' : 'text-clawd-text-dim'}`}>
+                      <span className={`text-sm ${planComposeText.length > 260 ? 'text-warning' : planComposeText.length > 280 ? 'text-error' : 'text-clawd-text-dim'}`}>
                         {planComposeText.length}/280
                       </span>
                       
@@ -1033,7 +1033,7 @@ export default function XPanel() {
                   <p className="whitespace-pre-wrap mb-4">{draft.text}</p>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      draft.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' :
+                      draft.status === 'pending' ? 'bg-yellow-500/20 text-warning' :
                       'bg-clawd-border text-clawd-text-dim'
                     }`}>
                       {draft.status}
