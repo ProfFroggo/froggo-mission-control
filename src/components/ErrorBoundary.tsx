@@ -36,7 +36,7 @@ const ERROR_PATTERNS: ErrorPattern[] = [
     title: 'Missing Data',
     message: 'Some expected data is not available yet.',
     suggestion: 'Try refreshing the page or waiting a moment for data to load.',
-    icon: <Database size={32} className="text-orange-400" />
+    icon: <Database size={32} className="text-warning" />
   },
   {
     test: /Network (request )?failed/i,
@@ -85,7 +85,7 @@ const ERROR_PATTERNS: ErrorPattern[] = [
     title: 'Connection Lost',
     message: 'Real-time connection to the server was interrupted.',
     suggestion: 'Check your connection and refresh the page.',
-    icon: <Wifi size={32} className="text-orange-400" />
+    icon: <Wifi size={32} className="text-warning" />
   },
   {
     test: /localStorage|sessionStorage/i,
@@ -244,7 +244,7 @@ Timestamp: ${new Date().toISOString()}
 
               {!isCritical && errorDetails && (
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-yellow-600 mb-2">
+                  <h3 className="text-sm font-semibold text-warning mb-2">
                     💡 What to try
                   </h3>
                   <p className="text-sm text-clawd-text-dim">
