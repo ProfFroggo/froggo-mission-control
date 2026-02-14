@@ -288,15 +288,15 @@ export default function WizardChat() {
             placeholder={step === 'extracting' ? 'Generating plan...' : 'Continue the conversation...'}
             rows={1}
             disabled={streaming || step === 'extracting'}
-            className="flex-1 bg-clawd-bg border border-clawd-border rounded px-3 py-2 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none disabled:opacity-50"
+            className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
           />
           <button
             onClick={handleSendClick}
             disabled={streaming || step === 'extracting'}
-            className="p-2 rounded bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
             title="Send message"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>

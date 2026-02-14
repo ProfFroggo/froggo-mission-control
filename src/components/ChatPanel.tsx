@@ -1149,20 +1149,12 @@ export default function ChatPanel() {
                     <div
                       className={`px-4 py-3 transition-all duration-150 ${
                         isUser
-                          ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md'
+                          ? 'bg-clawd-accent/10 border border-clawd-accent/30'
+                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border shadow-sm'
                       } ${
                         isUser
-                          ? showAvatar 
-                            ? 'rounded-2xl rounded-tr-md' 
-                            : isLastInGroup 
-                              ? 'rounded-2xl rounded-tr-md' 
-                              : 'rounded-2xl rounded-tr-lg'
-                          : showAvatar 
-                            ? 'rounded-2xl rounded-tl-md' 
-                            : isLastInGroup 
-                              ? 'rounded-2xl rounded-tl-md' 
-                              : 'rounded-2xl rounded-tl-lg'
+                          ? 'rounded-2xl rounded-tr-sm'
+                          : 'rounded-2xl rounded-tl-sm'
                       }`}
                     >
                       {msg.streaming && !msg.content ? (
@@ -1334,14 +1326,14 @@ export default function ChatPanel() {
               placeholder={connected ? `Message ${selectedAgent.name}...` : "Waiting for connection..."}
               disabled={!connected || loading}
               rows={1}
-              className="w-full bg-clawd-bg border border-clawd-border rounded-xl px-4 py-3 pr-12 resize-none focus:outline-none focus:border-clawd-accent disabled:opacity-50"
+              className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
             />
           </div>
           
           <button
             onClick={sendMessage}
             disabled={(!input.trim() && attachments.length === 0) || !connected || loading}
-            className="p-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
           </button>
