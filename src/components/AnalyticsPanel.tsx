@@ -224,10 +224,10 @@ export default function AnalyticsPanel() {
 
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <Clock size={20} className="text-orange-400" />
+                  <Clock size={20} className="text-warning" />
                   <Activity size={16} className="text-success" />
                 </div>
-                <div className="text-3xl font-bold text-orange-400 mb-1">
+                <div className="text-3xl font-bold text-warning mb-1">
                   {totalHours.toFixed(0)}h
                 </div>
                 <div className="text-sm text-clawd-text-dim">Total Hours</div>
@@ -340,7 +340,7 @@ export default function AnalyticsPanel() {
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Avg Time</div>
-                        <div className="font-medium text-orange-400">
+                        <div className="font-medium text-warning">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
