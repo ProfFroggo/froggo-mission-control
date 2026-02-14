@@ -5153,7 +5153,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       const raw = await runCmd(`${TGCLI} messages ${chatId} --limit ${lim}`, 5000);
       if (raw) {
         const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
-        for (const line of lines.reverse()) {
+        for (const line of lines) {
           const match = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
           if (match) {
             messages.push({
@@ -5170,7 +5170,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       const raw = await runCmd(`${DISCORDCLI} messages ${channelId} --limit ${lim}`, 5000);
       if (raw) {
         const lines = raw.split('\n').filter(l => l.match(/^\[\d{4}-\d{2}-\d{2}/));
-        for (const line of lines.reverse()) {
+        for (const line of lines) {
           const match = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\] ([^:]+): (.+)/);
           if (match) {
             messages.push({
@@ -5210,7 +5210,7 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
         result = execSync(`${PATHS.wacli} send ${escapeShell(to)} ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
         break;
       case 'telegram':
-        result = execSync(`${PATHS.tgcli} send ${escapeShell(to)} ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+        result = execSync(`${PATHS.tgcli} send ${escapeShell(to)} ${escapeShell(message)} --yes`, { encoding: 'utf-8', timeout: 30000 });
         break;
       case 'email':
         result = execSync(`${PATHS.gog} gmail send --to ${escapeShell(to)} --body ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });

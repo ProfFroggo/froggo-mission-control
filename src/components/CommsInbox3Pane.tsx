@@ -6,7 +6,7 @@
  * RIGHT: Message detail view with thread and reply
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import {
   Mail, MessageCircle, Send, Gamepad2,
   Inbox, Star, Archive, AlertTriangle,
@@ -142,8 +142,8 @@ function buildAccountsFromSources(
     if (platform === 'email') continue;
     const meta = PLATFORM_ICON_MAP[platform];
     if (!meta) continue;
-    const active = entries.some(e => e.connected || e.enabled || (e.configured && e.running));
-    if (active) {
+    const visible = entries.some(e => e.connected || e.enabled || e.configured);
+    if (visible) {
       accounts.push({
         id: platform,
         label: meta.label,
@@ -929,9 +929,21 @@ function RightPane({
     setAiIntent('');
   }, [conversation?.id, aiAnalysis?.reply_draft]);
 
+  const threadScrollRef = useRef<HTMLDivElement>(null);
+  // Pin scroll to bottom so newest message is visible on load
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [thread]);
+    if (!thread.length) return;
+    // Use the anchor div at the bottom of the thread
+    const anchor = threadEndRef.current;
+    if (anchor) {
+      // Immediate + delayed to catch layout settling
+      anchor.scrollIntoView({ block: 'end' });
+      requestAnimationFrame(() => anchor.scrollIntoView({ block: 'end' }));
+      const t1 = setTimeout(() => anchor.scrollIntoView({ block: 'end' }), 50);
+      const t2 = setTimeout(() => anchor.scrollIntoView({ block: 'end' }), 200);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [thread, conversation?.id]);
 
   // Generate AI suggestions when AI panel opens
   useEffect(() => {
@@ -1196,7 +1208,7 @@ function RightPane({
       )}
 
       {/* Thread / Message Body */}
-      <div className="flex-1 overflow-y-auto px-5 py-3 text-left min-w-0">
+      <div ref={threadScrollRef} className="flex-1 overflow-y-auto px-5 py-3 text-left min-w-0">
         {loadingThread || loadingBody ? (
           <div className="text-center text-clawd-text-dim py-8 text-sm">Loading...</div>
         ) : isSystem ? (
@@ -1735,6 +1747,7 @@ export default function CommsInbox3Pane() {
             selectedConversation.id, selectedConversation.platform, 20
           );
           if (result?.success && result.messages) {
+            // Backend returns oldest-first (chat-style) — use as-is
             setThread(result.messages);
           } else {
             setThread([]);
