@@ -278,17 +278,17 @@ Provide a brief, actionable summary.`;
   }
 
   const sentimentColors = {
-    positive: 'text-green-400 bg-green-500/20',
-    neutral: 'text-blue-400 bg-blue-500/20',
-    negative: 'text-red-400 bg-red-500/20',
+    positive: 'text-success bg-green-500/20',
+    neutral: 'text-info bg-blue-500/20',
+    negative: 'text-error bg-red-500/20',
     urgent: 'text-orange-400 bg-orange-500/20',
-    questioning: 'text-purple-400 bg-purple-500/20',
+    questioning: 'text-review bg-purple-500/20',
   };
 
   const urgencyColors = {
-    low: 'text-green-400',
-    medium: 'text-yellow-400',
-    high: 'text-red-400',
+    low: 'text-success',
+    medium: 'text-warning',
+    high: 'text-error',
   };
 
   const toneIcons = {
@@ -384,7 +384,7 @@ Provide a brief, actionable summary.`;
                             title="Copy to clipboard"
                           >
                             {copiedId === suggestion.id ? (
-                              <Check size={14} className="text-green-400" />
+                              <Check size={14} className="text-success" />
                             ) : (
                               <Copy size={14} />
                             )}

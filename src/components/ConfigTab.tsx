@@ -155,8 +155,8 @@ export default function ConfigTab() {
       {issues.length > 0 && (
         <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={16} className="text-yellow-400" />
-            <span className="font-medium text-yellow-400">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
+            <AlertTriangle size={16} className="text-warning" />
+            <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
           </div>
           {issues.map((issue: any, i: number) => (
             <div key={i} className="text-sm text-yellow-300">{issue.path}: {issue.message}</div>
@@ -182,7 +182,7 @@ export default function ConfigTab() {
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${showRaw ? 'bg-clawd-accent/20 text-clawd-accent' : 'bg-clawd-border text-clawd-text-dim'}`}>
           <Code size={16} /> Raw JSON
         </button>
-        {dirty && <span className="text-xs text-yellow-400">• Unsaved changes</span>}
+        {dirty && <span className="text-xs text-warning">• Unsaved changes</span>}
       </div>
 
       {showRaw ? (

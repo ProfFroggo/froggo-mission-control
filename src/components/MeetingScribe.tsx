@@ -608,7 +608,7 @@ ${transcriptText}`,
           {/* Recording info */}
           {isRecording && (
             <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-red-400">
+              <div className="flex items-center gap-2 text-error">
                 <span className="animate-pulse">●</span>
                 <span className="text-sm">Recording</span>
               </div>
@@ -631,7 +631,7 @@ ${transcriptText}`,
           )}
           
           {error && (
-            <div className="mt-3 p-2 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400">
+            <div className="mt-3 p-2 bg-error-subtle border border-error-border rounded text-sm text-error">
               {error}
             </div>
           )}
@@ -685,7 +685,7 @@ ${transcriptText}`,
           <div className="border-t border-clawd-border p-4">
             <button
               onClick={() => setShowActionItems(!showActionItems)}
-              className="flex items-center gap-2 mb-2 text-sm font-medium text-orange-400 w-full"
+              className="flex items-center gap-2 mb-2 text-sm font-medium text-warning w-full"
             >
               <ListTodo size={16} />
               Action Items ({actionItems.length})
@@ -695,7 +695,7 @@ ${transcriptText}`,
               <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-orange-500/20 rounded text-orange-300 text-[10px] shrink-0">
+                    <span className="px-1.5 py-0.5 bg-orange-500/20 rounded text-warning text-[10px] shrink-0">
                       {item.type}
                     </span>
                     <span className="text-clawd-text-dim truncate">{item.text}</span>
@@ -729,8 +729,8 @@ ${transcriptText}`,
             {aiSummary ? (
               <div className="bg-clawd-surface border border-clawd-border rounded-lg p-4 mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-purple-400" />
-                  <span className="text-sm font-medium text-purple-400">AI Summary</span>
+                  <Sparkles size={16} className="text-review" />
+                  <span className="text-sm font-medium text-review">AI Summary</span>
                 </div>
                 <div className="text-sm text-clawd-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
@@ -738,7 +738,7 @@ ${transcriptText}`,
               <button
                 onClick={generateAiSummary}
                 disabled={isSummarizing || !hasTranscript}
-                className="w-full mb-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-sm text-purple-300 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                className="w-full mb-4 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 rounded-lg text-sm text-review flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
                 {isSummarizing ? (
                   <><Loader2 size={16} className="animate-spin" /> Generating summary...</>
@@ -784,7 +784,7 @@ ${transcriptText}`,
             {/* Clear */}
             <button
               onClick={clearAll}
-              className="mt-6 text-sm text-clawd-text-dim hover:text-red-400 flex items-center gap-1"
+              className="mt-6 text-sm text-clawd-text-dim hover:text-error flex items-center gap-1"
             >
               <Trash2 size={14} /> Clear
             </button>

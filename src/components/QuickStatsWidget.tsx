@@ -40,8 +40,8 @@ export default function QuickStatsWidget() {
 
   const channelColors: Record<string, string> = {
     discord: 'text-indigo-400',
-    telegram: 'text-blue-400',
-    whatsapp: 'text-green-400',
+    telegram: 'text-info',
+    whatsapp: 'text-success',
     web: 'text-clawd-text-dim',
   };
 
@@ -57,7 +57,7 @@ export default function QuickStatsWidget() {
         {/* Active Sessions */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Users size={16} className="text-purple-400" />
+            <Users size={16} className="text-review" />
             <span className="text-sm font-medium text-clawd-text-dim">Active Sessions</span>
             <span className="ml-auto text-lg font-bold">{sessions.length}</span>
           </div>
@@ -83,7 +83,7 @@ export default function QuickStatsWidget() {
         {/* Running Agents */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Bot size={16} className="text-blue-400" />
+            <Bot size={16} className="text-info" />
             <span className="text-sm font-medium text-clawd-text-dim">Running Agents</span>
             <span className="ml-auto text-lg font-bold">{totalAgents}</span>
           </div>
@@ -124,7 +124,7 @@ export default function QuickStatsWidget() {
         {/* Tasks Today */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <CheckSquare size={16} className="text-green-400" />
+            <CheckSquare size={16} className="text-success" />
             <span className="text-sm font-medium text-clawd-text-dim">Tasks Today</span>
             <span className="ml-auto text-lg font-bold">
               {completedToday.length}/{totalToday}

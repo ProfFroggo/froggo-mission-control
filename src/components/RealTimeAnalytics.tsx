@@ -85,7 +85,7 @@ export default function RealTimeAnalytics() {
             value: msgResult?.result?.[0]?.count || 0,
             unit: 'msg',
             icon: MessageCircle,
-            color: 'text-blue-400',
+            color: 'text-info',
             sparkline: generateSparkline(msgResult?.result?.[0]?.count || 0),
           },
           {
@@ -93,7 +93,7 @@ export default function RealTimeAnalytics() {
             value: tasksResult?.result?.[0]?.count || 0,
             unit: 'tasks',
             icon: Activity,
-            color: 'text-purple-400',
+            color: 'text-review',
             sparkline: generateSparkline(tasksResult?.result?.[0]?.count || 0),
           },
           {
@@ -101,7 +101,7 @@ export default function RealTimeAnalytics() {
             value: completionsResult?.result?.[0]?.count || 0,
             unit: 'done',
             icon: CheckCircle,
-            color: 'text-green-400',
+            color: 'text-success',
             sparkline: generateSparkline(completionsResult?.result?.[0]?.count || 0),
           },
           {
@@ -109,7 +109,7 @@ export default function RealTimeAnalytics() {
             value: sessionsResult?.result?.[0]?.count || 0,
             unit: 'sessions',
             icon: Zap,
-            color: 'text-yellow-400',
+            color: 'text-warning',
             sparkline: generateSparkline(sessionsResult?.result?.[0]?.count || 0),
           },
         ]);
@@ -140,28 +140,28 @@ export default function RealTimeAnalytics() {
           title: 'Task Completed',
           description: 'Fix authentication bug',
           icon: CheckCircle,
-          color: 'text-green-400',
+          color: 'text-success',
         },
         {
           type: 'message' as const,
           title: 'New Message',
           description: 'Kevin sent a message in WhatsApp',
           icon: MessageCircle,
-          color: 'text-blue-400',
+          color: 'text-info',
         },
         {
           type: 'approval' as const,
           title: 'Approval Needed',
           description: 'Tweet requires review',
           icon: AlertCircle,
-          color: 'text-yellow-400',
+          color: 'text-warning',
         },
         {
           type: 'agent' as const,
           title: 'Agent Started',
           description: 'Coder agent started task execution',
           icon: Zap,
-          color: 'text-purple-400',
+          color: 'text-review',
         },
       ];
 
@@ -224,7 +224,7 @@ export default function RealTimeAnalytics() {
             onClick={() => setIsLive(!isLive)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               isLive
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                ? 'bg-success-subtle text-success border border-success-border'
                 : 'bg-clawd-surface border border-clawd-border'
             }`}
           >
@@ -332,9 +332,9 @@ export default function RealTimeAnalytics() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-clawd-text-dim mb-1">System Status</div>
-              <div className="font-medium text-green-400">Operational</div>
+              <div className="font-medium text-success">Operational</div>
             </div>
-            <CheckCircle size={24} className="text-green-400" />
+            <CheckCircle size={24} className="text-success" />
           </div>
         </div>
 
@@ -344,7 +344,7 @@ export default function RealTimeAnalytics() {
               <div className="text-sm text-clawd-text-dim mb-1">Uptime</div>
               <div className="font-medium">99.9%</div>
             </div>
-            <TrendingUp size={24} className="text-blue-400" />
+            <TrendingUp size={24} className="text-info" />
           </div>
         </div>
 
@@ -354,7 +354,7 @@ export default function RealTimeAnalytics() {
               <div className="text-sm text-clawd-text-dim mb-1">Avg Response</div>
               <div className="font-medium">0.8s</div>
             </div>
-            <Clock size={24} className="text-purple-400" />
+            <Clock size={24} className="text-review" />
           </div>
         </div>
       </div>

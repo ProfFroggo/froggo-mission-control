@@ -45,10 +45,10 @@ const typeIcons = {
 };
 
 const typeColors = {
-  task: 'text-blue-400 bg-blue-500/10',
-  fact: 'text-purple-400 bg-purple-500/10',
-  message: 'text-green-400 bg-green-500/10',
-  email: 'text-yellow-400 bg-yellow-500/10',
+  task: 'text-info bg-info-subtle',
+  fact: 'text-review bg-purple-500/10',
+  message: 'text-success bg-success-subtle',
+  email: 'text-warning bg-yellow-500/10',
   session: 'text-cyan-400 bg-cyan-500/10',
   calendar: 'text-orange-400 bg-orange-500/10',
   tweet: 'text-sky-400 bg-sky-500/10',
@@ -68,9 +68,9 @@ const typeLabels = {
 
 const statusColors = {
   todo: 'text-clawd-text-dim',
-  'in-progress': 'text-blue-400',
-  done: 'text-green-400',
-  blocked: 'text-red-400',
+  'in-progress': 'text-info',
+  done: 'text-success',
+  blocked: 'text-error',
 };
 
 export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSearchProps) {

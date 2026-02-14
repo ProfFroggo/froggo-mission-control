@@ -491,7 +491,7 @@ export default function EnhancedSettingsPanel() {
                 onClick={handleSave}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   saved 
-                    ? 'bg-green-500/20 text-green-400' 
+                    ? 'bg-green-500/20 text-success' 
                     : 'bg-clawd-accent text-white hover:bg-clawd-accent-dim'
                 }`}
               >
@@ -1093,7 +1093,7 @@ export default function EnhancedSettingsPanel() {
 
                   <button
                     onClick={clearCache}
-                    className="w-full py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-orange-500/20 text-warning rounded-lg hover:bg-orange-500/30 transition-colors flex items-center justify-center gap-2"
                   >
                     <Trash2 size={16} />
                     Clear Cache Now
@@ -1188,7 +1188,7 @@ export default function EnhancedSettingsPanel() {
 
                   <button
                     onClick={cleanupOldData}
-                    className="w-full py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-orange-500/20 text-warning rounded-lg hover:bg-orange-500/30 transition-colors flex items-center justify-center gap-2"
                   >
                     <Archive size={16} />
                     Cleanup Old Data Now
@@ -1427,8 +1427,8 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-2">
-                    <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-yellow-300">
+                    <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-warning">
                       These settings are for advanced users. Changing them may affect app stability.
                     </p>
                   </div>
@@ -1508,8 +1508,8 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
-                    <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-300">
+                    <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-error">
                       These settings control real external actions (tweets, emails, etc.). Use with caution.
                     </p>
                   </div>
@@ -1519,9 +1519,9 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium flex items-center gap-2">
                         Kill Switch
                         {settings.externalActionsEnabled ? (
-                          <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded font-bold">LIVE</span>
+                          <span className="text-xs px-2 py-0.5 bg-green-500/20 text-success rounded font-bold">LIVE</span>
                         ) : (
-                          <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded font-bold">BLOCKED</span>
+                          <span className="text-xs px-2 py-0.5 bg-red-500/20 text-error rounded font-bold">BLOCKED</span>
                         )}
                       </div>
                       <div className="text-sm text-clawd-text-dim">
@@ -1579,7 +1579,7 @@ export default function EnhancedSettingsPanel() {
                         <div className="flex items-start gap-2">
                           <span className="text-xl">🤖</span>
                           <div className="flex-1">
-                            <div className="font-medium text-blue-400 mb-2">Smart Account Selection</div>
+                            <div className="font-medium text-info mb-2">Smart Account Selection</div>
                             <div className="text-sm text-blue-300 space-y-2">
                               <p>Froggo intelligently chooses accounts based on context:</p>
                               <ul className="list-disc list-inside space-y-1 ml-2 text-xs">

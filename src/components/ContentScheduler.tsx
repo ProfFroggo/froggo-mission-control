@@ -34,8 +34,8 @@ interface ScheduledItem {
 
 const typeConfig: Record<ScheduledItemType, { icon: any; color: string; label: string }> = {
   tweet: { icon: XIcon, color: 'text-white bg-white/10', label: 'Post' },
-  email: { icon: Mail, color: 'text-green-400 bg-green-500/10', label: 'Email' },
-  message: { icon: Mail, color: 'text-purple-400 bg-purple-500/10', label: 'Message' },
+  email: { icon: Mail, color: 'text-success bg-success-subtle', label: 'Email' },
+  message: { icon: Mail, color: 'text-review bg-purple-500/10', label: 'Message' },
 };
 
 export default function ContentScheduler() {
@@ -494,9 +494,9 @@ export default function ContentScheduler() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         {mediaFile.type === 'image' ? (
-                          <ImageIcon size={14} className="text-green-400" />
+                          <ImageIcon size={14} className="text-success" />
                         ) : (
-                          <Video size={14} className="text-blue-400" />
+                          <Video size={14} className="text-info" />
                         )}
                         <span className="text-sm font-medium truncate">{mediaFile.fileName}</span>
                       </div>
@@ -512,7 +512,7 @@ export default function ContentScheduler() {
                       className="p-1 hover:bg-red-500/20 rounded transition-colors"
                       title="Remove media"
                     >
-                      <X size={16} className="text-red-400" />
+                      <X size={16} className="text-error" />
                     </button>
                   </div>
                 </div>
@@ -520,7 +520,7 @@ export default function ContentScheduler() {
               
               {/* Upload Error */}
               {uploadError && (
-                <div className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded">
+                <div className="text-xs text-error bg-error-subtle px-2 py-1 rounded">
                   {uploadError}
                 </div>
               )}
@@ -605,9 +605,9 @@ export default function ContentScheduler() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-xs px-2 py-0.5 rounded ${
-                          item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                          item.status === 'sent' ? 'bg-green-500/20 text-green-400' :
-                          item.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                          item.status === 'pending' ? 'bg-warning-subtle text-warning' :
+                          item.status === 'sent' ? 'bg-success-subtle text-success' :
+                          item.status === 'failed' ? 'bg-error-subtle text-error' :
                           'bg-clawd-bg0/20 text-clawd-text-dim'
                         }`}>
                           {item.status}
@@ -647,7 +647,7 @@ export default function ContentScheduler() {
                           className="p-2 hover:bg-green-500/20 rounded-lg transition-colors"
                           title="Send now"
                         >
-                          <Play size={16} className="text-green-400" />
+                          <Play size={16} className="text-success" />
                         </button>
                         <button
                           onClick={() => handleEdit(item)}
@@ -661,7 +661,7 @@ export default function ContentScheduler() {
                           className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
                           title="Cancel"
                         >
-                          <Trash2 size={16} className="text-red-400" />
+                          <Trash2 size={16} className="text-error" />
                         </button>
                       </div>
                     )}

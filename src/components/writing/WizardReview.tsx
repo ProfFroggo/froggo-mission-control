@@ -35,7 +35,7 @@ export default function WizardReview() {
     return (
       <div className="h-full flex items-center justify-center bg-clawd-bg">
         <div className="text-center p-8">
-          <AlertCircle size={32} className="mx-auto text-red-400 mb-3" />
+          <AlertCircle size={32} className="mx-auto text-error mb-3" />
           <p className="text-clawd-text text-sm font-medium">No plan to review</p>
           <button
             onClick={() => setStep('conversation')}
@@ -173,7 +173,7 @@ export default function WizardReview() {
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
         {/* Error banner */}
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-error-subtle border border-error-border text-error text-sm">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <div>
               <p className="font-medium">Creation failed</p>
@@ -242,7 +242,7 @@ export default function WizardReview() {
                 {theme}
                 <button
                   onClick={() => removeTheme(i)}
-                  className="hover:text-red-400 transition-colors"
+                  className="hover:text-error transition-colors"
                 >
                   <X size={10} />
                 </button>
@@ -301,7 +301,7 @@ export default function WizardReview() {
                   />
                   <button
                     onClick={() => removeChapter(i)}
-                    className="p-1.5 rounded text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-1.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -361,7 +361,7 @@ export default function WizardReview() {
                   </select>
                   <button
                     onClick={() => removeCharacter(i)}
-                    className="p-1.5 rounded text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-1.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -436,7 +436,7 @@ export default function WizardReview() {
                   />
                   <button
                     onClick={() => removeTimelineEvent(i)}
-                    className="p-1.5 rounded text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-1.5 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -466,7 +466,7 @@ export default function WizardReview() {
           </button>
           <button
             onClick={() => cancelWizard()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-clawd-text-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
           >
             <X size={14} />
             Cancel

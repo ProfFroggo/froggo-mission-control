@@ -67,7 +67,7 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
         ${isActive 
           ? 'border-clawd-accent text-clawd-accent bg-clawd-accent/5' 
           : isDropOver || isOver
-          ? 'border-green-500 text-clawd-text bg-green-500/10'
+          ? 'border-green-500 text-clawd-text bg-success-subtle'
           : 'border-transparent text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border/30'
         }
       `}

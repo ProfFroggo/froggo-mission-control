@@ -295,15 +295,15 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 Chat with {agent.name}
                 {sessionKey ? (
-                  <span className="text-sm px-2 py-0.5 bg-green-500/20 text-green-400 rounded">
+                  <span className="text-sm px-2 py-0.5 bg-success-subtle text-success rounded">
                     🟢 Live LLM
                   </span>
                 ) : spawning ? (
-                  <span className="text-sm px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded flex items-center gap-1">
+                  <span className="text-sm px-2 py-0.5 bg-warning-subtle text-warning rounded flex items-center gap-1">
                     <Loader2 size={12} className="animate-spin" /> Connecting...
                   </span>
                 ) : (
-                  <span className="text-sm px-2 py-0.5 bg-red-500/20 text-red-400 rounded">
+                  <span className="text-sm px-2 py-0.5 bg-error-subtle text-error rounded">
                     Disconnected
                   </span>
                 )}
@@ -319,7 +319,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 onClick={() => setIsVoiceMode(!isVoiceMode)}
                 className={`p-2 rounded-lg transition-colors ${
                   isVoiceMode
-                    ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                    ? 'bg-review-subtle text-review hover:bg-purple-500/30'
                     : 'hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
                 }`}
                 title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
@@ -411,7 +411,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                   {showAvatar && (
                     <div className={`text-xs font-medium mb-1 px-1 ${
                       msg.role === 'user' 
-                        ? 'text-blue-400' 
+                        ? 'text-info' 
                         : msg.role === 'assistant' 
                           ? 'text-emerald-500' 
                           : 'text-clawd-text-dim'
@@ -425,8 +425,8 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                     msg.role === 'user' 
                       ? 'bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-md' 
                       : msg.role === 'assistant' 
-                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md' 
-                        : 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400'
+                        ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md' 
+                        : 'bg-warning-subtle border border-warning-border text-warning'
                   } ${
                     msg.role === 'user'
                       ? showAvatar 
@@ -472,7 +472,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <p className="whitespace-pre-wrap leading-relaxed">{streamingContent}<span className="animate-pulse">▊</span></p>
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 <div className="text-xs font-medium mb-1 px-1 text-emerald-500">
                   {agent?.name}
                 </div>
-                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="flex gap-1">
                       <span className="w-2 h-2 bg-clawd-accent rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

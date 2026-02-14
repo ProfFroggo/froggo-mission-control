@@ -196,10 +196,10 @@ export default function AnalyticsPanel() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <Target size={20} className="text-blue-400" />
-                  <TrendingUp size={16} className="text-green-400" />
+                  <Target size={20} className="text-info" />
+                  <TrendingUp size={16} className="text-success" />
                 </div>
-                <div className="text-3xl font-bold text-blue-400 mb-1">
+                <div className="text-3xl font-bold text-info mb-1">
                   {totalCompleted}
                 </div>
                 <div className="text-sm text-clawd-text-dim">Tasks Completed</div>
@@ -210,10 +210,10 @@ export default function AnalyticsPanel() {
 
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <Users size={20} className="text-purple-400" />
-                  <Zap size={16} className="text-yellow-400" />
+                  <Users size={20} className="text-review" />
+                  <Zap size={16} className="text-warning" />
                 </div>
-                <div className="text-3xl font-bold text-purple-400 mb-1">
+                <div className="text-3xl font-bold text-review mb-1">
                   {agentUtilization.length}
                 </div>
                 <div className="text-sm text-clawd-text-dim">Active Agents</div>
@@ -224,10 +224,10 @@ export default function AnalyticsPanel() {
 
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <Clock size={20} className="text-orange-400" />
-                  <Activity size={16} className="text-green-400" />
+                  <Clock size={20} className="text-warning" />
+                  <Activity size={16} className="text-success" />
                 </div>
-                <div className="text-3xl font-bold text-orange-400 mb-1">
+                <div className="text-3xl font-bold text-warning mb-1">
                   {totalHours.toFixed(0)}h
                 </div>
                 <div className="text-sm text-clawd-text-dim">Total Hours</div>
@@ -238,10 +238,10 @@ export default function AnalyticsPanel() {
 
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <TrendingUp size={20} className="text-green-400" />
-                  <Zap size={16} className="text-blue-400" />
+                  <TrendingUp size={20} className="text-success" />
+                  <Zap size={16} className="text-info" />
                 </div>
-                <div className="text-3xl font-bold text-green-400 mb-1">
+                <div className="text-3xl font-bold text-success mb-1">
                   {avgVelocity > 0 ? '+' : ''}{avgVelocity}
                 </div>
                 <div className="text-sm text-clawd-text-dim">Avg Velocity</div>
@@ -334,19 +334,19 @@ export default function AnalyticsPanel() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-clawd-text-dim">In Progress</div>
-                        <div className="font-medium text-blue-400">
+                        <div className="font-medium text-info">
                           {project.inProgressTasks}
                         </div>
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Avg Time</div>
-                        <div className="font-medium text-orange-400">
+                        <div className="font-medium text-warning">
                           {project.avgCompletionTime.toFixed(1)}h
                         </div>
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Total Time</div>
-                        <div className="font-medium text-purple-400">
+                        <div className="font-medium text-review">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>

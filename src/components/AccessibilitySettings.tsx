@@ -320,11 +320,11 @@ export default function AccessibilitySettings() {
 
       {/* Info */}
       <div 
-        className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl"
+        className="p-4 bg-info-subtle border border-info-border rounded-xl"
         role="status"
         aria-label="Accessibility information"
       >
-        <p className="text-sm text-blue-400">
+        <p className="text-sm text-info">
           <strong>💡 Tip:</strong> Use keyboard shortcuts to navigate efficiently. Press <kbd className="px-2 py-1 bg-clawd-border rounded text-xs">⌘?</kbd> to view all shortcuts.
         </p>
       </div>

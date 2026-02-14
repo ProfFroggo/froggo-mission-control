@@ -188,7 +188,7 @@ export default function MeetingTranscriptionPanel() {
                   <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Download">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-gray-700 rounded transition-colors text-red-400" title="Delete">
+                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-gray-700 rounded transition-colors text-error" title="Delete">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -204,7 +204,7 @@ export default function MeetingTranscriptionPanel() {
                   <p className="text-sm text-gray-300">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
-                      <div className="text-xs font-medium text-yellow-400 mb-1">Action Items</div>
+                      <div className="text-xs font-medium text-warning mb-1">Action Items</div>
                       <ul className="text-xs text-gray-400 space-y-1">
                         {result.summary.actionItems.map((item, i) => <li key={i}>• {item}</li>)}
                       </ul>
@@ -212,7 +212,7 @@ export default function MeetingTranscriptionPanel() {
                   )}
                   {result.summary.keyDecisions.length > 0 && (
                     <div>
-                      <div className="text-xs font-medium text-blue-400 mb-1">Key Decisions</div>
+                      <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
                       <ul className="text-xs text-gray-400 space-y-1">
                         {result.summary.keyDecisions.map((d, i) => <li key={i}>• {d}</li>)}
                       </ul>

@@ -384,7 +384,7 @@ export default function ExportBackupTab() {
             </div>
 
             {autoBackupEnabled && (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+              <div className="bg-info-subtle border border-blue-500/20 rounded-lg p-4">
                 <div className="text-sm text-blue-300">
                   Auto-backup will run daily at 3:00 AM. Backups are created via Clawdbot cron system.
                 </div>
@@ -458,7 +458,7 @@ export default function ExportBackupTab() {
                     <span>{formatDate(backup.created)}</span>
                     <span>{formatBytes(backup.size)}</span>
                     {backup.metadata?.includesAttachments && (
-                      <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                      <span className="text-xs px-2 py-0.5 bg-info-subtle text-info rounded">
                         + Attachments
                       </span>
                     )}
@@ -466,7 +466,7 @@ export default function ExportBackupTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   {idx === 0 && (
-                    <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">
+                    <span className="text-xs px-2 py-1 bg-success-subtle text-success rounded">
                       Latest
                     </span>
                   )}
@@ -486,27 +486,27 @@ export default function ExportBackupTab() {
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-red-500/10 border border-red-500/20 rounded-xl p-6">
-        <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-red-400">
+      <section className="bg-error-subtle border border-red-500/20 rounded-xl p-6">
+        <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-error">
           <AlertTriangle size={20} />
           Danger Zone
         </h2>
         
         <div className="space-y-3 text-sm">
           <div className="flex items-start gap-2">
-            <CheckCircle size={16} className="text-green-400 flex-shrink-0 mt-0.5" />
+            <CheckCircle size={16} className="text-success flex-shrink-0 mt-0.5" />
             <div>
               <strong>Safe backup:</strong> A backup of your current database is automatically created before any restore operation
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <AlertTriangle size={16} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
             <div>
               <strong>Test restores:</strong> Always verify backups can be restored in a test environment first
             </div>
           </div>
           <div className="flex items-start gap-2">
-            <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
             <div>
               <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup's contents
             </div>

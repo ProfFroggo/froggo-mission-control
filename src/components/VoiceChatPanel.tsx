@@ -482,7 +482,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {/* API Key Warning */}
       {!apiKey.current && (
         <div className="bg-red-500/20 border-b border-red-500/50 px-4 py-2 text-center">
-          <p className="text-red-400 text-sm font-medium">⚠️ No Gemini API key found</p>
+          <p className="text-error text-sm font-medium">⚠️ No Gemini API key found</p>
           <p className="text-red-300 text-xs mt-1">Set VITE_GEMINI_API_KEY in .env file</p>
         </div>
       )}
@@ -508,7 +508,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           {callActive && (
             <div className="flex items-center gap-2 ml-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-green-400">Gemini Live</span>
+              <span className="text-xs text-success">Gemini Live</span>
               {agentContext && agentContext.tasks.length > 0 && (
                 <span className="text-[10px] text-clawd-text-dim bg-clawd-border/50 px-1.5 py-0.5 rounded-full" title={`${agentContext.tasks.length} tasks`}>
                   🧠 {agentContext.tasks.length}
@@ -530,11 +530,11 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             <Settings size={16} />
           </button>
           
-          <button onClick={() => setMuted(!muted)} className={`p-2 rounded-lg transition-colors ${muted ? 'bg-red-500/20 text-red-400' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'}`} title={muted ? 'Unmute' : 'Mute'}>
+          <button onClick={() => setMuted(!muted)} className={`p-2 rounded-lg transition-colors ${muted ? 'bg-error-subtle text-error' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'}`} title={muted ? 'Unmute' : 'Mute'}>
             {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
           
-          <button onClick={clearHistory} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-red-400 transition-colors" title="Clear history">
+          <button onClick={clearHistory} className="p-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-error transition-colors" title="Clear history">
             <Trash2 size={16} />
           </button>
         </div>
@@ -586,7 +586,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             </div>
             <p className="text-lg font-medium text-clawd-text mb-1">Voice Chat with {selectedAgent.name}</p>
             <p className="text-sm text-center max-w-xs">
-              Press call to connect via <span className="text-yellow-400">Gemini Live</span>. Real-time audio streaming with {selectedAgent.name}.
+              Press call to connect via <span className="text-warning">Gemini Live</span>. Real-time audio streaming with {selectedAgent.name}.
               {selectedAgent.role && <span className="block mt-1 text-xs opacity-70">{selectedAgent.role}</span>}
               {agentContext && (
                 <span className="block mt-2 text-xs opacity-60">
@@ -637,13 +637,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* Enable Audio button - shown when AudioContext is suspended */}
       {callActive && audioState === 'suspended' && (
-        <div className="px-4 py-2 border-t border-yellow-500/30 bg-yellow-500/10">
+        <div className="px-4 py-2 border-t border-warning-border bg-yellow-500/10">
           <button onClick={handleEnableAudio}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-medium transition-colors">
             <Volume2 size={18} />
             Enable Audio
           </button>
-          <p className="text-center text-[10px] text-yellow-400/70 mt-1">Browser requires a click to play audio</p>
+          <p className="text-center text-[10px] text-warning/70 mt-1">Browser requires a click to play audio</p>
         </div>
       )}
       
@@ -659,7 +659,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             )}
             {speaking && (
               <div className="flex items-center gap-3">
-                <span className="text-xs text-green-400 font-medium">{selectedAgent.name} speaking</span>
+                <span className="text-xs text-success font-medium">{selectedAgent.name} speaking</span>
                 <Waveform level={speakLevel} color="#4ade80" bars={12} height={40} />
               </div>
             )}

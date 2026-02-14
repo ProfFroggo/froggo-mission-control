@@ -15,9 +15,9 @@ import HealthCheckModal from './HealthCheckModal';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
   { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
-  { id: 'p2', label: 'Medium', color: 'text-yellow-400', bg: 'bg-yellow-500/20', icon: <Circle size={14} className="flex-shrink-0" /> },
+  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-yellow-500/20', icon: <Circle size={14} className="flex-shrink-0" /> },
   { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
@@ -40,13 +40,13 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
-  { id: 'blocked', title: 'Blocked', color: 'border-l-red-500', bg: 'bg-red-500/10', emoji: '🚫' },
-  { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-blue-500/10', emoji: '📝' },
+  { id: 'blocked', title: 'Blocked', color: 'border-l-red-500', bg: 'bg-error-subtle', emoji: '🚫' },
+  { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-info-subtle', emoji: '📝' },
   { id: 'internal-review', title: 'Internal Review', color: 'border-l-cyan-500', bg: 'bg-cyan-500/10', emoji: '🔍' },
   { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
   { id: 'review', title: 'Agent Review', color: 'border-l-purple-500', bg: 'bg-purple-500/10', emoji: '🤖' },
   { id: 'human-review', title: 'Human Review', color: 'border-l-orange-500', bg: 'bg-orange-500/10', emoji: '👤' },
-  { id: 'done', title: 'Done', color: 'border-l-green-500', bg: 'bg-green-500/10', emoji: '✅' },
+  { id: 'done', title: 'Done', color: 'border-l-green-500', bg: 'bg-success-subtle', emoji: '✅' },
 ];
 
 interface Filters {
@@ -523,17 +523,17 @@ export default function Kanban() {
             <div className="flex items-center gap-4 text-sm text-clawd-text-dim mt-1">
               <span>{tasks.length} tasks</span>
               {stats.inProgress > 0 && (
-                <span className="icon-text-tight text-yellow-400">
+                <span className="icon-text-tight text-warning">
                   <Zap size={14} className="flex-shrink-0" /> {stats.inProgress} in progress
                 </span>
               )}
               {stats.urgent > 0 && (
-                <span className="icon-text-tight text-red-400">
+                <span className="icon-text-tight text-error">
                   <AlertTriangle size={14} className="flex-shrink-0" /> {stats.urgent} urgent
                 </span>
               )}
               {stats.overdue > 0 && (
-                <span className="icon-text-tight text-red-400">
+                <span className="icon-text-tight text-error">
                   <Clock size={14} className="flex-shrink-0" /> {stats.overdue} overdue
                 </span>
               )}
@@ -589,7 +589,7 @@ export default function Kanban() {
             {/* Health Check */}
             <button
               onClick={handleHealthCheck}
-              className="icon-text px-3 py-2 border border-green-500/30 text-green-400 rounded-xl hover:bg-green-500/10 transition-all"
+              className="icon-text px-3 py-2 border border-success-border text-success rounded-xl hover:bg-success-subtle transition-all"
               title="Request Froggo to review board health, merge redundant tasks, and verify workflow"
             >
               <Stethoscope size={16} className="flex-shrink-0" />
@@ -935,7 +935,7 @@ export default function Kanban() {
               </button>
               <button
                 onClick={handleArchiveDone}
-                className="px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors"
+                className="px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-success transition-colors"
               >
                 Archive
               </button>
@@ -1066,7 +1066,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
       } ${
         activityIndicator ? activityIndicator.color :
         dueInfo?.isOverdue ? 'border-red-500/50 bg-red-500/5' :
-        task.priority === 'p0' ? 'border-red-500/30' :
+        task.priority === 'p0' ? 'border-error-border' :
         'border-clawd-border hover:border-clawd-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
       title={activityIndicator?.description}
@@ -1185,7 +1185,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(); setShowMenu(false); }}
                   disabled={isDeleting}
-                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border text-red-400 disabled:opacity-50"
+                  className="icon-text-tight w-full px-3 py-2 text-left text-sm hover:bg-clawd-border text-error disabled:opacity-50"
                 >
                   {isDeleting ? <Spinner size={14} className="flex-shrink-0" /> : <Trash2 size={16} className="flex-shrink-0" />} 
                   {isDeleting ? 'Deleting...' : 'Delete'}
@@ -1232,8 +1232,8 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
           
           {dueInfo && (
             <span className={`icon-text-tight px-2 py-0.5 rounded no-shrink no-wrap ${
-              dueInfo.isOverdue ? 'bg-red-500/20 text-red-400' :
-              dueInfo.isDueSoon ? 'bg-yellow-500/20 text-yellow-400' :
+              dueInfo.isOverdue ? 'bg-error-subtle text-error' :
+              dueInfo.isDueSoon ? 'bg-warning-subtle text-warning' :
               'bg-clawd-surface text-clawd-text-dim'
             }`}>
               <Calendar size={14} className="no-shrink" />
@@ -1246,7 +1246,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
           {assignedAgent ? (
             <div className="flex items-center gap-1.5 no-shrink">
               {isAgentWorking ? (
-                <span className="icon-badge-sm bg-yellow-500/20 text-yellow-400 animate-pulse">
+                <span className="icon-badge-sm bg-warning-subtle text-warning animate-pulse">
                   <Zap size={14} className="no-shrink" />
                 </span>
               ) : canStart ? (

@@ -898,7 +898,7 @@ export default function ChatPanel() {
           <button
             onClick={() => setIsVoiceMode(!isVoiceMode)}
             className={`p-2 rounded-lg transition-colors ${
-              isVoiceMode ? 'bg-purple-500/20 text-purple-400' : 'bg-clawd-border text-clawd-text-dim hover:text-purple-400'
+              isVoiceMode ? 'bg-review-subtle text-review' : 'bg-clawd-border text-clawd-text-dim hover:text-review'
             }`}
             title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}
           >
@@ -932,7 +932,7 @@ export default function ChatPanel() {
           <div className="w-px h-5 bg-clawd-border mx-1" />
           <button
             onClick={startTeamMeeting}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-warning text-white hover:bg-amber-600 transition-all shadow-sm hover:shadow-md text-xs font-semibold"
             title="Start Team Meeting — All agents join"
           >
             <UsersRound size={15} />
@@ -1122,8 +1122,8 @@ export default function ChatPanel() {
                           onClick={(e) => handleToggleStar(msg, e)}
                           className={`p-1.5 rounded-lg transition-all duration-100 ${
                             isStarred
-                              ? 'bg-yellow-100 text-yellow-600 shadow-sm'
-                              : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-yellow-600 hover:bg-yellow-50 border border-clawd-border'
+                              ? 'bg-yellow-100 text-warning shadow-sm'
+                              : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-warning hover:bg-yellow-50 border border-clawd-border'
                           }`}
                           title={isStarred ? 'Unstar message' : 'Star message'}
                         >
@@ -1150,7 +1150,7 @@ export default function ChatPanel() {
                       className={`px-4 py-3 transition-all duration-150 ${
                         isUser
                           ? 'bg-clawd-accent text-white'
-                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 dark:border-gray-800 shadow-sm hover:shadow-md'
+                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border/60 shadow-sm hover:shadow-md'
                       } ${
                         isUser
                           ? showAvatar 
@@ -1198,7 +1198,7 @@ export default function ChatPanel() {
                       {time}
                     </span>
                     {isStarred && (
-                      <Star size={10} className="text-yellow-500 fill-yellow-500" />
+                      <Star size={10} className="text-warning fill-yellow-500" />
                     )}
                   </div>
                 </div>

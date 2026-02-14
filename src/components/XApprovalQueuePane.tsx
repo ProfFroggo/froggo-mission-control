@@ -166,7 +166,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white">Approval Queue</h3>
-          <span className="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded-full">
+          <span className="px-2 py-1 text-xs bg-warning-subtle text-warning rounded-full">
             {items.length} pending
           </span>
         </div>
@@ -200,10 +200,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                 {/* Badges for plans */}
                 {item.itemType === 'plan' && (
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+                    <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
                       {(item as ContentPlan).content_type}
                     </span>
-                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                    <span className="px-2 py-1 text-xs bg-review-subtle text-review rounded-full">
                       {(item as ContentPlan).thread_length} tweet{(item as ContentPlan).thread_length > 1 ? 's' : ''}
                     </span>
                   </div>
@@ -212,10 +212,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                 {/* Badges for drafts */}
                 {item.itemType === 'draft' && (
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                    <span className="px-2 py-1 text-xs bg-success-subtle text-success rounded-full">
                       Version {(item as Draft).version}
                     </span>
-                    <span className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                    <span className="px-2 py-1 text-xs bg-review-subtle text-review rounded-full">
                       {(() => {
                         try {
                           const parsed = JSON.parse((item as Draft).content);
@@ -269,7 +269,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                           href={citation}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 truncate"
+                          className="flex items-center gap-1 text-xs text-info hover:text-blue-300 truncate"
                         >
                           <ExternalLink className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{citation}</span>

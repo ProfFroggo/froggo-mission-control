@@ -120,7 +120,7 @@ export default function DraggableVideoWindow({
         onClick={() => setViewMode('compact')}
       >
         <div className="flex items-center gap-2 px-3 py-2">
-          {videoMode === 'camera' ? <Video size={16} className="text-purple-400" /> : <Monitor size={16} className="text-blue-400" />}
+          {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
           <span className="text-xs font-medium text-clawd-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
           </span>
@@ -129,7 +129,7 @@ export default function DraggableVideoWindow({
               e.stopPropagation();
               onClose();
             }}
-            className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim hover:text-red-400 transition-colors"
+            className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim hover:text-error transition-colors"
           >
             <X size={14} />
           </button>
@@ -215,7 +215,7 @@ export default function DraggableVideoWindow({
           className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
           onMouseDown={handleResizeStart}
         >
-          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/40 dark:border-gray-600/40 rounded-br" />
+          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/40 rounded-br" />
         </div>
       )}
     </div>

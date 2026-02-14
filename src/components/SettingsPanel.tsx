@@ -977,9 +977,9 @@ export default function SettingsPanel() {
                     <div className="font-medium flex items-center gap-2">
                       External Actions
                       {settings.externalActionsEnabled ? (
-                        <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded">LIVE</span>
+                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded">LIVE</span>
                       ) : (
-                        <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded">BLOCKED</span>
+                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded">BLOCKED</span>
                       )}
                     </div>
                     <div className="text-sm text-clawd-text-dim">
@@ -1031,11 +1031,11 @@ export default function SettingsPanel() {
                 </div>
 
                 {/* Smart Account Selection Info */}
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
                   <div className="flex items-start gap-2">
                     <span className="text-xl">🤖</span>
                     <div className="flex-1">
-                      <div className="font-medium text-blue-400 mb-2">Smart Account Selection</div>
+                      <div className="font-medium text-info mb-2">Smart Account Selection</div>
                       <div className="text-sm text-blue-300 space-y-2">
                         <p>No default accounts! Froggo intelligently chooses which account to use based on context:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">

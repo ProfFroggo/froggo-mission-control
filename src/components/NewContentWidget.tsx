@@ -101,7 +101,7 @@ export default function NewContentWidget() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="flex items-center gap-2 text-red-400 mb-2">
+        <div className="flex items-center gap-2 text-error mb-2">
           <AlertCircle size={20} />
           <span className="text-sm">{error}</span>
         </div>
@@ -114,7 +114,7 @@ export default function NewContentWidget() {
       <div className="flex items-center justify-between mb-4">
         <Sparkles 
           size={28} 
-          className={totalNew > 0 ? 'text-purple-400' : 'text-clawd-text-dim'} 
+          className={totalNew > 0 ? 'text-review' : 'text-clawd-text-dim'} 
         />
         {totalNew > 0 && (
           <span className="px-3 py-1 bg-purple-500 text-white text-sm font-bold rounded-full shadow-lg">
@@ -131,11 +131,11 @@ export default function NewContentWidget() {
         {/* Files */}
         <div className="flex items-center justify-between p-2.5 rounded-lg bg-clawd-bg/30 border border-clawd-border/30">
           <div className="flex items-center gap-2">
-            <FileText size={16} className="text-green-400" />
+            <FileText size={16} className="text-success" />
             <span className="text-sm text-clawd-text-dim">Files</span>
           </div>
           <span className={`text-sm font-bold ${
-            counts.files > 0 ? 'text-green-400' : 'text-clawd-text-dim'
+            counts.files > 0 ? 'text-success' : 'text-clawd-text-dim'
           }`}>
             {counts.files}
           </span>
@@ -144,11 +144,11 @@ export default function NewContentWidget() {
         {/* Images */}
         <div className="flex items-center justify-between p-2.5 rounded-lg bg-clawd-bg/30 border border-clawd-border/30">
           <div className="flex items-center gap-2">
-            <Image size={16} className="text-purple-400" />
+            <Image size={16} className="text-review" />
             <span className="text-sm text-clawd-text-dim">Images</span>
           </div>
           <span className={`text-sm font-bold ${
-            counts.images > 0 ? 'text-purple-400' : 'text-clawd-text-dim'
+            counts.images > 0 ? 'text-review' : 'text-clawd-text-dim'
           }`}>
             {counts.images}
           </span>
@@ -157,11 +157,11 @@ export default function NewContentWidget() {
         {/* Reports */}
         <div className="flex items-center justify-between p-2.5 rounded-lg bg-clawd-bg/30 border border-clawd-border/30">
           <div className="flex items-center gap-2">
-            <FileBarChart size={16} className="text-blue-400" />
+            <FileBarChart size={16} className="text-info" />
             <span className="text-sm text-clawd-text-dim">Reports</span>
           </div>
           <span className={`text-sm font-bold ${
-            counts.reports > 0 ? 'text-blue-400' : 'text-clawd-text-dim'
+            counts.reports > 0 ? 'text-info' : 'text-clawd-text-dim'
           }`}>
             {counts.reports}
           </span>
@@ -175,7 +175,7 @@ export default function NewContentWidget() {
       )}
       
       {totalNew > 0 && (
-        <div className="mt-4 text-xs text-purple-400 text-center">
+        <div className="mt-4 text-xs text-review text-center">
           Last 24 hours
         </div>
       )}

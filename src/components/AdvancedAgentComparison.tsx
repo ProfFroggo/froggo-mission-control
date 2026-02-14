@@ -159,8 +159,8 @@ export default function AdvancedAgentComparison({
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
 
   const getTrendIcon = (value: number, threshold: number) => {
-    if (value > threshold) return <ArrowUpRight size={16} className="text-green-400" />;
-    if (value < threshold) return <ArrowDownRight size={16} className="text-red-400" />;
+    if (value > threshold) return <ArrowUpRight size={16} className="text-success" />;
+    if (value < threshold) return <ArrowDownRight size={16} className="text-error" />;
     return <Minus size={16} className="text-clawd-text-dim" />;
   };
 
@@ -304,7 +304,7 @@ export default function AdvancedAgentComparison({
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <span className="text-green-400 font-medium">
+                              <span className="text-success font-medium">
                                 {agent.tasksCompleted}
                               </span>
                               {getTrendIcon(
@@ -318,10 +318,10 @@ export default function AdvancedAgentComparison({
                             <span
                               className={`font-medium ${
                                 agent.completionRate >= 80
-                                  ? 'text-green-400'
+                                  ? 'text-success'
                                   : agent.completionRate >= 50
-                                  ? 'text-yellow-400'
-                                  : 'text-red-400'
+                                  ? 'text-warning'
+                                  : 'text-error'
                               }`}
                             >
                               {agent.completionRate}%
@@ -334,7 +334,7 @@ export default function AdvancedAgentComparison({
                           </td>
                           <td className="p-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <span className="text-blue-400 font-medium">
+                              <span className="text-info font-medium">
                                 {agent.efficiency.toFixed(2)}
                               </span>
                               <span className="text-xs text-clawd-text-dim">
@@ -350,7 +350,7 @@ export default function AdvancedAgentComparison({
                                   style={{ width: `${agent.consistency}%` }}
                                 />
                               </div>
-                              <span className="text-purple-400 font-medium w-12">
+                              <span className="text-review font-medium w-12">
                                 {Math.round(agent.consistency)}%
                               </span>
                             </div>

@@ -111,7 +111,7 @@ export default function ActiveAgentIndicator({
       </div>
       
       {showLabel && agentName && (
-        <span className="text-xs text-green-400 font-medium">
+        <span className="text-xs text-success font-medium">
           {agentName} working
         </span>
       )}

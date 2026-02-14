@@ -258,10 +258,10 @@ export default function NotificationSettingsModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Mute Status */}
           {isMuted && (
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex items-start gap-3">
-              <BellOff size={20} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="bg-yellow-500/10 border border-warning-border rounded-lg p-4 flex items-start gap-3">
+              <BellOff size={20} className="text-warning flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-yellow-400">Conversation Muted</p>
+                <p className="font-medium text-warning">Conversation Muted</p>
                 <p className="text-sm text-clawd-text-dim mt-1">
                   Until {new Date(muteUntil).toLocaleString()}
                 </p>
@@ -447,7 +447,7 @@ export default function NotificationSettingsModal({
                       #{keyword}
                       <button
                         onClick={() => removeKeyword(keyword)}
-                        className="hover:text-red-400 transition-colors"
+                        className="hover:text-error transition-colors"
                       >
                         <X size={14} />
                       </button>
@@ -536,7 +536,7 @@ export default function NotificationSettingsModal({
               <button
                 onClick={handleResetToDefaults}
                 disabled={saving}
-                className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Trash2 size={16} />
                 Reset to Defaults

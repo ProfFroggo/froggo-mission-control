@@ -451,7 +451,7 @@ Be conversational, friendly, and help design an effective agent.`;
                       )}
                       <div className="flex items-center gap-2">
                         <strong>Model:</strong>
-                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">
+                        <span className="px-2 py-0.5 bg-info-subtle text-info rounded text-xs font-medium">
                           {extractedData.model === 'opus' ? 'Claude Opus 4 🚀' : 'Claude Sonnet 4.5 ⚡'}
                         </span>
                       </div>

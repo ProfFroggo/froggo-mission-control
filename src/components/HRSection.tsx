@@ -111,7 +111,7 @@ export default function HRSection() {
                 </div>
               </div>
               <div className="p-3 bg-clawd-bg">
-                <div className={`text-lg font-bold ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-amber-400' : 'text-green-400'}`}>
+                <div className={`text-lg font-bold ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-amber-400' : 'text-success'}`}>
                   {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '✓'}
                 </div>
                 <div className="text-[10px] text-clawd-text-dim uppercase tracking-wider flex items-center gap-1">
@@ -153,7 +153,7 @@ export default function HRSection() {
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-300">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-amber-500/20 text-xs text-amber-300">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong> {teamHealth.agentsNeedingTraining.length === 1 ? 'has' : 'have'} skills below threshold. Training recommended.

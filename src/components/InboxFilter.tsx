@@ -279,7 +279,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm flex items-center gap-2 hover:bg-red-500/30"
+              className="px-3 py-2 bg-error-subtle text-error rounded-lg text-sm flex items-center gap-2 hover:bg-red-500/30"
             >
               <X size={14} />
               Clear
@@ -338,7 +338,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('unread')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.unread ? 'bg-blue-500/20 text-blue-400' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.unread ? 'bg-info-subtle text-info' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
                 }`}
               >
                 <Mail size={14} /> Unread
@@ -354,7 +354,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('starred')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.starred ? 'bg-yellow-500/20 text-yellow-400' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.starred ? 'bg-warning-subtle text-warning' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
                 }`}
               >
                 <Star size={14} /> Starred
@@ -362,7 +362,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('hasAttachment')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.hasAttachment ? 'bg-green-500/20 text-green-400' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.hasAttachment ? 'bg-success-subtle text-success' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
                 }`}
               >
                 <Paperclip size={14} /> Has Attachment
@@ -370,7 +370,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('urgent')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.urgent ? 'bg-red-500/20 text-red-400' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.urgent ? 'bg-error-subtle text-error' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
                 }`}
               >
                 <span>🚨</span> Urgent
@@ -419,7 +419,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                   </button>
                   <button
                     onClick={() => deleteSavedFilter(filter.id)}
-                    className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                    className="p-1 text-error hover:bg-red-500/20 rounded"
                   >
                     <X size={14} />
                   </button>

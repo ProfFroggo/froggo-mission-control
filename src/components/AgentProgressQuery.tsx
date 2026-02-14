@@ -106,7 +106,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
         onClick={handleQuery}
         disabled={loading}
         className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 
-                   text-purple-400 border border-purple-500/30 rounded-lg transition-all
+                   text-review border border-purple-500/30 rounded-lg transition-all
                    disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
       >
         {loading ? (
@@ -124,10 +124,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
       {/* Response display */}
       {response && (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+        <div className="bg-success-subtle border border-success-border rounded-lg p-4">
           <div className="flex items-start gap-2 mb-2">
-            <CheckCircle size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs font-semibold text-green-400">Agent Progress Report</div>
+            <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
+            <div className="text-xs font-semibold text-success">Agent Progress Report</div>
           </div>
           <div className="text-sm text-clawd-text-dim whitespace-pre-wrap ml-6">
             {response}
@@ -137,10 +137,10 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
 
       {/* Error display */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+        <div className="bg-error-subtle border border-error-border rounded-lg p-4">
           <div className="flex items-start gap-2">
-            <XCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-red-400">{error}</div>
+            <XCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-error">{error}</div>
           </div>
         </div>
       )}

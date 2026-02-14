@@ -67,9 +67,9 @@ export const DMFeed: React.FC = () => {
           <div key={msg.id} className="p-2 rounded bg-gray-800/50 border border-gray-700/50">
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>
-                <span className="text-blue-400 font-medium">{msg.from_agent}</span>
+                <span className="text-info font-medium">{msg.from_agent}</span>
                 <span className="mx-1">→</span>
-                <span className="text-green-400 font-medium">{msg.to_agent}</span>
+                <span className="text-success font-medium">{msg.to_agent}</span>
               </span>
               <span>{formatTimeAgo(msg.created_at)}</span>
             </div>
@@ -77,9 +77,9 @@ export const DMFeed: React.FC = () => {
             <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{msg.body}</div>
             <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
               <span className={`px-1.5 py-0.5 rounded ${
-                msg.message_type === 'request' ? 'bg-yellow-900/30 text-yellow-400' :
-                msg.message_type === 'response' ? 'bg-green-900/30 text-green-400' :
-                'bg-blue-900/30 text-blue-400'
+                msg.message_type === 'request' ? 'bg-yellow-900/30 text-warning' :
+                msg.message_type === 'response' ? 'bg-green-900/30 text-success' :
+                'bg-blue-900/30 text-info'
               }`}>{msg.message_type}</span>
               <span className={msg.status === 'unread' ? 'text-white font-medium' : ''}>{msg.status}</span>
             </div>

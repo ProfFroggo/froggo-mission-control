@@ -332,10 +332,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 })}
               </div>
 
-              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
                 <div className="flex items-start gap-2 text-sm">
-                  <AlertTriangle size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-blue-300">
+                  <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
+                  <div className="text-info">
                     You can always add or remove services later from account settings
                   </div>
                 </div>
@@ -384,10 +384,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     </ul>
                   </div>
 
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
                     <div className="flex items-start gap-2 text-sm">
-                      <AlertTriangle size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-blue-300">
+                      <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
+                      <div className="text-info">
                         <strong>Permissions requested:</strong>
                         <ul className="mt-2 space-y-1">
                           {selectedDataTypes.map(type => (
@@ -402,8 +402,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 <div className="space-y-4">
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-yellow-300">
+                      <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-warning">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
                           {provider === 'icloud' && 
@@ -458,7 +458,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {step === 'success' && (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
-                <Check size={32} className="text-green-400" />
+                <Check size={32} className="text-success" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Account Connected!</h3>
               <p className="text-sm text-clawd-text-dim text-center">
@@ -469,10 +469,10 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
           {/* Error Display */}
           {error && step !== 'connecting' && step !== 'success' && (
-            <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="mt-6 p-4 bg-error-subtle border border-red-500/20 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertTriangle size={16} className="text-red-400 mt-0.5" />
-                <div className="text-sm text-red-300">{error}</div>
+                <AlertTriangle size={16} className="text-error mt-0.5" />
+                <div className="text-sm text-error">{error}</div>
               </div>
             </div>
           )}

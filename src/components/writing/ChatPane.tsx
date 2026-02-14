@@ -198,7 +198,7 @@ export default function ChatPane() {
         {messages.length > 0 && (
           <button
             onClick={handleClearChat}
-            className="p-1 rounded text-clawd-text-dim hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-red-400/10 transition-colors"
             title="Clear conversation"
           >
             <Trash2 size={12} />
@@ -238,7 +238,7 @@ export default function ChatPane() {
         )}
         {/* Error display */}
         {error && (
-          <div className="text-sm text-red-400 px-2 py-1 mb-2">{error}</div>
+          <div className="text-sm text-error px-2 py-1 mb-2">{error}</div>
         )}
         {/* Scroll sentinel */}
         <div ref={scrollRef} />
