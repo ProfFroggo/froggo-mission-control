@@ -156,7 +156,7 @@ export const XMentionsView: React.FC = () => {
             onClick={() => updateStatus(mention.id, 'pending')}
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'pending'
-                ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                ? 'bg-yellow-100 text-warning border border-yellow-300'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -166,7 +166,7 @@ export const XMentionsView: React.FC = () => {
             onClick={() => updateStatus(mention.id, 'considering')}
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'considering'
-                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                ? 'bg-blue-100 text-info border border-blue-300'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -183,7 +183,7 @@ export const XMentionsView: React.FC = () => {
             🚫 Ignored
           </button>
           {mention.reply_status === 'replied' && (
-            <div className="px-2 py-1 text-xs rounded bg-green-100 text-green-800 border border-green-300">
+            <div className="px-2 py-1 text-xs rounded bg-green-100 text-success border border-green-300">
               ✅ Replied
               {mention.replied_at && (
                 <span className="ml-1 text-gray-500">
