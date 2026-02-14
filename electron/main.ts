@@ -7716,7 +7716,7 @@ ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: numbe
     
     if (response.success) {
       safeLog.log('[Finance] Analysis completed successfully');
-      return { success: true, analysis: response.content };
+      return { success: true, analysis: response.message };
     } else {
       throw new Error(response.error || 'Analysis failed');
     }
