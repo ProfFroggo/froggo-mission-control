@@ -49,12 +49,12 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
 
   // Other tabs: placeholder
   return (
-    <div className="flex flex-col h-full bg-gray-900 p-4">
-      <h3 className="text-lg font-semibold text-white mb-4">
+    <div className="flex flex-col h-full bg-clawd-surface p-4">
+      <h3 className="text-lg font-semibold text-clawd-text mb-4">
         {tab.charAt(0).toUpperCase() + tab.slice(1).replace('-', ' ')} Content
       </h3>
       
-      <div className="flex-1 flex items-center justify-center text-gray-400">
+      <div className="flex-1 flex items-center justify-center text-clawd-text-dim">
         <div className="text-center">
           <p className="text-sm">Content editor for {tab} tab</p>
           <p className="text-xs mt-2">Coming soon...</p>
