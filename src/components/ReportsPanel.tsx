@@ -182,7 +182,7 @@ export default function ReportsPanel() {
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Total Hours</div>
-                <div className="text-3xl font-bold text-orange-400">
+                <div className="text-3xl font-bold text-warning">
                   {weeklyReport.totalHours.toFixed(1)}h
                 </div>
               </div>
@@ -265,7 +265,7 @@ export default function ReportsPanel() {
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
                 <div className="text-sm text-clawd-text-dim mb-2">Total Hours</div>
-                <div className="text-3xl font-bold text-orange-400">
+                <div className="text-3xl font-bold text-warning">
                   {monthlyReport.totalHours.toFixed(1)}h
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function ReportsPanel() {
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Total Time</div>
-                        <div className="font-medium text-orange-400">
+                        <div className="font-medium text-warning">
                           {agent.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>
@@ -347,7 +347,7 @@ export default function ReportsPanel() {
                       </div>
                       <div>
                         <div className="text-clawd-text-dim">Total Time</div>
-                        <div className="font-medium text-orange-400">
+                        <div className="font-medium text-warning">
                           {project.totalTimeSpent.toFixed(1)}h
                         </div>
                       </div>
