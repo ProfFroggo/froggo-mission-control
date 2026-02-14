@@ -382,7 +382,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
   const getIcon = () => {
     switch (brief?.timeOfDay) {
       case 'morning': return <Sun className="text-warning" size={32} />;
-      case 'afternoon': return <Sun className="text-orange-400" size={32} />;
+      case 'afternoon': return <Sun className="text-warning" size={32} />;
       case 'evening': return <Moon className="text-review" size={32} />;
       case 'night': return <Moon className="text-info" size={32} />;
       default: return <Sparkles className="text-clawd-accent" size={32} />;
@@ -502,7 +502,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                 {brief.overnightActivity.agentSessions.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {brief.overnightActivity.agentSessions.map((agent, i) => (
-                      <span key={i} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs">
+                      <span key={i} className="px-2 py-1 bg-purple-500/20 text-review rounded text-xs">
                         {agent}
                       </span>
                     ))}
@@ -585,7 +585,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-clawd-text-dim mb-2">Working On Tasks</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.agentStats.busyAgents.map((agent, i) => (
-                        <span key={i} className="px-2 py-1 bg-green-500/20 text-green-300 rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-green-500/20 text-success rounded text-xs">
                           {agent}
                         </span>
                       ))}
