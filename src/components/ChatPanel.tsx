@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquarePlus, Phone, PhoneOff, UsersRound } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
@@ -1057,116 +1057,17 @@ export default function ChatPanel() {
             const isStarred = starredMessageIds.has(msg.id);
             
             return (
-              <div
+              <MessageItem
                 key={msg.id}
-                className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${
-                  showAvatar ? 'mt-6' : 'mt-2'
-                }`}
-              >
-                {/* Avatar column - consistent width */}
-                <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
-                  {isUser ? (
-                    <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/20">
-                      K
-                    </div>
-                  ) : (
-                    <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
-                  )}
-                </div>
-
-                {/* Message content column */}
-                <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] sm:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
-                  {/* Sender name (only on first message in group) */}
-                  {showAvatar && (
-                    <div className={`text-xs font-medium mb-1 px-1 ${
-                      isUser ? 'text-clawd-accent' : 'text-emerald-600'
-                    }`}>
-                      {isUser ? 'You' : selectedAgent.name}
-                    </div>
-                  )}
-
-                  {/* Message bubble with actions */}
-                  <div className="relative group w-full">
-                    {/* Message actions bar (appears on hover) */}
-                    {!msg.streaming && (
-                      <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
-                        <button
-                          onClick={(e) => handleToggleStar(msg, e)}
-                          className={`p-1.5 rounded-lg transition-all duration-100 ${
-                            isStarred
-                              ? 'bg-yellow-100 text-warning shadow-sm'
-                              : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-warning hover:bg-yellow-50 border border-clawd-border'
-                          }`}
-                          title={isStarred ? 'Unstar message' : 'Star message'}
-                        >
-                          <Star 
-                            size={14} 
-                            className={isStarred ? 'fill-yellow-500' : ''}
-                          />
-                        </button>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(msg.content);
-                            showToast('Copied to clipboard', 'success');
-                          }}
-                          className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
-                          title="Copy message"
-                        >
-                          <Copy size={14} />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Message bubble */}
-                    <div
-                      className={`px-4 py-3 transition-all duration-150 ${
-                        isUser
-                          ? 'bg-clawd-accent/10 border border-clawd-accent/30'
-                          : 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border shadow-sm'
-                      } ${
-                        isUser
-                          ? 'rounded-2xl rounded-tr-sm'
-                          : 'rounded-2xl rounded-tl-sm'
-                      }`}
-                    >
-                      {msg.streaming && !msg.content ? (
-                        <div className="flex items-center gap-2 py-1">
-                          <div className="flex gap-1">
-                            <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
-                            <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
-                            <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
-                          </div>
-                          <span className={`text-sm ${isUser ? 'text-white/80' : 'text-clawd-text-dim'}`}>
-                            Thinking...
-                          </span>
-                        </div>
-                      ) : msg.role === 'assistant' ? (
-                        <MarkdownMessage content={msg.content} />
-                      ) : (
-                        <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
-                      )}
-                      {msg.streaming && msg.content && (
-                        <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
-                          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-white' : 'bg-clawd-accent'}`} />
-                          <span className={`text-xs ${isUser ? 'text-white/90' : 'text-clawd-text-dim'}`}>
-                            typing...
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Timestamp and status */}
-                  <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''} ${isLastInGroup ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-100`}>
-                    <span className="text-xs text-clawd-text-dim font-medium">
-                      {time}
-                    </span>
-                    {isStarred && (
-                      <Star size={10} className="text-warning fill-yellow-500" />
-                    )}
-                  </div>
-                </div>
-              </div>
+                msg={msg}
+                isUser={isUser}
+                showAvatar={showAvatar}
+                isLastInGroup={isLastInGroup}
+                time={time}
+                isStarred={isStarred}
+                selectedAgent={selectedAgent}
+                onToggleStar={handleToggleStar}
+              />
             );
           })
         )}
@@ -1329,4 +1230,138 @@ export default function ChatPanel() {
     </div>
   );
 }
+
+// ============================================
+// Memoized Message Item Component
+// ============================================
+
+interface MessageItemProps {
+  msg: Message;
+  isUser: boolean;
+  showAvatar: boolean;
+  isLastInGroup: boolean;
+  time: string;
+  isStarred: boolean;
+  selectedAgent: ChatAgent;
+  onToggleStar: (msg: Message, e: React.MouseEvent) => void;
+}
+
+const MessageItem = memo(function MessageItem({
+  msg,
+  isUser,
+  showAvatar,
+  isLastInGroup,
+  time,
+  isStarred,
+  selectedAgent,
+  onToggleStar,
+}: MessageItemProps) {
+  return (
+    <div
+      className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${
+        showAvatar ? 'mt-6' : 'mt-2'
+      }`}
+    >
+      {/* Avatar column - consistent width */}
+      <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
+        {isUser ? (
+          <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/20">
+            K
+          </div>
+        ) : (
+          <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
+        )}
+      </div>
+
+      {/* Message content column */}
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] sm:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
+        {/* Sender name (only on first message in group) */}
+        {showAvatar && (
+          <div className={`text-xs font-medium mb-1 px-1 ${
+            isUser ? 'text-clawd-accent' : 'text-emerald-600'
+          }`}>
+            {isUser ? 'You' : selectedAgent.name}
+          </div>
+        )}
+
+        {/* Message bubble with actions */}
+        <div className="relative group w-full">
+          {/* Message actions bar (appears on hover) */}
+          {!msg.streaming && (
+            <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
+              <button
+                onClick={(e) => onToggleStar(msg, e)}
+                className={`p-1.5 rounded-lg transition-all duration-100 ${
+                  isStarred
+                    ? 'bg-yellow-100 text-warning shadow-sm'
+                    : 'bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-warning hover:bg-yellow-50 border border-clawd-border'
+                }`}
+                title={isStarred ? 'Unstar message' : 'Star message'}
+              >
+                <Star 
+                  size={14} 
+                  className={isStarred ? 'fill-yellow-500' : ''}
+                />
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(msg.content);
+                  showToast('Copied to clipboard', 'success');
+                }}
+                className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
+                title="Copy message"
+              >
+                <Copy size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Message bubble */}
+          <div
+            className={`relative px-4 py-3 rounded-2xl shadow-sm ${
+              isUser
+                ? 'bg-clawd-accent text-white rounded-tr-sm'
+                : 'bg-clawd-surface text-clawd-text border border-clawd-border rounded-tl-sm'
+            }`}
+          >
+            {msg.streaming && !msg.content ? (
+              <div className="flex items-center gap-2 py-1">
+                <div className="flex gap-1">
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className={`text-sm ${isUser ? 'text-white/80' : 'text-clawd-text-dim'}`}>
+                  Thinking...
+                </span>
+              </div>
+            ) : msg.role === 'assistant' ? (
+              <MarkdownMessage content={msg.content} />
+            ) : (
+              <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+            )}
+            {msg.streaming && msg.content && (
+              <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-white' : 'bg-clawd-accent'}`} />
+                <span className={`text-xs ${isUser ? 'text-white/90' : 'text-clawd-text-dim'}`}>
+                  typing...
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Timestamp and status */}
+        <div className={`flex items-center gap-2 mt-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''} ${isLastInGroup ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-100`}>
+          <span className="text-xs text-clawd-text-dim font-medium">
+            {time}
+          </span>
+          {isStarred && (
+            <Star size={10} className="text-warning fill-yellow-500" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
