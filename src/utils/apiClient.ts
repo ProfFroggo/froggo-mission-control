@@ -129,7 +129,9 @@ export async function apiCall<T = any>(
     // Wait before retry (exponential backoff)
     if (attempt < retries - 1) {
       const delay = retryDelay * Math.pow(2, attempt);
-      console.log(`[API] Retrying in ${delay}ms... (attempt ${attempt + 2}/${retries})`);
+      if (import.meta.env.DEV) {
+        console.log(`[API] Retrying in ${delay}ms... (attempt ${attempt + 2}/${retries})`);
+      }
       await sleep(delay);
     }
   }
