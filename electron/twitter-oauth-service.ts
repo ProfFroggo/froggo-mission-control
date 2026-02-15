@@ -251,6 +251,7 @@ class TwitterOAuthService {
       `export X_SCREEN_NAME="${credentials.screenName}"`,
     ].join('\n');
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('fs').writeFileSync(credFile, content, { mode: 0o600 });
     console.debug(`[TwitterOAuth] Credentials stored in ${credFile}`);
   }
@@ -260,11 +261,13 @@ class TwitterOAuthService {
    */
   async loadCredentials(): Promise<OAuthCredentials | null> {
     const credFile = `${process.env.HOME}/.x-api-credentials`;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     if (!require('fs').existsSync(credFile)) {
       return null;
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const content = require('fs').readFileSync(credFile, 'utf-8');
       const lines = content.split('\n');
       const creds: any = {};

@@ -10,6 +10,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { safeStorage } from '../utils/safeStorage';
 
 interface AccessibilitySettings {
   reducedMotion: boolean;
@@ -39,7 +40,7 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<AccessibilitySettings>(() => {
     // Load from localStorage
-    const saved = localStorage.getItem('froggo-a11y-settings');
+    const saved = safeStorage.getItem('froggo-a11y-settings');
     if (saved) {
       try {
         return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
@@ -62,7 +63,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
   const updateSettings = useCallback((newSettings: Partial<AccessibilitySettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };
-      localStorage.setItem('froggo-a11y-settings', JSON.stringify(updated));
+      safeStorage.setItem('froggo-a11y-settings', JSON.stringify(updated));
       return updated;
     });
   }, []);

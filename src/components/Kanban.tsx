@@ -12,6 +12,7 @@ import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
 import HealthCheckModal from './HealthCheckModal';
+import { safeStorage } from '../utils/safeStorage';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
@@ -158,7 +159,7 @@ export default function Kanban() {
   }
 
   const [columnSettings, setColumnSettings] = useState<Record<TaskStatus, ColumnSettings>>(() => {
-    const saved = localStorage.getItem('kanban-column-settings');
+    const saved = safeStorage.getItem('kanban-column-settings');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -166,7 +167,7 @@ export default function Kanban() {
         console.error('Failed to parse column settings:', e);
       }
     }
-    
+
     // Default settings for each column
     return columns.reduce((acc, col) => {
       acc[col.id] = {
@@ -188,7 +189,7 @@ export default function Kanban() {
 
   // Persist column settings to localStorage
   useEffect(() => {
-    localStorage.setItem('kanban-column-settings', JSON.stringify(columnSettings));
+    safeStorage.setItem('kanban-column-settings', JSON.stringify(columnSettings));
   }, [columnSettings]);
 
   const updateColumnSetting = (columnId: TaskStatus, key: keyof ColumnSettings, value: any) => {

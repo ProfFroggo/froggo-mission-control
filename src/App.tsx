@@ -6,6 +6,7 @@ import LoadingPanel from './components/LoadingPanel';
 import PerformanceProfiler from './components/PerformanceProfiler';
 import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
 import { showToast } from './components/Toast';
+import { safeStorage } from './utils/safeStorage';
 // Import protected panels with error boundaries
 import {
   Dashboard,
@@ -48,7 +49,7 @@ type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
     // Load default panel from settings
-    const saved = localStorage.getItem('froggo-settings');
+    const saved = safeStorage.getItem('froggo-settings');
     if (saved) {
       try {
         const settings = JSON.parse(saved);
@@ -80,7 +81,7 @@ function App() {
 
   // Apply saved theme and accent color on startup
   useEffect(() => {
-    const saved = localStorage.getItem('froggo-settings');
+    const saved = safeStorage.getItem('froggo-settings');
     if (saved) {
       try {
         const settings = JSON.parse(saved);
@@ -430,7 +431,7 @@ function App() {
             <MorningBrief
               onDismiss={() => {
                 setShowMorningBrief(false);
-                localStorage.setItem('morningBriefLastShown', new Date().toDateString());
+                safeStorage.setItem('morningBriefLastShown', new Date().toDateString());
               }}
               onNavigate={(view) => setCurrentView(view as any)}
             />
