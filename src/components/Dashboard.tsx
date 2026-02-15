@@ -7,7 +7,16 @@ import {
   X, Minus, Maximize2, GripVertical, Shield
 } from 'lucide-react';
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
-import type { Layout } from 'react-grid-layout';
+
+// Custom layout interface matching react-grid-layout's expected format
+interface GridLayout {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  static?: boolean;
+}
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
@@ -60,7 +69,7 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
 ];
 
-const DEFAULT_LAYOUT: Layout[] = [
+const DEFAULT_LAYOUT: GridLayout[] = [
   { i: 'hero', x: 0, y: 0, w: 12, h: 5, static: true },
   { i: 'approvals', x: 0, y: 5, w: 2, h: 4 },
   { i: 'inbox', x: 2, y: 5, w: 2, h: 4 },
@@ -163,7 +172,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   
   // Widget customization state
   const [editMode, setEditMode] = useState(false);
-  const [layout, setLayout] = useState<Layout[]>(() => {
+  const [layout, setLayout] = useState<GridLayout[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-layout');
     if (saved) {
       try {
@@ -254,7 +263,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     }
   }, [connected, loadGatewaySessions]);
 
-  const handleLayoutChange = (newLayout: Layout[]) => {
+  const handleLayoutChange = (newLayout: GridLayout[]) => {
     setLayout(newLayout);
     localStorage.setItem('dashboard-widget-layout', JSON.stringify(newLayout));
   };

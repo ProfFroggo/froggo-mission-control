@@ -331,6 +331,8 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
     const toExecute = issues.filter(i => !skipTypes.includes(i.type) && !skipTypes.includes(i.id));
     
     for (const issue of toExecute) {
+      if (abortControllerRef.current?.signal.aborted) break;
+      
       setExecutionLog(prev => [...prev, `${issue.actionVerb}...`]);
       await delay(500); // Longer delay so user sees progress
 
@@ -339,6 +341,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
           // For blocked tasks, just log them - manual review needed
           setExecutionLog(prev => [...prev, `Found ${issue.taskIds.length} blocked task(s):`]);
           for (const id of issue.taskIds) {
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             setExecutionLog(prev => [...prev, `  ⚠️ "${task?.title?.slice(0, 40)}..." (${id.slice(-8)})`]);
             await delay(200);
@@ -349,6 +352,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
           // For stalled tasks, log them - agents may need to be respawned
           setExecutionLog(prev => [...prev, `Found ${issue.taskIds.length} stalled task(s):`]);
           for (const id of issue.taskIds) {
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             const ageMin = task?.updated_at ? Math.round((Date.now() - task.updated_at) / 60000) : '??';
             setExecutionLog(prev => [...prev, `  ⚠️ "${task?.title?.slice(0, 35)}..." (${ageMin}min ago)`]);
@@ -359,6 +363,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
         else if (issue.id === 'no-agent-inprogress') {
           let fixed = 0;
           for (const id of issue.taskIds) {
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             setExecutionLog(prev => [...prev, `  → Moving "${task?.title?.slice(0, 25)}..." to todo`]);
             await delay(300);
@@ -369,6 +374,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
         else if (issue.id === 'invalid-agents') {
           let fixed = 0;
           for (const id of issue.taskIds) {
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             setExecutionLog(prev => [...prev, `  → Clearing agent from "${task?.title?.slice(0, 25)}..."`]);
             await delay(300);
@@ -382,6 +388,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
         else if (issue.id === 'junk' || issue.id === 'orphans') {
           let done = 0;
           for (const id of issue.taskIds) { 
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             setExecutionLog(prev => [...prev, `  → Deleting "${task?.title?.slice(0, 30)}..."`]);
             await delay(300);
@@ -392,6 +399,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
         else if (issue.id === 'duplicates') {
           let done = 0;
           for (const id of issue.taskIds) { 
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             setExecutionLog(prev => [...prev, `  → Removing dupe "${task?.title?.slice(0, 25)}..."`]);
             await delay(300);
@@ -402,6 +410,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
         else if (issue.id === 'malformed') {
           let fixed = 0;
           for (const id of issue.taskIds) {
+            if (abortControllerRef.current?.signal.aborted) break;
             const task = tasks.find(t => t.id === id);
             if (task) {
               const clean = task.title.replace(/\s*--\w+.*$/i, '').slice(0, 80);
