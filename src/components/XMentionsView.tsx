@@ -106,16 +106,16 @@ export const XMentionsView: React.FC = () => {
     return (
       <div
         key={mention.id}
-        className="border-b border-gray-200 p-4 hover:bg-gray-50 transition-colors"
+        className="border-b border-clawd-border p-4 hover:bg-clawd-surface transition-colors"
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <div className="font-medium text-gray-900">@{mention.author_username}</div>
-            <div className="text-sm text-gray-500">{mention.author_name}</div>
+            <div className="font-medium text-clawd-text">@{mention.author_username}</div>
+            <div className="text-sm text-clawd-text-dim">{mention.author_name}</div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-xs text-gray-400">
+            <div className="text-xs text-clawd-text-dim">
               {new Date(mention.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -127,10 +127,10 @@ export const XMentionsView: React.FC = () => {
         </div>
 
         {/* Tweet text */}
-        <div className="text-sm text-gray-800 mb-3 whitespace-pre-wrap">{mention.text}</div>
+        <div className="text-sm text-clawd-text mb-3 whitespace-pre-wrap">{mention.text}</div>
 
         {/* Metrics */}
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+        <div className="flex items-center gap-4 text-xs text-clawd-text-dim mb-3">
           {metrics.like_count !== undefined && (
             <div>❤️ {metrics.like_count}</div>
           )}
@@ -157,7 +157,7 @@ export const XMentionsView: React.FC = () => {
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'pending'
                 ? 'bg-yellow-100 text-warning border border-yellow-300'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
             ⏳ Pending
@@ -167,7 +167,7 @@ export const XMentionsView: React.FC = () => {
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'considering'
                 ? 'bg-blue-100 text-info border border-blue-300'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
             🤔 Considering
@@ -176,8 +176,8 @@ export const XMentionsView: React.FC = () => {
             onClick={() => updateStatus(mention.id, 'ignored')}
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'ignored'
-                ? 'bg-gray-200 text-gray-700 border border-gray-400'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-clawd-surface text-clawd-text border border-clawd-border'
+                : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
             🚫 Ignored
@@ -186,7 +186,7 @@ export const XMentionsView: React.FC = () => {
             <div className="px-2 py-1 text-xs rounded bg-green-100 text-success border border-green-300">
               ✅ Replied
               {mention.replied_at && (
-                <span className="ml-1 text-gray-500">
+                <span className="ml-1 text-clawd-text-dim">
                   {new Date(mention.replied_at).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -205,18 +205,18 @@ export const XMentionsView: React.FC = () => {
               value={notes[mention.id] || ''}
               onChange={(e) => setNotes({ ...notes, [mention.id]: e.target.value })}
               placeholder="Add notes..."
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
+              className="flex-1 px-2 py-1 text-sm border border-clawd-border rounded bg-clawd-bg text-clawd-text"
             />
             <button
               onClick={() => saveNotes(mention.id, notes[mention.id] || '')}
               disabled={!notes[mention.id]?.trim()}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 text-sm bg-clawd-surface text-clawd-text rounded hover:bg-clawd-surface/80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Note
             </button>
           </div>
           {metadata.notes && (
-            <div className="mt-1 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+            <div className="mt-1 text-xs text-clawd-text-dim bg-clawd-surface p-2 rounded">
               📝 {metadata.notes}
             </div>
           )}
@@ -231,12 +231,12 @@ export const XMentionsView: React.FC = () => {
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Write your reply..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded resize-none"
+                  className="w-full px-3 py-2 text-sm border border-clawd-border rounded resize-none bg-clawd-bg text-clawd-text"
                   rows={3}
                   maxLength={280}
                 />
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-clawd-text-dim">
                     {replyText.length}/280 characters
                   </div>
                   <div className="flex gap-2">
@@ -245,7 +245,7 @@ export const XMentionsView: React.FC = () => {
                         setSelectedMention(null);
                         setReplyText('');
                       }}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                      className="px-3 py-1 text-sm border border-clawd-border rounded hover:bg-clawd-surface"
                     >
                       Cancel
                     </button>
@@ -276,16 +276,16 @@ export const XMentionsView: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-gray-500">Loading mentions...</div>
+        <div className="text-clawd-text-dim">Loading mentions...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-clawd-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="text-lg font-semibold text-gray-900">X Mentions</div>
+      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
+        <div className="text-lg font-semibold text-clawd-text">X Mentions</div>
         <button
           onClick={fetchNewMentions}
           disabled={fetching}
@@ -303,7 +303,7 @@ export const XMentionsView: React.FC = () => {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 p-4 border-b border-gray-200 bg-gray-50">
+      <div className="flex gap-2 p-4 border-b border-clawd-border bg-clawd-surface">
         {(['all', 'pending', 'considering', 'ignored', 'replied'] as const).map((status) => {
           const count = status === 'all' 
             ? mentions.length 
@@ -316,7 +316,7 @@ export const XMentionsView: React.FC = () => {
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 filter === status
                   ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  : 'bg-clawd-bg text-clawd-text hover:bg-clawd-surface border border-clawd-border'
               }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
@@ -328,7 +328,7 @@ export const XMentionsView: React.FC = () => {
       {/* Mentions list */}
       <div className="flex-1 overflow-y-auto">
         {mentions.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-clawd-text-dim">
             <div className="text-center">
               <div className="text-4xl mb-2">📭</div>
               <div>No mentions found</div>
