@@ -187,15 +187,26 @@ export const XContentMixTracker: React.FC = () => {
     return 'major-deviation';
   };
 
+  const statusClasses = (status: string) => {
+    switch (status) {
+      case 'on-target':
+        return 'bg-success-subtle border-success-border';
+      case 'minor-deviation':
+        return 'bg-warning-subtle border-warning-border';
+      default:
+        return 'bg-error-subtle border-error-border';
+    }
+  };
+
   const status = getOverallStatus();
   const totalPosts = getTotalPosts();
 
   return (
-    <div className="flex flex-col h-full bg-white p-6">
+    <div className="flex flex-col h-full bg-clawd-surface p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <PieChart className="text-blue-500" size={24} />
+          <PieChart className="text-info" size={24} />
           <div>
             <h2 className="text-lg font-semibold text-clawd-text">Content Mix Tracker</h2>
             <p className="text-sm text-clawd-text-dim">
@@ -208,21 +219,13 @@ export const XContentMixTracker: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-3 py-1.5 text-sm rounded ${
-              period === 'week'
-                ? 'bg-blue-500 text-white'
-                : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'
-            }`}
+            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'btn-primary' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
           >
             Last Week
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-3 py-1.5 text-sm rounded ${
-              period === 'month'
-                ? 'bg-blue-500 text-white'
-                : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
+            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'btn-primary' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
           >
             Last Month
           </button>
@@ -230,13 +233,7 @@ export const XContentMixTracker: React.FC = () => {
       </div>
 
       {/* Overall status card */}
-      <div className={`mb-6 p-4 rounded-lg border-2 ${
-        status === 'on-target' 
-          ? 'bg-green-50 border-green-200'
-          : status === 'minor-deviation'
-          ? 'bg-yellow-50 border-yellow-200'
-          : 'bg-orange-50 border-orange-200'
-      }`}>
+      <div className={`mb-6 p-4 rounded-lg border-2 ${statusClasses(status)}`}>
         <div className="flex items-center gap-2 mb-1">
           {status === 'on-target' ? (
             <>
@@ -245,17 +242,17 @@ export const XContentMixTracker: React.FC = () => {
             </>
           ) : status === 'minor-deviation' ? (
             <>
-              <TrendingUp className="text-yellow-600" size={20} />
-              <span className="font-medium text-yellow-900">Minor Deviation</span>
+              <TrendingUp className="text-warning" size={20} />
+              <span className="font-medium text-warning">Minor Deviation</span>
             </>
           ) : (
             <>
-              <AlertTriangle className="text-orange-600" size={20} />
-              <span className="font-medium text-orange-900">Major Deviation</span>
+              <AlertTriangle className="text-error" size={20} />
+              <span className="font-medium text-error">Major Deviation</span>
             </>
           )}
         </div>
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-clawd-text-dim">
           {totalPosts} posts in the last {period === 'week' ? '7 days' : '30 days'}
         </p>
       </div>
@@ -278,9 +275,9 @@ export const XContentMixTracker: React.FC = () => {
           {mixData.map(renderMixBar)}
           
           {/* Recommendations */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="text-sm font-medium text-blue-900 mb-2">💡 Recommendations</div>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="mt-6 p-4 bg-clawd-surface rounded-lg border border-clawd-border">
+            <div className="text-sm font-medium text-clawd-text mb-2">💡 Recommendations</div>
+            <ul className="text-sm text-clawd-text space-y-1">
               {mixData.filter(isOffTarget).map(item => {
                 const deviation = getDeviation(item);
                 return (
