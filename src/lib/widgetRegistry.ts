@@ -43,7 +43,7 @@ export async function loadAgentWidgets(agentId: string): Promise<WidgetDefinitio
     const manifestData = await (window as any).clawdbot?.widgetAPI?.scanManifest(agentId);
 
     if (!manifestData || manifestData.error) {
-      console.warn(`[WidgetRegistry] No manifest for ${agentId}:`, manifestData?.error);
+      console.debug(`[WidgetRegistry] No manifest for ${agentId}:`, manifestData?.error);
       return [];
     }
 
@@ -54,7 +54,7 @@ export async function loadAgentWidgets(agentId: string): Promise<WidgetDefinitio
     return manifest.widgets;
 
   } catch (err) {
-    console.warn(`[WidgetRegistry] Failed to load widgets for ${agentId}:`, err);
+    console.debug(`[WidgetRegistry] Failed to load widgets for ${agentId}:`, err);
     return [];
   }
 }
@@ -70,7 +70,7 @@ export async function scanAllWidgets(): Promise<Map<string, WidgetDefinition[]>>
     // Get list of all agents from registry
     const agents = await (window as any).clawdbot?.getAgentRegistry();
     if (!agents || !Array.isArray(agents)) {
-      console.warn('[WidgetRegistry] Failed to fetch agent registry');
+      console.debug('[WidgetRegistry] Failed to fetch agent registry');
       return widgetMap;
     }
 

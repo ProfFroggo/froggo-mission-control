@@ -197,7 +197,7 @@ Provide a brief, actionable summary.`;
       // Extract JSON from response (handle cases where AI adds extra text)
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
-        console.warn('[AI Assistance] No JSON array found in suggestions response');
+        console.debug('[AI Assistance] No JSON array found in suggestions response');
         return [];
       }
       
@@ -219,7 +219,7 @@ Provide a brief, actionable summary.`;
       // Extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.warn('[AI Assistance] No JSON object found in sentiment response');
+        console.debug('[AI Assistance] No JSON object found in sentiment response');
         return null;
       }
       

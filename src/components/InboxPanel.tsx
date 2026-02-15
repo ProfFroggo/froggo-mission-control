@@ -138,7 +138,7 @@ export default function InboxPanel() {
     try {
       // Check if running in Electron with clawdbot API
       if (!window.clawdbot?.inbox?.list) {
-        console.warn('[InboxPanel] clawdbot.inbox not available (web mode)');
+        console.debug('[InboxPanel] clawdbot.inbox not available (web mode)');
         setItems([]);
         return;
       }
@@ -171,7 +171,7 @@ export default function InboxPanel() {
           allItems = [...taskItems, ...allItems];
         }
       } catch (e) {
-        console.warn('[InboxPanel] Failed to load review tasks:', e);
+        console.debug('[InboxPanel] Failed to load review tasks:', e);
       }
       
       // BUGFIX: Filter out items currently being processed OR recently approved to prevent flash
@@ -672,7 +672,7 @@ export default function InboxPanel() {
         try {
           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         } catch (e) {
-          console.warn('[Inbox] Failed to parse metadata:', e);
+          console.debug('[Inbox] Failed to parse metadata:', e);
         }
       }
       
@@ -695,7 +695,7 @@ export default function InboxPanel() {
           try {
             await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
           } catch (e) {
-            console.warn('[Inbox] Status verify failed:', e);
+            console.debug('[Inbox] Status verify failed:', e);
           }
         }, 500);
       }

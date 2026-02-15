@@ -322,7 +322,7 @@ export class GeminiLiveService {
         this.clearPlayback();
         const sessionDurationMs = this.connectTime ? Date.now() - this.connectTime : 0;
         const msSinceLastMsg = this.lastMessageTime ? Date.now() - this.lastMessageTime : 0;
-        console.warn(`[GeminiLive] WS closed: code=${e.code} reason="${e.reason}" wasClean=${e.wasClean} sessionDuration=${(sessionDurationMs/1000).toFixed(1)}s msgs=${this.messageCount} msSinceLastMsg=${msSinceLastMsg} toolCallPending=${this.toolCallPending} keepaliveActive=${!!this.toolCallKeepaliveTimer}`);
+        console.debug(`[GeminiLive] WS closed: code=${e.code} reason="${e.reason}" wasClean=${e.wasClean} sessionDuration=${(sessionDurationMs/1000).toFixed(1)}s msgs=${this.messageCount} msSinceLastMsg=${msSinceLastMsg} toolCallPending=${this.toolCallPending} keepaliveActive=${!!this.toolCallKeepaliveTimer}`);
         this.emit('disconnected', { code: e.code, reason: e.reason });
         if (!wasConnected && this.pendingSetup) {
           this.pendingSetup.reject(new Error(`Connection closed: ${e.reason || e.code}`));
@@ -437,7 +437,7 @@ export class GeminiLiveService {
       // Tool call cancellation
       if (msg.toolCallCancellation) {
         this.toolCallPending = false;
-        console.warn('[GeminiLive] Tool call CANCELLED by server:', JSON.stringify(msg.toolCallCancellation));
+        console.debug('[GeminiLive] Tool call CANCELLED by server:', JSON.stringify(msg.toolCallCancellation));
       }
 
       // Session resumption updates — store handle for reconnect
@@ -481,7 +481,7 @@ export class GeminiLiveService {
 
   private scheduleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.warn('[GeminiLive] Max reconnect attempts reached');
+      console.debug('[GeminiLive] Max reconnect attempts reached');
       this.emit('error', { message: 'Auto-reconnect failed after multiple attempts. Press call to reconnect.' });
       this.reconnectAttempts = 0;
       return;

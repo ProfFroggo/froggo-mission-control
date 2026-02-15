@@ -340,7 +340,7 @@ export default function EpicCalendar() {
 
       if (response.success) {
         if (response.errors && response.errors.length > 0) {
-          console.warn('[EpicCalendar] Some sources had errors:', response.errors);
+          console.debug('[EpicCalendar] Some sources had errors:', response.errors);
         }
 
         setEvents(response.events);

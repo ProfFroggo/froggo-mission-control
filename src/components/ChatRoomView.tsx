@@ -274,7 +274,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       // Safety timeout — 30s
       const timer = setTimeout(() => {
         if (!settled) {
-          console.warn(`[Room] Agent ${agentId} timed out after 30s`);
+          console.debug(`[Room] Agent ${agentId} timed out after 30s`);
           updateMessage(roomId, msgId, { content: content || '', streaming: false });
           settle();
         }

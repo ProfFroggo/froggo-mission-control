@@ -207,7 +207,7 @@ export function useFocusMode() {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.warn('Failed to parse focusMode:', e);
+        console.debug('Failed to parse focusMode:', e);
       }
     }
     return null;

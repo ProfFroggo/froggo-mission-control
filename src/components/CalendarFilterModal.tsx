@@ -61,7 +61,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         try {
           enabledIds = JSON.parse(savedFilters);
         } catch (e) {
-          console.warn('Failed to parse calendar-filter-preferences:', e);
+          console.debug('Failed to parse calendar-filter-preferences:', e);
           enabledIds = null;
         }
       }

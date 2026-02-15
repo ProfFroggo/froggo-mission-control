@@ -210,7 +210,7 @@ export default function ConnectedAccountsPanel() {
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
-          console.warn('Import errors:', result.errors);
+          console.debug('Import errors:', result.errors);
         }
         loadAccounts();
       } else {

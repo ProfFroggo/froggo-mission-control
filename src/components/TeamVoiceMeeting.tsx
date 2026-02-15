@@ -284,7 +284,7 @@ Respond as ${agentName(agentId)}:`;
       }),
       geminiLive.on('disconnected', () => {
         if (isActiveRef.current) {
-          console.warn('[TeamVoice] Gemini Live disconnected unexpectedly');
+          console.debug('[TeamVoice] Gemini Live disconnected unexpectedly');
         }
       }),
     ];

@@ -552,7 +552,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
         try {
           if (!toolCall?.functionCalls?.length) {
-            console.warn('[QuickActions] No function calls in tool-call event');
+            console.debug('[QuickActions] No function calls in tool-call event');
             return;
           }
           const agent = activeCallAgentRef.current;
@@ -762,7 +762,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         await ipc.spawnChat(agent.id);
       }
     } catch (e) {
-      console.warn('[QuickActions] Failed to spawn agent chat session:', e);
+      console.debug('[QuickActions] Failed to spawn agent chat session:', e);
     }
     setChatLoading(false);
   };

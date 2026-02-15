@@ -160,7 +160,7 @@ export function useNotifications() {
         break;
 
       default:
-        console.warn('[useNotifications] Unknown action type:', action.actionType);
+        console.debug('[useNotifications] Unknown action type:', action.actionType);
     }
   }, [navigate]);
 
@@ -200,7 +200,7 @@ export function useNotifications() {
         break;
 
       default:
-        console.warn('[useNotifications] Unknown view:', view);
+        console.debug('[useNotifications] Unknown view:', view);
     }
   }, [navigate]);
 

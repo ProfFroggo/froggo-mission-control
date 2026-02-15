@@ -74,7 +74,7 @@ async function loadPersonalities(): Promise<Record<string, any>> {
         return personalitiesData!;
       }
     } catch (err) {
-      console.warn('[AgentContext] Exec failed:', err);
+      console.debug('[AgentContext] Exec failed:', err);
     }
   }
   
@@ -87,7 +87,7 @@ async function loadPersonalities(): Promise<Record<string, any>> {
       return personalitiesData!;
     }
   } catch (err) {
-    console.warn('[AgentContext] Fetch failed:', err);
+    console.debug('[AgentContext] Fetch failed:', err);
   }
   
   console.error('[AgentContext] ❌ Failed to load personalities');
@@ -123,7 +123,7 @@ async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
       }
     }
   } catch (e) {
-    console.warn('[AgentContext] Failed to load tasks:', e);
+    console.debug('[AgentContext] Failed to load tasks:', e);
   }
   
   // Fallback: try gateway froggo-db
@@ -167,7 +167,7 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
         .slice(0, 10);
     }
   } catch (e) {
-    console.warn('[AgentContext] Failed to load sessions:', e);
+    console.debug('[AgentContext] Failed to load sessions:', e);
   }
   return [];
 }

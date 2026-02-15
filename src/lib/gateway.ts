@@ -344,7 +344,7 @@ class Gateway {
       this.ws.send(JSON.stringify({ type: 'req', id, method: 'sessions.list', params: { limit: 1 } }));
       
       this.heartbeatTimeout = window.setTimeout(() => {
-        console.warn('[Gateway] Heartbeat timeout');
+        console.debug('[Gateway] Heartbeat timeout');
         this.cleanup();
         this.setState('disconnected');
         this.scheduleReconnect();
@@ -462,7 +462,7 @@ class Gateway {
   // High-level methods
   async getSessions() {
     if (!this.connected) {
-      console.warn('[Gateway] getSessions called before connected, waiting...');
+      console.debug('[Gateway] getSessions called before connected, waiting...');
       // Wait up to 5 seconds for connection
       for (let i = 0; i < 50; i++) {
         if (this.connected) break;
@@ -664,7 +664,7 @@ class Gateway {
       // Safety timeout — clean up after 3 minutes if no response
       setTimeout(() => {
         if (this.runCallbacks.has(runId)) {
-          console.warn('[Gateway] RunId timeout, cleaning up:', runId);
+          console.debug('[Gateway] RunId timeout, cleaning up:', runId);
           const cb = this.runCallbacks.get(runId);
           if (cb?.onError) cb.onError('Response timeout', {});
           this.runCallbacks.delete(runId);

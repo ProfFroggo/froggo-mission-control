@@ -666,7 +666,7 @@ export default function MeetingsPanel() {
       const dbId = await saveMeetingToDb(title);
       setMeetingDbId(dbId);
     } catch (err) {
-      console.warn('[Meeting] DB save failed:', err);
+      console.debug('[Meeting] DB save failed:', err);
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
