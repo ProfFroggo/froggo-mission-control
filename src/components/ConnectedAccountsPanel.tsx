@@ -237,9 +237,6 @@ export default function ConnectedAccountsPanel() {
       
       if (result?.success) {
         showToast('success', 'Account added', 'Account authenticated successfully');
-        if (result.steps && result.steps.length > 0) {
-          console.log('Setup steps:', result.steps);
-        }
         loadAccounts();
         setShowAddModal(false);
         setSelectedType('');

@@ -141,8 +141,4 @@ export function cleanupGlobalErrorHandlers() {
 
   window.removeEventListener('error', handleWindowError as any);
   window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-
-  if (import.meta.env.DEV) {
-    console.log('[GlobalErrorHandler] Cleaned up');
-  }
 }
