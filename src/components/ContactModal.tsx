@@ -79,6 +79,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const focusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -103,8 +104,13 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   // Focus input when mode switches
   useEffect(() => {
     if (isOpen && mode === 'dialogue' && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      focusTimeoutRef.current = setTimeout(() => inputRef.current?.focus(), 100);
     }
+    return () => {
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current);
+      }
+    };
   }, [isOpen, mode]);
 
   const handleManualSubmit = async (e: React.FormEvent) => {
