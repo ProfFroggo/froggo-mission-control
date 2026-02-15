@@ -36,7 +36,7 @@ export const defaultTheme: AgentTheme = {
   bg: 'bg-clawd-surface',
   text: 'text-clawd-text-dim',
   ring: 'ring-clawd-border',
-  dot: 'bg-gray-400',
+  dot: 'bg-clawd-text-dim',
   pic: ''
 };
 
