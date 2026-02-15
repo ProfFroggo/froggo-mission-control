@@ -4,6 +4,22 @@ import Fuse from 'fuse.js';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 
+// SECURITY: Sanitize search snippet - only allow mark tags, escape everything else
+function sanitizeSearchSnippet(snippet: string): string {
+  // First, escape all HTML entities
+  let sanitized = snippet
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Then restore mark tags with safe styling
+  sanitized = sanitized
+    .replace(/&lt;mark&gt;/g, '<mark class="bg-clawd-accent/30 text-clawd-accent font-medium">')
+    .replace(/&lt;\/mark&gt;/g, '</mark>');
+
+  return sanitized;
+}
+
 // X logo component
 const XIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -592,11 +608,12 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                       )}
                     </div>
                     {/* Render snippet with HTML highlighting if it contains <mark> tags */}
+                    {/* SECURITY: Only mark tags are preserved, all other HTML is escaped */}
                     {result.snippet?.includes('<mark>') ? (
-                      <div 
+                      <div
                         className="text-sm text-clawd-text-dim line-clamp-2"
-                        dangerouslySetInnerHTML={{ 
-                          __html: result.snippet.replace(/<mark>/g, '<mark class="bg-clawd-accent/30 text-clawd-accent font-medium">') 
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeSearchSnippet(result.snippet)
                         }}
                       />
                     ) : (
