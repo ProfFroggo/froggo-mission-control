@@ -120,22 +120,22 @@ export const XReplyGuyView: React.FC = () => {
     return (
       <div
         key={mention.id}
-        className={`border-b border-gray-200 p-4 transition-colors ${
-          isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+        className={`border-b border-clawd-border p-4 transition-colors ${
+          isSelected ? 'bg-blue-500/10' : 'hover:bg-clawd-surface'
         }`}
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <div className="font-medium text-gray-900">@{mention.author_username}</div>
-            <div className="text-sm text-gray-500">{mention.author_name}</div>
+            <div className="font-medium text-clawd-text">@{mention.author_username}</div>
+            <div className="text-sm text-clawd-text-dim">{mention.author_name}</div>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-xs font-medium text-warning bg-orange-100 px-2 py-1 rounded">
               <TrendingUp size={12} />
               {engagementScore}
             </div>
-            <div className="text-xs text-gray-400">
+            <div className="text-xs text-clawd-text-dim">
               {new Date(mention.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -147,10 +147,10 @@ export const XReplyGuyView: React.FC = () => {
         </div>
 
         {/* Tweet text */}
-        <div className="text-sm text-gray-800 mb-3 whitespace-pre-wrap">{mention.text}</div>
+        <div className="text-sm text-clawd-text mb-3 whitespace-pre-wrap">{mention.text}</div>
 
         {/* Engagement metrics */}
-        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+        <div className="flex items-center gap-4 text-xs text-clawd-text-dim mb-3">
           <div>❤️ {mention.like_count}</div>
           <div>🔄 {mention.retweet_count}</div>
           <div>💬 {mention.reply_count}</div>
@@ -166,12 +166,12 @@ export const XReplyGuyView: React.FC = () => {
 
         {/* Quick reply section */}
         {isSelected ? (
-          <div className="space-y-3 bg-white p-3 rounded border border-blue-200">
+          <div className="space-y-3 bg-clawd-bg p-3 rounded border border-blue-200">
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write your reply..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-clawd-border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-clawd-bg text-clawd-text"
               rows={4}
               maxLength={280}
               autoFocus
@@ -179,7 +179,7 @@ export const XReplyGuyView: React.FC = () => {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-clawd-text-dim">
                   {replyText.length}/280
                 </div>
                 <label className="flex items-center gap-2 text-sm">
@@ -202,7 +202,7 @@ export const XReplyGuyView: React.FC = () => {
                     setSelectedMention(null);
                     setReplyText('');
                   }}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm border border-clawd-border rounded hover:bg-clawd-surface"
                 >
                   Cancel
                 </button>
@@ -238,13 +238,13 @@ export const XReplyGuyView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-clawd-bg">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-clawd-border">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="text-warning" size={20} />
-            <div className="text-lg font-semibold text-gray-900">Reply Guy</div>
+            <div className="text-lg font-semibold text-clawd-text">Reply Guy</div>
           </div>
           <button
             onClick={loadHotMentions}
@@ -255,29 +255,29 @@ export const XReplyGuyView: React.FC = () => {
           </button>
         </div>
         
-        <div className="text-sm text-gray-600 mb-3">
+        <div className="text-sm text-clawd-text-dim mb-3">
           Fast-track high-engagement mentions. Skip approval for time-sensitive replies.
         </div>
         
         {/* Filters */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-600">Min Likes:</label>
+            <label className="text-xs text-clawd-text-dim">Min Likes:</label>
             <input
               type="number"
               value={minLikes}
               onChange={(e) => setMinLikes(parseInt(e.target.value) || 0)}
-              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded"
+              className="w-20 px-2 py-1 text-sm border border-clawd-border rounded bg-clawd-bg text-clawd-text"
               min="0"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-600">Min Retweets:</label>
+            <label className="text-xs text-clawd-text-dim">Min Retweets:</label>
             <input
               type="number"
               value={minRetweets}
               onChange={(e) => setMinRetweets(parseInt(e.target.value) || 0)}
-              className="w-20 px-2 py-1 text-sm border border-gray-300 rounded"
+              className="w-20 px-2 py-1 text-sm border border-clawd-border rounded bg-clawd-bg text-clawd-text"
               min="0"
             />
           </div>
@@ -287,13 +287,13 @@ export const XReplyGuyView: React.FC = () => {
       {/* Mentions list */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-clawd-text-dim">
             <div>Loading hot mentions...</div>
           </div>
         ) : mentions.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-clawd-text-dim">
             <div className="text-center">
-              <TrendingUp size={48} className="mx-auto mb-2 text-gray-300" />
+              <TrendingUp size={48} className="mx-auto mb-2 text-clawd-text-dim" />
               <div className="text-sm">No high-engagement mentions found</div>
               <div className="text-xs mt-2">Try lowering the engagement thresholds</div>
             </div>
@@ -305,9 +305,9 @@ export const XReplyGuyView: React.FC = () => {
       
       {posting && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 text-center">
-            <div className="text-lg font-semibold mb-2">Posting...</div>
-            <div className="text-sm text-gray-600">Sending your reply to X</div>
+          <div className="bg-clawd-surface rounded-lg p-6 text-center border border-clawd-border">
+            <div className="text-lg font-semibold mb-2 text-clawd-text">Posting...</div>
+            <div className="text-sm text-clawd-text-dim">Sending your reply to X</div>
           </div>
         </div>
       )}
