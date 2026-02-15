@@ -3,6 +3,7 @@ import {
   Bell, BellOff, Volume2, Moon, Clock, 
   AlertCircle, Save, ZapOff 
 } from 'lucide-react';
+import { showToast } from './Toast';
 
 export default function GlobalNotificationSettings() {
   const [loading, setLoading] = useState(true);
@@ -77,13 +78,13 @@ export default function GlobalNotificationSettings() {
       const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults);
 
       if (result.success) {
-        alert('Global notification settings saved successfully!');
+        showToast('success', 'Global notification settings saved successfully!');
       } else {
-        alert('Failed to save global notification settings');
+        showToast('error', 'Failed to save global notification settings');
       }
     } catch (error) {
       console.error('[GlobalNotificationSettings] Save error:', error);
-      alert('Error saving settings');
+      showToast('error', 'Error saving settings');
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FolderPlus, CheckSquare, Square, Loader2 } from 'lucide-react';
+import { showToast } from './Toast';
 
 interface MessageFolder {
   id: number;
@@ -50,7 +51,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
 
   const handleAssign = async () => {
     if (selectedFolders.size === 0) {
-      alert('Please select at least one folder');
+      showToast('warning', 'Please select at least one folder');
       return;
     }
 
@@ -75,7 +76,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
       onClose();
     } catch (error) {
       console.error('[BulkFolderAssign] Failed to assign folders:', error);
-      alert('Failed to assign folders. See console for details.');
+      showToast('error', 'Failed to assign folders. See console for details.');
     } finally {
       setAssigning(false);
     }

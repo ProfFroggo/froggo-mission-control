@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, X } from 'lucide-react';
 import { Session } from '../store/store';
+import { showToast } from './Toast';
 
 interface SnoozeButtonProps {
   session: Session;
@@ -55,13 +56,13 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
   const handleCustomSnooze = () => {
     if (!customDate || !customTime) {
-      alert('Please select both date and time');
+      showToast('warning', 'Please select both date and time');
       return;
     }
 
     const dateTime = new Date(`${customDate}T${customTime}`);
     if (dateTime.getTime() <= Date.now()) {
-      alert('Snooze time must be in the future');
+      showToast('warning', 'Snooze time must be in the future');
       return;
     }
 

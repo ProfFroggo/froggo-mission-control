@@ -4,6 +4,7 @@ import {
   AlertCircle, CheckCircle, Clock, Zap, 
   MessageCircle, Hash, Calendar as CalendarIcon, Users, Mail
 } from 'lucide-react';
+import { showToast } from './Toast';
 
 // Automation types
 export interface XAutomationTrigger {
@@ -345,12 +346,12 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   
   const handleSave = async () => {
     if (!name.trim()) {
-      alert('Please enter a name for this automation');
+      showToast('warning', 'Please enter a name for this automation');
       return;
     }
     
     if (actions.length === 0) {
-      alert('Please add at least one action');
+      showToast('warning', 'Please add at least one action');
       return;
     }
     
@@ -374,10 +375,10 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
       if (result?.success) {
         onSave();
       } else {
-        alert(`Failed to save: ${result?.error || 'Unknown error'}`);
+        showToast('error', `Failed to save: ${result?.error || 'Unknown error'}`);
       }
     } catch (e: any) {
-      alert(`Failed to save: ${e.message}`);
+      showToast('error', `Failed to save: ${e.message}`);
     } finally {
       setSaving(false);
     }
