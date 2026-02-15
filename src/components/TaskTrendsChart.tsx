@@ -43,8 +43,8 @@ export default function TaskTrendsChart() {
       return (
         <div className="bg-clawd-surface border border-clawd-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
+          {payload.map((entry: any) => (
+            <p key={entry.name} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {entry.value}
               {entry.name === 'Completion Rate' && '%'}
             </p>

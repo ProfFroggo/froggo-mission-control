@@ -115,10 +115,10 @@ export default function PanelHeader({
           <div className="flex items-center gap-2 flex-shrink-0">
             {actions.map((action, index) => {
               const ActionIcon = typeof action.icon === 'function' ? action.icon : null;
-              
+
               return (
                 <button
-                  key={index}
+                  key={action.label || `action-${index}`}
                   onClick={action.onClick}
                   disabled={action.disabled || action.loading}
                   className={`
@@ -157,8 +157,8 @@ export default function PanelHeader({
       {/* Stats Row (if provided) */}
       {stats && stats.length > 0 && (
         <div className="flex items-center gap-4 text-sm text-clawd-text-dim">
-          {stats.map((stat, index) => (
-            <div key={index} className="flex items-center gap-1.5">
+          {stats.map((stat) => (
+            <div key={stat.label} className="flex items-center gap-1.5">
               <span className={stat.color || 'text-clawd-text'}>{stat.value}</span>
               <span>{stat.label}</span>
             </div>

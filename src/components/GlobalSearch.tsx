@@ -528,7 +528,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <div className="space-y-1">
                 {searchHistory.map((item, index) => (
                   <div
-                    key={index}
+                    key={`${item}-${index}`}
                     onClick={() => {
                       setQuery(item);
                       setShowHistory(false);

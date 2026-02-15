@@ -120,7 +120,7 @@ export default function XResearchIdeaEditor() {
           </label>
           <div className="space-y-2">
             {citations.map((citation, index) => (
-              <div key={index} className="flex gap-2">
+              <div key={`${citation}-${index}`} className="flex gap-2">
                 <input
                   type="url"
                   value={citation}
