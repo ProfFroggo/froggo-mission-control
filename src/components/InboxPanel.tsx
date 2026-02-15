@@ -101,6 +101,7 @@ export default function InboxPanel() {
   const rejectInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const recentlyRejectedTaskIds = useRef<Set<string>>(new Set());
+  const recentlyApprovedIds = useRef<Set<number | string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
   
   // Sorting state
@@ -173,10 +174,10 @@ export default function InboxPanel() {
         console.warn('[InboxPanel] Failed to load review tasks:', e);
       }
       
-      // BUGFIX: Filter out items currently being processed to prevent flash
+      // BUGFIX: Filter out items currently being processed OR recently approved to prevent flash
       // When items are approved/rejected, they're removed optimistically but may
-      // reappear on next poll if API hasn't finished updating. Exclude processing IDs.
-      const filteredItems = allItems.filter(i => !processingItems.has(i.id));
+      // reappear on next poll if API hasn't finished updating. Exclude processing IDs and recently approved.
+      const filteredItems = allItems.filter(i => !processingItems.has(i.id) && !recentlyApprovedIds.current.has(i.id));
       setItems(filteredItems);
     } catch (error) {
       console.error('Failed to load inbox:', error);
@@ -624,6 +625,11 @@ export default function InboxPanel() {
   };
   
   const executeApproval = async (item: InboxItem) => {
+    // BUGFIX: Track recently approved to prevent bounce-back during polling
+    recentlyApprovedIds.current.add(item.id);
+    // Clear from recently approved after 10 seconds (should be enough for API to sync)
+    setTimeout(() => recentlyApprovedIds.current.delete(item.id), 10000);
+    
     // OPTIMISTIC UI: Remove item immediately for instant feedback
     setItems(prev => prev.filter(i => i.id !== item.id));
     showToast('success', 'Approved ✓', item.title);
@@ -713,6 +719,10 @@ export default function InboxPanel() {
   const directReject = async (item: InboxItem, reason: string) => {
     setProcessingItems(prev => new Set(prev).add(item.id));
     
+    // BUGFIX: Track recently rejected to prevent bounce-back during polling
+    recentlyApprovedIds.current.add(item.id); // Use same tracking mechanism
+    setTimeout(() => recentlyApprovedIds.current.delete(item.id), 10000);
+    
     try {
       // OPTIMISTIC UI: Remove immediately
       setItems(prev => prev.filter(i => i.id !== item.id));
@@ -780,6 +790,10 @@ export default function InboxPanel() {
     
     const reason = rejectReason.trim() || "No reason provided";
     const item = rejectDialogItem;
+    
+    // BUGFIX: Track recently rejected to prevent bounce-back during polling
+    recentlyApprovedIds.current.add(item.id); // Use same tracking mechanism
+    setTimeout(() => recentlyApprovedIds.current.delete(item.id), 10000);
     
     // OPTIMISTIC UI: Remove immediately
     setItems(prev => prev.filter(i => i.id !== item.id));
