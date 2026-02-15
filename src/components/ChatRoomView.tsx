@@ -22,7 +22,7 @@ interface ChatRoomViewProps {
 }
 
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
-  const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents } = useChatRoomStore();
+  const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents, deleteRoom } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
@@ -237,7 +237,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   /** Send a message to a specific agent using per-runId callbacks.
    *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout). */
   const sendToAgent = (agentId: string, prompt: string): Promise<void> => {
-    return new Promise<void>(async (resolve) => {
+    return new Promise<void>((resolve) => {
       const msgId = `rm-${Date.now()}-${agentId}`;
       let content = '';
       let settled = false;
@@ -280,10 +280,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         }
       }, 30000);
 
-      try {
-        const sessionKey = `agent:${agentId}:room:${roomId}`;
+      // Use IIFE to avoid async Promise executor
+      (async () => {
+        try {
+          const sessionKey = `agent:${agentId}:room:${roomId}`;
 
-        await gateway.sendChatWithCallbacks(prompt, sessionKey, {
+          await gateway.sendChatWithCallbacks(prompt, sessionKey, {
           onDelta: (delta) => {
             content += delta;
             pendingContentRef.current = content;
@@ -318,14 +320,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         });
 
         setSessionKey(roomId, agentId, sessionKey);
-      } catch (e: any) {
-        clearTimeout(timer);
-        updateMessage(roomId, msgId, {
-          content: `Error: ${e.message || 'Failed to reach agent'}`,
-          streaming: false,
-        });
-        settle();
-      }
+        } catch (e: any) {
+          clearTimeout(timer);
+          updateMessage(roomId, msgId, {
+            content: `Error: ${e.message || 'Failed to reach agent'}`,
+            streaming: false,
+          });
+          settle();
+        }
+      })();
     });
   };
 
@@ -432,8 +435,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     const name = agentName(id);
     return name.toLowerCase().includes(mentionFilter);
   });
-
-  const { deleteRoom } = useChatRoomStore();
 
   // Detect if this is a team meeting (has all or nearly all agents)
   const totalAgents = agents.length;
