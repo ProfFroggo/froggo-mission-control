@@ -117,9 +117,9 @@ export default function AgentPanel() {
     active:     { color: 'bg-green-400',  label: 'Active', pulse: true },
     busy:       { color: 'bg-green-400',  label: 'Working…', pulse: true },
     idle:       { color: 'bg-yellow-400', label: 'Idle' },
-    offline:    { color: 'bg-gray-500',   label: 'Offline', hideDot: true },
+    offline:    { color: 'bg-clawd-bg0',   label: 'Offline', hideDot: true },
     suspended:  { color: 'bg-red-500',    label: 'Suspended', hideDot: true },
-    archived:   { color: 'bg-gray-500',   label: 'Archived', hideDot: true },
+    archived:   { color: 'bg-clawd-bg0',   label: 'Archived', hideDot: true },
     draft:      { color: 'bg-yellow-500', label: 'Draft', hideDot: true },
   };
 
@@ -279,8 +279,7 @@ export default function AgentPanel() {
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                               agent.trust_tier === 'master' ? 'bg-review-subtle text-review' :
                               agent.trust_tier === 'expert' ? 'bg-warning/20 text-amber-400' :
-                              agent.trust_tier === 'journeyman' ? 'bg-info-subtle text-info' :
-                              'bg-gray-500/20 text-gray-400'
+                              'bg-clawd-bg0/20 text-clawd-text-dim'
                             }`}>
                               {agent.trust_tier === 'master' ? 'Master' :
                                agent.trust_tier === 'expert' ? 'Expert' :
