@@ -273,7 +273,7 @@ const safeLog = {
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
-        console.log(...args);
+        console.debug(...args);
       }
     } catch (e: any) {
       // Silently ignore EPIPE and other stream errors

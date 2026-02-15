@@ -79,5 +79,5 @@ export function registerWritingChatHandlers() {
     }
   });
 
-  console.log('[writing-chat] IPC handlers registered');
+  console.debug('[writing-chat] IPC handlers registered');
 }

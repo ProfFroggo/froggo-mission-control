@@ -70,7 +70,7 @@ class AccountsService {
       if (fs.existsSync(ACCOUNTS_FILE)) {
         const data = fs.readFileSync(ACCOUNTS_FILE, 'utf-8');
         this.accounts = JSON.parse(data);
-        console.log(`[AccountsService] Loaded ${this.accounts.length} accounts`);
+        console.debug(`[AccountsService] Loaded ${this.accounts.length} accounts`);
       } else {
         // Migrate from legacy calendar accounts
         this.migrateLegacyAccounts();
@@ -85,7 +85,7 @@ class AccountsService {
    * Migrate legacy calendar accounts to new system
    */
   private async migrateLegacyAccounts() {
-    console.log('[AccountsService] Migrating legacy calendar accounts...');
+    console.debug('[AccountsService] Migrating legacy calendar accounts...');
     
     // Dynamically discover accounts from gog CLI instead of hardcoding
     let knownAccounts: string[] = [];
@@ -97,7 +97,7 @@ class AccountsService {
       const gogData = JSON.parse(gogList.stdout);
       knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
     } catch {
-      console.log('[AccountsService] Failed to discover gog accounts for migration');
+      console.debug('[AccountsService] Failed to discover gog accounts for migration');
     }
 
     for (const email of knownAccounts) {
@@ -122,7 +122,7 @@ class AccountsService {
             metadata: result.metadata,
           };
           this.accounts.push(account);
-          console.log(`[AccountsService] Migrated ${email}`);
+          console.debug(`[AccountsService] Migrated ${email}`);
         }
       } catch (err) {
         console.error(`[AccountsService] Failed to migrate ${email}:`, err);
@@ -141,7 +141,7 @@ class AccountsService {
     try {
       fs.mkdirSync(path.dirname(ACCOUNTS_FILE), { recursive: true });
       fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(this.accounts, null, 2));
-      console.log(`[AccountsService] Saved ${this.accounts.length} accounts`);
+      console.debug(`[AccountsService] Saved ${this.accounts.length} accounts`);
     } catch (err) {
       console.error('[AccountsService] Failed to save accounts:', err);
     }
@@ -184,7 +184,7 @@ class AccountsService {
     appPassword?: string;
   }) {
     try {
-      console.log(`[AccountsService] Adding ${request.provider} account: ${request.email}`);
+      console.debug(`[AccountsService] Adding ${request.provider} account: ${request.email}`);
 
       // Check if account already exists
       const existing = this.accounts.find(a => a.email === request.email && a.provider === request.provider);
@@ -230,7 +230,7 @@ class AccountsService {
       this.accounts.push(account);
       this.saveAccounts();
 
-      console.log(`[AccountsService] Added account: ${account.id}`);
+      console.debug(`[AccountsService] Added account: ${account.id}`);
 
       return {
         success: true,
@@ -371,7 +371,7 @@ class AccountsService {
     }
 
     const account = this.accounts[index];
-    console.log(`[AccountsService] Removing account: ${accountId}`);
+    console.debug(`[AccountsService] Removing account: ${accountId}`);
 
     // Delete token file if exists
     if (account.tokenPath && fs.existsSync(account.tokenPath)) {

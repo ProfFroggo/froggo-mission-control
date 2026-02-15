@@ -98,5 +98,5 @@ export function registerWritingFeedbackHandlers() {
   ipcMain.handle('writing:feedback:history', async (_, projectId: string, chapterId: string) =>
     getFeedbackHistory(projectId, chapterId));
 
-  console.log('[writing-feedback] IPC handlers registered');
+  console.debug('[writing-feedback] IPC handlers registered');
 }

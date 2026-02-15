@@ -323,5 +323,5 @@ export function registerWritingMemoryHandlers() {
   ipcMain.handle('writing:memory:facts:delete', async (_, projectId: string, id: string) =>
     deleteFact(projectId, id));
 
-  console.log('[writing-memory] IPC handlers registered');
+  console.debug('[writing-memory] IPC handlers registered');
 }

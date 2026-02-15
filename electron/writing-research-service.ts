@@ -283,5 +283,5 @@ export function registerWritingResearchHandlers(): void {
   ipcMain.handle('writing:research:links:cleanup', (_, projectId: string, validFactIds: string[]) =>
     cleanOrphanedLinks(projectId, validFactIds));
 
-  console.log('[writing-research] IPC handlers registered');
+  console.debug('[writing-research] IPC handlers registered');
 }

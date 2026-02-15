@@ -84,6 +84,6 @@ export function verifyPaths(): void {
   ];
   for (const { p, label } of critical) {
     if (!fs.existsSync(p)) console.error(`[STARTUP] MISSING: ${label} at ${p}`);
-    else console.log(`[STARTUP] OK: ${label}`);
+    else console.debug(`[STARTUP] OK: ${label}`);
   }
 }

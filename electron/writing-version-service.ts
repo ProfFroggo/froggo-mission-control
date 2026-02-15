@@ -254,5 +254,5 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  console.log('[writing-version] IPC handlers registered');
+  console.debug('[writing-version] IPC handlers registered');
 }

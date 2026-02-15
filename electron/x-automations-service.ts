@@ -245,5 +245,5 @@ export function registerXAutomationsHandlers() {
     return getRateLimit(automationId);
   });
 
-  console.log('[x-automations] IPC handlers registered');
+  console.debug('[x-automations] IPC handlers registered');
 }

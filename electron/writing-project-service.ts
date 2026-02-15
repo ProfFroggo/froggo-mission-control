@@ -232,7 +232,7 @@ async function createProjectFromWizard(wizardData: {
     }));
     await writeJson(writingMemoryPath(id, 'timeline.json'), timeline);
 
-    console.log(`[writing] Created wizard project: ${id} (${chapters.length} chapters, ${characters.length} chars, ${timeline.length} events)`);
+    console.debug(`[writing] Created wizard project: ${id} (${chapters.length} chapters, ${characters.length} chars, ${timeline.length} events)`);
     return { success: true, project: meta };
   } catch (e: any) {
     // Rollback: clean up partial project directory
@@ -606,5 +606,5 @@ export function registerWritingProjectHandlers() {
   ipcMain.handle('writing:chapter:delete', async (_, projectId: string, chapterId: string) =>
     deleteChapter(projectId, chapterId));
 
-  console.log('[writing] IPC handlers registered');
+  console.debug('[writing] IPC handlers registered');
 }
