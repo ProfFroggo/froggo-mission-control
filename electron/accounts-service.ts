@@ -42,7 +42,6 @@ export interface ConnectedAccount {
 }
 
 const ACCOUNTS_FILE = path.join(os.homedir(), 'clawd', 'data', 'connected-accounts.json');
-const TOKENS_DIR = path.join(os.homedir(), 'clawd', 'data', 'tokens');
 
 class AccountsService {
   private accounts: ConnectedAccount[] = [];
