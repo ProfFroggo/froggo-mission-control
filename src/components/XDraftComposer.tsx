@@ -131,7 +131,7 @@ export default function XDraftComposer() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
+      <div className="flex items-center justify-center h-full bg-clawd-bg">
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -165,7 +165,7 @@ export default function XDraftComposer() {
       {contentPlans.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-clawd-text-dim">
-            <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+            <AlertCircle className="w-12 h-12 mx-auto mb-3 text-clawd-text-dim" />
             <p className="font-medium text-clawd-text">No approved content plans</p>
             <p className="text-sm mt-1">Content plans must be approved before drafting</p>
           </div>
