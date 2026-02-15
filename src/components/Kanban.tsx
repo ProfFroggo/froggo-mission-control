@@ -749,12 +749,12 @@ export default function Kanban() {
                     {dropdowns.sort && (
                       <div className="absolute top-full left-0 mt-1 bg-clawd-surface border border-clawd-border rounded-lg shadow-lg z-50 min-w-[180px]">
                         <div className="p-1">
-                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'newest' ? 'text-clawd-accent' : ''}`}>Newest First</button>
-                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'oldest' ? 'text-clawd-accent' : ''}`}>Oldest First</button>
-                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-clawd-accent' : ''}`}>Priority: Low → High</button>
-                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-clawd-accent' : ''}`}>Priority: High → Low</button>
-                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-clawd-accent' : ''}`}>Progress: 0% → 100%</button>
-                          <button onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-clawd-accent' : ''}`}>Progress: 100% → 0%</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'newest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'newest' ? 'text-clawd-accent' : ''}`}>Newest First</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'oldest'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'oldest' ? 'text-clawd-accent' : ''}`}>Oldest First</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-asc' ? 'text-clawd-accent' : ''}`}>Priority: Low → High</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'priority-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'priority-desc' ? 'text-clawd-accent' : ''}`}>Priority: High → Low</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-asc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-asc' ? 'text-clawd-accent' : ''}`}>Progress: 0% → 100%</button>
+                          <button type="button" onClick={() => { updateColumnSetting(column.id, 'sortBy', 'progress-desc'); toggleColumnDropdown(column.id, 'sort'); }} className={`w-full text-left px-3 py-2 rounded hover:bg-clawd-border text-sm ${settings.sortBy === 'progress-desc' ? 'text-clawd-accent' : ''}`}>Progress: 100% → 0%</button>
                         </div>
                       </div>
                     )}
@@ -871,7 +871,7 @@ export default function Kanban() {
               <h2 className="icon-text text-lg font-semibold">
                 <Keyboard size={20} className="flex-shrink-0" /> Keyboard Shortcuts
               </h2>
-              <button onClick={() => setShowKeyboardHelp(false)} className="icon-btn-sm">
+              <button type="button" onClick={() => setShowKeyboardHelp(false)} className="icon-btn-sm">
                 <X size={16} className="flex-shrink-0" />
               </button>
             </div>

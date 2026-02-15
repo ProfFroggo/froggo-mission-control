@@ -79,10 +79,10 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         <div className="flex items-center justify-between px-5 py-4 border-b border-clawd-border">
           <h2 className="text-lg font-semibold text-clawd-text">Share Your Screen</h2>
           <div className="flex items-center gap-2">
-            <button onClick={fetchSources} className="p-2 rounded-lg hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Refresh">
+            <button type="button" onClick={fetchSources} className="p-2 rounded-lg hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors" title="Refresh">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
-            <button onClick={onCancel} className="p-2 rounded-lg hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors">
+            <button type="button" onClick={onCancel} className="p-2 rounded-lg hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors">
               <X size={16} />
             </button>
           </div>
@@ -91,7 +91,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         {/* Filter tabs */}
         <div className="flex gap-1 px-5 pt-3">
           {(['all', 'screen', 'window'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
+            <button type="button" key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 filter === f ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
               }`}>
@@ -112,7 +112,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 text-error">
               <p className="text-sm">⚠️ {error}</p>
-              <button onClick={fetchSources} className="mt-3 px-4 py-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text text-sm">
+              <button type="button" onClick={fetchSources} className="mt-3 px-4 py-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text text-sm">
                 Retry
               </button>
             </div>
@@ -123,7 +123,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filtered.map(source => (
-                <button key={source.id} onClick={() => setSelected(source.id)} onDoubleClick={() => onSelect(source)}
+                <button type="button" key={source.id} onClick={() => setSelected(source.id)} onDoubleClick={() => onSelect(source)}
                   className={`group flex flex-col rounded-xl border-2 overflow-hidden transition-all hover:scale-[1.02] ${
                     selected === source.id
                       ? 'border-clawd-accent shadow-lg shadow-clawd-accent/20 bg-clawd-accent/5'
@@ -167,11 +167,11 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-clawd-border">
-          <button onClick={onCancel}
+          <button type="button" onClick={onCancel}
             className="px-4 py-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text text-sm transition-colors">
             Cancel
           </button>
-          <button onClick={handleConfirm} disabled={!selected}
+          <button type="button" onClick={handleConfirm} disabled={!selected}
             className="px-4 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
             Share
           </button>

@@ -602,6 +602,7 @@ Be thorough but only include real people, not generic references.`;
                       }
                     }}
                     placeholder="Tell me about this person..."
+                    aria-label="Chat message input"
                     rows={2}
                     disabled={isStreaming || conversationComplete || saveStatus === 'saving'}
                     className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none disabled:opacity-50"
@@ -805,6 +806,7 @@ Be thorough but only include real people, not generic references.`;
                     value={company}
                     onChange={e => setCompany(e.target.value)}
                     placeholder="Company name"
+                    aria-label="Contact company"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   />
                 </div>
@@ -817,6 +819,7 @@ Be thorough but only include real people, not generic references.`;
                     value={location}
                     onChange={e => setLocation(e.target.value)}
                     placeholder="City, Country"
+                    aria-label="Contact location"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   />
                 </div>
@@ -833,6 +836,7 @@ Be thorough but only include real people, not generic references.`;
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="email@example.com"
+                    aria-label="Contact email"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   />
                 </div>
@@ -845,6 +849,7 @@ Be thorough but only include real people, not generic references.`;
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     placeholder="+1234567890"
+                    aria-label="Contact phone"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   />
                 </div>
@@ -857,6 +862,7 @@ Be thorough but only include real people, not generic references.`;
                   value={context}
                   onChange={e => setContext(e.target.value)}
                   placeholder="How you know them, what they do, why they're important..."
+                  aria-label="Contact context"
                   rows={3}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
                 />
@@ -869,6 +875,7 @@ Be thorough but only include real people, not generic references.`;
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Any additional notes or details..."
+                  aria-label="Contact notes"
                   rows={2}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
                 />

@@ -66,24 +66,24 @@ export default function LogsTab() {
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center gap-3">
-        <button onClick={() => setPolling(!polling)}
+        <button type="button" onClick={() => setPolling(!polling)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             polling ? 'bg-success-subtle text-success' : 'bg-clawd-border text-clawd-text-dim'
           }`}>
           {polling ? <Pause size={14} /> : <Play size={14} />}
           {polling ? 'Live' : 'Paused'}
         </button>
-        <button onClick={() => setAutoScroll(!autoScroll)}
+        <button type="button" onClick={() => setAutoScroll(!autoScroll)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
             autoScroll ? 'bg-clawd-accent/20 text-clawd-accent' : 'bg-clawd-border text-clawd-text-dim'
           }`}>
           <ArrowDown size={14} /> Auto-scroll
         </button>
-        <button onClick={handleDownload}
+        <button type="button" onClick={handleDownload}
           className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-lg text-sm hover:bg-clawd-border/80">
           <Download size={14} /> Download
         </button>
-        <button onClick={() => setLines([])}
+        <button type="button" onClick={() => setLines([])}
           className="flex items-center gap-2 px-3 py-2 bg-clawd-border text-clawd-text-dim rounded-lg text-sm hover:bg-clawd-border/80">
           Clear
         </button>

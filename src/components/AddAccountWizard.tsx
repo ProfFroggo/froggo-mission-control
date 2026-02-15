@@ -263,6 +263,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 <label className="block text-sm font-medium mb-2">Email Address</label>
                 <input
                   type="email"
+                  aria-label="Email address input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={`your.email@${provider === 'google' ? 'gmail.com' : provider === 'microsoft' ? 'outlook.com' : 'example.com'}`}
@@ -419,6 +420,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     <label className="block text-sm font-medium mb-2">App-Specific Password</label>
                     <input
                       type="password"
+                      aria-label="App-specific password input"
                       value={appPassword}
                       onChange={(e) => setAppPassword(e.target.value)}
                       placeholder="xxxx-xxxx-xxxx-xxxx"

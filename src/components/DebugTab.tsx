@@ -80,7 +80,7 @@ export default function DebugTab() {
             <Activity size={16} className="text-clawd-accent" />
             <h2 className="font-semibold">Gateway Connection</h2>
           </div>
-          <button onClick={handleReconnect} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          <button type="button" onClick={handleReconnect} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
             <RefreshCw size={14} /> Reconnect
           </button>
         </div>
@@ -102,7 +102,7 @@ export default function DebugTab() {
             <Terminal size={16} className="text-clawd-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
           </div>
-          <button onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
@@ -131,7 +131,7 @@ export default function DebugTab() {
             <AlertCircle size={16} className="text-clawd-accent" />
             <h2 className="font-semibold">Recent Logs</h2>
           </div>
-          <button onClick={refreshLogs} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          <button type="button" onClick={refreshLogs} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
             <RefreshCw size={14} /> Load More
           </button>
         </div>

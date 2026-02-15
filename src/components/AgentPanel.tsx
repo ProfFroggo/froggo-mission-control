@@ -162,18 +162,18 @@ export default function AgentPanel() {
           </div>
           <div className="icon-text gap-2">
             {compareAgents.length >= 2 && (
-              <button onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-review border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition-colors text-sm">
+              <button type="button" onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-review border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition-colors text-sm">
                 <GitCompare size={15} className="flex-shrink-0" /> Compare ({compareAgents.length})
               </button>
             )}
-            <button onClick={() => setShowAnalytics(!showAnalytics)}
+            <button type="button" onClick={() => setShowAnalytics(!showAnalytics)}
               className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-clawd-border hover:bg-clawd-border/50'}`}>
               <BarChart3 size={15} className="flex-shrink-0" /> Analytics
             </button>
-            <button onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-clawd-border disabled:opacity-50" title="Refresh">
+            <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-clawd-border disabled:opacity-50" title="Refresh">
               <RefreshCw size={15} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors text-sm">
+            <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors text-sm">
               <Plus size={15} className="flex-shrink-0" /> New Worker
             </button>
           </div>
@@ -344,18 +344,18 @@ export default function AgentPanel() {
                     {/* Action buttons row — always visible */}
                     <div className="flex items-center gap-2 pt-2 border-t border-clawd-border/50">
                       {agent.status === 'idle' && agentTasks.length > 0 && (
-                        <button onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
                           <Play size={12} /> Start
                         </button>
                       )}
                       {agent.status === 'busy' && agent.sessionKey && (
-                        <button onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
                           <Square size={12} /> Stop
                         </button>
                       )}
-                      <button onClick={(e) => { e.stopPropagation(); toggleExpanded(agent.id); }}
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleExpanded(agent.id); }}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-clawd-text-dim hover:text-clawd-text border border-clawd-border/50 rounded-lg hover:bg-clawd-border/30 transition-colors">
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                         {isExpanded ? 'Less' : 'More'}

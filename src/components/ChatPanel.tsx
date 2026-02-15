@@ -993,6 +993,7 @@ export default function ChatPanel() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
             <input
               type="text"
+              aria-label="Search messages input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
@@ -1291,6 +1292,7 @@ export default function ChatPanel() {
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
+              aria-label={`Message input for ${selectedAgent.name}`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

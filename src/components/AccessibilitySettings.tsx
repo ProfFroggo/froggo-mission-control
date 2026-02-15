@@ -295,6 +295,7 @@ export default function AccessibilitySettings() {
               <input
                 id="test-announcement"
                 type="text"
+                aria-label="Test screen reader announcement input"
                 value={testAnnouncement}
                 onChange={(e) => setTestAnnouncement(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleTestAnnouncement()}

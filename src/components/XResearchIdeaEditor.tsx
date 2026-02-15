@@ -87,6 +87,7 @@ export default function XResearchIdeaEditor() {
           </label>
           <input
             type="text"
+            aria-label="Research idea title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., AI Agents for Content Creation"
@@ -101,6 +102,7 @@ export default function XResearchIdeaEditor() {
             Description <span className="text-error">*</span>
           </label>
           <textarea
+            aria-label="Research idea description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the research idea, key insights, and why it's relevant..."
@@ -123,6 +125,7 @@ export default function XResearchIdeaEditor() {
               <div key={`${citation}-${index}`} className="flex gap-2">
                 <input
                   type="url"
+                  aria-label={`Citation URL ${index + 1}`}
                   value={citation}
                   onChange={(e) => handleCitationChange(index, e.target.value)}
                   placeholder="https://example.com/article"
