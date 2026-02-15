@@ -137,7 +137,7 @@ export function useMemoizedValueWithProfiling<T>(
     const duration = performance.now() - start;
 
     if (duration > thresholdMs) {
-      console.warn(
+      console.debug(
         `[Performance] ${label} took ${duration.toFixed(2)}ms (threshold: ${thresholdMs}ms)`
       );
     }

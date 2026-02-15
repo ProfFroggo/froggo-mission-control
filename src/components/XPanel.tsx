@@ -240,7 +240,7 @@ export default function XPanel() {
         console.error('[XPanel] Timeline error from API:', result.error);
         addActivity({ type: 'error', message: `Failed to load timeline: ${result.error}`, timestamp: Date.now() });
       } else {
-        console.warn('[XPanel] No tweets available');
+        console.debug('[XPanel] No tweets available');
         addActivity({ type: 'error', message: 'No timeline data available', timestamp: Date.now() });
       }
     } catch (e: any) {

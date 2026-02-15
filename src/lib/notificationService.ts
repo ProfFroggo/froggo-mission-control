@@ -103,7 +103,7 @@ class NotificationService {
     // Full refresh on gateway reconnect to catch missed events
     gateway.on('stateChange', ({ state, oldState }: { state: string; oldState: string }) => {
       if (state === 'connected' && oldState !== 'connected') {
-        console.log('[NotificationService] Gateway reconnected, refreshing all');
+        console.debug('[NotificationService] Gateway reconnected, refreshing all');
         this.refresh();
       }
     });
@@ -111,7 +111,7 @@ class NotificationService {
     // Safety net: slow background refresh in case gateway events are missed
     // This is 10x slower than the old polling (5min vs 30s) — events are the primary path
     this.safetyInterval = setInterval(() => {
-      console.log('[NotificationService] Safety net refresh');
+      console.debug('[NotificationService] Safety net refresh');
       this.refresh();
     }, 300000); // 5 minutes
 

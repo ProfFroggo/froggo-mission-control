@@ -22,7 +22,7 @@ export interface ChatAgent {
 export function fetchAgentList(): ChatAgent[] {
   const storeAgents = useStore.getState().agents;
   if (storeAgents.length === 0) {
-    console.warn('[AgentSelector] No agents in store, list will be empty until gateway loads');
+    console.debug('[AgentSelector] No agents in store, list will be empty until gateway loads');
     return [];
   }
 

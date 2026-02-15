@@ -304,7 +304,7 @@ export default function EnhancedSettingsPanel() {
       try {
         return { ...defaultSettings, ...JSON.parse(saved) };
       } catch (e) {
-        console.warn('Failed to parse froggo-settings:', e);
+        console.debug('Failed to parse froggo-settings:', e);
       }
     }
     return defaultSettings;

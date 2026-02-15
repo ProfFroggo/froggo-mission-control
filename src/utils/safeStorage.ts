@@ -8,7 +8,7 @@ export const safeStorage = {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.warn(`[safeStorage] Failed to get item "${key}":`, error);
+      console.debug(`[safeStorage] Failed to get item "${key}":`, error);
       return null;
     }
   },
@@ -18,7 +18,7 @@ export const safeStorage = {
       localStorage.setItem(key, value);
       return true;
     } catch (error) {
-      console.warn(`[safeStorage] Failed to set item "${key}":`, error);
+      console.debug(`[safeStorage] Failed to set item "${key}":`, error);
       return false;
     }
   },
@@ -28,7 +28,7 @@ export const safeStorage = {
       localStorage.removeItem(key);
       return true;
     } catch (error) {
-      console.warn(`[safeStorage] Failed to remove item "${key}":`, error);
+      console.debug(`[safeStorage] Failed to remove item "${key}":`, error);
       return false;
     }
   },
@@ -38,7 +38,7 @@ export const safeStorage = {
       const item = localStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : defaultValue;
     } catch (error) {
-      console.warn(`[safeStorage] Failed to get/parse JSON "${key}":`, error);
+      console.debug(`[safeStorage] Failed to get/parse JSON "${key}":`, error);
       return defaultValue;
     }
   },
@@ -48,7 +48,7 @@ export const safeStorage = {
       localStorage.setItem(key, JSON.stringify(value));
       return true;
     } catch (error) {
-      console.warn(`[safeStorage] Failed to set JSON "${key}":`, error);
+      console.debug(`[safeStorage] Failed to set JSON "${key}":`, error);
       return false;
     }
   },

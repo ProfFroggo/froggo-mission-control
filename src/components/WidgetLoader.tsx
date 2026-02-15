@@ -78,7 +78,7 @@ export default function WidgetLoader({ agentId, trustTier }: WidgetLoaderProps) 
   if (loading) return null;
   if (!canLoadWidgets(trustTier)) return null;
   if (error) {
-    console.warn(`[WidgetLoader] Error for ${agentId}:`, error);
+    console.debug(`[WidgetLoader] Error for ${agentId}:`, error);
     return null;
   }
   if (widgets.length === 0) return null;

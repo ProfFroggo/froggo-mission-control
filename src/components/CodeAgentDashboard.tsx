@@ -45,7 +45,7 @@ export default function CodeAgentDashboard() {
     try {
       // Safety check - bail if clawdbot APIs not available
       if (!(window as any).clawdbot) {
-        console.warn('[CodeAgentDashboard] Clawdbot APIs not available yet');
+        console.debug('[CodeAgentDashboard] Clawdbot APIs not available yet');
         return;
       }
       // Load recent git commits

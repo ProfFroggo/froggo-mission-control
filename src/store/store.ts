@@ -641,7 +641,7 @@ export const useStore = create<Store>()(
           
           // If any validation fails, block the move
           if (errors.length > 0) {
-            console.warn(`[Store] Cannot mark task as done:`, errors);
+            console.debug(`[Store] Cannot mark task as done:`, errors);
             get().addActivity({
               type: 'system',
               message: `⚠️ Cannot mark "${task.title}" as done:\n${errors.map(e => `• ${e}`).join('\n')}`,
@@ -919,7 +919,7 @@ export const useStore = create<Store>()(
           try {
             await (window as any).clawdbot?.agents?.spawnForTask?.(taskId, agentId);
           } catch (spawnErr) {
-            console.warn('Direct spawn failed, relying on DB triggers:', spawnErr);
+            console.debug('Direct spawn failed, relying on DB triggers:', spawnErr);
           }
 
           get().addActivity({

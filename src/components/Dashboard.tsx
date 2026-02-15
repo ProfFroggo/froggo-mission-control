@@ -178,7 +178,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.warn('Failed to parse dashboard-widget-layout:', e);
+        console.debug('Failed to parse dashboard-widget-layout:', e);
       }
     }
     return DEFAULT_LAYOUT;
@@ -189,7 +189,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
       try {
         return new Set(JSON.parse(saved));
       } catch (e) {
-        console.warn('Failed to parse dashboard-hidden-widgets:', e);
+        console.debug('Failed to parse dashboard-hidden-widgets:', e);
       }
     }
     return new Set();
@@ -200,7 +200,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
       try {
         return new Set(JSON.parse(saved));
       } catch (e) {
-        console.warn('Failed to parse dashboard-minimized-widgets:', e);
+        console.debug('Failed to parse dashboard-minimized-widgets:', e);
       }
     }
     return new Set();

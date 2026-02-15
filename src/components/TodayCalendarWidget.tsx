@@ -36,7 +36,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
     setError(null);
     try {
       if (!(window as any).clawdbot?.calendar?.today) {
-        console.warn('[TodayCalendar] calendar.today() not available');
+        console.debug('[TodayCalendar] calendar.today() not available');
         setEvents([]);
         return;
       }

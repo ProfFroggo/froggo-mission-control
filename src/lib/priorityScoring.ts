@@ -136,7 +136,7 @@ async function loadVips(): Promise<VipInfo[]> {
       return vips;
     }
   } catch (error) {
-    console.warn('[VIP] Failed to load VIPs:', error);
+    console.debug('[VIP] Failed to load VIPs:', error);
   }
   
   return [];
@@ -524,7 +524,7 @@ export async function calculatePriorityScoreAsync(item: InboxItemForScoring): Pr
  */
 export function preloadVipCache(): Promise<void> {
   return loadVips().then(() => undefined).catch(err => {
-    console.warn('[VIP] Failed to preload cache:', err);
+    console.debug('[VIP] Failed to preload cache:', err);
   });
 }
 

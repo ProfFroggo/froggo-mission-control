@@ -78,7 +78,7 @@ export function logRender(
   if (actualDuration > SLOW_RENDER_THRESHOLD) {
     stats.slowRenders++;
     componentStat.slowRenders++;
-    console.warn(
+    console.debug(
       `[Performance] Slow render detected: ${id} took ${actualDuration.toFixed(2)}ms (${phase})`,
       { metrics }
     );
@@ -129,11 +129,11 @@ export function resetStats() {
  */
 export function printPerformanceReport() {
   console.group('📊 Performance Report');
-  console.log('Total renders:', stats.totalRenders);
-  console.log('Slow renders:', stats.slowRenders, `(${((stats.slowRenders / stats.totalRenders) * 100).toFixed(1)}%)`);
-  console.log('Average duration:', stats.averageDuration.toFixed(2), 'ms');
-  console.log('Max duration:', stats.maxDuration.toFixed(2), 'ms');
-  console.log('\n🐢 Slowest components:');
+  console.debug('Total renders:', stats.totalRenders);
+  console.debug('Slow renders:', stats.slowRenders, `(${((stats.slowRenders / stats.totalRenders) * 100).toFixed(1)}%)`);
+  console.debug('Average duration:', stats.averageDuration.toFixed(2), 'ms');
+  console.debug('Max duration:', stats.maxDuration.toFixed(2), 'ms');
+  console.debug('\n🐢 Slowest components:');
   console.table(getSlowestComponents(10));
   console.groupEnd();
 }
