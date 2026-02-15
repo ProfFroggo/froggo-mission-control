@@ -112,7 +112,9 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       
       const result = await api.approve({
         id,
-        approvedBy: getCurrentUserName(), // TODO: Get from user context
+        import { getAgentName } from 'src/auth';
+...
+approvedBy: getAgentName(), // TODO: Get from user context
       });
 
       if (result.success) {
