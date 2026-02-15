@@ -103,10 +103,34 @@ function parseMarkdown(text: string): React.ReactNode[] {
   return elements;
 }
 
-function formatInline(text: string): React.ReactNode {
-  let remaining = text;
+// Escape HTML entities to prevent XSS through content
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
-  // Bold **text**
+// URL sanitization to prevent javascript: and data: XSS
+function sanitizeUrl(url: string): string | null {
+  const trimmed = url.trim().toLowerCase();
+  // Block javascript: and data: protocols
+  if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:')) {
+    return null;
+  }
+  // Allow http, https, mailto, tel, and relative URLs
+  if (/^(https?|mailto|tel):/i.test(url) || url.startsWith('/') || url.startsWith('#') || !/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+    return url;
+  }
+  return null;
+}
+
+function formatInline(text: string): React.ReactNode {
+  let remaining = escapeHtml(text);
+
+  // Bold **text** - restore tags after escaping
   remaining = remaining.replace(/\*\*(.+?)\*\*/g, (_, content) => {
     return `<strong>${content}</strong>`;
   });
@@ -116,9 +140,16 @@ function formatInline(text: string): React.ReactNode {
     return `<code class="px-1.5 py-0.5 bg-clawd-border rounded text-sm font-mono text-clawd-accent font-semibold">${content}</code>`;
   });
 
-  // Links [text](url)
-  remaining = remaining.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
-    return `<a href="${url}" class="text-clawd-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  // Links [text](url) - with XSS protection for URLs
+  // Note: text content is already escaped, URL is sanitized separately
+  remaining = remaining.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, linkText, url) => {
+    // Sanitize URL: only allow http/https/mailto/tel protocols
+    const sanitizedUrl = sanitizeUrl(url);
+    if (!sanitizedUrl) {
+      // Return plain text if URL is unsafe
+      return `[${linkText}](${escapeHtml(url)})`;
+    }
+    return `<a href="${sanitizedUrl}" class="text-clawd-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
   });
 
   return <span dangerouslySetInnerHTML={{ __html: remaining }} />;

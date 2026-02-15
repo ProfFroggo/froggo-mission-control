@@ -240,14 +240,19 @@ function isHtmlContent(text: string): boolean {
 }
 
 // Sanitize inline HTML for chat messages (strip dangerous tags, keep formatting)
+// SECURITY: This is a defense-in-depth measure. Input should already be trusted
+// or sanitized server-side. This prevents obvious XSS vectors.
 function sanitizeInlineHtml(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[\s\S]*?<\/embed>/gi, '')
     .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
     .replace(/\son\w+\s*=\s*[^\s>]*/gi, '')
-    .replace(/javascript\s*:/gi, 'blocked:');
+    .replace(/javascript\s*:/gi, 'blocked:')
+    .replace(/data\s*:/gi, 'blocked:');
 }
 
 // Parse email headers from body output (gog gmail read returns headers + body)
