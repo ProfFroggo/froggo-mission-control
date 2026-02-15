@@ -3,22 +3,7 @@ import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, C
 import Fuse from 'fuse.js';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
-
-// SECURITY: Sanitize search snippet - only allow mark tags, escape everything else
-function sanitizeSearchSnippet(snippet: string): string {
-  // First, escape all HTML entities
-  let sanitized = snippet
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // Then restore mark tags with safe styling
-  sanitized = sanitized
-    .replace(/&lt;mark&gt;/g, '<mark class="bg-clawd-accent/30 text-clawd-accent font-medium">')
-    .replace(/&lt;\/mark&gt;/g, '</mark>');
-
-  return sanitized;
-}
+import { sanitizeSearchSnippet } from '../utils/sanitize';
 
 // X logo component
 const XIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (

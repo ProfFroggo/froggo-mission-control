@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { sanitizeUrl } from '../utils/sanitize';
 
 interface MarkdownMessageProps {
   content: string;
@@ -113,19 +114,7 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
-// URL sanitization to prevent javascript: and data: XSS
-function sanitizeUrl(url: string): string | null {
-  const trimmed = url.trim().toLowerCase();
-  // Block javascript: and data: protocols
-  if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:')) {
-    return null;
-  }
-  // Allow http, https, mailto, tel, and relative URLs
-  if (/^(https?|mailto|tel):/i.test(url) || url.startsWith('/') || url.startsWith('#') || !/^[a-z][a-z0-9+.-]*:/i.test(url)) {
-    return url;
-  }
-  return null;
-}
+// Note: sanitizeUrl is imported from '../utils/sanitize'
 
 function formatInline(text: string): React.ReactNode {
   let remaining = escapeHtml(text);
