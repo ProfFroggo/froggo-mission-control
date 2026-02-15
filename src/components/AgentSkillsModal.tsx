@@ -70,7 +70,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} role="button" tabIndex={-1} aria-label="Close agent skills" />
       <div className={`relative w-full max-w-2xl bg-clawd-bg border border-clawd-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-clawd-border">

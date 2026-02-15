@@ -195,7 +195,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md modal-backdrop-enter flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop backdrop-blur-md modal-backdrop-enter flex items-center justify-center z-50 p-4" onClick={onClose} role="button" tabIndex={-1} aria-label="Close calendar filter">
       <div 
         className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter"
         onClick={(e) => e.stopPropagation()}
