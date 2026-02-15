@@ -128,7 +128,9 @@ export function initializeGlobalErrorHandlers() {
   window.addEventListener('error', handleWindowError as any);
   window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
-  console.log('[GlobalErrorHandler] Initialized');
+  if (import.meta.env.DEV) {
+    console.log('[GlobalErrorHandler] Initialized');
+  }
 }
 
 /**
@@ -140,5 +142,7 @@ export function cleanupGlobalErrorHandlers() {
   window.removeEventListener('error', handleWindowError as any);
   window.removeEventListener('unhandledrejection', handleUnhandledRejection);
 
-  console.log('[GlobalErrorHandler] Cleaned up');
+  if (import.meta.env.DEV) {
+    console.log('[GlobalErrorHandler] Cleaned up');
+  }
 }

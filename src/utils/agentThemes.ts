@@ -59,9 +59,7 @@ export function generateThemeFromColor(hex: string, pic?: string): AgentTheme {
     return defaultTheme;
   }
 
-  const r = parseInt(hexMatch[1], 16);
-  const g = parseInt(hexMatch[2], 16);
-  const b = parseInt(hexMatch[3], 16);
+  // Hex validated via regex match - theme uses hex with opacity suffix
 
   // Generate theme with varying opacity levels
   const theme: AgentTheme = {
