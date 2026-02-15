@@ -307,7 +307,7 @@ export default function SkillsTab() {
 
       {/* Add Skill Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)} role="button" tabIndex={-1} aria-label="Close add skill modal">
           <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-clawd-border flex items-center justify-between">
               <h3 className="font-semibold">Add Skill</h3>

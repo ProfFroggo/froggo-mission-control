@@ -1530,7 +1530,7 @@ export default function InboxPanel() {
 
       {/* Rejection Dialog */}
       {rejectDialogItem && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)} role="button" tabIndex={-1} aria-label="Close reject dialog">
           <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
             <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don't want.</p>
@@ -1566,7 +1566,7 @@ export default function InboxPanel() {
 
       {/* Schedule Modal */}
       {scheduleModal && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setScheduleModal(null)}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setScheduleModal(null)} role="button" tabIndex={-1} aria-label="Close schedule modal">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
@@ -1784,7 +1784,7 @@ export default function InboxPanel() {
 
       {/* Keyboard Shortcuts Help Overlay */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)} role="button" tabIndex={-1} aria-label="Close keyboard help">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -1866,7 +1866,7 @@ export default function InboxPanel() {
 
       {/* Agent Still Active Warning Modal */}
       {showAgentWarning && activeAgentSession && pendingApprovalItem && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowAgentWarning(false)}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowAgentWarning(false)} role="button" tabIndex={-1} aria-label="Close agent warning">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">

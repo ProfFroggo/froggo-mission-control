@@ -865,7 +865,7 @@ export default function Kanban() {
 
       {/* Keyboard Shortcuts Modal */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)}>
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)} role="button" tabIndex={-1} aria-label="Close keyboard shortcuts">
           <div className="bg-clawd-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-clawd-border" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="icon-text text-lg font-semibold">
@@ -1095,7 +1095,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
             {/* Priority Picker Modal */}
             {showPriority && priorityBtnPos && createPortal(
               <>
-                <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} />
+                <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} role="button" tabIndex={-1} aria-label="Close priority dropdown" />
                 <div 
                   className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
                   style={{ top: `${priorityBtnPos.top}px`, left: `${priorityBtnPos.left}px` }}
@@ -1146,7 +1146,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
           
           {showMenu && menuBtnPos && createPortal(
             <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} role="button" tabIndex={-1} aria-label="Close menu" />
               <div className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-[101] min-w-40"
                 style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
                 <button
@@ -1298,7 +1298,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions, onDragSt
           {/* Assign Agent Modal */}
           {showAssign && assignBtnPos && createPortal(
             <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} />
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} role="button" tabIndex={-1} aria-label="Close assign dropdown" />
               <div 
                 className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
                 style={{ top: `${assignBtnPos.top}px`, left: `${assignBtnPos.left}px` }}

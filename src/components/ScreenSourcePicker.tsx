@@ -73,7 +73,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onCancel}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onCancel} role="button" tabIndex={-1} aria-label="Cancel screen share">
       <div className="bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl w-[640px] max-w-[90vw] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-clawd-border">

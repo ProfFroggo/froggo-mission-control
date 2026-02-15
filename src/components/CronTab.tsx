@@ -266,7 +266,7 @@ export default function CronTab() {
 
       {/* Add Job Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)} role="button" tabIndex={-1} aria-label="Close add cron modal">
           <div className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-4">Add Cron Job</h2>
             <div className="space-y-4">

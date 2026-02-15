@@ -249,7 +249,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                 <div className="font-semibold mb-1">Quick Filter Syntax:</div>
                 <div className="space-y-0.5 text-clawd-text-dim">
                   {QUICK_FILTER_EXAMPLES.map(ex => (
-                    <div key={ex} className="hover:text-clawd-text cursor-pointer" onClick={() => setQuickFilterInput(ex)}>
+                    <div key={ex} className="hover:text-clawd-text cursor-pointer" onClick={() => setQuickFilterInput(ex)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setQuickFilterInput(ex)}>
                       {ex}
                     </div>
                   ))}

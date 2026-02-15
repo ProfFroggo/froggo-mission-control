@@ -811,7 +811,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       )}
       {/* Manage Members Modal */}
       {showManageMembers && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowManageMembers(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowManageMembers(false)} role="button" tabIndex={-1} aria-label="Close member management">
           <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-clawd-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>

@@ -160,7 +160,7 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={onClose} role="button" tabIndex={-1} aria-label="Close keyboard shortcuts">
       <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="p-6 border-b border-clawd-border">
