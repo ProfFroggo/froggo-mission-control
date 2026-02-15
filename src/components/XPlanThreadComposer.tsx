@@ -106,14 +106,14 @@ export default function XPlanThreadComposer() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-900">
+      <div className="flex items-center justify-center h-full bg-clawd-bg">
         <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 p-6">
+    <div className="flex flex-col h-full bg-clawd-bg p-6">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-5 h-5 text-info" />
@@ -127,7 +127,7 @@ export default function XPlanThreadComposer() {
       {researchIdeas.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-clawd-text-dim">
-            <AlertCircle className="w-12 h-12 mx-auto mb-3 text-gray-600" />
+            <AlertCircle className="w-12 h-12 mx-auto mb-3 text-clawd-text-dim" />
             <p className="font-medium text-clawd-text">No approved research ideas</p>
             <p className="text-sm mt-1">Research ideas must be approved before creating plans</p>
           </div>
@@ -254,7 +254,7 @@ export default function XPlanThreadComposer() {
             <button
               onClick={handleSubmit}
               disabled={submitting || !selectedResearchId || !title.trim() || !description.trim()}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>
