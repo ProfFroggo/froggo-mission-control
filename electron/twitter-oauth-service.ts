@@ -252,7 +252,7 @@ class TwitterOAuthService {
     ].join('\n');
 
     require('fs').writeFileSync(credFile, content, { mode: 0o600 });
-    console.log(`[TwitterOAuth] Credentials stored in ${credFile}`);
+    console.debug(`[TwitterOAuth] Credentials stored in ${credFile}`);
   }
 
   /**

@@ -52,8 +52,8 @@ function timeCliAvg(sql: string, iterations: number = 10): { avgMs: number; minM
 }
 
 // --- Run benchmarks ---
-console.log('=== Phase 08 Performance Benchmark ===\n');
-console.log(`Database: ${dbPath}\n`);
+console.debug('=== Phase 08 Performance Benchmark ===\n');
+console.debug(`Database: ${dbPath}\n`);
 
 const db = new Database(dbPath, { fileMustExist: true });
 db.pragma('journal_mode = WAL');
@@ -85,7 +85,7 @@ const queries = [
   },
 ];
 
-console.log('--- better-sqlite3 (in-process) ---');
+console.debug('--- better-sqlite3 (in-process) ---');
 const betterResults: Record<string, any> = {};
 for (const q of queries) {
   const stmt = db.prepare(q.sql);
@@ -93,21 +93,21 @@ for (const q of queries) {
   stmt.all();
   const result = timeMsAvg(() => stmt.all(), 100);
   betterResults[q.name] = result;
-  console.log(`  ${q.name}: avg=${result.avgMs.toFixed(3)}ms  min=${result.minMs.toFixed(3)}ms  max=${result.maxMs.toFixed(3)}ms`);
+  console.debug(`  ${q.name}: avg=${result.avgMs.toFixed(3)}ms  min=${result.minMs.toFixed(3)}ms  max=${result.maxMs.toFixed(3)}ms`);
 }
 
-console.log('\n--- sqlite3 CLI (child_process spawn) ---');
+console.debug('\n--- sqlite3 CLI (child_process spawn) ---');
 const cliResults: Record<string, any> = {};
 for (const q of queries) {
   const result = timeCliAvg(q.sql, 10); // Fewer iterations (slow)
   cliResults[q.name] = result;
-  console.log(`  ${q.name}: avg=${result.avgMs.toFixed(1)}ms  min=${result.minMs.toFixed(1)}ms  max=${result.maxMs.toFixed(1)}ms`);
+  console.debug(`  ${q.name}: avg=${result.avgMs.toFixed(1)}ms  min=${result.minMs.toFixed(1)}ms  max=${result.maxMs.toFixed(1)}ms`);
 }
 
-console.log('\n--- Speedup ---');
+console.debug('\n--- Speedup ---');
 for (const q of queries) {
   const speedup = cliResults[q.name].avgMs / betterResults[q.name].avgMs;
-  console.log(`  ${q.name}: ${speedup.toFixed(0)}x faster`);
+  console.debug(`  ${q.name}: ${speedup.toFixed(0)}x faster`);
 }
 
 // Output JSON for report generation
@@ -121,7 +121,7 @@ const report = {
     speedup: cliResults[q.name].avgMs / betterResults[q.name].avgMs,
   })),
 };
-console.log('\n--- JSON Report ---');
-console.log(JSON.stringify(report, null, 2));
+console.debug('\n--- JSON Report ---');
+console.debug(JSON.stringify(report, null, 2));
 
 db.close();

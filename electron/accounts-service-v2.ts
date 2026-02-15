@@ -30,7 +30,7 @@ class AccountsServiceV2 {
    */
   async listAccounts(): Promise<{ success: boolean; accounts?: ConnectedAccount[]; error?: string }> {
     try {
-      console.log('[AccountsV2] Fetching accounts from gog CLI...');
+      console.debug('[AccountsV2] Fetching accounts from gog CLI...');
       
       // Get accounts from gog auth list
       const { stdout: listOutput } = await execAsync('gog auth list --json', {
@@ -42,7 +42,7 @@ class AccountsServiceV2 {
       const gogAccounts = listData.accounts || [];
 
       if (gogAccounts.length === 0) {
-        console.log('[AccountsV2] No accounts found in gog');
+        console.debug('[AccountsV2] No accounts found in gog');
         return { success: true, accounts: [] };
       }
 
@@ -73,7 +73,7 @@ class AccountsServiceV2 {
 
       const accounts = await Promise.all(accountPromises);
       
-      console.log(`[AccountsV2] Loaded ${accounts.length} accounts with OAuth status`);
+      console.debug(`[AccountsV2] Loaded ${accounts.length} accounts with OAuth status`);
       return { success: true, accounts };
     } catch (error: any) {
       console.error('[AccountsV2] Error listing accounts:', error);
@@ -112,7 +112,7 @@ class AccountsServiceV2 {
           errorMsg.includes('Token has been expired') ||
           errorMsg.includes('unauthorized') ||
           errorMsg.includes('401')) {
-        console.log(`[AccountsV2] OAuth expired for ${email}`);
+        console.debug(`[AccountsV2] OAuth expired for ${email}`);
         return 'expired';
       }
 
@@ -129,7 +129,7 @@ class AccountsServiceV2 {
       // Extract email from accountId (format: google-email@example.com)
       const email = accountId.replace('google-', '');
       
-      console.log(`[AccountsV2] Refreshing OAuth for ${email}...`);
+      console.debug(`[AccountsV2] Refreshing OAuth for ${email}...`);
       
       // Run gog auth add to renew OAuth (will open browser)
       const { stdout, stderr } = await execAsync(`gog auth add "${email}"`, {
@@ -137,7 +137,7 @@ class AccountsServiceV2 {
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` },
       });
 
-      console.log(`[AccountsV2] OAuth renewal complete for ${email}`);
+      console.debug(`[AccountsV2] OAuth renewal complete for ${email}`);
       
       // Test if renewal was successful
       const authStatus = await this.testAccountOAuth(email);
@@ -169,7 +169,7 @@ class AccountsServiceV2 {
     try {
       const email = accountId.replace('google-', '');
       
-      console.log(`[AccountsV2] Removing account ${email}...`);
+      console.debug(`[AccountsV2] Removing account ${email}...`);
       
       await execAsync(`gog auth remove "${email}"`, {
         timeout: 10000,
@@ -194,7 +194,7 @@ class AccountsServiceV2 {
    */
   async addAccount(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      console.log(`[AccountsV2] Adding account ${email}...`);
+      console.debug(`[AccountsV2] Adding account ${email}...`);
       
       await execAsync(`gog auth add "${email}"`, {
         timeout: 120000, // 2 minutes for OAuth flow

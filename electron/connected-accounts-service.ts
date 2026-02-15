@@ -216,7 +216,7 @@ class ConnectedAccountsService {
       const gogType = types.find(t => t.type === 'google');
       if (gogType) gogType.available = true;
     } catch {
-      console.log('[ConnectedAccountsService] gog CLI not found');
+      console.debug('[ConnectedAccountsService] gog CLI not found');
     }
 
     return types;
@@ -264,7 +264,7 @@ class ConnectedAccountsService {
           );
 
           imported++;
-          console.log(`[ConnectedAccountsService] Imported Google account: ${email}`);
+          console.debug(`[ConnectedAccountsService] Imported Google account: ${email}`);
         }
       } catch (err: any) {
         console.error(`[ConnectedAccountsService] Failed to import ${email}:`, err.message);
@@ -387,7 +387,7 @@ class ConnectedAccountsService {
       
       // TODO: Revoke OAuth tokens if applicable
       
-      console.log(`[ConnectedAccountsService] Removed account: ${account.email}`);
+      console.debug(`[ConnectedAccountsService] Removed account: ${account.email}`);
       return { success: true };
     } catch (err: any) {
       return { success: false, error: err.message };

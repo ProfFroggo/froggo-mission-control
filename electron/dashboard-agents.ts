@@ -41,7 +41,7 @@ let healthCheckTimer: NodeJS.Timeout | null = null;
  */
 async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
   try {
-    console.log(`[DashboardAgents] Spawning ${agent.name} at ${agent.sessionKey}...`);
+    console.debug(`[DashboardAgents] Spawning ${agent.name} at ${agent.sessionKey}...`);
     
     // Use openclaw CLI to spawn an isolated agent session
     // This creates a persistent session that stays alive
@@ -57,7 +57,7 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
       return false;
     }
     
-    console.log(`[DashboardAgents] ✅ ${agent.name} spawned successfully`);
+    console.debug(`[DashboardAgents] ✅ ${agent.name} spawned successfully`);
     agent.spawned = true;
     agent.lastHealthCheck = Date.now();
     return true;
@@ -116,7 +116,7 @@ async function healthCheckLoop() {
  * Initialize all dashboard agent sessions
  */
 export async function initializeDashboardAgents(): Promise<void> {
-  console.log('[DashboardAgents] Initializing persistent agent sessions...');
+  console.debug('[DashboardAgents] Initializing persistent agent sessions...');
   
   // Spawn all agents in parallel
   const results = await Promise.all(
@@ -124,7 +124,7 @@ export async function initializeDashboardAgents(): Promise<void> {
   );
   
   const successCount = results.filter(r => r).length;
-  console.log(`[DashboardAgents] Spawned ${successCount}/${DASHBOARD_AGENTS.length} agents`);
+  console.debug(`[DashboardAgents] Spawned ${successCount}/${DASHBOARD_AGENTS.length} agents`);
   
   // Start health check loop
   if (healthCheckTimer) {
@@ -132,7 +132,7 @@ export async function initializeDashboardAgents(): Promise<void> {
   }
   healthCheckTimer = setInterval(healthCheckLoop, HEALTH_CHECK_INTERVAL);
   
-  console.log('[DashboardAgents] Health check monitoring started');
+  console.debug('[DashboardAgents] Health check monitoring started');
 }
 
 /**
@@ -143,7 +143,7 @@ export function shutdownDashboardAgents(): void {
     clearInterval(healthCheckTimer);
     healthCheckTimer = null;
   }
-  console.log('[DashboardAgents] Shutdown complete');
+  console.debug('[DashboardAgents] Shutdown complete');
 }
 
 /**

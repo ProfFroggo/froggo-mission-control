@@ -99,5 +99,5 @@ export function registerWritingWizardHandlers() {
     deleteWizardState(sessionId),
   );
 
-  console.log('[writing-wizard] IPC handlers registered');
+  console.debug('[writing-wizard] IPC handlers registered');
 }

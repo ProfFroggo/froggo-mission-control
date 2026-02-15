@@ -18,10 +18,10 @@ export function initXApiTokens(): void {
   bearerToken = process.env.X_BEARER_TOKEN || getSecret('x-bearer-token') || null;
   accessToken = process.env.X_ACCESS_TOKEN || getSecret('x-access-token') || null;
   if (bearerToken) {
-    console.log('[X API] Bearer token loaded');
+    console.debug('[X API] Bearer token loaded');
   }
   if (accessToken) {
-    console.log('[X API] Access token loaded');
+    console.debug('[X API] Access token loaded');
   }
 }
 
