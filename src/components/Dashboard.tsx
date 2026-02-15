@@ -165,15 +165,36 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   const [editMode, setEditMode] = useState(false);
   const [layout, setLayout] = useState<Layout[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-layout');
-    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.warn('Failed to parse dashboard-widget-layout:', e);
+      }
+    }
+    return DEFAULT_LAYOUT;
   });
   const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('dashboard-hidden-widgets');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
+    if (saved) {
+      try {
+        return new Set(JSON.parse(saved));
+      } catch (e) {
+        console.warn('Failed to parse dashboard-hidden-widgets:', e);
+      }
+    }
+    return new Set();
   });
   const [minimizedWidgets, setMinimizedWidgets] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('dashboard-minimized-widgets');
-    return saved ? new Set(JSON.parse(saved)) : new Set();
+    if (saved) {
+      try {
+        return new Set(JSON.parse(saved));
+      } catch (e) {
+        console.warn('Failed to parse dashboard-minimized-widgets:', e);
+      }
+    }
+    return new Set();
   });
   const [showAddWidget, setShowAddWidget] = useState(false);
 

@@ -21,32 +21,32 @@ export default function OxDashboard() {
   const QuickStat = ({ icon: Icon, label, value, color }: {
     icon: any; label: string; value: number; color: string;
   }) => (
-    <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center gap-4">
+    <div className="p-4 rounded-xl bg-clawd-surface/50 border border-clawd-border flex items-center gap-4">
       <div className={`p-3 rounded-lg ${color}`}>
         <Icon size={24} className="text-white" />
       </div>
       <div>
         <p className="text-2xl font-bold text-white">{value}</p>
-        <p className="text-sm text-slate-400">{label}</p>
+        <p className="text-sm text-clawd-text-dim">{label}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="h-full flex flex-col bg-slate-900">
+    <div className="h-full flex flex-col bg-clawd-bg">
       {/* Header */}
-      <div className="p-6 border-b border-slate-800">
+      <div className="p-6 border-b border-clawd-border">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-3xl">
             🐂
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Ox Lite Dashboard</h1>
-            <p className="text-slate-400">Bitso Master Sub-Agent Control Center</p>
+            <p className="text-clawd-text-dim">Bitso Master Sub-Agent Control Center</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-slate-400">
+            <span className="text-sm text-clawd-text-dim">
               {connected ? 'Connected to Froggo' : 'Disconnected'}
             </span>
           </div>
@@ -71,23 +71,23 @@ export default function OxDashboard() {
           {myTasks.slice(0, 5).map(task => (
             <div
               key={task.id}
-              className="p-4 rounded-xl bg-slate-800/50 border border-slate-700 hover:border-amber-600/50 transition-colors"
+              className="p-4 rounded-xl bg-clawd-surface/50 border border-clawd-border hover:border-amber-600/50 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${
                   task.status === 'done' ? 'bg-green-500' :
                   task.status === 'in-progress' ? 'bg-warning' :
-                  task.status === 'review' ? 'bg-purple-500' : 'bg-slate-500'
+                  task.status === 'review' ? 'bg-purple-500' : 'bg-clawd-text-dim'
                 }`} />
                 <h3 className="flex-1 font-medium text-white truncate">{task.title}</h3>
-                <span className="text-xs text-slate-500 capitalize px-2 py-1 rounded bg-slate-700">
+                <span className="text-xs text-clawd-text-dim capitalize px-2 py-1 rounded bg-clawd-border">
                   {task.status.replace('-', ' ')}
                 </span>
               </div>
             </div>
           ))}
           {myTasks.length === 0 && (
-            <div className="text-center py-12 text-slate-500">
+            <div className="text-center py-12 text-clawd-text-dim">
               <Inbox size={48} className="mx-auto mb-4 opacity-50" />
               <p>No tasks assigned yet</p>
               <p className="text-sm">Tasks from Froggo will appear here</p>
@@ -97,7 +97,7 @@ export default function OxDashboard() {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-800 text-center text-xs text-slate-600">
+      <div className="p-4 border-t border-clawd-border text-center text-xs text-clawd-text-dim/60">
         Ox Lite v1.0.0 • Bitso Onchain Worker • 🐂
       </div>
     </div>

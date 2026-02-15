@@ -282,16 +282,16 @@ export default function MeetingTranscribe() {
 
   if (initError) {
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-900 text-white p-8">
+      <div className="flex flex-col items-center justify-center h-full bg-clawd-bg text-white p-8">
         <FileText className="w-16 h-16 mb-4 text-error opacity-50" />
         <p className="text-error text-sm mb-2">Failed to initialize</p>
-        <p className="text-gray-500 text-xs">{initError}</p>
+        <p className="text-clawd-text-dim text-xs">{initError}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 text-white">
+    <div className="flex flex-col h-full bg-clawd-bg text-white">
       {/* API Key Warning */}
       {(!import.meta.env.VITE_GEMINI_API_KEY && !localStorage.getItem('gemini_api_key')) && (
         <div className="bg-yellow-500/20 border-b border-yellow-500/50 px-4 py-2 text-center">
@@ -305,7 +305,7 @@ export default function MeetingTranscribe() {
       )}
       
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-clawd-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <FileText className="w-5 h-5 text-review" />
@@ -322,9 +322,9 @@ export default function MeetingTranscribe() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Meeting List */}
-        <div className="w-80 border-r border-gray-700 flex flex-col">
+        <div className="w-80 border-r border-clawd-border flex flex-col">
           {/* New Meeting Form */}
-          <div className="p-4 border-b border-gray-700">
+          <div className="p-4 border-b border-clawd-border">
             <h3 className="text-sm font-semibold mb-3">Start New Meeting</h3>
             <div className="space-y-2">
               <input
@@ -333,7 +333,7 @@ export default function MeetingTranscribe() {
                 value={newMeetingTitle}
                 onChange={(e) => setNewMeetingTitle(e.target.value)}
                 disabled={!!activeMeeting}
-                className="w-full px-3 py-2 bg-gray-800 rounded border border-gray-700 focus:border-purple-500 outline-none text-sm disabled:opacity-50"
+                className="w-full px-3 py-2 bg-clawd-surface rounded border border-clawd-border focus:border-purple-500 outline-none text-sm disabled:opacity-50"
               />
               <input
                 type="text"
@@ -341,7 +341,7 @@ export default function MeetingTranscribe() {
                 value={newMeetingParticipants}
                 onChange={(e) => setNewMeetingParticipants(e.target.value)}
                 disabled={!!activeMeeting}
-                className="w-full px-3 py-2 bg-gray-800 rounded border border-gray-700 focus:border-purple-500 outline-none text-sm disabled:opacity-50"
+                className="w-full px-3 py-2 bg-clawd-surface rounded border border-clawd-border focus:border-purple-500 outline-none text-sm disabled:opacity-50"
               />
               {!activeMeeting ? (
                 <button
@@ -364,7 +364,7 @@ export default function MeetingTranscribe() {
           </div>
 
           {/* Upload Recording */}
-          <div className="p-4 border-b border-gray-700">
+          <div className="p-4 border-b border-clawd-border">
             <h3 className="text-sm font-semibold mb-3">Upload Recording</h3>
             <input
               ref={fileInputRef}
@@ -384,7 +384,7 @@ export default function MeetingTranscribe() {
                 <><Upload className="w-4 h-4" /><span>Upload Recording</span></>
               )}
             </button>
-            <p className="text-xs text-gray-500 mt-1 text-center">MP3, WAV, WebM, M4A, OGG, video</p>
+            <p className="text-xs text-clawd-text-dim mt-1 text-center">MP3, WAV, WebM, M4A, OGG, video</p>
             {uploadError && (
               <div className="mt-2 p-2 bg-red-500/20 text-red-300 rounded text-xs">{uploadError}</div>
             )}
@@ -393,9 +393,9 @@ export default function MeetingTranscribe() {
           {/* Meeting List */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-2">
-              <h3 className="text-xs font-semibold text-gray-400 px-2 mb-2">Past Meetings</h3>
+              <h3 className="text-xs font-semibold text-clawd-text-dim px-2 mb-2">Past Meetings</h3>
               {meetings.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 text-sm">
+                <div className="text-center py-8 text-clawd-text-dim text-sm">
                   <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>No meetings yet</p>
                 </div>
@@ -413,7 +413,7 @@ export default function MeetingTranscribe() {
                         className={`rounded-lg border transition-colors ${
                           selectedMeeting?.id === meeting.id
                             ? 'bg-purple-500/20 border-purple-500'
-                            : 'bg-gray-800 border-gray-700 hover:border-gray-600'
+                            : 'bg-clawd-surface border-clawd-border hover:border-clawd-border/80'
                         }`}
                       >
                         <div
@@ -423,7 +423,7 @@ export default function MeetingTranscribe() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm truncate">{meeting.title}</div>
-                              <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
+                              <div className="flex items-center space-x-2 text-xs text-clawd-text-dim mt-1">
                                 <Calendar className="w-3 h-3" />
                                 <span>{new Date(meeting.started_at).toLocaleDateString()}</span>
                               </div>
@@ -433,7 +433,7 @@ export default function MeetingTranscribe() {
                                 e.stopPropagation();
                                 toggleMeetingExpanded(meeting.id);
                               }}
-                              className="p-1 hover:bg-gray-700 rounded transition-colors"
+                              className="p-1 hover:bg-clawd-border rounded transition-colors"
                             >
                               {isExpanded ? (
                                 <ChevronUp className="w-4 h-4" />
@@ -443,7 +443,7 @@ export default function MeetingTranscribe() {
                             </button>
                           </div>
 
-                          <div className="flex items-center space-x-3 text-xs text-gray-400">
+                          <div className="flex items-center space-x-3 text-xs text-clawd-text-dim">
                             <div className="flex items-center space-x-1">
                               <Clock className="w-3 h-3" />
                               <span>{formatDuration(duration)}</span>
@@ -457,7 +457,7 @@ export default function MeetingTranscribe() {
                             <div className={`px-2 py-0.5 rounded-full ${
                               meeting.status === 'active'
                                 ? 'bg-error-subtle text-error'
-                                : 'bg-gray-700 text-gray-400'
+                                : 'bg-clawd-border text-clawd-text-dim'
                             }`}>
                               {meeting.status}
                             </div>
@@ -465,11 +465,11 @@ export default function MeetingTranscribe() {
                         </div>
 
                         {isExpanded && (
-                          <div className="px-3 pb-3 space-y-2 border-t border-gray-700 pt-2">
+                          <div className="px-3 pb-3 space-y-2 border-t border-clawd-border pt-2">
                             {meeting.participants.length > 0 && (
                               <div>
-                                <div className="text-xs text-gray-400 mb-1">Participants:</div>
-                                <div className="text-xs text-gray-300">
+                                <div className="text-xs text-clawd-text-dim mb-1">Participants:</div>
+                                <div className="text-xs text-clawd-text">
                                   {meeting.participants.join(', ')}
                                 </div>
                               </div>
@@ -480,7 +480,7 @@ export default function MeetingTranscribe() {
                                   e.stopPropagation();
                                   downloadTranscript(meeting.id);
                                 }}
-                                className="flex-1 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition-colors flex items-center justify-center space-x-1"
+                                className="flex-1 py-1 bg-clawd-border hover:bg-clawd-border/80 rounded text-xs font-medium transition-colors flex items-center justify-center space-x-1"
                               >
                                 <Download className="w-3 h-3" />
                                 <span>Export</span>
@@ -514,11 +514,11 @@ export default function MeetingTranscribe() {
           {selectedMeeting ? (
             <>
               {/* Meeting Header */}
-              <div className="p-4 border-b border-gray-700">
+              <div className="p-4 border-b border-clawd-border">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold">{selectedMeeting.title}</h3>
-                    <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
+                    <div className="flex items-center space-x-4 text-sm text-clawd-text-dim mt-1">
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
                         <span>{new Date(selectedMeeting.started_at).toLocaleString()}</span>
@@ -543,7 +543,7 @@ export default function MeetingTranscribe() {
                       <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-2 ${
                         isRecording
                           ? 'bg-error-subtle text-error'
-                          : 'bg-gray-700 text-gray-400'
+                          : 'bg-clawd-border text-clawd-text-dim'
                       }`}>
                         {isRecording ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
                         <span>{isRecording ? 'Recording' : 'Paused'}</span>
@@ -556,7 +556,7 @@ export default function MeetingTranscribe() {
               {/* Transcripts */}
               <div className="flex-1 overflow-y-auto p-4">
                 {transcripts.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
                     <FileText className="w-16 h-16 mb-4 opacity-50" />
                     <p className="text-sm">No transcripts yet</p>
                     {selectedMeeting.status === 'active' && (
@@ -571,12 +571,12 @@ export default function MeetingTranscribe() {
                           <Users className="w-4 h-4 text-review" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2 text-xs text-gray-400 mb-1">
+                          <div className="flex items-center space-x-2 text-xs text-clawd-text-dim mb-1">
                             <span className="font-medium">{transcript.speaker}</span>
                             <span>•</span>
                             <span>{new Date(transcript.timestamp).toLocaleTimeString()}</span>
                           </div>
-                          <div className="bg-gray-800 rounded-lg px-4 py-2">
+                          <div className="bg-clawd-surface rounded-lg px-4 py-2">
                             <MarkdownMessage content={transcript.text} />
                           </div>
                         </div>
@@ -588,7 +588,7 @@ export default function MeetingTranscribe() {
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
               <FileText className="w-16 h-16 mb-4 opacity-50" />
               <p className="text-sm">Select a meeting or start a new one</p>
               <p className="text-xs mt-2">Real-time transcription powered by Gemini AI</p>

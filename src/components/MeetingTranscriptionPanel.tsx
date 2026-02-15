@@ -120,17 +120,17 @@ export default function MeetingTranscriptionPanel() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 text-white">
-      <div className="flex items-center justify-between p-4 border-b border-gray-700">
+    <div className="flex flex-col h-full bg-clawd-bg text-white">
+      <div className="flex items-center justify-between p-4 border-b border-clawd-border">
         <div className="flex items-center space-x-3">
           <FileAudio className="w-5 h-5 text-emerald-400" />
           <h2 className="text-lg font-semibold">🐸 Meeting Transcription</h2>
         </div>
-        <span className="text-xs text-gray-500">Powered by Gemini AI</span>
+        <span className="text-xs text-clawd-text-dim">Powered by Gemini AI</span>
       </div>
 
       {/* Upload */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="p-4 border-b border-clawd-border">
         <input
           ref={fileInputRef}
           type="file"
@@ -149,7 +149,7 @@ export default function MeetingTranscriptionPanel() {
             <><Upload className="w-5 h-5" /><span>Upload Audio for Transcription</span></>
           )}
         </button>
-        <p className="text-xs text-gray-500 mt-2 text-center">
+        <p className="text-xs text-clawd-text-dim mt-2 text-center">
           Supports MP3, WAV, WebM, M4A, OGG, and video files
         </p>
       </div>
@@ -161,51 +161,51 @@ export default function MeetingTranscriptionPanel() {
       {/* Results */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {results.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
+          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
             <FileAudio className="w-16 h-16 mb-4 opacity-50" />
             <p className="text-sm">No transcriptions yet</p>
             <p className="text-xs mt-2">Upload a meeting recording to get started</p>
           </div>
         ) : (
           results.map(result => (
-            <div key={result.id} className="bg-gray-800 rounded-lg p-4 space-y-3">
+            <div key={result.id} className="bg-clawd-surface rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium">{result.filename}</div>
-                  <div className="text-xs text-gray-500">{new Date(result.timestamp).toLocaleString()}</div>
+                  <div className="text-xs text-clawd-text-dim">{new Date(result.timestamp).toLocaleString()}</div>
                 </div>
                 <div className="flex items-center space-x-2">
                   {!result.summary && (
                     <button
                       onClick={() => summarize(result.id)}
                       disabled={isSummarizing}
-                      className="p-2 hover:bg-gray-700 rounded transition-colors text-emerald-400"
+                      className="p-2 hover:bg-clawd-border rounded transition-colors text-emerald-400"
                       title="AI Summarize"
                     >
                       {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                     </button>
                   )}
-                  <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-gray-700 rounded transition-colors" title="Download">
+                  <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-clawd-border rounded transition-colors" title="Download">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-gray-700 rounded transition-colors text-error" title="Delete">
+                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-clawd-border rounded transition-colors text-error" title="Delete">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div className="text-sm text-gray-300 max-h-40 overflow-y-auto whitespace-pre-wrap bg-gray-900 rounded p-3">
+              <div className="text-sm text-clawd-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-clawd-bg rounded p-3">
                 {result.transcript}
               </div>
 
               {result.summary && (
-                <div className="space-y-2 border-t border-gray-700 pt-3">
+                <div className="space-y-2 border-t border-clawd-border pt-3">
                   <div className="text-sm font-medium text-emerald-400">✨ AI Summary</div>
-                  <p className="text-sm text-gray-300">{result.summary.summary}</p>
+                  <p className="text-sm text-clawd-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-warning mb-1">Action Items</div>
-                      <ul className="text-xs text-gray-400 space-y-1">
+                      <ul className="text-xs text-clawd-text-dim space-y-1">
                         {result.summary.actionItems.map((item, i) => <li key={i}>• {item}</li>)}
                       </ul>
                     </div>
@@ -213,7 +213,7 @@ export default function MeetingTranscriptionPanel() {
                   {result.summary.keyDecisions.length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
-                      <ul className="text-xs text-gray-400 space-y-1">
+                      <ul className="text-xs text-clawd-text-dim space-y-1">
                         {result.summary.keyDecisions.map((d, i) => <li key={i}>• {d}</li>)}
                       </ul>
                     </div>
