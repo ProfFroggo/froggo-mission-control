@@ -236,7 +236,7 @@ export class GeminiLiveService {
       this.ws.onclose = null;
       this.ws.onerror = null;
       this.ws.onmessage = null;
-      try { this.ws.close(); } catch {}
+      try { this.ws.close(); } catch { /* ignore */ }
       this.ws = null;
     }
     this._connected = false;

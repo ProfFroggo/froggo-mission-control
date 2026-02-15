@@ -497,10 +497,10 @@ export class MultiAgentVoiceSystem {
     }
 
     if (this.inputAudioContext && this.inputAudioContext.state !== 'closed') {
-      try { await this.inputAudioContext.close(); } catch {}
+      try { await this.inputAudioContext.close(); } catch { /* ignore */ }
     }
     if (this.outputAudioContext && this.outputAudioContext.state !== 'closed') {
-      try { await this.outputAudioContext.close(); } catch {}
+      try { await this.outputAudioContext.close(); } catch { /* ignore */ }
     }
 
     this.inputAudioContext = null;
