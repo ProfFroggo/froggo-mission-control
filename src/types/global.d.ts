@@ -399,6 +399,14 @@ declare global {
           error?: string;
         }>;
       };
+      // Toolbar pop-out API
+      toolbar?: {
+        popOut: (data?: { x?: number; y?: number; width?: number; height?: number }) => Promise<{ success: boolean; error?: string }>;
+        popIn: () => Promise<{ success: boolean; error?: string }>;
+        getState: () => Promise<{ poppedOut: boolean; windowId?: number }>;
+        onClosed: (callback: () => void) => () => void;
+        onPoppedIn: (callback: () => void) => () => void;
+      };
     };
   }
 }

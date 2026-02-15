@@ -9,10 +9,10 @@ export default function FloatingToolbar() {
   
   useEffect(() => {
     // Listen for toolbar closed event
-    const cleanup = window.electron.toolbar.onClosed(() => {
+    const cleanup = window.clawdbot?.toolbar?.onClosed(() => {
       // Floating window was closed from outside
     });
-    
+
     return () => {
       if (cleanup) cleanup();
     };
@@ -20,8 +20,13 @@ export default function FloatingToolbar() {
   
   const handlePopIn = async () => {
     try {
-      const result = await window.electron.toolbar.popIn();
-      
+      if (!window.clawdbot?.toolbar) {
+        showToast('error', 'Pop-in Failed', 'Toolbar API not available');
+        return;
+      }
+
+      const result = await window.clawdbot.toolbar.popIn();
+
       if (result.success) {
         // Window will close automatically
       } else {
