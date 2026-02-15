@@ -161,9 +161,9 @@ export default function FinancePanel() {
   };
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 90) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (percentage >= 90) return 'bg-error';
+    if (percentage >= 80) return 'bg-warning';
+    return 'bg-success';
   };
 
   const getCategoryEmoji = (category: string) => {
@@ -212,7 +212,7 @@ export default function FinancePanel() {
             onClick={() => setChatOpen(!chatOpen)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               chatOpen
-                ? 'bg-success-subtle text-success hover:bg-green-500/30'
+                ? 'bg-success-subtle text-success hover:bg-success/30'
                 : 'bg-clawd-bg-alt text-clawd-text-dim hover:bg-clawd-bg'
             }`}
           >
@@ -221,7 +221,7 @@ export default function FinancePanel() {
           </button>
           <button
             onClick={handleUploadClick}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-info hover:bg-info-dim text-white rounded-lg transition-colors"
           >
             <Upload size={16} />
             Upload Statement
@@ -260,7 +260,7 @@ export default function FinancePanel() {
               
               {/* Warning alerts */}
               {alerts.filter(a => a.severity === 'warning').map((alert) => (
-                <div key={alert.id} className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-warning-border rounded-lg">
+                <div key={alert.id} className="flex items-start gap-2 p-3 bg-warning/10 border border-warning-border rounded-lg">
                   <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-warning">{alert.title}</div>

@@ -526,8 +526,8 @@ export default function EpicCalendar() {
         ) : error ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <Calendar size={32} className="mx-auto mb-4 text-red-500" />
-              <p className="text-red-500">{error}</p>
+              <Calendar size={32} className="mx-auto mb-4 text-error" />
+              <p className="text-error">{error}</p>
               <button
                 onClick={fetchEvents}
                 className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
@@ -632,7 +632,7 @@ function EventCard({
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
   const primaryEmail = useUserSettings.getState().email;
-  const accountColor = event.account === primaryEmail ? 'bg-blue-500' : 'bg-purple-500';
+  const accountColor = event.account === primaryEmail ? 'bg-info' : 'bg-review';
 
   if (compact) {
     return (
@@ -1292,20 +1292,20 @@ function EventModal({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              Title <span className="text-red-500">*</span>
+              Title <span className="text-error">*</span>
             </label>
             <input
               type="text"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
               className={`w-full px-4 py-2 bg-clawd-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent ${
-                errors.summary ? 'border-red-500' : 'border-clawd-border'
+                errors.summary ? 'border-error' : 'border-clawd-border'
               }`}
               placeholder="Event title"
               autoFocus
             />
             {errors.summary && (
-              <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+              <p className="text-sm text-error mt-1 flex items-center gap-1">
                 <AlertCircle size={14} />
                 {errors.summary}
               </p>
@@ -1315,7 +1315,7 @@ function EventModal({
           {/* Account Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              Calendar Account <span className="text-red-500">*</span>
+              Calendar Account <span className="text-error">*</span>
             </label>
             <select
               value={formData.account}
@@ -1348,7 +1348,7 @@ function EventModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-red-500">*</span>
+                Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
               <input
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
@@ -1359,18 +1359,18 @@ function EventModal({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-red-500">*</span>
+                End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
               <input
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.end}
                 onChange={(e) => setFormData({ ...formData, end: e.target.value })}
                 className={`w-full px-4 py-2 bg-clawd-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent ${
-                  errors.end ? 'border-red-500' : 'border-clawd-border'
+                  errors.end ? 'border-error' : 'border-clawd-border'
                 }`}
               />
               {errors.end && (
-                <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                <p className="text-sm text-error mt-1 flex items-center gap-1">
                   <AlertCircle size={14} />
                   {errors.end}
                 </p>
@@ -1414,7 +1414,7 @@ function EventModal({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-error-subtle rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
                   Delete Event
@@ -1467,7 +1467,7 @@ function DeleteConfirmDialog({
       <div className="bg-clawd-surface rounded-2xl border border-clawd-border max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-start gap-4 mb-4">
           <div className="p-3 bg-error-subtle rounded-full">
-            <Trash2 size={24} className="text-red-500" />
+            <Trash2 size={24} className="text-error" />
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-2">Delete Event</h3>
@@ -1486,7 +1486,7 @@ function DeleteConfirmDialog({
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error-dim transition-colors"
           >
             Delete Event
           </button>
