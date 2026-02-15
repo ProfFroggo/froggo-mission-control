@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useStore } from '../store/store';
 
@@ -53,10 +53,20 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
   const [details, setDetails] = useState<AgentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const agent = agents.find(a => a.id === agentId);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 200);

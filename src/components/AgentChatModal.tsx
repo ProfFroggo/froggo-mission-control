@@ -41,11 +41,23 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
   const agent = agents.find(a => a.id === agentId);
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeouts and listeners on unmount
+  useEffect(() => {
+    return () => {
+      streamCleanupRef.current?.();
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleClose = () => {
     // Clean up stream listener
     streamCleanupRef.current?.();
     setIsClosing(true);
-    setTimeout(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 200);
@@ -203,7 +215,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       }
 
       // Set a timeout in case streaming never completes
-      setTimeout(() => {
+      const responseTimeoutRef = setTimeout(() => {
         if (sending) {
           // If still sending after 2 minutes, finalize what we have
           if (fullResponse) {
@@ -225,6 +237,17 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
           streamCleanupRef.current = null;
         }
       }, 120000);
+
+      // Cleanup timeout if component unmounts during request
+      const cleanupTimeout = () => clearTimeout(responseTimeoutRef);
+      window.addEventListener('beforeunload', cleanupTimeout);
+      
+      // Store cleanup for useEffect return
+      streamCleanupRef.current = () => {
+        unsub();
+        clearTimeout(responseTimeoutRef);
+        window.removeEventListener('beforeunload', cleanupTimeout);
+      };
 
     } catch (e: any) {
       console.error('Failed to send message:', e);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink } from 'lucide-react';
 import { ConnectedAccount, DataType } from '../types/accounts';
 
@@ -33,10 +33,20 @@ const PROVIDER_DOCS = {
 export default function AccountDetailModal({ account, onClose, onRefresh, onRemove }: Props) {
   const [isClosing, setIsClosing] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'permissions' | 'security'>('overview');
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 200);

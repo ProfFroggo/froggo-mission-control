@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 
@@ -29,9 +29,20 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 200);

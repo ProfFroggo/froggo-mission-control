@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Award } from 'lucide-react';
 
 interface AgentSkill {
@@ -53,9 +53,20 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(onClose, 200);
+    closeTimeoutRef.current = setTimeout(onClose, 200);
   };
 
   const agents = [...new Set(skills.map(s => s.agent_id))];

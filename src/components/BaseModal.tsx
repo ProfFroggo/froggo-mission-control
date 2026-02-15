@@ -11,7 +11,7 @@
  * - Customizable size and styling
  */
 
-import { useEffect, useRef, ReactNode } from 'react';
+import { useEffect, useRef, useCallback, ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 export interface BaseModalProps {
@@ -114,6 +114,16 @@ export default function BaseModal({
 }: BaseModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Track focus for focus trapping
   useEffect(() => {
@@ -122,13 +132,20 @@ export default function BaseModal({
       previousActiveElement.current = document.activeElement as HTMLElement;
       
       // Focus the modal container after a brief delay (for animation)
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         modalRef.current?.focus();
       }, 50);
     } else {
       // Restore focus when modal closes
       previousActiveElement.current?.focus();
     }
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
   }, [isOpen]);
 
   // ESC key handler
@@ -193,15 +210,15 @@ export default function BaseModal({
     };
   }, [isOpen]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     onClosingStart?.();
     
     // Wait for animation to complete before calling onClose
-    setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       onClose();
       onClosingComplete?.();
     }, animationDuration);
-  };
+  }, [onClose, onClosingStart, onClosingComplete, animationDuration]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !preventBackdropClose) {
