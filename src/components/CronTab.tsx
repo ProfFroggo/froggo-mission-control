@@ -273,37 +273,38 @@ export default function CronTab() {
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">Name</label>
                 <input type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" placeholder="My cron job" />
+                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" placeholder="My cron job" aria-label="Cron job name" />
               </div>
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">Description</label>
                 <input type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" placeholder="Optional description" />
+                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" placeholder="Optional description" aria-label="Cron job description" />
               </div>
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">Schedule</label>
                 <div className="flex gap-2">
                   <select value={newJob.scheduleKind} onChange={e => setNewJob(p => ({ ...p, scheduleKind: e.target.value }))}
-                    className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent">
+                    className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" aria-label="Schedule type">
                     <option value="cron">Cron</option>
                     <option value="every">Interval (min)</option>
                     <option value="at">One-time</option>
                   </select>
                   <input type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
                     className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent"
-                    placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'} />
+                    placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'}
+                    aria-label="Schedule expression" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">Message (what to tell the agent)</label>
                 <textarea value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
                   rows={3} className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent resize-none"
-                  placeholder="Check for new emails and summarize..." />
+                  placeholder="Check for new emails and summarize..." aria-label="Cron job message" />
               </div>
               <div>
                 <label className="block text-sm text-clawd-text-dim mb-1">Session Target</label>
                 <select value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
-                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent">
+                  className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" aria-label="Session target">
                   <option value="isolated">Isolated (new session)</option>
                   <option value="main">Main (shared session)</option>
                 </select>

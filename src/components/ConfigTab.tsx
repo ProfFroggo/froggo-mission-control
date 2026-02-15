@@ -191,6 +191,7 @@ export default function ConfigTab() {
           onChange={e => { setRawJson(e.target.value); setDirty(true); }}
           className="w-full h-96 bg-clawd-bg border border-clawd-border rounded-xl p-4 font-mono text-sm resize-none focus:outline-none focus:border-clawd-accent"
           spellCheck={false}
+          aria-label="Raw configuration JSON"
         />
       ) : (
         <div className="space-y-4">
@@ -230,14 +231,16 @@ export default function ConfigTab() {
                             <label className="block text-sm font-medium mb-1">{field.label}</label>
                             <input type="number" value={field.value}
                               onChange={e => updateField(field.path, Number(e.target.value))}
-                              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent" />
+                              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                              aria-label={field.label} />
                           </div>
                         ) : field.type === 'string' ? (
                           <div>
                             <label className="block text-sm font-medium mb-1">{field.label}</label>
                             <input type={field.sensitive ? 'password' : 'text'} value={field.value}
                               onChange={e => updateField(field.path, e.target.value)}
-                              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent" />
+                              className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                              aria-label={field.label} />
                           </div>
                         ) : field.type === 'object' ? (
                           <div>
