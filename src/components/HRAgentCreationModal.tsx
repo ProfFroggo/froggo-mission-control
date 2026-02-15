@@ -326,9 +326,20 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     }
   };
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(onClose, 200);
+    closeTimeoutRef.current = setTimeout(onClose, 200);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

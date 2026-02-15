@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { X, Download, ExternalLink } from 'lucide-react';
 
 interface FilePreviewModalProps {
@@ -14,10 +14,20 @@ interface FilePreviewModalProps {
 
 export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewModalProps) {
   const [isClosing, setIsClosing] = useState(false);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 200);
