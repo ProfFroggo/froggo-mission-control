@@ -127,7 +127,7 @@ export default function AgentPanel() {
 
   const toggleExpanded = (agentId: string) => {
     const s = new Set(expandedAgents);
-    s.has(agentId) ? s.delete(agentId) : s.add(agentId);
+    if (s.has(agentId)) { s.delete(agentId); } else { s.add(agentId); }
     setExpandedAgents(s);
   };
 
@@ -260,7 +260,7 @@ export default function AgentPanel() {
                             src={`./agent-profiles/${theme.pic}`}
                             alt={agent.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }}
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }}
                           />
                         ) : null}
                         <span className={`${theme.pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-3xl`}>{agent.avatar}</span>
@@ -470,7 +470,7 @@ export default function AgentPanel() {
                 <div key={agent.id} className="rounded-lg border border-clawd-border p-3 flex items-center gap-3 overflow-hidden">
                   <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden bg-clawd-bg">
                     {getTheme(agent.id).pic ? (
-                      <img src={`./agent-profiles/${getTheme(agent.id).pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }} />
+                      <img src={`./agent-profiles/${getTheme(agent.id).pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; if ((e.target as HTMLImageElement).nextElementSibling) { ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); } }} />
                     ) : null}
                     <span className={`${getTheme(agent.id).pic ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-xl`}>{agent.avatar}</span>
                   </div>

@@ -403,7 +403,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       <div className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4">
         <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center">
           <h1 className="text-2xl font-bold mb-4">Good morning 👋</h1>
-          <p className="text-clawd-text-dim mb-6">Couldn't load your brief data.</p>
+          <p className="text-clawd-text-dim mb-6">Couldn&apos;t load your brief data.</p>
           <button
             onClick={onDismiss}
             className="px-6 py-3 bg-clawd-accent text-white rounded-xl font-medium hover:bg-clawd-accent/80 transition-colors"
@@ -613,7 +613,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
             <div className="p-4 bg-clawd-bg rounded-xl">
               <div className="flex items-center gap-2 mb-3">
                 <Calendar size={16} className="text-clawd-accent" />
-                <span className="font-medium">Today's Schedule</span>
+                <span className="font-medium">Today&apos;s Schedule</span>
               </div>
               <div className="space-y-2">
                 {brief.upcomingEvents.map((event, i) => (
@@ -665,7 +665,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {!hasItems && (
             <div className="p-6 text-center">
               <CheckCircle size={48} className="text-success mx-auto mb-3" />
-              <p className="text-lg font-medium text-success">You're all caught up!</p>
+              <p className="text-lg font-medium text-success">You&apos;re all caught up!</p>
               <p className="text-sm text-clawd-text-dim">No pending items or upcoming events</p>
             </div>
           )}
@@ -684,7 +684,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
             onClick={onDismiss}
             className="w-full py-2 text-clawd-text-dim text-sm hover:text-clawd-text mt-2"
           >
-            Don't show again today
+            Don&apos;t show again today
           </button>
         </div>
       </div>

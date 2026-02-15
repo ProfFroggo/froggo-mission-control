@@ -505,115 +505,119 @@ class Gateway {
   }
 
   sendChat(message: string): Promise<{ content: string }> {
-    return new Promise(async (resolve, reject) => {
-      if (!this.connected) {
-        reject(new Error('Not connected'));
+    if (!this.connected) {
+      return Promise.reject(new Error('Not connected'));
+    }
+
+    const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let responseContent = '';
+    let resolved = false;
+    let resolvePromise: (value: { content: string }) => void;
+    let rejectPromise: (reason: Error) => void;
+
+    const promise = new Promise<{ content: string }>((resolve, reject) => {
+      resolvePromise = resolve;
+      rejectPromise = reject;
+    });
+
+    const cleanup = () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+      unsub5();
+    };
+
+    const finish = (content: string) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        cleanup();
+        resolvePromise({ content });
+      }
+    };
+
+    const fail = (err: Error) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        cleanup();
+        rejectPromise(err);
+      }
+    };
+
+    // Track the actual runId from the gateway response
+    let ourRunId = '';
+
+    // Listen for streaming events (gateway sends 'chat' with state field)
+    const unsub1 = this.on('chat', (data: any) => {
+      // Only process events for OUR request (filter out other sessions like Discord)
+      if (ourRunId && data.runId && data.runId !== ourRunId) {
+        // Different runId, ignore - this is from another session
         return;
       }
 
-      const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      let responseContent = '';
-      let resolved = false;
-      
-      const cleanup = () => {
-        unsub1();
-        unsub2();
-        unsub3();
-        unsub4();
-        unsub5();
-      };
+      // Extract text content
+      const text = data.message?.content?.[0]?.text || data.content || data.delta || '';
+      if (text) {
+        responseContent = text; // Full content, not delta
+      }
 
-      const finish = (content: string) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          cleanup();
-          resolve({ content });
-        }
-      };
-
-      const fail = (err: Error) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          cleanup();
-          reject(err);
-        }
-      };
-
-      // Track the actual runId from the gateway response
-      let ourRunId = '';
-      
-      // Listen for streaming events (gateway sends 'chat' with state field)
-      const unsub1 = this.on('chat', (data: any) => {
-        // Only process events for OUR request (filter out other sessions like Discord)
-        if (ourRunId && data.runId && data.runId !== ourRunId) {
-          // Different runId, ignore - this is from another session
-          return;
-        }
-        
-        // Extract text content
-        const text = data.message?.content?.[0]?.text || data.content || data.delta || '';
-        if (text) {
-          responseContent = text; // Full content, not delta
-        }
-        
-        // Check for final state
-        if (data.state === 'final') {
-          finish(responseContent);
-        }
-      });
-
-      // Also listen for legacy event names
-      const unsub2 = this.on('chat.delta', (data: any) => {
-        if (data.delta) responseContent += data.delta;
-      });
-
-      const unsub3 = this.on('chat.message', (data: any) => {
-        if (data.content) responseContent = data.content;
-      });
-
-      const unsub4 = this.on('chat.end', () => {
+      // Check for final state
+      if (data.state === 'final') {
         finish(responseContent);
-      });
-
-      const unsub5 = this.on('chat.error', (data: any) => {
-        fail(new Error(data.message || data.error || 'Chat error'));
-      });
-
-      // Timeout after 2 minutes
-      const timeout = setTimeout(() => {
-        if (responseContent) {
-          finish(responseContent);
-        } else {
-          fail(new Error('Response timeout'));
-        }
-      }, 120000);
-
-      try {
-        const result = await this.request('chat.send', {
-          message,
-          sessionKey: this.sessionKey,
-          idempotencyKey,
-        });
-
-        // Capture runId to filter streaming events
-        if (result?.runId) {
-          ourRunId = result.runId;
-        }
-
-        // If we got a direct response (non-streaming), use it
-        if (result?.content) {
-          clearTimeout(timeout);
-          finish(result.content);
-        }
-        // Otherwise wait for streaming events
-      } catch (e: any) {
-        console.error('[Gateway] sendChat error:', e);
-        clearTimeout(timeout);
-        fail(e);
       }
     });
+
+    // Also listen for legacy event names
+    const unsub2 = this.on('chat.delta', (data: any) => {
+      if (data.delta) responseContent += data.delta;
+    });
+
+    const unsub3 = this.on('chat.message', (data: any) => {
+      if (data.content) responseContent = data.content;
+    });
+
+    const unsub4 = this.on('chat.end', () => {
+      finish(responseContent);
+    });
+
+    const unsub5 = this.on('chat.error', (data: any) => {
+      fail(new Error(data.message || data.error || 'Chat error'));
+    });
+
+    // Timeout after 2 minutes
+    const timeout = setTimeout(() => {
+      if (responseContent) {
+        finish(responseContent);
+      } else {
+        fail(new Error('Response timeout'));
+      }
+    }, 120000);
+
+    this.request('chat.send', {
+      message,
+      sessionKey: this.sessionKey,
+      idempotencyKey,
+    }).then((result: any) => {
+      // Capture runId to filter streaming events
+      if (result?.runId) {
+        ourRunId = result.runId;
+      }
+
+      // If we got a direct response (non-streaming), use it
+      if (result?.content) {
+        clearTimeout(timeout);
+        finish(result.content);
+      }
+      // Otherwise wait for streaming events
+    }).catch((e: any) => {
+      console.error('[Gateway] sendChat error:', e);
+      clearTimeout(timeout);
+      fail(e);
+    });
+
+    return promise;
   }
 
   // Fire-and-forget send for streaming UI — returns runId for event filtering

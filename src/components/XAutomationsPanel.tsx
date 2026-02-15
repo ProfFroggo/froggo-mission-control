@@ -253,7 +253,7 @@ export default function XAutomationsPanel() {
                         </span>
                         {trigger.keywords && (
                           <span className="text-clawd-text-dim">
-                            "{trigger.keywords.join('", "')}"
+                            &quot;{trigger.keywords.join('", "')}&quot;
                           </span>
                         )}
                       </div>
@@ -615,7 +615,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
         <div className="p-6 border-t border-clawd-border flex items-center justify-between">
           <p className="text-sm text-clawd-text-dim">
             <AlertCircle size={14} className="inline mr-1" />
-            Automations run in the background. Be mindful of X's rate limits.
+            Automations run in the background. Be mindful of X&apos;s rate limits.
           </p>
           
           <div className="flex gap-3">

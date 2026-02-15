@@ -9,5 +9,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["electron/**/*"]
+  "include": ["electron/**/*"],
+  "exclude": ["electron/main-new.ts"]
 }

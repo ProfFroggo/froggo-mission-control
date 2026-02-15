@@ -712,7 +712,7 @@ export default function ConnectedAccountsPanel() {
                         </div>
                         {!type.available && type.requiresSkill && (
                           <div className="text-xs text-error mt-1">
-                            Requires '{type.skillName}' skill (not installed)
+                            Requires &apos;{type.skillName}&apos; skill (not installed)
                           </div>
                         )}
                       </div>
@@ -730,7 +730,7 @@ export default function ConnectedAccountsPanel() {
               <div className="mb-6 p-4 bg-clawd-bg rounded-lg">
                 <h3 className="font-medium mb-2">Setup Instructions</h3>
                 <div className="text-sm text-clawd-text-dim space-y-2">
-                  <p>1. Click "Continue" to start the authentication process</p>
+                  <p>1. Click &quot;Continue&quot; to start the authentication process</p>
                   <p>2. A browser window will open for OAuth authentication</p>
                   <p>3. Sign in and grant the requested permissions</p>
                   <p>4. Your account will be automatically configured</p>

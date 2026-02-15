@@ -213,7 +213,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                     </p>
                     {currentSnooze.snooze_reason && (
                       <p className="text-sm text-clawd-text-dim mt-1 italic">
-                        "{currentSnooze.snooze_reason}"
+                        &quot;{currentSnooze.snooze_reason}&quot;
                       </p>
                     )}
                   </div>

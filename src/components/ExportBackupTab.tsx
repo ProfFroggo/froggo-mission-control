@@ -508,7 +508,7 @@ export default function ExportBackupTab() {
           <div className="flex items-start gap-2">
             <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
             <div>
-              <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup's contents
+              <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup&apos;s contents
             </div>
           </div>
         </div>

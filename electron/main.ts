@@ -771,7 +771,7 @@ app.whenReady().then(() => {
 
   // Check for updates (prod only, non-blocking)
   if (!isDev && !app.getName().includes('Dev')) {
-    checkForUpdates().catch(() => {});
+    checkForUpdates().catch((err) => { console.error('[UpdateCheck] Failed:', err); });
   }
 });
 
@@ -3582,7 +3582,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'remove', jobId: id })
-    }).catch(() => {});
+    }).catch((err) => { console.error('[CronRemove] Failed:', err); });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -4685,7 +4685,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
             meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : m.metadata;
             // Handle double-encoded JSON
             if (typeof meta === 'string') meta = JSON.parse(meta);
-          } catch { meta = {}; }
+          } catch (err) { console.error('[MetadataParse] Failed:', err); meta = {}; }
         }
         return {
         id: m.external_id,
