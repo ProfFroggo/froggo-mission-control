@@ -3,6 +3,8 @@
  * Provides keyboard shortcut support for quick theme switching
  */
 
+import { safeStorage } from './safeStorage';
+
 export type Theme = 'dark' | 'light' | 'system';
 
 export interface ThemeState {
@@ -56,7 +58,7 @@ export function applyTheme(theme: Theme, accentColor: string) {
  * Get current theme from localStorage
  */
 export function getCurrentTheme(): ThemeState {
-  const saved = localStorage.getItem('froggo-settings');
+  const saved = safeStorage.getItem('froggo-settings');
   if (saved) {
     try {
       const settings = JSON.parse(saved);
@@ -99,17 +101,17 @@ export function toggleTheme(): Theme {
   applyTheme(newTheme, currentState.accentColor);
   
   // Save to localStorage
-  const saved = localStorage.getItem('froggo-settings');
+  const saved = safeStorage.getItem('froggo-settings');
   if (saved) {
     try {
       const settings = JSON.parse(saved);
       settings.theme = newTheme;
-      localStorage.setItem('froggo-settings', JSON.stringify(settings));
+      safeStorage.setItem('froggo-settings', JSON.stringify(settings));
     } catch (e) {
       console.error('[themeToggle] Failed to save theme:', e);
     }
   }
-  
+
   return newTheme;
 }
 

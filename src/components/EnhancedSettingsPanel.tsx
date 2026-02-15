@@ -8,6 +8,7 @@ import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
 import { reconnectGateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import { safeStorage } from '../utils/safeStorage';
 import SecuritySettings from './SecuritySettings';
 import ConnectedAccountsPanel from './ConnectedAccountsPanel';
 import ConfigTab from './ConfigTab';
@@ -298,7 +299,7 @@ export default function EnhancedSettingsPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [searchQuery, setSearchQuery] = useState('');
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = localStorage.getItem('froggo-settings');
+    const saved = safeStorage.getItem('froggo-settings');
     if (saved) {
       try {
         return { ...defaultSettings, ...JSON.parse(saved) };
@@ -330,8 +331,8 @@ export default function EnhancedSettingsPanel() {
   }, [settings.theme, settings.accentColor, settings.fontFamily, settings.fontSize]);
 
   const handleSave = async () => {
-    localStorage.setItem('froggo-settings', JSON.stringify(settings));
-    
+    safeStorage.setItem('froggo-settings', JSON.stringify(settings));
+
     try {
       await (window as any).clawdbot?.settings?.save({
         externalActionsEnabled: settings.externalActionsEnabled,
@@ -343,18 +344,18 @@ export default function EnhancedSettingsPanel() {
     } catch (e) {
       console.error('[Settings] Failed to save automation settings:', e);
     }
-    
+
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2002);
     showToast('success', 'Settings saved', 'Your preferences have been updated');
-    
+
     reconnectGateway();
   };
 
   const handleReset = () => {
     if (confirm('Reset all settings to defaults? This cannot be undone.')) {
       setSettings(defaultSettings);
-      localStorage.removeItem('froggo-settings');
+      safeStorage.removeItem('froggo-settings');
       showToast('info', 'Settings reset', 'All settings restored to defaults');
     }
   };
@@ -460,7 +461,7 @@ export default function EnhancedSettingsPanel() {
         // Clear localStorage cache entries
         Object.keys(localStorage).forEach(key => {
           if (key.startsWith('cache-')) {
-            localStorage.removeItem(key);
+            safeStorage.removeItem(key);
           }
         });
         showToast('success', 'Cache cleared', 'Cached data has been removed');
@@ -820,7 +821,7 @@ export default function EnhancedSettingsPanel() {
                               // Apply theme immediately
                               applyTheme(t, s.accentColor, s.fontFamily, s.fontSize);
                               // Save to localStorage immediately
-                              localStorage.setItem('froggo-settings', JSON.stringify(newSettings));
+                              safeStorage.setItem('froggo-settings', JSON.stringify(newSettings));
                               return newSettings;
                             });
                           }}

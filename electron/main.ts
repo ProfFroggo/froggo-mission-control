@@ -5496,7 +5496,7 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   const combined = `${subjectLower} ${snippet.toLowerCase()}`;
   
   // Extract amounts (e.g., $1,500 or €500 or £1000)
-  const amountMatch = combined.match(/[\$€£]\s?[\d,]+(?:\.\d{2})?/);
+  const amountMatch = combined.match(/[$€£]\s?[\d,]+(?:\.\d{2})?/);
   const amount = amountMatch ? amountMatch[0] : undefined;
   
   // Priority: Urgent
@@ -5570,7 +5570,7 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   
   // Priority: Medium - Large amounts (>$500)
   if (amount) {
-    const numericAmount = parseFloat(amount.replace(/[\$€£,]/g, ''));
+    const numericAmount = parseFloat(amount.replace(/[$€£,]/g, ''));
     if (numericAmount >= 500) {
       return { id, from, subject, reason: `Contains amount: ${amount}`, priority: 'high', amount };
     }

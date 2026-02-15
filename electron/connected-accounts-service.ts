@@ -80,9 +80,10 @@ function decrypt(text: string): string {
 // SQLite helpers
 async function dbQuery<T = any>(query: string, params: any[] = []): Promise<T[]> {
   return new Promise((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const sqlite3 = require('sqlite3').verbose();
     const db = new sqlite3.Database(DB_PATH);
-    
+
     db.all(query, params, (err: Error | null, rows: T[]) => {
       db.close();
       if (err) reject(err);
@@ -93,9 +94,10 @@ async function dbQuery<T = any>(query: string, params: any[] = []): Promise<T[]>
 
 async function dbRun(query: string, params: any[] = []): Promise<void> {
   return new Promise((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const sqlite3 = require('sqlite3').verbose();
     const db = new sqlite3.Database(DB_PATH);
-    
+
     db.run(query, params, function(err: Error | null) {
       db.close();
       if (err) reject(err);
