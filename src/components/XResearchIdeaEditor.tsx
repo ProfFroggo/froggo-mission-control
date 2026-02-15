@@ -68,13 +68,13 @@ export default function XResearchIdeaEditor() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 p-6">
+    <div className="flex flex-col h-full bg-clawd-bg p-6">
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-white">Propose Research Idea</h3>
         </div>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-clawd-text-dim">
           Create a new research idea with citations. It will be submitted for approval.
         </p>
       </div>
@@ -153,11 +153,11 @@ export default function XResearchIdeaEditor() {
       </div>
 
       {/* Submit Button */}
-      <div className="mt-6 pt-6 border-t border-gray-700">
+      <div className="mt-6 pt-6 border-t border-clawd-border">
         <button
           onClick={handleSubmit}
           disabled={submitting || !title.trim() || !description.trim()}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
         >
           {submitting ? (
             <>
