@@ -986,7 +986,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
     });
   } catch (error: any) {
     safeLog.error('Whisper failed:', error);
-    try { fs.unlinkSync(tempFile); } catch {}
+    try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
     return { error: error.message };
   }
 });
@@ -1017,7 +1017,7 @@ try {
     const match = content.match(/ELEVENLABS_API_KEY=(.+)/);
     if (match) elevenlabsApiKey = match[1].trim();
   }
-} catch {}
+} catch { /* ignore env read errors */ }
 
 ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
   const outputPath = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
@@ -1691,7 +1691,7 @@ ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) =>
                 resolve(taskData.assigned_to);
                 return;
               }
-            } catch {}
+            } catch { /* ignore parse errors */ }
           }
           resolve('froggo'); // Default to froggo
         }
@@ -4058,7 +4058,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
     let linkedTasks: string[] = [];
     try {
       if (row && row.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks);
-    } catch {}
+    } catch { /* ignore parse errors */ }
 
     if (!linkedTasks.includes(taskId)) {
       linkedTasks.push(taskId);
@@ -4249,7 +4249,7 @@ try {
   if (!anthropicApiKey && fs.existsSync(keyPath)) {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch {}
+} catch { /* ignore key read errors */ }
 // Fallback: read from openclaw.json config
 if (!anthropicApiKey) {
   try {
@@ -4290,7 +4290,7 @@ try {
   if (!openaiApiKey && fs.existsSync(keyPath)) {
     openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch {}
+} catch { /* ignore key read errors */ }
 
 // Expose OpenAI API key to renderer (for Whisper transcription)
 ipcMain.handle('get-openai-key', async () => {
@@ -4494,13 +4494,13 @@ ipcMain.handle('ai:generateReply', async (_, context: {
     try {
       const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
       scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
-    } catch {}
+    } catch { /* ignore query errors */ }
   }
   if (!taskCtx) {
     try {
       const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
       taskCtx = tasks.map((t: any) => t.title).join('; ');
-    } catch {}
+    } catch { /* ignore query errors */ }
   }
 
   let contextBlock = '';
@@ -4572,8 +4572,8 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
 
     let tasks: any[] = [];
     let events: any[] = [];
-    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch {}
-    try { events = row.events ? JSON.parse(row.events) : []; } catch {}
+    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch { /* ignore parse errors */ }
+    try { events = row.events ? JSON.parse(row.events) : []; } catch { /* ignore parse errors */ }
 
     return {
       success: true,
@@ -4959,7 +4959,7 @@ async function refreshCommsBackground() {
           .map((a: any) => a.email);
         if (gmailAccts.length > 0) emailAccounts = gmailAccts;
       }
-    } catch {}
+    } catch { /* ignore gog errors */ }
     for (const acct of emailAccounts) {
       try {
         const lastTs = await getFetchState('email', acct);
@@ -5381,7 +5381,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
       const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
       const gogData = JSON.parse(gogList);
       tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
-    } catch {}
+    } catch { /* ignore gog errors */ }
   }
 
   for (const acct of tryAccounts) {

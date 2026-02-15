@@ -1051,7 +1051,7 @@ function RightPane({
     }
   };
 
-  const useSuggestion = (text: string) => {
+  const applySuggestion = (text: string) => {
     setReplyText(text);
     setShowAIPanel(false);
   };
@@ -1294,7 +1294,7 @@ function RightPane({
                 {suggestedReplies.map((reply, i) => (
                   <button
                     key={i}
-                    onClick={() => useSuggestion(reply)}
+                    onClick={() => applySuggestion(reply)}
                     className="w-full text-left p-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent hover:bg-clawd-accent/5 transition-colors text-sm"
                   >
                     {reply}
@@ -1307,7 +1307,7 @@ function RightPane({
           {/* Response Planner */}
           <div>
             <span className="text-xs font-medium text-clawd-text-dim mb-2 block">Response Planner</span>
-            <p className="text-[10px] text-clawd-text-dim mb-2">Tell AI what you want to say, and it'll draft the message for you</p>
+            <p className="text-[10px] text-clawd-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1360,10 +1360,10 @@ function RightPane({
             Thanks, got it!
           </button>
           <button
-            onClick={() => setReplyText("I'll look into this and get back to you.")}
+            onClick={() => setReplyText("I&apos;ll look into this and get back to you.")}
             className="text-xs px-3 py-1.5 bg-clawd-surface border border-clawd-border rounded-full hover:border-clawd-accent/30 transition-colors whitespace-nowrap"
           >
-            I'll look into this
+            I&apos;ll look into this
           </button>
           <button
             onClick={generateReply}

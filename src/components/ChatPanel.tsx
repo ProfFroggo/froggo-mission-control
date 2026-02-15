@@ -377,6 +377,7 @@ export default function ChatPanel() {
             sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
+              // Message saved successfully
             }
           }).catch((err: any) => {
             console.error('[Chat] Error saving assistant message (handleEnd):', err);
