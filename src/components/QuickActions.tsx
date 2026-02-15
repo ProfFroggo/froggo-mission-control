@@ -178,7 +178,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
           <Phone size={14} className="text-clawd-accent" />
           {activeCall ? 'Active Call' : 'Call Agent'}
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
       </div>
       {activeCall && (
         <div className="mb-2 p-2 bg-error-subtle border border-red-500/20 rounded-lg flex items-center gap-2">
@@ -238,7 +238,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
           <Sparkles size={14} className="text-clawd-accent" />
           Context Chat
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
       </div>
 
       {/* Context indicator */}
@@ -375,7 +375,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
           <ListTodo size={14} className="text-clawd-accent" />
           Task Shortcuts
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
       </div>
 
       {/* Quick status filters */}
@@ -926,7 +926,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <MessageSquare size={16} className="text-clawd-accent" />
               Quick Message
             </h3>
-            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-clawd-border rounded">
+            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-clawd-border rounded" title="Close">
               <X size={16} />
             </button>
           </div>
@@ -1016,7 +1016,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             </div>
 
             {/* Close button */}
-            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors">
+            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors" title="Close">
               <X size={12} />
             </button>
           </div>
@@ -1085,7 +1085,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <MessageSquare size={14} className="text-clawd-accent" />
               Chat with Agent
             </h3>
-            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
+            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
           </div>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
@@ -1119,7 +1119,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 <div className="text-[10px] text-clawd-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
             </div>
-            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-clawd-border rounded">
+            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-clawd-border rounded" title="Close">
               <X size={12} />
             </button>
           </div>
@@ -1165,6 +1165,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               onClick={sendChatMessage}
               disabled={!chatInput.trim() || chatLoading}
               className="p-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-40 transition-colors"
+              title="Send message"
             >
               <Send size={12} />
             </button>

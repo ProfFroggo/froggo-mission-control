@@ -80,6 +80,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const focusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -112,6 +113,23 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       }
     };
   }, [isOpen, mode]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+      if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
+    };
+  }, []);
+
+  // Helper to set status with auto-clear
+  const setStatusWithTimeout = (status: 'idle' | 'saving' | 'success' | 'error', delay = 3000) => {
+    if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
+    setSaveStatus(status);
+    if (status !== 'idle' && status !== 'saving') {
+      statusTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), delay);
+    }
+  };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,9 +236,8 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
     // Check file type
     if (!file.name.endsWith('.txt') && !file.name.endsWith('.md')) {
-      setSaveStatus('error');
+      setStatusWithTimeout('error');
       setSaveMessage('Please upload a .txt or .md file');
-      setTimeout(() => setSaveStatus('idle'), 3000);
       return;
     }
 
