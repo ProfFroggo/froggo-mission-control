@@ -211,7 +211,7 @@ const TRIAGE_COLORS: Record<string, string> = {
   urgent: 'bg-red-500',
   action: 'bg-orange-500',
   fyi: 'bg-blue-500',
-  'no-reply': 'bg-gray-500',
+  'no-reply': 'bg-clawd-bg',
 };
 
 const TRIAGE_LABELS: Record<string, string> = {
@@ -612,7 +612,7 @@ function CenterPane({
                       </span>
                       {aiAnalyses?.get(conv.id) && (
                         <span
-                          className={`w-2 h-2 rounded-full flex-shrink-0 ${TRIAGE_COLORS[aiAnalyses.get(conv.id)!.triage] || 'bg-gray-500'}`}
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${TRIAGE_COLORS[aiAnalyses.get(conv.id)!.triage] || 'bg-clawd-bg'}`}
                           title={TRIAGE_LABELS[aiAnalyses.get(conv.id)!.triage] || ''}
                         />
                       )}
@@ -1159,7 +1159,7 @@ function RightPane({
               aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
               aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-warning' :
               aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
-              'bg-gray-500/20 text-gray-400'
+              'bg-clawd-bg/20 text-clawd-text-dim'
             }`}>
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
