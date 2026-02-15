@@ -45,7 +45,15 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
       // Load saved filter preferences
       const savedFilters = localStorage.getItem('calendar-filter-preferences');
-      const enabledIds = savedFilters ? JSON.parse(savedFilters) : null;
+      let enabledIds = null;
+      if (savedFilters) {
+        try {
+          enabledIds = JSON.parse(savedFilters);
+        } catch (e) {
+          console.warn('Failed to parse calendar-filter-preferences:', e);
+          enabledIds = null;
+        }
+      }
 
       // 1. Google Calendar accounts (from user settings)
       const userAccounts = useUserSettings.getState().emailAccounts;

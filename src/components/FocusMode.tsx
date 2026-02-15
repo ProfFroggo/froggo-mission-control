@@ -203,7 +203,14 @@ export function FocusModeSelector({ isOpen, onClose, currentMode, onSelectMode }
 export function useFocusMode() {
   const [focusMode, setFocusMode] = useState<FocusModeType>(() => {
     const saved = localStorage.getItem('focusMode');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.warn('Failed to parse focusMode:', e);
+      }
+    }
+    return null;
   });
 
   useEffect(() => {

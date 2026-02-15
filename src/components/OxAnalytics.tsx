@@ -42,22 +42,22 @@ export default function OxAnalytics() {
     subtext?: string;
     color: string;
   }) => (
-    <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+    <div className="p-4 rounded-xl bg-clawd-surface/50 border border-clawd-border">
       <div className="flex items-center gap-3 mb-2">
         <div className={`p-2 rounded-lg ${color}`}>
           <Icon size={18} className="text-white" />
         </div>
-        <span className="text-sm text-slate-400">{label}</span>
+        <span className="text-sm text-clawd-text-dim">{label}</span>
       </div>
       <div className="text-2xl font-bold text-white">{value}</div>
-      {subtext && <p className="text-xs text-slate-500 mt-1">{subtext}</p>}
+      {subtext && <p className="text-xs text-clawd-text-dim/60 mt-1">{subtext}</p>}
     </div>
   );
 
   return (
-    <div className="h-full flex flex-col bg-slate-900">
+    <div className="h-full flex flex-col bg-clawd-bg">
       {/* Header */}
-      <div className="p-4 border-b border-slate-800">
+      <div className="p-4 border-b border-clawd-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BarChart2 className="text-amber-500" size={24} />
@@ -73,7 +73,7 @@ export default function OxAnalytics() {
                 className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   timeRange === range 
                     ? 'bg-amber-600 text-white' 
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    : 'bg-clawd-surface text-clawd-text-dim hover:text-white'
                 }`}
               >
                 {range === 'today' ? 'Today' : range === 'week' ? 'This Week' : 'This Month'}
@@ -131,9 +131,9 @@ export default function OxAnalytics() {
         </div>
 
         {/* Performance Chart Placeholder */}
-        <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700 mb-6">
+        <div className="p-6 rounded-xl bg-clawd-surface/50 border border-clawd-border mb-6">
           <h2 className="text-lg font-medium text-white mb-4">Task Completion Trend</h2>
-          <div className="h-48 flex items-center justify-center text-slate-500">
+          <div className="h-48 flex items-center justify-center text-clawd-text-dim">
             <div className="text-center">
               <BarChart2 size={48} className="mx-auto mb-2 opacity-50" />
               <p>Chart visualization coming soon</p>
@@ -143,21 +143,21 @@ export default function OxAnalytics() {
         </div>
 
         {/* Recent Activity */}
-        <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+        <div className="p-4 rounded-xl bg-clawd-surface/50 border border-clawd-border">
           <h2 className="text-lg font-medium text-white mb-4">Recent Activity</h2>
           <div className="space-y-3">
             {myTasks.slice(0, 5).map(task => (
               <div key={task.id} className="flex items-center gap-3 text-sm">
                 <div className={`w-2 h-2 rounded-full ${
                   task.status === 'done' ? 'bg-green-500' :
-                  task.status === 'in-progress' ? 'bg-warning' : 'bg-slate-500'
+                  task.status === 'in-progress' ? 'bg-warning' : 'bg-clawd-text-dim'
                 }`} />
-                <span className="flex-1 text-slate-300 truncate">{task.title}</span>
-                <span className="text-xs text-slate-500 capitalize">{task.status}</span>
+                <span className="flex-1 text-clawd-text truncate">{task.title}</span>
+                <span className="text-xs text-clawd-text-dim capitalize">{task.status}</span>
               </div>
             ))}
             {myTasks.length === 0 && (
-              <p className="text-slate-500 text-center py-4">No tasks yet</p>
+              <p className="text-clawd-text-dim text-center py-4">No tasks yet</p>
             )}
           </div>
         </div>

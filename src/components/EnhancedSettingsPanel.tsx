@@ -299,7 +299,14 @@ export default function EnhancedSettingsPanel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = localStorage.getItem('froggo-settings');
-    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+    if (saved) {
+      try {
+        return { ...defaultSettings, ...JSON.parse(saved) };
+      } catch (e) {
+        console.warn('Failed to parse froggo-settings:', e);
+      }
+    }
+    return defaultSettings;
   });
   const [saved, setSaved] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<string | null>(null);
