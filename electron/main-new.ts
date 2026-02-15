@@ -17,11 +17,11 @@ import * as path from 'path';
 // Import handler modules
 import { registerTaskHandlers } from './task-handlers';
 import { registerAgentHandlers } from './agent-handlers';
+import { registerNotificationHandlers } from './notification-handlers';
+import { registerSettingsHandlers } from './settings-handlers';
 // TODO: Import additional modules as they are created
-// import { registerNotificationHandlers } from './notification-handlers';
 // import { registerChatHandlers } from './chat-handlers';
 // import { registerXHandlers } from './x-handlers';
-// import { registerSettingsHandlers } from './settings-handlers';
 
 // Initialize database
 import { initializeDatabase } from './database';
@@ -37,11 +37,15 @@ export function initializeIpcHandlers(): void {
   registerAgentHandlers();
   console.log('[Main] ✓ Agent handlers registered');
   
+  registerNotificationHandlers();
+  console.log('[Main] ✓ Notification handlers registered');
+  
+  registerSettingsHandlers();
+  console.log('[Main] ✓ Settings handlers registered');
+  
   // TODO: Register additional modules as they are migrated
-  // registerNotificationHandlers();
   // registerChatHandlers();
   // registerXHandlers();
-  // registerSettingsHandlers();
   
   console.log('[Main] IPC handlers initialized');
 }
@@ -95,4 +99,9 @@ function createWindow(): void {
 }
 
 // Export for testing
-export { registerTaskHandlers, registerAgentHandlers };
+export { 
+  registerTaskHandlers, 
+  registerAgentHandlers, 
+  registerNotificationHandlers,
+  registerSettingsHandlers 
+};
