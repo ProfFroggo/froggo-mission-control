@@ -143,10 +143,14 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
   const handleComplete = () => {
     // Mark tour as completed in localStorage
-    const completed = JSON.parse(localStorage.getItem('froggo-tours-completed') || '[]');
-    if (tour && !completed.includes(tour.id)) {
-      completed.push(tour.id);
-      localStorage.setItem('froggo-tours-completed', JSON.stringify(completed));
+    try {
+      const completed = JSON.parse(localStorage.getItem('froggo-tours-completed') || '[]');
+      if (tour && !completed.includes(tour.id)) {
+        completed.push(tour.id);
+        localStorage.setItem('froggo-tours-completed', JSON.stringify(completed));
+      }
+    } catch {
+      // Ignore localStorage errors
     }
     onComplete();
   };
@@ -409,8 +413,12 @@ export function useTour() {
   };
 
   const hasCompletedTour = (tourId: string): boolean => {
-    const completed = JSON.parse(localStorage.getItem('froggo-tours-completed') || '[]');
-    return completed.includes(tourId);
+    try {
+      const completed = JSON.parse(localStorage.getItem('froggo-tours-completed') || '[]');
+      return completed.includes(tourId);
+    } catch {
+      return false;
+    }
   };
 
   return {
