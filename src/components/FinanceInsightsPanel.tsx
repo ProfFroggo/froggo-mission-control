@@ -50,7 +50,7 @@ export default function FinanceInsightsPanel() {
       setAnalyzing(true);
       showToast('info', 'Analyzing finances...', 'This may take a moment');
       
-      const result = await window.electron.finance.triggerAnalysis({
+      const result = await window.clawdbot?.finance?.triggerAnalysis({
         daysBack: 7,
         focus: 'general'
       });
@@ -72,7 +72,7 @@ export default function FinanceInsightsPanel() {
 
   const dismissInsight = async (insightId: string) => {
     try {
-      const result = await window.electron.finance.dismissInsight(insightId);
+      const result = await window.clawdbot?.finance?.dismissInsight(insightId);
       
       if (result?.success) {
         // Remove from UI

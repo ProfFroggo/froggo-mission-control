@@ -729,6 +729,11 @@ declare global {
         onClosed: (callback: () => void) => () => void;
         onPoppedIn: (callback: () => void) => () => void;
       };
+      // Finance API
+      finance?: {
+        triggerAnalysis: (options: { daysBack?: number; focus?: string }) => Promise<{ success: boolean; error?: string }>;
+        dismissInsight: (insightId: string) => Promise<{ success: boolean; error?: string }>;
+      };
     };
   }
 }
