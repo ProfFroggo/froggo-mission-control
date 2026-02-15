@@ -28,26 +28,26 @@ import { initializeDatabase } from './database';
 
 // Initialize handlers
 export function initializeIpcHandlers(): void {
-  console.log('[Main] Initializing IPC handlers...');
+  console.info('[Main] Initializing IPC handlers...');
   
   // Register all handler modules
   registerTaskHandlers();
-  console.log('[Main] ✓ Task handlers registered');
+  console.info('[Main] ✓ Task handlers registered');
   
   registerAgentHandlers();
-  console.log('[Main] ✓ Agent handlers registered');
+  console.info('[Main] ✓ Agent handlers registered');
   
   registerNotificationHandlers();
-  console.log('[Main] ✓ Notification handlers registered');
+  console.info('[Main] ✓ Notification handlers registered');
   
   registerSettingsHandlers();
-  console.log('[Main] ✓ Settings handlers registered');
+  console.info('[Main] ✓ Settings handlers registered');
   
   // TODO: Register additional modules as they are migrated
   // registerChatHandlers();
   // registerXHandlers();
   
-  console.log('[Main] IPC handlers initialized');
+  console.info('[Main] IPC handlers initialized');
 }
 
 // Legacy handlers that haven't been migrated yet
