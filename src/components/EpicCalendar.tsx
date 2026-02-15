@@ -706,8 +706,10 @@ function EventCard({
       </div>
 
       {event.description && (
-        <p className="mt-3 text-sm text-clawd-text-dim line-clamp-2"
-           dangerouslySetInnerHTML={{ __html: event.description.replace(/<[^>]*>/g, '') }} />
+        <p className="mt-3 text-sm text-clawd-text-dim line-clamp-2">
+          {/* SECURITY: All HTML stripped from event descriptions */}
+          {event.description.replace(/<[^>]*>/g, '')}
+        </p>
       )}
     </div>
   );

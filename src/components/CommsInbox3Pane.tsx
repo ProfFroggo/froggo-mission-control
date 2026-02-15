@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { gateway } from '../lib/gateway';
+import { sanitizeHtml } from '../utils/sanitize';
 import { useStore, Activity } from '../store/store';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -239,20 +240,10 @@ function isHtmlContent(text: string): boolean {
   return /<[a-z][\s\S]*>/i.test(text) && !isHtmlEmail(text);
 }
 
-// Sanitize inline HTML for chat messages (strip dangerous tags, keep formatting)
-// SECURITY: This is a defense-in-depth measure. Input should already be trusted
-// or sanitized server-side. This prevents obvious XSS vectors.
+// Sanitize inline HTML for chat messages
+// Uses DOMPurify for robust XSS protection
 function sanitizeInlineHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
-    .replace(/<object[\s\S]*?<\/object>/gi, '')
-    .replace(/<embed[\s\S]*?<\/embed>/gi, '')
-    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
-    .replace(/\son\w+\s*=\s*[^\s>]*/gi, '')
-    .replace(/javascript\s*:/gi, 'blocked:')
-    .replace(/data\s*:/gi, 'blocked:');
+  return sanitizeHtml(html);
 }
 
 // Parse email headers from body output (gog gmail read returns headers + body)
