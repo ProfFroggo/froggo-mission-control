@@ -399,6 +399,7 @@ export default function ContentScheduler() {
                   onChange={(e) => setFormRecipient(e.target.value)}
                   placeholder="Recipient email"
                   className="px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  aria-label="Recipient email"
                 />
                 <input
                   type="text"
@@ -406,6 +407,7 @@ export default function ContentScheduler() {
                   onChange={(e) => setFormSubject(e.target.value)}
                   placeholder="Subject"
                   className="px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  aria-label="Email subject"
                 />
               </div>
             )}
@@ -417,6 +419,7 @@ export default function ContentScheduler() {
               placeholder={formType === 'tweet' ? 'What do you want to tweet?' : 'Email body...'}
               rows={3}
               className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent resize-none"
+              aria-label="Content"
             />
             {formType === 'tweet' && (
               <div className="text-xs text-clawd-text-dim text-right">
@@ -536,6 +539,7 @@ export default function ContentScheduler() {
                   onChange={(e) => setFormDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  aria-label="Schedule date"
                 />
               </div>
               <div>
@@ -545,6 +549,7 @@ export default function ContentScheduler() {
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
                   className="w-full px-3 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
+                  aria-label="Schedule time"
                 />
               </div>
             </div>
