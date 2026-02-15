@@ -563,6 +563,7 @@ function CenterPane({
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
           <input
             type="text"
+            aria-label="Search messages input"
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
             placeholder="Search messages..."
@@ -1316,6 +1317,7 @@ function RightPane({
             <div className="flex gap-2">
               <input
                 type="text"
+                aria-label="AI response intent input"
                 value={aiIntent}
                 onChange={e => setAiIntent(e.target.value)}
                 placeholder="E.g., 'Confirm I'll handle this by tomorrow'"
@@ -1411,6 +1413,7 @@ function RightPane({
           <div className="flex gap-2">
             <textarea
               ref={replyRef}
+              aria-label="Reply message textarea"
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               placeholder="Write your reply..."

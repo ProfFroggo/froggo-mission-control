@@ -66,6 +66,7 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
             <label className="block text-sm font-medium mb-2">Room Name (optional)</label>
             <input
               type="text"
+              aria-label="Room name input"
               value={roomName}
               onChange={e => setRoomName(e.target.value)}
               placeholder={defaultName || 'e.g., Architecture Discussion'}

@@ -380,7 +380,7 @@ export default function VIPSettingsPanel() {
           <div className="bg-clawd-bg border border-slate-700 rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-white">Add VIP Sender</h3>
-              <button onClick={resetForm} className="text-clawd-text-dim hover:text-white">
+              <button type="button" onClick={resetForm} className="text-clawd-text-dim hover:text-white">
                 <X size={20} />
               </button>
             </div>

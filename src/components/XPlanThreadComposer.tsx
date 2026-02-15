@@ -142,6 +142,7 @@ export default function XPlanThreadComposer() {
                 Based on Research Idea <span className="text-error">*</span>
               </label>
               <select
+                aria-label="Select research idea"
                 value={selectedResearchId}
                 onChange={(e) => setSelectedResearchId(e.target.value)}
                 className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -171,6 +172,7 @@ export default function XPlanThreadComposer() {
               </label>
               <input
                 type="text"
+                aria-label="Content title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., AI Agents for Productivity - Complete Guide"
@@ -232,6 +234,7 @@ export default function XPlanThreadComposer() {
                 Content Outline <span className="text-error">*</span>
               </label>
               <textarea
+                aria-label="Content outline"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={`Outline the ${threadLength === 1 ? 'tweet' : 'thread'}...\n\n${threadLength > 1 ? 'Example:\nTweet 1: Hook - grab attention\nTweet 2: Problem statement\nTweet 3: Solution\n...' : 'Keep it concise and impactful.'}`}
