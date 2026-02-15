@@ -129,7 +129,7 @@ export function initializeGlobalErrorHandlers() {
   window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
   if (import.meta.env.DEV) {
-    console.log('[GlobalErrorHandler] Initialized');
+    // Global error handler initialized
   }
 }
 

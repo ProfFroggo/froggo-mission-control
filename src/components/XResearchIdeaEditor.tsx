@@ -72,7 +72,7 @@ export default function XResearchIdeaEditor() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-5 h-5 text-info" />
-          <h3 className="text-lg font-semibold text-white">Propose Research Idea</h3>
+          <h3 className="text-lg font-semibold text-clawd-text">Propose Research Idea</h3>
         </div>
         <p className="text-sm text-clawd-text-dim">
           Create a new research idea with citations. It will be submitted for approval.

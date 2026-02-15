@@ -327,8 +327,6 @@ export default function EpicCalendar() {
     setLoading(true);
     setError(null);
     try {
-      console.log('[EpicCalendar] Fetching aggregated events...');
-      
       // Use the new calendar aggregation service
       if (!window.clawdbot?.calendar?.aggregate) {
         throw new Error('Calendar service not available — running outside Electron?');
@@ -341,13 +339,10 @@ export default function EpicCalendar() {
       });
 
       if (response.success) {
-        console.log(`[EpicCalendar] Loaded ${response.events.length} events`);
-        console.log('[EpicCalendar] Sources:', response.sources);
-        
         if (response.errors && response.errors.length > 0) {
           console.warn('[EpicCalendar] Some sources had errors:', response.errors);
         }
-        
+
         setEvents(response.events);
       } else {
         throw new Error(response.error || 'Failed to aggregate events');

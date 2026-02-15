@@ -80,7 +80,7 @@ function getGoogleAccounts(): string[] {
 }
 
 // Discovered at startup, refreshed when needed
-let GOOGLE_ACCOUNTS: string[] = getGoogleAccounts();
+const GOOGLE_ACCOUNTS: string[] = getGoogleAccounts();
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const CACHE_FILE_PATH = path.join(os.homedir(), 'clawd', 'data', 'calendar-cache.json');

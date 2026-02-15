@@ -83,25 +83,11 @@ export default function XPanel() {
   const [scheduleTime, setScheduleTime] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Debug: Log on mount to verify clawdbot is available
-  useEffect(() => {
-    console.log('[XPanel] Component mounted');
-    console.log('[XPanel] window.clawdbot available:', !!(window as any).clawdbot);
-    console.log('[XPanel] window.clawdbot.twitter available:', !!(window as any).clawdbot?.twitter);
-    if ((window as any).clawdbot?.twitter) {
-      console.log('[XPanel] twitter.home type:', typeof (window as any).clawdbot.twitter.home);
-      console.log('[XPanel] twitter.mentions type:', typeof (window as any).clawdbot.twitter.mentions);
-    }
-  }, []);
-
   // Auto-fetch when tab changes
   useEffect(() => {
-    console.log('[XPanel] Tab changed to:', activeTab, 'timeline.length:', timeline.length, 'mentions.length:', mentions.length);
     if (activeTab === 'mentions' && mentions.length === 0) {
-      console.log('[XPanel] Auto-fetching mentions...');
       fetchMentions();
     } else if (activeTab === 'timeline' && timeline.length === 0) {
-      console.log('[XPanel] Auto-fetching timeline...');
       fetchTimeline();
     } else if (activeTab === 'analytics') {
       calculateStats();
@@ -181,47 +167,33 @@ export default function XPanel() {
   });
 
   const fetchMentions = async () => {
-    console.log('[XPanel] fetchMentions() called');
     const clawdbot = (window as any).clawdbot;
     
     if (!clawdbot?.twitter?.mentions) {
-      console.error('[XPanel] ERROR: twitter.mentions is not available!');
       addActivity({ type: 'error', message: 'Twitter API not available (preload issue?)', timestamp: Date.now() });
       return;
     }
     
     setLoading(true);
     try {
-      console.log('[XPanel] Calling twitter.mentions()...');
       const result = await clawdbot.twitter.mentions();
-      console.log('[XPanel] Mentions result:', result);
       
       if (result?.success && result.mentions) {
-        console.log('[XPanel] Mapping', result.mentions.length, 'mentions...');
         const mapped = result.mentions.map(mapTweet);
         setMentions(mapped);
         addActivity({ type: 'task', message: `Loaded ${mapped.length} mentions`, timestamp: Date.now() });
       } else if (result?.error) {
-        console.error('[XPanel] Mentions error from API:', result.error);
         addActivity({ type: 'error', message: `Failed to load mentions: ${result.error}`, timestamp: Date.now() });
-      } else {
-        console.warn('[XPanel] Unexpected mentions result structure:', result);
       }
     } catch (e: any) {
-      console.error('[XPanel] Exception in fetchMentions:', e);
       addActivity({ type: 'error', message: `Failed to fetch mentions: ${e?.message}`, timestamp: Date.now() });
     } finally {
-      console.log('[XPanel] fetchMentions() completed');
       setLoading(false);
     }
   };
 
   const fetchTimeline = async () => {
-    console.log('[XPanel] fetchTimeline() called');
     const clawdbot = (window as any).clawdbot;
-    console.log('[XPanel] window.clawdbot:', !!clawdbot);
-    console.log('[XPanel] window.clawdbot.twitter:', !!clawdbot?.twitter);
-    console.log('[XPanel] window.clawdbot.twitter.home:', !!clawdbot?.twitter?.home);
     
     if (!clawdbot?.twitter?.home) {
       console.error('[XPanel] ERROR: twitter.home is not available!');
@@ -231,25 +203,18 @@ export default function XPanel() {
     
     setLoading(true);
     try {
-      console.log('[XPanel] Calling twitter.home(30)...');
       const result = await clawdbot.twitter.home(30);
-      console.log('[XPanel] Timeline result:', JSON.stringify(result, null, 2));
-      console.log('[XPanel] result?.success:', result?.success);
-      console.log('[XPanel] result?.tweets length:', result?.tweets?.length);
-      console.log('[XPanel] result?.error:', result?.error);
       
       // Check if we got tweets or need to parse raw data
       let tweets = result?.tweets || [];
       
       // Fallback: if tweets array is empty but raw data exists, try to parse it
       if (tweets.length === 0 && result?.raw) {
-        console.log('[XPanel] Tweets empty but raw data exists, attempting to parse...');
         try {
           // Try to find valid JSON array in the raw data
           const rawTrimmed = result.raw.trim();
           if (rawTrimmed.startsWith('[')) {
             tweets = JSON.parse(rawTrimmed);
-            console.log('[XPanel] Successfully parsed raw data:', tweets.length, 'tweets');
           }
         } catch (parseErr: any) {
           console.error('[XPanel] Failed to parse raw data:', parseErr.message);
@@ -260,7 +225,6 @@ export default function XPanel() {
             if (lastCloseBracket > 0) {
               const truncated = result.raw.substring(0, lastCloseBracket + 1) + ']';
               tweets = JSON.parse(truncated);
-              console.log('[XPanel] Parsed partial data:', tweets.length, 'tweets');
             }
           } catch {
             console.error('[XPanel] Could not recover partial JSON');
@@ -269,24 +233,20 @@ export default function XPanel() {
       }
       
       if (result?.success && tweets.length > 0) {
-        console.log('[XPanel] Mapping', tweets.length, 'tweets...');
         const mapped = tweets.map(mapTweet);
-        console.log('[XPanel] Mapped', mapped.length, 'tweets, setting state...');
         setTimeline(mapped);
         addActivity({ type: 'task', message: `Loaded ${mapped.length} timeline posts`, timestamp: Date.now() });
       } else if (result?.error) {
         console.error('[XPanel] Timeline error from API:', result.error);
         addActivity({ type: 'error', message: `Failed to load timeline: ${result.error}`, timestamp: Date.now() });
       } else {
-        console.warn('[XPanel] No tweets available:', result);
+        console.warn('[XPanel] No tweets available');
         addActivity({ type: 'error', message: 'No timeline data available', timestamp: Date.now() });
       }
     } catch (e: any) {
       console.error('[XPanel] Exception in fetchTimeline:', e);
-      console.error('[XPanel] Stack:', e?.stack);
       addActivity({ type: 'error', message: `Failed to fetch timeline: ${e?.message}`, timestamp: Date.now() });
     } finally {
-      console.log('[XPanel] fetchTimeline() completed, setting loading=false');
       setLoading(false);
     }
   };
@@ -473,7 +433,7 @@ export default function XPanel() {
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-xl">
+            <div className="p-2 bg-clawd-bg rounded-xl">
               <XLogo size={24} className="text-white" />
             </div>
             <div>

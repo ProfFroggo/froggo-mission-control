@@ -213,7 +213,7 @@ export default function FinancePanel() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               chatOpen
                 ? 'bg-success-subtle text-success hover:bg-green-500/30'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                : 'bg-clawd-bg-alt text-clawd-text-dim hover:bg-clawd-bg'
             }`}
           >
             <MessageSquare size={16} />

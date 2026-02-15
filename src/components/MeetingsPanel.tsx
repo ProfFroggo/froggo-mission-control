@@ -502,7 +502,6 @@ export default function MeetingsPanel() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('[Gemini] WebSocket connected, sending setup...');
         ws.send(JSON.stringify({
           setup: {
             model: GEMINI_MODEL,
@@ -530,7 +529,6 @@ export default function MeetingsPanel() {
         try {
           const data = JSON.parse(event.data);
           if (data.setupComplete) {
-            console.log('[Gemini] Setup complete');
             resolve(ws);
             return;
           }
@@ -576,7 +574,6 @@ export default function MeetingsPanel() {
       };
 
       ws.onclose = () => {
-        console.log('[Gemini] WebSocket closed');
         wsRef.current = null;
       };
     });

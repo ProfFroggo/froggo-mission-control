@@ -97,8 +97,8 @@ export default function PerformanceTable() {
   };
 
   const sortedData = [...data].sort((a, b) => {
-    let aVal = a[sortBy];
-    let bVal = b[sortBy];
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
 
     if (sortDir === 'asc') {
       return aVal > bVal ? 1 : -1;

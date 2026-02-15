@@ -372,11 +372,10 @@ Be thorough but only include real people, not generic references.`;
 
   const addToKnowledgeGraph = async (data: ExtractedContactData) => {
     try {
-      const result = await (window as any).clawdbot?.db?.exec(
+      await (window as any).clawdbot?.db?.exec(
         `INSERT INTO knowledge_nodes (type, name, description) VALUES (?, ?, ?)`,
         ['person', data.name, data.context || data.relationship || '']
       );
-      console.log('[ContactModal] Added to knowledge graph:', result);
     } catch (error) {
       console.error('[ContactModal] Failed to add to knowledge graph:', error);
     }
@@ -385,11 +384,10 @@ Be thorough but only include real people, not generic references.`;
   const logContactFact = async (data: ExtractedContactData) => {
     try {
       const factText = `Contact: ${data.name}${data.relationship ? ` (${data.relationship})` : ''}${data.role ? ` - ${data.role}` : ''}${data.company ? ` at ${data.company}` : ''}`;
-      const result = await (window as any).clawdbot?.db?.exec(
+      await (window as any).clawdbot?.db?.exec(
         `INSERT INTO facts (category, subject, content, source) VALUES (?, ?, ?, ?)`,
         ['person', data.name, factText, 'contact-modal']
       );
-      console.log('[ContactModal] Logged fact:', result);
     } catch (error) {
       console.error('[ContactModal] Failed to log fact:', error);
     }
@@ -417,8 +415,6 @@ Be thorough but only include real people, not generic references.`;
         priority: 'p2',
         assignedTo: 'researcher',
       });
-
-      console.log('[ContactModal] Created processing task for', data.name);
     } catch (error) {
       console.error('[ContactModal] Failed to create task:', error);
     }

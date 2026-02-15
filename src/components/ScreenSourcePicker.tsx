@@ -151,7 +151,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
                   {/* Label */}
                   <div className="px-2 py-2 flex items-center gap-1.5">
                     {source.appIcon ? (
-                      <img src={source.appIcon} alt="" className="w-4 h-4 flex-shrink-0" />
+                      <img src={source.appIcon} alt={`${source.name} icon`} className="w-4 h-4 flex-shrink-0" />
                     ) : source.id.startsWith('screen:') ? (
                       <Monitor size={12} className="text-clawd-text-dim flex-shrink-0" />
                     ) : (

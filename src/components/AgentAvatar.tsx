@@ -48,7 +48,7 @@ export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', class
       {hasPic ? (
         <img
           src={`./agent-profiles/${theme.pic}`}
-          alt={agentId}
+          alt={`${agentId} avatar`}
           className="w-full h-full object-cover"
           onError={() => setImgError(true)}
         />

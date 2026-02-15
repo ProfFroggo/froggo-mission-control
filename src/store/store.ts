@@ -228,9 +228,8 @@ interface Store {
 
 // Execute approved items via direct IPC calls
 async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; error?: string }> {
-  console.log('[Approval] Executing:', item.type, item.title);
   const clawdbot = (window as any).clawdbot;
-  
+
   try {
     switch (item.type) {
       case 'tweet':
@@ -244,7 +243,6 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
             await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Tweet failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
             return { success: false, error: result.error };
           }
-          console.log('[Approval] Tweet posted successfully');
         } else {
           // Fallback if IPC not available
           await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch(() => {});
@@ -265,7 +263,6 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
             await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Email to ${item.metadata.to} failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
             return { success: false, error: result.error };
           }
-          console.log('[Approval] Email sent successfully to', item.metadata.to);
         } else {
           await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch(() => {});
         }
@@ -280,7 +277,6 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
             await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.metadata.platform} message to ${item.metadata.to} failed: ${result?.error}`).catch(() => {});
             return { success: false, error: result?.error };
           }
-          console.log('[Approval] Message sent successfully');
         } else {
           await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch(() => {});
         }
@@ -579,7 +575,6 @@ export const useStore = create<Store>()(
         (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
       },
       updateTask: (id: string, updates: Partial<Task>) => {
-        console.log('[Store] updateTask called:', id, updates);
         // Snapshot original values for rollback
         const original = get().tasks.find((t: Task) => t.id === id);
         const rollbackValues = original
@@ -590,7 +585,6 @@ export const useStore = create<Store>()(
           tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
         }));
 
-        console.log('[Store] Calling clawdbot.tasks.update via IPC');
         // Persist to database via IPC
         (window as any).clawdbot?.tasks?.update(id, updates)
           .then((result: any) => {
@@ -601,8 +595,6 @@ export const useStore = create<Store>()(
                   tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
                 }));
               }
-            } else {
-              console.log('[Store] Task update persisted:', id, updates);
             }
           })
           .catch((err: any) => {
@@ -737,7 +729,6 @@ export const useStore = create<Store>()(
       },
 
       addSubtask: async (taskId: string, title: string, description?: string, assignedTo?: string) => {
-        console.log('[Store] addSubtask called:', { taskId, title });
         const subtaskId = `st-${Date.now()}`;
         const newSubtask: Subtask = {
           id: subtaskId,
@@ -748,21 +739,19 @@ export const useStore = create<Store>()(
           assignedTo,
           createdAt: Date.now(),
         };
-        
+
         try {
-          console.log('[Store] Calling IPC with subtaskId:', subtaskId);
           const result = await (window as any).clawdbot?.tasks?.subtasks?.add(taskId, {
             id: subtaskId,
             title,
             description,
             assignedTo,
           });
-          console.log('[Store] IPC result:', result);
-          
+
           if (result?.success) {
             // Optimistically update local state
             set((s: Store) => ({
-              tasks: s.tasks.map((t: Task) => t.id === taskId 
+              tasks: s.tasks.map((t: Task) => t.id === taskId
                 ? { ...t, subtasks: [...(t.subtasks || []), newSubtask], updatedAt: Date.now() }
                 : t
               )
@@ -883,10 +872,8 @@ export const useStore = create<Store>()(
 
             // Set agents to ONLY gateway agents (no fallback, no phantom agents)
             set({ agents: fresh });
-            console.log(`[Store] Loaded ${fresh.length} agents from gateway:`, fresh.map((a: Agent) => `${a.avatar} ${a.name} (${a.id})`).join(', '));
           } else {
             // If gateway unavailable, keep empty (no phantom agents)
-            console.warn('[Store] Gateway agents unavailable, agents list will be empty until gateway loads');
             if (result?.error) {
               console.error('[Store] Gateway error:', result.error);
             }
@@ -1143,7 +1130,6 @@ Start now.`;
                 context: item.context,
               }));
               set({ approvals: approvalItems });
-              console.log('[Store] Loaded', approvalItems.length, 'approvals from inbox');
             }
           }
         } catch (e) {
@@ -1223,7 +1209,6 @@ if (gateway.connected) {
 // Set up IPC listener for task notifications from file watcher
 if (typeof window !== 'undefined' && (window as any).clawdbot?.tasks?.onNotification) {
   (window as any).clawdbot.tasks.onNotification((notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => {
-    console.log('[Store] Task notification from file watcher:', notification);
     useStore.getState().loadTasksFromDB();
     useStore.getState().addActivity({
       type: 'task',
@@ -1274,7 +1259,6 @@ function debouncedTaskRefresh() {
 // Listen for task-related events for real-time updates
 // These can be triggered by the main agent after creating tasks from Discord
 gateway.on('task.created', (payload: any) => {
-  console.log('[Store] Task created event received:', payload);
   debouncedTaskRefresh();
   useStore.getState().addActivity({
     type: 'task',
@@ -1284,12 +1268,10 @@ gateway.on('task.created', (payload: any) => {
 });
 
 gateway.on('task.updated', (payload: any) => {
-  console.log('[Store] Task updated event received:', payload);
   debouncedTaskRefresh();
 });
 
 gateway.on('tasks.refresh', () => {
-  console.log('[Store] Tasks refresh event received');
   debouncedTaskRefresh();
 });
 
@@ -1303,7 +1285,6 @@ gateway.on('tasks.refresh', () => {
 // Listen for direct gateway broadcasts from main process (real-time task updates)
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
   (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: any }) => {
-    console.log('[Store] Gateway broadcast received:', data.event, data.payload?.id);
     if (data.event === 'task.created' || data.event === 'task.updated') {
       debouncedTaskRefresh();
     }
@@ -1316,7 +1297,6 @@ gateway.on('chat.message', (payload: any) => {
 
   // Detect task creation patterns from AI analysis
   if (typeof content === 'string' && content.includes('{"detected":true')) {
-    console.log('[Store] Task detection pattern in chat message, refreshing tasks');
     debouncedTaskRefresh();
   }
 
