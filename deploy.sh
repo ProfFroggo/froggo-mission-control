@@ -4,7 +4,7 @@
 set -e
 
 echo "🔨 Building Froggo..."
-cd ~/clawd/clawd-dashboard
+cd ~/froggo-dashboard
 npm run electron:build
 
 echo "🚀 Deploying to /Applications..."

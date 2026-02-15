@@ -112,7 +112,7 @@ export default function DebugTab() {
           ) : sessions.map((s: any, i: number) => (
             <div key={i} className="p-3 flex items-center gap-3 hover:bg-clawd-bg/50">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-green-400' : 'bg-gray-400'
+                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-green-400' : 'bg-clawd-bg0'
               }`} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{s.label || s.key || s.sessionKey}</div>

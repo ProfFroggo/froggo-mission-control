@@ -283,7 +283,7 @@ Be conversational, friendly, and help design an effective agent.`;
       const { showToast } = await import('./Toast');
       showToast('success', 'Worker Created!', `${workerData.name} is starting up...`);
 
-      console.log('[WorkerModal] Created worker:', workerData);
+      // Worker created successfully
     } catch (error) {
       console.error('Failed to create worker:', error);
       const { showToast } = await import('./Toast');

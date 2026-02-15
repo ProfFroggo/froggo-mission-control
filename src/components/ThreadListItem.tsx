@@ -187,15 +187,12 @@ export default function ThreadListItem({
               onClose={() => setShowModal(false)}
               onToggleStar={(msgId) => {
                 // TODO: Implement message-level star toggle
-                console.log('Toggle star for message:', msgId);
               }}
               onMarkRead={(msgId, isRead) => {
                 // TODO: Implement message-level read toggle
-                console.log('Mark message read:', msgId, isRead);
               }}
               onReply={(threadId, message) => {
                 // TODO: Implement reply functionality
-                console.log('Reply to thread:', threadId, message);
                 setShowModal(false);
               }}
             />

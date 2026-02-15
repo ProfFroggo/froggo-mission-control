@@ -695,7 +695,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                                 task.status === 'review' ? 'bg-purple-400 shadow-lg shadow-purple-400/50' :
                                 task.status === 'in-progress' ? 'bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50' :
-                                'bg-gray-400'
+                                'bg-clawd-bg0'
                               }`} />
                               
                               <div className="flex-1 min-w-0">

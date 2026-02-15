@@ -177,7 +177,6 @@ export default function InboxPanel() {
       // When items are approved/rejected, they're removed optimistically but may
       // reappear on next poll if API hasn't finished updating. Exclude processing IDs.
       const filteredItems = allItems.filter(i => !processingItems.has(i.id));
-      console.log('[Inbox] loadInbox setting items:', filteredItems.length, 'pending:', filteredItems.filter(i => i.status === 'pending').length, 'filtered out:', allItems.length - filteredItems.length, 'processing');
       setItems(filteredItems);
     } catch (error) {
       console.error('Failed to load inbox:', error);
@@ -636,13 +635,11 @@ export default function InboxPanel() {
         // This is a task in review status - approve and move to done
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.taskId) {
-          console.log('[Inbox] Approving task:', meta.taskId);
           // FIX: Update BOTH reviewStatus (to mark as reviewed) AND status (to move to done)
           await window.clawdbot?.tasks.update(meta.taskId, { 
             reviewStatus: 'approved',
             status: 'done'
           } as any);
-          console.log('[Inbox] Task approved and marked as done:', meta.taskId);
           return;
         }
       }
@@ -688,7 +685,6 @@ export default function InboxPanel() {
         setTimeout(async () => {
           try {
             await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
-            console.log('[Inbox] Status verified for task:', taskData.id);
           } catch (e) {
             console.warn('[Inbox] Status verify failed:', e);
           }
@@ -743,11 +739,10 @@ export default function InboxPanel() {
             // Retry once after a short delay
             setTimeout(async () => {
               try {
-                await window.clawdbot?.tasks.update(meta.taskId, { 
+                await window.clawdbot?.tasks.update(meta.taskId, {
                   reviewStatus: 'rejected',
-                  status: 'in-progress' 
+                  status: 'in-progress'
                 });
-                console.log('[Inbox] Retry succeeded for task:', meta.taskId);
               } catch (retryErr) {
                 console.error('[Inbox] Retry also failed:', retryErr);
               }
@@ -846,15 +841,12 @@ export default function InboxPanel() {
   const handleAdjust = async (item: InboxItem) => {
     if (!feedbackText.trim()) return;
     
-    console.log('[Inbox] handleAdjust called for item:', item.id, item.title, 'isTask:', (item as any).isTask);
-    
     // OPTIMISTIC UI: Remove from pending list immediately
     setItems(prev => prev.filter(i => i.id !== item.id));
     showToast('info', 'Revision requested', 'Creating task...');
-    
+
     // Check if this is a task review item
     const isTaskItem = (item as any).isTask || String(item.id).startsWith('task-review-');
-    console.log('[Inbox] isTaskItem:', isTaskItem, 'metadata:', item.metadata);
     
     if (isTaskItem && item.metadata) {
       // For task items, update the task status back to in-progress with feedback
@@ -892,8 +884,6 @@ export default function InboxPanel() {
         console.error('[Inbox] Task creation failed:', result);
         showToast('error', 'Revision task failed', result?.error || 'Unknown error');
       }
-      
-      console.log('[Inbox] Created revision task:', taskData.id);
     }
     
     setFeedbackId(null);

@@ -367,7 +367,7 @@ function App() {
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'accounts' && <ConnectedAccountsPanel />}
               {currentView === 'writing' && <WritingWorkspace />}
-              {currentView === 'contacts' && <ContactModal isOpen={true} onClose={() => setCurrentView('dashboard')} />}
+              {currentView === 'contacts' && <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />}
             </Suspense>
           </PerformanceProfiler>
         </main>
@@ -391,11 +391,10 @@ function App() {
 
         {/* Global Search */}
         <ErrorBoundary panelName="Global Search">
-          <GlobalSearch 
-            isOpen={searchOpen} 
+          <GlobalSearch
+            isOpen={searchOpen}
             onClose={() => setSearchOpen(false)}
             onNavigate={(view, id) => {
-              console.log('[App] Navigate to:', view, id);
               setCurrentView(view as View);
               // TODO: Pass id to panel for deep linking
             }}

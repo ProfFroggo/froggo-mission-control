@@ -6,7 +6,7 @@ echo ""
 
 # 1. Check if messages table exists
 echo "1. Checking if messages table exists..."
-TABLE_CHECK=$(sqlite3 ~/clawd/data/froggo.db "SELECT name FROM sqlite_master WHERE type='table' AND name='messages';" 2>&1)
+TABLE_CHECK=$(sqlite3 ~/froggo/data/froggo.db "SELECT name FROM sqlite_master WHERE type='table' AND name='messages';" 2>&1)
 if [ -z "$TABLE_CHECK" ]; then
   echo "   ❌ FAIL: messages table does not exist"
   exit 1
@@ -17,13 +17,13 @@ fi
 # 2. Count messages in database
 echo ""
 echo "2. Counting messages in database..."
-MSG_COUNT=$(sqlite3 ~/clawd/data/froggo.db "SELECT COUNT(*) FROM messages WHERE session_key='dashboard' AND channel='dashboard';" 2>&1)
+MSG_COUNT=$(sqlite3 ~/froggo/data/froggo.db "SELECT COUNT(*) FROM messages WHERE session_key='dashboard' AND channel='dashboard';" 2>&1)
 echo "   Found: $MSG_COUNT messages"
 
 # 3. Show recent messages
 echo ""
 echo "3. Recent messages (last 5):"
-sqlite3 ~/clawd/data/froggo.db "SELECT 
+sqlite3 ~/froggo/data/froggo.db "SELECT 
   id, 
   role, 
   substr(content, 1, 60) as preview,
@@ -38,7 +38,7 @@ echo ""
 echo "4. Testing message save (simulate user message)..."
 TEST_CONTENT="Test message from persistence verification script"
 TEST_TS=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-sqlite3 ~/clawd/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('$TEST_TS', 'dashboard', 'dashboard', 'user', '$TEST_CONTENT');"
+sqlite3 ~/froggo/data/froggo.db "INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES ('$TEST_TS', 'dashboard', 'dashboard', 'user', '$TEST_CONTENT');"
 
 if [ $? -eq 0 ]; then
   echo "   ✅ PASS: Test message saved successfully"
@@ -50,7 +50,7 @@ fi
 # 5. Verify test message was saved
 echo ""
 echo "5. Verifying test message..."
-VERIFY=$(sqlite3 ~/clawd/data/froggo.db "SELECT content FROM messages WHERE content='$TEST_CONTENT';" 2>&1)
+VERIFY=$(sqlite3 ~/froggo/data/froggo.db "SELECT content FROM messages WHERE content='$TEST_CONTENT';" 2>&1)
 if [ "$VERIFY" == "$TEST_CONTENT" ]; then
   echo "   ✅ PASS: Test message retrieved successfully"
 else
@@ -61,7 +61,7 @@ fi
 # 6. Clean up test message
 echo ""
 echo "6. Cleaning up test message..."
-sqlite3 ~/clawd/data/froggo.db "DELETE FROM messages WHERE content='$TEST_CONTENT';"
+sqlite3 ~/froggo/data/froggo.db "DELETE FROM messages WHERE content='$TEST_CONTENT';"
 echo "   ✅ Test message cleaned up"
 
 echo ""

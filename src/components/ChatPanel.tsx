@@ -168,19 +168,14 @@ export default function ChatPanel() {
   useEffect(() => {
     const loadFromDb = async () => {
       if (!selectedAgent) return;
-      console.log('[Chat] Loading from froggo.db for agent:', selectedAgent.id);
       // Mark as loaded IMMEDIATELY to prevent gateway history from loading while DB query runs
       setHistoryLoaded(true);
 
       if (window.clawdbot?.chat?.loadMessages) {
         const result = await window.clawdbot?.chat.loadMessages(50, selectedAgent.dbSessionKey);
-        console.log('[Chat] DB load result:', result.success, result.messages?.length, 'messages');
         if (result.success && result.messages?.length > 0) {
           setMessages(result.messages);
           messageCacheRef.current.set(selectedAgent.id, result.messages);
-          console.log('[Chat] Loaded', result.messages.length, 'messages from DB');
-        } else {
-          console.log('[Chat] No messages in DB');
         }
       }
     };
@@ -191,12 +186,7 @@ export default function ChatPanel() {
   const saveMessageToDb = async (role: string, content: string) => {
     if (!selectedAgent || !window.clawdbot?.chat?.saveMessage) return;
     try {
-      const result = await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
-      if (result?.success) {
-        console.log(`[Chat] ${role} message saved to DB`);
-      } else {
-        console.error(`[Chat] Failed to save ${role} message:`, result);
-      }
+      await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
     } catch (err) {
       console.error(`[Chat] Error saving ${role} message:`, err);
     }
@@ -300,13 +290,11 @@ export default function ChatPanel() {
   const loadHistory = async () => {
     // If we already have messages (from DB), don't overwrite with gateway history
     if (messages.length > 0) {
-      console.log('[Chat] Already have', messages.length, 'messages from DB, skipping gateway history');
       setHistoryLoaded(true);
       return;
     }
     
     try {
-      console.log('[Chat] No DB messages, trying gateway history...');
       const res = await gateway.getChatHistory(30);
       if (res?.messages && Array.isArray(res.messages)) {
         const history: Message[] = res.messages
@@ -334,7 +322,6 @@ export default function ChatPanel() {
         
         if (history.length > 0) {
           setMessages(history);
-          console.log('[Chat] Loaded', history.length, 'messages from gateway');
         }
       }
       setHistoryLoaded(true);
@@ -390,7 +377,6 @@ export default function ChatPanel() {
             sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
-              console.log('[Chat] Assistant message saved to DB (handleEnd)');
             }
           }).catch((err: any) => {
             console.error('[Chat] Error saving assistant message (handleEnd):', err);
@@ -405,10 +391,8 @@ export default function ChatPanel() {
         const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           const brainMessage = brainMatch[1].trim();
-          console.log('[Chat] Routing to Brain:', brainMessage.slice(0, 100));
           // Send to main session via gateway WebSocket
           gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
-            .then(() => console.log('[Chat] Successfully routed to Brain'))
             .catch((err: any) => console.error('[Chat] Brain routing error:', err));
         }
         
@@ -420,10 +404,7 @@ export default function ChatPanel() {
 
     const handleChatEvent = (data: any) => {
       // Handle generic 'chat' event with state field
-      console.log('[Chat] handleChatEvent:', { state: data.state, hasMsgId: !!currentMsgIdRef.current, content: data.message?.content?.[0]?.text?.slice(0, 50) });
-      
       if (!currentMsgIdRef.current) {
-        console.log('[Chat] No current message ID, ignoring chat event');
         return;
       }
 
@@ -444,7 +425,6 @@ export default function ChatPanel() {
 
       // Check if final
       if (data.state === 'final') {
-        console.log('[Chat] Got final state, clearing loading. Content length:', currentResponseRef.current.length);
         const finalContent = currentResponseRef.current;
         
         setMessages(prev => prev.map(m => 
@@ -460,12 +440,6 @@ export default function ChatPanel() {
             content: finalContent,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
-          }).then((result: any) => {
-            if (result?.success) {
-              console.log('[Chat] Assistant message saved to DB');
-            } else {
-              console.error('[Chat] Failed to save assistant message:', result?.error);
-            }
           }).catch((err: any) => {
             console.error('[Chat] Error saving assistant message:', err);
           });
@@ -479,11 +453,9 @@ export default function ChatPanel() {
         const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           const brainMessage = brainMatch[1].trim();
-          console.log('[Chat] Routing to Brain:', brainMessage.slice(0, 100));
           // Send to main session via gateway WebSocket (sends to Discord #get_shit_done)
           gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
             .then(() => {
-              console.log('[Chat] Successfully routed to Brain');
               showToast('success', 'Routed to Brain', 'Message sent to main session');
             })
             .catch((err: any) => {
@@ -553,7 +525,6 @@ export default function ChatPanel() {
     // Skip short filler acks - annoying when spoken
     const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack|👍|✅|🐸)\s*[.!]?\s*$/i;
     if (skipPhrases.test(text.trim())) {
-      console.log('[TTS] Skipping filler ack:', text);
       return;
     }
     
@@ -790,7 +761,6 @@ export default function ChatPanel() {
     // Also clear from database
     if (window.clawdbot?.chat?.clearMessages) {
       await window.clawdbot?.chat.clearMessages(selectedAgent.dbSessionKey);
-      console.log('[Chat] Cleared messages from DB for', selectedAgent.id);
     }
   };
 

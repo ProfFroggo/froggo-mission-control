@@ -39,7 +39,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
       // Fetch calendar events directly via IPC
       const calAccount = useUserSettings.getState().emailAccounts[0]?.email || '';
       const result = calAccount ? await (window as any).clawdbot?.calendar?.events(calAccount, 3) : null;
-      console.log('[Calendar] Events result:', result);
+      // Events loaded
       
       if (result?.success && result.events?.events) {
         // Map gog output to our CalendarEvent format

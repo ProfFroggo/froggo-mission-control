@@ -320,14 +320,14 @@ body {
   
   .btn-primary {
     @apply bg-clawd-accent text-white rounded-xl;
-    @apply hover:bg-clawd-accent/90 hover:shadow-glow;
+    @apply hover:bg-clawd-accent-dim hover:shadow-glow;
     @apply active:scale-95 transition-all duration-150;
     @apply px-4 py-2 gap-2; /* Standard button spacing */
   }
-  
+
   .btn-secondary {
     @apply bg-clawd-border text-clawd-text rounded-xl;
-    @apply hover:bg-clawd-border/80;
+    @apply hover:brightness-125;
     @apply active:scale-95 transition-all duration-150;
     @apply px-4 py-2 gap-2; /* Standard button spacing */
   }

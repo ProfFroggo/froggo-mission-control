@@ -53,7 +53,6 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
         return { ok: false, stdout: '', error: 'Shell exec not available' };
       }
       const result = await execFn(cmd);
-      console.log('[HealthCheck] exec result:', { cmd: cmd.slice(0, 80), success: result?.success });
       if (result?.blocked) {
         console.error('[HealthCheck] Command blocked:', result.reason);
         return { ok: false, stdout: '', error: `Blocked: ${result.reason}` };
@@ -72,7 +71,6 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
   const cancelTask = async (taskId: string): Promise<boolean> => {
     const ts = Date.now();
     const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET cancelled = 1, updated_at = ${ts} WHERE id = '${taskId}'"`;
-    console.log('[HealthCheck] cancelTask:', taskId);
     const result = await execCmd(cmd);
     return result.ok;
   };
@@ -81,24 +79,17 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
     const ts = Date.now();
     const escaped = value.replace(/'/g, "''");
     const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET ${field} = '${escaped}', updated_at = ${ts} WHERE id = '${taskId}'"`;
-    console.log('[HealthCheck] updateTaskField:', taskId, field, value);
     const result = await execCmd(cmd);
     return result.ok;
   };
 
   const fetchTasks = async (): Promise<any[]> => {
     try {
-      console.log('[HealthCheck] fetchTasks called');
-      console.log('[HealthCheck] clawdbot:', !!(window as any).clawdbot);
-      console.log('[HealthCheck] clawdbot.tasks:', !!(window as any).clawdbot?.tasks);
       const result = await (window as any).clawdbot?.tasks?.list();
-      console.log('[HealthCheck] tasks.list result:', result);
       if (result?.success && Array.isArray(result.tasks)) {
         const filtered = result.tasks.filter((t: any) => !['done', 'failed', 'cancelled'].includes(t.status));
-        console.log('[HealthCheck] filtered tasks:', filtered.length);
         return filtered;
       }
-      console.log('[HealthCheck] result not success or tasks not array');
     } catch (e) {
       console.error('[HealthCheck] fetchTasks error:', e);
     }
@@ -114,11 +105,6 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
     setScanProgress(10);
     const allTasks = await fetchTasks();
     setTasks(allTasks);
-    
-    // Log status distribution
-    const statusCounts: Record<string, number> = {};
-    allTasks.forEach(t => { statusCounts[t.status] = (statusCounts[t.status] || 0) + 1; });
-    console.log('[HealthCheck] Status distribution:', statusCounts);
     
     setScanProgress(20);
 
@@ -334,7 +320,6 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
     }
 
     const toExecute = issues.filter(i => !skipTypes.includes(i.type) && !skipTypes.includes(i.id));
-    console.log('[HealthCheck] Executing plan:', toExecute.map(i => i.id));
     
     for (const issue of toExecute) {
       setExecutionLog(prev => [...prev, `${issue.actionVerb}...`]);
@@ -380,7 +365,6 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
             await delay(300);
             const ts = Date.now();
             const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET assigned_to = NULL, updated_at = ${ts} WHERE id = '${id}'"`;
-            console.log('[HealthCheck] invalidAgents cmd:', cmd);
             const result = await execCmd(cmd);
             if (result.ok) fixed++;
           }

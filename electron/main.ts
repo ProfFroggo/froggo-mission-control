@@ -328,7 +328,7 @@ process.on('SIGPIPE', () => {
 
 // Local server for serving model files in prod
 let modelServer: http.Server | null = null;
-let modelServerPort = 18799;
+const modelServerPort = 18799;
 
 let mainWindow: BrowserWindow | null = null;
 let floatingToolbarWindow: BrowserWindow | null = null;
@@ -2988,7 +2988,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       }
 
       // Build metadata with injection detection result
-      let metadata: any = {};
+      const metadata: any = {};
       if (injectionResult && injectionResult.detected) {
         metadata.injectionWarning = {
           detected: true,

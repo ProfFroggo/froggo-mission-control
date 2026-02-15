@@ -95,7 +95,6 @@ export default function SessionsFilter() {
       const poll = async () => {
         // Skip if already fetching (request deduplication)
         if (fetchingRef.current) {
-          console.log('[SessionsFilter] Skipping poll - request already in flight');
           return;
         }
         
@@ -122,8 +121,7 @@ export default function SessionsFilter() {
 
       // Calculate interval with exponential backoff: 30s, 60s, 120s, 240s, 480s, 960s max
       const interval = 30000 * Math.pow(2, failCount);
-      console.log(`[SessionsFilter] Setting poll interval to ${interval}ms (failCount=${failCount})`);
-      
+
       const timer = setInterval(poll, interval);
       return () => clearInterval(timer);
     }
@@ -512,12 +510,10 @@ export default function SessionsFilter() {
   // Handle conversation drop on folder tab
   const handleConversationDrop = async (sessionKey: string, folderId: number) => {
     try {
-      console.log('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
       const result = await window.clawdbot?.folders.assign(folderId, sessionKey);
       if (result?.success) {
         // Refresh folders and assignments
         await loadFolders();
-        console.log('[SessionsFilter] Successfully assigned conversation to folder');
       } else {
         console.error('[SessionsFilter] Failed to assign folder:', result?.error);
         showToast('error', 'Failed to assign to folder');
