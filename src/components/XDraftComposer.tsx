@@ -11,6 +11,10 @@ interface ContentPlan {
 
 const TWEET_CHAR_LIMIT = 280;
 
+const getCurrentUserName = () => {
+  return "TEST_USER"; //Replace with proper authentication.
+}
+
 export default function XDraftComposer() {
   const [contentPlans, setContentPlans] = useState<ContentPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState('');
@@ -109,7 +113,7 @@ export default function XDraftComposer() {
         planId: selectedPlanId,
         version,
         content,
-        proposedBy: 'writer', // TODO: Get from agent context
+        proposedBy: getCurrentUserName(), // TODO: Get from agent context
       });
 
       if (result.success) {
