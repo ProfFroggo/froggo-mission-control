@@ -65,9 +65,10 @@ interface CalendarCache {
  * Dynamically discover authenticated Google accounts from gog CLI.
  * Returns empty array if gog is unavailable (no hardcoded fallback).
  */
+import { execSync } from 'child_process';
+
 function getGoogleAccounts(): string[] {
   try {
-    const { execSync } = require('child_process');
     const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
       timeout: 5000,
       env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },

@@ -436,7 +436,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               <section className="p-4 bg-error-subtle border border-red-500/20 rounded-lg">
                 <h4 className="font-medium text-error mb-2">Danger Zone</h4>
                 <p className="text-sm text-error mb-3">
-                  Removing this account will revoke Froggo's access and delete all stored credentials.
+                  Removing this account will revoke Froggo&apos;s access and delete all stored credentials.
                   This action cannot be undone.
                 </p>
                 <button

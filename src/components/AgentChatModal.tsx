@@ -275,7 +275,13 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               return theme.pic ? (
                 <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden ring-2 ${theme.ring} bg-clawd-bg`}>
                   <img src={`./agent-profiles/${theme.pic}`} alt={agent.name} className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }} />
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      if (target.nextElementSibling) {
+                        (target.nextElementSibling as HTMLElement).classList.remove('hidden');
+                      }
+                    }} />
                   <span className="hidden absolute inset-0 flex items-center justify-center text-2xl">{agent.avatar}</span>
                 </div>
               ) : (
@@ -515,7 +521,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
           </div>
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-clawd-text-dim">
-              💡 You're talking to a real LLM — ask anything relevant to this agent's role
+              💡 You&apos;re talking to a real LLM — ask anything relevant to this agent&apos;s role
             </span>
             {!sessionKey && !spawning && (
               <button
