@@ -414,6 +414,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search everything... (⌘K or ⌘F)"
+            aria-label="Search input"
             className="flex-1 bg-transparent text-lg outline-none placeholder-clawd-text-dim"
           />
           <div className="flex items-center gap-2">

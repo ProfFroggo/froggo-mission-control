@@ -507,6 +507,7 @@ export default function EnhancedSettingsPanel() {
             <input
               type="text"
               placeholder="Search settings..."
+              aria-label="Search settings input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
@@ -595,6 +596,7 @@ export default function EnhancedSettingsPanel() {
                     </div>
                     <input
                       type="text"
+                      aria-label="Gateway URL input"
                       value={settings.gatewayUrl}
                       onChange={(e) => setSettings(s => ({ ...s, gatewayUrl: e.target.value }))}
                       className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
@@ -607,6 +609,7 @@ export default function EnhancedSettingsPanel() {
                     </div>
                     <input
                       type="password"
+                      aria-label="Authentication token input"
                       value={settings.gatewayToken}
                       onChange={(e) => setSettings(s => ({ ...s, gatewayToken: e.target.value }))}
                       placeholder="Leave empty to use default"
@@ -635,6 +638,7 @@ export default function EnhancedSettingsPanel() {
                       <Tooltip text="This panel will open when you launch the app" />
                     </div>
                     <select
+                      aria-label="Default panel on startup select"
                       value={settings.defaultPanel}
                       onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
                       className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
@@ -680,6 +684,7 @@ export default function EnhancedSettingsPanel() {
                     </div>
                     <input
                       type="range"
+                      aria-label="Speech speed slider"
                       min="0.5"
                       max="2"
                       step="0.1"
@@ -728,6 +733,7 @@ export default function EnhancedSettingsPanel() {
                       </label>
                       <input
                         type="range"
+                        aria-label="Refresh interval slider"
                         min="10"
                         max="120"
                         step="10"
@@ -843,6 +849,7 @@ export default function EnhancedSettingsPanel() {
                       <label className="text-sm text-clawd-text-dim">Custom:</label>
                       <input
                         type="color"
+                        aria-label="Custom accent color picker"
                         value={settings.accentColor}
                         onChange={(e) => setSettings(s => ({ ...s, accentColor: e.target.value }))}
                         className="h-10 w-20 rounded-lg border border-clawd-border cursor-pointer"
@@ -864,6 +871,7 @@ export default function EnhancedSettingsPanel() {
                   <div>
                     <label className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
                     <select
+                      aria-label="Font family select"
                       value={settings.fontFamily}
                       onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}
                       className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
@@ -880,6 +888,7 @@ export default function EnhancedSettingsPanel() {
                     </label>
                     <input
                       type="range"
+                      aria-label="Font size slider"
                       min="12"
                       max="18"
                       step="1"
@@ -942,6 +951,7 @@ export default function EnhancedSettingsPanel() {
                         {editingShortcut === shortcut.id ? (
                           <input
                             type="text"
+                            aria-label={`Edit keyboard shortcut for ${shortcut.name}`}
                             autoFocus
                             value={shortcut.currentKey}
                             onChange={(e) => handleShortcutEdit(shortcut.id, e.target.value)}
@@ -1011,6 +1021,7 @@ export default function EnhancedSettingsPanel() {
                       </label>
                       <input
                         type="range"
+                        aria-label="Cache size slider"
                         min="50"
                         max="500"
                         step="50"
@@ -1031,6 +1042,7 @@ export default function EnhancedSettingsPanel() {
                     </label>
                     <input
                       type="range"
+                      aria-label="Max concurrent requests slider"
                       min="5"
                       max="30"
                       step="5"
@@ -1123,6 +1135,7 @@ export default function EnhancedSettingsPanel() {
                     </div>
                     <input
                       type="range"
+                      aria-label="Data retention days slider"
                       min="30"
                       max="365"
                       step="30"
@@ -1160,6 +1173,7 @@ export default function EnhancedSettingsPanel() {
                     </label>
                     <input
                       type="range"
+                      aria-label="Max log file size slider"
                       min="10"
                       max="500"
                       step="10"
@@ -1549,6 +1563,7 @@ export default function EnhancedSettingsPanel() {
                         </div>
                         <input
                           type="range"
+                          aria-label="Tweet rate limit slider"
                           min="1"
                           max="30"
                           step="1"
@@ -1566,6 +1581,7 @@ export default function EnhancedSettingsPanel() {
                         </div>
                         <input
                           type="range"
+                          aria-label="Email rate limit slider"
                           min="1"
                           max="50"
                           step="1"

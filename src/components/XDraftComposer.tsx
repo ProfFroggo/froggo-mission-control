@@ -258,6 +258,7 @@ export default function XDraftComposer() {
                               value={tweet}
                               onChange={(e) => handleTweetChange(index, e.target.value)}
                               placeholder={`Tweet ${index + 1}/${tweets.length}...`}
+                              aria-label={`Tweet ${index + 1} content`}
                               rows={3}
                               className={`w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
                                 isOverLimit(tweet)

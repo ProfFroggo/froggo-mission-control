@@ -762,6 +762,7 @@ Be thorough but only include real people, not generic references.`;
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Full name"
+                  aria-label="Contact name"
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   autoFocus
                 />
@@ -776,6 +777,7 @@ Be thorough but only include real people, not generic references.`;
                     value={relationship}
                     onChange={e => setRelationship(e.target.value)}
                     placeholder="friend, colleague, client..."
+                    aria-label="Contact relationship"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   />
                 </div>
@@ -786,6 +788,7 @@ Be thorough but only include real people, not generic references.`;
                     value={role}
                     onChange={e => setRole(e.target.value)}
                     placeholder="CEO, Engineer, Designer..."
+                    aria-label="Contact role or title"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
                   />
                 </div>
