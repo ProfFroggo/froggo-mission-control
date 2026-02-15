@@ -37,6 +37,10 @@ interface Draft {
 
 type QueueItem = (ResearchIdea | ContentPlan | Draft) & { itemType: 'research' | 'plan' | 'draft' };
 
+const getCurrentUserName = () => {
+  return "TEST_USER"; //Replace with proper authentication.
+}
+
 export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,7 +112,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       
       const result = await api.approve({
         id,
-        approvedBy: 'kevin', // TODO: Get from user context
+        approvedBy: getCurrentUserName(), // TODO: Get from user context
       });
 
       if (result.success) {

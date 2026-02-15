@@ -24,6 +24,10 @@ const THREAD_LENGTHS = [
   { value: 10, label: '10-tweet thread' },
 ];
 
+const getCurrentUserName = () => {
+  return "TEST_USER"; //Replace with proper authentication.
+}
+
 export default function XPlanThreadComposer() {
   const [researchIdeas, setResearchIdeas] = useState<ResearchIdea[]>([]);
   const [selectedResearchId, setSelectedResearchId] = useState('');
@@ -82,7 +86,7 @@ export default function XPlanThreadComposer() {
         contentType,
         threadLength,
         description: description.trim(),
-        proposedBy: 'writer', // TODO: Get from agent context
+        proposedBy: getCurrentUserName(), // TODO: Get from agent context
       });
 
       if (result.success) {
