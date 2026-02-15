@@ -140,7 +140,7 @@ export default function XDraftComposer() {
   const selectedPlan = contentPlans.find(p => p.id === selectedPlanId);
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 p-6">
+    <div className="flex flex-col h-full bg-clawd-bg p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -324,7 +324,7 @@ export default function XDraftComposer() {
             <button
               onClick={handleSubmit}
               disabled={submitting || !selectedPlanId || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>
