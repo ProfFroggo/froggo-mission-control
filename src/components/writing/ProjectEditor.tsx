@@ -130,6 +130,7 @@ export default function ProjectEditor() {
       orientation="horizontal"
       defaultLayout={defaultLayout}
       onLayoutChanged={handleLayoutChanged}
+      className="h-full"
     >
       {/* Left panel: Chapter sidebar */}
       <Panel
@@ -140,7 +141,7 @@ export default function ProjectEditor() {
         collapsedSize={0}
         panelRef={chaptersPanelRef}
         onResize={handleChaptersResize}
-        className="h-full"
+        className="!h-full"
       >
         <div className="h-full overflow-hidden [&>div]:!w-full">
           <ChapterSidebar />
@@ -158,7 +159,7 @@ export default function ProjectEditor() {
         collapsedSize={0}
         panelRef={chatPanelRef}
         onResize={handleChatResize}
-        className="h-full"
+        className="!h-full"
       >
         <ChatPane />
       </Panel>
@@ -169,7 +170,7 @@ export default function ProjectEditor() {
       <Panel
         id="editor"
         minSize={30}
-        className="h-full"
+        className="!h-full"
       >
         <div className="relative h-full">
           {/* Collapse toggle buttons */}
