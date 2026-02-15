@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react';
 import { showToast } from './Toast';
+import { getCurrentUserName } from '../utils/auth';
 import type { XTab } from './XTwitterPage';
 
 interface XApprovalQueuePaneProps {
@@ -36,10 +37,6 @@ interface Draft {
 }
 
 type QueueItem = (ResearchIdea | ContentPlan | Draft) & { itemType: 'research' | 'plan' | 'draft' };
-
-const getCurrentUserName = () => {
-  return "TEST_USER"; //Replace with proper authentication.
-}
 
 export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const [items, setItems] = useState<QueueItem[]>([]);
@@ -112,9 +109,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       
       const result = await api.approve({
         id,
-        import { getAgentName } from 'src/auth';
-...
-approvedBy: getAgentName(), // TODO: Get from user context
+        approvedBy: getCurrentUserName(),
       });
 
       if (result.success) {
@@ -188,7 +183,7 @@ approvedBy: getAgentName(), // TODO: Get from user context
           <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim">
             <Clock className="w-12 h-12 text-clawd-text-dim mb-3" />
             <p className="font-medium text-clawd-text">No items pending approval</p>
-            <p className="text-sm mt-1">Items will appear here when agents propose content</p>
+            <p className="text-sm mt-1 text-clawd-text-dim">Items will appear here when agents propose content</p>
           </div>
         ) : (
           <div className="space-y-3">

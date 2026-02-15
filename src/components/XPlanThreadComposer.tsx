@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Send, AlertCircle } from 'lucide-react';
 import { showToast } from './Toast';
+import { getCurrentUserName } from '../utils/auth';
 
 interface ResearchIdea {
   id: string;
@@ -23,10 +24,6 @@ const THREAD_LENGTHS = [
   { value: 7, label: '7-tweet thread' },
   { value: 10, label: '10-tweet thread' },
 ];
-
-const getCurrentUserName = () => {
-  return "TEST_USER"; //Replace with proper authentication.
-}
 
 export default function XPlanThreadComposer() {
   const [researchIdeas, setResearchIdeas] = useState<ResearchIdea[]>([]);
@@ -86,9 +83,7 @@ export default function XPlanThreadComposer() {
         contentType,
         threadLength,
         description: description.trim(),
-        import { getAgentName } from 'src/auth';
-...
-proposedBy: getAgentName(),
+        proposedBy: getCurrentUserName(),
       });
 
       if (result.success) {
