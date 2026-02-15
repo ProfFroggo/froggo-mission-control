@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench } from 'lucide-react';
+import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench, Loader2 } from 'lucide-react';
 import { showToast } from './Toast';
 import SkillsTab from './SkillsTab';
 import NodesTab from './NodesTab';
@@ -47,6 +47,7 @@ export default function ContextControlBoard() {
   const [loading, setLoading] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<{ role: string; content: string }[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
 
   const loadFile = useCallback(async (file: ContextFile) => {
     setSelectedFile(file);
@@ -139,9 +140,10 @@ export default function ContextControlBoard() {
   }, [activeTab, loadSkills, loadAgents]);
 
   const handleChat = async () => {
-    if (!chatMessage.trim()) return;
+    if (!chatMessage.trim() || chatLoading) return;
     const userMessage = chatMessage;
     setChatMessage('');
+    setChatLoading(true);
     setChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
     
     try {
@@ -161,6 +163,8 @@ export default function ContextControlBoard() {
       }
     } catch (e) {
       setChatHistory(prev => [...prev, { role: 'assistant', content: 'Failed to get response' }]);
+    } finally {
+      setChatLoading(false);
     }
   };
 
@@ -386,10 +390,14 @@ export default function ContextControlBoard() {
                 />
                 <button
                   onClick={handleChat}
-                  disabled={!chatMessage.trim()}
-                  className="px-4 py-2 bg-clawd-accent text-white rounded-xl disabled:opacity-50"
+                  disabled={!chatMessage.trim() || chatLoading}
+                  className="px-4 py-2 bg-clawd-accent text-white rounded-xl disabled:opacity-50 flex items-center gap-2"
                 >
-                  Send
+                  {chatLoading ? (
+                    <><Loader2 size={16} className="animate-spin" /> Sending...</>
+                  ) : (
+                    'Send'
+                  )}
                 </button>
               </div>
             </div>
