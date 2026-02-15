@@ -29,7 +29,7 @@ export interface NotificationPreferences {
 }
 
 export function useNotifications() {
-  const navigate = (path: string) => { console.log('[useNotifications] Navigate:', path); };
+  const navigate = (path: string) => { console.debug('[useNotifications] Navigate:', path); };
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [recentNotifications, setRecentNotifications] = useState<SystemNotification[]>([]);
 
@@ -86,7 +86,7 @@ export function useNotifications() {
   // Handle incoming notifications
   useEffect(() => {
     const unsubscribe = window.clawdbot?.notifications.onReceived((notification: SystemNotification) => {
-      console.log('[useNotifications] Received:', notification);
+      console.debug('[useNotifications] Received:', notification);
       
       // Add to recent notifications
       setRecentNotifications(prev => {
@@ -104,7 +104,7 @@ export function useNotifications() {
   // Handle notification actions (from action buttons)
   useEffect(() => {
     const unsubscribe = window.clawdbot?.notifications.onAction((action: NotificationAction) => {
-      console.log('[useNotifications] Action triggered:', action);
+      console.debug('[useNotifications] Action triggered:', action);
       handleNotificationAction(action);
     });
 
@@ -114,7 +114,7 @@ export function useNotifications() {
   // Handle navigation requests from notifications
   useEffect(() => {
     const unsubscribe = window.clawdbot?.onNavigate((view: string, data?: any) => {
-      console.log('[useNotifications] Navigate to:', view, data);
+      console.debug('[useNotifications] Navigate to:', view, data);
       handleNavigationFromNotification(view, data);
     });
 
@@ -127,7 +127,7 @@ export function useNotifications() {
       case 'approve':
         // Approve approval request
         if (action.data?.itemId) {
-          console.log('[useNotifications] Approving item:', action.data.itemId);
+          console.debug('[useNotifications] Approving item:', action.data.itemId);
           // Navigate to inbox and auto-approve
           navigate(`/inbox?action=approve&id=${action.data.itemId}`);
         }
@@ -135,7 +135,7 @@ export function useNotifications() {
 
       case 'dismiss':
         // Dismiss notification
-        console.log('[useNotifications] Dismissing notification');
+        console.debug('[useNotifications] Dismissing notification');
         break;
 
       case 'view-task':
