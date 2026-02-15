@@ -11,6 +11,7 @@ import {
 import { MeetingTranscriber, Meeting, MeetingTranscript, TranscriptionSegment } from '../lib/meetingTranscribe';
 import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
 import MarkdownMessage from './MarkdownMessage';
+import { showToast } from './Toast';
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
 async function getApiKey(): Promise<string> {
@@ -128,7 +129,7 @@ export default function MeetingTranscribe() {
   async function startNewMeeting() {
     if (!transcriber) return;
     if (!newMeetingTitle.trim()) {
-      alert('Please enter a meeting title');
+      showToast('warning', 'Please enter a meeting title');
       return;
     }
 
@@ -149,7 +150,7 @@ export default function MeetingTranscribe() {
       await startRecording(meeting.id);
     } catch (error) {
       console.error('[MeetingTranscribe] Failed to start meeting:', error);
-      alert('Failed to start meeting');
+      showToast('error', 'Failed to start meeting');
     }
   }
 
@@ -169,7 +170,7 @@ export default function MeetingTranscribe() {
       setIsRecording(true);
     } catch (error) {
       console.error('[MeetingTranscribe] Failed to start recording:', error);
-      alert('Microphone access denied');
+      showToast('error', 'Microphone access denied');
     }
   }
 
@@ -220,7 +221,7 @@ export default function MeetingTranscribe() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('[MeetingTranscribe] Failed to export transcript:', error);
-      alert('Failed to export transcript');
+      showToast('error', 'Failed to export transcript');
     }
   }
 

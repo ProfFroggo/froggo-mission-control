@@ -4,6 +4,7 @@ import {
   Hash, AlertCircle, X, Settings, Save, Trash2,
   ZapOff, MessageSquare 
 } from 'lucide-react';
+import { showToast } from './Toast';
 
 interface NotificationSettingsModalProps {
   sessionKey: string;
@@ -134,11 +135,11 @@ export default function NotificationSettingsModal({
         setHasCustomSettings(true);
         onClose();
       } else {
-        alert('Failed to save notification settings');
+        showToast('error', 'Failed to save notification settings');
       }
     } catch (error) {
       console.error('[NotificationSettings] Save error:', error);
-      alert('Error saving settings');
+      showToast('error', 'Error saving settings');
     } finally {
       setSaving(false);
     }

@@ -6,6 +6,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug, Network, Clock, Code, Database, Lock, Wifi } from 'lucide-react';
 import { LoadingButton } from './LoadingStates';
+import { showToast } from './Toast';
 
 interface Props {
   children: ReactNode;
@@ -190,7 +191,7 @@ Timestamp: ${new Date().toISOString()}
 
     // Copy to clipboard
     navigator.clipboard.writeText(bugReport);
-    alert('Bug report copied to clipboard! Please send it to the support team.');
+    showToast('success', 'Bug report copied to clipboard! Please send it to the support team.');
   };
 
   render() {

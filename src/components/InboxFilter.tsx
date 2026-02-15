@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply } from 'lucide-react';
+import { showToast } from './Toast';
 
 export interface FilterCriteria {
   search?: string;
@@ -192,7 +193,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
     setSavedFilters(updated);
     localStorage.setItem('inbox-saved-filters', JSON.stringify(updated));
     setFilterName('');
-    alert(`✅ Filter "${newFilter.name}" saved!`);
+    showToast('success', `Filter "${newFilter.name}" saved!`);
   };
 
   const applySavedFilter = (filter: SavedFilter) => {

@@ -11,6 +11,7 @@ import SnoozeModal from './SnoozeModal';
 import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS as DndCSS } from '@dnd-kit/utilities';
+import { showToast } from './Toast';
 
 type ChannelFilter = 'all' | 'whatsapp' | 'telegram' | 'discord' | 'webchat' | 'agents';
 
@@ -202,7 +203,7 @@ export default function SessionsFilter() {
         await loadPinnedSessions();
       } else if (result?.error) {
         // Show error if pin limit reached
-        alert(result?.error);
+        showToast('warning', result?.error);
       }
     } catch (error) {
       console.error('[SessionsFilter] Failed to toggle pin:', error);
@@ -408,9 +409,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        alert(`✅ Successfully deleted ${successCount} conversation(s)`);
+        showToast('success', `Successfully deleted ${successCount} conversation(s)`);
       } else {
-        alert(`⚠️ Deleted ${successCount} conversation(s), ${errorCount} failed. See console for details.`);
+        showToast('warning', `Deleted ${successCount} conversation(s), ${errorCount} failed. See console for details.`);
       }
       
       // Refresh and clear selection
@@ -419,7 +420,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk delete error:', error);
-      alert('❌ Failed to delete conversations. See console for details.');
+      showToast('error', 'Failed to delete conversations. See console for details.');
     }
   };
 
@@ -449,9 +450,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        alert(`✅ Successfully archived ${successCount} session(s)`);
+        showToast('success', `Successfully archived ${successCount} session(s)`);
       } else {
-        alert(`⚠️ Archived ${successCount} session(s), ${errorCount} failed. See console for details.`);
+        showToast('warning', `Archived ${successCount} session(s), ${errorCount} failed. See console for details.`);
       }
       
       // Refresh and clear selection
@@ -460,7 +461,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk archive error:', error);
-      alert('❌ Failed to archive sessions. See console for details.');
+      showToast('error', 'Failed to archive sessions. See console for details.');
     }
   };
 
@@ -489,9 +490,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        alert(`✅ Marked ${successCount} conversation(s) as read`);
+        showToast('success', `Marked ${successCount} conversation(s) as read`);
       } else {
-        alert(`⚠️ Marked ${successCount} conversation(s) as read, ${errorCount} failed. See console for details.`);
+        showToast('warning', `Marked ${successCount} conversation(s) as read, ${errorCount} failed. See console for details.`);
       }
       
       // Refresh and clear selection
@@ -499,7 +500,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk mark read error:', error);
-      alert('❌ Failed to mark conversations as read. See console for details.');
+      showToast('error', 'Failed to mark conversations as read. See console for details.');
     }
   };
 
@@ -519,11 +520,11 @@ export default function SessionsFilter() {
         console.log('[SessionsFilter] Successfully assigned conversation to folder');
       } else {
         console.error('[SessionsFilter] Failed to assign folder:', result?.error);
-        alert('Failed to assign to folder');
+        showToast('error', 'Failed to assign to folder');
       }
     } catch (error) {
       console.error('[SessionsFilter] Error assigning folder:', error);
-      alert('Failed to assign to folder');
+      showToast('error', 'Failed to assign to folder');
     }
   };
 
