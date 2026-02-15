@@ -386,9 +386,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleAddSubtask = async () => {
     if (!newSubtask.trim() || !task) return;
-    console.log('[TaskDetail] Adding subtask:', { taskId: task.id, title: newSubtask.trim() });
     const result = await addSubtask(task.id, newSubtask.trim());
-    console.log('[TaskDetail] addSubtask result:', result);
     if (result) {
       setSubtasks([...subtasks, result]);
       setNewSubtask('');
@@ -1108,13 +1106,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      console.log('[TaskDetailPanel] APPROVE CLICKED', task.id, task.status, task.reviewStatus);
                       // ATOMIC UPDATE: Change both reviewStatus AND status in one call
                       const updates: any = { 
                         reviewStatus: 'approved',
                         status: 'in-progress'
                       };
-                      console.log('[TaskDetailPanel] Calling updateTask with:', updates);
                       updateTask(task.id, updates);
                       logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
                       showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
