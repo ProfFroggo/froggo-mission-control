@@ -39,8 +39,9 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const didExecute = useRef(false);
 
-  // Dynamic valid agents from store (exclude froggo, main, clara - orchestrators)
-  const VALID_AGENTS = agents.filter(a => !['froggo', 'main', 'clara'].includes(a.id)).map(a => a.id);
+  // Dynamic valid agents from store (exclude froggo, main - orchestrators only)
+  // Clara and other agents CAN be assigned tasks
+  const VALID_AGENTS = agents.filter(a => !['froggo', 'main'].includes(a.id)).map(a => a.id);
 
   const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
