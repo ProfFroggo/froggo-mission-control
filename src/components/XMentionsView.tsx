@@ -156,7 +156,7 @@ export const XMentionsView: React.FC = () => {
             onClick={() => updateStatus(mention.id, 'pending')}
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'pending'
-                ? 'bg-yellow-100 text-warning border border-yellow-300'
+                ? 'bg-warning-subtle text-warning border border-warning'
                 : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
@@ -166,7 +166,7 @@ export const XMentionsView: React.FC = () => {
             onClick={() => updateStatus(mention.id, 'considering')}
             className={`px-2 py-1 text-xs rounded ${
               mention.reply_status === 'considering'
-                ? 'bg-blue-100 text-info border border-blue-300'
+                ? 'bg-info-subtle text-info border border-info'
                 : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
@@ -183,7 +183,7 @@ export const XMentionsView: React.FC = () => {
             🚫 Ignored
           </button>
           {mention.reply_status === 'replied' && (
-            <div className="px-2 py-1 text-xs rounded bg-green-100 text-success border border-green-300">
+            <div className="px-2 py-1 text-xs rounded bg-success-subtle text-success border border-success">
               ✅ Replied
               {mention.replied_at && (
                 <span className="ml-1 text-clawd-text-dim">
@@ -252,7 +252,7 @@ export const XMentionsView: React.FC = () => {
                     <button
                       onClick={() => handleReply(mention.id, mention.tweet_id)}
                       disabled={!replyText.trim()}
-                      className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1 text-sm bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send Reply
                     </button>
@@ -262,7 +262,7 @@ export const XMentionsView: React.FC = () => {
             ) : (
               <button
                 onClick={() => setSelectedMention(mention.id)}
-                className="px-3 py-1 text-sm border border-blue-500 text-info rounded hover:bg-blue-50"
+                className="px-3 py-1 text-sm border border-info text-info rounded hover:bg-info-subtle"
               >
                 💬 Reply
               </button>
@@ -289,7 +289,7 @@ export const XMentionsView: React.FC = () => {
         <button
           onClick={fetchNewMentions}
           disabled={fetching}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {fetching ? (
             <>
@@ -315,7 +315,7 @@ export const XMentionsView: React.FC = () => {
               onClick={() => setFilter(status)}
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 filter === status
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-info text-white'
                   : 'bg-clawd-bg text-clawd-text hover:bg-clawd-surface border border-clawd-border'
               }`}
             >

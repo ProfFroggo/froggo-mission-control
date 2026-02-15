@@ -90,7 +90,7 @@ export default function XResearchIdeaEditor() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., AI Agents for Content Creation"
-            className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
             disabled={submitting}
           />
         </div>
@@ -105,7 +105,7 @@ export default function XResearchIdeaEditor() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the research idea, key insights, and why it's relevant..."
             rows={8}
-            className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info resize-none"
             disabled={submitting}
           />
           <p className="text-xs text-clawd-text-dim mt-1">
@@ -126,7 +126,7 @@ export default function XResearchIdeaEditor() {
                   value={citation}
                   onChange={(e) => handleCitationChange(index, e.target.value)}
                   placeholder="https://example.com/article"
-                  className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
                   disabled={submitting}
                 />
                 {citations.length > 1 && (
@@ -143,7 +143,7 @@ export default function XResearchIdeaEditor() {
           </div>
           <button
             onClick={handleAddCitation}
-            className="mt-3 flex items-center gap-2 text-sm text-info hover:text-blue-300 transition-colors"
+            className="mt-3 flex items-center gap-2 text-sm text-info hover:text-info transition-colors"
             disabled={submitting}
           >
             <Plus className="w-4 h-4" />
@@ -157,11 +157,11 @@ export default function XResearchIdeaEditor() {
         <button
           onClick={handleSubmit}
           disabled={submitting || !title.trim() || !description.trim()}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
         >
           {submitting ? (
             <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-clawd-text border-t-transparent rounded-full animate-spin" />
               Submitting...
             </>
           ) : (

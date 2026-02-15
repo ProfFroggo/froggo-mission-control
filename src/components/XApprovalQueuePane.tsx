@@ -177,7 +177,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim">
@@ -270,7 +270,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                           href={citation}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs text-info hover:text-blue-300 truncate"
+                          className="flex items-center gap-1 text-xs text-info hover:text-info truncate"
                         >
                           <ExternalLink className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{citation}</span>
@@ -286,14 +286,14 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleApprove(item.id, item.itemType)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-success hover:bg-success/80 text-white text-sm rounded-lg transition-colors"
                   >
                     <CheckCircle className="w-4 h-4" />
                     Approve
                   </button>
                   <button
                     onClick={() => handleReject(item.id, item.itemType)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-error hover:bg-error/80 text-white text-sm rounded-lg transition-colors"
                   >
                     <XCircle className="w-4 h-4" />
                     Reject

@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer, shell, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer, shell, dialog, screen } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec, execSync, execFile } from 'child_process';
+import { exec, execSync, execFile, spawn, fork } from 'child_process';
+import { promisify } from 'util';
 import * as os from 'os';
 import * as crypto from 'crypto';
 import * as http from 'http';
@@ -115,7 +116,7 @@ ipcMain.handle('gateway:getToken', async () => {
         const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
         if (token) return token;
       }
-    } catch {}
+    } catch { /* ignore missing config */ }
   }
   return '';
 });
@@ -264,7 +265,7 @@ function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
-    require('fs').appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
+    fs.appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
   } catch (e) { /* ignore */ }
 }
 
@@ -310,8 +311,8 @@ process.on('uncaughtException', (error: any) => {
     if (process.stderr.writable) {
       safeLog.error('[UNCAUGHT EXCEPTION]', error);
     }
-  } catch {}
-  
+  } catch { /* ignore stream errors */ }
+
   // Don't exit for EPIPE-like errors, but consider exiting for severe errors
   // For now, keep running to avoid data loss
 });
@@ -802,7 +803,7 @@ async function checkForUpdates(): Promise<void> {
               shell.openExternal(release.html_url || `https://github.com/ProfFroggo/froggo_bot/releases/tag/v${remoteVersion}`);
             }
           }
-        } catch {}
+        } catch { /* ignore dialog errors */ }
         resolve();
       });
     });
@@ -972,8 +973,8 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
         }
         
         // Cleanup temp audio file
-        try { fs.unlinkSync(tempFile); } catch {}
-        
+        try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
+
         if (error) {
           safeLog.error('Whisper error:', error.message);
           resolve({ error: error.message, stdout, stderr });
@@ -3272,7 +3273,6 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
 ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
     // Pass criteria via stdin using execSync input option to avoid shell injection
-    const { execSync } = require('child_process');
     try {
       const result = execSync(
         `${path.join(SCRIPTS_DIR, 'inbox-filter.sh')} filter`,
@@ -3452,7 +3452,6 @@ ipcMain.handle('screenshot:capture', async (_, outputPath: string) => {
     if (mainWindow) {
       mainWindow.webContents.capturePage().then((image) => {
         const pngBuffer = image.toPNG();
-        const fs = require('fs');
         fs.writeFileSync(outputPath, pngBuffer);
         resolve({ success: true, path: outputPath, size: pngBuffer.length });
       }).catch((err) => {
@@ -3972,8 +3971,6 @@ ipcMain.handle('library:list', async (_, category?: string) => {
 });
 
 ipcMain.handle('library:upload', async () => {
-  const { dialog } = require('electron');
-  
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
@@ -6175,8 +6172,6 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 
 // Shell execution for Code Agent Dashboard, Context Control Board
 ipcMain.handle('exec:run', async (_, command: string) => {
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
   const execAsync = promisify(exec);
 
   // Use the clawd workspace as default cwd for git commands
@@ -7582,8 +7577,6 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
 });
 // ============== FINANCE MODULE ==============
 const execPromise = (cmd: string, opts?: { timeout?: number }) => {
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
   return promisify(exec)(cmd, opts);
 };
 
@@ -8721,8 +8714,8 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     // Get current screen where main window is
     const currentDisplay = mainWindow 
-      ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
-      : require('electron').screen.getPrimaryDisplay();
+      ? screen.getDisplayNearestPoint(mainWindow.getBounds())
+      : screen.getPrimaryDisplay();
     
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
     

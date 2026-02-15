@@ -133,7 +133,7 @@ export default function XDraftComposer() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-clawd-bg">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -151,7 +151,7 @@ export default function XDraftComposer() {
           {selectedPlanId && (
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-clawd-text text-sm rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1 bg-review hover:bg-review/80 text-clawd-text text-sm rounded-lg transition-colors"
             >
               <Eye className="w-4 h-4" />
               {showPreview ? 'Hide' : 'Show'} Preview
@@ -182,7 +182,7 @@ export default function XDraftComposer() {
               <select
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
                 disabled={submitting}
               >
                 <option value="">Select a content plan...</option>
@@ -217,7 +217,7 @@ export default function XDraftComposer() {
                       onClick={() => setVersion(v)}
                       className={`px-6 py-2 rounded-lg border-2 transition-colors ${
                         version === v
-                          ? 'border-blue-500 bg-blue-500/20 text-clawd-text'
+                          ? 'border-info bg-info/20 text-clawd-text'
                           : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
                       }`}
                       disabled={submitting}
@@ -239,7 +239,7 @@ export default function XDraftComposer() {
                   {tweets.length < 10 && (
                     <button
                       onClick={addTweet}
-                      className="flex items-center gap-1 text-sm text-info hover:text-blue-300"
+                      className="flex items-center gap-1 text-sm text-info hover:text-info"
                       disabled={submitting}
                     >
                       <Plus className="w-4 h-4" />
@@ -261,8 +261,8 @@ export default function XDraftComposer() {
                               rows={3}
                               className={`w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 resize-none ${
                                 isOverLimit(tweet)
-                                  ? 'border-red-500 focus:ring-red-500'
-                                  : 'border-clawd-border focus:ring-blue-500'
+                                  ? 'border-error focus:ring-error'
+                                  : 'border-clawd-border focus:ring-info'
                               }`}
                               disabled={submitting}
                             />
@@ -325,11 +325,11 @@ export default function XDraftComposer() {
             <button
               onClick={handleSubmit}
               disabled={submitting || !selectedPlanId || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-clawd-text border-t-transparent rounded-full animate-spin" />
                   Submitting...
                 </>
               ) : (

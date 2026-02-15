@@ -68,8 +68,8 @@ export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
       {/* Left Divider */}
       <div
         onMouseDown={(e) => handleMouseDown('left', e)}
-        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-500/50 transition-colors ${
-          dragging === 'left' ? 'bg-blue-500' : 'bg-transparent'
+        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors ${
+          dragging === 'left' ? 'bg-info' : 'bg-transparent'
         }`}
       />
 
@@ -81,8 +81,8 @@ export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
       {/* Right Divider */}
       <div
         onMouseDown={(e) => handleMouseDown('right', e)}
-        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-500/50 transition-colors ${
-          dragging === 'right' ? 'bg-blue-500' : 'bg-transparent'
+        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors ${
+          dragging === 'right' ? 'bg-info' : 'bg-transparent'
         }`}
       />
 

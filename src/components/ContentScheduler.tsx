@@ -86,7 +86,7 @@ export default function ContentScheduler() {
     const cleanup = async () => {
       const result = await (window as any).clawdbot?.media?.cleanup();
       if (result?.success && result.deletedCount > 0) {
-        console.log(`[MediaCleanup] Removed ${result.deletedCount} old file(s)`);
+        // Media cleanup completed
       }
     };
     cleanup();

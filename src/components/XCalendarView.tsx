@@ -212,22 +212,22 @@ export const XCalendarView: React.FC = () => {
     
     return (
       <div className="overflow-auto">
-        <div className="grid grid-cols-8 gap-px bg-gray-200 border border-gray-200">
+        <div className="grid grid-cols-8 gap-px bg-clawd-border border border-clawd-border">
           {/* Header */}
-          <div className="bg-white p-2 text-xs font-medium text-gray-500">Time</div>
+          <div className="bg-clawd-surface p-2 text-xs font-medium text-clawd-text-dim">Time</div>
           {days.map(day => (
-            <div key={day.toISOString()} className="bg-white p-2 text-center">
-              <div className="text-xs font-medium text-gray-500">
+            <div key={day.toISOString()} className="bg-clawd-surface p-2 text-center">
+              <div className="text-xs font-medium text-clawd-text-dim">
                 {day.toLocaleDateString('en-US', { weekday: 'short' })}
               </div>
-              <div className="text-sm font-semibold text-gray-900">{day.getDate()}</div>
+              <div className="text-sm font-semibold text-clawd-text">{day.getDate()}</div>
             </div>
           ))}
           
           {/* Time slots */}
           {hours.map(hour => (
             <React.Fragment key={hour}>
-              <div className="bg-white p-2 text-xs text-gray-500 border-t">
+              <div className="bg-clawd-surface p-2 text-xs text-clawd-text-dim border-t">
                 {hour.toString().padStart(2, '0')}:00
               </div>
               {days.map(day => {
@@ -243,7 +243,7 @@ export const XCalendarView: React.FC = () => {
                 return (
                   <div 
                     key={`${day.toISOString()}-${hour}`}
-                    className="bg-white p-1 min-h-[60px] border-t hover:bg-gray-50 cursor-pointer"
+                    className="bg-clawd-surface p-1 min-h-[60px] border-t hover:bg-clawd-bg-alt cursor-pointer"
                   >
                     {postsInSlot.map(post => {
                       let content;
@@ -259,7 +259,7 @@ export const XCalendarView: React.FC = () => {
                       return (
                         <div 
                           key={post.id}
-                          className="bg-blue-100 border border-blue-300 rounded p-1 mb-1 text-xs group relative"
+                          className="bg-info-subtle border border-info rounded p-1 mb-1 text-xs group relative"
                         >
                           <div className="font-medium text-info">{preview}</div>
                           <div className="text-info text-[10px]">
@@ -274,7 +274,7 @@ export const XCalendarView: React.FC = () => {
                                 e.stopPropagation();
                                 handleUnschedule(post.id);
                               }}
-                              className="bg-red-500 text-white text-[10px] px-1 rounded"
+                              className="bg-error text-white text-[10px] px-1 rounded"
                             >
                               ×
                             </button>
@@ -307,7 +307,7 @@ export const XCalendarView: React.FC = () => {
     
     return (
       <div className="space-y-2">
-        <div className="text-sm font-medium text-gray-700 mb-2">
+        <div className="text-sm font-medium text-clawd-text mb-2">
           Approved Drafts ({approvedDrafts.length})
         </div>
         {approvedDrafts.map(draft => {
@@ -327,18 +327,18 @@ export const XCalendarView: React.FC = () => {
               key={draft.id}
               className={`p-3 border rounded cursor-pointer transition-colors ${
                 selectedDraft === draft.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-info bg-info-subtle'
+                  : 'border-clawd-border hover:border-clawd-border/80'
               }`}
               onClick={() => handleDraftSelect(draft.id)}
             >
               <div className="flex items-start justify-between mb-1">
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-clawd-text-dim">
                   {isThread ? `🧵 Thread (${content.tweets.length} tweets)` : '📝 Single tweet'}
                 </div>
-                <div className="text-xs text-gray-400">v{draft.version}</div>
+                <div className="text-xs text-clawd-text-dim">v{draft.version}</div>
               </div>
-              <div className="text-sm text-gray-900">{preview}</div>
+              <div className="text-sm text-clawd-text">{preview}</div>
             </div>
           );
         })}
@@ -355,8 +355,8 @@ export const XCalendarView: React.FC = () => {
     if (!draft) return null;
     
     return (
-      <div className="mt-4 p-4 bg-gray-50 rounded">
-        <div className="text-sm font-medium text-gray-700 mb-3">
+      <div className="mt-4 p-4 bg-clawd-surface rounded">
+        <div className="text-sm font-medium text-clawd-text mb-3">
           Recommended Time Slots
         </div>
         <div className="space-y-2">
@@ -364,10 +364,10 @@ export const XCalendarView: React.FC = () => {
             <button
               key={slot.time}
               onClick={() => handleSchedule(selectedDraft, slot.time, slot.reason)}
-              className="w-full p-3 text-left border border-gray-200 rounded hover:border-blue-500 hover:bg-blue-50 transition-colors"
+              className="w-full p-3 text-left border border-clawd-border rounded hover:border-info hover:bg-info-subtle transition-colors"
             >
               <div className="flex items-center justify-between mb-1">
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-clawd-text">
                   {new Date(slot.time).toLocaleDateString('en-US', { 
                     weekday: 'short',
                     month: 'short',
@@ -383,12 +383,12 @@ export const XCalendarView: React.FC = () => {
                   {idx === 0 ? '⭐ Best' : `#${idx + 1}`}
                 </div>
               </div>
-              <div className="text-xs text-gray-500">{slot.reason}</div>
+              <div className="text-xs text-clawd-text-dim">{slot.reason}</div>
             </button>
           ))}
         </div>
         
-        <div className="mt-3 text-xs text-gray-500">
+        <div className="mt-3 text-xs text-clawd-text-dim">
           Or click any empty time slot in the calendar to schedule manually
         </div>
       </div>
@@ -404,7 +404,7 @@ export const XCalendarView: React.FC = () => {
   return (
     <div className="flex h-full">
       {/* Left sidebar - Draft selector */}
-      <div className="w-80 border-r border-gray-200 overflow-y-auto p-4">
+      <div className="w-80 border-r border-clawd-border overflow-y-auto p-4">
         {renderDraftSelector()}
         {renderTimeSlotPicker()}
       </div>
@@ -412,7 +412,7 @@ export const XCalendarView: React.FC = () => {
       {/* Main calendar */}
       <div className="flex-1 flex flex-col">
         {/* Calendar controls */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-clawd-border">
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigateWeek('prev')}
@@ -428,13 +428,13 @@ export const XCalendarView: React.FC = () => {
             </button>
             <button
               onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              className="px-3 py-1 border border-clawd-border rounded hover:bg-clawd-surface"
             >
               Today
             </button>
           </div>
           
-          <div className="text-lg font-semibold text-gray-900">
+          <div className="text-lg font-semibold text-clawd-text">
             {currentDate.toLocaleDateString('en-US', { 
               month: 'long',
               year: 'numeric'
@@ -446,8 +446,8 @@ export const XCalendarView: React.FC = () => {
               onClick={() => setViewMode('week')}
               className={`px-3 py-1 rounded ${
                 viewMode === 'week'
-                  ? 'bg-blue-500 text-white'
-                  : 'border border-gray-300 hover:bg-gray-50'
+                  ? 'bg-info text-white'
+                  : 'border border-clawd-border hover:bg-clawd-surface'
               }`}
             >
               Week
@@ -456,8 +456,8 @@ export const XCalendarView: React.FC = () => {
               onClick={() => setViewMode('day')}
               className={`px-3 py-1 rounded ${
                 viewMode === 'day'
-                  ? 'bg-blue-500 text-white'
-                  : 'border border-gray-300 hover:bg-gray-50'
+                  ? 'bg-info text-white'
+                  : 'border border-clawd-border hover:bg-clawd-surface'
               }`}
             >
               Day
