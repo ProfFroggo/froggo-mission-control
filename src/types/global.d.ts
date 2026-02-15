@@ -1,5 +1,9 @@
 export {};
 
+// ============================================
+// Base Types
+// ============================================
+
 interface VoskWord {
   word: string;
   start: number;
@@ -38,6 +42,402 @@ interface ActivityData {
   timestamp: number;
 }
 
+// ============================================
+// Task Types
+// ============================================
+
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in-progress' | 'review' | 'done';
+  project?: string;
+  assignedTo?: string;
+  priority?: 'p0' | 'p1' | 'p2' | 'p3';
+  createdAt?: number;
+  updatedAt?: number;
+  completedAt?: number;
+  dueDate?: string;
+}
+
+// ============================================
+// Inbox Types
+// ============================================
+
+interface InboxItem {
+  id: number;
+  type: string;
+  title: string;
+  content: string;
+  context?: string;
+  channel?: string;
+  status?: string;
+  createdAt?: number;
+  metadata?: string;
+}
+
+interface RevisionItem {
+  id: number;
+  type: string;
+  title: string;
+  originalContent: string;
+  feedback: string;
+  context: string;
+  created: string;
+  sourceChannel: string;
+}
+
+// ============================================
+// Chat Types
+// ============================================
+
+interface ChatMessage {
+  role: string;
+  content: string;
+  timestamp: number;
+  sessionKey?: string;
+}
+
+// ============================================
+// Library Types
+// ============================================
+
+interface LibraryFile {
+  id: string;
+  name: string;
+  path: string;
+  size?: number;
+  type?: string;
+  category?: string;
+  createdAt?: number;
+}
+
+// ============================================
+// Schedule Types
+// ============================================
+
+interface ScheduleItem {
+  id: string;
+  type: string;
+  content: string;
+  scheduledFor: string;
+  metadata?: Record<string, unknown>;
+}
+
+// ============================================
+// Search Types
+// ============================================
+
+interface SearchResult {
+  id: string;
+  title: string;
+  snippet?: string;
+  type?: string;
+}
+
+// ============================================
+// X/Twitter Types
+// ============================================
+
+interface XTweet {
+  id: string;
+  text: string;
+  authorId?: string;
+  createdAt?: string;
+}
+
+interface XMention {
+  id: string;
+  text: string;
+  authorUsername?: string;
+  createdAt?: string;
+}
+
+// ============================================
+// Message Types
+// ============================================
+
+interface MessageChat {
+  id: string;
+  name?: string;
+  platform: string;
+  lastMessage?: string;
+  timestamp?: number;
+}
+
+// ============================================
+// Email Types
+// ============================================
+
+interface Email {
+  id: string;
+  subject: string;
+  from: string;
+  to?: string;
+  body?: string;
+  date?: string;
+  account?: string;
+}
+
+// ============================================
+// Calendar Types
+// ============================================
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  description?: string;
+  location?: string;
+  account?: string;
+  source?: 'google' | 'mission-control';
+}
+
+interface CalendarCacheEntry {
+  key: string;
+  age: number;
+  valid: boolean;
+  eventCount: number;
+}
+
+interface CalendarCacheStats {
+  totalEntries: number;
+  validEntries: number;
+  expiredEntries: number;
+  entries: CalendarCacheEntry[];
+}
+
+// ============================================
+// Session Types
+// ============================================
+
+interface Session {
+  sessionKey: string;
+  agentId?: string;
+  channel?: string;
+  lastMessageAt?: number;
+  messageCount?: number;
+}
+
+interface SessionMessage {
+  role: string;
+  content: string;
+  timestamp: number;
+  agentId?: string;
+}
+
+// ============================================
+// Folder Types
+// ============================================
+
+interface MessageFolder {
+  id: number;
+  name: string;
+  icon?: string;
+  color?: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+interface FolderRule {
+  id?: number;
+  folderId: number;
+  conditions: Array<{
+    field: string;
+    operator: string;
+    value: string;
+  }>;
+}
+
+// ============================================
+// VIP Types
+// ============================================
+
+interface VIPContact {
+  id: number | string;
+  identifier: string;
+  label?: string;
+  type?: string;
+  category?: string;
+  boost?: number;
+  notes?: string;
+}
+
+// ============================================
+// Snooze Types
+// ============================================
+
+interface SnoozeEntry {
+  sessionKey: string;
+  until: string;
+  reason?: string;
+  createdAt?: number;
+}
+
+// ============================================
+// Starred Types
+// ============================================
+
+interface StarredMessage {
+  id: number;
+  messageId: number;
+  sessionKey?: string;
+  content?: string;
+  note?: string;
+  category?: string;
+  starredAt?: number;
+}
+
+interface StarredStats {
+  total: number;
+  byCategory?: Array<{ category: string; count: number }>;
+}
+
+// ============================================
+// Agent Registry Types
+// ============================================
+
+interface AgentRegistryEntry {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  color: string;
+  image_path: string;
+  status: string;
+  trust_tier: string;
+}
+
+// ============================================
+// DM Feed Types
+// ============================================
+
+interface DMMessage {
+  id: number;
+  correlation_id: string;
+  from_agent: string;
+  to_agent: string;
+  message_type: string;
+  subject: string;
+  body: string;
+  status: string;
+  created_at: number;
+  read_at: number | null;
+}
+
+// ============================================
+// Circuit Breaker Types
+// ============================================
+
+interface CircuitBreakerStatus {
+  state: 'closed' | 'open' | 'half_open';
+  consecutive_failures: number;
+  last_failure_time: number | null;
+  suspended_until: number | null;
+  last_state_change: number;
+}
+
+// ============================================
+// Performance Types
+// ============================================
+
+interface AgentPerformance {
+  agent_id: string;
+  status: string;
+  success_rate: number;
+  avg_completion_hours: number;
+  clara_approval_rate: number;
+  tokens_per_task: number;
+  total_tasks: number;
+  total_cost: number;
+}
+
+interface PerformanceReport {
+  days: number;
+  agents: AgentPerformance[];
+  error?: string;
+}
+
+// ============================================
+// Audit Types
+// ============================================
+
+interface AuditTimelineEntry {
+  timestamp: string;
+  type: 'lifecycle' | 'activity';
+  action: string;
+  task_id?: string;
+  message?: string;
+  outcome?: string;
+  field?: string;
+  from_value?: string;
+  to_value?: string;
+  changed_by?: string;
+  reason?: string;
+}
+
+interface AgentAudit {
+  agent_id: string;
+  days: number;
+  timeline: AuditTimelineEntry[];
+  error?: string;
+}
+
+// ============================================
+// Widget Types
+// ============================================
+
+interface WidgetManifest {
+  version?: string;
+  widgets?: WidgetDefinition[];
+  error?: string;
+}
+
+interface WidgetDefinition {
+  id: string;
+  name: string;
+  component: string;
+  permissions: string[];
+  panelType: 'dashboard' | 'sidebar' | 'modal';
+  icon: string;
+  description: string;
+}
+
+// ============================================
+// Settings Types
+// ============================================
+
+interface UserSettings {
+  theme?: 'light' | 'dark' | 'system';
+  notifications?: boolean;
+  sidebarCollapsed?: boolean;
+  [key: string]: unknown;
+}
+
+// ============================================
+// Notification Types
+// ============================================
+
+interface NotificationPrefs {
+  enabled?: boolean;
+  sound?: boolean;
+  desktop?: boolean;
+  [key: string]: unknown;
+}
+
+interface Notification {
+  id: string;
+  title: string;
+  body?: string;
+  icon?: string;
+  data?: Record<string, unknown>;
+}
+
+// ============================================
+// Window API
+// ============================================
+
 declare global {
   interface Window {
     electron?: {
@@ -72,7 +472,7 @@ declare global {
       tasks: {
         sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
         update: (taskId: string, updates: { status?: string; assignedTo?: string }) => Promise<{ success: boolean }>;
-        list: (status?: string) => Promise<{ success: boolean; tasks: any[] }>;
+        list: (status?: string) => Promise<{ success: boolean; tasks: Task[] }>;
         start: (taskId: string) => Promise<{ success: boolean }>;
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;
         // Poke Brain for status update
@@ -98,16 +498,16 @@ declare global {
       };
       // Inbox (froggo-db backed)
       inbox: {
-        list: (status?: string) => Promise<{ success: boolean; items: any[] }>;
+        list: (status?: string) => Promise<{ success: boolean; items: InboxItem[] }>;
         add: (item: { type: string; title: string; content: string; context?: string; channel?: string }) => Promise<{ success: boolean }>;
         // Add with custom metadata (for Stage 2 email items)
         addWithMetadata: (item: { type: string; title: string; content: string; context?: string; channel?: string; metadata?: string }) => Promise<{ success: boolean; error?: string }>;
         update: (id: number, updates: { status?: string; feedback?: string }) => Promise<{ success: boolean }>;
         approveAll: () => Promise<{ success: boolean; count?: number }>;
         // Revision handlers for 'needs-revision' items
-        listRevisions: () => Promise<{ success: boolean; items: any[] }>;
+        listRevisions: () => Promise<{ success: boolean; items: RevisionItem[] }>;
         submitRevision: (originalId: number, revisedContent: string, revisedTitle?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
-        getRevisionContext: (itemId: number) => Promise<{ success: boolean; item?: { id: number; type: string; title: string; originalContent: string; feedback: string; context: string; created: string; sourceChannel: string }; error?: string }>;
+        getRevisionContext: (itemId: number) => Promise<{ success: boolean; item?: RevisionItem; error?: string }>;
         onUpdate: (callback: (data: { newItems?: number; revision?: boolean; originalId?: number }) => void) => () => void;
       };
       // Execution
@@ -116,8 +516,8 @@ declare global {
       };
       // Chat message persistence
       chat: {
-        saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => Promise<{ success: boolean }>;
-        loadMessages: (limit?: number, sessionKey?: string) => Promise<{ success: boolean; messages: any[] }>;
+        saveMessage: (msg: ChatMessage) => Promise<{ success: boolean }>;
+        loadMessages: (limit?: number, sessionKey?: string) => Promise<{ success: boolean; messages: ChatMessage[] }>;
         clearMessages: (sessionKey?: string) => Promise<{ success: boolean }>;
         suggestReplies: (context: { role: string; content: string }[]) => Promise<{ success: boolean; suggestions: string[]; error?: string }>;
       };
@@ -129,13 +529,13 @@ declare global {
       };
       // Database
       db: {
-        exec: (query: string, params?: any[]) => Promise<{ success: boolean; result?: any[]; error?: string }>;
-        query: (query: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
+        exec: (query: string, params?: unknown[]) => Promise<{ success: boolean; result?: unknown[]; error?: string }>;
+        query: (query: string, params?: unknown[]) => Promise<{ success: boolean; rows?: unknown[]; error?: string }>;
       };
       // Library
       library: {
-        list: (category?: string) => Promise<{ success: boolean; files: any[] }>;
-        upload: () => Promise<{ success: boolean; file?: any; error?: string }>;
+        list: (category?: string) => Promise<{ success: boolean; files: LibraryFile[] }>;
+        upload: () => Promise<{ success: boolean; file?: LibraryFile; error?: string }>;
         delete: (fileId: string) => Promise<{ success: boolean }>;
         link: (fileId: string, taskId: string) => Promise<{ success: boolean }>;
       };
@@ -146,27 +546,27 @@ declare global {
       };
       // Schedule
       schedule: {
-        list: () => Promise<{ success: boolean; items: any[] }>;
-        add: (item: { type: string; content: string; scheduledFor: string; metadata?: any }) => Promise<{ success: boolean; id?: string }>;
-        update: (id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => Promise<{ success: boolean }>;
+        list: () => Promise<{ success: boolean; items: ScheduleItem[] }>;
+        add: (item: { type: string; content: string; scheduledFor: string; metadata?: Record<string, unknown> }) => Promise<{ success: boolean; id?: string }>;
+        update: (id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: Record<string, unknown> }) => Promise<{ success: boolean }>;
         cancel: (id: string) => Promise<{ success: boolean }>;
         sendNow: (id: string) => Promise<{ success: boolean }>;
       };
       // Search
       search: {
-        local: (query: string) => Promise<{ success: boolean; results: any[] }>;
-        discord: (query: string) => Promise<{ success: boolean; messages: any[] }>;
-        telegram: (query: string) => Promise<{ success: boolean; messages: any[] }>;
-        whatsapp: (query: string) => Promise<{ success: boolean; messages: any[] }>;
+        local: (query: string) => Promise<{ success: boolean; results: SearchResult[] }>;
+        discord: (query: string) => Promise<{ success: boolean; messages: unknown[] }>;
+        telegram: (query: string) => Promise<{ success: boolean; messages: unknown[] }>;
+        whatsapp: (query: string) => Promise<{ success: boolean; messages: unknown[] }>;
       };
       // System status
       system: {
-        status: () => Promise<{ success: boolean; status: any }>;
+        status: () => Promise<{ success: boolean; status: Record<string, unknown> }>;
       };
       // Settings
       settings: {
-        get: () => Promise<{ success: boolean; settings: any }>;
-        save: (settings: any) => Promise<{ success: boolean }>;
+        get: () => Promise<{ success: boolean; settings: UserSettings }>;
+        save: (settings: UserSettings) => Promise<{ success: boolean }>;
         getApiKey: (keyName: string) => Promise<string | null>;
         storeApiKey: (keyName: string, value: string) => Promise<{ success: boolean; error?: string }>;
         hasApiKey: (keyName: string) => Promise<boolean>;
@@ -174,26 +574,26 @@ declare global {
       };
       // X (bird CLI)
       twitter: {
-        mentions: () => Promise<{ success: boolean; mentions?: any[]; raw?: string }>;
-        home: (limit?: number) => Promise<{ success: boolean; tweets?: any[]; raw?: string }>;
+        mentions: () => Promise<{ success: boolean; mentions?: XMention[]; raw?: string }>;
+        home: (limit?: number) => Promise<{ success: boolean; tweets?: XTweet[]; raw?: string }>;
         queuePost: (text: string, context?: string) => Promise<{ success: boolean; message?: string }>;
       };
       // Messages (wacli)
       messages: {
-        recent: (limit?: number) => Promise<{ success: boolean; chats: any[] }>;
+        recent: (limit?: number) => Promise<{ success: boolean; chats: MessageChat[] }>;
       };
       // Email (gog CLI)
       email: {
-        unread: (account?: string) => Promise<{ success: boolean; emails: any[]; account?: string }>;
-        search: (query: string, account?: string) => Promise<{ success: boolean; emails: any[]; account?: string }>;
+        unread: (account?: string) => Promise<{ success: boolean; emails: Email[]; account?: string }>;
+        search: (query: string, account?: string) => Promise<{ success: boolean; emails: Email[]; account?: string }>;
         queueSend: (to: string, subject: string, body: string, account?: string) => Promise<{ success: boolean; message?: string }>;
         // Direct send (Stage 2 email workflow)
         send: (options: { to: string; subject: string; body: string; account?: string }) => Promise<{ success: boolean; output?: string; error?: string }>;
       };
       // Calendar (gog CLI + aggregation service)
       calendar: {
-        events: (account?: string, days?: number) => Promise<{ success: boolean; events: any[]; account?: string }>;
-        today: () => Promise<{ success: boolean; events: any[]; account?: string }>;
+        events: (account?: string, days?: number) => Promise<{ success: boolean; events: CalendarEvent[]; account?: string }>;
+        today: () => Promise<{ success: boolean; events: CalendarEvent[]; account?: string }>;
         // Calendar aggregation service
         aggregate: (options?: {
           days?: number;
@@ -202,7 +602,7 @@ declare global {
           accounts?: string[];
         }) => Promise<{
           success: boolean;
-          events: any[];
+          events: CalendarEvent[];
           sources: {
             google: { [account: string]: number };
             missionControl: number;
@@ -213,24 +613,14 @@ declare global {
         clearCache: (source?: 'google' | 'mission-control' | 'all') => Promise<{ success: boolean; error?: string }>;
         cacheStats: () => Promise<{
           success: boolean;
-          stats?: {
-            totalEntries: number;
-            validEntries: number;
-            expiredEntries: number;
-            entries: Array<{
-              key: string;
-              age: number;
-              valid: boolean;
-              eventCount: number;
-            }>;
-          };
+          stats?: CalendarCacheStats;
           error?: string;
         }>;
       };
       // Sessions management
       sessions: {
-        list: () => Promise<{ success: boolean; sessions: any[] }>;
-        history: (sessionKey: string, limit?: number) => Promise<{ success: boolean; messages: any[] }>;
+        list: () => Promise<{ success: boolean; sessions: Session[] }>;
+        history: (sessionKey: string, limit?: number) => Promise<{ success: boolean; messages: SessionMessage[] }>;
       };
       // Pinned Conversations
       pins: {
@@ -243,17 +633,17 @@ declare global {
       };
       // Message Folders
       folders: {
-        list: () => Promise<{ success: boolean; folders: any[]; error?: string }>;
-        create: (folder: { name: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; folder?: any; error?: string }>;
+        list: () => Promise<{ success: boolean; folders: MessageFolder[]; error?: string }>;
+        create: (folder: { name: string; icon?: string; color?: string; description?: string }) => Promise<{ success: boolean; folder?: MessageFolder; error?: string }>;
         update: (folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => Promise<{ success: boolean; error?: string }>;
         delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
         assign: (folderId: number, sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
         unassign: (folderId: number, sessionKey: string) => Promise<{ success: boolean; error?: string }>;
-        forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: any[]; error?: string }>;
-        conversations: (folderId: number) => Promise<{ success: boolean; conversations: any[]; error?: string }>;
+        forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: MessageFolder[]; error?: string }>;
+        conversations: (folderId: number) => Promise<{ success: boolean; conversations: unknown[]; error?: string }>;
         rules: {
-          get: (folderId: number) => Promise<{ success: boolean; rule?: any; error?: string }>;
-          save: (folderId: number, rule: any) => Promise<{ success: boolean; error?: string }>;
+          get: (folderId: number) => Promise<{ success: boolean; rule?: FolderRule; error?: string }>;
+          save: (folderId: number, rule: FolderRule) => Promise<{ success: boolean; error?: string }>;
           delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
         };
       };
@@ -261,7 +651,7 @@ declare global {
       conversations: {
         archive: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
         unarchive: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
-        archived: () => Promise<{ success: boolean; conversations: any[]; error?: string }>;
+        archived: () => Promise<{ success: boolean; conversations: unknown[]; error?: string }>;
         isArchived: (sessionKey: string) => Promise<{ success: boolean; archived: boolean; error?: string }>;
         markRead: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
         delete: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
@@ -272,132 +662,64 @@ declare global {
       };
       // Notification settings (per-conversation)
       notificationSettings: {
-        get: (sessionKey: string) => Promise<{ success: boolean; settings?: any; error?: string }>;
-        set: (sessionKey: string, settings: any) => Promise<{ success: boolean; error?: string }>;
+        get: (sessionKey: string) => Promise<{ success: boolean; settings?: NotificationPrefs; error?: string }>;
+        set: (sessionKey: string, settings: NotificationPrefs) => Promise<{ success: boolean; error?: string }>;
         delete: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
-        getEffective: (sessionKey: string) => Promise<{ success: boolean; settings?: any; error?: string }>;
-        getGlobalDefaults: () => Promise<{ success: boolean; defaults?: any; error?: string }>;
-        setGlobalDefaults: (defaults: any) => Promise<{ success: boolean; error?: string }>;
+        getEffective: (sessionKey: string) => Promise<{ success: boolean; settings?: NotificationPrefs; error?: string }>;
+        getGlobalDefaults: () => Promise<{ success: boolean; defaults?: NotificationPrefs; error?: string }>;
+        setGlobalDefaults: (defaults: NotificationPrefs) => Promise<{ success: boolean; error?: string }>;
         muteConversation: (sessionKey: string, until?: string) => Promise<{ success: boolean; error?: string }>;
         unmuteConversation: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
       };
       // VIP contacts
       vip: {
-        list: (category?: string) => Promise<any>;
+        list: (category?: string) => Promise<VIPContact[]>;
         add: (vip: { identifier: string; label?: string; type?: string; category?: string; boost?: number; notes?: string }) => Promise<{ success: boolean; error?: string }>;
         update: (id: number | string, updates: { label?: string; boost?: number; category?: string; notes?: string }) => Promise<{ success: boolean; error?: string }>;
         remove: (id: number | string) => Promise<{ success: boolean; error?: string }>;
       };
       // Snooze conversations
       snooze: {
-        list: () => Promise<{ success: boolean; snoozes?: any[]; error?: string }>;
-        get: (sessionKey: string) => Promise<{ success: boolean; snooze?: any; error?: string }>;
+        list: () => Promise<{ success: boolean; snoozes?: SnoozeEntry[]; error?: string }>;
+        get: (sessionKey: string) => Promise<{ success: boolean; snooze?: SnoozeEntry; error?: string }>;
         set: (sessionKey: string, until: string, reason?: string) => Promise<{ success: boolean; error?: string }>;
         unset: (sessionKey: string) => Promise<{ success: boolean; error?: string }>;
       };
       // Froggo DB direct queries
       froggo: {
-        query: (sql: string, params?: any[]) => Promise<{ success: boolean; rows?: any[]; error?: string }>;
+        query: (sql: string, params?: unknown[]) => Promise<{ success: boolean; rows?: unknown[]; error?: string }>;
       };
       // System notifications
       notifications: {
-        getPrefs: () => Promise<any>;
-        updatePrefs: (updates: any) => Promise<void>;
-        send: (options: any) => Promise<void>;
+        getPrefs: () => Promise<NotificationPrefs>;
+        updatePrefs: (updates: NotificationPrefs) => Promise<void>;
+        send: (options: Notification) => Promise<void>;
         test: () => Promise<void>;
-        onReceived: (callback: (notification: any) => void) => () => void;
-        onAction: (callback: (action: any) => void) => () => void;
+        onReceived: (callback: (notification: Notification) => void) => () => void;
+        onAction: (callback: (action: { action: string; notificationId: string }) => void) => () => void;
       };
       // Navigation
-      onNavigate: (callback: (view: string, data?: any) => void) => () => void;
+      onNavigate: (callback: (view: string, data?: unknown) => void) => () => void;
       // Starred messages
       starred: {
         star: (messageId: number, note?: string, category?: string) => Promise<{ success: boolean; error?: string }>;
         unstar: (identifier: number) => Promise<{ success: boolean; error?: string }>;
-        list: (options?: { category?: string; sessionKey?: string; limit?: number }) => Promise<{ success: boolean; starred: any[]; error?: string }>;
-        search: (query: string, limit?: number) => Promise<{ success: boolean; results: any[]; error?: string }>;
-        stats: () => Promise<{ success: boolean; stats: { total: number; byCategory?: any[] } }>;
+        list: (options?: { category?: string; sessionKey?: string; limit?: number }) => Promise<{ success: boolean; starred: StarredMessage[]; error?: string }>;
+        search: (query: string, limit?: number) => Promise<{ success: boolean; results: StarredMessage[]; error?: string }>;
+        stats: () => Promise<{ success: boolean; stats: StarredStats }>;
         check: (messageId: number) => Promise<{ success: boolean; isStarred: boolean }>;
       };
       // Agent registry (dynamic agent loading)
-      getAgentRegistry: () => Promise<Array<{
-        id: string;
-        name: string;
-        role: string;
-        description: string;
-        color: string;
-        image_path: string;
-        status: string;
-        trust_tier: string;
-      }>>;
+      getAgentRegistry: () => Promise<AgentRegistryEntry[]>;
       // DM Feed & Circuit Breakers
-      getDMHistory: (args?: { limit?: number; agent?: string }) => Promise<Array<{
-        id: number;
-        correlation_id: string;
-        from_agent: string;
-        to_agent: string;
-        message_type: string;
-        subject: string;
-        body: string;
-        status: string;
-        created_at: number;
-        read_at: number | null;
-      }>>;
-      getCircuitStatus: () => Promise<Record<string, {
-        state: 'closed' | 'open' | 'half_open';
-        consecutive_failures: number;
-        last_failure_time: number | null;
-        suspended_until: number | null;
-        last_state_change: number;
-      }>>;
+      getDMHistory: (args?: { limit?: number; agent?: string }) => Promise<DMMessage[]>;
+      getCircuitStatus: () => Promise<Record<string, CircuitBreakerStatus>>;
       // Agent performance & governance
-      getPerformanceReport: (days: number) => Promise<{
-        days: number;
-        agents: Array<{
-          agent_id: string;
-          status: string;
-          success_rate: number;
-          avg_completion_hours: number;
-          clara_approval_rate: number;
-          tokens_per_task: number;
-          total_tasks: number;
-          total_cost: number;
-        }>;
-        error?: string;
-      }>;
-      getAgentAudit: (agentId: string, days: number) => Promise<{
-        agent_id: string;
-        days: number;
-        timeline: Array<{
-          timestamp: string;
-          type: 'lifecycle' | 'activity';
-          action: string;
-          task_id?: string;
-          message?: string;
-          outcome?: string;
-          field?: string;
-          from_value?: string;
-          to_value?: string;
-          changed_by?: string;
-          reason?: string;
-        }>;
-        error?: string;
-      }>;
+      getPerformanceReport: (days: number) => Promise<PerformanceReport>;
+      getAgentAudit: (agentId: string, days: number) => Promise<AgentAudit>;
       // Widget API - dynamic agent widget loading
       widgetAPI?: {
-        scanManifest: (agentId: string) => Promise<{
-          version?: string;
-          widgets?: Array<{
-            id: string;
-            name: string;
-            component: string;
-            permissions: string[];
-            panelType: 'dashboard' | 'sidebar' | 'modal';
-            icon: string;
-            description: string;
-          }>;
-          error?: string;
-        }>;
+        scanManifest: (agentId: string) => Promise<WidgetManifest>;
       };
       // Toolbar pop-out API
       toolbar?: {
