@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Send, Plus, Trash2, AlertCircle, Eye } from 'lucide-react';
 import { showToast } from './Toast';
+import { getCurrentUserName } from '../utils/auth';
 
 interface ContentPlan {
   id: string;
@@ -10,10 +11,6 @@ interface ContentPlan {
 }
 
 const TWEET_CHAR_LIMIT = 280;
-
-const getCurrentUserName = () => {
-  return "TEST_USER"; //Replace with proper authentication.
-}
 
 export default function XDraftComposer() {
   const [contentPlans, setContentPlans] = useState<ContentPlan[]>([]);
@@ -113,9 +110,7 @@ export default function XDraftComposer() {
         planId: selectedPlanId,
         version,
         content,
-        import { getAgentName } from 'src/auth';
-...
-proposedBy: getAgentName(),
+        proposedBy: getCurrentUserName(),
       });
 
       if (result.success) {
