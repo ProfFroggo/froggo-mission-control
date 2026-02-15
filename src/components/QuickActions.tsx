@@ -852,14 +852,14 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   
   const handlePopOut = async () => {
     try {
-      // Check if window.electron and toolbar API are available
-      if (!window.electron?.toolbar) {
+      // Check if window.clawdbot and toolbar API are available
+      if (!window.clawdbot?.toolbar) {
         showToast('error', 'Pop-out Failed', 'Toolbar API not available');
-        console.error('window.electron.toolbar is not defined');
+        console.error('window.clawdbot.toolbar is not defined');
         return;
       }
 
-      const result = await window.electron.toolbar.popOut({
+      const result = await window.clawdbot.toolbar.popOut({
         width: state.isCollapsed ? 80 : 360,
         height: 400,
       });
