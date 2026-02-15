@@ -86,7 +86,9 @@ export default function XPlanThreadComposer() {
         contentType,
         threadLength,
         description: description.trim(),
-        proposedBy: getCurrentUserName(), // TODO: Get from agent context
+        import { getAgentName } from 'src/auth';
+...
+proposedBy: getAgentName(),
       });
 
       if (result.success) {
