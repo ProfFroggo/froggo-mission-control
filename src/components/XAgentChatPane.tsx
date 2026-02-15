@@ -110,7 +110,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim">
             <Users className="w-12 h-12 text-clawd-text-dim mb-3" />
             <p className="font-medium text-clawd-text">Start a conversation</p>
-            <p className="text-sm mt-1">Chat with {agents.join(' and ')}</p>
+            <p className="text-sm mt-1 text-clawd-text">Chat with {agents.join(' and ')}</p>
           </div>
         ) : (
           <>
@@ -122,9 +122,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 <div
                   className={`max-w-[80%] rounded-lg p-3 ${
                     msg.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-clawd-bg-alt text-clawd-text'
-                  }`}
+                      ? 'bg-info-subtle text-info'
+                      : 'bg-clawd-bg-alt text-clawd-text'}`}
                 >
                   {msg.role === 'agent' && msg.agentName && (
                     <div className="text-xs text-clawd-text-dim mb-1">{msg.agentName}</div>
@@ -132,7 +131,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                   <div className="text-sm whitespace-pre-wrap break-words">{msg.content}</div>
                   <div
                     className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-blue-200' : 'text-clawd-text-dim'
+                      msg.role === 'user' ? 'text-clawd-text-dim' : 'text-clawd-text-dim'
                     }`}
                   >
                     {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -167,13 +166,13 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={`Chat with ${agents[0]}...`}
-            className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
             disabled={loading}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            className="btn-primary p-2 rounded-lg transition-colors"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
