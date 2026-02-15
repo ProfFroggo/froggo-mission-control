@@ -343,7 +343,7 @@ export default function GlobalNotificationSettings() {
           )}
         </button>
         <p className="text-xs text-clawd-text-dim mt-2">
-          These settings apply to all conversations that don't have custom notification preferences.
+          These settings apply to all conversations that don&apos;t have custom notification preferences.
         </p>
       </div>
     </div>

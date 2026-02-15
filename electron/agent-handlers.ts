@@ -147,7 +147,9 @@ async function handleGetAgentRegistry(): Promise<Record<string, any>> {
 
 function loadAgentRegistry(): Record<string, any> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require('path');
     const registryPath = path.join(__dirname, 'agent-registry.json');
     const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));

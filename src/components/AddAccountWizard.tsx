@@ -362,7 +362,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     <div className="text-4xl mb-4">🔐</div>
                     <h4 className="font-medium mb-2">OAuth Authentication</h4>
                     <p className="text-sm text-clawd-text-dim mb-4">
-                      Click "Connect" below to open your browser and sign in to {currentProviderInfo.name}.
+                      Click &quot;Connect&quot; below to open your browser and sign in to {currentProviderInfo.name}.
                       Your credentials never pass through Froggo.
                     </p>
                     <ul className="text-sm text-clawd-text-dim text-left space-y-2">
@@ -380,7 +380,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                       </li>
                       <li className="flex items-start gap-2">
                         <span>4.</span>
-                        <span>You'll be redirected back automatically</span>
+                        <span>You&apos;ll be redirected back automatically</span>
                       </li>
                     </ul>
                   </div>

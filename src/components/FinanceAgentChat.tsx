@@ -183,9 +183,9 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             </div>
             <div className="mt-4 p-3 bg-clawd-bg-alt rounded-lg text-xs text-left space-y-1 max-w-xs">
               <p className="text-clawd-text font-medium">Try asking:</p>
-              <p className="text-clawd-text-dim">"How much did I spend this month?"</p>
-              <p className="text-clawd-text-dim">"Show me my biggest expenses"</p>
-              <p className="text-clawd-text-dim">"Am I on track with my budget?"</p>
+              <p className="text-clawd-text-dim">&quot;How much did I spend this month?&quot;</p>
+              <p className="text-clawd-text-dim">&quot;Show me my biggest expenses&quot;</p>
+              <p className="text-clawd-text-dim">&quot;Am I on track with my budget?&quot;</p>
             </div>
           </div>
         ) : (

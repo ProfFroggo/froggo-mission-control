@@ -422,7 +422,8 @@ export default function InboxPanel() {
         // Shift+A and Shift+X handled in 'a' and 'x' cases above
           
         // Filter shortcuts
-        case '/': // Focus search/filter (can be implemented later)
+        case '/': {
+          // Focus search/filter (can be implemented later)
           e.preventDefault();
           // For now, just cycle through filters
           const filters: (ApprovalType | 'all')[] = ['all', 'tweet', 'email', 'message', 'task'];
@@ -431,8 +432,9 @@ export default function InboxPanel() {
           setFilter(nextFilter);
           setFocusedIndex(0);
           break;
-          
-        case '1': case '2': case '3': case '4': case '5':
+        }
+
+        case '1': case '2': case '3': case '4': case '5': {
           // Quick filter: 1=all, 2=tweet, 3=email, 4=message, 5=task
           e.preventDefault();
           const filterMap: Record<string, ApprovalType | 'all'> = {
@@ -445,6 +447,7 @@ export default function InboxPanel() {
           setFilter(filterMap[key] || 'all');
           setFocusedIndex(0);
           break;
+        }
           
         // Sorting shortcuts
         case 'p': // Sort by priority
@@ -1547,7 +1550,7 @@ export default function InboxPanel() {
         <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)} role="button" tabIndex={-1} aria-label="Close reject dialog">
           <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
-            <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don't want.</p>
+            <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don&apos;t want.</p>
             <input
               ref={rejectInputRef}
               type="text"
