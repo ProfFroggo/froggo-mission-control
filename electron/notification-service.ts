@@ -10,14 +10,14 @@ const safeLog = {
       if (process.stdout.writable) {
         console.debug(...args);
       }
-    } catch {}
+    } catch { /* ignore */ }
   },
   error: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
         console.error(...args);
       }
-    } catch {}
+    } catch { /* ignore */ }
   },
 };
 

@@ -202,7 +202,7 @@ export default function InboxPanel() {
       try {
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.isReview) return true;
-      } catch {}
+      } catch { /* ignore */ }
     }
     
     // Everything else is an approval (blocking decision)
@@ -554,7 +554,7 @@ export default function InboxPanel() {
       if (item.metadata) {
         try {
           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-        } catch {}
+        } catch { /* ignore */ }
       }
       
       // Stage 2: Email is ready to send - show Send/Schedule modal
@@ -1659,7 +1659,7 @@ export default function InboxPanel() {
                         if (item.metadata) {
                           try {
                             metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-                          } catch {}
+                          } catch { /* ignore */ }
                         }
                         
                         const recipient = metadata.recipient || metadata.to;
@@ -1737,7 +1737,7 @@ export default function InboxPanel() {
                       if (item.metadata) {
                         try {
                           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-                        } catch {}
+                        } catch { /* ignore */ }
                       }
                       
                       // Add to schedule

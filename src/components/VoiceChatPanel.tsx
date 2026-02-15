@@ -31,12 +31,12 @@ async function loadApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
-  } catch {}
+  } catch { /* ignore */ }
   // 3. Check localStorage settings
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
     if (s.geminiApiKey) return s.geminiApiKey;
-  } catch {}
+  } catch { /* ignore */ }
   return '';
 }
 
@@ -66,7 +66,7 @@ function loadHistory(agentId: string): VoiceChatMessage[] {
 function saveHistory(agentId: string, msgs: VoiceChatMessage[]) {
   try {
     localStorage.setItem(storageKey(agentId), JSON.stringify(msgs.slice(-100)));
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {

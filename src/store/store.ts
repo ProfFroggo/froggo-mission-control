@@ -539,7 +539,7 @@ export const useStore = create<Store>()(
                     if (subtaskResult?.success) {
                       return { ...task, subtasks: subtaskResult.subtasks || [] };
                     }
-                  } catch {}
+                  } catch { /* ignore */ }
                   return task;
                 })
               );
