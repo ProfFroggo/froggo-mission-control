@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { MessageSquare, RefreshCw } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 
@@ -27,7 +27,7 @@ interface Activity {
   unread?: boolean;
 }
 
-export default function ActivityFeed() {
+const ActivityFeed = memo(function ActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
@@ -225,4 +225,6 @@ export default function ActivityFeed() {
       </div>
     </div>
   );
-}
+});
+
+export default ActivityFeed;
