@@ -87,7 +87,9 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
 
   // Load API key asynchronously on mount
   useEffect(() => {
-    loadApiKey().then(key => { apiKeyRef.current = key; });
+    loadApiKey()
+      .then(key => { apiKeyRef.current = key; })
+      .catch(err => console.error('[TeamVoiceMeeting] Failed to load API key:', err));
   }, []);
   const isActiveRef = useRef(false);
   const listeningRef = useRef(false);

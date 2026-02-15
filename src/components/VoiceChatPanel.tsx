@@ -118,7 +118,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
 
   // Load API key asynchronously on mount
   useEffect(() => {
-    loadApiKey().then(key => { apiKey.current = key; });
+    loadApiKey()
+      .then(key => { apiKey.current = key; })
+      .catch(err => console.error('[VoiceChat] Failed to load API key:', err));
   }, []);
   
   // Agent context
