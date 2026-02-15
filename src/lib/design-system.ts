@@ -196,9 +196,9 @@ export const PRIORITY_COLORS = {
     label: 'Medium',
   },
   p3: {
-    text: 'text-gray-400',
-    bg: 'bg-gray-500/20',
-    border: 'border-gray-500/30',
+    text: 'text-clawd-text-dim',
+    bg: 'bg-clawd-bg/20',
+    border: 'border-clawd-border/30',
     label: 'Low',
   },
 } as const;
