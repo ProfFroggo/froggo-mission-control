@@ -117,11 +117,18 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, streamingContent]);
 
+  const focusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Focus input when mode switches
   useEffect(() => {
     if (isOpen && mode === 'chat' && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      focusTimeoutRef.current = setTimeout(() => inputRef.current?.focus(), 100);
     }
+    return () => {
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current);
+      }
+    };
   }, [isOpen, mode]);
 
   // ⌘S to save (manual mode only)

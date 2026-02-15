@@ -39,9 +39,20 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(onClose, 200);
+    closeTimeoutRef.current = setTimeout(onClose, 200);
   };
 
   const outcomeIcon = (outcome: string | null) => {

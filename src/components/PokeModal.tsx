@@ -36,6 +36,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const streamCleanupRef = useRef<(() => void) | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const task = tasks.find(t => t.id === taskId);
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -44,6 +45,9 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     initPoke();
     return () => {
       streamCleanupRef.current?.();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, [taskId]);
 
@@ -193,7 +197,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         }
         
         // Timeout fallback
-        setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
           if (sending) {
             setSending(false);
             setStreamingContent('');
