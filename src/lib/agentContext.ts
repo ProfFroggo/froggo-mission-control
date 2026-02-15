@@ -57,20 +57,20 @@ let personalitiesData: Record<string, any> | null = null;
 async function loadPersonalities(): Promise<Record<string, any>> {
   if (personalitiesData) return personalitiesData;
   
-  console.log('[AgentContext] Loading personalities...');
+  console.debug('[AgentContext] Loading personalities...');
   
   // In Electron, try exec first (file:// fetch doesn't work)
   const isElectron = !!(window as any).clawdbot?.exec?.run;
   
   if (isElectron) {
     try {
-      console.log('[AgentContext] Electron mode - using exec...');
+      console.debug('[AgentContext] Electron mode - using exec...');
       const r = await (window as any).clawdbot.exec.run(
         'cat ~/clawd/clawd-dashboard/dist/agent-profiles/personalities.json'
       );
       if (r.success && r.stdout) {
         personalitiesData = JSON.parse(r.stdout);
-        console.log('[AgentContext] ✅ Loaded from exec');
+        console.debug('[AgentContext] ✅ Loaded from exec');
         return personalitiesData!;
       }
     } catch (err) {
@@ -83,7 +83,7 @@ async function loadPersonalities(): Promise<Record<string, any>> {
     const resp = await fetch('/agent-profiles/personalities.json');
     if (resp.ok) {
       personalitiesData = await resp.json();
-      console.log('[AgentContext] ✅ Loaded from fetch');
+      console.debug('[AgentContext] ✅ Loaded from fetch');
       return personalitiesData!;
     }
   } catch (err) {
@@ -257,7 +257,7 @@ export async function loadAgentContext(agentId: string): Promise<AgentContext> {
   // Cache it
   contextCache.set(agentId, { context, timestamp: Date.now() });
   
-  console.log(`[AgentContext] Loaded for ${agentId}:`, {
+  console.debug(`[AgentContext] Loaded for ${agentId}:`, {
     hasPersonality: !!personality,
     taskCount: tasks.length,
     sessionCount: sessions.length,

@@ -50,7 +50,7 @@ export async function loadAgentWidgets(agentId: string): Promise<WidgetDefinitio
     // Validate manifest schema
     const manifest = WidgetManifestSchema.parse(manifestData);
 
-    console.log(`[WidgetRegistry] Loaded ${manifest.widgets.length} widget(s) for ${agentId}`);
+    console.debug(`[WidgetRegistry] Loaded ${manifest.widgets.length} widget(s) for ${agentId}`);
     return manifest.widgets;
 
   } catch (err) {
@@ -89,7 +89,7 @@ export async function scanAllWidgets(): Promise<Map<string, WidgetDefinition[]>>
       })
     );
 
-    console.log(`[WidgetRegistry] Scanned ${agents.length} agents, found widgets for ${widgetMap.size}`);
+    console.debug(`[WidgetRegistry] Scanned ${agents.length} agents, found widgets for ${widgetMap.size}`);
 
   } catch (err) {
     console.error('[WidgetRegistry] Failed to scan widgets:', err);
