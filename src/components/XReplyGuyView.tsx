@@ -121,7 +121,7 @@ export const XReplyGuyView: React.FC = () => {
       <div
         key={mention.id}
         className={`border-b border-clawd-border p-4 transition-colors ${
-          isSelected ? 'bg-blue-500/10' : 'hover:bg-clawd-surface'
+          isSelected ? 'bg-info/10' : 'hover:bg-clawd-surface'
         }`}
       >
         {/* Header */}
@@ -131,7 +131,7 @@ export const XReplyGuyView: React.FC = () => {
             <div className="text-sm text-clawd-text-dim">{mention.author_name}</div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs font-medium text-warning bg-orange-100 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 text-xs font-medium text-warning bg-warning-subtle px-2 py-1 rounded">
               <TrendingUp size={12} />
               {engagementScore}
             </div>
@@ -166,12 +166,12 @@ export const XReplyGuyView: React.FC = () => {
 
         {/* Quick reply section */}
         {isSelected ? (
-          <div className="space-y-3 bg-clawd-bg p-3 rounded border border-blue-200">
+          <div className="space-y-3 bg-clawd-bg p-3 rounded border border-info">
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write your reply..."
-              className="w-full px-3 py-2 text-sm border border-clawd-border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-clawd-bg text-clawd-text"
+              className="w-full px-3 py-2 text-sm border border-clawd-border rounded resize-none focus:outline-none focus:ring-2 focus:ring-info bg-clawd-bg text-clawd-text"
               rows={4}
               maxLength={280}
               autoFocus
@@ -209,7 +209,7 @@ export const XReplyGuyView: React.FC = () => {
                 <button
                   onClick={() => handleCreateDraft(mention.id)}
                   disabled={!replyText.trim() || replyText.length > 280}
-                  className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="px-4 py-1.5 text-sm bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                 >
                   <Send size={14} />
                   {fastTrack ? 'Draft & Approve' : 'Create Draft'}
@@ -227,7 +227,7 @@ export const XReplyGuyView: React.FC = () => {
         ) : (
           <button
             onClick={() => setSelectedMention(mention.id)}
-            className="px-4 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+            className="px-4 py-1.5 text-sm bg-info text-white rounded hover:bg-info/80 flex items-center gap-1"
           >
             <Zap size={14} />
             Quick Reply
@@ -249,7 +249,7 @@ export const XReplyGuyView: React.FC = () => {
           <button
             onClick={loadHotMentions}
             disabled={loading}
-            className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-info text-white rounded hover:bg-info/80 disabled:opacity-50"
           >
             {loading ? 'Loading...' : 'Refresh'}
           </button>

@@ -341,9 +341,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
   };
 
   const handleSelect = (result: SearchResult) => {
-    console.log('[GlobalSearch] Selected:', result);
     saveToHistory(query);
-    
+
     // Navigate based on result type
     if (onNavigate) {
       switch (result.type) {
@@ -365,11 +364,9 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
         case 'tweet':
           onNavigate('twitter', result.id);
           break;
-        default:
-          console.log('Navigate to:', result);
       }
     }
-    
+
     onClose();
   };
 

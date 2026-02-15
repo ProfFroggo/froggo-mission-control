@@ -244,7 +244,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       }
       
       const result = await clawdbot.twitter.mentions();
-      console.log('[Mentions] Result:', result);
+      // Mentions loaded
       
       if (result?.success) {
         // Handle both JSON and raw output from bird CLI

@@ -532,7 +532,7 @@ export default function XAutomationsTab() {
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         automation.enabled
                           ? 'bg-success-subtle text-success'
-                          : 'bg-clawd-bg0/20 text-clawd-text-dim'
+                          : 'bg-clawd-bg/20 text-clawd-text-dim'
                       }`}>
                         {automation.enabled ? 'Active' : 'Disabled'}
                       </span>
@@ -547,7 +547,7 @@ export default function XAutomationsTab() {
                       onClick={() => toggleAutomation(automation.id, automation.enabled)}
                       className={`p-2 rounded-lg transition-colors ${
                         automation.enabled
-                          ? 'bg-success-subtle text-success hover:bg-green-500/30'
+                          ? 'bg-success-subtle text-success hover:bg-success/30'
                           : 'bg-clawd-bg0/20 text-clawd-text-dim hover:bg-clawd-bg0/30'
                       }`}
                       title={automation.enabled ? 'Disable' : 'Enable'}

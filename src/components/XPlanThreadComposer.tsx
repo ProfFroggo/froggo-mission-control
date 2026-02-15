@@ -108,7 +108,7 @@ export default function XPlanThreadComposer() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-clawd-bg">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -174,7 +174,7 @@ export default function XPlanThreadComposer() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., AI Agents for Productivity - Complete Guide"
-                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
                 disabled={submitting}
               />
             </div>
@@ -191,7 +191,7 @@ export default function XPlanThreadComposer() {
                     onClick={() => setContentType(type.value)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
                       contentType === type.value
-                        ? 'border-blue-500 bg-blue-500/20 text-clawd-text'
+                        ? 'border-info bg-info/20 text-clawd-text'
                         : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
                     }`}
                     disabled={submitting}
@@ -215,7 +215,7 @@ export default function XPlanThreadComposer() {
                     onClick={() => setThreadLength(length.value)}
                     className={`px-4 py-2 rounded-lg border-2 transition-colors ${
                       threadLength === length.value
-                        ? 'border-blue-500 bg-blue-500/20 text-clawd-text'
+                        ? 'border-info bg-info/20 text-clawd-text'
                         : 'border-clawd-border bg-clawd-bg-alt text-clawd-text-dim hover:border-clawd-border/80'
                     }`}
                     disabled={submitting}
@@ -236,7 +236,7 @@ export default function XPlanThreadComposer() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={`Outline the ${threadLength === 1 ? 'tweet' : 'thread'}...\n\n${threadLength > 1 ? 'Example:\nTweet 1: Hook - grab attention\nTweet 2: Problem statement\nTweet 3: Solution\n...' : 'Keep it concise and impactful.'}`}
                 rows={threadLength === 1 ? 6 : 12}
-                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono text-sm"
+                className="w-full bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info resize-none font-mono text-sm"
                 disabled={submitting}
               />
               <div className="flex items-center justify-between mt-2">
@@ -255,11 +255,11 @@ export default function XPlanThreadComposer() {
             <button
               onClick={handleSubmit}
               disabled={submitting || !selectedResearchId || !title.trim() || !description.trim()}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-clawd-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-clawd-text border-t-transparent rounded-full animate-spin" />
                   Submitting...
                 </>
               ) : (

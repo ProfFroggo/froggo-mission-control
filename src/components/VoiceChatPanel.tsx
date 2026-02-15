@@ -249,7 +249,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         });
       }),
       geminiLive.on('model-thinking', ({ text }: { text: string }) => {
-        console.log('[VoiceChat] Thinking:', text.slice(0, 100));
+        // Voice thinking update
       }),
       geminiLive.on('interrupted', () => {
         addSystemMessage('🔄 Interrupted');
@@ -261,7 +261,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           geminiLive.startToolCallKeepalive();
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
-            console.log(`[VoiceChat] Tool: ${fc.name}`, fc.args);
+            // Tool call executed
             addSystemMessage(`🔧 ${fc.name}(${Object.values(fc.args || {}).join(', ')})`);
             let result: any;
             try {

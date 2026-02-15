@@ -652,7 +652,6 @@ export default function MeetingsPanel() {
 
   const startMeeting = useCallback(async () => {
     if (listeningRef.current) return;
-    console.log('[Meeting] Starting...');
     setStatusMessage('Starting meeting...');
     setMeetingTranscript([]);
     setMeetingTranscriptLines([]);
@@ -692,7 +691,6 @@ export default function MeetingsPanel() {
   const endMeeting = useCallback(async () => {
     if (endMeetingInProgressRef.current) return;
     endMeetingInProgressRef.current = true;
-    console.log('[Meeting] Ending...');
     try {
       if (transcriptBufferRef.current.trim()) {
         const finalText = transcriptBufferRef.current.trim();

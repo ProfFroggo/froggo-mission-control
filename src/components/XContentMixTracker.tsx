@@ -115,9 +115,9 @@ export const XContentMixTracker: React.FC = () => {
               {currentPercent.toFixed(1)}% / {item.target}%
             </span>
             {offTarget ? (
-              <AlertTriangle size={14} className="text-orange-500" />
+              <AlertTriangle size={14} className="text-warning" />
             ) : (
-              <Check size={14} className="text-green-500" />
+              <Check size={14} className="text-success" />
             )}
           </div>
         </div>
@@ -154,7 +154,7 @@ export const XContentMixTracker: React.FC = () => {
 
         {/* Deviation indicator */}
         {offTarget && (
-          <div className="mt-1 text-xs text-orange-600 flex items-center gap-1">
+          <div className="mt-1 text-xs text-warning flex items-center gap-1">
             <AlertTriangle size={12} />
             {deviation > 0 
               ? `${deviation.toFixed(1)}% over target`

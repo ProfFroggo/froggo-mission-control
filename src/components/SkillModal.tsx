@@ -420,13 +420,6 @@ Format as markdown with proper headings.`;
       const { showToast } = await import('./Toast');
       showToast('success', 'Skill Created!', `${skillData.name} added and task assigned to ${assignedAgent}`);
 
-      console.log('[SkillModal] Created skill:', {
-        name: skillData.name,
-        path: skillPath,
-        agent: assignedAgent,
-        task: taskResult,
-      });
-
     } catch (error) {
       console.error('Failed to create skill:', error);
       const { showToast } = await import('./Toast');

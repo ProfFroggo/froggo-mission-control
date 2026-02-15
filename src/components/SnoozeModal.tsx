@@ -107,7 +107,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       const result = await window.clawdbot!.snooze.set(sessionKey, String(snoozeUntil), reason || undefined);
       
       if (result.success) {
-        console.log('[SnoozeModal] Snooze set successfully');
+        // Snooze set successfully
         onClose();
       } else {
         setError(result.error || 'Failed to set snooze');
@@ -128,7 +128,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       const result = await window.clawdbot!.snooze.unset(sessionKey);
       
       if (result.success) {
-        console.log('[SnoozeModal] Unsnooze successful');
+        // Unsnooze successful
         onClose();
       } else {
         setError(result.error || 'Failed to unsnooze');

@@ -463,7 +463,7 @@ export default function MeetingScribe() {
       const res = await window.clawdbot?.exec?.run(cmd);
       if (res.success) {
         result.savedPath = filepath;
-        console.log('[Scribe] Saved to:', filepath);
+        // Scribe saved successfully
       }
     } catch (err) {
       console.error('[Scribe] Save error:', err);
