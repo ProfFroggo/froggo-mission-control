@@ -287,9 +287,8 @@ Be thorough but only include real people, not generic references.`;
               }
             } catch (e) {
               console.error('Failed to parse entities:', e);
-              setSaveStatus('error');
+              setStatusWithTimeout('error');
               setSaveMessage('Failed to parse file content');
-              setTimeout(() => setSaveStatus('idle'), 3000);
             }
           }
           
@@ -302,9 +301,8 @@ Be thorough but only include real people, not generic references.`;
     } catch (error) {
       console.error('Parse error:', error);
       setIsParsing(false);
-      setSaveStatus('error');
+      setStatusWithTimeout('error');
       setSaveMessage('Failed to parse file');
-      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
@@ -363,16 +361,15 @@ Be thorough but only include real people, not generic references.`;
       setSaveStatus('success');
       setSaveMessage(`✓ ${contactData.name} added to ${fileName}`);
       
-      setTimeout(() => {
+      statusTimeoutRef.current = setTimeout(() => {
         resetForm();
         onClose();
       }, 2000);
 
     } catch (error) {
       console.error('Save error:', error);
-      setSaveStatus('error');
+      setStatusWithTimeout('error');
       setSaveMessage('Failed to save contact');
-      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 

@@ -44,6 +44,14 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
   const VALID_AGENTS = agents.filter(a => !['froggo', 'main'].includes(a.id)).map(a => a.id);
 
   const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const execCmd = async (cmd: string): Promise<{ ok: boolean; stdout: string; error?: string }> => {
     try {
@@ -304,6 +312,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
 
   const executePlan = async (feedback?: string) => {
     setPhase('executing');
+    abortControllerRef.current = new AbortController();
     const skipTypes: string[] = [];
     
     if (feedback) {

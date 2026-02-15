@@ -47,7 +47,7 @@ class NotificationService {
   private mainWindow: BrowserWindow | null = null;
 
   constructor() {
-    this.prefsPath = path.join(os.homedir(), 'clawd', 'data', 'notification-prefs.json');
+    this.prefsPath = path.join(os.homedir(), 'froggo', 'data', 'notification-prefs.json');
     this.loadPreferences();
   }
 
