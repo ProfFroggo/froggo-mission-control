@@ -755,9 +755,9 @@ export default function XPanel() {
                   {/* Ideas List */}
                   {planIdeas.length > 0 && (
                     <div className="mt-3 space-y-2 max-h-32 overflow-auto">
-                      {planIdeas.map((item, index) => (
+                      {planIdeas.map((item) => (
                         <button
-                          key={index}
+                          key={item.idea}
                           onClick={() => {
                             setPlanComposeText(item.idea);
                             addActivity({ type: 'task', message: 'Moved idea to compose', timestamp: Date.now() });

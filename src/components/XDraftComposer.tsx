@@ -250,7 +250,7 @@ export default function XDraftComposer() {
 
                 <div className="space-y-4">
                   {tweets.map((tweet, index) => (
-                    <div key={index} className="relative">
+                    <div key={`${tweet.slice(0, 20)}-${index}`} className="relative">
                       <div className="flex items-start gap-2">
                         <div className="flex-1">
                           <div className="relative">
@@ -295,7 +295,7 @@ export default function XDraftComposer() {
                 <h4 className="text-sm font-semibold text-clawd-text mb-3">Preview (X/Twitter Style)</h4>
                 <div className="space-y-3">
                   {tweets.filter(t => t.trim()).map((tweet, index) => (
-                    <div key={index} className="bg-black rounded-lg p-4 border border-gray-800">
+                    <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-black rounded-lg p-4 border border-gray-800">
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-clawd-text font-semibold">K</span>
