@@ -270,7 +270,7 @@ function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
-    require('fs').appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
+    fs.appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
   } catch (e) { /* ignore */ }
 }
 
@@ -3290,7 +3290,6 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
 ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
     // Pass criteria via stdin using execSync input option to avoid shell injection
-    const { execSync } = require('child_process');
     try {
       const result = execSync(
         `${path.join(SCRIPTS_DIR, 'inbox-filter.sh')} filter`,
@@ -3470,7 +3469,6 @@ ipcMain.handle('screenshot:capture', async (_, outputPath: string) => {
     if (mainWindow) {
       mainWindow.webContents.capturePage().then((image) => {
         const pngBuffer = image.toPNG();
-        const fs = require('fs');
         fs.writeFileSync(outputPath, pngBuffer);
         resolve({ success: true, path: outputPath, size: pngBuffer.length });
       }).catch((err) => {
@@ -3996,8 +3994,6 @@ ipcMain.handle('library:list', async (_, category?: string) => {
 });
 
 ipcMain.handle('library:upload', async () => {
-  const { dialog } = require('electron');
-  
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
