@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Settings, Inbox } from 'lucide-react';
 import FolderManager from './FolderManager';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
-import { SortableContext, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { SortableContext, horizontalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useSortable } from '@dnd-kit/sortable';
 
 interface MessageFolder {
   id: number;
@@ -120,8 +119,8 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
         const total = sortedFolders.reduce((sum: number, f: MessageFolder) => sum + f.conversation_count, 0);
         setAllSessionsCount(total);
       }
-    } catch (error) {
-      console.error('[FolderTabs] Failed to load folders:', error);
+    } catch {
+      // Silent fail - folders will remain empty
     }
   };
 
@@ -159,9 +158,8 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
             sort_order: i
           });
         }
-      } catch (error) {
-        console.error('[FolderTabs] Failed to update folder order:', error);
-        // Reload on error
+      } catch {
+        // Reload on error to restore previous order
         loadFolders();
       }
     }

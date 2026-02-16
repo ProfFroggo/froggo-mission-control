@@ -5,14 +5,14 @@ import * as os from 'os';
 
 // Safe logger
 const safeLog = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
         console.debug(...args);
       }
     } catch { /* ignore */ }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
         console.error(...args);
@@ -104,7 +104,7 @@ class NotificationService {
     silent?: boolean;
     urgency?: 'low' | 'normal' | 'critical';
     actions?: { type: string; text: string }[];
-    data?: any;
+    data?: Record<string, unknown>;
   }) {
     // Check if notifications are enabled globally
     if (!this.preferences.enabled) {
@@ -202,7 +202,7 @@ class NotificationService {
     return subtitleMap[type];
   }
 
-  private handleNotificationClick(type: string, data?: any) {
+  private handleNotificationClick(type: string, data?: Record<string, unknown>) {
     if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
 
     // Focus the window
@@ -225,7 +225,7 @@ class NotificationService {
     }
   }
 
-  private handleNotificationAction(actionType: string, data?: any) {
+  private handleNotificationAction(actionType: string, data?: Record<string, unknown>) {
     if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
 
     // Send action to renderer
