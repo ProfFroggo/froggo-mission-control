@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:compile": "tsc -p tsconfig.electron.json && cp electron/agent-registry.json dist-electron/agent-registry.json",
+    "electron:compile": "tsc -p tsconfig.electron.json && cp electron/agent-registry.json dist-electron/agent-registry.json && rm -rf dist-electron/electron dist-electron/src",
     "electron:dev": "npm run electron:compile && ./start.sh",
     "deploy": "bash deploy.sh",
     "electron:build": "npm run build:prod",
