@@ -84,7 +84,7 @@ export default function ChapterSidebar() {
   };
 
   return (
-    <div className="w-64 h-full flex flex-col bg-clawd-surface border-r border-clawd-border flex-shrink-0">
+    <div className="w-full h-full flex flex-col bg-clawd-surface border-r border-clawd-border flex-shrink-0 min-w-0">
       {/* Header */}
       <div className="px-3 py-3 border-b border-clawd-border flex-shrink-0">
         <div className="flex items-center gap-2">
