@@ -162,7 +162,7 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
           <ProgressBar 
             value={m.completedTasks} 
             max={m.totalTasks || 1} 
-            color="bg-blue-500" 
+            color="bg-info" 
           />
           <div className="text-xs text-clawd-text-dim mt-1">
             {m.inProgressTasks} in progress
@@ -224,7 +224,7 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
           <ProgressBar 
             value={m.subtaskCompletionRate} 
             max={100} 
-            color="bg-pink-500" 
+            color="bg-review" 
           />
         </div>
       </div>
@@ -234,7 +234,7 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
         <div className="flex items-center gap-3 text-xs text-clawd-text-dim">
           {m.reviewTasks > 0 && (
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <div className="w-2 h-2 rounded-full bg-info" />
               <span>{m.reviewTasks} in review</span>
             </div>
           )}

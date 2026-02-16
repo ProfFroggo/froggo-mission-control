@@ -146,17 +146,17 @@ export default function CodeAgentDashboard() {
   };
 
   const statusColors = {
-    running: 'bg-yellow-500',
-    idle: 'bg-green-500',
-    completed: 'bg-green-500',
-    failed: 'bg-red-500',
+    running: 'bg-warning',
+    idle: 'bg-success',
+    completed: 'bg-success',
+    failed: 'bg-error',
   };
 
   const taskStatusColors = {
     pending: 'bg-clawd-bg0',
-    'in-progress': 'bg-yellow-500',
-    review: 'bg-purple-500',
-    done: 'bg-green-500',
+    'in-progress': 'bg-warning',
+    review: 'bg-review',
+    done: 'bg-success',
   };
 
   return (
