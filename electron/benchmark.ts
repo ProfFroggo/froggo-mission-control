@@ -6,7 +6,7 @@
 import Database from 'better-sqlite3';
 import { execSync } from 'child_process';
 import { FROGGO_DB } from './paths';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './logger';
 
 const dbPath = FROGGO_DB;
 const logger = createLogger('Benchmark');
