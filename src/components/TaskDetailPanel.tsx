@@ -224,15 +224,21 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       // Cmd+Backspace - Delete task
       if (isCmdOrCtrl && e.key === 'Backspace') {
         e.preventDefault();
-        if (confirm(`Delete task "${task.title}"? This cannot be undone.`)) {
-          // Delete task
-          (window as any).clawdbot?.tasks?.delete(task.id).then(() => {
+        // Use ConfirmDialog instead of native confirm
+        showConfirm({
+          title: 'Delete Task',
+          message: `Delete task "${task.title}"? This cannot be undone.`,
+          confirmLabel: 'Delete',
+          type: 'danger',
+        }, async () => {
+          try {
+            await (window as any).clawdbot?.tasks?.delete(task.id);
             showToast('success', 'Task deleted', `Deleted "${task.title}"`);
             onClose();
-          }).catch((err: Error) => {
+          } catch (err: any) {
             showToast('error', 'Delete failed', err.message);
-          });
-        }
+          }
+        });
         return;
       }
     };
@@ -1500,6 +1506,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

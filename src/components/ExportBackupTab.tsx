@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Download, Upload, Database, Clock, HardDrive, CheckCircle, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface BackupInfo {
   filename: string;
@@ -37,6 +38,7 @@ export default function ExportBackupTab() {
   const [includeAttachments, setIncludeAttachments] = useState(false);
   const [autoBackupEnabled, setAutoBackupEnabled] = useState(false);
   const [keepBackupsCount, setKeepBackupsCount] = useState(10);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Load backups and stats on mount
   useEffect(() => {
@@ -175,49 +177,55 @@ export default function ExportBackupTab() {
 
   // Restore Backup
   const handleRestoreBackup = async (backupPath: string) => {
-    if (!confirm('⚠️ This will replace your current database. Are you sure you want to restore from this backup?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await (window as any).clawdbot?.exportBackup?.restoreBackup(backupPath);
-      
-      if (result?.success) {
-        showToast('success', 'Backup Restored', 'Database restored successfully. Refreshing...');
-        setTimeout(() => window.location.reload(), 2000);
-      } else {
-        showToast('error', 'Restore Failed', result?.error || 'Unknown error');
+    showConfirm({
+      title: 'Restore Backup',
+      message: '⚠️ This will replace your current database. Are you sure you want to restore from this backup?',
+      confirmLabel: 'Restore',
+      type: 'danger',
+    }, async () => {
+      setLoading(true);
+      try {
+        const result = await (window as any).clawdbot?.exportBackup?.restoreBackup(backupPath);
+        
+        if (result?.success) {
+          showToast('success', 'Backup Restored', 'Database restored successfully. Refreshing...');
+          setTimeout(() => window.location.reload(), 2000);
+        } else {
+          showToast('error', 'Restore Failed', result?.error || 'Unknown error');
+        }
+      } catch (error) {
+        showToast('error', 'Restore Failed', error instanceof Error ? error.message : String(error));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      showToast('error', 'Restore Failed', error instanceof Error ? error.message : String(error));
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   // Cleanup Old Backups
   const handleCleanupBackups = async () => {
-    if (!confirm(`Delete all but the ${keepBackupsCount} most recent backups?`)) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await (window as any).clawdbot?.exportBackup?.cleanupOldBackups(keepBackupsCount);
-      
-      if (result?.success) {
-        showToast('success', 'Cleanup Complete', `Deleted ${result.deletedCount} old backups`);
-        loadBackups();
-        loadStats();
-      } else {
-        showToast('error', 'Cleanup Failed', result?.error || 'Unknown error');
+    showConfirm({
+      title: 'Cleanup Backups',
+      message: `Delete all but the ${keepBackupsCount} most recent backups?`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, async () => {
+      setLoading(true);
+      try {
+        const result = await (window as any).clawdbot?.exportBackup?.cleanupOldBackups(keepBackupsCount);
+        
+        if (result?.success) {
+          showToast('success', 'Cleanup Complete', `Deleted ${result.deletedCount} old backups`);
+          loadBackups();
+          loadStats();
+        } else {
+          showToast('error', 'Cleanup Failed', result?.error || 'Unknown error');
+        }
+      } catch (error) {
+        showToast('error', 'Cleanup Failed', error instanceof Error ? error.message : String(error));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      showToast('error', 'Cleanup Failed', error instanceof Error ? error.message : String(error));
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -513,6 +521,17 @@ export default function ExportBackupTab() {
           </div>
         </div>
       </section>
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }
