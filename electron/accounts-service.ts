@@ -105,7 +105,13 @@ class AccountsService {
         timeout: 5000,
         env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
       });
-      const gogData = JSON.parse(gogList.stdout);
+      let gogData;
+      try {
+        gogData = JSON.parse(gogList.stdout);
+      } catch (parseError) {
+        logger.error('[AccountsService] Failed to parse gog auth list JSON:', parseError);
+        gogData = { accounts: [] };
+      }
       knownAccounts = (gogData.accounts || []).map((a: { email?: string }) => a.email).filter((e: string | undefined): e is string => Boolean(e));
     } catch {
       logger.info('[AccountsService] Failed to discover gog accounts for migration');
