@@ -51,6 +51,14 @@ type Listener = (event: any) => void;
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'authenticating' | 'connected';
 
+/** Queued action for offline replay */
+interface QueuedAction {
+  method: string;
+  params: unknown;
+  resolve: (value: unknown) => void;
+  reject: (reason: Error) => void;
+}
+
 class Gateway {
   private ws: WebSocket | null = null;
   private seq = 0;
@@ -68,6 +76,10 @@ class Gateway {
   // Per-runId callback system — components register handlers keyed by runId
   // so multiple concurrent requests (e.g. multi-agent rooms) each get their own events
   private runCallbacks = new Map<string, RunCallback>();
+  // Offline queue for actions during disconnection
+  private offlineQueue: QueuedAction[] = [];
+  private maxOfflineQueueSize = 50;
+  private lastError: string | null = null;
   
   // Heartbeat
   private heartbeatInterval: number | null = null;
@@ -269,14 +281,26 @@ class Gateway {
     };
 
     this.ws.onclose = (event) => {
+      const wasConnected = this.state === 'connected';
+      this.lastError = `Connection closed (code: ${event.code})`;
       console.log('[Gateway] WebSocket closed:', event.code);
       this.cleanup();
       this.setState('disconnected');
       this.scheduleReconnect();
+      // Emit connection lost event for UI feedback
+      if (wasConnected) {
+        this.emit('connectionLost', { 
+          code: event.code, 
+          reason: event.reason,
+          attempts: this.reconnectAttempts 
+        });
+      }
     };
 
     this.ws.onerror = (err) => {
+      this.lastError = 'WebSocket connection error';
       console.error('[Gateway] WebSocket error:', err);
+      this.emit('connectionError', { error: this.lastError, attempts: this.reconnectAttempts });
     };
   }
 
@@ -285,12 +309,14 @@ class Gateway {
       const oldState = this.state;
       this.state = newState;
       console.log('[Gateway] State:', oldState, '->', newState);
-      this.emit('stateChange', { state: newState, oldState });
+      this.emit('stateChange', { state: newState, oldState, attempts: this.reconnectAttempts, error: this.lastError });
       
       if (newState === 'connected') {
         this.emit('connect', {});
+        // Process offline queue
+        this.processOfflineQueue();
       } else if (newState === 'disconnected' && oldState !== 'disconnected') {
-        this.emit('disconnect', {});
+        this.emit('disconnect', { attempts: this.reconnectAttempts, error: this.lastError });
       }
     }
   }
@@ -448,7 +474,13 @@ class Gateway {
   }
 
   async request<T = any>(method: string, params: any = {}): Promise<T> {
+    // If offline, queue the action for later replay
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.state !== 'connected') {
+      // Only queue write operations, not reads
+      const writeMethods = ['send', 'chat.send', 'sessions.spawn', 'sessions.delete', 'cron.add', 'cron.update', 'cron.remove', 'skills.install', 'skills.update', 'config.apply', 'channels.logout'];
+      if (writeMethods.some(m => method.startsWith(m))) {
+        return this.queueOfflineAction<T>(method, params);
+      }
       throw new Error('Not connected');
     }
     const id = `req-${Date.now()}-${++this.seq}`;
@@ -463,6 +495,65 @@ class Gateway {
       this.pending.set(id, { resolve, reject, timer });
       this.ws!.send(JSON.stringify({ type: 'req', id, method, params }));
     });
+  }
+
+  /** Queue an action to be replayed when connection is restored */
+  private queueOfflineAction<T>(method: string, params: unknown): Promise<T> {
+    if (this.offlineQueue.length >= this.maxOfflineQueueSize) {
+      return Promise.reject(new Error('Offline queue is full. Changes cannot be saved.'));
+    }
+    
+    return new Promise((resolve, reject) => {
+      this.offlineQueue.push({ method, params, resolve: resolve as (value: unknown) => void, reject });
+      this.emit('actionQueued', { method, queueSize: this.offlineQueue.length });
+    });
+  }
+
+  /** Process queued offline actions when connection is restored */
+  private async processOfflineQueue() {
+    if (this.offlineQueue.length === 0) return;
+    
+    const queue = [...this.offlineQueue];
+    this.offlineQueue = [];
+    
+    this.emit('processingOfflineQueue', { count: queue.length });
+    
+    for (const action of queue) {
+      try {
+        const result = await this.request(action.method, action.params);
+        action.resolve(result);
+      } catch (err) {
+        action.reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    }
+    
+    this.emit('offlineQueueProcessed', { processed: queue.length });
+  }
+
+  /** Get current reconnection attempt count */
+  getReconnectAttempts(): number {
+    return this.reconnectAttempts;
+  }
+
+  /** Get offline queue size */
+  getOfflineQueueSize(): number {
+    return this.offlineQueue.length;
+  }
+
+  /** Get last connection error */
+  getLastError(): string | null {
+    return this.lastError;
+  }
+
+  /** Clear offline queue (e.g., when user logs out) */
+  clearOfflineQueue() {
+    const count = this.offlineQueue.length;
+    // Reject all queued actions
+    for (const action of this.offlineQueue) {
+      action.reject(new Error('Connection closed - action cancelled'));
+    }
+    this.offlineQueue = [];
+    this.emit('offlineQueueCleared', { count });
   }
 
   on(event: string, listener: Listener) {
