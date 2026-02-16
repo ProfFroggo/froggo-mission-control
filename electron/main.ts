@@ -972,7 +972,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
         }
         
         // Cleanup temp audio file
-        try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ } /* ignore */ }
+        try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
         
         if (error) {
           safeLog.error('Whisper error:', error.message);
@@ -985,7 +985,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
     });
   } catch (error: any) {
     safeLog.error('Whisper failed:', error);
-    try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ } /* ignore */ }
+    try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
     return { error: error.message };
   }
 });

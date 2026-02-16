@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, Wind, Droplets, RefreshCw, AlertCircle, Thermometer, ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
+import WidgetLoading from './WidgetLoading';
 
 interface WeatherCondition {
   temp_C: string;
