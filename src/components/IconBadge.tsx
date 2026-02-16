@@ -16,10 +16,11 @@ interface IconBadgeProps {
 export default function IconBadge({ 
   icon: Icon, 
   size = 18, 
-  color = 'bg-clawd-bg0/10 text-clawd-text-dim',
+  color = 'bg-clawd-bg/10 text-clawd-text-dim',
   rounded = 'lg',
-  className = ''
-}: IconBadgeProps) {
+  className = '',
+  'aria-label': ariaLabel
+}: IconBadgeProps & { 'aria-label'?: string }) {
   const roundedClass = {
     sm: 'rounded',
     md: 'rounded-md',
@@ -40,8 +41,10 @@ export default function IconBadge({
         width: `${minDimension}px`,
         height: `${minDimension}px`
       }}
+      aria-label={ariaLabel}
+      role={ariaLabel ? 'img' : undefined}
     >
-      <Icon size={size} className="flex-shrink-0" />
+      <Icon size={size} className="flex-shrink-0" aria-hidden="true" />
     </div>
   );
 }
