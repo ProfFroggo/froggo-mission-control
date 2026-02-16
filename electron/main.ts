@@ -230,8 +230,14 @@ ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
     }
 
     // Read and parse manifest
-    const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
-    const manifest = JSON.parse(manifestContent);
+    let manifest: any;
+    try {
+      const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+      manifest = JSON.parse(manifestContent);
+    } catch (parseError) {
+      safeLog.error('[WidgetManifest] Failed to parse manifest JSON:', parseError);
+      return { error: 'Invalid manifest JSON' };
+    }
 
     // Validate component paths don't escape widget directory
     const widgetDir = path.dirname(manifestPath);
