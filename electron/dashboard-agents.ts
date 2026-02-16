@@ -47,7 +47,7 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
     // This creates a persistent session that stays alive
     const cmd = `openclaw agent --agent-id ${agent.agentId} --session-key ${agent.sessionKey} --message "You are now connected to the dashboard chat. Read your SOUL.md and be ready. Do NOT run onboarding or BOOTSTRAP.md — you are already set up. Reply with a single word: ready" --no-deliver`;
     
-    const { stdout, stderr } = await execAsync(cmd, {
+    const { stderr } = await execAsync(cmd, {
       timeout: 30000,
       env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
     });

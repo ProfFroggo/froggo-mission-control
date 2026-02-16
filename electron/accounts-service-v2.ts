@@ -140,7 +140,7 @@ class AccountsServiceV2 {
       logger.info(`[AccountsV2] Refreshing OAuth for ${email}...`);
       
       // Run gog auth add to renew OAuth (will open browser)
-      const { stdout, stderr } = await execAsync(`gog auth add "${email}"`, {
+      await execAsync(`gog auth add "${email}"`, {
         timeout: 120000, // 2 minute timeout for user to complete OAuth in browser
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` },
       });

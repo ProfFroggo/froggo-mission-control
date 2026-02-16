@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { useUserSettings } from '../store/userSettings';
+import WidgetLoading from './WidgetLoading';
 
 interface EmailAccount {
   email: string;

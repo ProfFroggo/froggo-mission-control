@@ -1,9 +1,24 @@
-import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
+import { Users, Bot, CheckSquare, Activity, Loader2 } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentAvatar from './AgentAvatar';
+import WidgetLoading from './WidgetLoading';
 
 export default function QuickStatsWidget() {
-  const { sessions, agents, tasks, activities, gatewaySessions } = useStore();
+  const { sessions, agents, tasks, activities, gatewaySessions, loading } = useStore();
+
+  // Show loading state while initial data is loading
+  if (loading.tasks || loading.agents) {
+    return (
+      <div className="bg-clawd-surface rounded-xl border border-clawd-border overflow-hidden">
+        <div className="p-4 border-b border-clawd-border">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Activity size={16} className="text-clawd-accent" /> Quick Stats
+          </h2>
+        </div>
+        <WidgetLoading variant="skeleton" lines={4} />
+      </div>
+    );
+  }
 
   // Active Sessions - breakdown by channel
   const sessionsByChannel = sessions.reduce((acc, s: any) => {

@@ -25,7 +25,6 @@ const safeLog = {
     } catch { /* ignore */ }
   },
 };
-const SESSION_DIR = path.join(OPENCLAW_DIR, 'sessions');
 
 interface EventWatcher {
   start: () => void;
@@ -38,7 +37,7 @@ const notifiedItems = new Set<string>();
 /**
  * Watch task_activity table for completions and failures
  */
-function createTaskActivityWatcher(mainWindow: BrowserWindow): EventWatcher {
+function createTaskActivityWatcher(_mainWindow: BrowserWindow): EventWatcher {
   let lastCheck = Date.now();
   let interval: NodeJS.Timeout | null = null;
 
@@ -106,7 +105,7 @@ function createTaskActivityWatcher(mainWindow: BrowserWindow): EventWatcher {
 /**
  * Watch for new messages in active sessions (chat mentions)
  */
-function createMessageWatcher(mainWindow: BrowserWindow): EventWatcher {
+function createMessageWatcher(_mainWindow: BrowserWindow): EventWatcher {
   let interval: NodeJS.Timeout | null = null;
   let lastMessageCheck = Date.now();
 
@@ -172,7 +171,7 @@ function createMessageWatcher(mainWindow: BrowserWindow): EventWatcher {
 /**
  * Watch for tasks moving to 'review' status
  */
-function createReviewWatcher(mainWindow: BrowserWindow): EventWatcher {
+function createReviewWatcher(_mainWindow: BrowserWindow): EventWatcher {
   let lastCheck = Date.now();
   let interval: NodeJS.Timeout | null = null;
 

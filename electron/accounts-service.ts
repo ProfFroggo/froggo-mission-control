@@ -319,7 +319,7 @@ class AccountsService {
   /**
    * Authenticate iCloud account (app-specific password)
    */
-  private async authenticateICloud(request: AddAccountRequest) {
+  private async authenticateICloud(_request: AddAccountRequest) {
     // TODO: Implement iCloud authentication
     // This would involve storing app-specific password securely
     // and testing connection to iCloud services

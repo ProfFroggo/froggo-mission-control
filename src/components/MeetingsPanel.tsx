@@ -169,7 +169,7 @@ export default function MeetingsPanel() {
 
   useEffect(() => {
     return () => {
-      if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } /* ignore */ } }
+      if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } }
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
       if (audioContextRef.current) { audioContextRef.current.close().catch(() => {}); }
     };
@@ -703,7 +703,7 @@ export default function MeetingsPanel() {
         setMeetingTranscript(prev => [...prev, finalText]);
       }
       if (wsRef.current) {
-        try { wsRef.current.close(); } catch { /* ignore */ } /* ignore */ }
+        try { wsRef.current.close(); } catch { /* ignore */ }
         wsRef.current = null;
       }
       if (streamRef.current) {
