@@ -50,7 +50,7 @@ export interface BackupMetadata {
 /**
  * Convert JSON array to CSV format
  */
-function jsonToCsv(data: any[]): string {
+function jsonToCsv(data: Record<string, unknown>[]): string {
   if (data.length === 0) return '';
 
   // Get all unique keys from all objects
@@ -82,7 +82,7 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
   console.debug('[ExportBackup] Exporting tasks with options:', options);
 
   const conditions: string[] = ['1=1'];
-  const params: any[] = [];
+  const params: unknown[] = [];
   const filters = options.filters || {};
 
   if (filters.status) {
@@ -131,11 +131,39 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
     ORDER BY t.created_at DESC
   `;
 
-  const tasks = prepare(sql).all(...params) as any[];
+  interface TaskRow {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    project: string;
+    assigned_to: string;
+    reviewer_id: string;
+    priority: string;
+    tags: string;
+    due_date: string;
+    created_at: number;
+    updated_at: number;
+    started_at: number;
+    completed_at: number;
+    planning_notes: string;
+    subtask_count: number;
+    completed_subtasks: number;
+    attachment_count: number;
+  }
+
+  const tasks = prepare(sql).all(...params) as TaskRow[];
 
   // Also fetch subtasks for each task
   const taskIds = tasks.map(t => t.id);
-  let subtasks: any[] = [];
+  interface SubtaskRow {
+    id: string;
+    task_id: string;
+    title: string;
+    completed: number;
+    created_at: number;
+  }
+  let subtasks: SubtaskRow[] = [];
 
   if (taskIds.length > 0) {
     const placeholders = taskIds.map(() => '?').join(',');
@@ -186,7 +214,7 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
   console.debug('[ExportBackup] Exporting agent logs');
 
   const conditions: string[] = ['1=1'];
-  const params: any[] = [];
+  const params: unknown[] = [];
   const filters = options.filters || {};
 
   if (filters.dateFrom) {
@@ -215,7 +243,19 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
     ORDER BY a.created_at DESC
   `;
 
-  const logs = prepare(sql).all(...params) as any[];
+  interface LogRow {
+    id: number;
+    task_id: string;
+    activity_type: string;
+    details: string;
+    created_at: number;
+    agent_id: string;
+    metadata: string;
+    task_title: string;
+    task_project: string;
+  }
+
+  const logs = prepare(sql).all(...params) as LogRow[];
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   const filename = `agent-logs-${timestamp}.${options.format}`;
@@ -244,7 +284,7 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
   console.debug('[ExportBackup] Exporting chat history');
 
   const conditions: string[] = ['1=1'];
-  const params: any[] = [];
+  const params: unknown[] = [];
   const filters = options.filters || {};
 
   if (filters.dateFrom) {
@@ -271,7 +311,18 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
     ORDER BY timestamp DESC LIMIT 10000
   `;
 
-  const messages = prepare(sql).all(...params) as any[];
+  interface MessageRow {
+    id: number;
+    timestamp: number;
+    session_key: string;
+    channel: string;
+    role: string;
+    content: string;
+    message_id: string;
+    metadata: string;
+  }
+
+  const messages = prepare(sql).all(...params) as MessageRow[];
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   const filename = `chat-history-${timestamp}.${options.format}`;
@@ -314,7 +365,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<string>
     WHERE type='table'
     ORDER BY name
   `).all() as any[];
-  const tables = tablesResult.map((t: any) => t.name);
+  const tables = tablesResult.map((t: { name: string }) => t.name);
 
   const metadata: BackupMetadata = {
     timestamp: new Date().toISOString(),
@@ -367,11 +418,11 @@ export async function restoreBackup(backupPath: string): Promise<void> {
     prepare('SELECT COUNT(*) as count FROM tasks').get();
     console.debug('[ExportBackup] Database verification passed');
 
-  } catch (error: any) {
+  } catch (error) {
     // Restore failed, revert to safeguard
-    console.error('[ExportBackup] Restore failed, reverting:', error.message);
+    console.error('[ExportBackup] Restore failed, reverting:', (error as Error).message);
     fs.copyFileSync(safeguardPath, DB_PATH);
-    throw new Error(`Restore failed: ${error.message}`);
+    throw new Error(`Restore failed: ${(error as Error).message}`);
   }
 }
 
@@ -434,8 +485,8 @@ export async function cleanupOldBackups(keepCount: number = 10): Promise<number>
       }
 
       deletedCount++;
-    } catch (error: any) {
-      console.error('[ExportBackup] Failed to delete backup:', backup.filename, error.message);
+    } catch (error) {
+      console.error('[ExportBackup] Failed to delete backup:', backup.filename, (error as Error).message);
     }
   }
 
@@ -454,7 +505,7 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
   }
 
   const content = fs.readFileSync(filepath, 'utf-8');
-  let data: any;
+  let data: { tasks?: Record<string, unknown>[]; subtasks?: Record<string, unknown>[] };
 
   try {
     data = JSON.parse(content);
@@ -487,8 +538,8 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
       prepare(`INSERT INTO tasks (${fields.join(', ')}) VALUES (${placeholders})`).run(...values);
       imported++;
 
-    } catch (error: any) {
-      console.error('[ExportBackup] Failed to import task:', task.id, error.message);
+    } catch (error) {
+      console.error('[ExportBackup] Failed to import task:', task.id, (error as Error).message);
       errors++;
     }
   }
@@ -502,8 +553,8 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
         const values = fields.map(k => subtask[k]);
 
         prepare(`INSERT OR IGNORE INTO subtasks (${fields.join(', ')}) VALUES (${placeholders})`).run(...values);
-      } catch (error: any) {
-        console.error('[ExportBackup] Failed to import subtask:', error.message);
+      } catch (error) {
+        console.error('[ExportBackup] Failed to import subtask:', (error as Error).message);
       }
     }
   }
