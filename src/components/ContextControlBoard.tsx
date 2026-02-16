@@ -356,7 +356,7 @@ export default function ContextControlBoard() {
                 <div className="text-center text-clawd-text-dim py-12">
                   <MessageSquare size={48} className="mx-auto opacity-20 mb-4" />
                   <p>Chat about context, memory, or agent configuration</p>
-                  <p className="text-sm">e.g., "Update SOUL.md to be more casual"</p>
+                  <p className="text-sm">e.g., &quot;Update SOUL.md to be more casual&quot;</p>
                 </div>
               ) : (
                 <div className="space-y-4">

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, ChevronDown, ChevronRight, LogOut, Wifi, WifiOff, MessageSquare } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface ChannelAccount {
   accountId: string;
@@ -44,6 +45,7 @@ export default function ChannelsTab() {
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   const loadChannels = useCallback(async () => {
     setLoading(true);
@@ -74,14 +76,20 @@ export default function ChannelsTab() {
   useEffect(() => { loadChannels(); }, [loadChannels]);
 
   const handleLogout = async (channelId: string, accountId?: string) => {
-    if (!confirm(`Logout ${accountId || channelId}?`)) return;
-    try {
-      await gateway.channelLogout(channelId, accountId);
-      showToast('success', 'Logged out');
-      loadChannels();
-    } catch (e) {
-      showToast('error', 'Logout failed', String(e));
-    }
+    showConfirm({
+      title: 'Logout',
+      message: `Are you sure you want to logout ${accountId || channelId}?`,
+      confirmLabel: 'Logout',
+      type: 'warning',
+    }, async () => {
+      try {
+        await gateway.channelLogout(channelId, accountId);
+        showToast('success', 'Logged out');
+        loadChannels();
+      } catch (e) {
+        showToast('error', 'Logout failed', String(e));
+      }
+    });
   };
 
   const formatTimeAgo = (ms?: number) => {
@@ -194,6 +202,17 @@ export default function ChannelsTab() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

@@ -1050,7 +1050,7 @@ export default function ChatPanel() {
         {messages.length === 0 ? (
           <div className="text-center py-16 text-clawd-text-dim">
             <AgentAvatar agentId={selectedAgent.id} size="2xl" className="mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">Hey! I'm {selectedAgent.name}</p>
+            <p className="text-lg font-medium mb-2">Hey! I&apos;m {selectedAgent.name}</p>
             <p className="text-sm">{selectedAgent.role}. Ask me anything!</p>
             <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-md mx-auto">
               {['Check my calendar', 'Draft a tweet', 'What tasks are pending?', 'Check my emails'].map((q, i) => (

@@ -79,7 +79,7 @@ export default function OxGuardrails() {
                 className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-amber-500 focus:outline-none"
               />
               <p className="text-xs text-slate-500 mt-1">
-                Kevin's limit: 6 concurrent agents
+                Kevin&apos;s limit: 6 concurrent agents
               </p>
             </div>
             

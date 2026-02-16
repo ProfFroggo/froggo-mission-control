@@ -100,8 +100,8 @@ export default function ExportBackupTab() {
       } else {
         showToast('error', 'Export Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
-      showToast('error', 'Export Failed', error.message);
+    } catch (error) {
+      showToast('error', 'Export Failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
@@ -122,8 +122,8 @@ export default function ExportBackupTab() {
       } else {
         showToast('error', 'Export Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
-      showToast('error', 'Export Failed', error.message);
+    } catch (error) {
+      showToast('error', 'Export Failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
@@ -144,8 +144,8 @@ export default function ExportBackupTab() {
       } else {
         showToast('error', 'Export Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
-      showToast('error', 'Export Failed', error.message);
+    } catch (error) {
+      showToast('error', 'Export Failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
@@ -166,8 +166,8 @@ export default function ExportBackupTab() {
       } else {
         showToast('error', 'Backup Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
-      showToast('error', 'Backup Failed', error.message);
+    } catch (error) {
+      showToast('error', 'Backup Failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
@@ -189,8 +189,8 @@ export default function ExportBackupTab() {
       } else {
         showToast('error', 'Restore Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
-      showToast('error', 'Restore Failed', error.message);
+    } catch (error) {
+      showToast('error', 'Restore Failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
@@ -213,8 +213,8 @@ export default function ExportBackupTab() {
       } else {
         showToast('error', 'Cleanup Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
-      showToast('error', 'Cleanup Failed', error.message);
+    } catch (error) {
+      showToast('error', 'Cleanup Failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }
@@ -508,7 +508,7 @@ export default function ExportBackupTab() {
           <div className="flex items-start gap-2">
             <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
             <div>
-              <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup's contents
+              <strong>Data loss risk:</strong> Restoring a backup will replace ALL current data with the backup&apos;s contents
             </div>
           </div>
         </div>

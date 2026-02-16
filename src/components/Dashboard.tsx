@@ -6,6 +6,7 @@ import {
   TrendingUp, Clock, Zap, Users, Edit3, Plus, RotateCcw,
   X, Minus, Maximize2, Shield, type LucideIcon
 } from 'lucide-react';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { ResponsiveGridLayout } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -152,6 +153,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   
   const [greeting, setGreeting] = useState('');
   const [showActivityStream, setShowActivityStream] = useState(false);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   
   // Widget customization state
   const [editMode, setEditMode] = useState(false);
@@ -246,14 +248,19 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   };
 
   const handleResetLayout = () => {
-    if (confirm('Reset dashboard to default layout?')) {
+    showConfirm({
+      title: 'Reset Dashboard',
+      message: 'Reset dashboard to default layout? This will restore all widgets to their original positions.',
+      confirmLabel: 'Reset',
+      type: 'warning',
+    }, () => {
       setLayout(DEFAULT_LAYOUT);
       setHiddenWidgets(new Set());
       setMinimizedWidgets(new Set());
       localStorage.setItem('dashboard-widget-layout', JSON.stringify(DEFAULT_LAYOUT));
       localStorage.removeItem('dashboard-hidden-widgets');
       localStorage.removeItem('dashboard-minimized-widgets');
-    }
+    });
   };
 
   const handleToggleMinimize = (widgetId: string) => {
@@ -1000,6 +1007,17 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           )}
         </ResponsiveGridLayout>
       </div>
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }
