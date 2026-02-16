@@ -1051,7 +1051,7 @@ function RightPane({
     }
   };
 
-  const useSuggestion = (text: string) => {
+  const applySuggestion = (text: string) => {
     setReplyText(text);
     setShowAIPanel(false);
   };
@@ -1294,7 +1294,7 @@ function RightPane({
                 {suggestedReplies.map((reply, i) => (
                   <button
                     key={i}
-                    onClick={() => useSuggestion(reply)}
+                    onClick={() => applySuggestion(reply)}
                     className="w-full text-left p-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent hover:bg-clawd-accent/5 transition-colors text-sm"
                   >
                     {reply}

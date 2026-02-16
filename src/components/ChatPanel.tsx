@@ -619,7 +619,7 @@ export default function ChatPanel() {
     }
   };
 
-  const useSuggestion = (suggestion: string) => {
+  const applySuggestion = (suggestion: string) => {
     setInput(suggestion);
     setSuggestedReplies([]);
     inputRef.current?.focus();
@@ -1260,7 +1260,7 @@ export default function ChatPanel() {
               {suggestedReplies.map((suggestion, idx) => (
                 <button
                   key={idx}
-                  onClick={() => useSuggestion(suggestion)}
+                  onClick={() => applySuggestion(suggestion)}
                   className="px-3 py-2 bg-clawd-accent/10 border border-clawd-accent/30 rounded-lg text-sm hover:border-clawd-accent hover:bg-clawd-accent/20 transition-all text-left"
                   title="Click to use this reply"
                 >

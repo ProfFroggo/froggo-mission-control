@@ -1,25 +1,17 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { 
   Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, 
-  ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, 
+  ArrowRight, Calendar, RefreshCw, Bell, ChevronDown, 
   Inbox, ListTodo, AlertTriangle, Sparkles, 
   TrendingUp, Clock, Zap, Users, Edit3, Plus, RotateCcw,
-  X, Minus, Maximize2, GripVertical, Shield, type LucideIcon
+  X, Minus, Maximize2, Shield, type LucideIcon
 } from 'lucide-react';
-import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
+import { ResponsiveGridLayout } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
+import { TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
 import AgentAvatar from './AgentAvatar';
-
-// X logo component  
-const XIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
 import TodayCalendarWidget from './TodayCalendarWidget';
 import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
