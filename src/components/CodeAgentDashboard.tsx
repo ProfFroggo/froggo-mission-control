@@ -51,7 +51,10 @@ export default function CodeAgentDashboard() {
       // Load recent git commits
       const gitResult = await (window as any).clawdbot?.exec?.run(
         'git log --oneline -20 --pretty=format:"%h|%s|%an|%at" 2>/dev/null || echo ""'
-      ).catch(() => ({ stdout: '' }));
+      ).catch((err: any) => {
+        console.error('[CodeAgentDashboard] Failed to fetch git commits:', err);
+        return { stdout: '' };
+      });
       
       if (gitResult?.stdout) {
         const lines = gitResult.stdout.trim().split('\n').filter(Boolean);

@@ -82,8 +82,8 @@ Time: ${new Date().toISOString()}
     navigator.clipboard.writeText(errorDetails).then(() => {
       // Show feedback - using alert for simplicity as toast might not be available in error state
       alert('Error details copied to clipboard. Please share with the development team.');
-    }).catch(() => {
-      console.error('[ErrorBoundary] Failed to copy error details');
+    }).catch((err) => {
+      console.error('[ErrorBoundary] Failed to copy error details to clipboard:', err);
     });
   };
 
