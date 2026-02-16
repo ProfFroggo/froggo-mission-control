@@ -260,11 +260,11 @@ export default function AnalyticsOverview() {
         </div>
 
         {dailyData.length > 0 ? (
-          <div className="h-64 relative">
+          <div className="h-64 relative overflow-hidden">
             <svg
               className="w-full h-full"
-              viewBox={`0 0 ${dailyData.length * 40} 240`}
-              preserveAspectRatio="xMidYMid meet"
+              viewBox={`0 0 ${Math.max(dailyData.length * 40, 300)} 260`}
+              preserveAspectRatio="xMidYMid slice"
             >
               {/* Grid lines */}
               {[0, 25, 50, 75, 100].map((percent) => (
@@ -348,15 +348,22 @@ export default function AnalyticsOverview() {
                 );
               })}
 
-              {/* X-axis labels */}
+              {/* X-axis labels - improved spacing to prevent overlap */}
               {dailyData.map((day, idx) => {
-                if (dailyData.length <= 14 || idx % Math.ceil(dailyData.length / 14) === 0) {
+                // Dynamic skip interval based on data density
+                const maxLabels = dailyData.length <= 7 ? dailyData.length : dailyData.length <= 14 ? 7 : 10;
+                const skipInterval = Math.ceil(dailyData.length / maxLabels);
+                
+                if (idx % skipInterval === 0 || idx === dailyData.length - 1) {
                   const x = idx * 40 + 20;
+                  // Alternate label positions to prevent crowding
+                  const yOffset = Math.floor(idx / skipInterval) % 2 === 1 && dailyData.length > 14 ? 245 : 230;
+                  
                   return (
                     <text
                       key={`label-${idx}`}
                       x={x}
-                      y="230"
+                      y={yOffset}
                       fontSize="10"
                       fill="currentColor"
                       className="text-clawd-text-dim"
@@ -368,6 +375,19 @@ export default function AnalyticsOverview() {
                 }
                 return null;
               })}
+              
+              {/* Staggered row indicator line for crowded charts */}
+              {dailyData.length > 14 && (
+                <line
+                  x1="0"
+                  y1="235"
+                  x2={dailyData.length * 40}
+                  y2="235"
+                  stroke="currentColor"
+                  strokeOpacity="0.05"
+                  className="text-clawd-border"
+                />
+              )}
             </svg>
           </div>
         ) : (
