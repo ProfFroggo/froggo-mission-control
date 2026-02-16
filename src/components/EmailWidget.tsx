@@ -93,10 +93,12 @@ export default function EmailWidget() {
 
       <div className="divide-y divide-clawd-border">
         {loading && accounts.length === 0 ? (
-          <div className="p-6 text-center text-clawd-text-dim">
-            <Mail size={24} className="mx-auto mb-2 opacity-50 animate-pulse" />
-            <p className="text-sm">Checking inboxes...</p>
-          </div>
+          <WidgetLoading 
+            variant="spinner" 
+            title="Checking inboxes..." 
+            icon={Mail}
+            compact 
+          />
         ) : error ? (
           <div className="p-6 text-center text-clawd-text-dim">
             <AlertCircle size={24} className="mx-auto mb-2 text-error" />
