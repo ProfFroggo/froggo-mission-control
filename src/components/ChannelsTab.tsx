@@ -162,7 +162,7 @@ export default function ChannelsTab() {
                     ) : channel.accounts.map((account, i) => (
                       <div key={i} className="p-4 border-b border-clawd-border last:border-b-0 hover:bg-clawd-bg/30">
                         <div className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded ${account.connected ? 'bg-green-500/20' : 'bg-clawd-bg0/20'}`}>
+                          <div className={`p-1.5 rounded ${account.connected ? 'bg-success-subtle' : 'bg-clawd-bg0/20'}`}>
                             {account.connected ? <Wifi size={14} className="text-success" /> : <WifiOff size={14} className="text-clawd-text-dim" />}
                           </div>
                           <div className="flex-1">

@@ -155,13 +155,13 @@ export default function ConfigTab() {
     <div className="space-y-6">
       {/* Issues Banner */}
       {issues.length > 0 && (
-        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+        <div className="p-4 bg-warning-subtle border border-warning-border rounded-xl">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={16} className="text-warning" />
             <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
           </div>
           {issues.map((issue, i) => (
-            <div key={i} className="text-sm text-yellow-300">{issue.path}: {issue.message}</div>
+            <div key={i} className="text-sm text-warning">{issue.path}: {issue.message}</div>
           ))}
         </div>
       )}
