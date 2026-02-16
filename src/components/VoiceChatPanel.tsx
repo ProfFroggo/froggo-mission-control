@@ -143,7 +143,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setAgentContext(ctx);
         agentContextRef.current = ctx;
       }
-    }).catch(() => {});
+    }).catch((err) => { console.error('[VoiceChat] Failed to load agent context:', err); });
     return () => { cancelled = true; };
   }, [selectedAgent.id]);
   
@@ -274,7 +274,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             responses.push({ id: fc.id, name: fc.name, response: result });
             if (['create_task', 'update_task', 'spawn_agent'].includes(fc.name)) {
               invalidateAgentContext();
-              loadAgentContext(selectedAgent.id).then(ctx => { agentContextRef.current = ctx; setAgentContext(ctx); }).catch(() => {});
+              loadAgentContext(selectedAgent.id).then(ctx => { agentContextRef.current = ctx; setAgentContext(ctx); }).catch((err) => { console.error('[VoiceChat] Failed to reload agent context:', err); });
             }
           }
           try {
@@ -317,14 +317,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       message: `[Voice call started with ${selectedAgent.name}]`,
       sessionKey: selectedAgent.sessionKey,
       idempotencyKey: `voice-init-${Date.now()}`,
-    }).catch(() => {}); // Session creation is best-effort
+    }).catch((err) => { console.error('[VoiceChat] Failed to send voice init message:', err); }); // Session creation is best-effort
 
     // Refresh agent context
     invalidateAgentContext(selectedAgent.id);
     loadAgentContext(selectedAgent.id).then(ctx => {
       agentContextRef.current = ctx;
       setAgentContext(ctx);
-    }).catch(() => {});
+    }).catch((err) => { console.error('[VoiceChat] Failed to refresh agent context:', err); });
     
     try {
       const voice = getGeminiVoiceForAgent(selectedAgent.id);

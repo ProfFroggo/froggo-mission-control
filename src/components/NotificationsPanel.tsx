@@ -38,7 +38,7 @@ export default function NotificationsPanel() {
       const items: UnifiedNotification[] = [];
       
       // 1. Load inbox approvals
-      const inboxResult = await (window as any).clawdbot?.inbox?.list().catch(() => null);
+      const inboxResult = await (window as any).clawdbot?.inbox?.list().catch((err: any) => { console.error('[Notifications] Failed to list inbox:', err); return null; });
       if (inboxResult?.items) {
         for (const item of inboxResult.items.filter((i: any) => i.status === 'pending')) {
           items.push({
@@ -57,7 +57,7 @@ export default function NotificationsPanel() {
       }
 
       // 2. Load calendar events (today)
-      const calendarResult = await (window as any).clawdbot?.calendar?.today().catch(() => null);
+      const calendarResult = await (window as any).clawdbot?.calendar?.today().catch((err: any) => { console.error('[Notifications] Failed to get calendar:', err); return null; });
       if (calendarResult?.events) {
         const now = Date.now();
         for (const event of calendarResult.events) {

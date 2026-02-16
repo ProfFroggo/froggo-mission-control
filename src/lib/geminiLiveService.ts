@@ -681,7 +681,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.micStream = null;
     }
     if (this.audioContext) {
-      this.audioContext.close().catch(() => {});
+      this.audioContext.close().catch((err) => { console.error('[GeminiLive] Failed to close audio context:', err); });
       this.audioContext = null;
     }
     this.micAnalyser = null;
@@ -781,7 +781,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
     this.playbackQueue = [];
     this.isPlaying = false;
     if (this.playbackCtx) {
-      this.playbackCtx.close().catch(() => {});
+      this.playbackCtx.close().catch((err) => { console.error('[GeminiLive] Failed to close playback context:', err); });
       this.playbackCtx = null;
     }
     this.playbackSourceNode = null;

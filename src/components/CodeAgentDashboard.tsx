@@ -69,7 +69,7 @@ export default function CodeAgentDashboard() {
       }
 
       // Load sessions list - show all agent sessions
-      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch(() => null);
+      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch((err: any) => { console.error('[CodeAgent] Failed to list sessions:', err); return null; });
       if (sessionsResult?.sessions) {
         const devSessions: DevSession[] = sessionsResult.sessions
           .filter((s: any) => {
@@ -100,7 +100,7 @@ export default function CodeAgentDashboard() {
       }
 
       // Load kanban tasks that are dev-related
-      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch(() => null);
+      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch((err: any) => { console.error('[CodeAgent] Failed to list tasks:', err); return null; });
       if (tasksResult?.tasks) {
         const devTasks: DevTask[] = tasksResult.tasks
           .filter((t: any) => {

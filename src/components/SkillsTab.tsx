@@ -36,8 +36,8 @@ export default function SkillsTab() {
     setLoading(true);
     try {
       const [statusResult, binsResult] = await Promise.all([
-        gateway.getSkillsStatus().catch(() => null),
-        gateway.getSkillsBins().catch(() => null),
+        gateway.getSkillsStatus().catch((err) => { console.error('[SkillsTab] Failed to get skills status:', err); return null; }),
+        gateway.getSkillsBins().catch((err) => { console.error('[SkillsTab] Failed to get skills bins:', err); return null; }),
       ]);
 
       if (binsResult?.bins) setBins(binsResult.bins);

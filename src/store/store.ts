@@ -240,12 +240,12 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
           if (!result.success) {
             console.error('[Approval] Tweet failed:', result.error);
             // Fallback: notify agent to handle it
-            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Tweet failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Tweet failed: ${result.error}\n\nContent: ${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
             return { success: false, error: result.error };
           }
         } else {
           // Fallback if IPC not available
-          await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch(() => {});
+          await gateway.sendToSession('main', `[APPROVED] Post this ${item.type}: ${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         }
         break;
       }
@@ -260,11 +260,11 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
           });
           if (!result.success) {
             console.error('[Approval] Email failed:', result.error);
-            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Email to ${item.metadata.to} failed: ${result.error}\n\nContent: ${item.content}`).catch(() => {});
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] Email to ${item.metadata.to} failed: ${result.error}\n\nContent: ${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
             return { success: false, error: result.error };
           }
         } else {
-          await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch(() => {});
+          await gateway.sendToSession('main', `[APPROVED] Send email to ${item.metadata?.to}: ${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         }
         break;
       }
@@ -274,23 +274,23 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
           const result = await clawdbot.messages.send(item.metadata.platform, item.metadata.to, item.content);
           if (!result?.success) {
             console.error('[Approval] Message failed:', result?.error);
-            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.metadata.platform} message to ${item.metadata.to} failed: ${result?.error}`).catch(() => {});
+            await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.metadata.platform} message to ${item.metadata.to} failed: ${result?.error}`).catch((err) => { console.error("[Store] Operation failed:", err); });
             return { success: false, error: result?.error };
           }
         } else {
-          await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch(() => {});
+          await gateway.sendToSession('main', `[APPROVED] Send ${item.metadata?.platform} message to ${item.metadata?.to}: ${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         }
         break;
       }
       case 'task': {
         // Notify agent to create task (tasks are managed by the agent/froggo-db)
-        await gateway.sendToSession('main', `[APPROVED] Create task: ${item.title}\n${item.content}`).catch(() => {});
+        await gateway.sendToSession('main', `[APPROVED] Create task: ${item.title}\n${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         break;
       }
       case 'action':
       default: {
         // Generic actions - notify agent to execute
-        await gateway.sendToSession('main', `[APPROVED] Execute action: ${item.title}\n${item.content}`).catch(() => {});
+        await gateway.sendToSession('main', `[APPROVED] Execute action: ${item.title}\n${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         break;
       }
     }
@@ -298,7 +298,7 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
   } catch (e) {
     console.error('[Approval] Failed to execute:', e);
     // Notify agent about the failure so it can retry or handle
-    await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${e.message}\n\nContent: ${item.content}`).catch(() => {});
+    await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${e.message}\n\nContent: ${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
     return { success: false, error: e.message };
   }
 }
@@ -572,7 +572,7 @@ export const useStore = create<Store>()(
           tasks: [...s.tasks, newTask]
         }));
         // Sync to froggo-db
-        (window as any).clawdbot?.tasks?.sync(newTask).catch(() => {});
+        (window as any).clawdbot?.tasks?.sync(newTask).catch((err) => { console.error("[Store] Operation failed:", err); });
       },
       updateTask: (id: string, updates: Partial<Task>) => {
         // Snapshot original values for rollback
@@ -656,12 +656,12 @@ export const useStore = create<Store>()(
           tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, status, updatedAt: Date.now() } : t)
         }));
         // Broadcast status change to main session
-        gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch(() => {});
+        gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         // Sync to froggo-db
-        (window as any).clawdbot?.tasks?.update(task.id, { status }).catch(() => {});
+        (window as any).clawdbot?.tasks?.update(task.id, { status }).catch((err) => { console.error("[Store] Operation failed:", err); });
         
         // Log activity to task_activity table
-        get().logTaskActivity(id, 'status_changed', `Status changed from ${previousStatus} to ${status}`).catch(() => {});
+        get().logTaskActivity(id, 'status_changed', `Status changed from ${previousStatus} to ${status}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         
         // Also add to activity feed
         get().addActivity({
@@ -689,16 +689,16 @@ export const useStore = create<Store>()(
           const msg = agent 
             ? `[TASK_ASSIGNED] "${task.title}" assigned to ${agent.avatar} ${agent.name}`
             : `[TASK_UNASSIGNED] "${task.title}" unassigned`;
-          gateway.sendToSession('main', msg).catch(() => {});
+          gateway.sendToSession('main', msg).catch((err) => { console.error("[Store] Operation failed:", err); });
           // Sync to froggo-db
-          (window as any).clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch(() => {});
+          (window as any).clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch((err) => { console.error("[Store] Operation failed:", err); });
           
           // Log activity to task_activity table
           const action = agent ? 'assigned' : 'unassigned';
           const message = agent 
             ? `Task assigned to ${agent.name}`
             : 'Task unassigned';
-          get().logTaskActivity(id, action, message, agentId).catch(() => {});
+          get().logTaskActivity(id, action, message, agentId).catch((err) => { console.error("[Store] Operation failed:", err); });
           
           // Also add to activity feed
           get().addActivity({
@@ -938,7 +938,7 @@ export const useStore = create<Store>()(
           });
           
           // Log to task_activity table for persistence
-          get().logTaskActivity(taskId, 'agent_started', `${agent.name} agent started working on task`, agentId).catch(() => {});
+          get().logTaskActivity(taskId, 'agent_started', `${agent.name} agent started working on task`, agentId).catch((err) => { console.error("[Store] Operation failed:", err); });
 
         } catch (e) {
           console.error('Failed to start task:', e);
@@ -1048,7 +1048,7 @@ Start now.`;
           }));
           
           // Also remove from file-based approval queue
-          (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
+          (window as any).clawdbot?.approvals?.remove?.(id).catch((err) => { console.error("[Store] Operation failed:", err); });
           
           // Execute the action asynchronously
           executeApproval(item).then(async (result) => {
@@ -1070,7 +1070,7 @@ Start now.`;
 
             // Notify main session
             if (result.success) {
-              gateway.sendToSession('main', `[EXECUTED] ${item.type}: "${item.title}" completed successfully`).catch(() => {});
+              gateway.sendToSession('main', `[EXECUTED] ${item.type}: "${item.title}" completed successfully`).catch((err) => { console.error("[Store] Operation failed:", err); });
             }
           });
         }
@@ -1085,12 +1085,12 @@ Start now.`;
             title: item.title,
             content: item.content,
             reason: 'User rejected',
-          }).catch(() => {});
+          }).catch((err) => { console.error("[Store] Operation failed:", err); });
           // Notify main session
-          gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch(() => {});
+          gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch((err) => { console.error("[Store] Operation failed:", err); });
         }
         // Remove from file-based queue
-        (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
+        (window as any).clawdbot?.approvals?.remove?.(id).catch((err) => { console.error("[Store] Operation failed:", err); });
         set((s: Store) => ({
           approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
         }));
@@ -1110,7 +1110,7 @@ Start now.`;
             updatedAt: Date.now(),
           };
           // Remove from file-based queue
-          (window as any).clawdbot?.approvals?.remove?.(id).catch(() => {});
+          (window as any).clawdbot?.approvals?.remove?.(id).catch((err) => { console.error("[Store] Operation failed:", err); });
           // Remove from local approvals list
           set((s: Store) => ({
             approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id),
@@ -1118,9 +1118,9 @@ Start now.`;
           // Sync task to DB (not local-only)
           (window as any).clawdbot?.tasks?.sync?.(revisionTask).then(() => {
             useStore.getState().loadTasksFromDB();
-          }).catch(() => {});
+          }).catch((err) => { console.error("[Store] Operation failed:", err); });
           // Notify for revision
-          gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch(() => {});
+          gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch((err) => { console.error("[Store] Operation failed:", err); });
         }
       },
       loadApprovals: async () => {
