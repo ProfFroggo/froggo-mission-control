@@ -31,7 +31,9 @@ async function loadApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[VoiceChatPanel] Failed to load API key from settings:', err);
+  }
   // 3. Check localStorage settings
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
