@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Heart, MessageCircle, Repeat, BarChart2, RefreshCw, Edit, Trash2, Eye, Users, Sparkles, Image, Calendar, X, Lightbulb, ArrowRight, Search, FileText, Zap } from 'lucide-react';
 import { useStore, XDraft } from '../store/store';
 import { LoadingButton } from './LoadingStates';
+import WidgetLoading from './WidgetLoading';
 import ContentCalendar from './ContentCalendar';
 import XAutomationsTab from './XAutomationsTab';
 
@@ -1082,10 +1083,10 @@ export default function XPanel() {
         {activeTab === 'mentions' && (
           <div className="max-w-xl mx-auto space-y-4">
             {loading ? (
-              <div className="text-center py-12 text-clawd-text-dim">
-                <RefreshCw size={48} className="mx-auto mb-4 opacity-30 animate-spin" />
-                <p>Loading mentions...</p>
-              </div>
+              <WidgetLoading 
+                variant="spinner" 
+                title="Loading mentions..." 
+              />
             ) : mentions.length === 0 ? (
               <div className="text-center py-12 text-clawd-text-dim">
                 <MessageCircle size={48} className="mx-auto mb-4 opacity-30" />
@@ -1103,10 +1104,10 @@ export default function XPanel() {
         {activeTab === 'timeline' && (
           <div className="max-w-xl mx-auto space-y-4">
             {loading ? (
-              <div className="text-center py-12 text-clawd-text-dim">
-                <RefreshCw size={48} className="mx-auto mb-4 opacity-30 animate-spin" />
-                <p>Loading timeline...</p>
-              </div>
+              <WidgetLoading 
+                variant="spinner" 
+                title="Loading timeline..." 
+              />
             ) : timeline.length === 0 ? (
               <div className="text-center py-12 text-clawd-text-dim">
                 <Users size={48} className="mx-auto mb-4 opacity-30" />

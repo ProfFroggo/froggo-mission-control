@@ -4,7 +4,7 @@ import {
   ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, 
   Inbox, ListTodo, AlertTriangle, Sparkles, 
   TrendingUp, Clock, Zap, Users, Edit3, Plus, RotateCcw,
-  X, Minus, Maximize2, GripVertical, Shield
+  X, Minus, Maximize2, GripVertical, Shield, type LucideIcon
 } from 'lucide-react';
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
 import type { Layout } from 'react-grid-layout';
@@ -32,14 +32,14 @@ import { useStore } from '../store/store';
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
 
 interface DashboardProps {
-  onNavigate?: (view: any) => void;
+  onNavigate?: (view: View) => void;
   onShowBrief?: () => void;
 }
 
 interface WidgetConfig {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   removable: boolean;
 }
 
@@ -80,7 +80,7 @@ const DEFAULT_LAYOUT: Layout[] = [
 interface DashboardWidgetProps {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   children: React.ReactNode;
   onRemove?: () => void;
   editMode: boolean;
@@ -275,7 +275,14 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     localStorage.setItem('dashboard-minimized-widgets', JSON.stringify([...newMinimized]));
   };
 
-  const getSessionIcon = (session: any) => {
+  /** Session object from gateway */
+  interface SessionInfo {
+    key?: string;
+    channel?: string;
+    displayName?: string;
+  }
+
+  const getSessionIcon = (session: SessionInfo) => {
     if (session.channel === 'whatsapp') return '💬';
     if (session.channel === 'telegram') return '✈️';
     if (session.channel === 'discord') return '🎮';
@@ -284,7 +291,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     return '💻';
   };
 
-  const getSessionName = (session: any) => {
+  const getSessionName = (session: SessionInfo) => {
     const key = session.key || '';
     const parts = key.split(':');
     const last = parts[parts.length - 1];
@@ -886,7 +893,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                             ) : sessions.length === 0 ? (
                               <p className="text-sm text-clawd-text-dim text-center py-8">No active sessions</p>
                             ) : (
-                              sessions.slice(0, 6).map((s: any) => {
+                              sessions.slice(0, 6).map((s: SessionInfo & { updatedAt?: number }) => {
                                 const isActive = Date.now() - (s.updatedAt || 0) < 300000;
                                 return (
                                   <div 

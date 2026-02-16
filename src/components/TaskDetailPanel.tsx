@@ -229,7 +229,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           (window as any).clawdbot?.tasks?.delete(task.id).then(() => {
             showToast('success', 'Task deleted', `Deleted "${task.title}"`);
             onClose();
-          }).catch((err: any) => {
+          }).catch((err: Error) => {
             showToast('error', 'Delete failed', err.message);
           });
         }
@@ -319,7 +319,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       const result = await gateway.getSessions();
       if (result.sessions) {
         // Find session with label matching task ID
-        const activeSession = result.sessions.find((s: any) => {
+        const activeSession = result.sessions.find((s: { updatedAt: number; label?: string }) => {
           // Session is active if updated within last 5 minutes
           const isActive = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
           // Label contains task ID (e.g., "coder-task-123")
@@ -379,7 +379,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       
       // Refresh activity to show the reopen entry
       loadActivity();
-    } catch (err: any) {
+    } catch (err) {
       showToast('error', 'Failed to reopen', err.message);
     }
   };
@@ -470,7 +470,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         setUploadingFile(false);
       };
       reader.readAsDataURL(file);
-    } catch (err: any) {
+    } catch (err) {
       showToast('error', 'Upload failed', err.message);
       setUploadingFile(false);
     }
@@ -1110,7 +1110,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     onClick={() => {
                       console.log('[TaskDetailPanel] APPROVE CLICKED', task.id, task.status, task.reviewStatus);
                       // ATOMIC UPDATE: Change both reviewStatus AND status in one call
-                      const updates: any = { 
+                      const updates: { reviewStatus: 'approved'; status: 'in-progress' } = { 
                         reviewStatus: 'approved',
                         status: 'in-progress'
                       };
@@ -1463,7 +1463,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     } else {
                       showToast('error', 'Failed to abort agent', result.stderr || result.error || 'Unknown error');
                     }
-                  } catch (err: any) {
+                  } catch (err) {
                     showToast('error', 'Abort failed', err.message);
                   } finally {
                     setAbortingAgent(false);
