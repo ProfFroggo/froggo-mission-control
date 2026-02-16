@@ -1356,12 +1356,15 @@ export default function InboxPanel() {
                             : ''
                         }`}
                         title="AI Assistance"
+                        aria-label="AI Assistance"
                       >
                          <Sparkles size={16} className="flex-shrink-0" />
                       </button>
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : item.id)}
                         className="p-2 hover:bg-clawd-border rounded-lg transition-colors flex-shrink-0"
+                        title={isExpanded ? "Collapse" : "Expand"}
+                        aria-label={isExpanded ? "Collapse item" : "Expand item"}
                       >
                         {isExpanded ?  <ChevronUp size={16} className="flex-shrink-0" /> :  <ChevronDown size={16} className="flex-shrink-0" />}
                       </button>
@@ -1811,6 +1814,8 @@ export default function InboxPanel() {
               <button
                 onClick={() => setShowKeyboardHelp(false)}
                 className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+                title="Close"
+                aria-label="Close keyboard shortcuts"
               >
                  <X size={20} className="flex-shrink-0" />
               </button>
