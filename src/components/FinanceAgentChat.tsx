@@ -152,6 +152,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
               onClick={clearHistory}
               className="p-2 hover:bg-clawd-bg-alt rounded-lg transition-colors"
               title="Clear chat history"
+              aria-label="Clear chat history"
             >
               <Trash2 className="w-4 h-4 text-clawd-text-dim" />
             </button>
@@ -160,6 +161,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             <button
               onClick={onClose}
               className="p-2 hover:bg-clawd-bg-alt rounded-lg transition-colors"
+              aria-label="Close chat"
             >
               <X className="w-4 h-4 text-clawd-text-dim" />
             </button>
@@ -263,6 +265,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
             className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            aria-label={loading ? "Sending message" : "Send message"}
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
