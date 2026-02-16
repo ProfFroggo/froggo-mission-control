@@ -50,19 +50,19 @@ const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
 
 // Risk level styling
 const riskStyles: Record<string, { bg: string; text: string; border: string }> = {
-  critical: { bg: 'bg-red-500/20', text: 'text-error', border: 'border-red-500/50' },
-  high: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/50' },
-  medium: { bg: 'bg-yellow-500/20', text: 'text-warning', border: 'border-yellow-500/50' },
-  low: { bg: 'bg-blue-500/20', text: 'text-info', border: 'border-blue-500/50' },
+  critical: { bg: 'bg-error-subtle', text: 'text-error', border: 'border-error-border' },
+  high: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
+  medium: { bg: 'bg-warning-subtle', text: 'text-warning', border: 'border-warning-border' },
+  low: { bg: 'bg-info-subtle', text: 'text-info', border: 'border-info-border' },
 };
 
 const typeConfig: Record<ApprovalType, { icon: any; color: string; label: string }> = {
-  tweet: { icon: Send, color: 'text-sky-400 bg-sky-500/20', label: 'Tweet' },
-  reply: { icon: MessageSquare, color: 'text-info bg-blue-500/20', label: 'Reply' },
-  email: { icon: Mail, color: 'text-success bg-green-500/20', label: 'Email' },
-  message: { icon: MessageSquare, color: 'text-review bg-purple-500/20', label: 'Message' },
-  task: { icon: Bot, color: 'text-warning bg-yellow-500/20', label: 'Task' },
-  action: { icon: Play, color: 'text-success bg-green-500/20', label: 'Action' },
+  tweet: { icon: Send, color: 'text-info bg-info-subtle', label: 'Tweet' },
+  reply: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Reply' },
+  email: { icon: Mail, color: 'text-success bg-success-subtle', label: 'Email' },
+  message: { icon: MessageSquare, color: 'text-review bg-review-subtle', label: 'Message' },
+  task: { icon: Bot, color: 'text-warning bg-warning-subtle', label: 'Task' },
+  action: { icon: Play, color: 'text-success bg-success-subtle', label: 'Action' },
 };
 
 // Helper component for shortcut rows

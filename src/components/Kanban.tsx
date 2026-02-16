@@ -16,9 +16,9 @@ import { safeStorage } from '../utils/safeStorage';
 
 // Priority config - STANDARDIZED ICON SIZE: xs (12px)
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-red-500/20', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
-  { id: 'p1', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/20', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
-  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-yellow-500/20', icon: <Circle size={14} className="flex-shrink-0" /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={14} className="flex-shrink-0" /> },
+  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={14} className="flex-shrink-0" /> },
+  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={14} className="flex-shrink-0" /> },
   { id: 'p3', label: 'Low', color: 'text-clawd-text-dim', bg: 'bg-clawd-bg0/20', icon: <ArrowDown size={14} className="flex-shrink-0" /> },
 ];
 
@@ -41,13 +41,13 @@ function formatDueDate(timestamp: number): { text: string; isOverdue: boolean; i
 }
 
 const columns: { id: TaskStatus; title: string; color: string; bg: string; emoji?: string }[] = [
-  { id: 'blocked', title: 'Blocked', color: 'border-l-red-500', bg: 'bg-error-subtle', emoji: '🚫' },
-  { id: 'todo', title: 'To Do', color: 'border-l-blue-500', bg: 'bg-info-subtle', emoji: '📝' },
-  { id: 'internal-review', title: 'Internal Review', color: 'border-l-cyan-500', bg: 'bg-cyan-500/10', emoji: '🔍' },
-  { id: 'in-progress', title: 'In Progress', color: 'border-l-yellow-500', bg: 'bg-yellow-500/10', emoji: '⚡' },
-  { id: 'review', title: 'Agent Review', color: 'border-l-purple-500', bg: 'bg-purple-500/10', emoji: '🤖' },
-  { id: 'human-review', title: 'Human Review', color: 'border-l-orange-500', bg: 'bg-orange-500/10', emoji: '👤' },
-  { id: 'done', title: 'Done', color: 'border-l-green-500', bg: 'bg-success-subtle', emoji: '✅' },
+  { id: 'blocked', title: 'Blocked', color: 'border-l-error', bg: 'bg-error-subtle', emoji: '🚫' },
+  { id: 'todo', title: 'To Do', color: 'border-l-info', bg: 'bg-info-subtle', emoji: '📝' },
+  { id: 'internal-review', title: 'Internal Review', color: 'border-l-info', bg: 'bg-info-subtle', emoji: '🔍' },
+  { id: 'in-progress', title: 'In Progress', color: 'border-l-warning', bg: 'bg-warning-subtle', emoji: '⚡' },
+  { id: 'review', title: 'Agent Review', color: 'border-l-review', bg: 'bg-review-subtle', emoji: '🤖' },
+  { id: 'human-review', title: 'Human Review', color: 'border-l-warning', bg: 'bg-warning-subtle', emoji: '👤' },
+  { id: 'done', title: 'Done', color: 'border-l-success', bg: 'bg-success-subtle', emoji: '✅' },
 ];
 
 interface Filters {
