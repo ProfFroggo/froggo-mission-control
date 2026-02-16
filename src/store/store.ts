@@ -3,6 +3,9 @@ import { persist } from 'zustand/middleware';
 import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { matchTaskToAgent } from '../lib/agents';
+import { createLogger } from '../utils/logger';
+
+const storeLogger = createLogger('Store');
 
 export type TaskStatus = 'blocked' | 'todo' | 'internal-review' | 'in-progress' | 'review' | 'human-review' | 'done' | 'failed' | 'cancelled';
 export type TaskPriority = 'p0' | 'p1' | 'p2' | 'p3'; // p0 = urgent, p3 = low
@@ -1268,7 +1271,7 @@ function debouncedTaskRefresh() {
 // Listen for task-related events for real-time updates
 // These can be triggered by the main agent after creating tasks from Discord
 gateway.on('task.created', (payload: { title?: string }) => {
-  console.log('[Store] Task created event received:', payload);
+  storeLogger.debug('[Store] Task created event received:', payload);
   debouncedTaskRefresh();
   useStore.getState().addActivity({
     type: 'task',
@@ -1278,7 +1281,7 @@ gateway.on('task.created', (payload: { title?: string }) => {
 });
 
 gateway.on('task.updated', (payload: { id?: string }) => {
-  console.log('[Store] Task updated event received:', payload);
+  storeLogger.debug('[Store] Task updated event received:', payload);
   debouncedTaskRefresh();
 });
 
@@ -1296,7 +1299,7 @@ gateway.on('tasks.refresh', () => {
 // Listen for direct gateway broadcasts from main process (real-time task updates)
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
   (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: unknown }) => {
-    console.log('[Store] Gateway broadcast received:', data.event, (data.payload as { id?: string })?.id);
+    storeLogger.debug('[Store] Gateway broadcast received:', data.event, (data.payload as { id?: string })?.id);
     if (data.event === 'task.created' || data.event === 'task.updated') {
       debouncedTaskRefresh();
     }

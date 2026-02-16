@@ -1,5 +1,8 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Bug, XCircle } from 'lucide-react';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('ErrorBoundary');
 
 interface Props {
   children: ReactNode;
@@ -52,10 +55,10 @@ export class ErrorBoundary extends Component<Props, State> {
   private reportError(error: Error, errorInfo: ErrorInfo) {
     // Log to console for development
     console.group('🚨 Error Boundary Report');
-    console.log('Component:', this.getComponentName());
-    console.log('Error:', error.message);
-    console.log('Stack:', error.stack);
-    console.log('Component Stack:', errorInfo.componentStack);
+    logger.error('Component:', this.getComponentName());
+    logger.error('Error:', error.message);
+    logger.error('Stack:', error.stack);
+    logger.error('Component Stack:', errorInfo.componentStack);
     console.groupEnd();
 
     // Could integrate with Sentry, LogRocket, etc. here

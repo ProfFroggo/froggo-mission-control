@@ -1,5 +1,7 @@
 // Gateway WebSocket Client - connects to Clawdbot gateway
+import { createLogger } from '../utils/logger';
 
+const logger = createLogger('Gateway');
 const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
 const DEFAULT_TOKEN = '';
 const DEFAULT_SESSION_KEY = 'agent:froggo:dashboard'; // Default session key (overridable via setSessionKey)
@@ -41,7 +43,7 @@ async function ensureGatewayToken() {
       const saved = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
       saved.gatewayToken = token;
       localStorage.setItem('froggo-settings', JSON.stringify(saved));
-      console.log('[Gateway] Loaded token from openclaw config');
+      logger.debug('[Gateway] Loaded token from openclaw config');
       gateway.reconnect();
     }
   } catch { /* ignore */ }
@@ -96,13 +98,13 @@ class Gateway {
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          console.log('[Gateway] Tab visible, checking connection...');
+          logger.debug('[Gateway] Tab visible, checking connection...');
           this.checkConnection();
         }
       });
       
       window.addEventListener('online', () => {
-        console.log('[Gateway] Network online, reconnecting...');
+        logger.debug('[Gateway] Network online, reconnecting...');
         this.reconnectNow();
       });
     }
@@ -118,7 +120,7 @@ class Gateway {
 
   connect() {
     if (this.state === 'connecting' || this.state === 'authenticating') {
-      console.log('[Gateway] Already connecting...');
+      logger.debug('[Gateway] Already connecting...');
       return;
     }
     
@@ -129,7 +131,7 @@ class Gateway {
     this.token = settings.gatewayToken;
 
     this.setState('connecting');
-    console.log('[Gateway] Connecting to:', this.gatewayUrl, '(attempt', this.reconnectAttempts + 1, ')');
+    logger.debug('[Gateway] Connecting to:', this.gatewayUrl, '(attempt', this.reconnectAttempts + 1, ')');
 
     try {
       this.ws = new WebSocket(this.gatewayUrl);
@@ -155,7 +157,7 @@ class Gateway {
         // this.lastPong = Date.now();
         
         if (msg.type !== 'event' || !msg.event?.startsWith('chat.')) {
-          console.log('[Gateway] Received:', msg.type, msg.event || msg.method || '');
+          logger.debug('[Gateway] Received:', msg.type, msg.event || msg.method || '');
         }
 
         if (msg.type === 'event' && msg.event === 'connect.challenge') {
@@ -176,7 +178,7 @@ class Gateway {
             this.pending.delete(msg.id);
             if (msg.ok) {
               if (msg.id.startsWith('connect-')) {
-                console.log('[Gateway] Connected successfully');
+                logger.debug('[Gateway] Connected successfully');
                 this.onConnected();
               }
               p.resolve(msg.payload);
@@ -199,7 +201,7 @@ class Gateway {
           
           // Debug log for chat-related events
           if (msg.event?.startsWith('chat')) {
-            console.log('[Gateway] Chat event:', msg.event, 'isOurSession:', isOurSession, 'runId:', payload?.runId, 'payload:', JSON.stringify(payload).slice(0, 200));
+            logger.debug('[Gateway] Chat event:', msg.event, 'isOurSession:', isOurSession, 'runId:', payload?.runId, 'payload:', JSON.stringify(payload).slice(0, 200));
           }
 
           // Per-runId callback dispatch — fires BEFORE session-based filtering
@@ -277,13 +279,13 @@ class Gateway {
     };
 
     this.ws.onopen = () => {
-      console.log('[Gateway] WebSocket opened');
+      logger.debug('[Gateway] WebSocket opened');
     };
 
     this.ws.onclose = (event) => {
       const wasConnected = this.state === 'connected';
       this.lastError = `Connection closed (code: ${event.code})`;
-      console.log('[Gateway] WebSocket closed:', event.code);
+      logger.debug('[Gateway] WebSocket closed:', event.code);
       this.cleanup();
       this.setState('disconnected');
       this.scheduleReconnect();
@@ -308,7 +310,7 @@ class Gateway {
     if (this.state !== newState) {
       const oldState = this.state;
       this.state = newState;
-      console.log('[Gateway] State:', oldState, '->', newState);
+      logger.debug('[Gateway] State:', oldState, '->', newState);
       this.emit('stateChange', { state: newState, oldState, attempts: this.reconnectAttempts, error: this.lastError });
       
       if (newState === 'connected') {
@@ -415,7 +417,7 @@ class Gateway {
     );
     this.reconnectAttempts++;
     
-    console.log('[Gateway] Reconnecting in', delay, 'ms');
+    logger.debug('[Gateway] Reconnecting in', delay, 'ms');
     
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
@@ -450,7 +452,7 @@ class Gateway {
         auth: { token: this.token },
       }
     };
-    console.log('[Gateway] Authenticating...');
+    logger.debug('[Gateway] Authenticating...');
     this.ws?.send(JSON.stringify(connectMsg));
     
     const timer = window.setTimeout(() => {
@@ -574,7 +576,7 @@ class Gateway {
   setSessionKey(key: string) {
     this.sessionKey = key;
     this.activeRunIds.clear();
-    console.log('[Gateway] Session key changed to:', key);
+    logger.debug('[Gateway] Session key changed to:', key);
   }
 
   // High-level methods
@@ -678,7 +680,7 @@ class Gateway {
         
         // Check for final state
         if (data.state === 'final') {
-          console.log('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
+          logger.debug('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
           finish(responseContent);
         }
       });
@@ -710,18 +712,18 @@ class Gateway {
       }, 120000);
 
       try {
-        console.log('[Gateway] sendChat calling request...');
+        logger.debug('[Gateway] sendChat calling request...');
         const result = await this.request('chat.send', { 
           message, 
           sessionKey: this.sessionKey, 
           idempotencyKey,
         });
-        console.log('[Gateway] sendChat request returned:', JSON.stringify(result));
+        logger.debug('[Gateway] sendChat request returned:', JSON.stringify(result));
         
         // Capture runId to filter streaming events
         if (result?.runId) {
           ourRunId = result.runId;
-          console.log('[Gateway] Tracking runId:', ourRunId);
+          logger.debug('[Gateway] Tracking runId:', ourRunId);
         }
         
         // If we got a direct response (non-streaming), use it
@@ -730,7 +732,7 @@ class Gateway {
           finish(result.content);
         }
         // Otherwise wait for streaming events
-        console.log('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
+        logger.debug('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
       } catch (e: any) {
         console.error('[Gateway] sendChat error:', e);
         clearTimeout(timeout);
@@ -928,7 +930,7 @@ export function forceReconnect() {
 // This enables real-time task updates when database changes happen
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
   (window as any).clawdbot.gateway.onBroadcast((broadcastData: { type: string; event: string; payload: any }) => {
-    console.log('[Gateway] Received broadcast from main:', broadcastData.event);
+    logger.debug('[Gateway] Received broadcast from main:', broadcastData.event);
     // Emit the event locally to all listeners
     if (broadcastData.event && broadcastData.payload) {
       gateway['emit'](broadcastData.event, broadcastData.payload);

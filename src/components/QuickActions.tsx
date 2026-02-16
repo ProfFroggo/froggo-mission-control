@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('QuickActions');
 import AgentAvatar from './AgentAvatar';
 import { ChatAgent, fetchAgentList } from './AgentSelector';
 import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
@@ -551,7 +554,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       }),
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
         try {
-          console.log('[QuickActions] Tool call received:', toolCall);
+          logger.debug('[QuickActions] Tool call received:', toolCall);
           if (!toolCall?.functionCalls?.length) {
             console.warn('[QuickActions] No function calls in tool-call event');
             return;
@@ -560,11 +563,11 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
             addTx('system', `🔧 ${fc.name}(${JSON.stringify(fc.args || {}).slice(0, 100)})`);
-            console.log(`[QuickActions] Executing tool: ${fc.name}`);
+            logger.debug(`[QuickActions] Executing tool: ${fc.name}`);
             let result: any;
             try {
               result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
-              console.log(`[QuickActions] Tool ${fc.name} result:`, result);
+              logger.debug(`[QuickActions] Tool ${fc.name} result:`, result);
             } catch (err: any) {
               console.error(`[QuickActions] Tool ${fc.name} error:`, err);
               result = { error: err.message || 'Tool execution failed' };
@@ -572,9 +575,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             }
             responses.push({ id: fc.id, name: fc.name, response: result });
           }
-          console.log('[QuickActions] Sending tool responses:', responses.length);
+          logger.debug('[QuickActions] Sending tool responses:', responses.length);
           await geminiLive.sendToolResponse(responses);
-          console.log('[QuickActions] Tool responses sent');
+          logger.debug('[QuickActions] Tool responses sent');
         } catch (err: any) {
           console.error('[QuickActions] Tool handler error:', err);
           addTx('system', `⚠️ Tool error: ${err.message}`);

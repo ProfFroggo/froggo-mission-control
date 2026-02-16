@@ -6,6 +6,9 @@
  */
 
 import { getVoiceProfile } from '../config/agent-voices';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('GeminiLive');
 
 // Audio constants matching Gemini Live API requirements
 const SEND_SAMPLE_RATE = 16000;
@@ -247,13 +250,13 @@ export class GeminiLiveService {
     this._videoMode = videoMode;
 
     const url = `${WS_URL}?key=${apiKey}`;
-    console.log('[GeminiLive] Connecting to:', url.replace(/key=.*/, 'key=***'));
+    logger.debug('[GeminiLive] Connecting to:', url.replace(/key=.*/, 'key=***'));
     
     return new Promise((resolve, reject) => {
-      console.log('[GeminiLive] Creating WebSocket...');
+      logger.debug('[GeminiLive] Creating WebSocket...');
       const ws = new WebSocket(url);
       this.ws = ws;
-      console.log('[GeminiLive] WebSocket created, readyState:', ws.readyState);
+      logger.debug('[GeminiLive] WebSocket created, readyState:', ws.readyState);
 
       const timeout = setTimeout(() => {
         reject(new Error('WebSocket connection timeout'));
@@ -261,7 +264,7 @@ export class GeminiLiveService {
       }, 15000);
 
       ws.onopen = () => {
-        console.log('[GeminiLive] WebSocket OPEN');
+        logger.debug('[GeminiLive] WebSocket OPEN');
         clearTimeout(timeout);
         // Setup message - trying Python SDK field format
         const setupMsg: any = {
@@ -302,9 +305,8 @@ export class GeminiLiveService {
         
         // Session resumption — only send if we already have a handle from a previous session
         // Note: not all models support this (e.g. preview models return 1008)
-        // TODO: re-enable when using gemini-live-2.5-flash-native-audio (GA model)
-        
-        console.log('[GeminiLive] Sending setup:', JSON.stringify(setupMsg, null, 2));
+        // FUTURE: Re-enable session resumption when using gemini-live-2.5-flash-native-audio GA model
+        // Preview models don't support this feature and return 1008 error
         ws.send(JSON.stringify(setupMsg));
         this.pendingSetup = { resolve, reject };
       };
@@ -357,7 +359,7 @@ export class GeminiLiveService {
       const msgKeys = Object.keys(msg).join(', ');
       if (!msg.serverContent?.modelTurn?.parts?.some((p: any) => p.inlineData)) {
         // Log everything except raw audio chunks (too noisy)
-        console.log(`[GeminiLive] MSG keys=[${msgKeys}]`, 
+        logger.debug(`[GeminiLive] MSG keys=[${msgKeys}]`, 
           msg.toolCall ? `toolCall: ${JSON.stringify(msg.toolCall).slice(0, 200)}` :
           msg.toolCallCancellation ? `CANCELLATION: ${JSON.stringify(msg.toolCallCancellation)}` :
           msg.goAway ? `GO_AWAY: ${JSON.stringify(msg.goAway)}` :
@@ -380,7 +382,7 @@ export class GeminiLiveService {
         if (!this.playbackCtx) {
           this.playbackCtx = new AudioContext({ sampleRate: RECEIVE_SAMPLE_RATE });
           this.scheduledTime = this.playbackCtx.currentTime;
-          console.log('[GeminiLive] Playback AudioContext created, state:', this.playbackCtx.state);
+          logger.debug('[GeminiLive] Playback AudioContext created, state:', this.playbackCtx.state);
         }
         
         this.connectTime = Date.now();
@@ -403,7 +405,7 @@ export class GeminiLiveService {
           for (const part of sc.modelTurn.parts) {
             if (part.inlineData?.mimeType?.startsWith('audio/pcm') && part.inlineData.data) {
               const pcmData = this.base64ToArrayBuffer(part.inlineData.data);
-              console.log('[GeminiLive] Audio chunk received:', pcmData.byteLength, 'bytes');
+              logger.debug('[GeminiLive] Audio chunk received:', pcmData.byteLength, 'bytes');
               this.enqueueAudio(pcmData);
               if (!this._speaking) {
                 this._speaking = true;
@@ -457,7 +459,7 @@ export class GeminiLiveService {
       // Tool calls - emit for external handling
       if (msg.toolCall) {
         this.toolCallPending = true;
-        console.log('[GeminiLive] Tool call received, marking pending:', JSON.stringify(msg.toolCall).slice(0, 300));
+        logger.debug('[GeminiLive] Tool call received, marking pending:', JSON.stringify(msg.toolCall).slice(0, 300));
         this.emit('tool-call', msg.toolCall as GeminiToolCall);
       }
 
@@ -472,13 +474,13 @@ export class GeminiLiveService {
         const update = msg.sessionResumptionUpdate;
         if (update.resumable && update.newHandle) {
           this.sessionHandle = update.newHandle;
-          console.log('[GeminiLive] Session resumption handle updated');
+          logger.debug('[GeminiLive] Session resumption handle updated');
         }
       }
 
       // GoAway — server is about to close, proactively reconnect
       if (msg.goAway) {
-        console.log('[GeminiLive] GoAway received, time left:', msg.goAway.timeLeft);
+        logger.debug('[GeminiLive] GoAway received, time left:', msg.goAway.timeLeft);
         // Let the auto-reconnect handle this via onclose
       }
     } catch (err) {
@@ -517,7 +519,7 @@ export class GeminiLiveService {
     }
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
     this.reconnectAttempts++;
-    console.log(`[GeminiLive] Auto-reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    logger.debug(`[GeminiLive] Auto-reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
     this.emit('reconnecting', { attempt: this.reconnectAttempts, delayMs: delay });
     this.reconnectTimer = setTimeout(async () => {
       if (this.intentionalDisconnect || !this.lastConfig) return;
@@ -526,7 +528,7 @@ export class GeminiLiveService {
         
         // Replay conversation context to restore state
         if (this.conversationHistory.length > 0) {
-          console.log(`[GeminiLive] Replaying ${this.conversationHistory.length} conversation items`);
+          logger.debug(`[GeminiLive] Replaying ${this.conversationHistory.length} conversation items`);
           const contextSummary = this.conversationHistory.map(item => 
             `${item.role === 'user' ? 'User' : 'Assistant'}: ${item.text}`
           ).join('\n');
@@ -548,7 +550,7 @@ export class GeminiLiveService {
         // Restore mic if it was active
         await this.startMic();
         this.reconnectAttempts = 0;
-        console.log('[GeminiLive] Auto-reconnected successfully with context replay');
+        logger.debug('[GeminiLive] Auto-reconnected successfully with context replay');
       } catch (err) {
         console.error('[GeminiLive] Reconnect failed:', err);
         if (!this.intentionalDisconnect) this.scheduleReconnect();
@@ -562,7 +564,7 @@ export class GeminiLiveService {
     if (this._listening || !this._connected) return;
 
     try {
-      console.log('[GeminiLive] startMic: requesting getUserMedia...');
+      logger.debug('[GeminiLive] startMic: requesting getUserMedia...');
       // Use simple constraints like MeetingsPanel (which works in production)
       this.micStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -597,7 +599,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 `;
       const blob = new Blob([workletCode], { type: 'application/javascript' });
       const workletUrl = URL.createObjectURL(blob);
-      console.log('[GeminiLive] Loading audio processor from blob URL');
+      logger.debug('[GeminiLive] Loading audio processor from blob URL');
       try {
         await this.audioContext.audioWorklet.addModule(workletUrl);
       } finally {
@@ -722,7 +724,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
     if (this.playbackCtx.state === 'suspended') {
       try {
         await this.playbackCtx.resume();
-        console.log('[GeminiLive] Playback AudioContext resumed');
+        logger.debug('[GeminiLive] Playback AudioContext resumed');
       } catch (err) {
         console.error('[GeminiLive] Failed to resume playback AudioContext:', err);
         return;
@@ -910,12 +912,12 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
 
   startToolCallKeepalive(): void {
     this.stopToolCallKeepalive();
-    console.log('[GeminiLive] Starting tool call keepalive (every 2s)');
+    logger.debug('[GeminiLive] Starting tool call keepalive (every 2s)');
     let keepaliveCount = 0;
     this.toolCallKeepaliveTimer = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         keepaliveCount++;
-        if (keepaliveCount % 5 === 1) console.log(`[GeminiLive] Keepalive #${keepaliveCount} sent`);
+        if (keepaliveCount % 5 === 1) logger.debug(`[GeminiLive] Keepalive #${keepaliveCount} sent`);
         // Send a small silent PCM frame (160 samples = 10ms at 16kHz)
         const silence = new Int16Array(160);
         const base64 = this.arrayBufferToBase64(silence.buffer as ArrayBuffer);
@@ -935,7 +937,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
     if (this.toolCallKeepaliveTimer) {
       clearInterval(this.toolCallKeepaliveTimer);
       this.toolCallKeepaliveTimer = null;
-      console.log('[GeminiLive] Stopped tool call keepalive');
+      logger.debug('[GeminiLive] Stopped tool call keepalive');
     }
   }
 
@@ -944,7 +946,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
   async sendToolResponse(functionResponses: Array<{ id: string; name: string; response: any }>): Promise<void> {
     this.stopToolCallKeepalive();
     this.toolCallPending = false;
-    console.log(`[GeminiLive] Sending tool response for: ${functionResponses.map(r => r.name).join(', ')} wsState=${this.ws?.readyState}`);
+    logger.debug(`[GeminiLive] Sending tool response for: ${functionResponses.map(r => r.name).join(', ')} wsState=${this.ws?.readyState}`);
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       this.emit('error', { message: 'Not connected' });
       return;
@@ -973,7 +975,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
           functionResponses: sanitized,
         },
       });
-      console.log('[GeminiLive] Sending tool response:', msg.slice(0, 500));
+      logger.debug('[GeminiLive] Sending tool response:', msg.slice(0, 500));
       this.ws.send(msg);
     } catch (err: any) {
       console.error('[GeminiLive] Failed to send tool response:', err);
