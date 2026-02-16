@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import {
   BarChart2,
   Activity,
@@ -13,21 +13,25 @@ import {
   Download,
   RefreshCw,
   Zap,
+  Loader2,
 } from 'lucide-react';
-import AnalyticsOverview from './AnalyticsOverview';
+import { DateRange } from './DateRangePicker';
+
+// Lazy load heavy chart components (code splitting)
+const AnalyticsOverview = lazy(() => import('./AnalyticsOverview'));
+const TaskTrendsChart = lazy(() => import('./TaskTrendsChart'));
+const UsageStatsPanel = lazy(() => import('./UsageStatsPanel'));
+const PerformanceBenchmarks = lazy(() => import('./PerformanceBenchmarks'));
+const TokenUsageWidget = lazy(() => import('./TokenUsageWidget'));
+const AdvancedAgentComparison = lazy(() => import('./AdvancedAgentComparison'));
+
+// Lightweight components - regular imports
 import SessionsFilter from './SessionsFilter';
-import TaskTrendsChart from './TaskTrendsChart';
-import AgentUtilizationChart from './AgentUtilizationChart';
 import TimeTrackingPanel from './TimeTrackingPanel';
 import ProductivityHeatmap from './ProductivityHeatmap';
 import ReportsPanel from './ReportsPanel';
-import UsageStatsPanel from './UsageStatsPanel';
-import AdvancedAgentComparison from './AdvancedAgentComparison';
-import PerformanceBenchmarks from './PerformanceBenchmarks';
-import RealTimeAnalytics from './RealTimeAnalytics';
-import TokenUsageWidget from './TokenUsageWidget';
 import PerformanceTable from './PerformanceTable';
-import { DateRange } from './DateRangePicker';
+import RealTimeAnalytics from './RealTimeAnalytics';
 
 type Tab =
   | 'overview'
@@ -42,7 +46,14 @@ type Tab =
   | 'reports'
   | 'sessions';
 
-const TABS: { id: Tab; label: string; icon: any; description: string }[] = [
+interface TabConfig {
+  id: Tab;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+}
+
+const TABS: TabConfig[] = [
   {
     id: 'overview',
     label: 'Overview',
@@ -110,6 +121,18 @@ const TABS: { id: Tab; label: string; icon: any; description: string }[] = [
     description: 'Active sessions',
   },
 ];
+
+// Loading fallback component
+function ChartSkeleton() {
+  return (
+    <div className="h-full flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-clawd-text-dim">
+        <Loader2 size={32} className="animate-spin" />
+        <p className="text-sm">Loading charts...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -221,17 +244,19 @@ export default function AnalyticsDashboard() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden p-6" key={refreshKey}>
-        {activeTab === 'overview' && <AnalyticsOverview />}
-        {activeTab === 'realtime' && <RealTimeAnalytics />}
-        {activeTab === 'tokens' && <TokenUsageWidget />}
-        {activeTab === 'trends' && <TaskTrendsChart />}
-        {activeTab === 'agents' && <PerformanceTable />}
-        {activeTab === 'usage' && <UsageStatsPanel />}
-        {activeTab === 'benchmarks' && <PerformanceBenchmarks />}
-        {activeTab === 'time' && <TimeTrackingPanel />}
-        {activeTab === 'heatmap' && <ProductivityHeatmap />}
-        {activeTab === 'reports' && <ReportsPanel />}
-        {activeTab === 'sessions' && <SessionsFilter />}
+        <Suspense fallback={<ChartSkeleton />}>
+          {activeTab === 'overview' && <AnalyticsOverview />}
+          {activeTab === 'realtime' && <RealTimeAnalytics />}
+          {activeTab === 'tokens' && <TokenUsageWidget />}
+          {activeTab === 'trends' && <TaskTrendsChart />}
+          {activeTab === 'agents' && <PerformanceTable />}
+          {activeTab === 'usage' && <UsageStatsPanel />}
+          {activeTab === 'benchmarks' && <PerformanceBenchmarks />}
+          {activeTab === 'time' && <TimeTrackingPanel />}
+          {activeTab === 'heatmap' && <ProductivityHeatmap />}
+          {activeTab === 'reports' && <ReportsPanel />}
+          {activeTab === 'sessions' && <SessionsFilter />}
+        </Suspense>
       </div>
 
       {/* Agent Comparison Modal */}
