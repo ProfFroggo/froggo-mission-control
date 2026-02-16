@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "noEmitOnError": false
   },
-  "include": ["electron/**/*", "src/utils/logger.ts"],
+  "include": ["electron/**/*"],
   "exclude": [
     "electron/main-new.ts",
     "electron/handlers/x-twitter-handlers.ts"
