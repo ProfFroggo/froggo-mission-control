@@ -1070,7 +1070,13 @@ ipcMain.handle('agents:getActiveSessions', async () => {
       );
     });
 
-    const data = JSON.parse(result);
+    let data: { sessions?: Array<{ key: string; updatedAt?: number }> } = { sessions: [] };
+    try {
+      data = JSON.parse(result);
+    } catch (parseError) {
+      safeLog.error('[ActiveSessions] Failed to parse sessions JSON:', parseError);
+      return [];
+    }
     const sessions = data.sessions || [];
     
     // Filter to recently active sessions (updated within last 2 minutes)
@@ -3644,7 +3650,13 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
         return { success: false, error: result.error };
       }
     } else if (item.type === 'email') {
-      const meta = item.metadata ? JSON.parse(item.metadata) : {};
+      let meta: Record<string, string> = {};
+      try {
+        meta = item.metadata ? JSON.parse(item.metadata) : {};
+      } catch (e) {
+        safeLog.error('[ScheduleProcessor] Failed to parse email metadata:', e);
+        meta = {};
+      }
       const recipient = meta.recipient || meta.to || '';
       const account = meta.account || '';
 
@@ -5141,14 +5153,18 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       const query = `SELECT text, from_me, datetime(ts, 'unixepoch', 'localtime') as time FROM messages WHERE chat_jid='${jid}' ORDER BY ts DESC LIMIT ${lim}`;
       const raw = await runCmd(`sqlite3 "${waDbPath}" "${query}" -json`, 5000);
       if (raw) {
-        const rows = JSON.parse(raw);
-        for (const row of rows.reverse()) {
-          messages.push({
-            sender: row.from_me ? 'You' : contactName,
-            text: row.text || '',
-            timestamp: row.time || '',
-            fromMe: !!row.from_me,
-          });
+        try {
+          const rows = JSON.parse(raw);
+          for (const row of rows.reverse()) {
+            messages.push({
+              sender: row.from_me ? 'You' : contactName,
+              text: row.text || '',
+              timestamp: row.time || '',
+              fromMe: !!row.from_me,
+            });
+          }
+        } catch (e) {
+          safeLog.error('[History] Failed to parse WhatsApp messages:', e);
         }
       }
     } else if (platform === 'telegram') {
@@ -7866,10 +7882,19 @@ ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?:
     const ideas = stmt.all(...params);
     
     // Parse JSON fields
-    const parsed = ideas.map((idea: any) => ({
-      ...idea,
-      citations: idea.citations ? JSON.parse(idea.citations) : []
-    }));
+    const parsed = ideas.map((idea: any) => {
+      let citations: string[] = [];
+      try {
+        citations = idea.citations ? JSON.parse(idea.citations) : [];
+      } catch (e) {
+        safeLog.warn('[X/Research] Failed to parse citations for idea', idea.id, ':', e);
+        citations = [];
+      }
+      return {
+        ...idea,
+        citations
+      };
+    });
     
     return { success: true, ideas: parsed };
   } catch (error: any) {
@@ -8245,10 +8270,19 @@ ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: s
     const drafts = stmt.all(...params);
     
     // Parse JSON fields
-    const parsed = drafts.map((draft: any) => ({
-      ...draft,
-      media_paths: draft.media_paths ? JSON.parse(draft.media_paths) : []
-    }));
+    const parsed = drafts.map((draft: any) => {
+      let media_paths: string[] = [];
+      try {
+        media_paths = draft.media_paths ? JSON.parse(draft.media_paths) : [];
+      } catch (e) {
+        safeLog.warn('[X/Draft] Failed to parse media_paths for draft', draft.id, ':', e);
+        media_paths = [];
+      }
+      return {
+        ...draft,
+        media_paths
+      };
+    });
     
     return { success: true, drafts: parsed };
   } catch (error: any) {
