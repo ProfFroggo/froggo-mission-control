@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet } from 'lucide-react';
 import EmptyState from './EmptyState';
+import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
 import FinanceAgentChat from './FinanceAgentChat';
 import FinanceInsightsPanel from './FinanceInsightsPanel';
