@@ -598,7 +598,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const getGeminiApiKey = async (): Promise<string> => {
     // 1. Check localStorage settings
     try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
-    catch {}
+    catch { /* localStorage parse error - ignore and continue */ }
     // 2. Check env vars
     const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
     if (envKey) return envKey;

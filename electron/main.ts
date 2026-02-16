@@ -1,9 +1,9 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer, shell, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer, shell, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec, execSync, execFile } from 'child_process';
 import * as os from 'os';
-import * as crypto from 'crypto';
+// crypto imported but unused - removed during bug-hunt cleanup
 import * as http from 'http';
 import { calendarService } from './calendar-service';
 import { accountsService } from './accounts-service';
@@ -8727,8 +8727,10 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
     
     // Use provided position, or saved position, or default
-    const windowWidth = data?.width || savedBounds?.width || 80;
-    const windowHeight = data?.height || savedBounds?.height || 400;
+    // Default dimensions for horizontal pill toolbar (was 80x400 for vertical sidebar)
+    // Expanded: ~600x80, Collapsed: ~250x80
+    const windowWidth = data?.width || savedBounds?.width || 650;
+    const windowHeight = data?.height || savedBounds?.height || 100;
     const windowX = data?.x !== undefined ? data.x : (savedBounds?.x !== undefined ? savedBounds.x : screenWidth - windowWidth - 20);
     const windowY = data?.y !== undefined ? data.y : (savedBounds?.y !== undefined ? savedBounds.y : Math.floor((screenHeight - windowHeight) / 2));
     
