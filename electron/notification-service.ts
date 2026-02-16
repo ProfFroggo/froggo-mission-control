@@ -11,14 +11,28 @@ const safeLog = {
   log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
-        logger.debug(...args);
+        logger.debug(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },
   error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
-        logger.error(...args);
+        logger.error(args.map(a => String(a)).join(' '));
+      }
+    } catch { /* ignore */ }
+  },
+  warn: (...args: unknown[]) => {
+    try {
+      if (process.stderr.writable) {
+        logger.warn(args.map(a => String(a)).join(' '));
+      }
+    } catch { /* ignore */ }
+  },
+  debug: (...args: unknown[]) => {
+    try {
+      if (process.stdout.writable) {
+        logger.debug(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },

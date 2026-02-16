@@ -194,14 +194,14 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
     // CSV format
-    const tasksCSV = jsonToCsv(tasks as Array<Record<string, unknown>>);
+    const tasksCSV = jsonToCsv((tasks as unknown) as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, tasksCSV);
 
     // Also export subtasks to separate CSV
     if (subtasks.length > 0) {
       const subtasksFilename = `subtasks-export-${timestamp}.csv`;
       const subtasksFilepath = path.join(EXPORT_DIR, subtasksFilename);
-      const subtasksCSV = jsonToCsv(subtasks as Array<Record<string, unknown>>);
+      const subtasksCSV = jsonToCsv((subtasks as unknown) as Array<Record<string, unknown>>);
       fs.writeFileSync(subtasksFilepath, subtasksCSV);
     }
   }
@@ -272,7 +272,7 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
     };
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
-    const csv = jsonToCsv(logs as Array<Record<string, unknown>>);
+    const csv = jsonToCsv((logs as unknown) as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, csv);
   }
 
@@ -339,7 +339,7 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
     };
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
-    const csv = jsonToCsv(messages as Array<Record<string, unknown>>);
+    const csv = jsonToCsv((messages as unknown) as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, csv);
   }
 

@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron';
 import { prepare } from './database';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('XAutomations');
 
 // Generate ID
 function generateId(): string {
