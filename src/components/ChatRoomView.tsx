@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, Play, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
@@ -22,7 +22,7 @@ interface ChatRoomViewProps {
 }
 
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
-  const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents } = useChatRoomStore();
+  const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents, deleteRoom } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
@@ -432,8 +432,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     const name = agentName(id);
     return name.toLowerCase().includes(mentionFilter);
   });
-
-  const { deleteRoom } = useChatRoomStore();
 
   // Detect if this is a team meeting (has all or nearly all agents)
   const totalAgents = agents.length;

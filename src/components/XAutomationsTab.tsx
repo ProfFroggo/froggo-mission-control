@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Power, Trash2, Edit, Play, Zap, Clock, Hash, UserPlus, MessageSquare, Heart, Repeat, Send, List } from 'lucide-react';
+import { showToast } from './Toast';
 
 interface Automation {
   id: string;
@@ -123,13 +124,13 @@ export default function XAutomationsTab() {
       );
       
       if (result?.success) {
-        alert('Automation test triggered! Check logs for results.');
+        showToast('success', 'Test Triggered', 'Automation test triggered! Check logs for results.');
       } else {
-        alert(`Test failed: ${result?.error || 'Unknown error'}`);
+        showToast('error', 'Test Failed', result?.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Failed to test automation:', error);
-      alert('Test failed: ' + error);
+      showToast('error', 'Test Failed', String(error));
     }
   };
 
@@ -163,7 +164,7 @@ export default function XAutomationsTab() {
 
   const saveAutomation = async () => {
     if (!builderName || !builderTriggerType || builderActions.length === 0) {
-      alert('Please fill in all required fields');
+      showToast('warning', 'Missing Fields', 'Please fill in all required fields');
       return;
     }
 
@@ -191,9 +192,10 @@ export default function XAutomationsTab() {
       await (window as any).clawdbot?.db?.execute(query, params);
       await loadAutomations();
       closeBuilder();
+      showToast('success', 'Automation Saved', editingAutomation ? 'Changes saved successfully' : 'New automation created');
     } catch (error) {
       console.error('Failed to save automation:', error);
-      alert('Failed to save automation: ' + error);
+      showToast('error', 'Save Failed', 'Failed to save automation: ' + error);
     }
   };
 

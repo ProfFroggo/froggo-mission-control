@@ -144,7 +144,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
                 <ExternalLink size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-50" />
                 <h3 className="text-lg font-semibold mb-2">Preview not available</h3>
                 <p className="text-sm text-clawd-text-dim mb-4">
-                  This file type can't be previewed in the browser.
+                  This file type can&apos;t be previewed in the browser.
                 </p>
                 <button
                   onClick={handleDownload}

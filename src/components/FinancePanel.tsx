@@ -143,15 +143,15 @@ export default function FinancePanel() {
       const result = await (window as any).clawdbot?.finance?.uploadCSV(text, file.name);
       
       if (result?.success) {
-        alert(`✅ Imported ${result.imported} transactions (${result.skipped} duplicates skipped)`);
+        showToast('success', 'Import Complete', `Imported ${result.imported} transactions (${result.skipped} duplicates skipped)`);
         await loadFinanceData(); // Reload data
         setUploadModalOpen(false);
       } else {
-        alert(`❌ Upload failed: ${result?.error || 'Unknown error'}`);
+        showToast('error', 'Upload Failed', result?.error || 'Unknown error');
       }
     } catch (error: any) {
       console.error('[Finance] Upload error:', error);
-      alert(`❌ Upload failed: ${error.message}`);
+      showToast('error', 'Upload Failed', error.message);
     }
   };
 

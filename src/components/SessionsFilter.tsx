@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
+import { showToast } from './Toast';
 import FolderSelector from './FolderSelector';
 import FolderManager from './FolderManager';
 import FolderTabs from './FolderTabs';

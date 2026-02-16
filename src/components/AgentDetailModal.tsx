@@ -64,32 +64,20 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
 
   const buildDetailsFromRealData = async () => {
     setLoading(true);
-    console.log('[AgentDetail] ===== buildDetailsFromRealData START for', agentId, '=====');
 
     // Try IPC first (reads from froggo.db with real data)
     let ipcDetails: any = null;
     try {
       const ipc = (window as any).clawdbot?.agents;
-      console.log('[AgentDetail] IPC available:', !!ipc, 'getDetails:', typeof ipc?.getDetails);
       if (ipc?.getDetails) {
-        console.log('[AgentDetail] Calling ipc.getDetails(' + agentId + ')...');
         ipcDetails = await ipc.getDetails(agentId);
-        console.log('[AgentDetail] IPC result type:', typeof ipcDetails, 'success:', ipcDetails?.success);
-        console.log('[AgentDetail] IPC totalTasks:', ipcDetails?.totalTasks, 'successfulTasks:', ipcDetails?.successfulTasks);
-        console.log('[AgentDetail] IPC recentTasks count:', ipcDetails?.recentTasks?.length, 'skills count:', ipcDetails?.skills?.length);
-        if (ipcDetails && !ipcDetails.success) {
-          console.error('[AgentDetail] IPC returned success=false, error:', ipcDetails.error);
-        }
-      } else {
-        console.warn('[AgentDetail] No IPC getDetails available - window.clawdbot:', typeof (window as any).clawdbot);
       }
-    } catch (e: any) {
-      console.error('[AgentDetail] IPC getDetails EXCEPTION:', e?.message || e, e?.stack);
+    } catch (e) {
+      // IPC failed, will fall back to store data
     }
 
     // Get tasks from store as fallback/supplement
     const agentTasks = tasks.filter(t => t.assignedTo === agentId);
-    console.log('[AgentDetail] Store tasks for', agentId, ':', agentTasks.length, '(total store tasks:', tasks.length, ')');
     const doneTasks = agentTasks.filter(t => t.status === 'done');
     const failedTasksList = agentTasks.filter(t => (t.status as string) === 'failed' || (t.status as string) === 'blocked');
     const inProgressTasks = agentTasks.filter(t => t.status === 'in-progress');
@@ -100,7 +88,6 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
     const failedCount = ipcDetails?.failedTasks ?? failedTasksList.length;
     const successRate = ipcDetails?.successRate ?? (totalTasks > 0 ? successfulCount / totalTasks : 0);
     const avgTimeStr = ipcDetails?.avgTime || 'N/A';
-    console.log('[AgentDetail] FINAL data:', { totalTasks, successfulCount, failedCount, successRate, source: ipcDetails?.success ? 'IPC' : 'store' });
 
     // Skills: prefer IPC data, fall back to agent capabilities
     let skills = ipcDetails?.skills || [];
