@@ -18,6 +18,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { safeStorage } from 'electron';
 import { FROGGO_DB } from './paths';
+import { safeLog as logger } from './logger';
 
 const execAsync = promisify(exec);
 

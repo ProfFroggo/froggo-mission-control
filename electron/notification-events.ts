@@ -13,17 +13,17 @@ import { createLogger } from '../src/utils/logger';
 const logger = createLogger('NotificationEvents');
 
 const safeLog = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
-        logger.debug(...args);
+        logger.debug(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
-        logger.error(...args);
+        logger.error(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },

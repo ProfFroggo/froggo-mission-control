@@ -52,8 +52,6 @@ interface AddAccountRequest {
   password?: string;
   appPassword?: string;
   tokenPath?: string;
-  createdAt: number;
-  updatedAt: number;
 }
 
 const ACCOUNTS_FILE = path.join(os.homedir(), 'clawd', 'data', 'connected-accounts.json');
