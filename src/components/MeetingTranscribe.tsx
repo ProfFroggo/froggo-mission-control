@@ -21,7 +21,7 @@ async function getApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
-  } catch {}
+  } catch { /* ignore */ }
   // 3. Try localStorage
   const storedKey = localStorage.getItem('gemini_api_key');
   if (storedKey && storedKey !== 'your_key_here') return storedKey;
@@ -29,7 +29,7 @@ async function getApiKey(): Promise<string> {
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
     if (s.geminiApiKey) return s.geminiApiKey;
-  } catch {}
+  } catch { /* ignore */ }
   throw new Error('Gemini API key not set. Configure it in Settings > API Keys.');
 }
 

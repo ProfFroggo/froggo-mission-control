@@ -23,14 +23,14 @@ export function playNotificationSound(type: 'approval' | 'message' | 'alert' = '
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
       break;
-    case 'alert':
+    case 'alert': {
       // Urgent double beep
       oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
       gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.15);
-      
+
       // Second beep
       const osc2 = audioContext.createOscillator();
       const gain2 = audioContext.createGain();
@@ -42,6 +42,7 @@ export function playNotificationSound(type: 'approval' | 'message' | 'alert' = '
       osc2.start(audioContext.currentTime + 0.2);
       osc2.stop(audioContext.currentTime + 0.35);
       break;
+    }
     default:
       // Gentle pop
       oscillator.frequency.setValueAtTime(440, audioContext.currentTime);

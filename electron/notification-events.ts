@@ -15,14 +15,14 @@ const safeLog = {
       if (process.stdout.writable) {
         console.log(...args);
       }
-    } catch {}
+    } catch { /* ignore */ }
   },
   error: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
         console.error(...args);
       }
-    } catch {}
+    } catch { /* ignore */ }
   },
 };
 const SESSION_DIR = path.join(OPENCLAW_DIR, 'sessions');

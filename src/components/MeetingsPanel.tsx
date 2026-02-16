@@ -27,11 +27,11 @@ async function getGeminiApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) { _cachedGeminiKey = key; return key; }
-  } catch {}
+  } catch { /* ignore */ }
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
     if (s.geminiApiKey) { _cachedGeminiKey = s.geminiApiKey; return s.geminiApiKey; }
-  } catch {}
+  } catch { /* ignore */ }
   return '';
 }
 const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
@@ -169,7 +169,7 @@ export default function MeetingsPanel() {
 
   useEffect(() => {
     return () => {
-      if (wsRef.current) { try { wsRef.current.close(); } catch {} }
+      if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } /* ignore */ } }
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
       if (audioContextRef.current) { audioContextRef.current.close().catch(() => {}); }
     };
@@ -396,7 +396,7 @@ export default function MeetingsPanel() {
           }
         }
         meetings.sort((a, b) => b.date.getTime() - a.date.getTime());
-      } catch {}
+      } catch { /* ignore */ }
       setPastMeetings(meetings);
     } catch (err) {
       console.error('[Meetings] Error loading:', err);
@@ -488,7 +488,7 @@ export default function MeetingsPanel() {
           description: `From meeting on ${new Date().toLocaleDateString()}`,
         });
         if (result.success) created++;
-      } catch {}
+      } catch { /* ignore */ }
     }
     return created;
   }, [meetingActionItems]);
@@ -617,7 +617,7 @@ export default function MeetingsPanel() {
             mediaChunks: [{ data: btoa(binary), mimeType: 'audio/pcm;rate=16000' }]
           }
         }));
-      } catch {}
+      } catch { /* ignore */ }
     };
     source.connect(processor);
     processor.connect(audioContext.destination);
@@ -703,7 +703,7 @@ export default function MeetingsPanel() {
         setMeetingTranscript(prev => [...prev, finalText]);
       }
       if (wsRef.current) {
-        try { wsRef.current.close(); } catch {}
+        try { wsRef.current.close(); } catch { /* ignore */ } /* ignore */ }
         wsRef.current = null;
       }
       if (streamRef.current) {
@@ -722,7 +722,7 @@ export default function MeetingsPanel() {
       setMeetingStartTime(null);
       await new Promise(resolve => setTimeout(resolve, 100));
       if (meetingDbId) {
-        try { await endMeetingInDb(meetingDbId, duration); } catch {}
+        try { await endMeetingInDb(meetingDbId, duration); } catch { /* ignore */ }
       }
     } catch (err) {
       console.error('[Meeting] Error ending:', err);
@@ -743,11 +743,11 @@ export default function MeetingsPanel() {
         let savedPath: string | null = null;
         try {
           savedPath = await saveMeetingToFile(meetingTranscript, meetingActionItems);
-        } catch {}
+        } catch { /* ignore */ }
         const summary = await generateSummary(meetingTranscript);
         if (summary) setAiSummary(summary);
         if (meetingDbId) {
-          try { await endMeetingInDb(meetingDbId, elapsedTime, summary || undefined, savedPath || undefined); } catch {}
+          try { await endMeetingInDb(meetingDbId, elapsedTime, summary || undefined, savedPath || undefined); } catch { /* ignore */ }
         }
         setMeetingEndSummary({ savedPath, tasksCreated: 0, extractedTasks: [] });
         setStatusMessage('Meeting ended');
@@ -775,7 +775,7 @@ export default function MeetingsPanel() {
       ...approved.map(a => `- [${a.type}] ${a.editedText || a.text}`), '',
       'Please confirm any action items.',
     ].filter(Boolean).join('\n');
-    try { await gateway.sendChat(summary); } catch {}
+    try { await gateway.sendChat(summary); } catch { /* ignore */ }
     setMeetingTranscript([]);
     setMeetingActionItems([]);
   }, [meetingTranscript, meetingActionItems]);

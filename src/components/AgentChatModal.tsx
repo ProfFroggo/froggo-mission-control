@@ -518,6 +518,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               onClick={sendMessage}
               disabled={!input.trim() || sending || !sessionKey}
               className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+              aria-label="Send message"
             >
               <Send size={20} />
             </button>

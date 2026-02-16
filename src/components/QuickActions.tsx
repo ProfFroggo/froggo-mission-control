@@ -531,7 +531,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
           }).catch(() => {});
         }
-      } catch {}
+      } catch { /* ignore */ }
     };
 
     const unsubs = [
@@ -606,7 +606,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     try {
       const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
       if (key) return key;
-    } catch {}
+    } catch { /* ignore */ }
     return '';
   };
 
@@ -647,7 +647,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         const ctx = new AudioContext();
         ringCtxRef.current = ctx;
         ringRef.current = playRingTone(ctx);
-      } catch {}
+      } catch { /* ignore */ }
 
       try {
         // Load full agent context (SOUL.md, memory, tasks, etc.) + chat history

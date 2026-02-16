@@ -136,7 +136,7 @@ export interface ApprovalItem {
     replyTo?: string;
     scheduledFor?: string;
     actionType?: string;
-    actionPayload?: any;
+    actionPayload?: Record<string, unknown>;
   };
   status: ApprovalStatus;
   createdAt: number;
@@ -299,7 +299,7 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
       }
     }
     return { success: true };
-  } catch (e: any) {
+  } catch (e) {
     console.error('[Approval] Failed to execute:', e);
     // Notify agent about the failure so it can retry or handle
     await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${e.message}\n\nContent: ${item.content}`).catch(() => {});
@@ -364,7 +364,7 @@ export const useStore = create<Store>()(
             const now = Date.now();
             const fiveMinutes = 5 * 60 * 1000;
             
-            const processed: GatewaySession[] = result.sessions.map((s: any) => {
+            const processed: GatewaySession[] = result.sessions.map((s: { key?: string; kind?: 'direct' | 'group'; updatedAt?: number; ageMs?: number; sessionId?: string; model?: string; totalTokens?: number; contextTokens?: number; inputTokens?: number; outputTokens?: number; channel?: string; label?: string | null }) => {
               // Determine session type from key
               const key = s.key || '';
               const label = s.label || null;
@@ -511,7 +511,7 @@ export const useStore = create<Store>()(
           const result = await (window as any).clawdbot?.tasks?.list();
           if (result?.success && Array.isArray(result.tasks)) {
             // Convert froggo-db tasks to store format (backend already filters archived/cancelled)
-            const tasksWithoutSubtasks = result.tasks.map((t: any) => ({
+            const tasksWithoutSubtasks = result.tasks.map((t: { id: string; title: string; description?: string; status: string; priority?: string; project?: string; assigned_to?: string; reviewerId?: string; reviewer_id?: string; reviewStatus?: string; review_status?: string; planning_notes?: string; planningNotes?: string; due_date?: string; last_agent_update?: string; created_at?: number; updated_at?: number; last_activity_at?: number }) => ({
               id: t.id,
               title: t.title,
               description: t.description || '',
@@ -593,7 +593,7 @@ export const useStore = create<Store>()(
         console.log('[Store] Calling clawdbot.tasks.update via IPC');
         // Persist to database via IPC
         (window as any).clawdbot?.tasks?.update(id, updates)
-          .then((result: any) => {
+          .then((result: { success?: boolean; error?: string }) => {
             if (!result?.success) {
               console.error('[Store] Task update failed:', result?.error);
               if (rollbackValues) {
@@ -605,7 +605,7 @@ export const useStore = create<Store>()(
               console.log('[Store] Task update persisted:', id, updates);
             }
           })
-          .catch((err: any) => {
+          .catch((err: Error) => {
             console.error('[Store] Task update exception:', err);
             if (rollbackValues) {
               set((s: Store) => ({
@@ -860,7 +860,16 @@ export const useStore = create<Store>()(
           const result = await (window as any).clawdbot?.agents?.list();
           if (result?.success && Array.isArray(result.agents) && result.agents.length > 0) {
             // Map CLI fields (identityName, identityEmoji) to store fields (name, avatar)
-            const agents: Agent[] = result.agents.map((cliAgent: any) => ({
+            interface CliAgent {
+              id: string;
+              identityName?: string;
+              identityEmoji?: string;
+              description?: string;
+              capabilities?: string[];
+              workspace?: string;
+              model?: string;
+            }
+            const agents: Agent[] = result.agents.map((cliAgent: CliAgent) => ({
               id: cliAgent.id,
               name: cliAgent.identityName || cliAgent.id,
               avatar: cliAgent.identityEmoji || '🤖',
@@ -1133,7 +1142,7 @@ Start now.`;
           if (window.clawdbot?.inbox?.list) {
             const result = await window.clawdbot.inbox.list();
             if (result?.success && Array.isArray(result.items)) {
-              const approvalItems: ApprovalItem[] = result.items.map((item: any) => ({
+              const approvalItems: ApprovalItem[] = result.items.map((item: { id: string | number; type: string; title: string; content: string; status: string; context?: string; created: string }) => ({
                 id: String(item.id),
                 type: item.type as ApprovalType,
                 title: item.title,
@@ -1191,7 +1200,7 @@ Start now.`;
         xDrafts: s.xDrafts,
       }),
       // Custom merge to ensure arrays are never undefined after hydration
-      merge: (persistedState: any, currentState: any) => ({
+      merge: (persistedState: { activities?: Activity[]; xDrafts?: XDraft[] }, currentState: { activities: Activity[]; xDrafts: XDraft[] }) => ({
         ...currentState,
         ...persistedState,
         // Ensure arrays default to empty if missing/null in persisted state
@@ -1233,7 +1242,7 @@ if (typeof window !== 'undefined' && (window as any).clawdbot?.tasks?.onNotifica
   });
 }
 
-gateway.on('chat', (payload: any) => {
+gateway.on('chat', (payload: { final?: boolean; content?: string; sessionKey?: string }) => {
   if (payload?.final && payload?.content) {
     useStore.getState().addActivity({
       type: 'chat',
@@ -1245,7 +1254,7 @@ gateway.on('chat', (payload: any) => {
 });
 
 // Listen for approval requests from Froggo
-gateway.on('approval.request', (payload: any) => {
+gateway.on('approval.request', (payload: { type: ApprovalType; title: string; content: string; context?: string; metadata?: ApprovalItem['metadata'] }) => {
   if (payload?.type && payload?.title && payload?.content) {
     useStore.getState().addApproval({
       type: payload.type,
@@ -1273,7 +1282,7 @@ function debouncedTaskRefresh() {
 
 // Listen for task-related events for real-time updates
 // These can be triggered by the main agent after creating tasks from Discord
-gateway.on('task.created', (payload: any) => {
+gateway.on('task.created', (payload: { title?: string }) => {
   console.log('[Store] Task created event received:', payload);
   debouncedTaskRefresh();
   useStore.getState().addActivity({
@@ -1283,7 +1292,7 @@ gateway.on('task.created', (payload: any) => {
   });
 });
 
-gateway.on('task.updated', (payload: any) => {
+gateway.on('task.updated', (payload: { id?: string }) => {
   console.log('[Store] Task updated event received:', payload);
   debouncedTaskRefresh();
 });
@@ -1302,8 +1311,8 @@ gateway.on('tasks.refresh', () => {
 
 // Listen for direct gateway broadcasts from main process (real-time task updates)
 if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
-  (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: any }) => {
-    console.log('[Store] Gateway broadcast received:', data.event, data.payload?.id);
+  (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: unknown }) => {
+    console.log('[Store] Gateway broadcast received:', data.event, (data.payload as { id?: string })?.id);
     if (data.event === 'task.created' || data.event === 'task.updated') {
       debouncedTaskRefresh();
     }
@@ -1311,7 +1320,7 @@ if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadc
 }
 
 // Also check for approval patterns in chat messages
-gateway.on('chat.message', (payload: any) => {
+gateway.on('chat.message', (payload: { content?: string }) => {
   const content = payload?.content || '';
 
   // Detect task creation patterns from AI analysis

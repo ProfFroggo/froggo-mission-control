@@ -37,7 +37,7 @@ function timeCli(sql: string): number {
   const start = performance.now();
   try {
     execSync(`sqlite3 "${dbPath}" "${sql}" -json`, { timeout: 10000 });
-  } catch {}
+  } catch { /* ignore */ }
   return performance.now() - start;
 }
 
