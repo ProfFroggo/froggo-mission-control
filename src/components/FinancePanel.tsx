@@ -191,12 +191,11 @@ export default function FinancePanel() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-clawd-bg text-clawd-text">
-        <div className="text-center">
-          <DollarSign size={48} className="mx-auto mb-4 text-clawd-text/50 animate-pulse" />
-          <p className="text-lg">Loading finance data...</p>
-        </div>
-      </div>
+      <WidgetLoading 
+        variant="spinner" 
+        title="Loading finance data..."
+        icon={DollarSign}
+      />
     );
   }
 
