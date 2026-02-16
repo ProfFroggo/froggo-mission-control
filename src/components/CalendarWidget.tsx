@@ -57,7 +57,7 @@ export default function CalendarWidget({ expanded = false, onOpenFullCalendar }:
         setLastFetch(Date.now());
       }
     } catch (e: any) {
-      console.error('Failed to fetch calendar:', e);
+      // Silently fail - deprecated component
       setError('Could not load calendar');
     } finally {
       setLoading(false);
