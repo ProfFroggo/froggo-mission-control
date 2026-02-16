@@ -773,7 +773,7 @@ app.whenReady().then(() => {
 
   // Check for updates (prod only, non-blocking)
   if (!isDev && !app.getName().includes('Dev')) {
-    checkForUpdates().catch(() => {});
+    checkForUpdates().catch((err) => safeLog.error('[Updates] Failed to check for updates:', err));
   }
 });
 
@@ -3586,7 +3586,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'remove', jobId: id })
-    }).catch(() => {});
+    }).catch((err) => safeLog.error('[Cron] Failed to remove job via API:', err));
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
