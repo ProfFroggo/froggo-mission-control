@@ -10,6 +10,7 @@ import { promisify } from 'util';
 import * as crypto from 'crypto';
 import * as https from 'https';
 import * as querystring from 'querystring';
+import * as fs from 'fs';
 
 const execAsync = promisify(exec);
 
@@ -251,7 +252,7 @@ class TwitterOAuthService {
       `export X_SCREEN_NAME="${credentials.screenName}"`,
     ].join('\n');
 
-    require('fs').writeFileSync(credFile, content, { mode: 0o600 });
+    fs.writeFileSync(credFile, content, { mode: 0o600 });
     console.log(`[TwitterOAuth] Credentials stored in ${credFile}`);
   }
 
@@ -260,12 +261,12 @@ class TwitterOAuthService {
    */
   async loadCredentials(): Promise<OAuthCredentials | null> {
     const credFile = `${process.env.HOME}/.x-api-credentials`;
-    if (!require('fs').existsSync(credFile)) {
+    if (!fs.existsSync(credFile)) {
       return null;
     }
 
     try {
-      const content = require('fs').readFileSync(credFile, 'utf-8');
+      const content = fs.readFileSync(credFile, 'utf-8');
       const lines = content.split('\n');
       const creds: any = {};
 
