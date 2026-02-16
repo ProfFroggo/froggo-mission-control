@@ -46,7 +46,7 @@ export function registerWritingChatHandlers() {
 
       return { success: true, messages };
     } catch (e: any) {
-      console.error('[writing-chat] loadHistory error:', e.message);
+      logger.error('[writing-chat] loadHistory error:', e.message);
       return { success: false, error: e.message, messages: [] };
     }
   });
@@ -60,7 +60,7 @@ export function registerWritingChatHandlers() {
       await fs.promises.appendFile(filepath, JSON.stringify(message) + '\n', 'utf-8');
       return { success: true };
     } catch (e: any) {
-      console.error('[writing-chat] appendMessage error:', e.message);
+      logger.error('[writing-chat] appendMessage error:', e.message);
       return { success: false, error: e.message };
     }
   });
@@ -77,7 +77,7 @@ export function registerWritingChatHandlers() {
       }
       return { success: true };
     } catch (e: any) {
-      console.error('[writing-chat] clearHistory error:', e.message);
+      logger.error('[writing-chat] clearHistory error:', e.message);
       return { success: false, error: e.message };
     }
   });

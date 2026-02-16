@@ -8,6 +8,9 @@
 import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import { FROGGO_DB, SCHEDULE_DB, SECURITY_DB, SESSIONS_DB, SESSIONS_DB_LEGACY } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('Database');
 
 const FROGGO_DB_PATH = FROGGO_DB;
 const SCHEDULE_DB_PATH = SCHEDULE_DB;
@@ -97,7 +100,7 @@ export function closeDb(): void {
     try {
       // better-sqlite3 statements don't have explicit close, just finalize when needed
     } catch (error) {
-      console.error('[Database] Failed to cleanup statement:', error);
+      logger.error('[Database] Failed to cleanup statement:', error);
     }
   });
   statementCache.clear();
@@ -107,7 +110,7 @@ export function closeDb(): void {
     try {
       scheduleDb.close();
     } catch (error) {
-      console.error('[Database] Failed to close schedule.db:', error);
+      logger.error('[Database] Failed to close schedule.db:', error);
     }
     scheduleDb = null;
   }
@@ -117,7 +120,7 @@ export function closeDb(): void {
     try {
       securityDb.close();
     } catch (error) {
-      console.error('[Database] Failed to close security.db:', error);
+      logger.error('[Database] Failed to close security.db:', error);
     }
     securityDb = null;
   }
@@ -127,7 +130,7 @@ export function closeDb(): void {
     try {
       sessionsDb.close();
     } catch (error) {
-      console.error('[Database] Failed to close sessions.db:', error);
+      logger.error('[Database] Failed to close sessions.db:', error);
     }
     sessionsDb = null;
   }
@@ -136,6 +139,6 @@ export function closeDb(): void {
   try {
     db.close();
   } catch (error) {
-    console.error('[Database] Failed to close froggo.db:', error);
+    logger.error('[Database] Failed to close froggo.db:', error);
   }
 }

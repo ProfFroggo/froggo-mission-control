@@ -5,7 +5,9 @@
  * and avoid duplicate handler errors.
  */
 import { ipcMain } from 'electron';
+import { createLogger } from '../src/utils/logger';
 
+const logger = createLogger('IPC');
 const registeredHandlers = new Set<string>();
 
 /**
@@ -13,7 +15,7 @@ const registeredHandlers = new Set<string>();
  */
 export function registerHandler(channel: string, handler: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any): void {
   if (registeredHandlers.has(channel)) {
-    console.warn(`[IPC] Handler '${channel}' already registered, skipping`);
+    logger.warn(`[IPC] Handler '${channel}' already registered, skipping`);
     return;
   }
   

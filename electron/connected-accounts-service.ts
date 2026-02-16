@@ -142,7 +142,7 @@ class ConnectedAccountsService {
         updatedAt: row.updated_at
       }));
     } catch (err) {
-      console.error('[ConnectedAccountsService] Failed to list accounts:', err);
+      logger.error('[ConnectedAccountsService] Failed to list accounts:', err);
       return [];
     }
   }
@@ -165,7 +165,7 @@ class ConnectedAccountsService {
         [accountId]
       );
     } catch (err) {
-      console.error('[ConnectedAccountsService] Failed to get permissions:', err);
+      logger.error('[ConnectedAccountsService] Failed to get permissions:', err);
       return [];
     }
   }
@@ -218,7 +218,7 @@ class ConnectedAccountsService {
       const gogType = types.find(t => t.type === 'google');
       if (gogType) gogType.available = true;
     } catch {
-      console.debug('[ConnectedAccountsService] gog CLI not found');
+      logger.debug('[ConnectedAccountsService] gog CLI not found');
     }
 
     return types;
@@ -266,10 +266,10 @@ class ConnectedAccountsService {
           );
 
           imported++;
-          console.debug(`[ConnectedAccountsService] Imported Google account: ${email}`);
+          logger.debug(`[ConnectedAccountsService] Imported Google account: ${email}`);
         }
       } catch (err) {
-        console.error(`[ConnectedAccountsService] Failed to import ${email}:`, (err as Error).message);
+        logger.error(`[ConnectedAccountsService] Failed to import ${email}:`, (err as Error).message);
         errors.push(`${email}: ${err.message}`);
       }
     }
@@ -389,7 +389,7 @@ class ConnectedAccountsService {
 
       // TODO: Revoke OAuth tokens if applicable
 
-      console.debug(`[ConnectedAccountsService] Removed account: ${account.email}`);
+      logger.debug(`[ConnectedAccountsService] Removed account: ${account.email}`);
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };
@@ -452,7 +452,7 @@ class ConnectedAccountsService {
         [accountId, limit]
       );
     } catch (err) {
-      console.error('[ConnectedAccountsService] Failed to get sync history:', err);
+      logger.error('[ConnectedAccountsService] Failed to get sync history:', err);
       return [];
     }
   }

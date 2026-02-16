@@ -54,7 +54,7 @@ async function logFeedback(projectId: string, entry: FeedbackEntry) {
 
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-feedback] logFeedback error:', e.message);
+    logger.error('[writing-feedback] logFeedback error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -87,7 +87,7 @@ async function getFeedbackHistory(projectId: string, chapterId: string) {
       throw err;
     }
   } catch (e: any) {
-    console.error('[writing-feedback] getFeedbackHistory error:', e.message);
+    logger.error('[writing-feedback] getFeedbackHistory error:', e.message);
     return { success: false, error: e.message, entries: [] };
   }
 }

@@ -53,7 +53,7 @@ export interface BackupMetadata {
 /**
  * Convert JSON array to CSV format
  */
-function jsonToCsv(data: Record<string, unknown>[]): string {
+function jsonToCsv(data: Array<Record<string, unknown>>): string {
   if (data.length === 0) return '';
 
   // Get all unique keys from all objects
@@ -194,14 +194,14 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
     // CSV format
-    const tasksCSV = jsonToCsv(tasks);
+    const tasksCSV = jsonToCsv(tasks as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, tasksCSV);
 
     // Also export subtasks to separate CSV
     if (subtasks.length > 0) {
       const subtasksFilename = `subtasks-export-${timestamp}.csv`;
       const subtasksFilepath = path.join(EXPORT_DIR, subtasksFilename);
-      const subtasksCSV = jsonToCsv(subtasks);
+      const subtasksCSV = jsonToCsv(subtasks as Array<Record<string, unknown>>);
       fs.writeFileSync(subtasksFilepath, subtasksCSV);
     }
   }
@@ -272,7 +272,7 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
     };
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
-    const csv = jsonToCsv(logs);
+    const csv = jsonToCsv(logs as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, csv);
   }
 
@@ -339,7 +339,7 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
     };
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
-    const csv = jsonToCsv(messages);
+    const csv = jsonToCsv(messages as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, csv);
   }
 
@@ -423,7 +423,7 @@ export async function restoreBackup(backupPath: string): Promise<void> {
 
   } catch (error) {
     // Restore failed, revert to safeguard
-    console.error('[ExportBackup] Restore failed, reverting:', (error as Error).message);
+    logger.error('[ExportBackup] Restore failed, reverting:', (error as Error).message);
     fs.copyFileSync(safeguardPath, DB_PATH);
     throw new Error(`Restore failed: ${(error as Error).message}`);
   }
@@ -489,7 +489,7 @@ export async function cleanupOldBackups(keepCount: number = 10): Promise<number>
 
       deletedCount++;
     } catch (error) {
-      console.error('[ExportBackup] Failed to delete backup:', backup.filename, (error as Error).message);
+      logger.error('[ExportBackup] Failed to delete backup:', backup.filename, (error as Error).message);
     }
   }
 
@@ -542,7 +542,7 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
       imported++;
 
     } catch (error) {
-      console.error('[ExportBackup] Failed to import task:', task.id, (error as Error).message);
+      logger.error('[ExportBackup] Failed to import task:', task.id, (error as Error).message);
       errors++;
     }
   }
@@ -557,7 +557,7 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
 
         prepare(`INSERT OR IGNORE INTO subtasks (${fields.join(', ')}) VALUES (${placeholders})`).run(...values);
       } catch (error) {
-        console.error('[ExportBackup] Failed to import subtask:', (error as Error).message);
+        logger.error('[ExportBackup] Failed to import subtask:', (error as Error).message);
       }
     }
   }

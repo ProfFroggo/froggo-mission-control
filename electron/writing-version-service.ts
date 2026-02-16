@@ -207,7 +207,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await listVersions(projectId, chapterId);
     } catch (e) {
-      console.error('[writing-version] list error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] list error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -216,7 +216,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await saveSnapshot(projectId, chapterId, label);
     } catch (e) {
-      console.error('[writing-version] save error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] save error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -225,7 +225,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await readVersionContent(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] read error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] read error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -234,7 +234,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await restoreVersion(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] restore error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] restore error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -243,7 +243,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await computeDiff(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] diff error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] diff error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -252,7 +252,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await deleteVersion(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] delete error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] delete error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });

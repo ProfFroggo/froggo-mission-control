@@ -31,7 +31,7 @@ async function saveWizardState(sessionId: string, state: Record<string, unknown>
     );
     return { success: true };
   } catch (e) {
-    console.error('[writing-wizard] saveWizardState error:', e instanceof Error ? e.message : String(e));
+    logger.error('[writing-wizard] saveWizardState error:', e instanceof Error ? e.message : String(e));
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
@@ -44,7 +44,7 @@ async function loadWizardState(sessionId: string) {
   } catch (err) {
     const error = err as { code?: string; message?: string };
     if (error.code === 'ENOENT') return { success: true, state: null };
-    console.error('[writing-wizard] loadWizardState error:', error.message);
+    logger.error('[writing-wizard] loadWizardState error:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -71,7 +71,7 @@ async function listPendingWizards() {
 
     return { success: true, wizards };
   } catch (e) {
-    console.error('[writing-wizard] listPendingWizards error:', e instanceof Error ? e.message : String(e));
+    logger.error('[writing-wizard] listPendingWizards error:', e instanceof Error ? e.message : String(e));
     return { success: false, error: e instanceof Error ? e.message : String(e), wizards: [] };
   }
 }
@@ -84,7 +84,7 @@ async function deleteWizardState(sessionId: string) {
     });
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-wizard] deleteWizardState error:', e.message);
+    logger.error('[writing-wizard] deleteWizardState error:', e.message);
     return { success: false, error: e.message };
   }
 }

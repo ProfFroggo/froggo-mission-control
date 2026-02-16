@@ -8,19 +8,22 @@ import * as path from 'path';
 import { notificationService } from './notification-service';
 import { prepare } from './database';
 import { OPENCLAW_DIR } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('NotificationEvents');
 
 const safeLog = {
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
-        console.debug(...args);
+        logger.debug(...args);
       }
     } catch { /* ignore */ }
   },
   error: (...args: any[]) => {
     try {
       if (process.stderr.writable) {
-        console.error(...args);
+        logger.error(...args);
       }
     } catch { /* ignore */ }
   },
