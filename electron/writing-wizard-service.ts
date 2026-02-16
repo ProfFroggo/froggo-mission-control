@@ -13,6 +13,9 @@
 import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingWizard');
 import { WIZARD_STATE_DIR } from './paths';
 
 // ── Helpers ──
@@ -100,5 +103,5 @@ export function registerWritingWizardHandlers() {
     deleteWizardState(sessionId),
   );
 
-  console.debug('[writing-wizard] IPC handlers registered');
+  logger.debug('[writing-wizard] IPC handlers registered');
 }

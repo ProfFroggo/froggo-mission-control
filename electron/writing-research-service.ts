@@ -13,6 +13,9 @@ import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingResearchDbPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingResearch');
 
 // -- Types --
 
@@ -283,5 +286,5 @@ export function registerWritingResearchHandlers(): void {
   ipcMain.handle('writing:research:links:cleanup', (_, projectId: string, validFactIds: string[]) =>
     cleanOrphanedLinks(projectId, validFactIds));
 
-  console.debug('[writing-research] IPC handlers registered');
+  logger.debug('[writing-research] IPC handlers registered');
 }

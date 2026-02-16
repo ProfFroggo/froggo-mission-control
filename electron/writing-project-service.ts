@@ -13,6 +13,9 @@
 import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingProject');
 import { WRITING_PROJECTS_DIR, writingProjectPath, writingChapterPath, writingMemoryPath } from './paths';
 
 // ── Types ──
@@ -232,7 +235,7 @@ async function createProjectFromWizard(wizardData: {
     }));
     await writeJson(writingMemoryPath(id, 'timeline.json'), timeline);
 
-    console.debug(`[writing] Created wizard project: ${id} (${chapters.length} chapters, ${characters.length} chars, ${timeline.length} events)`);
+    logger.debug(`[writing] Created wizard project: ${id} (${chapters.length} chapters, ${characters.length} chars, ${timeline.length} events)`);
     return { success: true, project: meta };
   } catch (e: any) {
     // Rollback: clean up partial project directory
@@ -606,5 +609,5 @@ export function registerWritingProjectHandlers() {
   ipcMain.handle('writing:chapter:delete', async (_, projectId: string, chapterId: string) =>
     deleteChapter(projectId, chapterId));
 
-  console.debug('[writing] IPC handlers registered');
+  logger.debug('[writing] IPC handlers registered');
 }

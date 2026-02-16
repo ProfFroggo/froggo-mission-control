@@ -11,6 +11,9 @@ import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingChat');
 
 // ── IPC Registration ──
 
@@ -79,5 +82,5 @@ export function registerWritingChatHandlers() {
     }
   });
 
-  console.debug('[writing-chat] IPC handlers registered');
+  logger.debug('[writing-chat] IPC handlers registered');
 }

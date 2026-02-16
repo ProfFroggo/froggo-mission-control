@@ -12,6 +12,9 @@ import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingMemory');
 
 // ── Types ──
 
@@ -323,5 +326,5 @@ export function registerWritingMemoryHandlers() {
   ipcMain.handle('writing:memory:facts:delete', async (_, projectId: string, id: string) =>
     deleteFact(projectId, id));
 
-  console.debug('[writing-memory] IPC handlers registered');
+  logger.debug('[writing-memory] IPC handlers registered');
 }
