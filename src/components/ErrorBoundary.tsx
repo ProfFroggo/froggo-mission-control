@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * ErrorBoundary - Global error boundary to catch React errors
  * Provides graceful degradation and error recovery with smart error detection
@@ -6,323 +7,181 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug, Network, Clock, Code, Database, Lock, Wifi } from 'lucide-react';
 import { LoadingButton } from './LoadingStates';
+=======
+import { Component, ReactNode, ErrorInfo } from 'react';
+import { AlertTriangle, RefreshCw, Bug, XCircle } from 'lucide-react';
+>>>>>>> 8214873 (feat: add error boundaries for crash protection [P1])
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  panelName?: string;
+  componentName?: string;
+  panelName?: string; // Alias for componentName (used in App.tsx)
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
-  errorCount: number;
 }
 
-// Common error patterns and their user-friendly messages
-interface ErrorPattern {
-  test: RegExp;
-  title: string;
-  message: string;
-  suggestion: string;
-  icon: React.ReactNode;
-}
-
-const ERROR_PATTERNS: ErrorPattern[] = [
-  {
-    test: /Cannot read propert(y|ies) of (null|undefined)/i,
-    title: 'Missing Data',
-    message: 'Some expected data is not available yet.',
-    suggestion: 'Try refreshing the page or waiting a moment for data to load.',
-    icon: <Database size={32} className="text-warning" />
-  },
-  {
-    test: /Network (request )?failed/i,
-    title: 'Connection Problem',
-    message: 'Unable to connect to the server.',
-    suggestion: 'Check your internet connection and try again.',
-    icon: <Network size={32} className="text-error" />
-  },
-  {
-    test: /Failed to fetch/i,
-    title: 'Network Error',
-    message: 'Could not retrieve data from the server.',
-    suggestion: 'The server might be down. Try again in a few moments.',
-    icon: <Wifi size={32} className="text-error" />
-  },
-  {
-    test: /timeout/i,
-    title: 'Request Timeout',
-    message: 'The request took too long to complete.',
-    suggestion: 'The server might be slow. Try refreshing the page.',
-    icon: <Clock size={32} className="text-warning" />
-  },
-  {
-    test: /is not a function/i,
-    title: 'Code Error',
-    message: 'Something unexpected happened in the application.',
-    suggestion: 'Try refreshing the page. If this persists, please report it.',
-    icon: <Code size={32} className="text-review" />
-  },
-  {
-    test: /Cannot access.*before initialization/i,
-    title: 'Loading Error',
-    message: 'A component tried to use data before it was ready.',
-    suggestion: 'Refresh the page to restart the loading process.',
-    icon: <RefreshCw size={32} className="text-info" />
-  },
-  {
-    test: /Maximum update depth exceeded/i,
-    title: 'Infinite Loop',
-    message: 'A component got stuck in an update loop.',
-    suggestion: 'Refresh the page. If this keeps happening, please report it.',
-    icon: <AlertTriangle size={32} className="text-error" />
-  },
-  {
-    test: /WebSocket/i,
-    title: 'Connection Lost',
-    message: 'Real-time connection to the server was interrupted.',
-    suggestion: 'Check your connection and refresh the page.',
-    icon: <Wifi size={32} className="text-warning" />
-  },
-  {
-    test: /localStorage|sessionStorage/i,
-    title: 'Storage Error',
-    message: 'Unable to save or load local data.',
-    suggestion: 'Check if you have enough storage space or try clearing browser cache.',
-    icon: <Database size={32} className="text-warning" />
-  },
-  {
-    test: /permission denied/i,
-    title: 'Permission Denied',
-    message: 'The app does not have permission to perform this action.',
-    suggestion: 'Check your browser permissions and try again.',
-    icon: <Lock size={32} className="text-error" />
-  }
-];
-
-const getErrorDetails = (error: Error): ErrorPattern => {
-  const errorMessage = error.message;
-  
-  // Try to match against known patterns
-  for (const pattern of ERROR_PATTERNS) {
-    if (pattern.test.test(errorMessage)) {
-      return pattern;
-    }
-  }
-  
-  // Default fallback
-  return {
-    title: 'Something Went Wrong',
-    message: 'An unexpected error occurred.',
-    suggestion: 'Try refreshing the page. If the problem persists, please contact support.',
-    test: /.*/,
-    icon: <AlertTriangle size={32} className="text-error" />
-  };
-};
-
+/**
+ * Error Boundary component for crash protection
+ * Catches JavaScript errors anywhere in child component tree
+ * and displays a fallback UI instead of crashing the app
+ */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      errorCount: 0,
-    };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    return {
-      hasError: true,
-      error,
-    };
+  static getDerivedStateFromError(error: Error): State {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error, errorInfo: null };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log error details for debugging
+    console.error('[ErrorBoundary] Caught error:', error);
+    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
 
-    this.setState((prevState) => ({
-      errorInfo,
-      errorCount: prevState.errorCount + 1,
-    }));
+    this.setState({ errorInfo });
 
-    // Call custom error handler
+    // Call optional error handler
     this.props.onError?.(error, errorInfo);
 
-    // Log to external service (e.g., Sentry) in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Log to error tracking service
-      console.error('Production error:', {
-        error: error.toString(),
-        componentStack: errorInfo.componentStack,
-      });
-    }
+    // Report to any error tracking service
+    this.reportError(error, errorInfo);
   }
 
-  handleReset = () => {
-    this.setState({
-      hasError: false,
-      error: null,
-      errorInfo: null,
-    });
+  private getComponentName(): string {
+    return this.props.componentName || this.props.panelName || 'Unknown';
+  }
+
+  private reportError(error: Error, errorInfo: ErrorInfo) {
+    // Log to console for development
+    console.group('🚨 Error Boundary Report');
+    console.log('Component:', this.getComponentName());
+    console.log('Error:', error.message);
+    console.log('Stack:', error.stack);
+    console.log('Component Stack:', errorInfo.componentStack);
+    console.groupEnd();
+
+    // Could integrate with Sentry, LogRocket, etc. here
+    // Example: Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+  }
+
+  private handleRetry = () => {
+    // Reset error state to attempt re-render
+    this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
-  handleReload = () => {
-    window.location.reload();
-  };
-
-  handleGoHome = () => {
-    window.location.href = '/';
-  };
-
-  handleReportBug = () => {
-    const { error, errorInfo } = this.state;
-    const bugReport = `
-Error: ${error?.message}
-Stack: ${error?.stack}
-Component Stack: ${errorInfo?.componentStack}
-User Agent: ${navigator.userAgent}
-Timestamp: ${new Date().toISOString()}
+  private handleReportError = () => {
+    // Copy error details to clipboard for reporting
+    const errorDetails = `
+Component: ${this.getComponentName()}
+Error: ${this.state.error?.message}
+Stack: ${this.state.error?.stack}
+Time: ${new Date().toISOString()}
     `.trim();
 
+<<<<<<< HEAD
     // Copy to clipboard
     navigator.clipboard.writeText(bugReport);
     alert('Bug report copied to clipboard! Please send it to the support team.');
+=======
+    navigator.clipboard.writeText(errorDetails).then(() => {
+      // Show feedback - using alert for simplicity as toast might not be available in error state
+      alert('Error details copied to clipboard. Please share with the development team.');
+    }).catch(() => {
+      console.error('[ErrorBoundary] Failed to copy error details');
+    });
+>>>>>>> 8214873 (feat: add error boundaries for crash protection [P1])
   };
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback
+      // Custom fallback if provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default error UI
-      const { error, errorInfo, errorCount } = this.state;
-      const { panelName } = this.props;
-      const isCritical = errorCount > 3;
-      const errorDetails = error ? getErrorDetails(error) : null;
-      const isDevelopment = process.env.NODE_ENV === 'development';
-
+      // Default fallback UI
       return (
-        <div className="min-h-[300px] bg-clawd-bg flex items-center justify-center p-8">
-          <div className="max-w-2xl w-full">
-            {/* Icon */}
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center">
-                {errorDetails?.icon || <AlertTriangle size={40} className="text-error" />}
+        <div className="h-full flex items-center justify-center p-6 bg-clawd-bg">
+          <div className="max-w-md w-full bg-clawd-surface rounded-2xl border border-error-border p-6 shadow-xl">
+            {/* Icon and Title */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-error-subtle rounded-xl">
+                <AlertTriangle size={28} className="text-error" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-clawd-text">
+                  Something went wrong
+                </h2>
+                {this.getComponentName() !== 'Unknown' && (
+                  <p className="text-sm text-clawd-text-dim">
+                    in {this.getComponentName()}
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-center text-clawd-text mb-2">
-              {isCritical ? 'Critical Error' : errorDetails?.title || 'Something Went Wrong'}
-            </h1>
-
-            {/* Panel name if provided */}
-            {panelName && (
-              <p className="text-center text-clawd-text-dim mb-6 text-sm">
-                in {panelName}
+            {/* Error Message */}
+            <div className="mb-6">
+              <p className="text-sm text-clawd-text-dim mb-2">
+                An error occurred while rendering this component. Don&apos;t worry - your data is safe.
               </p>
-            )}
-
-            {/* User-friendly message */}
-            <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 mb-6 space-y-4">
-              <div>
-                <h3 className="text-sm font-semibold text-clawd-text mb-2">
-                  What happened?
-                </h3>
-                <p className="text-clawd-text-dim text-sm">
-                  {isCritical
-                    ? 'The application has encountered multiple errors. Please reload the page or contact support.'
-                    : errorDetails?.message || 'An unexpected error occurred.'}
-                </p>
-              </div>
-
-              {!isCritical && errorDetails && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-warning mb-2">
-                    💡 What to try
-                  </h3>
-                  <p className="text-sm text-clawd-text-dim">
-                    {errorDetails.suggestion}
-                  </p>
+              {this.state.error && (
+                <div className="bg-clawd-bg rounded-lg p-3 border border-clawd-border">
+                  <code className="text-xs text-error font-mono break-all">
+                    {this.state.error.message}
+                  </code>
                 </div>
               )}
             </div>
 
-            {/* Error details (dev mode or expanded) */}
-            {error && (
-              <div className="bg-clawd-surface border border-clawd-border rounded-lg p-4 mb-6">
-                {isDevelopment && (
-                  <div className="mb-4">
-                    <p className="text-sm font-mono text-error mb-2">
-                      {error.toString()}
-                    </p>
-                    {errorInfo && (
-                      <details className="text-xs text-clawd-text-dim">
-                        <summary className="cursor-pointer hover:text-clawd-text font-medium mb-2">
-                          🔧 Stack Trace (dev mode)
-                        </summary>
-                        <pre className="mt-2 overflow-auto max-h-64 whitespace-pre-wrap bg-error-subtle border border-red-500/20 rounded p-3 text-error">
-                          {errorInfo.componentStack}
-                        </pre>
-                      </details>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Action Buttons */}
+            <div className="space-y-2">
+              <button
+                onClick={this.handleRetry}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors font-medium"
+              >
+                <RefreshCw size={18} />
+                Try Again
+              </button>
 
-            {/* Actions */}
-            <div className="space-y-3">
-              {!isCritical && (
-                <LoadingButton
-                  onClick={this.handleReset}
-                  variant="primary"
-                  icon={<RefreshCw size={16} />}
-                  className="w-full"
+              <div className="flex gap-2">
+                <button
+                  onClick={this.handleReportError}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-clawd-bg border border-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border transition-colors text-sm"
                 >
-                  Try Again
-                </LoadingButton>
-              )}
+                  <Bug size={16} />
+                  Report Error
+                </button>
 
-              <LoadingButton
-                onClick={this.handleReload}
-                variant="secondary"
-                icon={<RefreshCw size={16} />}
-                className="w-full"
-              >
-                Reload Page
-              </LoadingButton>
-
-              <LoadingButton
-                onClick={this.handleGoHome}
-                variant="secondary"
-                icon={<Home size={16} />}
-                className="w-full"
-              >
-                Go to Home
-              </LoadingButton>
-
-              <LoadingButton
-                onClick={this.handleReportBug}
-                variant="ghost"
-                icon={<Bug size={16} />}
-                className="w-full"
-              >
-                Copy Error Report
-              </LoadingButton>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-clawd-bg border border-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border transition-colors text-sm"
+                >
+                  <XCircle size={16} />
+                  Reload App
+                </button>
+              </div>
             </div>
 
-            {/* Error count warning */}
-            {errorCount > 1 && (
-              <div className="mt-4 text-center text-xs text-clawd-text-dim">
-                {errorCount} errors occurred. If this continues, try restarting the app.
-              </div>
+            {/* Technical Details (collapsible) */}
+            {this.state.errorInfo && (
+              <details className="mt-4">
+                <summary className="text-xs text-clawd-text-dim cursor-pointer hover:text-clawd-text transition-colors">
+                  Technical Details
+                </summary>
+                <pre className="mt-2 text-xs text-clawd-text-dim bg-clawd-bg p-3 rounded-lg overflow-auto max-h-40 font-mono">
+                  {this.state.errorInfo.componentStack}
+                </pre>
+              </details>
             )}
           </div>
         </div>
@@ -334,37 +193,24 @@ Timestamp: ${new Date().toISOString()}
 }
 
 /**
- * Hook to use error boundary imperatively
- */
-export function useErrorHandler() {
-  const [error, setError] = React.useState<Error | null>(null);
-
-  React.useEffect(() => {
-    if (error) {
-      throw error;
-    }
-  }, [error]);
-
-  return setError;
-}
-
-/**
- * Higher-order component to wrap any component with an error boundary
- * Uses ErrorBoundary without a static fallback so the built-in error UI
- * with "Try Again" (reset) button is shown, allowing in-place recovery.
+ * HOC to wrap a component with ErrorBoundary
  */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   componentName?: string
 ) {
-  return function WithErrorBoundaryWrapper(props: P) {
+  const displayName = componentName || Component.displayName || Component.name || 'Component';
+  
+  function ErrorBoundaryWrapper(props: P) {
     return (
-      <ErrorBoundary panelName={componentName}>
+      <ErrorBoundary componentName={displayName}>
         <Component {...props} />
       </ErrorBoundary>
     );
-  };
+  }
+  
+  ErrorBoundaryWrapper.displayName = `withErrorBoundary(${displayName})`;
+  return ErrorBoundaryWrapper;
 }
 
-// Default export
 export default ErrorBoundary;
