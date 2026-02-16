@@ -216,6 +216,7 @@ export default function FinancePanel() {
                 ? 'bg-success-subtle text-success hover:bg-success/30'
                 : 'bg-clawd-bg-alt text-clawd-text-dim hover:bg-clawd-bg'
             }`}
+            aria-label={chatOpen ? "Close AI chat" : "Open AI chat"}
           >
             <MessageSquare size={16} />
             AI Chat
@@ -223,6 +224,7 @@ export default function FinancePanel() {
           <button
             onClick={handleUploadClick}
             className="flex items-center gap-2 px-4 py-2 bg-info hover:bg-info-dim text-white rounded-lg transition-colors"
+            aria-label="Upload bank statement"
           >
             <Upload size={16} />
             Upload Statement
@@ -336,14 +338,14 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-info hover:text-info transition-colors">
+                <button className="mt-4 w-full text-sm text-info hover:text-info transition-colors" aria-label="View all budget categories">
                   View All Categories →
                 </button>
               </>
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No family budget set up</p>
-                <button className="text-info hover:text-info text-sm">
+                <button className="text-info hover:text-info text-sm" aria-label="Create family budget">
                   Create Budget
                 </button>
               </div>
@@ -411,14 +413,14 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-review hover:text-review transition-colors">
+                <button className="mt-4 w-full text-sm text-review hover:text-review transition-colors" aria-label="View all crypto budget categories">
                   View All Categories →
                 </button>
               </>
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No crypto budget set up</p>
-                <button className="text-review hover:text-review text-sm">
+                <button className="text-review hover:text-review text-sm" aria-label="Create crypto budget">
                   Create Budget
                 </button>
               </div>
@@ -430,7 +432,7 @@ export default function FinancePanel() {
         <div className="bg-clawd-surface border border-clawd-border rounded-xl">
           <div className="flex items-center justify-between p-4 border-b border-clawd-border">
             <h2 className="text-lg font-semibold">Recent Transactions</h2>
-            <button className="text-sm text-clawd-text/60 hover:text-clawd-text">
+            <button className="text-sm text-clawd-text/60 hover:text-clawd-text" aria-label="Filter transactions">
               Filter
             </button>
           </div>
@@ -514,6 +516,7 @@ export default function FinancePanel() {
               <button
                 onClick={() => setUploadModalOpen(false)}
                 className="px-4 py-2 text-sm bg-clawd-bg hover:bg-clawd-border rounded-lg transition-colors"
+                aria-label="Cancel upload"
               >
                 Cancel
               </button>
