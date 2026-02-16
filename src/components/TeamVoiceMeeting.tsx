@@ -141,7 +141,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
       running = false;
       cancelAnimationFrame(animRef.current);
       micStreamRef.current?.getTracks().forEach(t => t.stop());
-      micCtxRef.current?.close().catch(() => {});
+      micCtxRef.current?.close().catch((err) => { console.error('[TeamVoiceMeeting] Failed to close mic context:', err); });
     };
   }, [listening]);
 

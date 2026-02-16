@@ -383,7 +383,7 @@ export default function MeetingScribe() {
     
     // Close audio context
     if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current.close().catch((err) => { console.error('[MeetingScribe] Failed to close audio context:', err); });
       audioCtxRef.current = null;
     }
     

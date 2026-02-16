@@ -1456,8 +1456,8 @@ export default function CommsInbox3Pane() {
         // Fetch email accounts (from gog auth) and gateway channels in parallel
         const [emailResult, channelsResult] = await Promise.all([
           (window as any).clawdbot?.email?.accounts?.()
-            .catch(() => null),
-          gateway.getChannelsStatus().catch(() => null),
+            .catch((err: any) => { console.error('[CommsInbox] Failed to get email accounts:', err); return null; }),
+          gateway.getChannelsStatus().catch((err) => { console.error('[CommsInbox] Failed to get channels status:', err); return null; }),
         ]);
 
         if (cancelled) return;

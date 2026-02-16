@@ -177,7 +177,7 @@ export default function MeetingsPanel() {
     return () => {
       if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } }
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
-      if (audioContextRef.current) { audioContextRef.current.close().catch(() => {}); }
+      if (audioContextRef.current) { audioContextRef.current.close().catch((err) => { console.error('[Meetings] Failed to close audio context:', err); }); }
     };
   }, []);
 
@@ -549,7 +549,7 @@ export default function MeetingsPanel() {
                 setMeetingTranscript(prev => [...prev, finalText]);
                 setMeetingTranscriptLines(prev => [...prev, { text: finalText, timestamp: Date.now() }]);
                 if (meetingDbIdRef.current) {
-                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch(() => {});
+                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch((err) => { console.error('[Meetings] Failed to save transcript:', err); });
                 }
                 const actions = detectActionItems(finalText);
                 if (actions.length > 0) {

@@ -886,7 +886,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 (window as any).__planningNotesTimer = setTimeout(() => {
                   (window as any).clawdbot?.tasks?.update(task.id, { 
                     planningNotes: e.target.value 
-                  }).catch(() => {});
+                  }).catch((err) => { console.error('[TaskDetail] Failed to load subtasks:', err); });
                 }, 1000);
               }}
               placeholder="Planning notes, brainstorming, research..."

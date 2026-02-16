@@ -15,8 +15,8 @@ export default function DebugTab() {
     setLoading(true);
     try {
       const [sessResult, logResult] = await Promise.all([
-        gateway.getSessions().catch(() => null),
-        gateway.tailLogs({ limit: 50 }).catch(() => null),
+        gateway.getSessions().catch((err) => { console.error('[DebugTab] Failed to get sessions:', err); return null; }),
+        gateway.tailLogs({ limit: 50 }).catch((err) => { console.error('[DebugTab] Failed to tail logs:', err); return null; }),
       ]);
       if (sessResult?.sessions) setSessions(sessResult.sessions);
       if (logResult?.lines) {

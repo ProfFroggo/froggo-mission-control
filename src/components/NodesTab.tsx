@@ -39,8 +39,8 @@ export default function NodesTab() {
     setLoading(true);
     try {
       const [nodesResult, pairResult] = await Promise.all([
-        gateway.getNodes().catch(() => null),
-        gateway.listNodePairRequests().catch(() => null),
+        gateway.getNodes().catch((err) => { console.error('[NodesTab] Failed to get nodes:', err); return null; }),
+        gateway.listNodePairRequests().catch((err) => { console.error('[NodesTab] Failed to list pair requests:', err); return null; }),
       ]);
 
       if (nodesResult?.nodes) setNodes(nodesResult.nodes);
