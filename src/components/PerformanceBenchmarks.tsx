@@ -54,7 +54,7 @@ export default function PerformanceBenchmarks() {
       const dbExec = (window as any).clawdbot?.db?.exec;
       if (!dbExec) throw new Error('Database not available');
 
-      let periods: BenchmarkData[] = [];
+      const periods: BenchmarkData[] = [];
 
       if (compareMode === 'wow') {
         // Week over week - last 8 weeks

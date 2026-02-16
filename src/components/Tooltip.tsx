@@ -196,7 +196,7 @@ export default function Tooltip({
               borderRadius: '8px',
               fontSize: '13px',
               lineHeight: '1.4',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              boxShadow: 'var(--shadow-lg)',
               position: 'relative',
             }}
           >
