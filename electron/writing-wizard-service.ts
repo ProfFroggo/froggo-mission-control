@@ -17,7 +17,7 @@ import { WIZARD_STATE_DIR } from './paths';
 
 // ── Helpers ──
 
-async function saveWizardState(sessionId: string, state: any) {
+async function saveWizardState(sessionId: string, state: Record<string, unknown>) {
   try {
     const dir = path.join(WIZARD_STATE_DIR, sessionId);
     await fs.promises.mkdir(dir, { recursive: true });
@@ -27,9 +27,9 @@ async function saveWizardState(sessionId: string, state: any) {
       'utf-8',
     );
     return { success: true };
-  } catch (e: any) {
-    console.error('[writing-wizard] saveWizardState error:', e.message);
-    return { success: false, error: e.message };
+  } catch (e) {
+    console.error('[writing-wizard] saveWizardState error:', e instanceof Error ? e.message : String(e));
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -38,10 +38,11 @@ async function loadWizardState(sessionId: string) {
     const filepath = path.join(WIZARD_STATE_DIR, sessionId, 'wizard-state.json');
     const raw = await fs.promises.readFile(filepath, 'utf-8');
     return { success: true, state: JSON.parse(raw) };
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return { success: true, state: null };
-    console.error('[writing-wizard] loadWizardState error:', err.message);
-    return { success: false, error: err.message };
+  } catch (err) {
+    const error = err as { code?: string; message?: string };
+    if (error.code === 'ENOENT') return { success: true, state: null };
+    console.error('[writing-wizard] loadWizardState error:', error.message);
+    return { success: false, error: error.message };
   }
 }
 
@@ -66,9 +67,9 @@ async function listPendingWizards() {
     }
 
     return { success: true, wizards };
-  } catch (e: any) {
-    console.error('[writing-wizard] listPendingWizards error:', e.message);
-    return { success: false, error: e.message, wizards: [] };
+  } catch (e) {
+    console.error('[writing-wizard] listPendingWizards error:', e instanceof Error ? e.message : String(e));
+    return { success: false, error: e instanceof Error ? e.message : String(e), wizards: [] };
   }
 }
 

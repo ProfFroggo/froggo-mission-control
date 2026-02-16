@@ -96,7 +96,7 @@ export class FinanceAgentBridge extends EventEmitter {
       
       const cmd = `openclaw agent --agent-id ${this.agentId} --session-key ${this.sessionKey} --message "${initMessage}" --no-deliver`;
       
-      const { stdout, stderr } = await execAsync(cmd, {
+      const { stderr } = await execAsync(cmd, {
         timeout: 30000,
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
       });
@@ -152,7 +152,7 @@ export class FinanceAgentBridge extends EventEmitter {
       console.log('[FinanceAgentBridge] Sending message to Finance Manager...');
       const cmd = `openclaw agent --message '${escapedMessage}' --session-key '${this.sessionKey}' --agent-id ${this.agentId}`;
       
-      const { stdout, stderr } = await execAsync(cmd, {
+      await execAsync(cmd, {
         encoding: 'utf-8',
         timeout: 60000,
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }

@@ -313,10 +313,10 @@ class ConnectedAccountsService {
   /**
    * Add Google account via gog CLI
    */
-  private async addGoogleAccount(options: any): Promise<any> {
+  private async addGoogleAccount(_options: any): Promise<any> {
     try {
       // Use gog CLI to authenticate
-      const { stdout, stderr } = await execAsync('gog auth login', { timeout: 120000 });
+      const { stderr } = await execAsync('gog auth login', { timeout: 120000 });
       
       if (stderr && stderr.includes('error')) {
         return { success: false, error: stderr };
@@ -367,7 +367,7 @@ class ConnectedAccountsService {
   /**
    * Add iCloud account (macOS system integration)
    */
-  private async addICloudAccount(options: any): Promise<any> {
+  private async addICloudAccount(_options: any): Promise<any> {
     return { 
       success: false, 
       error: 'iCloud integration not yet implemented. Use macOS Calendar app for now.'
