@@ -12,6 +12,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { writingProjectPath, writingChapterPath, writingVersionsPath } from './paths';
 import { diffWords, Change } from 'diff';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingVersion');
 
 // ── Types ──
 
@@ -254,5 +257,5 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  console.debug('[writing-version] IPC handlers registered');
+  logger.debug('[writing-version] IPC handlers registered');
 }

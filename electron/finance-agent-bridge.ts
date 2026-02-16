@@ -9,8 +9,10 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 import { homedir, tmpdir } from 'os';
+import { createLogger } from '../src/utils/logger';
 
 const execAsync = promisify(exec);
+const logger = createLogger('FinanceAgentBridge');
 
 interface ChatMessage {
   id: string;
@@ -48,12 +50,12 @@ export class FinanceAgentBridge extends EventEmitter {
    */
   async initialize(): Promise<boolean> {
     try {
-      console.debug('[FinanceAgentBridge] Initializing Finance Manager agent session...');
+      logger.debug('[FinanceAgentBridge] Initializing Finance Manager agent session...');
       
       // Check if session already exists
       const exists = await this.checkSessionExists();
       if (exists) {
-        console.debug('[FinanceAgentBridge] ✅ Finance Manager session already active');
+        logger.debug('[FinanceAgentBridge] ✅ Finance Manager session already active');
         this.spawned = true;
         return true;
       }
@@ -90,7 +92,7 @@ export class FinanceAgentBridge extends EventEmitter {
    */
   private async spawnAgent(): Promise<boolean> {
     try {
-      console.debug('[FinanceAgentBridge] Spawning Finance Manager agent...');
+      logger.debug('[FinanceAgentBridge] Spawning Finance Manager agent...');
       
       const initMessage = 'You are now connected to the Finance dashboard. You have access to financial transaction data via froggo-db finance-* commands. Be ready to analyze finances, answer questions, and provide insights. Reply with: ready';
       
@@ -106,7 +108,7 @@ export class FinanceAgentBridge extends EventEmitter {
         return false;
       }
       
-      console.debug('[FinanceAgentBridge] ✅ Finance Manager spawned successfully');
+      logger.debug('[FinanceAgentBridge] ✅ Finance Manager spawned successfully');
       this.spawned = true;
       
       return true;
@@ -149,7 +151,7 @@ export class FinanceAgentBridge extends EventEmitter {
       const escapedMessage = fullMessage.replace(/'/g, "'\\''");
       
       // Send to agent
-      console.debug('[FinanceAgentBridge] Sending message to Finance Manager...');
+      logger.debug('[FinanceAgentBridge] Sending message to Finance Manager...');
       const cmd = `openclaw agent --message '${escapedMessage}' --session-key '${this.sessionKey}' --agent-id ${this.agentId}`;
       
       await execAsync(cmd, {
@@ -186,7 +188,7 @@ export class FinanceAgentBridge extends EventEmitter {
       // Emit message event for real-time updates
       this.emit('message', agentChatMessage);
       
-      console.debug('[FinanceAgentBridge] ✅ Received response from Finance Manager');
+      logger.debug('[FinanceAgentBridge] ✅ Received response from Finance Manager');
       
       return {
         success: true,
@@ -240,7 +242,7 @@ export class FinanceAgentBridge extends EventEmitter {
         }
       }).filter(Boolean) as ChatMessage[];
       
-      console.debug(`[FinanceAgentBridge] Loaded ${this.chatHistory.length} messages from history`);
+      logger.debug(`[FinanceAgentBridge] Loaded ${this.chatHistory.length} messages from history`);
     } catch (error: any) {
       console.error('[FinanceAgentBridge] Error loading chat history:', error.message);
     }
@@ -330,7 +332,7 @@ export class FinanceAgentBridge extends EventEmitter {
     
     try {
       await execAsync(cmd);
-      console.debug(`[FinanceAgentBridge] ✅ Stored insight: ${title}`);
+      logger.debug(`[FinanceAgentBridge] ✅ Stored insight: ${title}`);
     } finally {
       // Clean up temp file
       fs.unlinkSync(tmpFile);
@@ -369,5 +371,5 @@ export function getFinanceAgentBridge(): FinanceAgentBridge {
 export async function initializeFinanceAgentBridge(): Promise<void> {
   const bridge = getFinanceAgentBridge();
   await bridge.initialize();
-  console.debug('[FinanceAgentBridge] Initialization complete');
+  logger.debug('[FinanceAgentBridge] Initialization complete');
 }
