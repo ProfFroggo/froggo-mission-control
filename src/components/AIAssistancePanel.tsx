@@ -309,6 +309,7 @@ Provide a brief, actionable summary.`;
         <button
           onClick={onClose}
           className="p-1 hover:bg-clawd-border rounded-lg transition-colors"
+          aria-label="Close panel"
         >
           <X size={16} />
         </button>

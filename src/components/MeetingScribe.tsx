@@ -20,11 +20,11 @@ async function getGeminiApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) { _cachedScribeKey = key; return key; }
-  } catch {}
+  } catch { /* ignore */ }
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
     if (s.geminiApiKey) { _cachedScribeKey = s.geminiApiKey; return s.geminiApiKey; }
-  } catch {}
+  } catch { /* ignore */ }
   return '';
 }
 const GEMINI_MODEL = 'gemini-2.0-flash';

@@ -29,11 +29,11 @@ async function loadApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
-  } catch {}
+  } catch { /* ignore */ }
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
     if (s.geminiApiKey) return s.geminiApiKey;
-  } catch {}
+  } catch { /* ignore */ }
   return '';
 }
 
@@ -133,7 +133,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
           animRef.current = requestAnimationFrame(tick);
         };
         tick();
-      } catch {}
+      } catch { /* ignore */ }
     })();
     return () => {
       running = false;

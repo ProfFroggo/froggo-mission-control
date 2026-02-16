@@ -392,7 +392,7 @@ export async function listBackups(): Promise<Array<{ filename: string; path: str
     if (fs.existsSync(metadataPath)) {
       try {
         metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-      } catch {}
+      } catch { /* ignore */ }
     }
 
     return {

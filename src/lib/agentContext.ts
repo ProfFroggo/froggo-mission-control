@@ -144,7 +144,7 @@ async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
         }));
       }
     }
-  } catch {}
+  } catch { /* ignore */ }
   
   return [];
 }
@@ -218,7 +218,7 @@ async function loadAgentMemory(agentId: string): Promise<string | null> {
         return r.stdout.trim().slice(0, 2000); // Cap at 2000 chars
       }
     }
-  } catch {}
+  } catch { /* ignore */ }
   return null;
 }
 

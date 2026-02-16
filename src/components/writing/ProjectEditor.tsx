@@ -14,7 +14,7 @@ const COLLAPSE_KEY = 'writing-collapsed';
 const DEFAULT_LAYOUT: Layout = { chapters: 15, chat: 30, editor: 55 };
 
 // Clean up old key on load
-try { localStorage.removeItem('writing-layout'); } catch {}
+try { localStorage.removeItem('writing-layout'); } catch { /* ignore */ }
 
 function getPersistedLayout(): Layout | undefined {
   try {

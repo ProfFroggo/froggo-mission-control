@@ -23,7 +23,7 @@ function getSettings(): { gatewayUrl: string; gatewayToken: string } {
         gatewayToken: parsed.gatewayToken || DEFAULT_TOKEN,
       };
     }
-  } catch {}
+  } catch { /* ignore */ }
   return { gatewayUrl: DEFAULT_GATEWAY_WS, gatewayToken: DEFAULT_TOKEN };
 }
 
@@ -44,7 +44,7 @@ async function ensureGatewayToken() {
       console.log('[Gateway] Loaded token from openclaw config');
       gateway.reconnect();
     }
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 type Listener = (event: any) => void;
@@ -330,7 +330,7 @@ class Gateway {
         this.ws.onerror = null;
         this.ws.onmessage = null;
         this.ws.close(); 
-      } catch {}
+      } catch { /* ignore */ }
       this.ws = null;
     }
   }
