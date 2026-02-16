@@ -12,13 +12,6 @@ const dbPath = FROGGO_DB;
 const logger = createLogger('Benchmark');
 
 // --- Benchmark helpers ---
-function timeMs(fn: () => any): { result: any; ms: number } {
-  const start = performance.now();
-  const result = fn();
-  const ms = performance.now() - start;
-  return { result, ms };
-}
-
 function timeMsAvg(fn: () => any, iterations: number = 100): { avgMs: number; minMs: number; maxMs: number } {
   const times: number[] = [];
   for (let i = 0; i < iterations; i++) {

@@ -38,6 +38,16 @@ export interface ConnectedAccount {
   }>;
   metadata?: Record<string, unknown>;
   authType: 'oauth' | 'app-password' | 'manual';
+}
+
+/** Add account request shape */
+interface AddAccountRequest {
+  email: string;
+  provider: AccountProvider;
+  dataTypes: DataType[];
+  authType: 'oauth' | 'app-password' | 'manual';
+  password?: string;
+  appPassword?: string;
   tokenPath?: string;
   createdAt: number;
   updatedAt: number;
@@ -245,16 +255,6 @@ class AccountsService {
         error: err instanceof Error ? err.message : 'Failed to add account',
       };
     }
-  }
-
-  /** Add account request shape */
-  interface AddAccountRequest {
-    email: string;
-    provider: AccountProvider;
-    dataTypes: DataType[];
-    authType: 'oauth' | 'app-password' | 'manual';
-    password?: string;
-    appPassword?: string;
   }
 
   /**
