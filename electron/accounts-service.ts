@@ -14,7 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './logger';
 
 const execAsync = promisify(exec);
 const logger = createLogger('AccountsService');
