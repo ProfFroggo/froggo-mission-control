@@ -102,6 +102,15 @@ export function getLogLevel(): LogLevel {
  * Safe console logging that won't crash on EPIPE
  */
 export const safeLog = {
+  debug: (...args: any[]) => {
+    try {
+      if (process.stdout.writable) {
+        console.debug(...args);
+      }
+    } catch (e: any) {
+      // Silently ignore EPIPE and other stream errors
+    }
+  },
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
