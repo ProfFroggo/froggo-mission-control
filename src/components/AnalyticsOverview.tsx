@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, MessageSquare, Zap, Clock, Calendar, Activity, ArrowUp, ArrowDown, Minus, Users, FolderKanban } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface Stat {
   label: string;
@@ -260,135 +270,33 @@ export default function AnalyticsOverview() {
         </div>
 
         {dailyData.length > 0 ? (
-          <div className="h-64 relative overflow-hidden">
-            <svg
-              className="w-full h-full"
-              viewBox={`0 0 ${Math.max(dailyData.length * 40, 300)} 260`}
-              preserveAspectRatio="xMidYMid slice"
-            >
-              {/* Grid lines */}
-              {[0, 25, 50, 75, 100].map((percent) => (
-                <line
-                  key={percent}
-                  x1="0"
-                  y1={240 - (percent / 100) * 200}
-                  x2={dailyData.length * 40}
-                  y2={240 - (percent / 100) * 200}
-                  stroke="currentColor"
-                  strokeOpacity="0.1"
-                  className="text-clawd-border"
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                <XAxis 
+                  dataKey="label" 
+                  stroke="#9CA3AF" 
+                  fontSize={10}
+                  interval={Math.floor(dailyData.length / 10)}
+                  angle={dailyData.length > 14 ? -45 : 0}
+                  textAnchor={dailyData.length > 14 ? 'end' : 'middle'}
+                  height={dailyData.length > 14 ? 50 : 30}
                 />
-              ))}
-
-              {/* Completed line (green) */}
-              <polyline
-                points={dailyData
-                  .map((day, idx) => {
-                    const x = idx * 40 + 20;
-                    const y = 240 - (day.completed / maxValue) * 200;
-                    return `${x},${y}`;
-                  })
-                  .join(' ')}
-                fill="none"
-                stroke="rgb(34 197 94)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Completed points */}
-              {dailyData.map((day, idx) => {
-                const x = idx * 40 + 20;
-                const y = 240 - (day.completed / maxValue) * 200;
-                return (
-                  <circle
-                    key={`completed-${idx}`}
-                    cx={x}
-                    cy={y}
-                    r="4"
-                    fill="rgb(34 197 94)"
-                    className="hover:r-6 transition-all"
-                  >
-                    <title>{`${day.label}\nCompleted: ${day.completed}`}</title>
-                  </circle>
-                );
-              })}
-
-              {/* Created line (blue) */}
-              <polyline
-                points={dailyData
-                  .map((day, idx) => {
-                    const x = idx * 40 + 20;
-                    const y = 240 - (day.created / maxValue) * 200;
-                    return `${x},${y}`;
-                  })
-                  .join(' ')}
-                fill="none"
-                stroke="rgb(59 130 246)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Created points */}
-              {dailyData.map((day, idx) => {
-                const x = idx * 40 + 20;
-                const y = 240 - (day.created / maxValue) * 200;
-                return (
-                  <circle
-                    key={`created-${idx}`}
-                    cx={x}
-                    cy={y}
-                    r="4"
-                    fill="rgb(59 130 246)"
-                    className="hover:r-6 transition-all"
-                  >
-                    <title>{`${day.label}\nCreated: ${day.created}`}</title>
-                  </circle>
-                );
-              })}
-
-              {/* X-axis labels - improved spacing to prevent overlap */}
-              {dailyData.map((day, idx) => {
-                // Dynamic skip interval based on data density
-                const maxLabels = dailyData.length <= 7 ? dailyData.length : dailyData.length <= 14 ? 7 : 10;
-                const skipInterval = Math.ceil(dailyData.length / maxLabels);
-                
-                if (idx % skipInterval === 0 || idx === dailyData.length - 1) {
-                  const x = idx * 40 + 20;
-                  // Alternate label positions to prevent crowding
-                  const yOffset = Math.floor(idx / skipInterval) % 2 === 1 && dailyData.length > 14 ? 245 : 230;
-                  
-                  return (
-                    <text
-                      key={`label-${idx}`}
-                      x={x}
-                      y={yOffset}
-                      fontSize="10"
-                      fill="currentColor"
-                      className="text-clawd-text-dim"
-                      textAnchor="middle"
-                    >
-                      {day.label}
-                    </text>
-                  );
-                }
-                return null;
-              })}
-              
-              {/* Staggered row indicator line for crowded charts */}
-              {dailyData.length > 14 && (
-                <line
-                  x1="0"
-                  y1="235"
-                  x2={dailyData.length * 40}
-                  y2="235"
-                  stroke="currentColor"
-                  strokeOpacity="0.05"
-                  className="text-clawd-border"
+                <YAxis stroke="#9CA3AF" fontSize={10} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1f2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#9CA3AF' }}
                 />
-              )}
-            </svg>
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Bar dataKey="completed" name="Completed" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="created" name="Created" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <div className="h-64 flex items-center justify-center text-clawd-text-dim">
