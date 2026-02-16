@@ -278,11 +278,11 @@ Provide a brief, actionable summary.`;
   }
 
   const sentimentColors = {
-    positive: 'text-success bg-green-500/20',
-    neutral: 'text-info bg-blue-500/20',
-    negative: 'text-error bg-red-500/20',
-    urgent: 'text-orange-400 bg-orange-500/20',
-    questioning: 'text-review bg-purple-500/20',
+    positive: 'text-success bg-success-subtle',
+    neutral: 'text-info bg-info-subtle',
+    negative: 'text-error bg-error-subtle',
+    urgent: 'text-warning bg-warning-subtle',
+    questioning: 'text-review bg-review-subtle',
   };
 
   const urgencyColors = {
