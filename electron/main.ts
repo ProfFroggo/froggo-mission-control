@@ -4064,7 +4064,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
     let linkedTasks: string[] = [];
     try {
       if (row && row.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks);
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[LibraryLink] Failed to parse linked tasks:', err); }
 
     if (!linkedTasks.includes(taskId)) {
       linkedTasks.push(taskId);
@@ -4255,7 +4255,7 @@ try {
   if (!anthropicApiKey && fs.existsSync(keyPath)) {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch { /* ignore */ }
+} catch (err) { safeLog.debug('[AI] Failed to load Anthropic API key:', err); }
 // Fallback: read from openclaw.json config
 if (!anthropicApiKey) {
   try {
@@ -4296,7 +4296,7 @@ try {
   if (!openaiApiKey && fs.existsSync(keyPath)) {
     openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch { /* ignore */ }
+} catch (err) { safeLog.debug('[AI] Failed to load OpenAI API key:', err); }
 
 // Expose OpenAI API key to renderer (for Whisper transcription)
 ipcMain.handle('get-openai-key', async () => {
@@ -4500,13 +4500,13 @@ ipcMain.handle('ai:generateReply', async (_, context: {
     try {
       const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
       scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[AIReply] Failed to load schedule context:', err); }
   }
   if (!taskCtx) {
     try {
       const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
       taskCtx = tasks.map((t: any) => t.title).join('; ');
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[AIReply] Failed to load task context:', err); }
   }
 
   let contextBlock = '';
@@ -4578,8 +4578,8 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
 
     let tasks: any[] = [];
     let events: any[] = [];
-    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch { /* ignore */ }
-    try { events = row.events ? JSON.parse(row.events) : []; } catch { /* ignore */ }
+    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch (err) { safeLog.debug('[AIAnalysis] Failed to parse tasks:', err); }
+    try { events = row.events ? JSON.parse(row.events) : []; } catch (err) { safeLog.debug('[AIAnalysis] Failed to parse events:', err); }
 
     return {
       success: true,
@@ -4965,7 +4965,7 @@ async function refreshCommsBackground() {
           .map((a: any) => a.email);
         if (gmailAccts.length > 0) emailAccounts = gmailAccts;
       }
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[Email] Failed to discover email accounts:', err); }
     for (const acct of emailAccounts) {
       try {
         const lastTs = await getFetchState('email', acct);
@@ -5387,7 +5387,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
       const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
       const gogData = JSON.parse(gogList);
       tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[Email] Failed to get accounts for email body:', err); }
   }
 
   for (const acct of tryAccounts) {
