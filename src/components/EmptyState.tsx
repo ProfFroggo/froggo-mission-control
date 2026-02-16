@@ -1,125 +1,165 @@
-import React, { ReactNode } from 'react';
-import { Inbox, MessageSquare, CheckCircle, FolderOpen, Calendar, Bell, Bot, Code, FileText, Search } from 'lucide-react';
+/**
+ * EmptyState Component
+ * 
+ * A reusable empty state component for consistent UX across the dashboard.
+ * Provides visual feedback when there's no content to display.
+ * 
+ * Features:
+ * - Customizable icon (Lucide icon component)
+ * - Title and description text
+ * - Optional action button
+ * - Uses design system tokens for consistent styling
+ * - Responsive and accessible
+ * 
+ * Usage:
+ * ```tsx
+ * <EmptyState
+ *   icon={Inbox}
+ *   title="No messages yet"
+ *   description="Your inbox is empty. New messages will appear here."
+ *   action={{
+ *     label: "Send message",
+ *     onClick: () => handleSendMessage()
+ *   }}
+ * />
+ * ```
+ */
 
-type EmptyStateType = 'inbox' | 'chat' | 'tasks' | 'files' | 'calendar' | 'notifications' | 'agents' | 'code' | 'search' | 'generic';
+import { LucideIcon } from 'lucide-react';
 
-interface EmptyStateProps {
-  type?: EmptyStateType;
-  icon?: ReactNode;
-  title?: string;
-  description?: string;
-  action?: ReactNode;
+interface EmptyStateAction {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
 }
 
-const illustrations: Record<EmptyStateType, {
-  icon: any;
+interface EmptyStateProps {
+  /** Lucide icon component to display */
+  icon: LucideIcon;
+  /** Main title text */
   title: string;
-  description: string;
-  gradient: string;
-}> = {
-  inbox: {
-    icon: Inbox,
-    title: "All caught up!",
-    description: "No pending approvals. Enjoy the calm.",
-    gradient: "from-green-500/20 to-emerald-500/10",
-  },
-  chat: {
-    icon: MessageSquare,
-    title: "Start a conversation",
-    description: "Say hi to Froggo and get things done.",
-    gradient: "from-blue-500/20 to-cyan-500/10",
-  },
-  tasks: {
-    icon: CheckCircle,
-    title: "No tasks yet",
-    description: "Create your first task to get started.",
-    gradient: "from-purple-500/20 to-pink-500/10",
-  },
-  files: {
-    icon: FolderOpen,
-    title: "Library is empty",
-    description: "Drop files here to upload them.",
-    gradient: "from-yellow-500/20 to-orange-500/10",
-  },
-  calendar: {
-    icon: Calendar,
-    title: "No events",
-    description: "Your schedule is clear.",
-    gradient: "from-indigo-500/20 to-blue-500/10",
-  },
-  notifications: {
-    icon: Bell,
-    title: "All clear!",
-    description: "No notifications to show.",
-    gradient: "from-rose-500/20 to-red-500/10",
-  },
-  agents: {
-    icon: Bot,
-    title: "No agents configured",
-    description: "Set up your first AI agent.",
-    gradient: "from-cyan-500/20 to-teal-500/10",
-  },
-  code: {
-    icon: Code,
-    title: "No activity",
-    description: "Start a coding session to see progress.",
-    gradient: "from-violet-500/20 to-purple-500/10",
-  },
-  search: {
-    icon: Search,
-    title: "No results",
-    description: "Try a different search term.",
-    gradient: "from-gray-500/20 to-slate-500/10",
-  },
-  generic: {
-    icon: FileText,
-    title: "Nothing here",
-    description: "This space is empty.",
-    gradient: "from-gray-500/20 to-gray-500/5",
-  },
-};
+  /** Descriptive text explaining the empty state */
+  description?: string;
+  /** Optional action button configuration */
+  action?: EmptyStateAction;
+  /** Optional compact variant for smaller spaces */
+  compact?: boolean;
+  /** Optional additional CSS classes */
+  className?: string;
+}
 
-export default function EmptyState({ 
-  type = 'generic', 
-  icon: customIcon,
-  title: customTitle, 
-  description: customDescription,
-  action 
+export default function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  compact = false,
+  className = ''
 }: EmptyStateProps) {
-  const config = illustrations[type];
-  const Icon = customIcon || config.icon;
-  const title = customTitle || config.title;
-  const description = customDescription || config.description;
+  const baseClasses = 'empty-state';
+  const compactClasses = compact 
+    ? 'py-8 px-4' 
+    : 'py-16 px-8';
 
   return (
-    <div className="flex flex-col items-center justify-center h-full py-12 px-4">
-      {/* Illustration */}
-      <div className={`relative mb-6`}>
-        {/* Background glow */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-50 scale-150`} />
-        
-        {/* Icon container */}
-        <div className={`relative w-24 h-24 rounded-3xl bg-gradient-to-br ${config.gradient} flex items-center justify-center`}>
-          <div className="w-20 h-20 rounded-2xl bg-clawd-surface/80 flex items-center justify-center">
-            {React.isValidElement(Icon) ? Icon : <Icon size={40} className="text-clawd-text-dim" />}
-          </div>
-        </div>
-        
-        {/* Decorative elements */}
-        <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-clawd-accent/30 animate-pulse" />
-        <div className="absolute -bottom-1 -left-1 w-3 h-3 rounded-full bg-clawd-accent/20 animate-pulse" style={{ animationDelay: '0.5s' }} />
+    <div className={`${baseClasses} ${compactClasses} ${className}`}>
+      {/* Icon Container */}
+      <div className="empty-state-icon">
+        <Icon 
+          size={compact ? 24 : 32} 
+          className="text-clawd-text-dim"
+          aria-hidden="true"
+        />
       </div>
 
-      {/* Text */}
-      <h3 className="text-xl font-semibold text-clawd-text mb-2">{title}</h3>
-      <p className="text-sm text-clawd-text-dim text-center max-w-xs">{description}</p>
+      {/* Title */}
+      <h3 className="empty-state-title">
+        {title}
+      </h3>
 
-      {/* Action */}
+      {/* Description */}
+      {description && (
+        <p className="empty-state-description">
+          {description}
+        </p>
+      )}
+
+      {/* Action Button */}
       {action && (
-        <div className="mt-6">
-          {action}
-        </div>
+        <button
+          onClick={action.onClick}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            action.variant === 'secondary'
+              ? 'bg-clawd-border text-clawd-text hover:bg-clawd-border/80'
+              : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+          }`}
+        >
+          {action.label}
+        </button>
       )}
     </div>
   );
 }
+
+/**
+ * Pre-configured empty state presets for common scenarios
+ */
+export const EmptyStatePresets = {
+  /** Empty inbox/messages */
+  inbox: {
+    icon: 'Inbox',
+    title: 'No messages yet',
+    description: 'Your inbox is empty. New messages will appear here.'
+  },
+  
+  /** Empty tasks list */
+  tasks: {
+    icon: 'CheckCircle',
+    title: 'No tasks yet',
+    description: 'You don\'t have any tasks assigned. New tasks will appear here.'
+  },
+  
+  /** Empty search results */
+  search: {
+    icon: 'Search',
+    title: 'No results found',
+    description: 'Try adjusting your search terms or filters to find what you\'re looking for.'
+  },
+  
+  /** Empty library/files */
+  library: {
+    icon: 'FolderOpen',
+    title: 'No files yet',
+    description: 'Your library is empty. Upload files to see them here.'
+  },
+  
+  /** Empty notifications */
+  notifications: {
+    icon: 'Bell',
+    title: 'No notifications',
+    description: 'You\'re all caught up! New notifications will appear here.'
+  },
+  
+  /** Empty kanban column */
+  kanban: {
+    icon: 'Layout',
+    title: 'No items',
+    description: 'This column is empty. Drag items here or create new ones.'
+  },
+  
+  /** Empty finance/transactions */
+  finance: {
+    icon: 'Wallet',
+    title: 'No transactions yet',
+    description: 'Your transaction history is empty. Transactions will appear here.'
+  },
+  
+  /** Generic empty state */
+  generic: {
+    icon: 'Package',
+    title: 'Nothing here yet',
+    description: 'This area is currently empty. Content will appear here when available.'
+  }
+} as const;
+
+export type EmptyStatePreset = keyof typeof EmptyStatePresets;
