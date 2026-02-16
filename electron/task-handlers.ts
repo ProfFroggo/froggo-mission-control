@@ -14,6 +14,62 @@ import { prepare } from './database';
 import { safeLog } from './logger';
 import { emitTaskEvent } from './events';
 
+// Task row interface
+interface TaskRow {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  assigned_to?: string;
+  project?: string;
+  priority: string;
+  created_at: number;
+  updated_at: number;
+  reviewerId?: string;
+  due_date?: number;
+  started_at?: number;
+  completed_at?: number;
+  tags?: string;
+  planning_notes?: string;
+  subtask_count?: number;
+  completed_subtasks?: number;
+  activity_count?: number;
+}
+
+// Subtask row interface
+interface SubtaskRow {
+  id: string;
+  task_id: string;
+  title: string;
+  completed: number;
+  position: number;
+  created_at: number;
+  updated_at: number;
+}
+
+// Activity row interface
+interface ActivityRow {
+  id: number;
+  task_id: string;
+  action: string;
+  message?: string;
+  details?: string;
+  agent_id?: string;
+  timestamp: number;
+}
+
+// Attachment row interface
+interface AttachmentRow {
+  id: string;
+  task_id: string;
+  filename: string;
+  file_path: string;
+  file_size: number;
+  mime_type?: string;
+  description?: string;
+  created_at: number;
+}
+
 export function registerTaskHandlers(): void {
   // Task CRUD Operations
   ipcMain.handle('tasks:sync', handleTaskSync);
@@ -90,26 +146,26 @@ async function handleTaskSync(_: Electron.IpcMainInvokeEvent, task: {
     safeLog.log('[Tasks] Synced:', taskData.id);
     emitTaskEvent('task.created', taskData.id);
     return { success: true, id: taskData.id };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Sync error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Sync error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskUpdate(
-  _: Electron.IpcMainInvokeEvent, 
-  taskId: string, 
-  updates: { 
-    status?: string; 
-    assignedTo?: string; 
-    planningNotes?: string; 
-    reviewStatus?: string; 
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string,
+  updates: {
+    status?: string;
+    assignedTo?: string;
+    planningNotes?: string;
+    reviewStatus?: string;
     reviewerId?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const sqlFields: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     
     if (updates.planningNotes !== undefined) {
       sqlFields.push('planning_notes = ?');
@@ -157,20 +213,20 @@ async function handleTaskUpdate(
     }
     
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Update error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Update error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskList(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   status?: string
-): Promise<{ success: boolean; tasks: any[]; totalDone?: number; totalArchived?: number; error?: string }> {
+): Promise<{ success: boolean; tasks: TaskRow[]; totalDone?: number; totalArchived?: number; error?: string }> {
   try {
     const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
     let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
-    const params: any[] = [];
+    const params: unknown[] = [];
     
     if (status) {
       whereClause += ' AND status = ?';
@@ -186,21 +242,22 @@ async function handleTaskList(
       LIMIT 500
     `).all(...params);
 
-    const { 'COUNT(*)': totalDone } = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as any;
-    const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
+    const countResult = prepare(`SELECT COUNT(*) as count FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as { count: number };
+    const totalDone = countResult.count;
+    const totalArchived = totalDone - (tasks as TaskRow[]).filter((t) => t.status === 'done').length;
 
-    return { success: true, tasks, totalDone, totalArchived };
-  } catch (error: any) {
-    safeLog.error('[tasks:list] Error:', error.message);
+    return { success: true, tasks: tasks as TaskRow[], totalDone, totalArchived };
+  } catch (error) {
+    safeLog.error('[tasks:list] Error:', (error as Error).message);
     return { success: false, tasks: [] };
   }
 }
 
 async function handleTaskSearch(
-  _: Electron.IpcMainInvokeEvent, 
-  query: string, 
+  _: Electron.IpcMainInvokeEvent,
+  query: string,
   includeArchived = true
-): Promise<{ success: boolean; tasks: any[]; error?: string }> {
+): Promise<{ success: boolean; tasks: TaskRow[]; error?: string }> {
   try {
     const pattern = `%${query}%`;
     const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
@@ -212,34 +269,34 @@ async function handleTaskSearch(
       LIMIT 100
     `).all(pattern, pattern);
 
-    return { success: true, tasks };
-  } catch (error: any) {
-    safeLog.error('[tasks:search] Error:', error.message);
+    return { success: true, tasks: tasks as TaskRow[] };
+  } catch (error) {
+    safeLog.error('[tasks:search] Error:', (error as Error).message);
     return { success: false, tasks: [] };
   }
 }
 
 async function handleTaskGetWithProgress(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   taskId: string
-): Promise<{ success: boolean; task?: any; error?: string }> {
+): Promise<{ success: boolean; task?: Record<string, unknown>; error?: string }> {
   try {
-    const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+    const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as TaskRow | undefined;
     if (!task) {
       return { success: false, error: 'Task not found' };
     }
-    
-    const progress = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC').all(taskId);
-    const subtasks = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId);
-    const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC').all(taskId);
-    
-    return { 
-      success: true, 
-      task: { ...task, progress, subtasks, attachments } 
+
+    const progress = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC').all(taskId) as ActivityRow[];
+    const subtasks = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId) as SubtaskRow[];
+    const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC').all(taskId) as AttachmentRow[];
+
+    return {
+      success: true,
+      task: { ...task, progress, subtasks, attachments }
     };
-  } catch (error: any) {
-    safeLog.error('[tasks:getWithProgress] Error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[tasks:getWithProgress] Error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -260,14 +317,14 @@ async function handleTaskStart(
     }
     return { success: false, error: 'Task not found' };
   } catch (error: any) {
-    safeLog.error('[Tasks] Start error:', error.message);
-    return { success: false, error: error.message };
+    safeLog.error('[Tasks] Start error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskComplete(
-  _: Electron.IpcMainInvokeEvent, 
-  taskId: string, 
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string,
   outcome?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -275,21 +332,21 @@ async function handleTaskComplete(
     const result = prepare(`
       UPDATE tasks SET status = 'done', completed_at = ?, updated_at = ?, outcome = ? WHERE id = ?
     `).run(now, now, outcome || null, taskId);
-    
+
     if (result.changes > 0) {
       safeLog.log('[Tasks] Completed:', taskId);
       emitTaskEvent('task.completed', taskId);
       return { success: true };
     }
     return { success: false, error: 'Task not found' };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Complete error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Complete error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskDelete(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   taskId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -297,61 +354,61 @@ async function handleTaskDelete(
     const result = prepare(`
       UPDATE tasks SET cancelled = 1, updated_at = ? WHERE id = ?
     `).run(Date.now(), taskId);
-    
+
     if (result.changes > 0) {
       safeLog.log('[Tasks] Deleted (cancelled):', taskId);
       emitTaskEvent('task.deleted', taskId);
       return { success: true };
     }
     return { success: false, error: 'Task not found' };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Delete error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Delete error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskArchiveDone(): Promise<{ success: boolean; archived?: number; error?: string }> {
   try {
     const result = prepare(`
-      UPDATE tasks SET archived = 1, updated_at = ? 
+      UPDATE tasks SET archived = 1, updated_at = ?
       WHERE status = 'done' AND (archived IS NULL OR archived = 0)
     `).run(Date.now());
-    
+
     safeLog.log('[Tasks] Archived done tasks:', result.changes);
     return { success: true, archived: result.changes };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Archive error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Archive error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskPoke(
-  _: Electron.IpcMainInvokeEvent, 
-  taskId: string, 
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string,
   title: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     safeLog.log('[Tasks] Poke:', taskId, title);
     // TODO: Implement notification to assigned agent
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Poke error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Poke error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleTaskPokeInternal(
-  _: Electron.IpcMainInvokeEvent, 
-  taskId: string, 
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string,
   title: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     safeLog.log('[Tasks] Internal poke:', taskId, title);
     // TODO: Implement internal notification
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Tasks] Internal poke error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Tasks] Internal poke error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -360,19 +417,19 @@ async function handleTaskPokeInternal(
 async function handleSubtaskList(
   _: Electron.IpcMainInvokeEvent, 
   taskId: string
-): Promise<{ success: boolean; subtasks: any[]; error?: string }> {
+): Promise<{ success: boolean; subtasks: SubtaskRow[]; error?: string }> {
   try {
-    const subtasks = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId);
+    const subtasks = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId) as SubtaskRow[];
     return { success: true, subtasks };
-  } catch (error: any) {
-    safeLog.error('[Subtasks] List error:', error.message);
+  } catch (error) {
+    safeLog.error('[Subtasks] List error:', (error as Error).message);
     return { success: false, subtasks: [] };
   }
 }
 
 async function handleSubtaskAdd(
-  _: Electron.IpcMainInvokeEvent, 
-  taskId: string, 
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string,
   subtask: { id: string; title: string; description?: string; assignedTo?: string }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -380,25 +437,25 @@ async function handleSubtaskAdd(
       INSERT INTO subtasks (id, task_id, title, description, assigned_to, created_at, completed)
       VALUES (?, ?, ?, ?, ?, ?, 0)
     `).run(subtask.id, taskId, subtask.title, subtask.description || '', subtask.assignedTo || null, Date.now());
-    
+
     safeLog.log('[Subtasks] Added:', subtask.id);
     emitTaskEvent('subtask.added', taskId);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Subtasks] Add error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Subtasks] Add error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleSubtaskUpdate(
-  _: Electron.IpcMainInvokeEvent, 
-  subtaskId: string, 
+  _: Electron.IpcMainInvokeEvent,
+  subtaskId: string,
   updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const fields: string[] = [];
-    const params: any[] = [];
-    
+    const params: unknown[] = [];
+
     if (updates.completed !== undefined) {
       fields.push('completed = ?');
       params.push(updates.completed ? 1 : 0);
@@ -407,60 +464,60 @@ async function handleSubtaskUpdate(
         params.push(Date.now());
       }
     }
-    
+
     if (updates.completedBy !== undefined) {
       fields.push('completed_by = ?');
       params.push(updates.completedBy);
     }
-    
+
     if (updates.title !== undefined) {
       fields.push('title = ?');
       params.push(updates.title);
     }
-    
+
     if (updates.assignedTo !== undefined) {
       fields.push('assigned_to = ?');
       params.push(updates.assignedTo);
     }
-    
+
     if (fields.length === 0) {
       return { success: true };
     }
-    
+
     params.push(subtaskId);
     const result = prepare(`UPDATE subtasks SET ${fields.join(', ')} WHERE id = ?`).run(...params);
-    
+
     if (result.changes > 0) {
       safeLog.log('[Subtasks] Updated:', subtaskId);
       return { success: true };
     }
     return { success: false, error: 'Subtask not found' };
-  } catch (error: any) {
-    safeLog.error('[Subtasks] Update error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Subtasks] Update error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleSubtaskDelete(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   subtaskId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const result = prepare('DELETE FROM subtasks WHERE id = ?').run(subtaskId);
-    
+
     if (result.changes > 0) {
       safeLog.log('[Subtasks] Deleted:', subtaskId);
       return { success: true };
     }
     return { success: false, error: 'Subtask not found' };
-  } catch (error: any) {
-    safeLog.error('[Subtasks] Delete error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Subtasks] Delete error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleSubtaskReorder(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   subtaskIds: string[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -468,32 +525,32 @@ async function handleSubtaskReorder(
     subtaskIds.forEach((id, index) => {
       stmt.run(index, id);
     });
-    
+
     safeLog.log('[Subtasks] Reordered:', subtaskIds.length);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Subtasks] Reorder error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Subtasks] Reorder error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 // ============ ACTIVITY HANDLERS ============
 
 async function handleActivityList(
-  _: Electron.IpcMainInvokeEvent, 
-  taskId: string, 
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string,
   limit?: number
-): Promise<{ success: boolean; activity: any[]; error?: string }> {
+): Promise<{ success: boolean; activity: ActivityRow[]; error?: string }> {
   try {
-    const sql = limit 
+    const sql = limit
       ? 'SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?'
       : 'SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC';
     const params = limit ? [taskId, limit] : [taskId];
-    const activity = prepare(sql).all(...params);
-    
+    const activity = prepare(sql).all(...params) as ActivityRow[];
+
     return { success: true, activity };
-  } catch (error: any) {
-    safeLog.error('[Activity] List error:', error.message);
+  } catch (error) {
+    safeLog.error('[Activity] List error:', (error as Error).message);
     return { success: false, activity: [] };
   }
 }
@@ -519,33 +576,33 @@ async function handleActivityAdd(
     
     safeLog.log('[Activity] Added:', entry.action);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Activity] Add error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Activity] Add error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 // ============ ATTACHMENT HANDLERS ============
 
 async function handleAttachmentsList(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   taskId: string
-): Promise<{ success: boolean; attachments: any[]; error?: string }> {
+): Promise<{ success: boolean; attachments: AttachmentRow[]; error?: string }> {
   try {
-    const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC').all(taskId);
+    const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC').all(taskId) as AttachmentRow[];
     return { success: true, attachments };
-  } catch (error: any) {
-    safeLog.error('[Attachments] List error:', error.message);
+  } catch (error) {
+    safeLog.error('[Attachments] List error:', (error as Error).message);
     return { success: false, attachments: [] };
   }
 }
 
-async function handleAttachmentsListAll(): Promise<{ success: boolean; attachments: any[]; error?: string }> {
+async function handleAttachmentsListAll(): Promise<{ success: boolean; attachments: AttachmentRow[]; error?: string }> {
   try {
-    const attachments = prepare('SELECT * FROM task_attachments ORDER BY created_at DESC LIMIT 1000').all();
+    const attachments = prepare('SELECT * FROM task_attachments ORDER BY created_at DESC LIMIT 1000').all() as AttachmentRow[];
     return { success: true, attachments };
-  } catch (error: any) {
-    safeLog.error('[Attachments] ListAll error:', error.message);
+  } catch (error) {
+    safeLog.error('[Attachments] ListAll error:', (error as Error).message);
     return { success: false, attachments: [] };
   }
 }
