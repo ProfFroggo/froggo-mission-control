@@ -252,7 +252,7 @@ export default function XAutomationsPanel() {
                         </span>
                         {trigger.keywords && (
                           <span className="text-clawd-text-dim">
-                            &quot;{trigger.keywords.join(&quot;, &quot;)}&quot;
+                            {'\"' + trigger.keywords.join(', ') + '\"'}
                           </span>
                         )}
                       </div>
