@@ -361,13 +361,13 @@ export default function AgentPanel() {
                         {isExpanded ? 'Less' : 'More'}
                       </button>
                       <div className="flex-1" />
-                      <button onClick={(e) => { e.stopPropagation(); setChatAgent(agent.id); }}
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setChatAgent(agent.id); }}
                         className={`p-1.5 rounded-lg transition-colors ${HOVER_BG_MAP[theme.bg] || ''} ${theme.text} opacity-50 hover:opacity-100`}
                         title="Chat"
                         aria-label={`Chat with ${agent.name}`}>
                         <MessageSquare size={14} />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
                         className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-purple-500/10' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
                         title="Compare"
                         aria-label={`Compare ${agent.name}`}>
@@ -386,12 +386,12 @@ export default function AgentPanel() {
                           </h4>
                           <div className="flex flex-wrap gap-1.5">
                             {agent.capabilities?.map((skill, i) => (
-                              <button key={i} onClick={() => setSelectedAgent(agent.id)}
+                              <button type="button" key={i} onClick={() => setSelectedAgent(agent.id)}
                                 className={`px-2 py-1 text-xs rounded-md border ${theme.border} ${theme.bg} ${theme.text} hover:brightness-125 transition-all`}>
                                 {skill}
                               </button>
                             ))}
-                            <button onClick={() => setSelectedAgent(agent.id)}
+                            <button type="button" onClick={() => setSelectedAgent(agent.id)}
                               className="px-2 py-1 text-xs text-clawd-text-dim border border-dashed border-clawd-border rounded-md hover:border-clawd-text-dim transition-colors">
                               + Add
                             </button>
@@ -399,11 +399,11 @@ export default function AgentPanel() {
                         </div>
 
                         <div className="flex gap-2">
-                          <button onClick={() => setSelectedAgent(agent.id)}
+                          <button type="button" onClick={() => setSelectedAgent(agent.id)}
                             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-clawd-border rounded-lg hover:bg-clawd-border/30 transition-colors">
                             <FileText size={14} /> Details
                           </button>
-                          <button onClick={() => setChatAgent(agent.id)}
+                          <button type="button" onClick={() => setChatAgent(agent.id)}
                             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-lg border ${theme.border} ${theme.bg} ${theme.text} hover:brightness-125 transition-all`}>
                             <MessageSquare size={14} /> Chat
                           </button>
@@ -484,7 +484,7 @@ export default function AgentPanel() {
                     <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
                   </div>
                   {agent.status === 'busy' ? (
-                    <button onClick={() => updateAgentStatus(agent.id, 'idle')}
+                    <button type="button" onClick={() => updateAgentStatus(agent.id, 'idle')}
                       className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors">
                       Stop
                     </button>

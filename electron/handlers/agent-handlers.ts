@@ -9,7 +9,7 @@
  */
 
 import { ipcMain } from 'electron';
-import { exec, execSync } from 'child_process';
+import { exec } from 'child_process';
 import { prepare } from '../database';
 import { safeLog } from '../logger';
 import {

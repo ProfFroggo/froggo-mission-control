@@ -48,7 +48,7 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[]; er
     exec('openclaw agents list --json', { 
       timeout: 10000, 
       env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } 
-    }, (error, stdout, stderr) => {
+    }, (error, stdout, _stderr) => {
       if (error) {
         safeLog.warn('[Agents] CLI failed, falling back to DB:', error.message);
         const agents = getAgentsFromDB();

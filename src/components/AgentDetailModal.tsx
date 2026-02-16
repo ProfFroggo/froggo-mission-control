@@ -552,7 +552,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
             <div className="text-center py-12 text-clawd-text-dim">
               <XCircle size={32} className="mx-auto mb-2 opacity-50" />
               <p>Failed to load agent details</p>
-              <button onClick={buildDetailsFromRealData} className="mt-2 text-clawd-accent hover:underline text-sm">
+              <button type="button" onClick={buildDetailsFromRealData} className="mt-2 text-clawd-accent hover:underline text-sm">
                 Retry
               </button>
             </div>
