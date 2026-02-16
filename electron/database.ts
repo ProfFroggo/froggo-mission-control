@@ -93,7 +93,7 @@ export function getSessionsDb(): Database.Database | null {
  */
 export function closeDb(): void {
   // Clear statement cache
-  statementCache.forEach((stmt) => {
+  statementCache.forEach((_stmt) => {
     try {
       // better-sqlite3 statements don't have explicit close, just finalize when needed
     } catch (error) {

@@ -17,8 +17,10 @@ import { promisify } from 'util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { createLogger } from '../src/utils/logger';
 
 const execAsync = promisify(exec);
+const logger = createLogger('CalendarService');
 
 export interface CalendarEvent {
   id: string;
@@ -65,16 +67,16 @@ interface CalendarCache {
  * Dynamically discover authenticated Google accounts from gog CLI.
  * Returns empty array if gog is unavailable (no hardcoded fallback).
  */
-import { execSync } from 'child_process';
-
 function getGoogleAccounts(): string[] {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { execSync } = require('child_process');
     const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
       timeout: 5000,
       env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
     }).toString();
     const gogData = JSON.parse(gogList);
-    return (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
+    return (gogData.accounts || []).map((a: { email?: string }) => a.email).filter((e: string | undefined): e is string => Boolean(e));
   } catch {
     return [];
   }
@@ -102,10 +104,10 @@ class CalendarService {
       if (fs.existsSync(CACHE_FILE_PATH)) {
         const data = fs.readFileSync(CACHE_FILE_PATH, 'utf-8');
         this.cache = JSON.parse(data);
-        console.debug('[CalendarService] Cache loaded from disk');
+        logger.info('[CalendarService] Cache loaded from disk');
       }
     } catch (err) {
-      console.error('[CalendarService] Failed to load cache:', err);
+      logger.error('[CalendarService] Failed to load cache:', err);
       this.cache = {};
     }
   }
@@ -121,7 +123,7 @@ class CalendarService {
       }
       fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(this.cache, null, 2));
     } catch (err) {
-      console.error('[CalendarService] Failed to save cache:', err);
+      logger.error('[CalendarService] Failed to save cache:', err);
     }
   }
 
@@ -141,7 +143,7 @@ class CalendarService {
    */
   private getCached(key: string): CalendarEvent[] | null {
     if (this.isCacheValid(key)) {
-      console.debug(`[CalendarService] Cache hit for ${key}`);
+      logger.info(`[CalendarService] Cache hit for ${key}`);
       return this.cache[key].events;
     }
     return null;
@@ -170,14 +172,14 @@ class CalendarService {
 
     // Check if fetch is already in progress
     if (this.pendingFetches.has(cacheKey)) {
-      console.debug(`[CalendarService] Waiting for pending fetch: ${cacheKey}`);
+      logger.info(`[CalendarService] Waiting for pending fetch: ${cacheKey}`);
       return this.pendingFetches.get(cacheKey)!;
     }
 
     // Start new fetch
     const fetchPromise = (async () => {
       try {
-        console.debug(`[CalendarService] Fetching from ${account} (${days} days)`);
+        logger.info(`[CalendarService] Fetching from ${account} (${days} days)`);
         
         const command = `GOG_ACCOUNT=${account} gog calendar events --days ${days} --json`;
         const { stdout, stderr } = await execAsync(command, {
@@ -186,28 +188,28 @@ class CalendarService {
         });
 
         if (stderr) {
-          console.warn(`[CalendarService] Warning from ${account}:`, stderr);
+          logger.warn(`[CalendarService] Warning from ${account}:`, stderr);
         }
 
         if (!stdout || stdout.trim() === '') {
-          console.debug(`[CalendarService] No events from ${account}`);
+          logger.info(`[CalendarService] No events from ${account}`);
           this.setCache(cacheKey, []);
           return [];
         }
 
         const data = JSON.parse(stdout);
-        const events: CalendarEvent[] = (data.events || []).map((event: any) => ({
+        const events: CalendarEvent[] = (data.events || []).map((event: CalendarEvent) => ({
           ...event,
           account,
           source: 'google' as const,
           sourceAccount: account
         }));
 
-        console.debug(`[CalendarService] Fetched ${events.length} events from ${account}`);
+        logger.info(`[CalendarService] Fetched ${events.length} events from ${account}`);
         this.setCache(cacheKey, events);
         return events;
-      } catch (err: any) {
-        console.error(`[CalendarService] Failed to fetch from ${account}:`, err.message);
+      } catch (err) {
+        logger.error(`[CalendarService] Failed to fetch from ${account}:`, err instanceof Error ? err.message : String(err));
         // Return empty array on error (don't break entire aggregation)
         return [];
       } finally {
@@ -232,7 +234,7 @@ class CalendarService {
 
     // TODO: Implement Mission Control schedule fetching
     // For now, return empty array
-    console.debug('[CalendarService] Mission Control integration pending');
+    logger.info('[CalendarService] Mission Control integration pending');
     return [];
   }
 
@@ -273,8 +275,8 @@ class CalendarService {
           const events = await this.fetchGoogleAccount(account, days);
           sources.google[account] = events.length;
           return events;
-        } catch (err: any) {
-          errors.push(`Google (${account}): ${err.message}`);
+        } catch (err) {
+          errors.push(`Google (${account}): ${err instanceof Error ? err.message : String(err)}`);
           return [];
         }
       });
@@ -289,8 +291,8 @@ class CalendarService {
         const mcEvents = await this.fetchMissionControl();
         sources.missionControl = mcEvents.length;
         allEvents.push(...mcEvents);
-      } catch (err: any) {
-        errors.push(`Mission Control: ${err.message}`);
+      } catch (err) {
+        errors.push(`Mission Control: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
@@ -301,7 +303,7 @@ class CalendarService {
       return aStart.getTime() - bStart.getTime();
     });
 
-    console.debug(`[CalendarService] Aggregated ${allEvents.length} events from ${Object.keys(sources.google).length} Google accounts`);
+    logger.info(`[CalendarService] Aggregated ${allEvents.length} events from ${Object.keys(sources.google).length} Google accounts`);
 
     return {
       events: allEvents,
@@ -316,17 +318,17 @@ class CalendarService {
   clearCache(source?: 'google' | 'mission-control' | 'all') {
     if (!source || source === 'all') {
       this.cache = {};
-      console.debug('[CalendarService] Cleared all cache');
+      logger.info('[CalendarService] Cleared all cache');
     } else if (source === 'google') {
       Object.keys(this.cache).forEach(key => {
         if (key.startsWith('google:')) {
           delete this.cache[key];
         }
       });
-      console.debug('[CalendarService] Cleared Google cache');
+      logger.info('[CalendarService] Cleared Google cache');
     } else if (source === 'mission-control') {
       delete this.cache['mission-control'];
-      console.debug('[CalendarService] Cleared Mission Control cache');
+      logger.info('[CalendarService] Cleared Mission Control cache');
     }
     this.saveCache();
   }

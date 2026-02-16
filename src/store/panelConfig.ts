@@ -60,14 +60,14 @@ function loadFromStorage(): PanelConfig[] {
         return merged;
       }
     }
-  } catch { /* ignore storage errors */ }
+  } catch { /* ignore error */ }
   return DEFAULT_PANELS.map(p => ({ ...p }));
 }
 
 function saveToStorage(panels: PanelConfig[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(panels));
-  } catch { /* ignore storage errors */ }
+  } catch { /* ignore error */ }
 }
 
 interface PanelConfigStore {

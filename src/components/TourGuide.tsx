@@ -190,7 +190,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
             left: highlightRect.left - 4,
             width: highlightRect.width + 8,
             height: highlightRect.height + 8,
-            boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)',
+            boxShadow: 'var(--shadow-glow-lg)',
           }}
         />
       )}

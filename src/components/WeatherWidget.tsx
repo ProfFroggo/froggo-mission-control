@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, Wind, Droplets, RefreshCw, AlertCircle, Thermometer, ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
+import WidgetLoading from './WidgetLoading';
 
 interface WeatherCondition {
   temp_C: string;
@@ -102,10 +103,12 @@ export default function WeatherWidget() {
 
       <div className="p-4">
         {loading && !weather ? (
-          <div className="text-center py-6 text-clawd-text-dim">
-            <Cloud size={32} className="mx-auto mb-2 opacity-50 animate-pulse" />
-            <p className="text-sm">Loading weather...</p>
-          </div>
+          <WidgetLoading 
+            variant="spinner" 
+            title="Loading weather..." 
+            icon={Cloud}
+            compact 
+          />
         ) : error ? (
           <div className="text-center py-6 text-clawd-text-dim">
             <AlertCircle size={32} className="mx-auto mb-2 text-error" />

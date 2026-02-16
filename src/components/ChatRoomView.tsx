@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Loader2, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, Play, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
@@ -7,6 +7,7 @@ import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { useStore } from '../store/store';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface AttachedFile {
   id: string;
@@ -27,6 +28,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Helper to get agent name/emoji from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
@@ -536,10 +538,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </button>
           <button
             onClick={() => {
-              if (confirm(isTeamMeeting ? 'End this meeting?' : 'Delete this room?')) {
+              showConfirm({
+                title: isTeamMeeting ? 'End Meeting' : 'Delete Room',
+                message: isTeamMeeting ? 'End this meeting?' : 'Delete this room?',
+                confirmLabel: isTeamMeeting ? 'End Meeting' : 'Delete Room',
+                type: 'warning',
+              }, async () => {
                 deleteRoom(room.id);
                 onBack();
-              }
+              });
             }}
             className={`p-2 rounded-lg transition-colors ${
               isTeamMeeting
@@ -852,6 +859,17 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

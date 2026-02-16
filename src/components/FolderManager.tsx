@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Folder, Plus, Edit2, Trash2, X, Check, FolderOpen, Tag, Zap } from 'lucide-react';
 import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface MessageFolder {
   id: number;
@@ -31,6 +32,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     color: '#6366f1',
     description: '',
   });
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   const loadFolders = async () => {
     setLoading(true);
@@ -98,22 +100,25 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
   };
 
   const handleDelete = async (folderId: number, folderName: string) => {
-    if (!confirm(`Delete folder "${folderName}"? This will remove all conversation assignments.`)) {
-      return;
-    }
-
-    try {
-      const result = await window.clawdbot?.folders.delete(folderId);
-      if (result?.success) {
-        showToast('success', `Folder "${folderName}" deleted`);
-        loadFolders();
-      } else {
-        showToast('error', result?.error || 'Failed to delete folder');
+    showConfirm({
+      title: 'Delete Folder',
+      message: `Delete folder "${folderName}"? This will remove all conversation assignments.`,
+      confirmLabel: 'Delete Folder',
+      type: 'danger',
+    }, async () => {
+      try {
+        const result = await window.clawdbot?.folders.delete(folderId);
+        if (result?.success) {
+          showToast('success', `Folder "${folderName}" deleted`);
+          loadFolders();
+        } else {
+          showToast('error', result?.error || 'Failed to delete folder');
+        }
+      } catch (error) {
+        console.error('[FolderManager] Delete error:', error);
+        showToast('error', 'Failed to delete folder');
       }
-    } catch (error) {
-      console.error('[FolderManager] Delete error:', error);
-      showToast('error', 'Failed to delete folder');
-    }
+    });
   };
 
   const startEdit = (folder: MessageFolder) => {
@@ -435,6 +440,17 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

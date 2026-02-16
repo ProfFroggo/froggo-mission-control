@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { prepare, db } from './database';
+import { prepare } from './database';
 import { FROGGO_DB, PROJECT_ROOT } from './paths';
 
 const execPromise = promisify(exec);

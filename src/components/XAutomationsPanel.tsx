@@ -4,7 +4,6 @@ import {
   AlertCircle, CheckCircle, Clock, Zap, 
   MessageCircle, Hash, Calendar as CalendarIcon, Users, Mail
 } from 'lucide-react';
-import { showToast } from './Toast';
 
 // Automation types
 export interface XAutomationTrigger {
@@ -253,7 +252,7 @@ export default function XAutomationsPanel() {
                         </span>
                         {trigger.keywords && (
                           <span className="text-clawd-text-dim">
-                            &quot;{trigger.keywords.join('", "')}&quot;
+                            {'\"' + trigger.keywords.join(', ') + '\"'}
                           </span>
                         )}
                       </div>
@@ -346,12 +345,12 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   
   const handleSave = async () => {
     if (!name.trim()) {
-      showToast('warning', 'Please enter a name for this automation');
+      alert('Please enter a name for this automation');
       return;
     }
     
     if (actions.length === 0) {
-      showToast('warning', 'Please add at least one action');
+      alert('Please add at least one action');
       return;
     }
     
@@ -375,10 +374,10 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
       if (result?.success) {
         onSave();
       } else {
-        showToast('error', `Failed to save: ${result?.error || 'Unknown error'}`);
+        alert(`Failed to save: ${result?.error || 'Unknown error'}`);
       }
     } catch (e: any) {
-      showToast('error', `Failed to save: ${e.message}`);
+      alert(`Failed to save: ${e.message}`);
     } finally {
       setSaving(false);
     }
@@ -505,7 +504,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <div className="space-y-3 mb-4">
               {actions.map((action, index) => (
-                <div key={`${action.type}-${index}`} className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
+                <div key={index} className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex-1 space-y-3">
                       <select

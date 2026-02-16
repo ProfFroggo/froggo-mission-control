@@ -58,6 +58,12 @@ interface TranscriptLine {
   cleaned?: string;
 }
 
+/** Database transcript row structure */
+interface TranscriptRow {
+  cleaned_text?: string;
+  text: string;
+}
+
 interface PastMeeting {
   id?: string;
   filename: string;
@@ -184,12 +190,12 @@ export default function MeetingsPanel() {
   }, [meetingStartTime]);
 
   // DB Helpers
-  const dbExec = useCallback(async (sql: string, params: any[] = []) => {
+  const dbExec = useCallback(async (sql: string, params: (string | number | boolean | null)[] = []) => {
     if (!(window as any).clawdbot?.db?.exec) return;
     await (window as any).clawdbot.db.exec(sql, params);
   }, []);
 
-  const dbQuery = useCallback(async (sql: string, params: any[] = []): Promise<any[]> => {
+  const dbQuery = useCallback(async <T extends Record<string, unknown>>(sql: string, params: (string | number | boolean | null)[] = []): Promise<T[]> => {
     if (!(window as any).clawdbot?.db?.query) return [];
     try {
       return (await (window as any).clawdbot.db.query(sql, params)) || [];
@@ -253,10 +259,10 @@ export default function MeetingsPanel() {
         time: new Date(row.started_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         title: row.title,
         duration: row.duration,
-        transcript: transcripts.map((t: any) => t.cleaned_text || t.text),
+        transcript: transcripts.map((t: TranscriptRow) => t.cleaned_text || t.text),
         actionItems: [],
         tasksCreated: [],
-        rawContent: row.summary || transcripts.map((t: any) => t.cleaned_text || t.text).join('\n'),
+        rawContent: row.summary || transcripts.map((t: TranscriptRow) => t.cleaned_text || t.text).join('\n'),
         source: 'db',
       });
     }
@@ -679,9 +685,9 @@ export default function MeetingsPanel() {
       setMeetingActive(true);
       setShowTitleInput(false);
       setStatusMessage('Recording...');
-    } catch (e: any) {
+    } catch (e) {
       console.error('[Meeting] Failed to start:', e);
-      setStatusMessage('Failed: ' + e.message);
+      setStatusMessage('Failed: ' + (e instanceof Error ? e.message : String(e)));
       setMeetingStartTime(null);
       listeningRef.current = false;
       setListening(false);
@@ -818,8 +824,8 @@ export default function MeetingsPanel() {
           }
         }
       }
-    } catch (e: any) {
-      setMeetingChatMessages(prev => [...prev, { role: 'assistant', content: `Error: ${e.message}`, timestamp: Date.now() }]);
+    } catch (e) {
+      setMeetingChatMessages(prev => [...prev, { role: 'assistant', content: `Error: ${e instanceof Error ? e.message : String(e)}`, timestamp: Date.now() }]);
     } finally {
       setMeetingChatProcessing(false);
       setMeetingChatInput('');

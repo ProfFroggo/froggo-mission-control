@@ -178,7 +178,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
           <Phone size={14} className="text-clawd-accent" />
           {activeCall ? 'Active Call' : 'Call Agent'}
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
       </div>
       {activeCall && (
         <div className="mb-2 p-2 bg-error-subtle border border-red-500/20 rounded-lg flex items-center gap-2">
@@ -238,7 +238,7 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat }: {
           <Sparkles size={14} className="text-clawd-accent" />
           Context Chat
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
       </div>
 
       {/* Context indicator */}
@@ -375,7 +375,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
           <ListTodo size={14} className="text-clawd-accent" />
           Task Shortcuts
         </h3>
-        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
+        <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
       </div>
 
       {/* Quick status filters */}
@@ -551,17 +551,20 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       }),
       geminiLive.on('tool-call', async (toolCall: GeminiToolCall) => {
         try {
+          console.log('[QuickActions] Tool call received:', toolCall);
           if (!toolCall?.functionCalls?.length) {
-            console.debug('[QuickActions] No function calls in tool-call event');
+            console.warn('[QuickActions] No function calls in tool-call event');
             return;
           }
           const agent = activeCallAgentRef.current;
           const responses: Array<{ id: string; name: string; response: any }> = [];
           for (const fc of toolCall.functionCalls) {
             addTx('system', `🔧 ${fc.name}(${JSON.stringify(fc.args || {}).slice(0, 100)})`);
+            console.log(`[QuickActions] Executing tool: ${fc.name}`);
             let result: any;
             try {
               result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
+              console.log(`[QuickActions] Tool ${fc.name} result:`, result);
             } catch (err: any) {
               console.error(`[QuickActions] Tool ${fc.name} error:`, err);
               result = { error: err.message || 'Tool execution failed' };
@@ -569,7 +572,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             }
             responses.push({ id: fc.id, name: fc.name, response: result });
           }
+          console.log('[QuickActions] Sending tool responses:', responses.length);
           await geminiLive.sendToolResponse(responses);
+          console.log('[QuickActions] Tool responses sent');
         } catch (err: any) {
           console.error('[QuickActions] Tool handler error:', err);
           addTx('system', `⚠️ Tool error: ${err.message}`);
@@ -593,7 +598,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const getGeminiApiKey = async (): Promise<string> => {
     // 1. Check localStorage settings
     try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
-    catch { /* ignore */ }
+    catch { /* localStorage parse error - ignore and continue */ }
     // 2. Check env vars
     const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
     if (envKey) return envKey;
@@ -762,7 +767,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         await ipc.spawnChat(agent.id);
       }
     } catch (e) {
-      console.debug('[QuickActions] Failed to spawn agent chat session:', e);
+      console.warn('[QuickActions] Failed to spawn agent chat session:', e);
     }
     setChatLoading(false);
   };
@@ -852,14 +857,14 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   
   const handlePopOut = async () => {
     try {
-      // Check if window.clawdbot and toolbar API are available
-      if (!window.clawdbot?.toolbar) {
+      // Check if window.electron and toolbar API are available
+      if (!window.electron?.toolbar) {
         showToast('error', 'Pop-out Failed', 'Toolbar API not available');
-        console.error('window.clawdbot.toolbar is not defined');
+        console.error('window.electron.toolbar is not defined');
         return;
       }
 
-      const result = await window.clawdbot.toolbar.popOut({
+      const result = await window.electron.toolbar.popOut({
         width: state.isCollapsed ? 80 : 360,
         height: 400,
       });
@@ -926,7 +931,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <MessageSquare size={16} className="text-clawd-accent" />
               Quick Message
             </h3>
-            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-clawd-border rounded" title="Close">
+            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-clawd-border rounded">
               <X size={16} />
             </button>
           </div>
@@ -1016,7 +1021,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             </div>
 
             {/* Close button */}
-            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors" title="Close">
+            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors">
               <X size={12} />
             </button>
           </div>
@@ -1085,7 +1090,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <MessageSquare size={14} className="text-clawd-accent" />
               Chat with Agent
             </h3>
-            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded" title="Close"><X size={14} /></button>
+            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
           </div>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
@@ -1119,7 +1124,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 <div className="text-[10px] text-clawd-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
             </div>
-            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-clawd-border rounded" title="Close">
+            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-clawd-border rounded">
               <X size={12} />
             </button>
           </div>
@@ -1165,7 +1170,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               onClick={sendChatMessage}
               disabled={!chatInput.trim() || chatLoading}
               className="p-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/90 disabled:opacity-40 transition-colors"
-              title="Send message"
             >
               <Send size={12} />
             </button>

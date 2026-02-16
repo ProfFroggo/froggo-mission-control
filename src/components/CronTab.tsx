@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface CronJob {
   id: string;
@@ -32,6 +33,7 @@ export default function CronTab() {
   const [runs, setRuns] = useState<Record<string, CronRun[]>>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [newJob, setNewJob] = useState({ name: '', description: '', scheduleKind: 'cron', expr: '*/5 * * * *', message: '', sessionTarget: 'isolated' });
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
@@ -81,14 +83,20 @@ export default function CronTab() {
   };
 
   const removeJob = async (job: CronJob) => {
-    if (!confirm(`Delete cron job "${job.name}"?`)) return;
-    try {
-      await gateway.removeCronJob(job.id);
-      setJobs(prev => prev.filter(j => j.id !== job.id));
-      showToast('success', 'Job deleted');
-    } catch (e) {
-      showToast('error', 'Failed to delete job', String(e));
-    }
+    showConfirm({
+      title: 'Delete Cron Job',
+      message: `Are you sure you want to delete "${job.name}"?`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, async () => {
+      try {
+        await gateway.removeCronJob(job.id);
+        setJobs(prev => prev.filter(j => j.id !== job.id));
+        showToast('success', 'Job deleted');
+      } catch (e) {
+        showToast('error', 'Failed to delete job', String(e));
+      }
+    });
   };
 
   const addJob = async () => {
@@ -317,6 +325,17 @@ export default function CronTab() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

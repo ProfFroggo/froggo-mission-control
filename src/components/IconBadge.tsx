@@ -72,10 +72,10 @@ export const BadgePresets = {
   task: { color: 'text-warning bg-yellow-500/20' },
   action: { color: 'text-success bg-green-500/20' },
   
-  // Channels
-  discord: { color: 'text-[#5865F2] bg-[#5865F2]/20' },
-  telegram: { color: 'text-[#229ED9] bg-[#229ED9]/20' },
-  whatsapp: { color: 'text-[#25D366] bg-[#25D366]/20' },
+  // Channels - using CSS custom properties for theme consistency
+  discord: { color: 'text-[var(--channel-discord)] bg-[var(--channel-discord-bg)]' },
+  telegram: { color: 'text-[var(--channel-telegram)] bg-[var(--channel-telegram-bg)]' },
+  whatsapp: { color: 'text-[var(--channel-whatsapp)] bg-[var(--channel-whatsapp-bg)]' },
   webchat: { color: 'text-review bg-purple-500/20' },
   agents: { color: 'text-orange-400 bg-orange-500/20' },
 } as const;

@@ -133,13 +133,14 @@ export default function NotificationSettingsModal({
 
       if (result?.success) {
         setHasCustomSettings(true);
+        showToast('success', 'Settings Saved', 'Notification settings updated');
         onClose();
       } else {
-        showToast('error', 'Failed to save notification settings');
+        showToast('error', 'Save Failed', 'Failed to save notification settings');
       }
     } catch (error) {
       console.error('[NotificationSettings] Save error:', error);
-      showToast('error', 'Error saving settings');
+      showToast('error', 'Save Failed', 'Error saving settings');
     } finally {
       setSaving(false);
     }
@@ -226,7 +227,7 @@ export default function NotificationSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter" onClick={onClose} role="button" tabIndex={-1} aria-label="Close notification settings">
+    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter" onClick={onClose}>
       <div className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="p-6 border-b border-clawd-border flex items-center justify-between">

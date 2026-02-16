@@ -185,6 +185,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             onClick={onClose}
             disabled={step === 'connecting'}
             className="p-2 hover:bg-clawd-bg rounded-lg transition-colors disabled:opacity-50"
+            aria-label="Close wizard"
           >
             <X size={20} />
           </button>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useStore } from './store/store';
 import Sidebar from './components/Sidebar';
-import TopBar from './components/TopBar';
 import LoadingPanel from './components/LoadingPanel';
 import PerformanceProfiler from './components/PerformanceProfiler';
 import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
@@ -66,7 +65,7 @@ function App() {
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [skillModalOpen, setSkillModalOpen] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(208); // Track sidebar width for TopBar positioning
+  const [, setSidebarWidth] = useState(208); // Track sidebar width for sidebar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
   const { activeTour, completeTour, skipTour } = useTour();
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
@@ -397,7 +396,7 @@ function App() {
             onClose={() => setSearchOpen(false)}
             onNavigate={(view, id) => {
               setCurrentView(view as View);
-              // TODO: Pass id to panel for deep linking
+              // Deep linking with id: not yet implemented
             }}
           />
         </ErrorBoundary>

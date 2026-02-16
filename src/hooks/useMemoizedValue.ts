@@ -16,7 +16,7 @@ import { useRef } from 'react';
 /**
  * Deep equality check for objects and arrays
  */
-function deepEqual(a: any, b: any): boolean {
+function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== typeof b) return false;
@@ -32,7 +32,7 @@ function deepEqual(a: any, b: any): boolean {
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
     if (keysA.length !== keysB.length) return false;
-    return keysA.every(key => deepEqual(a[key], b[key]));
+    return keysA.every(key => deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
   }
 
   return false;
@@ -43,9 +43,9 @@ function deepEqual(a: any, b: any): boolean {
  */
 export function useMemoizedValue<T>(
   computeFn: () => T,
-  deps: any[]
+  deps: unknown[]
 ): T {
-  const ref = useRef<{ deps: any[]; value: T } | null>(null);
+  const ref = useRef<{ deps: unknown[]; value: T } | null>(null);
 
   // Check if deps have changed (deep comparison)
   const depsChanged = !ref.current || !deepEqual(ref.current.deps, deps);
@@ -62,7 +62,7 @@ export function useMemoizedValue<T>(
 /**
  * Shallow equality check (faster for simple cases)
  */
-function shallowEqual(a: any[], b: any[]): boolean {
+function shallowEqual(a: unknown[], b: unknown[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((item, index) => item === b[index]);
 }
@@ -72,9 +72,9 @@ function shallowEqual(a: any[], b: any[]): boolean {
  */
 export function useShallowMemoizedValue<T>(
   computeFn: () => T,
-  deps: any[]
+  deps: unknown[]
 ): T {
-  const ref = useRef<{ deps: any[]; value: T } | null>(null);
+  const ref = useRef<{ deps: unknown[]; value: T } | null>(null);
 
   const depsChanged = !ref.current || !shallowEqual(ref.current.deps, deps);
 
@@ -86,6 +86,11 @@ export function useShallowMemoizedValue<T>(
   return ref.current!.value;
 }
 
+/** Item with ID for memoization */
+interface WithId {
+  id: string | number;
+}
+
 /**
  * Memoize an array transformation
  * Optimized for filtering/mapping large arrays
@@ -93,11 +98,11 @@ export function useShallowMemoizedValue<T>(
 export function useMemoizedArray<T, R>(
   array: T[],
   transformFn: (items: T[]) => R[],
-  deps: any[] = []
+  deps: unknown[] = []
 ): R[] {
   return useMemoizedValue(
     () => transformFn(array),
-    [array.length, ...array.map(item => (item as any)?.id || item), ...deps]
+    [array.length, ...array.map(item => (item as unknown as WithId)?.id || item), ...deps]
   );
 }
 
@@ -105,7 +110,7 @@ export function useMemoizedArray<T, R>(
  * Memoize object properties
  * Only recomputes when specific properties change
  */
-export function useMemoizedObject<T extends Record<string, any>>(
+export function useMemoizedObject<T extends Record<string, unknown>>(
   obj: T,
   keys: (keyof T)[]
 ): T {
@@ -123,11 +128,11 @@ export function useMemoizedObject<T extends Record<string, any>>(
  */
 export function useMemoizedValueWithProfiling<T>(
   computeFn: () => T,
-  deps: any[],
+  deps: unknown[],
   label: string,
   thresholdMs: number = 10
 ): T {
-  const ref = useRef<{ deps: any[]; value: T } | null>(null);
+  const ref = useRef<{ deps: unknown[]; value: T } | null>(null);
 
   const depsChanged = !ref.current || !deepEqual(ref.current.deps, deps);
 
