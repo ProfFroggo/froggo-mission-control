@@ -203,7 +203,7 @@ export default function SessionsFilter() {
         await loadPinnedSessions();
       } else if (result?.error) {
         // Show error if pin limit reached
-        alert(result?.error);
+        showToast('error', 'Pin Failed', result.error);
       }
     } catch (error) {
       console.error('[SessionsFilter] Failed to toggle pin:', error);
@@ -409,9 +409,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        alert(`✅ Successfully deleted ${successCount} conversation(s)`);
+        showToast('success', 'Deleted', `Successfully deleted ${successCount} conversation(s)`);
       } else {
-        alert(`⚠️ Deleted ${successCount} conversation(s), ${errorCount} failed. See console for details.`);
+        showToast('warning', 'Partial Success', `Deleted ${successCount} conversation(s), ${errorCount} failed`);
       }
       
       // Refresh and clear selection
@@ -420,7 +420,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk delete error:', error);
-      alert('❌ Failed to delete conversations. See console for details.');
+      showToast('error', 'Delete Failed', 'Failed to delete conversations');
     }
   };
 
@@ -450,9 +450,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        alert(`✅ Successfully archived ${successCount} session(s)`);
+        showToast('success', 'Archived', `Successfully archived ${successCount} session(s)`);
       } else {
-        alert(`⚠️ Archived ${successCount} session(s), ${errorCount} failed. See console for details.`);
+        showToast('warning', 'Partial Success', `Archived ${successCount} session(s), ${errorCount} failed`);
       }
       
       // Refresh and clear selection
@@ -461,7 +461,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk archive error:', error);
-      alert('❌ Failed to archive sessions. See console for details.');
+      showToast('error', 'Archive Failed', 'Failed to archive sessions');
     }
   };
 
@@ -490,9 +490,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        alert(`✅ Marked ${successCount} conversation(s) as read`);
+        showToast('success', 'Marked as Read', `Marked ${successCount} conversation(s) as read`);
       } else {
-        alert(`⚠️ Marked ${successCount} conversation(s) as read, ${errorCount} failed. See console for details.`);
+        showToast('warning', 'Partial Success', `Marked ${successCount} conversation(s) as read, ${errorCount} failed`);
       }
       
       // Refresh and clear selection
@@ -500,7 +500,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk mark read error:', error);
-      alert('❌ Failed to mark conversations as read. See console for details.');
+      showToast('error', 'Action Failed', 'Failed to mark conversations as read');
     }
   };
 
@@ -517,14 +517,13 @@ export default function SessionsFilter() {
       if (result?.success) {
         // Refresh folders and assignments
         await loadFolders();
-        console.log('[SessionsFilter] Successfully assigned conversation to folder');
       } else {
         console.error('[SessionsFilter] Failed to assign folder:', result?.error);
-        alert('Failed to assign to folder');
+        showToast('error', 'Assignment Failed', 'Failed to assign to folder');
       }
     } catch (error) {
       console.error('[SessionsFilter] Error assigning folder:', error);
-      alert('Failed to assign to folder');
+      showToast('error', 'Assignment Failed', 'Failed to assign to folder');
     }
   };
 
