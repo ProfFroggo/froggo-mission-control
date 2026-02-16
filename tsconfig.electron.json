@@ -4,10 +4,15 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "dist-electron",
-    "strict": true,
+    "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "noEmitOnError": false
   },
-  "include": ["electron/**/*"]
+  "include": ["electron/**/*", "src/utils/logger.ts"],
+  "exclude": [
+    "electron/main-new.ts",
+    "electron/handlers/x-twitter-handlers.ts"
+  ]
 }

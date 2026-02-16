@@ -6,14 +6,14 @@ import { gateway } from '../lib/gateway';
 const channelConfig: Record<string, { icon: string; color: string; label: string }> = {
   whatsapp: { icon: '💬', color: 'bg-success-subtle text-success border-success-border', label: 'WhatsApp' },
   telegram: { icon: '✈️', color: 'bg-info-subtle text-info border-info-border', label: 'Telegram' },
-  discord: { icon: '🎮', color: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30', label: 'Discord' },
-  webchat: { icon: '🌐', color: 'bg-review-subtle text-review border-purple-500/30', label: 'Webchat' },
-  signal: { icon: '🔒', color: 'bg-blue-600/20 text-blue-300 border-blue-600/30', label: 'Signal' },
-  imessage: { icon: '💬', color: 'bg-blue-400/20 text-blue-300 border-blue-400/30', label: 'iMessage' },
-  slack: { icon: '💼', color: 'bg-purple-600/20 text-purple-300 border-purple-600/30', label: 'Slack' },
+  discord: { icon: '🎮', color: 'bg-info-subtle text-info border-info-border', label: 'Discord' },
+  webchat: { icon: '🌐', color: 'bg-review-subtle text-review border-review-border', label: 'Webchat' },
+  signal: { icon: '🔒', color: 'bg-info-subtle text-info border-info-border', label: 'Signal' },
+  imessage: { icon: '💬', color: 'bg-info-subtle text-info border-info-border', label: 'iMessage' },
+  slack: { icon: '💼', color: 'bg-review-subtle text-review border-review-border', label: 'Slack' },
   voice: { icon: '🎤', color: 'bg-warning-subtle text-warning border-warning-border', label: 'Voice' },
-  cron: { icon: '⏰', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', label: 'Scheduled' },
-  system: { icon: '⚙️', color: 'bg-clawd-bg0/20 text-clawd-text-dim border-clawd-border/30', label: 'System' },
+  cron: { icon: '⏰', color: 'bg-warning-subtle text-warning border-warning-border', label: 'Scheduled' },
+  system: { icon: '⚙️', color: 'bg-muted-subtle text-muted border-muted-border', label: 'System' },
 };
 
 interface Activity {
