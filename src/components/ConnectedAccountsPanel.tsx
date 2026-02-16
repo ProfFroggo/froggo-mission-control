@@ -5,7 +5,7 @@ import {
   Key, Clock, Shield, Database, Link as LinkIcon, HelpCircle
 } from 'lucide-react';
 import { showToast } from './Toast';
-import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { useConfirmDialog } from './ConfirmDialog';
 
 // Lazy load ChannelsTab to avoid import-time errors breaking the whole panel
 const ChannelsTab = lazy(() => import('./ChannelsTab').catch(() => ({
@@ -110,7 +110,7 @@ export default function ConnectedAccountsPanel() {
   const [selectedType, setSelectedType] = useState<string>('');
   const [importingGoogle, setImportingGoogle] = useState(false);
   const [panelTab, setPanelTab] = useState<'accounts' | 'channels'>('accounts');
-  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
+  const { showConfirm } = useConfirmDialog();
 
   useEffect(() => {
     loadAccounts();
