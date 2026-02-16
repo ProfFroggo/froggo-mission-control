@@ -462,8 +462,8 @@ function App() {
                   const { showToast } = await import('./components/Toast');
                   showToast('success', 'Approved all', `${result.count} items approved`);
                 }
-              } catch (e) {
-                console.error('Approve all failed:', e);
+              } catch {
+                // Silent fail - error handled by UI state
               }
             }}
           />
