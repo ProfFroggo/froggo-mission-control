@@ -1,16 +1,5 @@
-<<<<<<< HEAD
-/**
- * ErrorBoundary - Global error boundary to catch React errors
- * Provides graceful degradation and error recovery with smart error detection
- */
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home, Bug, Network, Clock, Code, Database, Lock, Wifi } from 'lucide-react';
-import { LoadingButton } from './LoadingStates';
-=======
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Bug, XCircle } from 'lucide-react';
->>>>>>> 8214873 (feat: add error boundaries for crash protection [P1])
 
 interface Props {
   children: ReactNode;
@@ -87,18 +76,12 @@ Stack: ${this.state.error?.stack}
 Time: ${new Date().toISOString()}
     `.trim();
 
-<<<<<<< HEAD
-    // Copy to clipboard
-    navigator.clipboard.writeText(bugReport);
-    alert('Bug report copied to clipboard! Please send it to the support team.');
-=======
     navigator.clipboard.writeText(errorDetails).then(() => {
       // Show feedback - using alert for simplicity as toast might not be available in error state
       alert('Error details copied to clipboard. Please share with the development team.');
     }).catch(() => {
       console.error('[ErrorBoundary] Failed to copy error details');
     });
->>>>>>> 8214873 (feat: add error boundaries for crash protection [P1])
   };
 
   render() {
