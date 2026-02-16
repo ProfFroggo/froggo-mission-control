@@ -280,7 +280,7 @@ class NotificationService {
     });
   }
 
-  info(title: string, body: string, data?: any) {
+  info(title: string, body: string, data?: Record<string, unknown>) {
     this.show({
       type: 'info',
       title,
@@ -310,7 +310,15 @@ export function setupNotificationHandlers(mainWindow: BrowserWindow) {
   });
 
   // Send notification
-  ipcMain.handle('notifications:send', async (_, options: any) => {
+  ipcMain.handle('notifications:send', async (_, options: {
+    type: 'task-completed' | 'agent-failure' | 'approval-request' | 'chat-mention' | 'info';
+    title: string;
+    body: string;
+    silent?: boolean;
+    urgency?: 'low' | 'normal' | 'critical';
+    actions?: { type: string; text: string }[];
+    data?: Record<string, unknown>;
+  }) => {
     await notificationService.show(options);
     return { success: true };
   });
