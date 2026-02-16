@@ -69,6 +69,7 @@ interface CalendarCache {
  */
 function getGoogleAccounts(): string[] {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { execSync } = require('child_process');
     const gogList = execSync('/opt/homebrew/bin/gog auth list --json', {
       timeout: 5000,
