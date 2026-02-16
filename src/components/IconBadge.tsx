@@ -55,27 +55,27 @@ export default function IconBadge({
 export const BadgePresets = {
   // Notification types
   taskComplete: { color: 'text-success bg-success-subtle' },
-  taskDeadline: { color: 'text-orange-400 bg-orange-500/10' },
-  agentUpdate: { color: 'text-review bg-purple-500/10' },
+  taskDeadline: { color: 'text-warning bg-warning-subtle' },
+  agentUpdate: { color: 'text-review bg-review-subtle' },
   messageArrival: { color: 'text-info bg-info-subtle' },
-  approvalPending: { color: 'text-warning bg-yellow-500/10' },
-  calendarEvent: { color: 'text-pink-400 bg-pink-500/10' },
+  approvalPending: { color: 'text-warning bg-warning-subtle' },
+  calendarEvent: { color: 'text-review bg-review-subtle' },
   systemAlert: { color: 'text-error bg-error-subtle' },
-  skillLearned: { color: 'text-cyan-400 bg-cyan-500/10' },
+  skillLearned: { color: 'text-info bg-info-subtle' },
   error: { color: 'text-error bg-error-subtle' },
   
   // Approval types
-  tweet: { color: 'text-sky-400 bg-sky-500/20' },
-  reply: { color: 'text-info bg-blue-500/20' },
-  email: { color: 'text-success bg-green-500/20' },
-  message: { color: 'text-review bg-purple-500/20' },
-  task: { color: 'text-warning bg-yellow-500/20' },
-  action: { color: 'text-success bg-green-500/20' },
+  tweet: { color: 'text-info bg-info-subtle' },
+  reply: { color: 'text-info bg-info-subtle' },
+  email: { color: 'text-success bg-success-subtle' },
+  message: { color: 'text-review bg-review-subtle' },
+  task: { color: 'text-warning bg-warning-subtle' },
+  action: { color: 'text-success bg-success-subtle' },
   
   // Channels - using CSS custom properties for theme consistency
   discord: { color: 'text-[var(--channel-discord)] bg-[var(--channel-discord-bg)]' },
   telegram: { color: 'text-[var(--channel-telegram)] bg-[var(--channel-telegram-bg)]' },
   whatsapp: { color: 'text-[var(--channel-whatsapp)] bg-[var(--channel-whatsapp-bg)]' },
-  webchat: { color: 'text-review bg-purple-500/20' },
+  webchat: { color: 'text-review bg-review-subtle' },
   agents: { color: 'text-orange-400 bg-orange-500/20' },
 } as const;
