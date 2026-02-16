@@ -9,21 +9,23 @@ interface ConfigSection {
   fields: ConfigField[];
 }
 
+type ConfigValue = string | number | boolean | null | Record<string, unknown>;
+
 interface ConfigField {
   path: string;
   key: string;
   label: string;
   type: 'boolean' | 'string' | 'number' | 'select' | 'object';
-  value: any;
+  value: ConfigValue;
   options?: string[];
   help?: string;
   sensitive?: boolean;
 }
 
 export default function ConfigTab() {
-  const [config, setConfig] = useState<any>(null);
+  const [config, setConfig] = useState<Record<string, unknown> | null>(null);
   const [hash, setHash] = useState('');
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<Array<{ message?: string; path?: string; severity?: string }>>([]);
   const [sections, setSections] = useState<ConfigSection[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -53,10 +55,10 @@ export default function ConfigTab() {
 
   useEffect(() => { loadConfig(); }, [loadConfig]);
 
-  const buildSections = (cfg: any) => {
+  const buildSections = (cfg: Record<string, unknown>) => {
     const sectionMap: Record<string, ConfigField[]> = {};
 
-    const traverse = (obj: any, prefix: string, sectionKey: string) => {
+    const traverse = (obj: Record<string, unknown>, prefix: string, sectionKey: string) => {
       for (const [key, val] of Object.entries(obj)) {
         const path = prefix ? `${prefix}.${key}` : key;
         const section = sectionKey || key;
@@ -98,9 +100,9 @@ export default function ConfigTab() {
     setSections(built);
   };
 
-  const updateField = (path: string, newValue: any) => {
+  const updateField = (path: string, newValue: ConfigValue) => {
     setDirty(true);
-    setConfig((prev: any) => {
+    setConfig((prev: Record<string, unknown> | null) => {
       const updated = JSON.parse(JSON.stringify(prev));
       const parts = path.split('.');
       let obj = updated;
@@ -158,7 +160,7 @@ export default function ConfigTab() {
             <AlertTriangle size={16} className="text-warning" />
             <span className="font-medium text-warning">{issues.length} issue{issues.length !== 1 ? 's' : ''}</span>
           </div>
-          {issues.map((issue: any, i: number) => (
+          {issues.map((issue, i) => (
             <div key={i} className="text-sm text-yellow-300">{issue.path}: {issue.message}</div>
           ))}
         </div>

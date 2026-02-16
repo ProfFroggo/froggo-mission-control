@@ -1475,7 +1475,7 @@ function DeleteConfirmDialog({
           <div>
             <h3 className="text-lg font-semibold mb-2">Delete Event</h3>
             <p className="text-sm text-clawd-text-dim">
-              Are you sure you want to delete "<strong>{eventTitle}</strong>"? This action cannot be undone.
+              Are you sure you want to delete &quot;<strong>{eventTitle}</strong>&quot;? This action cannot be undone.
             </p>
           </div>
         </div>

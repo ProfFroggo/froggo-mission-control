@@ -525,7 +525,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
           </div>
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-clawd-text-dim">
-              💡 You're talking to a real LLM — ask anything relevant to this agent's role
+              💡 You&apos;re talking to a real LLM — ask anything relevant to this agent&apos;s role
             </span>
             {!sessionKey && !spawning && (
               <button

@@ -230,7 +230,7 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
           ) : (
             <div className="text-center py-12 text-clawd-text-dim">
               <Keyboard size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No shortcuts found for "{searchQuery}"</p>
+              <p className="text-sm">No shortcuts found for &quot;{searchQuery}&quot;</p>
               <p className="text-xs mt-1">Try a different search term</p>
             </div>
           )}

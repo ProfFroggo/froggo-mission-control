@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Save, X, CheckCircle } from 'lucide-react';
 import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface VipSender {
   id: number;
@@ -39,6 +40,7 @@ export default function VIPSettingsPanel() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -124,21 +126,26 @@ export default function VIPSettingsPanel() {
   };
 
   const handleRemove = async (id: number, label: string) => {
-    if (!confirm(`Remove VIP: ${label}?`)) return;
+    showConfirm({
+      title: 'Remove VIP',
+      message: `Are you sure you want to remove VIP: ${label}?`,
+      confirmLabel: 'Remove',
+      type: 'warning',
+    }, async () => {
+      try {
+        const result = await window.clawdbot?.vip.remove(id);
 
-    try {
-      const result = await window.clawdbot?.vip.remove(id);
-
-      if (result?.success) {
-        showToast('success', `VIP removed: ${label}`);
-        loadVips();
-      } else {
-        showToast('error', result?.error || 'Failed to remove VIP');
+        if (result?.success) {
+          showToast('success', `VIP removed: ${label}`);
+          loadVips();
+        } else {
+          showToast('error', result?.error || 'Failed to remove VIP');
+        }
+      } catch (error: any) {
+        console.error('[VIP] Remove error:', error);
+        showToast('error', error.message || 'Failed to remove VIP');
       }
-    } catch (error: any) {
-      console.error('[VIP] Remove error:', error);
-      showToast('error', error.message || 'Failed to remove VIP');
-    }
+    });
   };
 
   const startEdit = (vip: VipSender) => {
@@ -499,6 +506,17 @@ export default function VIPSettingsPanel() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

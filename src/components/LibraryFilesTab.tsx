@@ -3,6 +3,7 @@ import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, R
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 type FileCategory = 'draft' | 'document' | 'media' | 'strategy' | 'research' | 'other';
 type ViewMode = 'grid' | 'list';
@@ -59,6 +60,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerContent, setViewerContent] = useState<any>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Apply initial path filter when provided
   useEffect(() => {
@@ -126,17 +128,22 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   };
 
   const handleDelete = async (file: LibraryFile) => {
-    if (!confirm(`Delete "${file.name}"?`)) return;
-    
-    try {
-      const result = await (window as any).clawdbot?.library?.delete(file.id);
-      if (result?.success) {
-        showToast('success', 'File deleted');
-        loadFiles();
+    showConfirm({
+      title: 'Delete File',
+      message: `Are you sure you want to delete "${file.name}"?`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, async () => {
+      try {
+        const result = await (window as any).clawdbot?.library?.delete(file.id);
+        if (result?.success) {
+          showToast('success', 'File deleted');
+          loadFiles();
+        }
+      } catch (error) {
+        showToast('error', 'Delete failed', String(error));
       }
-    } catch (error) {
-      showToast('error', 'Delete failed', String(error));
-    }
+    });
   };
 
   const handleLinkToTask = async (file: LibraryFile) => {
@@ -538,6 +545,17 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

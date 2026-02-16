@@ -114,7 +114,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
         <div className="flex items-center gap-2">
           <Calendar size={16} className="text-info" />
           <div>
-            <h2 className="font-semibold">Today's Schedule</h2>
+            <h2 className="font-semibold">Today&apos;s Schedule</h2>
             <p className="text-xs text-clawd-text-dim">{dateStr}</p>
           </div>
         </div>
