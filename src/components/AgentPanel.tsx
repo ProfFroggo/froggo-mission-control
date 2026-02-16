@@ -170,7 +170,7 @@ export default function AgentPanel() {
               className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-clawd-border hover:bg-clawd-border/50'}`}>
               <BarChart3 size={15} className="flex-shrink-0" /> Analytics
             </button>
-            <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-clawd-border disabled:opacity-50" title="Refresh">
+            <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-clawd-border disabled:opacity-50" title="Refresh" aria-label="Refresh agents">
               <RefreshCw size={15} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors text-sm">
@@ -363,12 +363,14 @@ export default function AgentPanel() {
                       <div className="flex-1" />
                       <button onClick={(e) => { e.stopPropagation(); setChatAgent(agent.id); }}
                         className={`p-1.5 rounded-lg transition-colors ${HOVER_BG_MAP[theme.bg] || ''} ${theme.text} opacity-50 hover:opacity-100`}
-                        title="Chat">
+                        title="Chat"
+                        aria-label={`Chat with ${agent.name}`}>
                         <MessageSquare size={14} />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
                         className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-purple-500/10' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
-                        title="Compare">
+                        title="Compare"
+                        aria-label={`Compare ${agent.name}`}>
                         <GitCompare size={14} />
                       </button>
                     </div>

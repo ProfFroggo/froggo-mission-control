@@ -102,7 +102,7 @@ export default function DebugTab() {
             <Terminal size={16} className="text-clawd-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
           </div>
-          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80">
+          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-clawd-border rounded-lg text-sm hover:bg-clawd-border/80" aria-label="Refresh sessions">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
