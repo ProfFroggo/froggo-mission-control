@@ -16,7 +16,7 @@ export interface AppSettings {
 }
 
 let cachedSettings: AppSettings | null = null;
-let listeners: Set<() => void> = new Set();
+const listeners: Set<() => void> = new Set();
 
 function notifyListeners() {
   listeners.forEach(fn => fn());

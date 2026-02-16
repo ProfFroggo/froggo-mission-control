@@ -14,8 +14,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
+import { createLogger } from '../src/utils/logger';
 
 const execAsync = promisify(exec);
+const logger = createLogger('AccountsService');
 
 export type AccountProvider = 'google' | 'icloud' | 'microsoft' | 'apple';
 export type DataType = 'email' | 'calendar' | 'drive' | 'contacts' | 'tasks';
@@ -34,7 +36,7 @@ export interface ConnectedAccount {
     permission: 'read' | 'write' | 'read-write';
     description: string;
   }>;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   authType: 'oauth' | 'app-password' | 'manual';
   tokenPath?: string;
   createdAt: number;
@@ -70,13 +72,13 @@ class AccountsService {
       if (fs.existsSync(ACCOUNTS_FILE)) {
         const data = fs.readFileSync(ACCOUNTS_FILE, 'utf-8');
         this.accounts = JSON.parse(data);
-        console.log(`[AccountsService] Loaded ${this.accounts.length} accounts`);
+        logger.info(`[AccountsService] Loaded ${this.accounts.length} accounts`);
       } else {
         // Migrate from legacy calendar accounts
         this.migrateLegacyAccounts();
       }
     } catch (err) {
-      console.error('[AccountsService] Failed to load accounts:', err);
+      logger.error('[AccountsService] Failed to load accounts:', err);
       this.accounts = [];
     }
   }
@@ -85,7 +87,7 @@ class AccountsService {
    * Migrate legacy calendar accounts to new system
    */
   private async migrateLegacyAccounts() {
-    console.log('[AccountsService] Migrating legacy calendar accounts...');
+    logger.info('[AccountsService] Migrating legacy calendar accounts...');
     
     // Dynamically discover accounts from gog CLI instead of hardcoding
     let knownAccounts: string[] = [];
@@ -95,9 +97,9 @@ class AccountsService {
         env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
       });
       const gogData = JSON.parse(gogList.stdout);
-      knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
+      knownAccounts = (gogData.accounts || []).map((a: { email?: string }) => a.email).filter((e: string | undefined): e is string => Boolean(e));
     } catch {
-      console.log('[AccountsService] Failed to discover gog accounts for migration');
+      logger.info('[AccountsService] Failed to discover gog accounts for migration');
     }
 
     for (const email of knownAccounts) {
@@ -122,10 +124,10 @@ class AccountsService {
             metadata: result.metadata,
           };
           this.accounts.push(account);
-          console.log(`[AccountsService] Migrated ${email}`);
+          logger.info(`[AccountsService] Migrated ${email}`);
         }
       } catch (err) {
-        console.error(`[AccountsService] Failed to migrate ${email}:`, err);
+        logger.error(`[AccountsService] Failed to migrate ${email}:`, err);
       }
     }
 
@@ -141,9 +143,9 @@ class AccountsService {
     try {
       fs.mkdirSync(path.dirname(ACCOUNTS_FILE), { recursive: true });
       fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(this.accounts, null, 2));
-      console.log(`[AccountsService] Saved ${this.accounts.length} accounts`);
+      logger.info(`[AccountsService] Saved ${this.accounts.length} accounts`);
     } catch (err) {
-      console.error('[AccountsService] Failed to save accounts:', err);
+      logger.error('[AccountsService] Failed to save accounts:', err);
     }
   }
 
@@ -184,7 +186,7 @@ class AccountsService {
     appPassword?: string;
   }) {
     try {
-      console.log(`[AccountsService] Adding ${request.provider} account: ${request.email}`);
+      logger.info(`[AccountsService] Adding ${request.provider} account: ${request.email}`);
 
       // Check if account already exists
       const existing = this.accounts.find(a => a.email === request.email && a.provider === request.provider);
@@ -230,25 +232,35 @@ class AccountsService {
       this.accounts.push(account);
       this.saveAccounts();
 
-      console.log(`[AccountsService] Added account: ${account.id}`);
+      logger.info(`[AccountsService] Added account: ${account.id}`);
 
       return {
         success: true,
         account,
       };
-    } catch (err: any) {
-      console.error('[AccountsService] Add account error:', err);
+    } catch (err) {
+      logger.error('[AccountsService] Add account error:', err);
       return {
         success: false,
-        error: err.message || 'Failed to add account',
+        error: err instanceof Error ? err.message : 'Failed to add account',
       };
     }
+  }
+
+  /** Add account request shape */
+  interface AddAccountRequest {
+    email: string;
+    provider: AccountProvider;
+    dataTypes: DataType[];
+    authType: 'oauth' | 'app-password' | 'manual';
+    password?: string;
+    appPassword?: string;
   }
 
   /**
    * Authenticate Google account via gog CLI
    */
-  private async authenticateGoogle(request: any) {
+  private async authenticateGoogle(request: AddAccountRequest) {
     try {
       // For Google, we rely on gog CLI OAuth flow
       // gog automatically handles OAuth and stores tokens
@@ -267,10 +279,10 @@ class AccountsService {
         tokenPath: undefined,  // gog CLI manages tokens internally
         metadata: testResult.metadata,
       };
-    } catch (err: any) {
+    } catch (err) {
       return {
         success: false,
-        error: err.message || 'Google authentication failed',
+        error: err instanceof Error ? err.message : 'Google authentication failed',
       };
     }
   }
@@ -296,10 +308,10 @@ class AccountsService {
           calendarsCount,
         },
       };
-    } catch (err: any) {
+    } catch (err) {
       return {
         success: false,
-        error: err.message || 'Failed to connect to Google',
+        error: err instanceof Error ? err.message : 'Failed to connect to Google',
       };
     }
   }
@@ -307,7 +319,7 @@ class AccountsService {
   /**
    * Authenticate iCloud account (app-specific password)
    */
-  private async authenticateICloud(request: any) {
+  private async authenticateICloud(request: AddAccountRequest) {
     // TODO: Implement iCloud authentication
     // This would involve storing app-specific password securely
     // and testing connection to iCloud services
@@ -348,15 +360,15 @@ class AccountsService {
       }
 
       return { success: false, error: 'Provider not supported' };
-    } catch (err: any) {
+    } catch (err) {
       account.status = 'error';
       account.lastChecked = Date.now();
-      account.errorMessage = err.message;
+      account.errorMessage = err instanceof Error ? err.message : String(err);
       this.saveAccounts();
 
       return {
         success: false,
-        error: err.message,
+        error: err instanceof Error ? err.message : String(err),
       };
     }
   }
@@ -371,14 +383,14 @@ class AccountsService {
     }
 
     const account = this.accounts[index];
-    console.log(`[AccountsService] Removing account: ${accountId}`);
+    logger.info(`[AccountsService] Removing account: ${accountId}`);
 
     // Delete token file if exists
     if (account.tokenPath && fs.existsSync(account.tokenPath)) {
       try {
         fs.unlinkSync(account.tokenPath);
       } catch (err) {
-        console.error('[AccountsService] Failed to delete token file:', err);
+        logger.error('[AccountsService] Failed to delete token file:', err);
       }
     }
 

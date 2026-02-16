@@ -46,7 +46,7 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
     if (r.stdout?.trim() && r.stdout.trim() !== '') {
       sections.push(`### Current State (STATE.md)\n${r.stdout.trim().slice(0, 2000)}`);
     }
-  } catch {}
+  } catch { /* ignore error */ }
 
   // 2. Load chat history from ALL matching gateway sessions
   try {
@@ -84,10 +84,10 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
               sections.push(`### Chat: ${label}\n${lines.join('\n')}`);
             }
           }
-        } catch {}
+        } catch { /* ignore error */ }
       }
     }
-  } catch {}
+  } catch { /* ignore error */ }
 
   // 3. Load today's + yesterday's memory notes
   try {
@@ -98,7 +98,7 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
     if (r.stdout?.trim()) {
       sections.push(`### Recent Memory Notes\n${r.stdout.trim().slice(0, 1500)}`);
     }
-  } catch {}
+  } catch { /* ignore error */ }
 
   if (sections.length === 0) return '';
   return sections.join('\n\n').slice(0, 6000);

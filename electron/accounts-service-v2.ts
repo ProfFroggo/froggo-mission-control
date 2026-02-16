@@ -6,8 +6,10 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { createLogger } from '../src/utils/logger';
 
 const execAsync = promisify(exec);
+const logger = createLogger('AccountsServiceV2');
 
 export interface ConnectedAccount {
   id: string;
@@ -30,7 +32,7 @@ class AccountsServiceV2 {
    */
   async listAccounts(): Promise<{ success: boolean; accounts?: ConnectedAccount[]; error?: string }> {
     try {
-      console.log('[AccountsV2] Fetching accounts from gog CLI...');
+      logger.info('[AccountsV2] Fetching accounts from gog CLI...');
       
       // Get accounts from gog auth list
       const { stdout: listOutput } = await execAsync('gog auth list --json', {
@@ -42,12 +44,18 @@ class AccountsServiceV2 {
       const gogAccounts = listData.accounts || [];
 
       if (gogAccounts.length === 0) {
-        console.log('[AccountsV2] No accounts found in gog');
+        logger.info('[AccountsV2] No accounts found in gog');
         return { success: true, accounts: [] };
       }
 
       // Test each account's OAuth status
-      const accountPromises = gogAccounts.map(async (gogAccount: any) => {
+      interface GogAccount {
+        email: string;
+        created_at?: string;
+        services?: string[];
+        scopes?: string[];
+      }
+      const accountPromises = gogAccounts.map(async (gogAccount: GogAccount) => {
         const email = gogAccount.email;
         const createdAt = gogAccount.created_at ? new Date(gogAccount.created_at).getTime() : Date.now();
 
@@ -73,13 +81,13 @@ class AccountsServiceV2 {
 
       const accounts = await Promise.all(accountPromises);
       
-      console.log(`[AccountsV2] Loaded ${accounts.length} accounts with OAuth status`);
+      logger.info(`[AccountsV2] Loaded ${accounts.length} accounts with OAuth status`);
       return { success: true, accounts };
-    } catch (error: any) {
-      console.error('[AccountsV2] Error listing accounts:', error);
+    } catch (error) {
+      logger.error('[AccountsV2] Error listing accounts:', error);
       return { 
         success: false, 
-        error: error.message || 'Failed to list accounts',
+        error: error instanceof Error ? error.message : 'Failed to list accounts',
         accounts: []
       };
     }
@@ -104,19 +112,19 @@ class AccountsServiceV2 {
       }
 
       return 'error';
-    } catch (error: any) {
-      const errorMsg = error.message || '';
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
       
       // Check for OAuth-specific errors
       if (errorMsg.includes('invalid_grant') || 
           errorMsg.includes('Token has been expired') ||
           errorMsg.includes('unauthorized') ||
           errorMsg.includes('401')) {
-        console.log(`[AccountsV2] OAuth expired for ${email}`);
+        logger.info(`[AccountsV2] OAuth expired for ${email}`);
         return 'expired';
       }
 
-      console.error(`[AccountsV2] OAuth test error for ${email}:`, errorMsg);
+      logger.error(`[AccountsV2] OAuth test error for ${email}:`, errorMsg);
       return 'error';
     }
   }
@@ -129,7 +137,7 @@ class AccountsServiceV2 {
       // Extract email from accountId (format: google-email@example.com)
       const email = accountId.replace('google-', '');
       
-      console.log(`[AccountsV2] Refreshing OAuth for ${email}...`);
+      logger.info(`[AccountsV2] Refreshing OAuth for ${email}...`);
       
       // Run gog auth add to renew OAuth (will open browser)
       const { stdout, stderr } = await execAsync(`gog auth add "${email}"`, {
@@ -137,7 +145,7 @@ class AccountsServiceV2 {
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` },
       });
 
-      console.log(`[AccountsV2] OAuth renewal complete for ${email}`);
+      logger.info(`[AccountsV2] OAuth renewal complete for ${email}`);
       
       // Test if renewal was successful
       const authStatus = await this.testAccountOAuth(email);
@@ -153,11 +161,11 @@ class AccountsServiceV2 {
           error: `OAuth renewal completed but account still shows as ${authStatus}`,
         };
       }
-    } catch (error: any) {
-      console.error('[AccountsV2] Error refreshing account:', error);
+    } catch (error) {
+      logger.error('[AccountsV2] Error refreshing account:', error);
       return {
         success: false,
-        error: error.message || 'Failed to refresh account',
+        error: error instanceof Error ? error.message : 'Failed to refresh account',
       };
     }
   }
@@ -169,7 +177,7 @@ class AccountsServiceV2 {
     try {
       const email = accountId.replace('google-', '');
       
-      console.log(`[AccountsV2] Removing account ${email}...`);
+      logger.info(`[AccountsV2] Removing account ${email}...`);
       
       await execAsync(`gog auth remove "${email}"`, {
         timeout: 10000,
@@ -180,11 +188,11 @@ class AccountsServiceV2 {
         success: true,
         message: `Account ${email} removed successfully`,
       };
-    } catch (error: any) {
-      console.error('[AccountsV2] Error removing account:', error);
+    } catch (error) {
+      logger.error('[AccountsV2] Error removing account:', error);
       return {
         success: false,
-        error: error.message || 'Failed to remove account',
+        error: error instanceof Error ? error.message : 'Failed to remove account',
       };
     }
   }
@@ -194,7 +202,7 @@ class AccountsServiceV2 {
    */
   async addAccount(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      console.log(`[AccountsV2] Adding account ${email}...`);
+      logger.info(`[AccountsV2] Adding account ${email}...`);
       
       await execAsync(`gog auth add "${email}"`, {
         timeout: 120000, // 2 minutes for OAuth flow
@@ -215,11 +223,11 @@ class AccountsServiceV2 {
           error: `Account added but showing status: ${authStatus}`,
         };
       }
-    } catch (error: any) {
-      console.error('[AccountsV2] Error adding account:', error);
+    } catch (error) {
+      logger.error('[AccountsV2] Error adding account:', error);
       return {
         success: false,
-        error: error.message || 'Failed to add account',
+        error: error instanceof Error ? error.message : 'Failed to add account',
       };
     }
   }
