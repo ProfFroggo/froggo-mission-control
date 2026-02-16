@@ -11,6 +11,40 @@ interface ErrorContext {
   userId?: string;
 }
 
+/** Utility type for unknown errors with common properties */
+interface AppError {
+  message?: string;
+  code?: string;
+  status?: number;
+  error?: string;
+  details?: string;
+  fields?: string;
+}
+
+/** Type guard to safely extract error properties */
+function toAppError(error: unknown): AppError {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+    };
+  }
+  if (typeof error === 'string') {
+    return { message: error };
+  }
+  if (typeof error === 'object' && error !== null) {
+    const err = error as Record<string, unknown>;
+    return {
+      message: typeof err.message === 'string' ? err.message : undefined,
+      code: typeof err.code === 'string' ? err.code : undefined,
+      status: typeof err.status === 'number' ? err.status : undefined,
+      error: typeof err.error === 'string' ? err.error : undefined,
+      details: typeof err.details === 'string' ? err.details : undefined,
+      fields: typeof err.fields === 'string' ? err.fields : undefined,
+    };
+  }
+  return {};
+}
+
 export interface ErrorInfo {
   title: string;
   message: string;
@@ -30,12 +64,13 @@ export interface RecoveryAction {
 /**
  * Get comprehensive error information with recovery suggestions
  */
-export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
+export function getErrorInfo(error: unknown, context?: ErrorContext): ErrorInfo {
+  const err = toAppError(error);
   const action = context?.action || 'perform this action';
   const resource = context?.resource || 'data';
 
   // Network errors
-  if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('ENOTFOUND')) {
+  if (err.message?.includes('fetch') || err.message?.includes('network') || err.message?.includes('ENOTFOUND')) {
     return {
       title: 'Connection Failed',
       message: `Unable to connect to the server. Please check your internet connection.`,
@@ -50,7 +85,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Timeout errors
-  if (error?.message?.includes('timeout') || error?.code === 'ETIMEDOUT') {
+  if (err.message?.includes('timeout') || err.code === 'ETIMEDOUT') {
     return {
       title: 'Request Timed Out',
       message: `This is taking longer than expected. The server might be busy.`,
@@ -65,7 +100,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Permission errors
-  if (error?.message?.includes('permission') || error?.code === 'EACCES' || error?.status === 403) {
+  if (err.message?.includes('permission') || err.code === 'EACCES' || err.status === 403) {
     return {
       title: 'Permission Denied',
       message: `You don't have permission to ${action}. Contact your administrator if you believe this is incorrect.`,
@@ -80,7 +115,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Not found errors
-  if (error?.message?.includes('not found') || error?.code === 'ENOENT' || error?.status === 404) {
+  if (err.message?.includes('not found') || err.code === 'ENOENT' || err.status === 404) {
     return {
       title: 'Not Found',
       message: `We couldn't find that ${resource}. It may have been moved or deleted.`,
@@ -95,7 +130,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Server errors (5xx)
-  if (error?.status >= 500 || error?.message?.includes('server error')) {
+  if ((err.status ?? 0) >= 500 || err.message?.includes('server error')) {
     return {
       title: 'Server Error',
       message: `Our servers are having trouble right now. Our team has been notified.`,
@@ -110,7 +145,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Authentication errors
-  if (error?.status === 401 || error?.message?.includes('unauthorized') || error?.message?.includes('authentication')) {
+  if (err.status === 401 || err.message?.includes('unauthorized') || err.message?.includes('authentication')) {
     return {
       title: 'Authentication Required',
       message: `Your session has expired. Please sign in again.`,
@@ -125,7 +160,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Rate limit errors
-  if (error?.status === 429 || error?.message?.includes('rate limit') || error?.message?.includes('too many requests')) {
+  if (err.status === 429 || err.message?.includes('rate limit') || err.message?.includes('too many requests')) {
     return {
       title: 'Too Many Requests',
       message: `You're sending requests too quickly. Please wait a moment before trying again.`,
@@ -139,8 +174,8 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Validation errors
-  if (error?.message?.includes('invalid') || error?.message?.includes('validation') || error?.status === 400) {
-    const validationDetails = error?.details || error?.fields || '';
+  if (err.message?.includes('invalid') || err.message?.includes('validation') || err.status === 400) {
+    const validationDetails = err.details || err.fields || '';
     return {
       title: 'Invalid Input',
       message: validationDetails 
@@ -156,7 +191,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Database errors
-  if (error?.message?.includes('database') || error?.message?.includes('sqlite') || error?.message?.includes('SQLITE')) {
+  if (err.message?.includes('database') || err.message?.includes('sqlite') || err.message?.includes('SQLITE')) {
     return {
       title: 'Database Error',
       message: `We're having trouble saving your changes. Your data is safe, but please try again.`,
@@ -171,7 +206,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // IPC/Electron errors
-  if (error?.message?.includes('IPC') || error?.message?.includes('ipcRenderer') || error?.message?.includes('main process')) {
+  if (err.message?.includes('IPC') || err.message?.includes('ipcRenderer') || err.message?.includes('main process')) {
     return {
       title: 'Communication Error',
       message: `Unable to communicate with the application. Try restarting Froggo.`,
@@ -186,7 +221,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Conflict errors (409)
-  if (error?.status === 409 || error?.message?.includes('conflict')) {
+  if (err.status === 409 || err.message?.includes('conflict')) {
     return {
       title: 'Conflict Detected',
       message: `This ${resource} has been modified by someone else. Please refresh and try again.`,
@@ -201,7 +236,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Agent spawn errors
-  if (error?.message?.includes('spawn') || error?.message?.includes('agent')) {
+  if (err.message?.includes('spawn') || err.message?.includes('agent')) {
     return {
       title: 'Agent Error',
       message: `Unable to start the agent. ${context?.technical || 'Please try again.'}`,
@@ -216,7 +251,7 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
   }
 
   // Parse the actual error message if it's user-friendly
-  const errorMsg = error?.message || error?.error || '';
+  const errorMsg = err.message || err.error || '';
   if (errorMsg && errorMsg.length < 100 && !errorMsg.includes('Error:') && !errorMsg.includes('at ')) {
     return {
       title: 'Error',
@@ -248,27 +283,27 @@ export function getErrorInfo(error: any, context?: ErrorContext): ErrorInfo {
 /**
  * Legacy compatibility - get just the message
  */
-export function getUserFriendlyError(error: any, context?: ErrorContext): string {
+export function getUserFriendlyError(error: unknown, context?: ErrorContext): string {
   return getErrorInfo(error, context).message;
 }
 
 /**
  * Get a short, friendly error title
  */
-export function getErrorTitle(error: any): string {
+export function getErrorTitle(error: unknown): string {
   return getErrorInfo(error).title;
 }
 
 /**
  * Determine if an error is recoverable (user should retry)
  */
-export function isRecoverableError(error: any): boolean {
+export function isRecoverableError(error: unknown): boolean {
   return getErrorInfo(error).recoverable;
 }
 
 /**
  * Get recovery suggestions for an error
  */
-export function getRecoveryActions(error: any, context?: ErrorContext): RecoveryAction[] {
+export function getRecoveryActions(error: unknown, context?: ErrorContext): RecoveryAction[] {
   return getErrorInfo(error, context).recovery || [];
 }

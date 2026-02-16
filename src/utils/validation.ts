@@ -5,7 +5,7 @@
 
 export interface ValidationRule {
   type: 'required' | 'minLength' | 'maxLength' | 'pattern' | 'email' | 'url' | 'custom';
-  value?: any;
+  value?: number | string;
   message: string;
   validator?: (value: string) => boolean;
 }

@@ -25,14 +25,21 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/** Error shape for retry decisions */
+interface RetryError {
+  status?: number;
+  name?: string;
+  message?: string;
+}
+
 /**
  * Check if error should be retried
  */
-function shouldRetry(error: any, attempt: number, maxRetries: number, skipRetryOn: number[]): boolean {
+function shouldRetry(error: RetryError, attempt: number, maxRetries: number, skipRetryOn: number[]): boolean {
   if (attempt >= maxRetries) return false;
 
   // Don't retry on client errors (4xx) except 408 (timeout) and 429 (rate limit)
-  if (error?.status) {
+  if (error.status) {
     const status = error.status;
     if (skipRetryOn.includes(status)) return false;
     if (status >= 400 && status < 500 && status !== 408 && status !== 429) return false;
@@ -44,7 +51,7 @@ function shouldRetry(error: any, attempt: number, maxRetries: number, skipRetryO
 /**
  * Make API request with retry logic
  */
-export async function apiCall<T = any>(
+export async function apiCall<T = unknown>(
   url: string,
   options: ApiOptions = {}
 ): Promise<ApiResponse<T>> {
@@ -56,7 +63,7 @@ export async function apiCall<T = any>(
     ...fetchOptions
   } = options;
 
-  let lastError: any = null;
+  let lastError: RetryError | null = null;
 
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -107,12 +114,13 @@ export async function apiCall<T = any>(
           };
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       // Network or abort error
-      if (error.name === 'AbortError') {
-        lastError = new Error('Request timeout');
+      const err = error instanceof Error ? error : new Error(String(error));
+      if (err.name === 'AbortError') {
+        lastError = { name: 'AbortError', message: 'Request timeout' };
       } else {
-        lastError = error;
+        lastError = err;
       }
 
       // Check if should retry
@@ -153,10 +161,10 @@ export async function apiCall<T = any>(
  * Convenience methods
  */
 export const api = {
-  get: <T = any>(url: string, options?: ApiOptions) =>
+  get: <T = unknown>(url: string, options?: ApiOptions) =>
     apiCall<T>(url, { ...options, method: 'GET' }),
 
-  post: <T = any>(url: string, body?: any, options?: ApiOptions) =>
+  post: <T = unknown>(url: string, body?: Record<string, unknown> | unknown[], options?: ApiOptions) =>
     apiCall<T>(url, {
       ...options,
       method: 'POST',
@@ -164,7 +172,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  put: <T = any>(url: string, body?: any, options?: ApiOptions) =>
+  put: <T = unknown>(url: string, body?: Record<string, unknown> | unknown[], options?: ApiOptions) =>
     apiCall<T>(url, {
       ...options,
       method: 'PUT',
@@ -172,10 +180,10 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  delete: <T = any>(url: string, options?: ApiOptions) =>
+  delete: <T = unknown>(url: string, options?: ApiOptions) =>
     apiCall<T>(url, { ...options, method: 'DELETE' }),
 
-  patch: <T = any>(url: string, body?: any, options?: ApiOptions) =>
+  patch: <T = unknown>(url: string, body?: Record<string, unknown> | unknown[], options?: ApiOptions) =>
     apiCall<T>(url, {
       ...options,
       method: 'PATCH',
