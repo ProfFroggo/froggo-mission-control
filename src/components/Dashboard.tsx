@@ -335,29 +335,29 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                       <div className="flex items-center gap-3 flex-wrap">
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
                           connected 
-                            ? 'bg-green-500/20 text-success border border-success-border' 
-                            : 'bg-red-500/20 text-error border border-error-border'
+                            ? 'bg-success-subtle text-success border border-success-border' 
+                            : 'bg-error-subtle text-error border border-error-border'
                         }`}>
                           {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
                           {connected ? 'All Systems Online' : 'Connecting...'}
                         </div>
 
                         {urgentCount > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/20 text-warning border border-orange-500/30 backdrop-blur-sm animate-pulse">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-warning-subtle text-warning border border-warning-border backdrop-blur-sm animate-pulse">
                             <AlertTriangle size={12} />
                             {urgentCount} urgent {urgentCount === 1 ? 'item' : 'items'}
                           </div>
                         )}
 
                         {activeSubagents.length > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-info border border-info-border backdrop-blur-sm">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-info-subtle text-info border border-info-border backdrop-blur-sm">
                             <Bot size={12} />
                             {activeSubagents.length} agent{activeSubagents.length > 1 ? 's' : ''} working
                           </div>
                         )}
 
                         {completedToday > 0 && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 text-success border border-success-border backdrop-blur-sm">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-success-subtle text-success border border-success-border backdrop-blur-sm">
                             <CheckCircle size={12} />
                             {completedToday} completed today
                           </div>

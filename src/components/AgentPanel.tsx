@@ -114,13 +114,13 @@ export default function AgentPanel() {
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
   const statusConfig: Record<Agent['status'], { color: string; label: string; pulse?: boolean; hideDot?: boolean }> = {
-    active:     { color: 'bg-green-400',  label: 'Active', pulse: true },
-    busy:       { color: 'bg-green-400',  label: 'Working…', pulse: true },
-    idle:       { color: 'bg-yellow-400', label: 'Idle' },
+    active:     { color: 'bg-success',  label: 'Active', pulse: true },
+    busy:       { color: 'bg-success',  label: 'Working…', pulse: true },
+    idle:       { color: 'bg-warning', label: 'Idle' },
     offline:    { color: 'bg-clawd-bg0',   label: 'Offline', hideDot: true },
-    suspended:  { color: 'bg-red-500',    label: 'Suspended', hideDot: true },
+    suspended:  { color: 'bg-error',    label: 'Suspended', hideDot: true },
     archived:   { color: 'bg-clawd-bg0',   label: 'Archived', hideDot: true },
-    draft:      { color: 'bg-yellow-500', label: 'Draft', hideDot: true },
+    draft:      { color: 'bg-warning', label: 'Draft', hideDot: true },
   };
 
   const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
