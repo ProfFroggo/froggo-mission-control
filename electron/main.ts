@@ -447,9 +447,6 @@ function createWindow() {
   mainWindow.webContents.on('render-process-gone', (event, details) => {
     safeLog.log('[Main] RENDERER CRASHED:', details.reason, details.exitCode);
   });
-  mainWindow.webContents.on('crashed', () => {
-    safeLog.log('[Main] RENDERER CRASHED (legacy event)');
-  });
 
   // SAFEGUARD: Send cleanup signal before window closes
   mainWindow.on('close', (e) => {
