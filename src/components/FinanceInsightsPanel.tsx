@@ -30,7 +30,7 @@ export default function FinanceInsightsPanel() {
       setLoading(true);
       setError(null);
       
-      const result = await (window as any).clawdbot?.invoke('finance:getInsights');
+      const result = await (window as any).clawdbot?.finance?.getInsights();
       
       if (result?.success) {
         setInsights(result.insights || []);
