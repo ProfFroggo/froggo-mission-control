@@ -1,10 +1,9 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, protocol, desktopCapturer, shell, dialog, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer, shell, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec, execSync, execFile, spawn, fork } from 'child_process';
-import { promisify } from 'util';
+import { exec, execSync, execFile } from 'child_process';
 import * as os from 'os';
-import * as crypto from 'crypto';
+// crypto imported but unused - removed during bug-hunt cleanup
 import * as http from 'http';
 import { calendarService } from './calendar-service';
 import { accountsService } from './accounts-service';
@@ -116,7 +115,7 @@ ipcMain.handle('gateway:getToken', async () => {
         const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
         if (token) return token;
       }
-    } catch { /* ignore missing config */ }
+    } catch { /* ignore */ }
   }
   return '';
 });
@@ -265,7 +264,7 @@ function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
-    fs.appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
+    require('fs').appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
   } catch (e) { /* ignore */ }
 }
 
@@ -273,7 +272,7 @@ const safeLog = {
   log: (...args: any[]) => {
     try {
       if (process.stdout.writable) {
-        console.debug(...args);
+        console.log(...args);
       }
     } catch (e: any) {
       // Silently ignore EPIPE and other stream errors
@@ -311,8 +310,8 @@ process.on('uncaughtException', (error: any) => {
     if (process.stderr.writable) {
       safeLog.error('[UNCAUGHT EXCEPTION]', error);
     }
-  } catch { /* ignore stream errors */ }
-
+  } catch { /* ignore */ }
+  
   // Don't exit for EPIPE-like errors, but consider exiting for severe errors
   // For now, keep running to avoid data loss
 });
@@ -771,7 +770,7 @@ app.whenReady().then(() => {
 
   // Check for updates (prod only, non-blocking)
   if (!isDev && !app.getName().includes('Dev')) {
-    checkForUpdates().catch((err) => { console.error('[UpdateCheck] Failed:', err); });
+    checkForUpdates().catch(() => {});
   }
 });
 
@@ -803,7 +802,7 @@ async function checkForUpdates(): Promise<void> {
               shell.openExternal(release.html_url || `https://github.com/ProfFroggo/froggo_bot/releases/tag/v${remoteVersion}`);
             }
           }
-        } catch { /* ignore dialog errors */ }
+        } catch { /* ignore */ }
         resolve();
       });
     });
@@ -974,7 +973,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
         
         // Cleanup temp audio file
         try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
-
+        
         if (error) {
           safeLog.error('Whisper error:', error.message);
           resolve({ error: error.message, stdout, stderr });
@@ -1017,7 +1016,7 @@ try {
     const match = content.match(/ELEVENLABS_API_KEY=(.+)/);
     if (match) elevenlabsApiKey = match[1].trim();
   }
-} catch { /* ignore env read errors */ }
+} catch { /* ignore */ }
 
 ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
   const outputPath = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
@@ -1691,7 +1690,7 @@ ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) =>
                 resolve(taskData.assigned_to);
                 return;
               }
-            } catch { /* ignore parse errors */ }
+            } catch { /* ignore */ }
           }
           resolve('froggo'); // Default to froggo
         }
@@ -3273,6 +3272,7 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
 ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
     // Pass criteria via stdin using execSync input option to avoid shell injection
+    const { execSync } = require('child_process');
     try {
       const result = execSync(
         `${path.join(SCRIPTS_DIR, 'inbox-filter.sh')} filter`,
@@ -3452,6 +3452,7 @@ ipcMain.handle('screenshot:capture', async (_, outputPath: string) => {
     if (mainWindow) {
       mainWindow.webContents.capturePage().then((image) => {
         const pngBuffer = image.toPNG();
+        const fs = require('fs');
         fs.writeFileSync(outputPath, pngBuffer);
         resolve({ success: true, path: outputPath, size: pngBuffer.length });
       }).catch((err) => {
@@ -3582,7 +3583,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'remove', jobId: id })
-    }).catch((err) => { console.error('[CronRemove] Failed:', err); });
+    }).catch(() => {});
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -3971,6 +3972,8 @@ ipcMain.handle('library:list', async (_, category?: string) => {
 });
 
 ipcMain.handle('library:upload', async () => {
+  const { dialog } = require('electron');
+  
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
@@ -4058,7 +4061,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
     let linkedTasks: string[] = [];
     try {
       if (row && row.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks);
-    } catch { /* ignore parse errors */ }
+    } catch { /* ignore */ }
 
     if (!linkedTasks.includes(taskId)) {
       linkedTasks.push(taskId);
@@ -4249,7 +4252,7 @@ try {
   if (!anthropicApiKey && fs.existsSync(keyPath)) {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch { /* ignore key read errors */ }
+} catch { /* ignore */ }
 // Fallback: read from openclaw.json config
 if (!anthropicApiKey) {
   try {
@@ -4290,7 +4293,7 @@ try {
   if (!openaiApiKey && fs.existsSync(keyPath)) {
     openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch { /* ignore key read errors */ }
+} catch { /* ignore */ }
 
 // Expose OpenAI API key to renderer (for Whisper transcription)
 ipcMain.handle('get-openai-key', async () => {
@@ -4494,13 +4497,13 @@ ipcMain.handle('ai:generateReply', async (_, context: {
     try {
       const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
       scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
-    } catch { /* ignore query errors */ }
+    } catch { /* ignore */ }
   }
   if (!taskCtx) {
     try {
       const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
       taskCtx = tasks.map((t: any) => t.title).join('; ');
-    } catch { /* ignore query errors */ }
+    } catch { /* ignore */ }
   }
 
   let contextBlock = '';
@@ -4572,8 +4575,8 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
 
     let tasks: any[] = [];
     let events: any[] = [];
-    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch { /* ignore parse errors */ }
-    try { events = row.events ? JSON.parse(row.events) : []; } catch { /* ignore parse errors */ }
+    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch { /* ignore */ }
+    try { events = row.events ? JSON.parse(row.events) : []; } catch { /* ignore */ }
 
     return {
       success: true,
@@ -4685,7 +4688,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
             meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : m.metadata;
             // Handle double-encoded JSON
             if (typeof meta === 'string') meta = JSON.parse(meta);
-          } catch (err) { console.error('[MetadataParse] Failed:', err); meta = {}; }
+          } catch { meta = {}; }
         }
         return {
         id: m.external_id,
@@ -4959,7 +4962,7 @@ async function refreshCommsBackground() {
           .map((a: any) => a.email);
         if (gmailAccts.length > 0) emailAccounts = gmailAccts;
       }
-    } catch { /* ignore gog errors */ }
+    } catch { /* ignore */ }
     for (const acct of emailAccounts) {
       try {
         const lastTs = await getFetchState('email', acct);
@@ -5381,7 +5384,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
       const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
       const gogData = JSON.parse(gogList);
       tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
-    } catch { /* ignore gog errors */ }
+    } catch { /* ignore */ }
   }
 
   for (const acct of tryAccounts) {
@@ -5496,7 +5499,7 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   const combined = `${subjectLower} ${snippet.toLowerCase()}`;
   
   // Extract amounts (e.g., $1,500 or €500 or £1000)
-  const amountMatch = combined.match(/[$€£]\s?[\d,]+(?:\.\d{2})?/);
+  const amountMatch = combined.match(/[\$€£]\s?[\d,]+(?:\.\d{2})?/);
   const amount = amountMatch ? amountMatch[0] : undefined;
   
   // Priority: Urgent
@@ -5570,7 +5573,7 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   
   // Priority: Medium - Large amounts (>$500)
   if (amount) {
-    const numericAmount = parseFloat(amount.replace(/[$€£,]/g, ''));
+    const numericAmount = parseFloat(amount.replace(/[\$€£,]/g, ''));
     if (numericAmount >= 500) {
       return { id, from, subject, reason: `Contains amount: ${amount}`, priority: 'high', amount };
     }
@@ -6172,6 +6175,8 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 
 // Shell execution for Code Agent Dashboard, Context Control Board
 ipcMain.handle('exec:run', async (_, command: string) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
   const execAsync = promisify(exec);
 
   // Use the clawd workspace as default cwd for git commands
@@ -7576,8 +7581,10 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
   }
 });
 // ============== FINANCE MODULE ==============
-const execPromise = (cmd: string, opts?: { timeout?: number }): Promise<{ stdout: string; stderr: string }> => {
-  return promisify(exec)(cmd, opts) as Promise<{ stdout: string; stderr: string }>;
+const execPromise = (cmd: string, opts?: { timeout?: number }) => {
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  return promisify(exec)(cmd, opts);
 };
 
 ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
@@ -8714,14 +8721,16 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     // Get current screen where main window is
     const currentDisplay = mainWindow 
-      ? screen.getDisplayNearestPoint(mainWindow.getBounds())
-      : screen.getPrimaryDisplay();
+      ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
+      : require('electron').screen.getPrimaryDisplay();
     
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
     
     // Use provided position, or saved position, or default
-    const windowWidth = data?.width || savedBounds?.width || 80;
-    const windowHeight = data?.height || savedBounds?.height || 400;
+    // Default dimensions for horizontal pill toolbar (was 80x400 for vertical sidebar)
+    // Expanded: ~600x80, Collapsed: ~250x80
+    const windowWidth = data?.width || savedBounds?.width || 650;
+    const windowHeight = data?.height || savedBounds?.height || 100;
     const windowX = data?.x !== undefined ? data.x : (savedBounds?.x !== undefined ? savedBounds.x : screenWidth - windowWidth - 20);
     const windowY = data?.y !== undefined ? data.y : (savedBounds?.y !== undefined ? savedBounds.y : Math.floor((screenHeight - windowHeight) / 2));
     

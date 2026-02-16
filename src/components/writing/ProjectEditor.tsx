@@ -14,7 +14,7 @@ const COLLAPSE_KEY = 'writing-collapsed';
 const DEFAULT_LAYOUT: Layout = { chapters: 15, chat: 30, editor: 55 };
 
 // Clean up old key on load
-try { localStorage.removeItem('writing-layout'); } catch { /* ignore storage errors */ }
+try { localStorage.removeItem('writing-layout'); } catch { /* ignore */ }
 
 function getPersistedLayout(): Layout | undefined {
   try {
@@ -130,7 +130,6 @@ export default function ProjectEditor() {
       orientation="horizontal"
       defaultLayout={defaultLayout}
       onLayoutChanged={handleLayoutChanged}
-      className="h-full"
     >
       {/* Left panel: Chapter sidebar */}
       <Panel
@@ -141,7 +140,7 @@ export default function ProjectEditor() {
         collapsedSize={0}
         panelRef={chaptersPanelRef}
         onResize={handleChaptersResize}
-        className="!h-full"
+        className="h-full"
       >
         <div className="h-full overflow-hidden [&>div]:!w-full">
           <ChapterSidebar />
@@ -159,7 +158,7 @@ export default function ProjectEditor() {
         collapsedSize={0}
         panelRef={chatPanelRef}
         onResize={handleChatResize}
-        className="!h-full"
+        className="h-full"
       >
         <ChatPane />
       </Panel>
@@ -170,7 +169,7 @@ export default function ProjectEditor() {
       <Panel
         id="editor"
         minSize={30}
-        className="!h-full"
+        className="h-full"
       >
         <div className="relative h-full">
           {/* Collapse toggle buttons */}

@@ -124,13 +124,13 @@ export default function XAutomationsTab() {
       );
       
       if (result?.success) {
-        showToast('success', 'Automation test triggered! Check logs for results.');
+        showToast('success', 'Test Triggered', 'Automation test triggered! Check logs for results.');
       } else {
-        showToast('error', `Test failed: ${result?.error || 'Unknown error'}`);
+        showToast('error', 'Test Failed', result?.error || 'Unknown error');
       }
     } catch (error) {
       console.error('Failed to test automation:', error);
-      showToast('error', 'Test failed: ' + error);
+      showToast('error', 'Test Failed', String(error));
     }
   };
 
@@ -164,7 +164,7 @@ export default function XAutomationsTab() {
 
   const saveAutomation = async () => {
     if (!builderName || !builderTriggerType || builderActions.length === 0) {
-      showToast('warning', 'Please fill in all required fields');
+      showToast('warning', 'Missing Fields', 'Please fill in all required fields');
       return;
     }
 
@@ -192,9 +192,10 @@ export default function XAutomationsTab() {
       await (window as any).clawdbot?.db?.execute(query, params);
       await loadAutomations();
       closeBuilder();
+      showToast('success', 'Automation Saved', editingAutomation ? 'Changes saved successfully' : 'New automation created');
     } catch (error) {
       console.error('Failed to save automation:', error);
-      showToast('error', 'Failed to save automation: ' + error);
+      showToast('error', 'Save Failed', 'Failed to save automation: ' + error);
     }
   };
 
@@ -375,9 +376,9 @@ export default function XAutomationsTab() {
             <div className="space-y-3">
               {builderActions.map((action, index) => {
                 const Icon = getActionIcon(action.type);
-
+                
                 return (
-                  <div key={`${action.type}-${index}`} className="bg-clawd-bg rounded-lg border border-clawd-border p-4 space-y-3">
+                  <div key={index} className="bg-clawd-bg rounded-lg border border-clawd-border p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 font-medium">
                         <Icon size={16} />
@@ -532,7 +533,7 @@ export default function XAutomationsTab() {
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         automation.enabled
                           ? 'bg-success-subtle text-success'
-                          : 'bg-clawd-bg/20 text-clawd-text-dim'
+                          : 'bg-clawd-bg0/20 text-clawd-text-dim'
                       }`}>
                         {automation.enabled ? 'Active' : 'Disabled'}
                       </span>
@@ -547,7 +548,7 @@ export default function XAutomationsTab() {
                       onClick={() => toggleAutomation(automation.id, automation.enabled)}
                       className={`p-2 rounded-lg transition-colors ${
                         automation.enabled
-                          ? 'bg-success-subtle text-success hover:bg-success/30'
+                          ? 'bg-success-subtle text-success hover:bg-green-500/30'
                           : 'bg-clawd-bg0/20 text-clawd-text-dim hover:bg-clawd-bg0/30'
                       }`}
                       title={automation.enabled ? 'Disable' : 'Enable'}
@@ -590,7 +591,7 @@ export default function XAutomationsTab() {
                     {automation.actions.map((action: any, index: number) => {
                       const ActionIcon = getActionIcon(action.type);
                       return (
-                        <div key={`${action.type}-${index}`} className="flex items-center gap-1 px-3 py-1.5 bg-clawd-bg rounded-lg">
+                        <div key={index} className="flex items-center gap-1 px-3 py-1.5 bg-clawd-bg rounded-lg">
                           <ActionIcon size={14} />
                           <span>{ACTION_OPTIONS.find(o => o.type === action.type)?.label}</span>
                         </div>

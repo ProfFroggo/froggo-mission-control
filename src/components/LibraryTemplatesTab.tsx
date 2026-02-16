@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -86,6 +87,7 @@ export default function LibraryTemplatesTab() {
   const [editName, setEditName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newTemplate, setNewTemplate] = useState({ name: '', content: '', type: 'generic' as Template['type'] });
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   const filteredTemplates = templates.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,9 +127,15 @@ export default function LibraryTemplatesTab() {
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm('Delete this template?')) return;
-    setTemplates(prev => prev.filter(t => t.id !== id));
-    showToast('info', 'Template deleted');
+    showConfirm({
+      title: 'Delete Template',
+      message: 'Are you sure you want to delete this template?',
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, () => {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+      showToast('info', 'Template deleted');
+    });
   };
 
   const handleCreate = () => {
@@ -383,6 +391,17 @@ export default function LibraryTemplatesTab() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

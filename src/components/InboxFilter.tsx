@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply } from 'lucide-react';
 import { showToast } from './Toast';
-import { safeStorage } from '../utils/safeStorage';
 
 export interface FilterCriteria {
   search?: string;
@@ -68,7 +67,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
   // Load saved filters from localStorage
   useEffect(() => {
-    const saved = safeStorage.getItem('inbox-saved-filters');
+    const saved = localStorage.getItem('inbox-saved-filters');
     if (saved) {
       try {
         setSavedFilters(JSON.parse(saved));
@@ -192,9 +191,9 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
     const updated = [...savedFilters, newFilter];
     setSavedFilters(updated);
-    safeStorage.setItem('inbox-saved-filters', JSON.stringify(updated));
+    localStorage.setItem('inbox-saved-filters', JSON.stringify(updated));
     setFilterName('');
-    showToast('success', `Filter "${newFilter.name}" saved!`);
+    showToast('success', 'Filter Saved', `"${newFilter.name}" has been saved`);
   };
 
   const applySavedFilter = (filter: SavedFilter) => {
@@ -210,7 +209,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const deleteSavedFilter = (id: string) => {
     const updated = savedFilters.filter(f => f.id !== id);
     setSavedFilters(updated);
-    safeStorage.setItem('inbox-saved-filters', JSON.stringify(updated));
+    localStorage.setItem('inbox-saved-filters', JSON.stringify(updated));
   };
 
   const hasActiveFilters = searchInput || quickFilterInput || platforms.length > 0 || Object.keys(flags).length > 0;
@@ -250,7 +249,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                 <div className="font-semibold mb-1">Quick Filter Syntax:</div>
                 <div className="space-y-0.5 text-clawd-text-dim">
                   {QUICK_FILTER_EXAMPLES.map(ex => (
-                    <div key={ex} className="hover:text-clawd-text cursor-pointer" onClick={() => setQuickFilterInput(ex)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setQuickFilterInput(ex)}>
+                    <div key={ex} className="hover:text-clawd-text cursor-pointer" onClick={() => setQuickFilterInput(ex)}>
                       {ex}
                     </div>
                   ))}

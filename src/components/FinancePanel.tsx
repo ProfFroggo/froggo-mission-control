@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell, MessageSquare } from 'lucide-react';
+import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet } from 'lucide-react';
+import EmptyState from './EmptyState';
+import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
 import FinanceAgentChat from './FinanceAgentChat';
 import FinanceInsightsPanel from './FinanceInsightsPanel';
@@ -190,12 +192,11 @@ export default function FinancePanel() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center bg-clawd-bg text-clawd-text">
-        <div className="text-center">
-          <DollarSign size={48} className="mx-auto mb-4 text-clawd-text/50 animate-pulse" />
-          <p className="text-lg">Loading finance data...</p>
-        </div>
-      </div>
+      <WidgetLoading 
+        variant="spinner" 
+        title="Loading finance data..."
+        icon={DollarSign}
+      />
     );
   }
 
@@ -461,11 +462,16 @@ export default function FinancePanel() {
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center text-clawd-text/60">
-                <Upload size={48} className="mx-auto mb-4 text-clawd-text/30" />
-                <p className="mb-2">No transactions yet</p>
-                <p className="text-sm">Upload a bank statement to get started</p>
-              </div>
+              <EmptyState
+                icon={Wallet}
+                title="No transactions yet"
+                description="Upload a bank statement to get started tracking your finances."
+                action={{
+                  label: "Upload Statement",
+                  onClick: () => setUploadModalOpen(true),
+                  variant: "primary"
+                }}
+              />
             )}
           </div>
         </div>

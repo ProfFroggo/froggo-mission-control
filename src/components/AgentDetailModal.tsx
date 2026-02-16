@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { useStore } from '../store/store';
 
@@ -53,20 +53,10 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
   const [details, setDetails] = useState<AgentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const agent = agents.find(a => a.id === agentId);
-  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleClose = () => {
     setIsClosing(true);
-    closeTimeoutRef.current = setTimeout(() => {
+    setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 200);
@@ -82,8 +72,8 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
       if (ipc?.getDetails) {
         ipcDetails = await ipc.getDetails(agentId);
       }
-    } catch (e: any) {
-      console.error('[AgentDetail] IPC getDetails failed:', e?.message || e);
+    } catch (e) {
+      // IPC failed, will fall back to store data
     }
 
     // Get tasks from store as fallback/supplement
@@ -234,13 +224,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
         <div className="p-6 border-b border-clawd-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-clawd-bg">
-              {(() => { const themes: Record<string, string> = { main: 'froggo.png', froggo: 'froggo.png', coder: 'coder.png', researcher: 'researcher.png', writer: 'writer.png', chief: 'chief.png', hr: 'hr.png', ox: 'ox.png' }; const pic = themes[agent.id.toLowerCase()]; return pic ? <img src={`./agent-profiles/${pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      if (target.nextElementSibling) {
-                        (target.nextElementSibling as HTMLElement).classList.remove('hidden');
-                      }
-                    }} /> : null; })()}
+              {(() => { const themes: Record<string, string> = { main: 'froggo.png', froggo: 'froggo.png', coder: 'coder.png', researcher: 'researcher.png', writer: 'writer.png', chief: 'chief.png', hr: 'hr.png', ox: 'ox.png' }; const pic = themes[agent.id.toLowerCase()]; return pic ? <img src={`./agent-profiles/${pic}`} alt={agent.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling && ((e.target as HTMLImageElement).nextElementSibling as HTMLElement).classList.remove('hidden'); }} /> : null; })()}
               <span className={`${['main','froggo','coder','researcher','writer','chief','hr','ox'].includes(agent.id.toLowerCase()) ? 'hidden' : ''} absolute inset-0 flex items-center justify-center text-4xl`}>{agent.avatar}</span>
             </div>
             <div>
@@ -568,7 +552,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
             <div className="text-center py-12 text-clawd-text-dim">
               <XCircle size={32} className="mx-auto mb-2 opacity-50" />
               <p>Failed to load agent details</p>
-              <button type="button" onClick={buildDetailsFromRealData} className="mt-2 text-clawd-accent hover:underline text-sm">
+              <button onClick={buildDetailsFromRealData} className="mt-2 text-clawd-accent hover:underline text-sm">
                 Retry
               </button>
             </div>

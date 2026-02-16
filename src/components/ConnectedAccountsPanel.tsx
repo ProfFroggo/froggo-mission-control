@@ -5,6 +5,7 @@ import {
   Key, Clock, Shield, Database, Link as LinkIcon, HelpCircle
 } from 'lucide-react';
 import { showToast } from './Toast';
+import { useConfirmDialog } from './ConfirmDialog';
 
 // Lazy load ChannelsTab to avoid import-time errors breaking the whole panel
 const ChannelsTab = lazy(() => import('./ChannelsTab').catch(() => ({
@@ -109,6 +110,7 @@ export default function ConnectedAccountsPanel() {
   const [selectedType, setSelectedType] = useState<string>('');
   const [importingGoogle, setImportingGoogle] = useState(false);
   const [panelTab, setPanelTab] = useState<'accounts' | 'channels'>('accounts');
+  const { showConfirm } = useConfirmDialog();
 
   useEffect(() => {
     loadAccounts();
@@ -183,24 +185,27 @@ export default function ConnectedAccountsPanel() {
     const account = accounts.find(a => a.id === accountId);
     if (!account) return;
 
-    if (!confirm(`Remove account ${account.email}?\n\nThis will revoke access and delete stored credentials.`)) {
-      return;
-    }
-
-    try {
-      const result = await (window as any).clawdbot?.accounts?.remove(accountId);
-      if (result?.success) {
-        showToast('success', 'Account removed', `${account.email} has been removed`);
-        loadAccounts();
-        if (selectedAccount?.id === accountId) {
-          setShowDetailModal(false);
+    showConfirm({
+      title: 'Remove Account',
+      message: `Remove account ${account.email}?\n\nThis will revoke access and delete stored credentials.`,
+      confirmLabel: 'Remove',
+      type: 'danger',
+    }, async () => {
+      try {
+        const result = await (window as any).clawdbot?.accounts?.remove(accountId);
+        if (result?.success) {
+          showToast('success', 'Account removed', `${account.email} has been removed`);
+          loadAccounts();
+          if (selectedAccount?.id === accountId) {
+            setShowDetailModal(false);
+          }
+        } else {
+          showToast('error', 'Failed to remove', result?.error || 'Unknown error');
         }
-      } else {
-        showToast('error', 'Failed to remove', result?.error || 'Unknown error');
+      } catch (err: any) {
+        showToast('error', 'Failed to remove', err.message);
       }
-    } catch (err: any) {
-      showToast('error', 'Failed to remove', err.message);
-    }
+    });
   };
 
   const handleImportGoogle = async () => {

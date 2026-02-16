@@ -1,34 +1,18 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { 
   Activity, CheckCircle, Bot, MessageSquare, Wifi, WifiOff, 
-  ArrowRight, Calendar, Mail, RefreshCw, Bell, ChevronDown, 
+  ArrowRight, Calendar, RefreshCw, Bell, ChevronDown, 
   Inbox, ListTodo, AlertTriangle, Sparkles, 
   TrendingUp, Clock, Zap, Users, Edit3, Plus, RotateCcw,
-  X, Minus, Maximize2, GripVertical, Shield
+  X, Minus, Maximize2, Shield, type LucideIcon
 } from 'lucide-react';
-import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
-
-// Custom layout interface matching react-grid-layout's expected format
-interface GridLayout {
-  i: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  static?: boolean;
-}
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { ResponsiveGridLayout } from 'react-grid-layout';
+import type { Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { Spinner, TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
+import { TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
 import AgentAvatar from './AgentAvatar';
-
-// X logo component  
-const XIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
 import TodayCalendarWidget from './TodayCalendarWidget';
 import QuickStatsWidget from './QuickStatsWidget';
 import WeatherWidget from './WeatherWidget';
@@ -41,14 +25,14 @@ import { useStore } from '../store/store';
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
 
 interface DashboardProps {
-  onNavigate?: (view: any) => void;
+  onNavigate?: (view: View) => void;
   onShowBrief?: () => void;
 }
 
 interface WidgetConfig {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   removable: boolean;
 }
 
@@ -69,7 +53,7 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
 ];
 
-const DEFAULT_LAYOUT: GridLayout[] = [
+const DEFAULT_LAYOUT: Layout[] = [
   { i: 'hero', x: 0, y: 0, w: 12, h: 5, static: true },
   { i: 'approvals', x: 0, y: 5, w: 2, h: 4 },
   { i: 'inbox', x: 2, y: 5, w: 2, h: 4 },
@@ -89,7 +73,7 @@ const DEFAULT_LAYOUT: GridLayout[] = [
 interface DashboardWidgetProps {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   children: React.ReactNode;
   onRemove?: () => void;
   editMode: boolean;
@@ -169,41 +153,21 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   
   const [greeting, setGreeting] = useState('');
   const [showActivityStream, setShowActivityStream] = useState(false);
+  const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   
   // Widget customization state
   const [editMode, setEditMode] = useState(false);
-  const [layout, setLayout] = useState<GridLayout[]>(() => {
+  const [layout, setLayout] = useState<Layout[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-layout');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.debug('Failed to parse dashboard-widget-layout:', e);
-      }
-    }
-    return DEFAULT_LAYOUT;
+    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
   });
   const [hiddenWidgets, setHiddenWidgets] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('dashboard-hidden-widgets');
-    if (saved) {
-      try {
-        return new Set(JSON.parse(saved));
-      } catch (e) {
-        console.debug('Failed to parse dashboard-hidden-widgets:', e);
-      }
-    }
-    return new Set();
+    return saved ? new Set(JSON.parse(saved)) : new Set();
   });
   const [minimizedWidgets, setMinimizedWidgets] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('dashboard-minimized-widgets');
-    if (saved) {
-      try {
-        return new Set(JSON.parse(saved));
-      } catch (e) {
-        console.debug('Failed to parse dashboard-minimized-widgets:', e);
-      }
-    }
-    return new Set();
+    return saved ? new Set(JSON.parse(saved)) : new Set();
   });
   const [showAddWidget, setShowAddWidget] = useState(false);
 
@@ -263,7 +227,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     }
   }, [connected, loadGatewaySessions]);
 
-  const handleLayoutChange = (newLayout: GridLayout[]) => {
+  const handleLayoutChange = (newLayout: Layout[]) => {
     setLayout(newLayout);
     localStorage.setItem('dashboard-widget-layout', JSON.stringify(newLayout));
   };
@@ -284,14 +248,19 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   };
 
   const handleResetLayout = () => {
-    if (confirm('Reset dashboard to default layout?')) {
+    showConfirm({
+      title: 'Reset Dashboard',
+      message: 'Reset dashboard to default layout? This will restore all widgets to their original positions.',
+      confirmLabel: 'Reset',
+      type: 'warning',
+    }, () => {
       setLayout(DEFAULT_LAYOUT);
       setHiddenWidgets(new Set());
       setMinimizedWidgets(new Set());
       localStorage.setItem('dashboard-widget-layout', JSON.stringify(DEFAULT_LAYOUT));
       localStorage.removeItem('dashboard-hidden-widgets');
       localStorage.removeItem('dashboard-minimized-widgets');
-    }
+    });
   };
 
   const handleToggleMinimize = (widgetId: string) => {
@@ -305,7 +274,14 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     localStorage.setItem('dashboard-minimized-widgets', JSON.stringify([...newMinimized]));
   };
 
-  const getSessionIcon = (session: any) => {
+  /** Session object from gateway */
+  interface SessionInfo {
+    key?: string;
+    channel?: string;
+    displayName?: string;
+  }
+
+  const getSessionIcon = (session: SessionInfo) => {
     if (session.channel === 'whatsapp') return '💬';
     if (session.channel === 'telegram') return '✈️';
     if (session.channel === 'discord') return '🎮';
@@ -314,7 +290,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     return '💻';
   };
 
-  const getSessionName = (session: any) => {
+  const getSessionName = (session: SessionInfo) => {
     const key = session.key || '';
     const parts = key.split(':');
     const last = parts[parts.length - 1];
@@ -725,7 +701,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                                 task.status === 'review' ? 'bg-purple-400 shadow-lg shadow-purple-400/50' :
                                 task.status === 'in-progress' ? 'bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50' :
-                                'bg-clawd-bg0'
+                                'bg-gray-400'
                               }`} />
                               
                               <div className="flex-1 min-w-0">
@@ -916,7 +892,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                             ) : sessions.length === 0 ? (
                               <p className="text-sm text-clawd-text-dim text-center py-8">No active sessions</p>
                             ) : (
-                              sessions.slice(0, 6).map((s: any) => {
+                              sessions.slice(0, 6).map((s: SessionInfo & { updatedAt?: number }) => {
                                 const isActive = Date.now() - (s.updatedAt || 0) < 300000;
                                 return (
                                   <div 
@@ -1031,6 +1007,17 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
           )}
         </ResponsiveGridLayout>
       </div>
+
+      <ConfirmDialog
+        open={open}
+        onClose={closeConfirm}
+        onConfirm={onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmLabel={config.confirmLabel}
+        cancelLabel={config.cancelLabel}
+        type={config.type}
+      />
     </div>
   );
 }

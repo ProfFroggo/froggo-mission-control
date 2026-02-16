@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Inbox, AlertCircle } from 'lucide-react';
+import WidgetLoading from './WidgetLoading';
 
 interface InboxItem {
   id: string;
@@ -44,11 +45,7 @@ export default function InboxWidget() {
 
   if (loading && unreadCount === 0) {
     return (
-      <div className="p-6 animate-pulse">
-        <div className="h-8 w-8 bg-clawd-border/50 rounded-full mb-4" />
-        <div className="h-12 bg-clawd-border/50 rounded mb-2" />
-        <div className="h-4 bg-clawd-border/50 rounded w-2/3" />
-      </div>
+      <WidgetLoading variant="skeleton" lines={3} compact />
     );
   }
 

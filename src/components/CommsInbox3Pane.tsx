@@ -6,14 +6,14 @@
  * RIGHT: Message detail view with thread and reply
  */
 
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Mail, MessageCircle, Send, Gamepad2,
   Inbox, Star, Archive, AlertTriangle,
   RefreshCw, ChevronRight, ChevronDown, Search,
   Reply, ReplyAll, Forward, MoreHorizontal,
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
-  Activity as ActivityIcon, ChevronUp, FileText, Code,
+  Activity as ActivityIcon, FileText, Code,
   CalendarPlus, ListPlus
 } from 'lucide-react';
 import { showToast } from './Toast';

@@ -36,7 +36,7 @@ export const defaultTheme: AgentTheme = {
   bg: 'bg-clawd-surface',
   text: 'text-clawd-text-dim',
   ring: 'ring-clawd-border',
-  dot: 'bg-clawd-text-dim',
+  dot: 'bg-gray-400',
   pic: ''
 };
 
@@ -58,8 +58,6 @@ export function generateThemeFromColor(hex: string, pic?: string): AgentTheme {
   if (!hexMatch) {
     return defaultTheme;
   }
-
-  // Hex validated via regex match - theme uses hex with opacity suffix
 
   // Generate theme with varying opacity levels
   const theme: AgentTheme = {

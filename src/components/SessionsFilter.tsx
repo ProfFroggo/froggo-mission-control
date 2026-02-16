@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
+import { showToast } from './Toast';
 import FolderSelector from './FolderSelector';
 import FolderManager from './FolderManager';
 import FolderTabs from './FolderTabs';
@@ -11,7 +12,6 @@ import SnoozeModal from './SnoozeModal';
 import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS as DndCSS } from '@dnd-kit/utilities';
-import { showToast } from './Toast';
 
 type ChannelFilter = 'all' | 'whatsapp' | 'telegram' | 'discord' | 'webchat' | 'agents';
 
@@ -95,6 +95,7 @@ export default function SessionsFilter() {
       const poll = async () => {
         // Skip if already fetching (request deduplication)
         if (fetchingRef.current) {
+          console.log('[SessionsFilter] Skipping poll - request already in flight');
           return;
         }
         
@@ -121,7 +122,8 @@ export default function SessionsFilter() {
 
       // Calculate interval with exponential backoff: 30s, 60s, 120s, 240s, 480s, 960s max
       const interval = 30000 * Math.pow(2, failCount);
-
+      console.log(`[SessionsFilter] Setting poll interval to ${interval}ms (failCount=${failCount})`);
+      
       const timer = setInterval(poll, interval);
       return () => clearInterval(timer);
     }
@@ -201,7 +203,7 @@ export default function SessionsFilter() {
         await loadPinnedSessions();
       } else if (result?.error) {
         // Show error if pin limit reached
-        showToast('warning', result?.error);
+        showToast('error', 'Pin Failed', result.error);
       }
     } catch (error) {
       console.error('[SessionsFilter] Failed to toggle pin:', error);
@@ -407,9 +409,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        showToast('success', `Successfully deleted ${successCount} conversation(s)`);
+        showToast('success', 'Deleted', `Successfully deleted ${successCount} conversation(s)`);
       } else {
-        showToast('warning', `Deleted ${successCount} conversation(s), ${errorCount} failed. See console for details.`);
+        showToast('warning', 'Partial Success', `Deleted ${successCount} conversation(s), ${errorCount} failed`);
       }
       
       // Refresh and clear selection
@@ -418,7 +420,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk delete error:', error);
-      showToast('error', 'Failed to delete conversations. See console for details.');
+      showToast('error', 'Delete Failed', 'Failed to delete conversations');
     }
   };
 
@@ -448,9 +450,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        showToast('success', `Successfully archived ${successCount} session(s)`);
+        showToast('success', 'Archived', `Successfully archived ${successCount} session(s)`);
       } else {
-        showToast('warning', `Archived ${successCount} session(s), ${errorCount} failed. See console for details.`);
+        showToast('warning', 'Partial Success', `Archived ${successCount} session(s), ${errorCount} failed`);
       }
       
       // Refresh and clear selection
@@ -459,7 +461,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk archive error:', error);
-      showToast('error', 'Failed to archive sessions. See console for details.');
+      showToast('error', 'Archive Failed', 'Failed to archive sessions');
     }
   };
 
@@ -488,9 +490,9 @@ export default function SessionsFilter() {
       
       // Show result
       if (errorCount === 0) {
-        showToast('success', `Marked ${successCount} conversation(s) as read`);
+        showToast('success', 'Marked as Read', `Marked ${successCount} conversation(s) as read`);
       } else {
-        showToast('warning', `Marked ${successCount} conversation(s) as read, ${errorCount} failed. See console for details.`);
+        showToast('warning', 'Partial Success', `Marked ${successCount} conversation(s) as read, ${errorCount} failed`);
       }
       
       // Refresh and clear selection
@@ -498,7 +500,7 @@ export default function SessionsFilter() {
       setSelectedSessions(new Set());
     } catch (error) {
       console.error('[SessionsFilter] Bulk mark read error:', error);
-      showToast('error', 'Failed to mark conversations as read. See console for details.');
+      showToast('error', 'Action Failed', 'Failed to mark conversations as read');
     }
   };
 
@@ -510,17 +512,18 @@ export default function SessionsFilter() {
   // Handle conversation drop on folder tab
   const handleConversationDrop = async (sessionKey: string, folderId: number) => {
     try {
+      console.log('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
       const result = await window.clawdbot?.folders.assign(folderId, sessionKey);
       if (result?.success) {
         // Refresh folders and assignments
         await loadFolders();
       } else {
         console.error('[SessionsFilter] Failed to assign folder:', result?.error);
-        showToast('error', 'Failed to assign to folder');
+        showToast('error', 'Assignment Failed', 'Failed to assign to folder');
       }
     } catch (error) {
       console.error('[SessionsFilter] Error assigning folder:', error);
-      showToast('error', 'Failed to assign to folder');
+      showToast('error', 'Assignment Failed', 'Failed to assign to folder');
     }
   };
 
