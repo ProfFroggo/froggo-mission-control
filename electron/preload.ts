@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, desktopCapturer } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 // Detect if running in dev or prod mode via env var (set by start script)
 const isDev = process.env.ELECTRON_DEV === '1';

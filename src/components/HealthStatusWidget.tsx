@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Shield, CheckCircle, AlertTriangle, XCircle, Loader } from 'lucide-react';
+import WidgetLoading from './WidgetLoading';
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -57,10 +58,11 @@ export default function HealthStatusWidget() {
 
   if (loading) {
     return (
-      <div className="p-4 flex flex-col items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-clawd-accent"></div>
-        <p className="text-xs text-clawd-text-dim mt-2">Checking...</p>
-      </div>
+      <WidgetLoading 
+        variant="spinner" 
+        title="Checking system status..." 
+        compact 
+      />
     );
   }
 
