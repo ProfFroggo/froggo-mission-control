@@ -57,8 +57,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     setLoading(true);
 
     try {
-      // TODO: Implement actual agent communication via IPC
-      // For now, placeholder response
+      // FUTURE: Implement agent communication via IPC to backend agent system
+      // Currently using placeholder response until agent messaging API is ready
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       const agentMessage: ChatMessage = {

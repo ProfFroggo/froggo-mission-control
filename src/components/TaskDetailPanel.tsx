@@ -7,6 +7,7 @@ import { showToast } from './Toast';
 import AgentAvatar from './AgentAvatar';
 import PokeModal from './PokeModal';
 import { gateway } from '@/lib/gateway';
+import ConfirmDialog from './ConfirmDialog';
 
 interface TaskAttachment {
   id: number;

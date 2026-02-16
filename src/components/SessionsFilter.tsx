@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
+import { createLogger } from '../utils/logger';
 import FolderSelector from './FolderSelector';
+
+const logger = createLogger('SessionsFilter');
 import FolderManager from './FolderManager';
 import FolderTabs from './FolderTabs';
 import DraggableSession from './DraggableSession';
@@ -95,7 +98,7 @@ export default function SessionsFilter() {
       const poll = async () => {
         // Skip if already fetching (request deduplication)
         if (fetchingRef.current) {
-          console.log('[SessionsFilter] Skipping poll - request already in flight');
+          logger.debug('[SessionsFilter] Skipping poll - request already in flight');
           return;
         }
         
@@ -122,7 +125,7 @@ export default function SessionsFilter() {
 
       // Calculate interval with exponential backoff: 30s, 60s, 120s, 240s, 480s, 960s max
       const interval = 30000 * Math.pow(2, failCount);
-      console.log(`[SessionsFilter] Setting poll interval to ${interval}ms (failCount=${failCount})`);
+      logger.debug(`[SessionsFilter] Setting poll interval to ${interval}ms (failCount=${failCount})`);
       
       const timer = setInterval(poll, interval);
       return () => clearInterval(timer);
@@ -512,7 +515,7 @@ export default function SessionsFilter() {
   // Handle conversation drop on folder tab
   const handleConversationDrop = async (sessionKey: string, folderId: number) => {
     try {
-      console.log('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
+      logger.debug('[SessionsFilter] Dropping conversation', sessionKey, 'on folder', folderId);
       const result = await window.clawdbot?.folders.assign(folderId, sessionKey);
       if (result?.success) {
         // Refresh folders and assignments
