@@ -115,7 +115,7 @@ ipcMain.handle('gateway:getToken', async () => {
         const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
         if (token) return token;
       }
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[GatewayToken] Config read failed:', err); }
   }
   return '';
 });
@@ -316,7 +316,7 @@ process.on('uncaughtException', (error: any) => {
     if (process.stderr.writable) {
       safeLog.error('[UNCAUGHT EXCEPTION]', error);
     }
-  } catch { /* ignore */ }
+  } catch (err) { safeLog.debug('[ExceptionHandler] Failed to log exception:', err); }
   
   // Don't exit for EPIPE-like errors, but consider exiting for severe errors
   // For now, keep running to avoid data loss
@@ -805,7 +805,7 @@ async function checkForUpdates(): Promise<void> {
               shell.openExternal(release.html_url || `https://github.com/ProfFroggo/froggo_bot/releases/tag/v${remoteVersion}`);
             }
           }
-        } catch { /* ignore */ }
+        } catch (err) { safeLog.debug('[UpdateCheck] Dialog error:', err); }
         resolve();
       });
     });
@@ -1019,7 +1019,7 @@ try {
     const match = content.match(/ELEVENLABS_API_KEY=(.+)/);
     if (match) elevenlabsApiKey = match[1].trim();
   }
-} catch { /* ignore */ }
+} catch (err) { safeLog.debug('[TTS] Failed to load ElevenLabs API key:', err); }
 
 ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
   const outputPath = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
@@ -1693,7 +1693,7 @@ ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) =>
                 resolve(taskData.assigned_to);
                 return;
               }
-            } catch { /* ignore */ }
+            } catch (err) { safeLog.debug('[Poke] Failed to parse task data:', err); }
           }
           resolve('froggo'); // Default to froggo
         }
