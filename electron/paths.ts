@@ -11,7 +11,9 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
+import { createLogger } from '../src/utils/logger';
 
+const logger = createLogger('Paths');
 const HOME = os.homedir();
 
 // ── Core roots ──
@@ -83,7 +85,7 @@ export function verifyPaths(): void {
     { p: SCRIPTS_DIR,    label: 'Scripts directory' },
   ];
   for (const { p, label } of critical) {
-    if (!fs.existsSync(p)) console.error(`[STARTUP] MISSING: ${label} at ${p}`);
-    else console.debug(`[STARTUP] OK: ${label}`);
+    if (!fs.existsSync(p)) logger.error(`[STARTUP] MISSING: ${label} at ${p}`);
+    else logger.debug(`[STARTUP] OK: ${label}`);
   }
 }

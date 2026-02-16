@@ -15,8 +15,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { execSync } from 'child_process';
-import { prepare } from './database';
-import { safeLog } from './logger';
+import { prepare } from '../database';
+import { safeLog } from '../logger';
 
 export function registerXTwitterHandlers(): void {
   // Research handlers

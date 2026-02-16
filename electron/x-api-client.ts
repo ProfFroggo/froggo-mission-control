@@ -4,7 +4,9 @@
  */
 
 import { getSecret } from './secret-store';
+import { createLogger } from '../src/utils/logger';
 
+const logger = createLogger('XAPI');
 const X_API_BASE = 'https://api.x.com/2';
 
 let bearerToken: string | null = null;
@@ -18,10 +20,10 @@ export function initXApiTokens(): void {
   bearerToken = process.env.X_BEARER_TOKEN || getSecret('x-bearer-token') || null;
   accessToken = process.env.X_ACCESS_TOKEN || getSecret('x-access-token') || null;
   if (bearerToken) {
-    console.debug('[X API] Bearer token loaded');
+    logger.debug('[X API] Bearer token loaded');
   }
   if (accessToken) {
-    console.debug('[X API] Access token loaded');
+    logger.debug('[X API] Access token loaded');
   }
 }
 
@@ -144,7 +146,7 @@ export async function getMentions(count = 20): Promise<any[]> {
     });
     return mapTweets(data);
   } catch (err: any) {
-    console.error('[X API] getMentions error:', err.message);
+    logger.error('[X API] getMentions error:', err.message);
     return [];
   }
 }
@@ -160,7 +162,7 @@ export async function getHomeTimeline(count = 20): Promise<any[]> {
     });
     return mapTweets(data);
   } catch (err: any) {
-    console.error('[X API] getHomeTimeline error:', err.message);
+    logger.error('[X API] getHomeTimeline error:', err.message);
     return [];
   }
 }
@@ -176,7 +178,7 @@ export async function searchRecent(query: string, count = 20): Promise<any[]> {
     });
     return mapTweets(data);
   } catch (err: any) {
-    console.error('[X API] searchRecent error:', err.message);
+    logger.error('[X API] searchRecent error:', err.message);
     return [];
   }
 }
@@ -199,7 +201,7 @@ export async function getThread(conversationId: string, count = 100): Promise<an
     });
     return mapTweets(data);
   } catch (err: any) {
-    console.error('[X API] getThread error:', err.message);
+    logger.error('[X API] getThread error:', err.message);
     return [];
   }
 }
@@ -213,7 +215,7 @@ export async function getFollowers(userId?: string, count = 100): Promise<any[]>
     });
     return data.data || [];
   } catch (err: any) {
-    console.error('[X API] getFollowers error:', err.message);
+    logger.error('[X API] getFollowers error:', err.message);
     return [];
   }
 }
@@ -227,7 +229,7 @@ export async function getFollowing(userId?: string, count = 100): Promise<any[]>
     });
     return data.data || [];
   } catch (err: any) {
-    console.error('[X API] getFollowing error:', err.message);
+    logger.error('[X API] getFollowing error:', err.message);
     return [];
   }
 }

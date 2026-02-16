@@ -99,10 +99,7 @@ app.whenReady().then(async () => {
   safeLog.log('[Main] App ready, initializing...');
 
   // Verify paths
-  const pathIssues = verifyPaths();
-  if (pathIssues.length > 0) {
-    safeLog.warn('[Main] Path issues detected:', pathIssues);
-  }
+  verifyPaths();
 
   // Initialize services
   try {
@@ -118,10 +115,10 @@ app.whenReady().then(async () => {
   mainWindow = createMainWindow();
 
   // Setup notification events
-  setupNotificationEvents();
+  setupNotificationEvents(mainWindow);
 
   // Setup notification handlers
-  setupNotificationHandlers();
+  setupNotificationHandlers(mainWindow);
 
   // Register writing service handlers
   registerWritingProjectHandlers();
@@ -260,14 +257,14 @@ ipcMain.handle('app:health', async () => {
   }
 
   try {
-    // Check agents
+    // Check agents - consider healthy if at least one agent is spawned
     const agentStatus = getDashboardAgentsStatus();
-    health.services.agents = agentStatus.running;
+    health.services.agents = agentStatus.some(a => a.spawned);
   } catch {
     health.services.agents = false;
   }
 
-  health.services.notifications = notificationService.isEnabled();
+  health.services.notifications = notificationService.getPreferences().enabled;
 
   return health;
 });

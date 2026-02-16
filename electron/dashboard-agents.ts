@@ -55,7 +55,7 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
     });
     
     if (stderr && !stderr.includes('success')) {
-      console.error(`[DashboardAgents] Error spawning ${agent.name}:`, stderr);
+      logger.error(`[DashboardAgents] Error spawning ${agent.name}:`, stderr);
       return false;
     }
     
@@ -64,7 +64,7 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
     agent.lastHealthCheck = Date.now();
     return true;
   } catch (error: any) {
-    console.error(`[DashboardAgents] Failed to spawn ${agent.name}:`, error.message);
+    logger.error(`[DashboardAgents] Failed to spawn ${agent.name}:`, error.message);
     return false;
   }
 }
@@ -84,7 +84,7 @@ async function checkAgentHealth(agent: DashboardAgent): Promise<boolean> {
     const found = sessions.sessions?.some((s: any) => s.key === agent.sessionKey);
     
     if (!found) {
-      console.warn(`[DashboardAgents] ⚠️  ${agent.name} session not found, respawning...`);
+      logger.warn(`[DashboardAgents] ⚠️  ${agent.name} session not found, respawning...`);
       agent.spawned = false;
       return false;
     }
@@ -92,7 +92,7 @@ async function checkAgentHealth(agent: DashboardAgent): Promise<boolean> {
     agent.lastHealthCheck = Date.now();
     return true;
   } catch (error) {
-    console.error(`[DashboardAgents] Health check failed for ${agent.name}:`, error);
+    logger.error(`[DashboardAgents] Health check failed for ${agent.name}:`, error);
     return false;
   }
 }

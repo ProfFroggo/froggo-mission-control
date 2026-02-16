@@ -63,7 +63,7 @@ export class FinanceAgentBridge extends EventEmitter {
       // Spawn new session
       return await this.spawnAgent();
     } catch (error: any) {
-      console.error('[FinanceAgentBridge] Initialization error:', error.message);
+      logger.error('[FinanceAgentBridge] Initialization error:', error.message);
       return false;
     }
   }
@@ -82,7 +82,7 @@ export class FinanceAgentBridge extends EventEmitter {
       const sessions = JSON.parse(stdout);
       return sessions.sessions?.some((s: any) => s.key === this.sessionKey) || false;
     } catch (error) {
-      console.error('[FinanceAgentBridge] Error checking session:', error);
+      logger.error('[FinanceAgentBridge] Error checking session:', error);
       return false;
     }
   }
@@ -104,7 +104,7 @@ export class FinanceAgentBridge extends EventEmitter {
       });
       
       if (stderr && !stderr.includes('success')) {
-        console.error('[FinanceAgentBridge] Error spawning agent:', stderr);
+        logger.error('[FinanceAgentBridge] Error spawning agent:', stderr);
         return false;
       }
       
@@ -113,7 +113,7 @@ export class FinanceAgentBridge extends EventEmitter {
       
       return true;
     } catch (error: any) {
-      console.error('[FinanceAgentBridge] Failed to spawn agent:', error.message);
+      logger.error('[FinanceAgentBridge] Failed to spawn agent:', error.message);
       return false;
     }
   }
@@ -154,12 +154,12 @@ export class FinanceAgentBridge extends EventEmitter {
       logger.debug('[FinanceAgentBridge] Sending message to Finance Manager...');
       const cmd = `openclaw agent --message '${escapedMessage}' --session-key '${this.sessionKey}' --agent-id ${this.agentId}`;
       
-      await execAsync(cmd, {
+      const { stdout } = await execAsync(cmd, {
         encoding: 'utf-8',
         timeout: 60000,
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
       });
-      
+
       // Extract agent response
       // Note: openclaw agent output includes metadata, need to parse actual response
       let agentMessage = stdout.trim();
@@ -195,7 +195,7 @@ export class FinanceAgentBridge extends EventEmitter {
         message: agentMessage
       };
     } catch (error: any) {
-      console.error('[FinanceAgentBridge] Error sending message:', error.message);
+      logger.error('[FinanceAgentBridge] Error sending message:', error.message);
       return {
         success: false,
         error: error.message
@@ -244,7 +244,7 @@ export class FinanceAgentBridge extends EventEmitter {
       
       logger.debug(`[FinanceAgentBridge] Loaded ${this.chatHistory.length} messages from history`);
     } catch (error: any) {
-      console.error('[FinanceAgentBridge] Error loading chat history:', error.message);
+      logger.error('[FinanceAgentBridge] Error loading chat history:', error.message);
     }
   }
   
@@ -263,7 +263,7 @@ export class FinanceAgentBridge extends EventEmitter {
       const lines = this.chatHistory.map(msg => JSON.stringify(msg)).join('\n');
       fs.writeFileSync(this.historyPath, lines + '\n', 'utf-8');
     } catch (error: any) {
-      console.error('[FinanceAgentBridge] Error saving chat history:', error.message);
+      logger.error('[FinanceAgentBridge] Error saving chat history:', error.message);
     }
   }
   
@@ -282,7 +282,7 @@ export class FinanceAgentBridge extends EventEmitter {
       try {
         await this.storeAnalysisAsInsight(response.message, analysisType);
       } catch (error: any) {
-        console.error('[FinanceAgentBridge] Failed to store insight:', error.message);
+        logger.error('[FinanceAgentBridge] Failed to store insight:', error.message);
       }
     }
     

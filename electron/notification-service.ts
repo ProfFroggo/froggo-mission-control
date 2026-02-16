@@ -2,20 +2,23 @@ import { Notification, app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { createLogger } from '../src/utils/logger';
 
-// Safe logger
+const logger = createLogger('Notification');
+
+// Safe logger (legacy - being migrated)
 const safeLog = {
   log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
-        console.debug(...args);
+        logger.debug(...args);
       }
     } catch { /* ignore */ }
   },
   error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
-        console.error(...args);
+        logger.error(...args);
       }
     } catch { /* ignore */ }
   },

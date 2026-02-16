@@ -10,6 +10,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { BrowserWindow, dialog } from 'electron';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('ShellSecurity');
 
 // --- Types ---
 
@@ -113,7 +116,7 @@ export function logAudit(entry: ShellAuditEntry): void {
     const line = JSON.stringify(entry) + '\n';
     fs.appendFileSync(AUDIT_FILE, line, 'utf-8');
   } catch (err) {
-    console.error('[ShellSecurity] Failed to write audit log:', err);
+    logger.error('[ShellSecurity] Failed to write audit log:', err);
   }
 }
 

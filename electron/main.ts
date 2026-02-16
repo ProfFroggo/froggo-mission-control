@@ -50,7 +50,7 @@ function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
     const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
     return data.agents || {};
   } catch (err) {
-    console.error('Failed to load agent registry, using empty:', err);
+    safeLog.error('Failed to load agent registry, using empty:', err);
     return {};
   }
 }
@@ -275,30 +275,39 @@ function debugLog(...args: any[]) {
 }
 
 const safeLog = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
         console.log(...args);
       }
-    } catch (e: any) {
+    } catch {
       // Silently ignore EPIPE and other stream errors
     }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
         console.error(...args);
       }
-    } catch (e: any) {
+    } catch {
       // Silently ignore stream errors
     }
   },
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
         console.warn(...args);
       }
-    } catch (e: any) {
+    } catch {
+      // Silently ignore stream errors
+    }
+  },
+  debug: (...args: unknown[]) => {
+    try {
+      if (process.stdout.writable) {
+        console.debug(...args);
+      }
+    } catch {
       // Silently ignore stream errors
     }
   }
@@ -869,7 +878,7 @@ ipcMain.handle('settings:getApiKey', async (_, keyName: string) => {
   try {
     return getSecret(keyName);
   } catch (err: any) {
-    console.error('[Settings] getApiKey error:', err.message);
+    safeLog.error('[Settings] getApiKey error:', err.message);
     return null;
   }
 });
@@ -879,7 +888,7 @@ ipcMain.handle('settings:storeApiKey', async (_, keyName: string, value: string)
     storeSecret(keyName, value);
     return { success: true };
   } catch (err: any) {
-    console.error('[Settings] storeApiKey error:', err.message);
+    safeLog.error('[Settings] storeApiKey error:', err.message);
     return { success: false, error: err.message };
   }
 });
@@ -888,7 +897,7 @@ ipcMain.handle('settings:hasApiKey', async (_, keyName: string) => {
   try {
     return hasSecret(keyName);
   } catch (err: any) {
-    console.error('[Settings] hasApiKey error:', err.message);
+    safeLog.error('[Settings] hasApiKey error:', err.message);
     return false;
   }
 });
@@ -898,7 +907,7 @@ ipcMain.handle('settings:deleteApiKey', async (_, keyName: string) => {
     deleteSecret(keyName);
     return { success: true };
   } catch (err: any) {
-    console.error('[Settings] deleteApiKey error:', err.message);
+    safeLog.error('[Settings] deleteApiKey error:', err.message);
     return { success: false, error: err.message };
   }
 });
@@ -1101,7 +1110,7 @@ ipcMain.handle('agents:getActiveSessions', async () => {
 
     return { success: true, sessions: activeSessions };
   } catch (error: any) {
-    console.error('[agents:getActiveSessions] Error:', error.message);
+    safeLog.error('[agents:getActiveSessions] Error:', error.message);
     return { success: false, sessions: [], error: error.message };
   }
 });
@@ -6643,7 +6652,7 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
 
     return { success: true, output: result };
   } catch (error: any) {
-    console.error('[agents:spawnForTask] Error:', error.message);
+    safeLog.error('[agents:spawnForTask] Error:', error.message);
     return { success: false, error: error.message };
   }
 });
@@ -7016,7 +7025,7 @@ ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: stri
     const rows = prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
     return rows;
   } catch (e: any) {
-    console.error('get-dm-history error:', e);
+    safeLog.error('get-dm-history error:', e);
     return [];
   }
 });
@@ -7580,7 +7589,7 @@ ipcMain.handle('hrReports:list', async () => {
       .sort((a, b) => b.createdAt - a.createdAt); // Newest first
     return { success: true, reports };
   } catch (error: any) {
-    console.error('[HRReports] List error:', error);
+    safeLog.error('[HRReports] List error:', error);
     return { success: false, reports: [], error: error.message };
   }
 });
@@ -7595,7 +7604,7 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
     const content = fs.readFileSync(filePath, 'utf-8');
     return { success: true, content };
   } catch (error: any) {
-    console.error('[HRReports] Read error:', error);
+    safeLog.error('[HRReports] Read error:', error);
     return { success: false, error: error.message };
   }
 });

@@ -127,7 +127,7 @@ async function listProjects() {
 
     return { success: true, projects };
   } catch (e: any) {
-    console.error('[writing] listProjects error:', e.message);
+    logger.error('[writing] listProjects error:', e.message);
     return { success: false, error: e.message, projects: [] };
   }
 }
@@ -149,7 +149,7 @@ async function createProject(title: string, type: string) {
 
     return { success: true, project: meta };
   } catch (e: any) {
-    console.error('[writing] createProject error:', e.message);
+    logger.error('[writing] createProject error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -244,7 +244,7 @@ async function createProjectFromWizard(wizardData: {
     } catch {
       // best-effort rollback
     }
-    console.error('[writing] createProjectFromWizard error:', e.message);
+    logger.error('[writing] createProjectFromWizard error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -275,7 +275,7 @@ async function getProject(projectId: string) {
 
     return { success: true, project: { ...meta, chapters: chaptersWithWordCount } };
   } catch (e: any) {
-    console.error('[writing] getProject error:', e.message);
+    logger.error('[writing] getProject error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -292,7 +292,7 @@ async function updateProject(projectId: string, updates: { title?: string; type?
     await writeJson(projectJsonPath, meta);
     return { success: true, project: meta };
   } catch (e: any) {
-    console.error('[writing] updateProject error:', e.message);
+    logger.error('[writing] updateProject error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -303,7 +303,7 @@ async function deleteProject(projectId: string) {
     await fs.promises.rm(projectDir, { recursive: true, force: true });
     return { success: true };
   } catch (e: any) {
-    console.error('[writing] deleteProject error:', e.message);
+    logger.error('[writing] deleteProject error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -334,7 +334,7 @@ async function listChapters(projectId: string) {
 
     return { success: true, chapters: chaptersWithWordCount };
   } catch (e: any) {
-    console.error('[writing] listChapters error:', e.message);
+    logger.error('[writing] listChapters error:', e.message);
     return { success: false, error: e.message, chapters: [] };
   }
 }
@@ -383,7 +383,7 @@ async function createChapter(projectId: string, title: string) {
 
     return { success: true, chapter };
   } catch (e: any) {
-    console.error('[writing] createChapter error:', e.message);
+    logger.error('[writing] createChapter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -405,7 +405,7 @@ async function readChapter(projectId: string, chapterId: string) {
 
     return { success: true, chapter: { ...chapter, content, wordCount } };
   } catch (e: any) {
-    console.error('[writing] readChapter error:', e.message);
+    logger.error('[writing] readChapter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -445,7 +445,7 @@ async function saveChapter(projectId: string, chapterId: string, content: string
     const wordCount = countWords(content);
     return { success: true, wordCount };
   } catch (e: any) {
-    console.error('[writing] saveChapter error:', e.message);
+    logger.error('[writing] saveChapter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -487,7 +487,7 @@ async function renameChapter(projectId: string, chapterId: string, newTitle: str
 
     return { success: true, chapter: chapters[idx] };
   } catch (e: any) {
-    console.error('[writing] renameChapter error:', e.message);
+    logger.error('[writing] renameChapter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -546,7 +546,7 @@ async function reorderChapters(projectId: string, chapterIds: string[]) {
 
     return { success: true, chapters: reordered };
   } catch (e: any) {
-    console.error('[writing] reorderChapters error:', e.message);
+    logger.error('[writing] reorderChapters error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -577,7 +577,7 @@ async function deleteChapter(projectId: string, chapterId: string) {
 
     return { success: true };
   } catch (e: any) {
-    console.error('[writing] deleteChapter error:', e.message);
+    logger.error('[writing] deleteChapter error:', e.message);
     return { success: false, error: e.message };
   }
 }

@@ -38,6 +38,9 @@ export interface ConnectedAccount {
   }>;
   metadata?: Record<string, unknown>;
   authType: 'oauth' | 'app-password' | 'manual';
+  createdAt: number;
+  updatedAt: number;
+  tokenPath?: string;
 }
 
 /** Add account request shape */
