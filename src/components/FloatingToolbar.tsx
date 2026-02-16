@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Phone, PhoneOff, Minimize2, X } from 'lucide-react';
+import {
+  Phone, PhoneOff, Minimize2, X, GripVertical, Search, Plus, UserPlus, Brain,
+  Sparkles, ListTodo, MessageSquare, ChevronLeft, ChevronRight, RotateCcw, ExternalLink
+} from 'lucide-react';
 import { showToast } from './Toast';
+
+type ToolbarMode = 'collapsed' | 'expanded';
 
 export default function FloatingToolbar() {
   const [activeCall, setActiveCall] = useState<{agentName: string} | null>(null);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [agentCallModalOpen, setAgentCallModalOpen] = useState(false);
+  const [mode, setMode] = useState<ToolbarMode>('expanded');
+  const [agentChatOpen, setAgentChatOpen] = useState(false);
+  const [agentChatModalOpen, setAgentChatModalOpen] = useState(false);
+  const [contextChatOpen, setContextChatOpen] = useState(false);
+  const [taskShortcutsOpen, setTaskShortcutsOpen] = useState(false);
+  const [callRinging, setCallRinging] = useState(false);
   
   useEffect(() => {
     // Listen for toolbar closed event
@@ -33,7 +44,30 @@ export default function FloatingToolbar() {
     }
   };
   
+  const handleClose = async () => {
+    try {
+      await window.electron.toolbar.close();
+    } catch (error) {
+      console.error('Close error:', error);
+      window.close();
+    }
+  };
+  
+  const toggleMode = () => {
+    setMode(prev => prev === 'collapsed' ? 'expanded' : 'collapsed');
+  };
+  
+  const closeAllModals = () => {
+    setCallDialogOpen(false);
+    setAgentCallModalOpen(false);
+    setAgentChatOpen(false);
+    setAgentChatModalOpen(false);
+    setContextChatOpen(false);
+    setTaskShortcutsOpen(false);
+  };
+  
   const handleCall = () => {
+    closeAllModals();
     if (activeCall) {
       setCallDialogOpen(!callDialogOpen);
     } else {
@@ -41,62 +75,181 @@ export default function FloatingToolbar() {
     }
   };
   
+  // Mock handlers for toolbar actions (these would communicate with main window)
+  const handleSearch = () => {
+    showToast('info', 'Search', 'Search would open in main window');
+  };
+  
+  const handleNewTask = () => {
+    showToast('info', 'New Task', 'New task would open in main window');
+  };
+  
+  const handleContextChat = () => {
+    closeAllModals();
+    setContextChatOpen(!contextChatOpen);
+  };
+  
+  const handleTaskShortcuts = () => {
+    closeAllModals();
+    setTaskShortcutsOpen(!taskShortcutsOpen);
+  };
+  
+  const handleAgentChat = () => {
+    closeAllModals();
+    if (agentChatOpen) {
+      setAgentChatOpen(false);
+    } else {
+      setAgentChatModalOpen(!agentChatModalOpen);
+    }
+  };
+  
   return (
-    <div className="h-full w-full bg-clawd-bg/95 backdrop-blur-sm border border-clawd-border rounded-lg shadow-2xl flex flex-col">
-      {/* Header with pop-in button */}
-      <div className="flex items-center justify-between p-2 border-b border-clawd-border bg-clawd-surface/50">
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-medium text-clawd-text-dim">Toolbar</div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handlePopIn}
-            className="p-1.5 rounded hover:bg-clawd-border transition-colors"
-            title="Dock toolbar back"
-          >
-            <Minimize2 size={14} className="text-clawd-text-dim" />
-          </button>
-          <button
-            onClick={handlePopIn}
-            className="p-1.5 rounded hover:bg-clawd-border transition-colors"
-            title="Close floating toolbar"
-          >
-            <X size={14} className="text-clawd-text-dim" />
-          </button>
-        </div>
-      </div>
-      
-      {/* Main toolbar content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
-        {/* Call button */}
-        <button
-          onClick={handleCall}
-          className={`p-4 rounded-full transition-colors ${
-            activeCall 
-              ? 'bg-red-500 text-white hover:bg-red-600' 
-              : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
-          }`}
-          title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
+    <div className="h-full w-full flex items-center justify-center bg-transparent p-4">
+      {/* Main Toolbar - matches in-app toolbar styling exactly */}
+      <div
+        className={`flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full shadow-2xl transition-all duration-300 px-1.5 py-1`}
+      >
+        {/* Drag Handle */}
+        <div
+          className="p-2 cursor-grab active:cursor-grabbing hover:bg-clawd-border rounded-full transition-colors select-none"
+          title="Drag to reposition"
         >
-          {activeCall ? <PhoneOff size={24} /> : <Phone size={24} />}
-        </button>
-        
-        {activeCall && (
-          <div className="text-center">
-            <div className="text-xs text-clawd-text-dim">In call with</div>
-            <div className="text-sm font-medium text-clawd-text">{activeCall.agentName}</div>
-          </div>
-        )}
-        
-        {/* Quick actions */}
-        <div className="text-center mt-4">
-          <div className="text-[10px] text-clawd-text-dim">
-            Always on top
-          </div>
-          <div className="text-[10px] text-clawd-text-dim mt-1">
-            Press Minimize to dock back
-          </div>
+          <GripVertical size={16} className="text-clawd-text-dim pointer-events-none" />
         </div>
+
+        {mode === 'collapsed' ? (
+          <>
+            {/* Primary: Call button (collapsed) */}
+            <button
+              onClick={handleCall}
+              className={`p-2.5 rounded-full transition-colors ${
+                callRinging ? 'bg-yellow-500 text-white animate-pulse'
+                : activeCall ? 'bg-red-500 text-white' : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+              }`}
+              title={activeCall ? activeCall.agentName : 'Call Agent'}
+            >
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
+            </button>
+            {activeCall && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                {activeCall.agentName}
+              </span>
+            )}
+            <button 
+              onClick={handlePopIn} 
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Dock toolbar back"
+            >
+              <ExternalLink size={14} className="text-clawd-text-dim" />
+            </button>
+            <button 
+              onClick={toggleMode} 
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Expand toolbar"
+            >
+              <ChevronLeft size={16} className="text-clawd-text-dim" />
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Standard actions */}
+            <button 
+              onClick={handleSearch} 
+              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Search"
+            >
+              <Search size={16} className="text-clawd-text-dim" />
+            </button>
+            <button 
+              onClick={handleNewTask} 
+              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
+              title="New Task"
+            >
+              <Plus size={16} className="text-clawd-text-dim" />
+            </button>
+            <button 
+              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Add Contact"
+            >
+              <UserPlus size={16} className="text-clawd-text-dim" />
+            </button>
+            <button 
+              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Add Skill"
+            >
+              <Brain size={16} className="text-clawd-text-dim" />
+            </button>
+
+            {/* Context Chat */}
+            <button
+              onClick={handleContextChat}
+              className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
+              title="Context Chat"
+            >
+              <Sparkles size={16} className={contextChatOpen ? '' : 'text-clawd-text-dim'} />
+            </button>
+
+            {/* Task Shortcuts */}
+            <button
+              onClick={handleTaskShortcuts}
+              className={`p-2.5 rounded-full transition-colors ${taskShortcutsOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
+              title="Task Shortcuts"
+            >
+              <ListTodo size={16} className={taskShortcutsOpen ? '' : 'text-clawd-text-dim'} />
+            </button>
+
+            <div className="w-px h-6 bg-clawd-border mx-0.5" />
+
+            {/* Agent Chat button */}
+            <button
+              onClick={handleAgentChat}
+              className={`p-2.5 rounded-full transition-colors ${
+                agentChatOpen || agentChatModalOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
+              }`}
+              title="Chat with Agent"
+            >
+              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-clawd-text-dim'} />
+            </button>
+
+            {/* Primary: Call button */}
+            <button
+              onClick={handleCall}
+              className={`p-2.5 rounded-full transition-colors ${
+                callRinging ? 'bg-yellow-500 text-white animate-pulse'
+                : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
+                : agentCallModalOpen ? 'bg-clawd-accent text-white'
+                : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
+              }`}
+              title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
+            >
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
+            </button>
+
+            <div className="w-px h-6 bg-clawd-border mx-0.5" />
+            <button 
+              onClick={handlePopIn} 
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Dock toolbar back"
+            >
+              <ExternalLink size={14} className="text-clawd-text-dim" />
+            </button>
+            <button 
+              onClick={toggleMode} 
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Collapse toolbar"
+            >
+              <ChevronRight size={16} className="text-clawd-text-dim" />
+            </button>
+            <button 
+              onClick={handleClose} 
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
+              title="Close toolbar"
+            >
+              <X size={14} className="text-clawd-text-dim" />
+            </button>
+          </>
+        )}
       </div>
       
       {/* Agent call modal placeholder */}
