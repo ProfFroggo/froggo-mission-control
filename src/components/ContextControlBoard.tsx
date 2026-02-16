@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench, Loader2 } from 'lucide-react';
+import { Brain, FileText, Bot, Sparkles, Edit3, Save, Plus, MessageSquare, ChevronRight, Book, User, Wrench, Loader2, type LucideIcon } from 'lucide-react';
 import { showToast } from './Toast';
 import SkillsTab from './SkillsTab';
 import NodesTab from './NodesTab';
@@ -7,7 +7,7 @@ import NodesTab from './NodesTab';
 interface ContextFile {
   name: string;
   path: string;
-  icon: any;
+  icon: LucideIcon;
   description: string;
   content?: string;
 }

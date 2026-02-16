@@ -52,7 +52,7 @@ export interface ConnectedAccount {
     // Microsoft
     tenantId?: string;
     
-    [key: string]: any;
+    [key: string]: unknown;
   };
   
   // Auth data (stored securely)
