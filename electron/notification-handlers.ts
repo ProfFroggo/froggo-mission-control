@@ -25,23 +25,30 @@ export function registerNotificationHandlers(): void {
 
 // ============ NOTIFICATION SETTINGS HANDLERS ============
 
+interface NotificationSettings {
+  session_key: string;
+  settings: string;
+  updated_at: number;
+  muted_until?: number;
+}
+
 async function handleNotificationSettingsGet(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   sessionKey: string
-): Promise<{ success: boolean; settings?: any; error?: string }> {
+): Promise<{ success: boolean; settings?: NotificationSettings | null; error?: string }> {
   try {
-    const settings = prepare('SELECT * FROM notification_settings WHERE session_key = ?').get(sessionKey);
+    const settings = prepare('SELECT * FROM notification_settings WHERE session_key = ?').get(sessionKey) as NotificationSettings | undefined;
     return { success: true, settings: settings || null };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Get error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Get error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleNotificationSettingsSet(
-  _: Electron.IpcMainInvokeEvent, 
-  sessionKey: string, 
-  settings: any
+  _: Electron.IpcMainInvokeEvent,
+  sessionKey: string,
+  settings: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = Date.now();
@@ -52,40 +59,40 @@ async function handleNotificationSettingsSet(
         settings = excluded.settings,
         updated_at = excluded.updated_at
     `).run(sessionKey, JSON.stringify(settings), now);
-    
+
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Set error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Set error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleNotificationSettingsDelete(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   sessionKey: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     prepare('DELETE FROM notification_settings WHERE session_key = ?').run(sessionKey);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Delete error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Delete error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
-async function handleNotificationSettingsGlobalDefaults(): Promise<{ success: boolean; defaults?: any; error?: string }> {
+async function handleNotificationSettingsGlobalDefaults(): Promise<{ success: boolean; defaults?: Record<string, unknown> | null; error?: string }> {
   try {
-    const row = prepare('SELECT settings FROM notification_settings WHERE session_key = ?').get('__global__') as any;
+    const row = prepare('SELECT settings FROM notification_settings WHERE session_key = ?').get('__global__') as { settings: string } | undefined;
     return { success: true, defaults: row ? JSON.parse(row.settings) : null };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Global defaults error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Global defaults error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleNotificationSettingsSetGlobalDefaults(
-  _: Electron.IpcMainInvokeEvent, 
-  defaults: any
+  _: Electron.IpcMainInvokeEvent,
+  defaults: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const now = Date.now();
@@ -96,45 +103,45 @@ async function handleNotificationSettingsSetGlobalDefaults(
         settings = excluded.settings,
         updated_at = excluded.updated_at
     `).run('__global__', JSON.stringify(defaults), now);
-    
+
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Set global defaults error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Set global defaults error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleNotificationSettingsGetEffective(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   sessionKey: string
-): Promise<{ success: boolean; settings?: any; error?: string }> {
+): Promise<{ success: boolean; settings?: Record<string, unknown>; error?: string }> {
   try {
     // Get session-specific settings
-    const sessionRow = prepare('SELECT settings FROM notification_settings WHERE session_key = ?').get(sessionKey) as any;
+    const sessionRow = prepare('SELECT settings FROM notification_settings WHERE session_key = ?').get(sessionKey) as { settings: string } | undefined;
     const sessionSettings = sessionRow ? JSON.parse(sessionRow.settings) : {};
-    
+
     // Get global defaults
-    const globalRow = prepare('SELECT settings FROM notification_settings WHERE session_key = ?').get('__global__') as any;
+    const globalRow = prepare('SELECT settings FROM notification_settings WHERE session_key = ?').get('__global__') as { settings: string } | undefined;
     const globalSettings = globalRow ? JSON.parse(globalRow.settings) : {};
-    
+
     // Merge with session settings taking precedence
     const effective = { ...globalSettings, ...sessionSettings };
-    
+
     return { success: true, settings: effective };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Get effective error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Get effective error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleNotificationSettingsMute(
-  _: Electron.IpcMainInvokeEvent, 
-  sessionKey: string, 
+  _: Electron.IpcMainInvokeEvent,
+  sessionKey: string,
   duration?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const until = duration ? Date.now() + parseDuration(duration) : null;
-    
+
     prepare(`
       INSERT INTO notification_settings (session_key, muted_until, updated_at)
       VALUES (?, ?, ?)
@@ -142,34 +149,34 @@ async function handleNotificationSettingsMute(
         muted_until = excluded.muted_until,
         updated_at = excluded.updated_at
     `).run(sessionKey, until, Date.now());
-    
+
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Mute error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Mute error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleNotificationSettingsUnmute(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   sessionKey: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     prepare(`
-      UPDATE notification_settings 
-      SET muted_until = NULL, updated_at = ? 
+      UPDATE notification_settings
+      SET muted_until = NULL, updated_at = ?
       WHERE session_key = ?
     `).run(Date.now(), sessionKey);
-    
+
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[NotificationSettings] Unmute error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[NotificationSettings] Unmute error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleRejectionsLog(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   rejection: { type: string; title: string; content?: string; reason?: string }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -184,11 +191,11 @@ async function handleRejectionsLog(
       rejection.reason || null,
       Date.now()
     );
-    
+
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Rejections] Log error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Rejections] Log error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
