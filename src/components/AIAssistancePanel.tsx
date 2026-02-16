@@ -187,7 +187,7 @@ ONLY return the JSON object, no additional text.`;
 
 Title: ${item.title}
 Content: ${item.content}
-${item.context ? `Context: ${item.context}` : ''}`;
+${item.context ? `Context: ${item.context}` : ''}
 
 Provide a brief, actionable summary.`;
   };
