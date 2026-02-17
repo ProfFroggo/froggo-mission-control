@@ -170,7 +170,7 @@ export default function OxAnalytics() {
           <h2 className="text-lg font-medium text-white mb-4">Task Completion Trend</h2>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={completionTrendData} margin={{ top: 10, right: 10, left: -20, right: 10 }}>
+              <BarChart data={completionTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
                 <XAxis 
                   dataKey="day" 
@@ -192,7 +192,7 @@ export default function OxAnalytics() {
                     color: '#fff'
                   }}
                   labelStyle={{ color: '#9CA3AF' }}
-                  formatter={(value: number) => [value, 'Completed']}
+                  formatter={(value: number) => [value, 'Completed'] as [number, string]}
                 />
                 <Bar 
                   dataKey="completed" 

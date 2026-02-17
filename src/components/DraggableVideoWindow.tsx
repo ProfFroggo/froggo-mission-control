@@ -163,7 +163,7 @@ export default function DraggableVideoWindow({
           viewMode !== 'fullwidth' ? 'cursor-move' : ''
         }`}
         onMouseDown={handleDragStart}
-        onKeyDown={(e) => { if (viewMode !== 'fullwidth' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const rect = containerRef.current?.getBoundingClientRect(); if (rect) { setDragStart({ x: e.clientX - rect.left, y: e.clientY - rect.top }); setIsDragging(true); } }}}
+        onKeyDown={(e) => { if (viewMode !== 'fullwidth' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const rect = containerRef.current?.getBoundingClientRect(); if (rect) { setDragStart({ x: rect.width / 2, y: rect.height / 2 }); setIsDragging(true); } }}}
         role="button"
         tabIndex={viewMode !== 'fullwidth' ? 0 : -1}
         aria-label="Drag video window"
@@ -223,7 +223,7 @@ export default function DraggableVideoWindow({
         <div
           className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
           onMouseDown={handleResizeStart}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const rect = containerRef.current?.getBoundingClientRect(); if (rect) { setResizeStart({ x: e.clientX, y: e.clientY, w: rect.width, h: rect.height }); setIsResizing(true); } }}}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const rect = containerRef.current?.getBoundingClientRect(); if (rect) { setResizeStart({ x: rect.width, y: rect.height, w: rect.width, h: rect.height }); setIsResizing(true); } }}}
           role="button"
           tabIndex={0}
           aria-label="Resize video window"
