@@ -565,7 +565,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             try {
               result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
               logger.debug(`[QuickActions] Tool ${fc.name} result:`, result);
-            } catch (_err) {
+            } catch (err: any) {
               console.error(`[QuickActions] Tool ${fc.name} error:`, err);
               result = { error: (err as Error).message || 'Tool execution failed' };
               addTx('system', `⚠️ ${fc.name} failed: ${(err as Error).message}`);
@@ -575,7 +575,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           logger.debug('[QuickActions] Sending tool responses:', responses.length);
           await geminiLive.sendToolResponse(responses);
           logger.debug('[QuickActions] Tool responses sent');
-        } catch (_err) {
+        } catch (err: any) {
           console.error('[QuickActions] Tool handler error:', err);
           addTx('system', `⚠️ Tool error: ${(err as Error).message}`);
         }
@@ -598,7 +598,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const getGeminiApiKey = async (): Promise<string> => {
     // 1. Check localStorage settings
     try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
-    catch (_err) {
+    catch (err) {
       console.error('[QuickActions] Failed to parse settings from localStorage:', err);
     }
     // 2. Check env vars
@@ -678,7 +678,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         await geminiLive.sendText('Hey, you just picked up the phone. Greet me!');
         await geminiLive.startMic();
         if (!isMeetingActive) toggleMeeting();
-      } catch (_err) {
+      } catch (err: any) {
         stopRinging();
         setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ ${(err as Error).message}` }]);
         setActiveCall(null);
