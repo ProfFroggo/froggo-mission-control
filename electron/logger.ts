@@ -47,7 +47,7 @@ class Logger {
                       level === 'warn' ? console.warn : console.info;
         logFn(this.formatMessage(level, message), ...args);
       }
-    } catch (e: any) {
+    } catch (_e: any) {
       // Silently ignore EPIPE and other stream errors
     }
   }
@@ -107,7 +107,7 @@ export const safeLog = {
       if (process.stdout.writable) {
         console.debug(...args);
       }
-    } catch (e: any) {
+    } catch (_e: any) {
       // Silently ignore EPIPE and other stream errors
     }
   },
@@ -116,7 +116,7 @@ export const safeLog = {
       if (process.stdout.writable) {
         console.log(...args);
       }
-    } catch (e: any) {
+    } catch (_e: any) {
       // Silently ignore EPIPE and other stream errors
     }
   },
@@ -125,7 +125,7 @@ export const safeLog = {
       if (process.stderr.writable) {
         console.error(...args);
       }
-    } catch (e: any) {
+    } catch (_e: any) {
       // Silently ignore stream errors
     }
   },
@@ -134,7 +134,7 @@ export const safeLog = {
       if (process.stderr.writable) {
         console.warn(...args);
       }
-    } catch (e: any) {
+    } catch (_e: any) {
       // Silently ignore stream errors
     }
   }
