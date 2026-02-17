@@ -44,7 +44,7 @@ async function ensureGatewayToken() {
       saved.gatewayToken = token;
       localStorage.setItem('froggo-settings', JSON.stringify(saved));
       logger.debug('[Gateway] Loaded token from openclaw config');
-      gateway.reconnect();
+      gateway.connect();
     }
   } catch { /* ignore */ }
 }

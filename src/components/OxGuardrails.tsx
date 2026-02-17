@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Bot, Clock, AlertTriangle, Save, RefreshCw } from 'lucide-react';
+import { Shield, Bot, Clock, AlertTriangle, Save } from 'lucide-react';
 
 interface GuardrailSettings {
   maxSubAgents: number;

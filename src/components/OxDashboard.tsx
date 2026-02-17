@@ -1,4 +1,4 @@
-import { LayoutDashboard, Inbox, Bot, Clock, CheckCircle, TrendingUp } from 'lucide-react';
+import { Inbox, Bot, Clock, CheckCircle } from 'lucide-react';
 import { useStore } from '../store/store';
 
 export default function OxDashboard() {

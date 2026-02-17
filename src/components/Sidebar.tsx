@@ -3,7 +3,7 @@ import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, Che
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
-import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
+import { FocusModeSelector, useFocusMode } from './FocusMode';
 
 // X logo as SVG component
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -50,7 +50,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   const [expanded, setExpanded] = useState(true); // Open by default
   const [inboxCount, setInboxCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
-  const { connected, tasks, activities } = useStore();
+  const { tasks, activities } = useStore();
   const { panels: panelConfig, openEditModal } = usePanelConfigStore();
   const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);

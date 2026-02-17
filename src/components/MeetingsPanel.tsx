@@ -324,6 +324,7 @@ export default function MeetingsPanel() {
   }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _extractTasksFromText = useCallback((text: string): string[] => {
     const tasks: string[] = [];
     for (const pattern of TASK_EXTRACTION_PATTERNS) {

@@ -13,7 +13,7 @@ const logger = createLogger('GeminiLive');
 // Audio constants matching Gemini Live API requirements
 const SEND_SAMPLE_RATE = 16000;
 const RECEIVE_SAMPLE_RATE = 24000;
-const CHANNELS = 1;
+// const CHANNELS = 1; // reserved for future multi-channel support
 const MODEL = 'models/gemini-2.5-flash-native-audio-latest'; // ONLY native-audio models support bidiGenerateContent
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
@@ -162,7 +162,8 @@ export class GeminiLiveService {
   private playbackCtx: AudioContext | null = null;
   private playbackQueue: ArrayBuffer[] = [];
   private isPlaying = false;
-  private playbackSourceNode: AudioBufferSourceNode | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private _playbackSourceNode: AudioBufferSourceNode | null = null;
   private playbackGain: GainNode | null = null;
   private scheduledTime = 0;
 
@@ -194,7 +195,8 @@ export class GeminiLiveService {
   private toolCallKeepaliveTimer: ReturnType<typeof setInterval> | null = null;
 
   // Session resumption — allows reconnecting without losing context
-  private sessionHandle: string | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private _sessionHandle: string | null = null;
   
   // Context replay buffer - store recent conversation for reconnect
   private conversationHistory: Array<{role: 'user' | 'model', text: string}> = [];
@@ -473,7 +475,7 @@ export class GeminiLiveService {
       if (msg.sessionResumptionUpdate) {
         const update = msg.sessionResumptionUpdate;
         if (update.resumable && update.newHandle) {
-          this.sessionHandle = update.newHandle;
+          this._sessionHandle = update.newHandle;
           logger.debug('[GeminiLive] Session resumption handle updated');
         }
       }
@@ -499,7 +501,7 @@ export class GeminiLiveService {
     this.stopVideo();
     this.clearPlayback();
     this.stopToolCallKeepalive();
-    this.sessionHandle = null; // Clear handle on intentional disconnect
+    this._sessionHandle = null; // Clear handle on intentional disconnect
     if (this.ws) {
       this.ws.close(1000, 'User disconnected');
       this.ws = null;
@@ -762,7 +764,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       source.start(startTime);
       this.scheduledTime = startTime + audioBuffer.duration;
 
-      this.playbackSourceNode = source;
+      this._playbackSourceNode = source;
     }
 
     // Wait for last scheduled audio to finish, then check for more
@@ -787,7 +789,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.playbackCtx.close().catch((err) => { console.error('[GeminiLive] Failed to close playback context:', err); });
       this.playbackCtx = null;
     }
-    this.playbackSourceNode = null;
+    this._playbackSourceNode = null;
     this.playbackGain = null;
     this.scheduledTime = 0;
   }

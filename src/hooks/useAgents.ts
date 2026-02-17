@@ -145,7 +145,7 @@ async function fetchAgents(): Promise<AgentInfo[]> {
         const status = latest?.status ? normalizeStatus(latest.status) : statusFromAge(latestUpdated);
 
         // Aggregate token counts across all sessions for this agent
-        const totalTokens = agentSessionList.reduce((sum: number, s: any) => sum + (s.totalTokens || 0), 0);
+        // const totalTokens = agentSessionList.reduce((sum: number, s: any) => sum + (s.totalTokens || 0), 0);
         const sessionCount = agentSessionList.length;
 
         // Count active subagents for this parent

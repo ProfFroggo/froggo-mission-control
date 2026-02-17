@@ -4,17 +4,6 @@ import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  description: string;
-  sort_order: number;
-  is_smart: number;
-  conversation_count: number;
-}
-
 interface FolderManagerProps {
   onClose?: () => void;
   onSelect?: (folderId: number) => void;

@@ -18,14 +18,6 @@ import { CSS as DndCSS } from '@dnd-kit/utilities';
 
 type ChannelFilter = 'all' | 'whatsapp' | 'telegram' | 'discord' | 'webchat' | 'agents';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  conversation_count: number;
-}
-
 // Sortable session component for pinned items
 function SortableSession({ sessionKey, children }: { sessionKey: string; children: React.ReactNode }) {
   const {
