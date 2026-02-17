@@ -5,8 +5,6 @@ import { useStore } from '../store/store';
 import { showToast } from './Toast';
 import { createLogger } from '../utils/logger';
 import FolderSelector from './FolderSelector';
-
-const logger = createLogger('SessionsFilter');
 import FolderManager from './FolderManager';
 import FolderTabs from './FolderTabs';
 import DraggableSession from './DraggableSession';
@@ -16,6 +14,8 @@ import SnoozeModal from './SnoozeModal';
 import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS as DndCSS } from '@dnd-kit/utilities';
+
+const logger = createLogger('SessionsFilter');
 
 // Handle keyboard events for modal backdrops
 const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
