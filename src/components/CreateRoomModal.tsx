@@ -63,8 +63,9 @@ export default function CreateRoomModal({ isOpen, onClose, onCreate }: CreateRoo
         <div className="p-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Room Name */}
           <div>
-            <label className="block text-sm font-medium mb-2">Room Name (optional)</label>
+            <label htmlFor="room-name" className="block text-sm font-medium mb-2">Room Name (optional)</label>
             <input
+              id="room-name"
               type="text"
               aria-label="Room name input"
               value={roomName}

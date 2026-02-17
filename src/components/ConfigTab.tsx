@@ -230,16 +230,16 @@ export default function ConfigTab() {
                           </div>
                         ) : field.type === 'number' ? (
                           <div>
-                            <label className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input type="number" value={typeof field.value === 'number' ? field.value : (typeof field.value === 'string' ? Number(field.value) : 0)}
+                            <label htmlFor={`config-${field.path}`} className="block text-sm font-medium mb-1">{field.label}</label>
+                            <input id={`config-${field.path}`} type="number" value={typeof field.value === 'number' ? field.value : (typeof field.value === 'string' ? Number(field.value) : 0)}
                               onChange={e => updateField(field.path, e.target.valueAsNumber || 0)}
                               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
                               aria-label={field.label} />
                           </div>
                         ) : field.type === 'string' ? (
                           <div>
-                            <label className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input type={field.sensitive ? 'password' : 'text'} value={typeof field.value === 'string' ? field.value : ''}
+                            <label htmlFor={`config-${field.path}`} className="block text-sm font-medium mb-1">{field.label}</label>
+                            <input id={`config-${field.path}`} type={field.sensitive ? 'password' : 'text'} value={typeof field.value === 'string' ? field.value : ''}
                               onChange={e => updateField(field.path, e.target.value)}
                               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
                               aria-label={field.label} />

@@ -1538,8 +1538,20 @@ export default function InboxPanel() {
 
       {/* Rejection Dialog */}
       {rejectDialogItem && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setRejectDialogItem(null)} role="button" tabIndex={-1} aria-label="Close reject dialog">
-          <div className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" 
+          onClick={() => setRejectDialogItem(null)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setRejectDialogItem(null); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close reject dialog"
+        >
+          <div 
+            className="bg-clawd-surface border border-clawd-border rounded-lg p-6 max-w-md w-full mx-4" 
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
             <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
             <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don&apos;t want.</p>
             <input
@@ -1574,8 +1586,20 @@ export default function InboxPanel() {
 
       {/* Schedule Modal */}
       {scheduleModal && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setScheduleModal(null)} role="button" tabIndex={-1} aria-label="Close schedule modal">
-          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" 
+          onClick={() => setScheduleModal(null)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setScheduleModal(null); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close schedule modal"
+        >
+          <div 
+            className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" 
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded-lg ${(typeConfig[scheduleModal.item.type as ApprovalType] ?? typeConfig['action']).color}`}>
@@ -1603,8 +1627,9 @@ export default function InboxPanel() {
                 </div>
                 <div className="flex gap-3">
                   <div className="flex-1 min-w-0">
-                    <label className="text-xs text-clawd-text-dim mb-1 block">Date</label>
+                    <label htmlFor="schedule-date" className="text-xs text-clawd-text-dim mb-1 block">Date</label>
                     <input
+                      id="schedule-date"
                       type="date"
                       value={scheduleModal.date}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, date: e.target.value })}
@@ -1613,8 +1638,9 @@ export default function InboxPanel() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <label className="text-xs text-clawd-text-dim mb-1 block">Time</label>
+                    <label htmlFor="schedule-time" className="text-xs text-clawd-text-dim mb-1 block">Time</label>
                     <input
+                      id="schedule-time"
                       type="time"
                       value={scheduleModal.time}
                       onChange={(e) => setScheduleModal({ ...scheduleModal, time: e.target.value })}
@@ -1792,8 +1818,20 @@ export default function InboxPanel() {
 
       {/* Keyboard Shortcuts Help Overlay */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)} role="button" tabIndex={-1} aria-label="Close keyboard help">
-          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" 
+          onClick={() => setShowKeyboardHelp(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowKeyboardHelp(false); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close keyboard help"
+        >
+          <div 
+            className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" 
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold mb-1">⌨️ Keyboard Shortcuts</h2>

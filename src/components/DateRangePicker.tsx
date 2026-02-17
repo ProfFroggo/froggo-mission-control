@@ -73,6 +73,12 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setIsOpen(!isOpen); } }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-label={`Date range picker, currently ${formatDateRange(value)}`}
         className="flex items-center gap-2 px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors"
       >
         <Calendar size={16} />
@@ -85,10 +91,14 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setIsOpen(false); } }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close date range picker"
           />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 w-96 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl z-50 p-4">
+          <div className="absolute right-0 top-full mt-2 w-96 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl z-50 p-4" role="listbox" aria-label="Date range options">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Select Date Range</h3>
               <button
@@ -120,10 +130,11 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
               <div className="text-sm text-clawd-text-dim mb-2">Custom Range</div>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-clawd-text-dim mb-1">
+                  <label htmlFor="date-range-start" className="block text-xs text-clawd-text-dim mb-1">
                     Start Date
                   </label>
                   <input
+                    id="date-range-start"
                     type="date"
                     value={customStart}
                     onChange={(e) => setCustomStart(e.target.value)}
@@ -132,10 +143,11 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-clawd-text-dim mb-1">
+                  <label htmlFor="date-range-end" className="block text-xs text-clawd-text-dim mb-1">
                     End Date
                   </label>
                   <input
+                    id="date-range-end"
                     type="date"
                     value={customEnd}
                     onChange={(e) => setCustomEnd(e.target.value)}

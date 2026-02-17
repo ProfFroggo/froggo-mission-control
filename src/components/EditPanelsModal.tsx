@@ -126,6 +126,10 @@ export default function EditPanelsModal() {
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center modal-backdrop"
       onClick={(e) => { if (e.target === e.currentTarget) closeEditModal(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') closeEditModal(); }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close edit panels modal"
     >
       <div className="glass-modal rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col">
         {/* Header */}

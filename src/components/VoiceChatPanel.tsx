@@ -548,8 +548,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         <div className="px-4 py-3 border-b border-clawd-border bg-clawd-surface">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="text-xs font-medium text-clawd-text-dim mb-1 block">Video Mode</label>
-              <select value={videoMode} onChange={(e) => setVideoMode(e.target.value as VideoMode)}
+              <label htmlFor="video-mode-select" className="text-xs font-medium text-clawd-text-dim mb-1 block">Video Mode</label>
+              <select id="video-mode-select" value={videoMode} onChange={(e) => setVideoMode(e.target.value as VideoMode)}
                 className="w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm">
                 <option value="none">🎙️ Audio only</option>
                 <option value="camera">📹 Camera</option>

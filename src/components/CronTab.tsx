@@ -192,6 +192,11 @@ export default function CronTab() {
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-clawd-bg/50 transition-colors"
                   onClick={() => expandJob(job.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); expandJob(job.id); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  aria-label={`${job.name} job - ${isExpanded ? 'collapse' : 'expand'}`}
                 >
                   <button
                     onClick={e => { e.stopPropagation(); toggleJob(job); }}
@@ -274,44 +279,56 @@ export default function CronTab() {
 
       {/* Add Job Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)} role="button" tabIndex={-1} aria-label="Close add cron modal">
-          <div className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" 
+          onClick={() => setShowAddModal(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowAddModal(false); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close add cron modal"
+        >
+          <div 
+            className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-lg w-full" 
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
+            role="presentation"
+          >
             <h2 className="text-lg font-semibold mb-4">Add Cron Job</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Name</label>
-                <input type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
+                <label htmlFor="cron-name" className="block text-sm text-clawd-text-dim mb-1">Name</label>
+                <input id="cron-name" type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" placeholder="My cron job" aria-label="Cron job name" />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Description</label>
-                <input type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
+                <label htmlFor="cron-description" className="block text-sm text-clawd-text-dim mb-1">Description</label>
+                <input id="cron-description" type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" placeholder="Optional description" aria-label="Cron job description" />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Schedule</label>
+                <label htmlFor="cron-schedule" className="block text-sm text-clawd-text-dim mb-1">Schedule</label>
                 <div className="flex gap-2">
-                  <select value={newJob.scheduleKind} onChange={e => setNewJob(p => ({ ...p, scheduleKind: e.target.value }))}
+                  <select id="cron-schedule-kind" value={newJob.scheduleKind} onChange={e => setNewJob(p => ({ ...p, scheduleKind: e.target.value }))}
                     className="bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" aria-label="Schedule type">
                     <option value="cron">Cron</option>
                     <option value="every">Interval (min)</option>
                     <option value="at">One-time</option>
                   </select>
-                  <input type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
+                  <input id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
                     className="flex-1 bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent"
                     placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'}
                     aria-label="Schedule expression" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Message (what to tell the agent)</label>
-                <textarea value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
+                <label htmlFor="cron-message" className="block text-sm text-clawd-text-dim mb-1">Message (what to tell the agent)</label>
+                <textarea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
                   rows={3} className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent resize-none"
                   placeholder="Check for new emails and summarize..." aria-label="Cron job message" />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Session Target</label>
-                <select value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
+                <label htmlFor="cron-session" className="block text-sm text-clawd-text-dim mb-1">Session Target</label>
+                <select id="cron-session-target" value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-clawd-accent" aria-label="Session target">
                   <option value="isolated">Isolated (new session)</option>
                   <option value="main">Main (shared session)</option>

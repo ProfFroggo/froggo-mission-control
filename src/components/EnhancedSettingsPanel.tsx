@@ -599,10 +599,11 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <label className="block text-sm text-clawd-text-dim">Gateway URL</label>
+                      <label htmlFor="gateway-url" className="block text-sm text-clawd-text-dim">Gateway URL</label>
                       <Tooltip text="WebSocket endpoint for Clawdbot gateway" />
                     </div>
                     <input
+                      id="gateway-url"
                       type="text"
                       aria-label="Gateway URL input"
                       value={settings.gatewayUrl}
@@ -612,10 +613,11 @@ export default function EnhancedSettingsPanel() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <label className="block text-sm text-clawd-text-dim">Authentication Token</label>
+                      <label htmlFor="gateway-token" className="block text-sm text-clawd-text-dim">Authentication Token</label>
                       <Tooltip text="Optional token for secured connections" />
                     </div>
                     <input
+                      id="gateway-token"
                       type="password"
                       aria-label="Authentication token input"
                       value={settings.gatewayToken}
@@ -642,10 +644,11 @@ export default function EnhancedSettingsPanel() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm text-clawd-text-dim">Default Panel on Startup</label>
+                      <label htmlFor="default-panel" className="block text-sm text-clawd-text-dim">Default Panel on Startup</label>
                       <Tooltip text="This panel will open when you launch the app" />
                     </div>
                     <select
+                      id="default-panel"
                       aria-label="Default panel on startup select"
                       value={settings.defaultPanel}
                       onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
@@ -685,12 +688,13 @@ export default function EnhancedSettingsPanel() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="block text-sm text-clawd-text-dim">
+                      <label htmlFor="speech-speed" className="block text-sm text-clawd-text-dim">
                         Speech Speed: {settings.voiceSpeed.toFixed(1)}x
                       </label>
                       <Tooltip text="Adjust voice playback speed" />
                     </div>
                     <input
+                      id="speech-speed"
                       type="range"
                       aria-label="Speech speed slider"
                       min="0.5"
@@ -810,7 +814,7 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">Color Mode</label>
+                    <label htmlFor="color-mode-select" className="block text-sm text-clawd-text-dim mb-2">Color Mode</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['dark', 'light', 'system'] as const).map((t) => (
                         <button
@@ -840,7 +844,7 @@ export default function EnhancedSettingsPanel() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">Accent Color</label>
+                    <label htmlFor="accent-color-picker" className="block text-sm text-clawd-text-dim mb-2">Accent Color</label>
                     <div className="flex gap-2 flex-wrap mb-3">
                       {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
                         <button
@@ -850,12 +854,14 @@ export default function EnhancedSettingsPanel() {
                             settings.accentColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent'
                           }`}
                           style={{ backgroundColor: color }}
+                          aria-label={`Accent color ${color}`}
                         />
                       ))}
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-sm text-clawd-text-dim">Custom:</label>
+                      <label htmlFor="custom-accent-color" className="text-sm text-clawd-text-dim">Custom:</label>
                       <input
+                        id="custom-accent-color"
                         type="color"
                         aria-label="Custom accent color picker"
                         value={settings.accentColor}
@@ -960,7 +966,6 @@ export default function EnhancedSettingsPanel() {
                           <input
                             type="text"
                             aria-label={`Edit keyboard shortcut for ${shortcut.name}`}
-                            autoFocus
                             value={shortcut.currentKey}
                             onChange={(e) => handleShortcutEdit(shortcut.id, e.target.value)}
                             onBlur={() => setEditingShortcut(null)}
