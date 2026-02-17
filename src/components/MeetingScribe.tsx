@@ -5,7 +5,7 @@
  */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Mic, MicOff, Square, Loader2, Brain, ListTodo, FileText,
+  Mic, Square, Loader2, Brain, ListTodo, FileText,
   Download, Send, Trash2, Clock, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useStore } from '../store/store';
@@ -157,11 +157,11 @@ function formatDuration(seconds: number): string {
 }
 
 export default function MeetingScribe() {
-  const { isMuted, setMeetingActive, addActivity } = useStore();
+  const { setMeetingActive, addActivity } = useStore();
   
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [_isPaused, setIsPaused] = useState(false);
   const [timer, setTimer] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
   

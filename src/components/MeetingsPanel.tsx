@@ -323,22 +323,6 @@ export default function MeetingsPanel() {
     return items;
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _extractTasksFromText = useCallback((text: string): string[] => {
-    const tasks: string[] = [];
-    for (const pattern of TASK_EXTRACTION_PATTERNS) {
-      let match;
-      pattern.lastIndex = 0;
-      while ((match = pattern.exec(text)) !== null) {
-        const task = match[1]?.trim();
-        if (task && task.length > 3 && task.length < 200) {
-          if (!tasks.some(t => t.toLowerCase() === task.toLowerCase())) tasks.push(task);
-        }
-      }
-    }
-    return tasks;
-  }, []);
-
   const loadPastMeetings = useCallback(async () => {
     if (!window.clawdbot?.exec?.run) return;
     setLoadingPastMeetings(true);

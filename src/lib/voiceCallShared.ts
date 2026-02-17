@@ -4,7 +4,7 @@
  */
 
 import { loadAgentContext, invalidateAgentContext, AgentContext } from './agentContext';
-import type { GeminiTool, GeminiToolCall } from './geminiLiveService';
+import type { GeminiTool } from './geminiLiveService';
 
 export type { AgentContext };
 
@@ -410,7 +410,7 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
           await exec(`froggo-db task-add "${args.task_title.replace(/"/g, '\\"')}" --assign ${agentId} --priority high --status todo 2>&1`);
         }
         // Fire-and-forget: send message to agent without waiting for full turn (avoids 30s timeout)
-        const r = await exec(`nohup openclaw agent --agent ${agentId} --message "${msg}" >/dev/null 2>&1 &`);
+        await exec(`nohup openclaw agent --agent ${agentId} --message "${msg}" >/dev/null 2>&1 &`);
         invalidateAgentContext(agentId);
         return { success: true, output: `Message sent to ${agentId}`, agent_spawned: agentId };
       }

@@ -27,7 +27,7 @@ interface Issue {
 
 type Phase = 'scanning' | 'proposing' | 'executing' | 'done';
 
-export default function HealthCheckModal({ onClose, stats }: HealthCheckModalProps) {
+export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
   const agents = useStore(s => s.agents);
   const [phase, setPhase] = useState<Phase>('scanning');
   const [scanProgress, setScanProgress] = useState(0);
@@ -173,10 +173,8 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
     setScanProgress(30);
 
     // 2. In-progress without subtasks (work not planned)
-    const inProgressNoSubtasks = allTasks.filter(t => 
-      t.status === 'in-progress' && (!t.subtasks || t.subtasks.length === 0)
-    );
     // Note: We may not have subtasks loaded, so let's check another way
+    // const inProgressNoSubtasks = allTasks.filter(t => t.status === 'in-progress' && (!t.subtasks || t.subtasks.length === 0));
     
     setScanProgress(40);
 
@@ -474,7 +472,7 @@ export default function HealthCheckModal({ onClose, stats }: HealthCheckModalPro
 
   const criticalCount = issues.filter(i => i.severity === 'critical').length;
   const warningCount = issues.filter(i => i.severity === 'warning').length;
-  const infoCount = issues.filter(i => i.severity === 'info').length;
+  // const infoCount = issues.filter(i => i.severity === 'info').length;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

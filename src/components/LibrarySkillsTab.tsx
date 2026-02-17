@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Plus, Search, TrendingUp, Clock, CheckCircle, BookOpen } from 'lucide-react';
 import EmptyState from './EmptyState';
 
 interface Skill {
@@ -94,7 +94,7 @@ export default function LibrarySkillsTab() {
           <div className="text-center py-12 text-clawd-text-dim">Loading skills...</div>
         ) : sortedSkills.length === 0 ? (
           <EmptyState
-            type="generic"
+            icon={BookOpen}
             title="No skills tracked"
             description="Start tracking your skills and proficiency levels"
           />

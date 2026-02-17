@@ -59,7 +59,7 @@ function SortableItem({ panel, isLastVisible, onToggle }: {
       <span className="flex-1 text-clawd-text text-sm font-medium">{panel.label}</span>
       <Toggle
         checked={panel.visible}
-        onChange={(checked) => onToggle(panel.id)}
+        onChange={(_checked) => onToggle(panel.id)}
         disabled={panel.visible && isLastVisible}
         size="sm"
       />
