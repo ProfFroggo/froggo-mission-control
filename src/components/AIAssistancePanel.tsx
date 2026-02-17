@@ -44,13 +44,14 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'sentiment' | 'summary'>('suggestions');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selectedItem) {
       generateAssistance();
     }
-  }, [selectedItem, generateAssistance]);
+  }, [selectedItem]);
 
-  const generateAssistance = useCallback(async () => {
+  const generateAssistance = async () => {
     if (!selectedItem) return;
     
     setLoading(true);

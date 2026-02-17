@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Save, GitCompare, RotateCcw, Trash2, Loader2 } from 'lucide-react';
 import { useWritingStore } from '../../store/writingStore';
 import { useVersionStore } from '../../store/versionStore';
 import VersionDiff from './VersionDiff';
+import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 interface VersionPanelProps {
   onClose: () => void;
@@ -24,6 +25,13 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
     reset,
   } = useVersionStore();
 
+  // Modal state
+  const [restoreTarget, setRestoreTarget] = useState<{id: string, label: string} | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{id: string, label: string} | null>(null);
+  const saveDialog = useConfirmDialog();
+  const restoreDialog = useConfirmDialog();
+  const deleteDialog = useConfirmDialog();
+
   useEffect(() => {
     if (activeProjectId && activeChapterId) {
       loadVersions(activeProjectId, activeChapterId);
@@ -33,37 +41,32 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
     };
   }, [activeProjectId, activeChapterId]);
 
-  const handleSave = async () => {
+  const handleSaveConfirm = async () => {
     if (!activeProjectId || !activeChapterId) return;
-    const label = window.prompt('Version label (optional):', '');
-    if (label === null) return; // User cancelled
 
     // Flush current content to disk before snapshotting
     if (activeChapterContent !== null) {
       await saveChapter(activeChapterContent);
     }
 
-    await saveVersion(activeProjectId, activeChapterId, label || undefined);
+    await saveVersion(activeProjectId, activeChapterId, undefined);
   };
 
-  const handleRestore = async (versionId: string, versionLabel: string) => {
-    if (!activeProjectId || !activeChapterId) return;
-    const confirmed = window.confirm(`Restore "${versionLabel}"? This will replace the current chapter content.`);
-    if (!confirmed) return;
+  const handleRestoreConfirm = async () => {
+    if (!activeProjectId || !activeChapterId || !restoreTarget) return;
 
-    const success = await restoreVersion(activeProjectId, activeChapterId, versionId);
+    const success = await restoreVersion(activeProjectId, activeChapterId, restoreTarget.id);
     if (success) {
-      // Reload chapter content in the editor
       await openChapter(activeChapterId);
     }
+    setRestoreTarget(null);
   };
 
-  const handleDelete = async (versionId: string, versionLabel: string) => {
-    if (!activeProjectId || !activeChapterId) return;
-    const confirmed = window.confirm(`Delete version "${versionLabel}"? This cannot be undone.`);
-    if (!confirmed) return;
+  const handleDeleteConfirm = async () => {
+    if (!activeProjectId || !activeChapterId || !deleteTarget) return;
 
-    await deleteVersion(activeProjectId, activeChapterId, versionId);
+    await deleteVersion(activeProjectId, activeChapterId, deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const handleCompare = async (versionId: string) => {
@@ -102,7 +105,14 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
       {/* Save button */}
       <div className="px-3 py-2 border-b border-clawd-border">
         <button
-          onClick={handleSave}
+          onClick={() => {
+            saveDialog.showConfirm({
+              title: 'Save Snapshot',
+              message: 'Save the current chapter content as a version snapshot',
+              confirmLabel: 'Save',
+              type: 'info',
+            }, handleSaveConfirm);
+          }}
           disabled={!activeChapterId}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded bg-clawd-accent/20 text-clawd-accent hover:bg-clawd-accent/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           title="Saves the current chapter content as a version snapshot"
@@ -144,14 +154,30 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
                       <GitCompare size={13} />
                     </button>
                     <button
-                      onClick={() => handleRestore(v.id, v.label)}
+                      onClick={() => {
+                        setRestoreTarget({ id: v.id, label: v.label });
+                        restoreDialog.showConfirm({
+                          title: 'Restore Version',
+                          message: `Restore "${v.label}"? This will replace the current chapter content.`,
+                          confirmLabel: 'Restore',
+                          type: 'warning',
+                        }, handleRestoreConfirm);
+                      }}
                       className="p-1 text-clawd-text-dim hover:text-warning rounded transition-colors"
                       title="Restore this version"
                     >
                       <RotateCcw size={13} />
                     </button>
                     <button
-                      onClick={() => handleDelete(v.id, v.label)}
+                      onClick={() => {
+                        setDeleteTarget({ id: v.id, label: v.label });
+                        deleteDialog.showConfirm({
+                          title: 'Delete Version',
+                          message: `Delete version "${v.label}"? This cannot be undone.`,
+                          confirmLabel: 'Delete',
+                          type: 'danger',
+                        }, handleDeleteConfirm);
+                      }}
                       className="p-1 text-clawd-text-dim hover:text-error rounded transition-colors"
                       title="Delete this version"
                     >
@@ -173,6 +199,38 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
           onClose={clearDiff}
         />
       )}
+
+      {/* Save Dialog */}
+      <ConfirmDialog
+        open={saveDialog.open}
+        onClose={() => {
+          saveDialog.closeConfirm();
+        }}
+        onConfirm={handleSaveConfirm}
+        {...saveDialog.config}
+      />
+
+      {/* Restore Dialog */}
+      <ConfirmDialog
+        open={restoreDialog.open}
+        onClose={() => {
+          restoreDialog.closeConfirm();
+          setRestoreTarget(null);
+        }}
+        onConfirm={handleRestoreConfirm}
+        {...restoreDialog.config}
+      />
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => {
+          deleteDialog.closeConfirm();
+          setDeleteTarget(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        {...deleteDialog.config}
+      />
     </div>
   );
 }

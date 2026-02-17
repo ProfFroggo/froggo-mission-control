@@ -1,21 +1,35 @@
 import { Pencil, Trash2, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import TimelineForm from './TimelineForm';
+import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 export default function TimelineList() {
   const { timeline, editingId, setEditingId, addTimelineEvent, updateTimelineEvent, deleteTimelineEvent } =
     useMemoryStore();
   const { activeProjectId } = useWritingStore();
 
+  const [deleteTarget, setDeleteTarget] = useState<{id: string, date: string} | null>(null);
+  const deleteDialog = useConfirmDialog();
+
   if (!activeProjectId) return null;
 
   const sorted = [...timeline].sort((a, b) => a.position - b.position);
 
   const handleDelete = (id: string, date: string) => {
-    if (window.confirm(`Delete event "${date}"?`)) {
-      deleteTimelineEvent(activeProjectId, id);
-    }
+    setDeleteTarget({ id, date });
+    deleteDialog.showConfirm({
+      title: 'Delete Event',
+      message: `Delete event "${date}"?`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, () => {
+      if (deleteTarget) {
+        deleteTimelineEvent(activeProjectId, deleteTarget.id);
+        setDeleteTarget(null);
+      }
+    });
   };
 
   return (
@@ -85,6 +99,22 @@ export default function TimelineList() {
           </button>
         </div>
       )}
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => {
+          deleteDialog.closeConfirm();
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteTimelineEvent(activeProjectId, deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+        {...deleteDialog.config}
+      />
     </div>
   );
 }
