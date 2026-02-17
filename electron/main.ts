@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer, shell, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer, shell, dialog, screen } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec, execSync, execFile } from 'child_process';
+import { promisify } from 'util';
 import * as os from 'os';
 // crypto imported but unused - removed during bug-hunt cleanup
 import * as http from 'http';
@@ -6199,8 +6200,6 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 
 // Shell execution for Code Agent Dashboard, Context Control Board
 ipcMain.handle('exec:run', async (_, command: string) => {
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
   const execAsync = promisify(exec);
 
   // Use the clawd workspace as default cwd for git commands
@@ -7606,8 +7605,6 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
 });
 // ============== FINANCE MODULE ==============
 const execPromise = (cmd: string, opts?: { timeout?: number }) => {
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
   return promisify(exec)(cmd, opts);
 };
 
@@ -8763,8 +8760,8 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     // Get current screen where main window is
     const currentDisplay = mainWindow 
-      ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
-      : require('electron').screen.getPrimaryDisplay();
+      ? screen.getDisplayNearestPoint(mainWindow.getBounds())
+      : screen.getPrimaryDisplay();
     
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
     
