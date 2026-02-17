@@ -11,6 +11,9 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('MeetingScribe');
 
 // Gemini API key — loaded dynamically, no hardcoded fallback
 let _cachedScribeKey: string | null = null;
@@ -113,7 +116,7 @@ Rules:
 
   if (!response.ok) {
     const err = await response.text();
-    console.error('[Scribe] Gemini error:', response.status, err);
+    logger.error('Gemini API error:', response.status, err);
     throw new Error(`Gemini API error: ${response.status}`);
   }
 
@@ -384,7 +387,7 @@ export default function MeetingScribe() {
     
     // Close audio context
     if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch((err) => { console.error('[MeetingScribe] Failed to close audio context:', err); });
+      audioCtxRef.current.close().catch((err) => { logger.error('Failed to close audio context:', err); });
       audioCtxRef.current = null;
     }
     

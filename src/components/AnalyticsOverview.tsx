@@ -74,15 +74,15 @@ export default function AnalyticsOverview() {
     setLoading(true);
     try {
       // Fetch real analytics data from froggo.db
-      const analyticsResult = await (window as any).clawdbot?.analytics?.getData(timeRange).catch((err: any) => { console.error('[Analytics] Failed to get analytics data:', err); return null; });
+      const analyticsResult = await (window as any).clawdbot?.analytics?.getData(timeRange).catch((err: any) => { logger.error('Failed to get analytics data:', err); return null; });
 
       // Also get current stats
-      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch((err: any) => { console.error('[Analytics] Failed to list sessions:', err); return null; });
+      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
       const sessionsCount = sessionsResult?.sessions?.length || 0;
-      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch((err: any) => { console.error('[Analytics] Failed to list tasks:', err); return null; });
+      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
       const tasksCount = tasksResult?.tasks?.length || 0;
       const completedTasks = tasksResult?.tasks?.filter((t: any) => t.status === 'done')?.length || 0;
-      const inboxResult = await (window as any).clawdbot?.inbox?.list().catch((err: any) => { console.error('[Analytics] Failed to list inbox:', err); return null; });
+      const inboxResult = await (window as any).clawdbot?.inbox?.list().catch((err: any) => { logger.error('Failed to list inbox:', err); return null; });
       const pendingApprovals = inboxResult?.items?.filter((i: any) => i.status === 'pending')?.length || 0;
 
       if (analyticsResult?.success) {

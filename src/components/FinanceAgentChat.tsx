@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Send, Loader2, X, MessageSquare, Trash2, AlertCircle } from 'lucide-react';
 import { showToast } from './Toast';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('FinanceChat');
 
 interface ChatMessage {
   id: string;
@@ -47,7 +50,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       if (result?.success) {
         setMessages(result.messages || []);
       } else {
-        console.error('[FinanceChat] Error loading history:', result?.error);
+        logger.error('Error loading history:', result?.error);
       }
     } catch (error) {
       // '[FinanceChat] Load history error:', error;
