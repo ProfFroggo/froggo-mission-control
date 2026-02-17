@@ -91,14 +91,6 @@ export const XCalendarView: React.FC = () => {
     const now = Date.now();
     const slots: TimeSlot[] = [];
     
-    // Parse draft content to determine content type
-    let content;
-    try {
-      content = JSON.parse(draft.content);
-    } catch {
-      content = { tweets: [{ text: draft.content }] };
-    }
-    
     const metadata = draft.draft_metadata ? JSON.parse(draft.draft_metadata) : {};
     const contentType = metadata.content_type || 'educational';
     

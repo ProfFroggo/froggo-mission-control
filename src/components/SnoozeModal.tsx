@@ -56,8 +56,18 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       setLoading(true);
       const result = await window.clawdbot!.snooze.get(sessionKey);
       if (result.success && result.snooze) {
-        setCurrentSnooze(result.snooze);
-        setReason(result.snooze.snooze_reason || '');
+        // Convert SnoozeEntry to SnoozeData format
+        const snoozeData: SnoozeData = {
+          id: 0,
+          session_id: result.snooze.sessionKey,
+          snooze_until: new Date(result.snooze.until).getTime(),
+          snooze_reason: result.snooze.snooze_reason || result.snooze.reason,
+          reminder_sent: 0,
+          created_at: result.snooze.createdAt || Date.now(),
+          updated_at: Date.now(),
+        };
+        setCurrentSnooze(snoozeData);
+        setReason(snoozeData.snooze_reason || '');
       }
     } catch (err) {
       console.error('[SnoozeModal] Failed to load current snooze:', err);

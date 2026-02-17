@@ -567,8 +567,8 @@ export const useStore = create<Store>()(
           get().setLoading('tasks', false);
         }
       },
-      addTask: (task: Task) => {
-        const newTask = {
+      addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+        const newTask: Task = {
           ...task,
           id: `task-${Date.now()}`,
           createdAt: Date.now(),
@@ -1135,13 +1135,13 @@ Start now.`;
           if (window.clawdbot?.inbox?.list) {
             const result = await window.clawdbot.inbox.list();
             if (result?.success && Array.isArray(result.items)) {
-              const approvalItems: ApprovalItem[] = result.items.map((item: { id: string | number; type: string; title: string; content: string; status: string; context?: string; created: string }) => ({
+              const approvalItems: ApprovalItem[] = result.items.map((item: InboxItem) => ({
                 id: String(item.id),
                 type: item.type as ApprovalType,
                 title: item.title,
                 content: item.content,
-                status: item.status as 'pending' | 'approved' | 'rejected',
-                createdAt: new Date(item.created).getTime(),
+                status: (item.status || 'pending') as 'pending' | 'approved' | 'rejected',
+                createdAt: new Date(item.createdAt || item.created || Date.now()).getTime(),
                 context: item.context,
               }));
               set({ approvals: approvalItems });
@@ -1192,12 +1192,10 @@ Start now.`;
         xDrafts: s.xDrafts,
       }),
       // Custom merge to ensure arrays are never undefined after hydration
-      merge: (persistedState: { activities?: Activity[]; xDrafts?: XDraft[] }, currentState: { activities: Activity[]; xDrafts: XDraft[] }) => ({
+      merge: (persistedState: unknown, currentState: Store): Store => ({
         ...currentState,
-        ...persistedState,
-        // Ensure arrays default to empty if missing/null in persisted state
-        activities: persistedState?.activities ?? currentState.activities ?? [],
-        xDrafts: persistedState?.xDrafts ?? currentState.xDrafts ?? [],
+        activities: (persistedState as { activities?: Activity[] })?.activities ?? currentState.activities ?? [],
+        xDrafts: (persistedState as { xDrafts?: XDraft[] })?.xDrafts ?? currentState.xDrafts ?? [],
       }),
     }
   )

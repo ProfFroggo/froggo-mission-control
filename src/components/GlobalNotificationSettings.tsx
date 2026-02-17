@@ -62,20 +62,20 @@ export default function GlobalNotificationSettings() {
     try {
       const updatedDefaults = {
         default_notification_level: defaultNotificationLevel,
-        default_sound_enabled: defaultSoundEnabled,
+        default_sound_enabled: defaultSoundEnabled ? 1 : 0,
         default_sound_type: defaultSoundType,
-        default_desktop_notifications: defaultDesktopNotifications,
-        quiet_hours_enabled: quietHoursEnabled,
+        default_desktop_notifications: defaultDesktopNotifications ? 1 : 0,
+        quiet_hours_enabled: quietHoursEnabled ? 1 : 0,
         quiet_start: quietStart,
         quiet_end: quietEnd,
         default_priority_level: defaultPriorityLevel,
-        do_not_disturb_enabled: doNotDisturbEnabled,
+        do_not_disturb_enabled: doNotDisturbEnabled ? 1 : 0,
         dnd_until: dndUntil || null,
-        enable_batching: enableBatching,
+        enable_batching: enableBatching ? 1 : 0,
         batch_interval_minutes: batchIntervalMinutes,
       };
 
-      const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults);
+      const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults as unknown as NotificationPrefs);
 
       if (result.success) {
         showToast('success', 'Global notification settings saved successfully!');

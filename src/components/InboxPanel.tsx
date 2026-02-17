@@ -75,7 +75,7 @@ function ShortcutRow({ keys, description }: { keys: string[]; description: strin
 type TabType = 'all' | 'approvals' | 'reviews';
 
 export default function InboxPanel() {
-  const [items, setItems] = useState<InboxItem[]>([]);
+  const [items, setItems] = useState<LocalInboxItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingItems, setProcessingItems] = useState<Set<number | string>>(new Set());
   const [expandedId, setExpandedId] = useState<number | string | null>(null);
@@ -84,7 +84,7 @@ export default function InboxPanel() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [filter, setFilter] = useState<ApprovalType | 'all'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
-  const [rejectDialogItem, setRejectDialogItem] = useState<InboxItem | null>(null);
+  const [rejectDialogItem, setRejectDialogItem] = useState<LocalInboxItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const rejectInputRef = useRef<HTMLInputElement>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
@@ -225,7 +225,7 @@ export default function InboxPanel() {
         content: item.content,
         context: item.context,
         metadata,
-        created: item.created,
+        created: item.created ?? '',
         source_channel: item.source_channel,
       });
       return { ...item, priority_score: score.total };
@@ -242,7 +242,7 @@ export default function InboxPanel() {
         comparison = (b.priority_score || 0) - (a.priority_score || 0);
         break;
       case 'time':
-        comparison = new Date(b.created).getTime() - new Date(a.created).getTime();
+        comparison = new Date(b.created ?? '').getTime() - new Date(a.created ?? '').getTime();
         break;
       case 'type':
         comparison = a.type.localeCompare(b.type);
@@ -370,7 +370,7 @@ export default function InboxPanel() {
               handleBulkApprove();
             }
           } else if (navItems[focusedIndex]) {
-            toggleSelection(navItems[focusedIndex].id);
+            toggleSelection(Number(navItems[focusedIndex].id));
           }
           break;
           
@@ -594,7 +594,7 @@ export default function InboxPanel() {
         if (result?.success) {
           // Mark original as approved (Stage 1 complete)
           setItems(prev => prev.filter(i => i.id !== item.id));
-          await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
+          await window.clawdbot?.inbox.update(Number(item.id), { status: 'approved' });
           showToast('success', 'Email content approved', `Ready to send to ${recipient}`);
         } else {
           showToast('error', 'Failed to create send task', result?.error);
@@ -642,7 +642,7 @@ export default function InboxPanel() {
       }
       
       // Regular inbox item - update and create execution task
-      await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
+      await window.clawdbot?.inbox.update(Number(item.id), { status: 'approved' });
       
       // Create task as IN-PROGRESS so watcher picks it up and executes
       const projectMap: Record<string, string> = {
@@ -753,7 +753,7 @@ export default function InboxPanel() {
         }
       } else {
         // Regular inbox item
-        await window.clawdbot?.inbox.update(item.id, { 
+        await window.clawdbot?.inbox.update(Number(item.id), { 
           status: 'rejected',
           feedback: reason 
         });
@@ -821,7 +821,7 @@ export default function InboxPanel() {
         }
       } else {
         // Regular inbox item
-        await window.clawdbot?.inbox.update(item.id, { 
+        await window.clawdbot?.inbox.update(Number(item.id), { 
           status: 'rejected',
           feedback: reason 
         });
@@ -865,7 +865,7 @@ export default function InboxPanel() {
       }
     } else {
       // Regular inbox item - update status and create revision task
-      await window.clawdbot?.inbox.update(item.id, { 
+      await window.clawdbot?.inbox.update(Number(item.id), { 
         status: 'needs-revision', 
         feedback: feedbackText 
       });
@@ -1223,7 +1223,7 @@ export default function InboxPanel() {
         ) : (
           <div className="p-6 space-y-4">
             {filteredPending.map((item, index) => {
-              const config = typeConfig[item.type];
+              const config = typeConfig[item.type as ApprovalType] ?? typeConfig['action'];
               const Icon = config.icon;
               const isExpanded = expandedId === item.id;
               const showFeedback = feedbackId === item.id;
@@ -1273,7 +1273,7 @@ export default function InboxPanel() {
                       <input
                         type="checkbox"
                         checked={selectedIds.has(item.id)}
-                        onChange={() => toggleSelection(item.id)}
+                        onChange={() => toggleSelection(Number(item.id))}
                         onClick={(e) => e.stopPropagation()}
                         className="w-4 h-4 mt-1 rounded border-clawd-border text-clawd-accent focus:ring-clawd-accent focus:ring-offset-0 bg-clawd-bg cursor-pointer"
                       />
@@ -1320,7 +1320,7 @@ export default function InboxPanel() {
                           )}
                           <span className="text-xs text-clawd-text-dim flex items-center gap-1">
                              <Clock size={14} className="flex-shrink-0" />
-                            {formatTime(item.created)}
+                            {formatTime(item.created ?? '')}
                           </span>
                           {item.source_channel && (
                             <span className="text-xs text-clawd-text-dim">
@@ -1507,7 +1507,7 @@ export default function InboxPanel() {
           {showCompleted && (
             <div className="px-6 pb-4 max-h-64 overflow-y-auto space-y-2">
               {completedItems.map((item) => {
-                const config = typeConfig[item.type];
+                const config = typeConfig[item.type as ApprovalType] ?? typeConfig['action'];
                 const Icon = config.icon;
                 return (
                   <div
@@ -1518,7 +1518,7 @@ export default function InboxPanel() {
                       <Icon size={16} className={config.color.split(' ')[0]} />
                       <div>
                         <div className="text-sm">{item.title}</div>
-                        <div className="text-xs text-clawd-text-dim">{formatTime(item.created)}</div>
+                        <div className="text-xs text-clawd-text-dim">{formatTime(item.created ?? '')}</div>
                       </div>
                     </div>
                     <div className={`text-xs px-2 py-1 rounded ${
@@ -1578,7 +1578,7 @@ export default function InboxPanel() {
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${typeConfig[scheduleModal.item.type].color}`}>
+              <div className={`p-2 rounded-lg ${(typeConfig[scheduleModal.item.type as ApprovalType] ?? typeConfig['action']).color}`}>
                 {scheduleModal.item.type === 'tweet' ?  <Send size={20} className="flex-shrink-0" /> :  <Mail size={20} className="flex-shrink-0" />}
               </div>
               <div>
@@ -1678,7 +1678,7 @@ export default function InboxPanel() {
                           });
                           
                           if (result?.success) {
-                            await window.clawdbot?.inbox.update(item.id, { status: 'approved' });
+                            await window.clawdbot?.inbox.update(Number(item.id), { status: 'approved' });
                             showToast('success', 'Email sent ✓', `To: ${recipient}`);
                           } else {
                             showToast('error', 'Email failed', result?.error);
@@ -1750,7 +1750,7 @@ export default function InboxPanel() {
                         if (result?.success) {
                           // Remove from inbox
                           setItems(prev => prev.filter(i => i.id !== item.id));
-                          await window.clawdbot?.inbox.update(item.id, { status: 'scheduled' });
+                          await window.clawdbot?.inbox.update(Number(item.id), { status: 'scheduled' });
                           
                           const friendlyTime = new Date(scheduledFor).toLocaleString(undefined, {
                             weekday: 'short',
@@ -1989,7 +1989,7 @@ export default function InboxPanel() {
       {/* AI Assistance Panel (side panel) */}
       {showAIPanel && (
         <AIAssistancePanel
-          selectedItem={selectedItemForAI}
+          selectedItem={selectedItemForAI as any}
           onClose={() => {
             setShowAIPanel(false);
             setSelectedItemForAI(null);
