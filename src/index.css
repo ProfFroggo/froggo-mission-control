@@ -30,6 +30,9 @@
   --clawd-text-dim: #a1a1aa;
   --clawd-accent: #22c55e;
   --clawd-accent-dim: #16a34a;
+  --clawd-bg-alt: #1a1a1a;   /* Alternate bg: between bg (#0a0a0a) and surface (#141414), used for input backgrounds */
+  --clawd-bg0: #0a0a0a;      /* Deepest background, same as --clawd-bg, used for status dots and inactive states */
+  --clawd-card: #141414;     /* Card background, same as --clawd-surface, used for message bubbles and cards */
   --clawd-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --clawd-font-size: 14px;
   
@@ -61,6 +64,9 @@
   --clawd-border: #e4e4e7;
   --clawd-text: #18181b;
   --clawd-text-dim: #52525b; /* Improved from #71717a for better contrast (7.8:1 vs 5.9:1) */
+  --clawd-bg-alt: #f4f4f5;   /* Light alternate bg: slightly darker than white for input backgrounds */
+  --clawd-bg0: #fafafa;      /* Deepest background in light mode */
+  --clawd-card: #ffffff;     /* Card background in light mode */
 }
 
 * {
