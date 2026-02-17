@@ -687,6 +687,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     },
     action: (action: string) => ipcRenderer.invoke('toolbar:action', action),
     resize: (height: number) => ipcRenderer.invoke('toolbar:resize', height),
+    setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('toolbar:setIgnoreMouseEvents', ignore),
     startDragging: () => ipcRenderer.send('toolbar:startDragging'),
     onAction: (callback: (action: string) => void) => {
       const handler = (_: unknown, action: string) => callback(action);

@@ -495,14 +495,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     if (!isFloating) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state, isFloating]);
 
-  // Floating mode: resize window when panels open/close
-  const anyPanelOpen = quickMessageOpen || agentCallModalOpen || contextChatOpen || taskShortcutsOpen || agentChatModalOpen || callDialogOpen || agentChatOpen;
-  useEffect(() => {
-    if (!isFloating) return;
-    const w = window as any;
-    const h = anyPanelOpen ? 520 : 60;
-    w.clawdbot?.toolbar?.resize?.(h);
-  }, [isFloating, anyPanelOpen]);
 
   useImperativeHandle(ref, () => ({
     openQuickMessage: () => { closeAllModals(); setQuickMessageOpen(true); },
@@ -926,22 +918,18 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const noDrag = isFloating ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {};
   const dragStyle = isFloating ? { WebkitAppRegion: 'drag' } as React.CSSProperties : {};
 
-  return (
-    <div
-      ref={toolbarRef}
-      className={isFloating
-        ? 'relative w-full h-full flex flex-col-reverse items-center'
-        : `fixed z-40 ${dragging ? '' : 'transition-all duration-300 ease-out'}`
-      }
-      style={isFloating ? {} : { ...snapStyle, position: 'fixed' }}
-    >
-      {/* ─── Modals (positioned above/below toolbar based on snap edge) ─── */}
+  // Panel position classes
+  const panelPos = isFloating
+    ? 'absolute bottom-full mb-2 left-1/2 -translate-x-1/2'
+    : `absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`;
+
+  const pillContent = (
+    <>
+      {/* ─── Modals ─── */}
 
       {/* Quick Message Modal */}
       {quickMessageOpen && !state.isCollapsed && (
-        <div className={`absolute w-80 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-4 ${
-          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={`${panelPos} w-80 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-4`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium flex items-center gap-2">
               <MessageSquare size={16} className="text-clawd-accent" />
@@ -975,7 +963,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 2: Agent Call Modal */}
       {agentCallModalOpen && !state.isCollapsed && (
-        <div className={`absolute ${isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={panelPos}>
           <AgentCallModal
             isOpen={agentCallModalOpen}
             onClose={() => setAgentCallModalOpen(false)}
@@ -987,9 +975,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 2b: Active Call Window (agent image / video + transcript + controls) */}
       {callDialogOpen && activeCall && (
-        <div className={`absolute w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden ${
-          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={`${panelPos} w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden`}>
 
           {/* Agent image / / Screen share area */}
           <div className="relative w-full aspect-square bg-black overflow-hidden">
@@ -1098,9 +1084,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Agent Chat Picker */}
       {agentChatModalOpen && !state.isCollapsed && (
-        <div className={`absolute w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 ${
-          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'} max-h-80 overflow-y-auto`}>
+        <div className={`${panelPos} w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 max-h-80 overflow-y-auto`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium flex items-center gap-2">
               <MessageSquare size={14} className="text-clawd-accent" />
@@ -1128,9 +1112,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* Agent Chat Interface */}
       {agentChatOpen && chatAgent && (
-        <div className={`absolute w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden ${
-          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={`${panelPos} w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden`}>
           {/* Header */}
           <div className="flex items-center justify-between px-3 py-2.5 bg-clawd-bg/50 border-b border-clawd-border">
             <div className="flex items-center gap-2">
@@ -1195,7 +1177,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 3: Context Chat Modal */}
       {contextChatOpen && !state.isCollapsed && (
-        <div className={`absolute ${isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={panelPos}>
           <ContextChatModal
             isOpen={contextChatOpen}
             onClose={() => setContextChatOpen(false)}
@@ -1207,7 +1189,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 4: Task Shortcuts Modal */}
       {taskShortcutsOpen && !state.isCollapsed && (
-        <div className={`absolute ${isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={panelPos}>
           <TaskShortcutsModal
             isOpen={taskShortcutsOpen}
             onClose={() => setTaskShortcutsOpen(false)}
@@ -1215,7 +1197,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         </div>
       )}
 
-      {/* ─── Toolbar ─── */}
+      {/* ─── Toolbar Pill ─── */}
       <div
         className={`flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full transition-all duration-300 px-1.5 py-1 ${
           isFloating ? 'shadow-none' : 'shadow-lg'
@@ -1344,6 +1326,31 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </>
         )}
       </div>
+    </>
+  );
+
+  if (isFloating) {
+    return (
+      <div className="relative w-full h-full pointer-events-none">
+        <div
+          ref={toolbarRef}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 relative pointer-events-auto"
+          onMouseEnter={() => (window as any).clawdbot?.toolbar?.setIgnoreMouseEvents?.(false)}
+          onMouseLeave={() => (window as any).clawdbot?.toolbar?.setIgnoreMouseEvents?.(true)}
+        >
+          {pillContent}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={toolbarRef}
+      className={`fixed z-40 ${dragging ? '' : 'transition-all duration-300 ease-out'}`}
+      style={{ ...snapStyle, position: 'fixed' }}
+    >
+      {pillContent}
     </div>
   );
 });
