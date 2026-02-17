@@ -32,7 +32,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
 
   // Helper to get agent name/emoji from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
-  const agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
+  const _agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
@@ -160,7 +160,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     setStopped(true);
   }, [roomId, room, updateMessage]);
 
-  const clearPending = () => {
+  const _clearPending = () => {
     if (pendingAgentRef.current) {
       setTypingAgents(prev => {
         const n = new Set(prev);
@@ -359,9 +359,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
     // Display message (show attachment badges to user)
     const displayContent = text + (attachments.length > 0 ? `\n\n📎 ${attachments.map(a => a.name).join(', ')}` : '');
-
-    // Show image thumbnails in user message
-    const imageAtts = attachments.filter(a => a.type.startsWith('image/'));
 
     const userMsg: RoomMessage = {
       id: `rm-${Date.now()}-user`,

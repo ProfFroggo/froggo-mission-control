@@ -1688,7 +1688,7 @@ export default function CommsInbox3Pane() {
     loadMessages();
 
     // Listen for comms-updated events from background polling
-    const cleanup = (window as any).clawdbot?.messages?.onUpdate?.((data: any) => {
+    const cleanup = (window as any).clawdbot?.messages?.onUpdate?.((_data: any) => {
       if (isMounted.current) {
         loadMessages(true);
       }

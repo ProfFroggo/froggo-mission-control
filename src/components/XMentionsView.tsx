@@ -33,10 +33,10 @@ export const XMentionsView: React.FC = () => {
   const loadMentions = async () => {
     try {
       const filters = filter === 'all' ? {} : { replyStatus: filter };
-      const result = await window.electron.xMention.list(filters);
+      const result = await window.clawdbot?.xMention?.list(filters);
       
-      if (result.success) {
-        setMentions(result.mentions);
+      if (result?.success) {
+        setMentions((result?.mentions ?? []) as Mention[]);
       }
       setLoading(false);
     } catch (error) {
@@ -48,9 +48,9 @@ export const XMentionsView: React.FC = () => {
   const fetchNewMentions = async () => {
     setFetching(true);
     try {
-      const result = await window.electron.xMention.fetch();
+      const result = await window.clawdbot?.xMention?.fetch();
       
-      if (result.success) {
+      if (result?.success) {
         await loadMentions();
       }
     } catch (error) {
@@ -62,7 +62,7 @@ export const XMentionsView: React.FC = () => {
 
   const updateStatus = async (id: string, status: 'pending' | 'considering' | 'ignored' | 'replied') => {
     try {
-      await window.electron.xMention.update({ id, replyStatus: status });
+      await window.clawdbot?.xMention?.update({ id, replyStatus: status });
       await loadMentions();
     } catch (error) {
       console.error('Error updating mention status:', error);
@@ -71,7 +71,7 @@ export const XMentionsView: React.FC = () => {
 
   const saveNotes = async (id: string, noteText: string) => {
     try {
-      await window.electron.xMention.update({ id, notes: noteText });
+      await window.clawdbot?.xMention?.update({ id, notes: noteText });
       setNotes({ ...notes, [id]: '' });
     } catch (error) {
       console.error('Error saving notes:', error);
@@ -82,13 +82,13 @@ export const XMentionsView: React.FC = () => {
     if (!replyText.trim()) return;
     
     try {
-      const result = await window.electron.xMention.reply({
+      const result = await window.clawdbot?.xMention?.reply({
         mentionId,
         replyText,
         tweetId,
       });
       
-      if (result.success) {
+      if (result?.success) {
         setReplyText('');
         setSelectedMention(null);
         await loadMentions();

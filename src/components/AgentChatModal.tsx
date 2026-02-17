@@ -17,15 +17,6 @@ interface Message {
   timestamp: number;
 }
 
-// Map agent IDs to descriptive task prompts for spawning
-const agentSystemPrompts: Record<string, string> = {
-  main: 'You are Froggo, the main orchestrator agent. Help the user with any task.',
-  coder: 'You are Coder, a software engineering agent. Help with code, debugging, architecture, and technical problems.',
-  researcher: 'You are Researcher, a research and analysis agent. Help with research, data gathering, and analysis.',
-  writer: 'You are Writer, a content creation agent. Help with writing, editing, and content strategy.',
-  chief: 'You are Chief, the executive oversight agent. Help with planning, prioritization, and strategic decisions.',
-};
-
 export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps) {
   const { agents } = useStore();
   const [isClosing, setIsClosing] = useState(false);

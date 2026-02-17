@@ -302,7 +302,7 @@ class NotificationService {
            LIMIT 50`
         );
         if (result.success && result.rows) {
-          for (const row of result.rows) {
+          for (const row of result.rows as Record<string, any>[]) {
             const ts = new Date(row.timestamp).getTime();
             const platform = row.platform || 'unknown';
             const senderDisplay = row.sender_name || row.sender || 'Unknown';
@@ -342,8 +342,8 @@ class NotificationService {
               updated_at: ts,
               type: 'message_arrival',
               priority: 'normal',
-              title: chat.name || chat.sender || 'WhatsApp',
-              message: chat.preview || chat.lastMessage || '(no preview)',
+              title: chat.name || (chat as any).sender || 'WhatsApp',
+              message: (chat as any).preview || (chat as any).lastMessage || '(no preview)',
               source: 'message',
               source_id: chat.id,
               channel: 'WhatsApp',
@@ -383,7 +383,7 @@ class NotificationService {
       );
 
       if (result.success && result.rows) {
-        for (const row of result.rows) {
+        for (const row of result.rows as Record<string, any>[]) {
           const ts = typeof row.timestamp === 'number' ? row.timestamp : new Date(row.timestamp).getTime();
           let type: Notification['type'] = 'agent_update';
           let priority: Notification['priority'] = 'normal';
@@ -440,7 +440,7 @@ class NotificationService {
           // Only include pending items
           if (item.status !== 'pending') continue;
 
-          const ts = item.created_at ? new Date(item.created_at).getTime() : Date.now();
+          const ts = item.createdAt ? new Date(item.createdAt).getTime() : Date.now();
           notifications.push({
             id: `approval-${item.id || ts}`,
             created_at: ts,
@@ -450,7 +450,7 @@ class NotificationService {
             title: item.title || 'Approval Required',
             message: item.content || 'Pending your review',
             source: 'inbox',
-            source_id: item.id,
+            source_id: String(item.id),
             channel: item.channel || undefined,
             read: false,
             dismissed: false,

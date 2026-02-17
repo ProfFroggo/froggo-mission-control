@@ -11,7 +11,7 @@
  * - settings-handlers.ts: Settings, API keys, configuration
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import { createLogger } from '../src/utils/logger';
 

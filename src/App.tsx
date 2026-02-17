@@ -53,7 +53,7 @@ function App() {
       try {
         const settings = JSON.parse(saved);
         return (settings.defaultPanel as View) || 'dashboard';
-      } catch (e) {
+      } catch {
         return 'dashboard';
       }
     }
@@ -402,7 +402,7 @@ function App() {
           <GlobalSearch
             isOpen={searchOpen}
             onClose={() => setSearchOpen(false)}
-            onNavigate={(view, id) => {
+            onNavigate={(view, _id) => {
               setCurrentView(view as View);
               // Deep linking with id: not yet implemented
             }}

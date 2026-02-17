@@ -733,6 +733,103 @@ declare global {
       finance?: {
         triggerAnalysis: (options: { daysBack?: number; focus?: string }) => Promise<{ success: boolean; error?: string }>;
         dismissInsight: (insightId: string) => Promise<{ success: boolean; error?: string }>;
+        getTransactions: (limit?: number) => Promise<{ success: boolean; transactions?: unknown[]; error?: string }>;
+        getBudgetStatus: (budgetType: 'family' | 'crypto') => Promise<{ success: boolean; status?: unknown; error?: string }>;
+        uploadCSV: (csvContent: string, filename: string) => Promise<{ success: boolean; error?: string }>;
+        getAlerts: () => Promise<{ success: boolean; alerts?: unknown[]; error?: string }>;
+        getInsights: () => Promise<{ success: boolean; insights?: unknown[]; error?: string }>;
+      };
+      // Finance Agent
+      financeAgent?: {
+        sendMessage: (message: string, context?: unknown) => Promise<{ success: boolean; response?: string; error?: string }>;
+        getChatHistory: () => Promise<{ success: boolean; history?: unknown[]; error?: string }>;
+        clearHistory: () => Promise<{ success: boolean; error?: string }>;
+        triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => Promise<{ success: boolean; error?: string }>;
+        getStatus: () => Promise<{ success: boolean; status?: unknown; error?: string }>;
+      };
+      // HR Reports
+      hrReports?: {
+        list: () => Promise<{ success: boolean; files?: string[]; error?: string }>;
+        read: (filename: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+      };
+      // X Automations
+      xAutomations?: {
+        list: () => Promise<{ success: boolean; automations?: unknown[]; error?: string }>;
+        get: (id: string) => Promise<{ success: boolean; automation?: unknown; error?: string }>;
+        create: (automation: {
+          name: string;
+          description?: string;
+          trigger_type: string;
+          trigger_config: string;
+          conditions?: string;
+          actions: string;
+          max_executions_per_hour?: number;
+          max_executions_per_day?: number;
+        }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+        toggle: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+        executions: (automationId?: string, limit?: number) => Promise<{ success: boolean; executions?: unknown[]; error?: string }>;
+        rateLimit: (automationId: string) => Promise<{ success: boolean; rateLimit?: unknown; error?: string }>;
+      };
+      // X Research
+      xResearch?: {
+        propose: (data: { title: string; description: string; citations: string[]; proposedBy: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; limit?: number }) => Promise<{ success: boolean; ideas?: unknown[]; error?: string }>;
+        approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
+        reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Plan
+      xPlan?: {
+        create: (data: { researchIdeaId: string; title: string; contentType: string; threadLength: number; description: string; proposedBy: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; contentType?: string; limit?: number }) => Promise<{ success: boolean; plans?: unknown[]; error?: string }>;
+        approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
+        reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Draft
+      xDraft?: {
+        create: (data: { planId: string; version: string; content: string; mediaUrls?: string[]; proposedBy: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; planId?: string; limit?: number }) => Promise<{ success: boolean; drafts?: unknown[]; error?: string }>;
+        approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
+        reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Schedule
+      xSchedule?: {
+        create: (data: { draftId: string; scheduledFor: number; timeSlotReason?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; dateFrom?: number; dateTo?: number; limit?: number }) => Promise<{ success: boolean; scheduled?: unknown[]; error?: string }>;
+        update: (data: { id: string; scheduledFor?: number; status?: string }) => Promise<{ success: boolean; error?: string }>;
+        delete: (data: { id: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Mention
+      xMention?: {
+        fetch: () => Promise<{ success: boolean; count?: number; error?: string }>;
+        list: (filters?: { replyStatus?: string; limit?: number; offset?: number }) => Promise<{ success: boolean; mentions?: unknown[]; error?: string }>;
+        update: (data: { id: string; replyStatus?: string; repliedAt?: number; repliedWithId?: string; notes?: string }) => Promise<{ success: boolean; error?: string }>;
+        reply: (data: { mentionId: string; replyText: string; tweetId: string }) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
+      };
+      // X Reply Guy
+      xReplyGuy?: {
+        listHotMentions: (filters?: { minLikes?: number; minRetweets?: number; limit?: number }) => Promise<{ success: boolean; mentions?: unknown[]; error?: string }>;
+        createQuickDraft: (data: { mentionId: string; replyText: string; fastTrack?: boolean }) => Promise<{ success: boolean; draftId?: string; error?: string }>;
+        postNow: (data: { draftId: string }) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
+      };
+      // Writing Module
+      writing?: {
+        project: {
+          list: () => Promise<{ success: boolean; projects?: unknown[]; error?: string }>;
+          create: (title: string, type: string) => Promise<{ success: boolean; id?: string; error?: string }>;
+          get: (id: string) => Promise<{ success: boolean; project?: unknown; error?: string }>;
+          update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+          delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+        };
+        chapter?: {
+          list: (projectId: string) => Promise<{ success: boolean; chapters?: unknown[]; error?: string }>;
+          create: (projectId: string, data: Record<string, unknown>) => Promise<{ success: boolean; id?: string; error?: string }>;
+          get: (id: string) => Promise<{ success: boolean; chapter?: unknown; error?: string }>;
+          update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+          delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+          reorder: (projectId: string, ids: string[]) => Promise<{ success: boolean; error?: string }>;
+        };
       };
     };
   }

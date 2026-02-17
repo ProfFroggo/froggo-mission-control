@@ -217,7 +217,7 @@ export class FinanceAgentBridge extends EventEmitter {
     this.chatHistory = [];
     try {
       await fs.promises.unlink(this.historyPath);
-    } catch (error) {
+    } catch {
       // Ignore error if file doesn't exist
     }
   }

@@ -199,8 +199,6 @@ export default function AnalyticsOverview() {
     loadAnalytics();
   }, [loadAnalytics]);
 
-  const maxValue = Math.max(...dailyData.map(d => Math.max(d.completed, d.created)), 1);
-
   return (
     <div className="h-full overflow-y-auto p-6">
       {/* Time range selector */}

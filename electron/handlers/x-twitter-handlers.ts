@@ -18,6 +18,124 @@ import { execSync } from 'child_process';
 import { prepare } from '../database';
 import { safeLog } from '../logger';
 
+// ============== INTERFACES ==============
+
+interface ResearchIdeaData {
+  title: string;
+  description: string;
+  citations: string[];
+  proposedBy: string;
+}
+
+interface ResearchIdeaDBRow {
+  id: string;
+  title: string;
+  description: string;
+  citations: string;
+  proposed_by: string;
+  status: string;
+  file_path: string | null;
+}
+
+interface ResearchIdeaResult {
+  id: string;
+  title: string;
+  description: string;
+  citations: string[];
+  proposed_by: string;
+  status: string;
+  file_path?: string | null;
+  [key: string]: unknown;
+}
+
+interface ResearchFilters {
+  status?: string;
+  limit?: number;
+}
+
+interface ResearchListResult {
+  success: boolean;
+  ideas: ResearchIdeaResult[];
+  error?: string;
+}
+
+interface ResearchProposeResult {
+  success: boolean;
+  id?: string;
+  filePath?: string;
+  error?: string;
+}
+
+interface ApproveRejectData {
+  id: string;
+  approvedBy?: string;
+  reason?: string;
+}
+
+interface GenericResult {
+  success: boolean;
+  error?: string;
+}
+
+interface ContentPlanData {
+  researchIdeaId: string;
+  title: string;
+  contentType: string;
+  threadLength: number;
+  description: string;
+  proposedBy: string;
+}
+
+interface ContentPlanDBRow {
+  id: string;
+  research_idea_id: string;
+  title: string;
+  content_type: string;
+  thread_length: number;
+  proposed_by: string;
+  status: string;
+  file_path: string | null;
+}
+
+interface ContentPlanResult {
+  id: string;
+  research_idea_id: string;
+  title: string;
+  content_type: string;
+  thread_length: number;
+  proposed_by: string;
+  status: string;
+  file_path?: string | null;
+  [key: string]: unknown;
+}
+
+interface ContentPlanFilters {
+  status?: string;
+  contentType?: string;
+  limit?: number;
+}
+
+interface ContentPlanListResult {
+  success: boolean;
+  plans: ContentPlanResult[];
+  error?: string;
+}
+
+interface ContentPlanCreateResult {
+  success: boolean;
+  id?: string;
+  filePath?: string;
+  error?: string;
+}
+
+interface ListResult<T> {
+  success: boolean;
+  data?: T[];
+  error?: string;
+}
+
+// ============== HANDLER REGISTRATION ==============
+
 export function registerXTwitterHandlers(): void {
   // Research handlers
   ipcMain.handle('x:research:propose', handleXResearchPropose);
@@ -57,12 +175,7 @@ export function registerXTwitterHandlers(): void {
 
 // ============== RESEARCH HANDLERS ==============
 
-async function handleXResearchPropose(_: Electron.IpcMainInvokeEvent, data: {
-  title: string;
-  description: string;
-  citations: string[];
-  proposedBy: string;
-}): Promise<{ success: boolean; id?: string; filePath?: string; error?: string }> {
+async function handleXResearchPropose(_: Electron.IpcMainInvokeEvent, data: ResearchIdeaData): Promise<ResearchProposeResult> {
   try {
     const { title, description, citations, proposedBy } = data;
     const id = `research-${Date.now()}`;
@@ -106,19 +219,17 @@ ${citations.map(url => `- ${url}`).join('\n')}
 
     safeLog.log(`[X/Research] Created research idea: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: any) {
-    safeLog.error('[X/Research] Propose error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Research] Propose error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
-async function handleXResearchList(_: Electron.IpcMainInvokeEvent, filters?: {
-  status?: string;
-  limit?: number;
-}): Promise<{ success: boolean; ideas: any[]; error?: string }> {
+async function handleXResearchList(_: Electron.IpcMainInvokeEvent, filters?: ResearchFilters): Promise<ResearchListResult> {
   try {
     let query = 'SELECT * FROM x_research_ideas';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (filters?.status) {
       query += ' WHERE status = ?';
@@ -133,24 +244,22 @@ async function handleXResearchList(_: Electron.IpcMainInvokeEvent, filters?: {
     }
 
     const stmt = prepare(query);
-    const ideas = stmt.all(...params);
+    const ideas = stmt.all(...params) as ResearchIdeaDBRow[];
 
-    const parsed = ideas.map((idea: any) => ({
+    const parsed = ideas.map((idea): ResearchIdeaResult => ({
       ...idea,
-      citations: idea.citations ? JSON.parse(idea.citations) : []
+      citations: idea.citations ? JSON.parse(idea.citations) as string[] : []
     }));
 
     return { success: true, ideas: parsed };
-  } catch (error: any) {
-    safeLog.error('[X/Research] List error:', error.message);
-    return { success: false, ideas: [], error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Research] List error:', errorMessage);
+    return { success: false, ideas: [], error: errorMessage };
   }
 }
 
-async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: {
-  id: string;
-  approvedBy: string;
-}): Promise<{ success: boolean; error?: string }> {
+async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: ApproveRejectData): Promise<GenericResult> {
   try {
     const { id, approvedBy } = data;
     const now = Date.now();
@@ -166,8 +275,8 @@ async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: {
       throw new Error('Research idea not found');
     }
 
-    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as any;
-    if (idea?.filePath && fs.existsSync(idea.file_path)) {
+    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as { file_path: string | null } | undefined;
+    if (idea?.file_path && fs.existsSync(idea.file_path)) {
       let content = fs.readFileSync(idea.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: approved');
       content = content.replace(/^---\n/, `---\napproved_by: ${approvedBy}\napproved_at: ${new Date(now).toISOString()}\n---\n`);
@@ -181,16 +290,14 @@ async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Research] Approved research idea: ${id}`);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[X/Research] Approve error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Research] Approve error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
-async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: {
-  id: string;
-  reason?: string;
-}): Promise<{ success: boolean; error?: string }> {
+async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: ApproveRejectData): Promise<GenericResult> {
   try {
     const { id, reason } = data;
     const now = Date.now();
@@ -200,13 +307,13 @@ async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: {
       SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
       WHERE id = ?
     `);
-    const result = stmt.run(now, reason || '', id);
+    const result = stmt.run(now, reason ?? '', id);
 
     if (result.changes === 0) {
       throw new Error('Research idea not found');
     }
 
-    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as any;
+    const idea = prepare('SELECT file_path FROM x_research_ideas WHERE id = ?').get(id) as { file_path: string | null } | undefined;
     if (idea?.file_path && fs.existsSync(idea.file_path)) {
       let content = fs.readFileSync(idea.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: rejected');
@@ -223,22 +330,16 @@ async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Research] Rejected research idea: ${id}`);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[X/Research] Reject error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Research] Reject error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
 // ============== PLAN HANDLERS ==============
 
-async function handleXPlanCreate(_: Electron.IpcMainInvokeEvent, data: {
-  researchIdeaId: string;
-  title: string;
-  contentType: string;
-  threadLength: number;
-  description: string;
-  proposedBy: string;
-}): Promise<{ success: boolean; id?: string; filePath?: string; error?: string }> {
+async function handleXPlanCreate(_: Electron.IpcMainInvokeEvent, data: ContentPlanData): Promise<ContentPlanCreateResult> {
   try {
     const { researchIdeaId, title, contentType, threadLength, description, proposedBy } = data;
     const id = `plan-${Date.now()}`;
@@ -288,20 +389,17 @@ ${description}
 
     safeLog.log(`[X/Plan] Created content plan: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: any) {
-    safeLog.error('[X/Plan] Create error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Plan] Create error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
-async function handleXPlanList(_: Electron.IpcMainInvokeEvent, filters?: {
-  status?: string;
-  contentType?: string;
-  limit?: number;
-}): Promise<{ success: boolean; plans: any[]; error?: string }> {
+async function handleXPlanList(_: Electron.IpcMainInvokeEvent, filters?: ContentPlanFilters): Promise<ContentPlanListResult> {
   try {
     let query = 'SELECT * FROM x_content_plans WHERE 1=1';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (filters?.status) {
       query += ' AND status = ?';
@@ -321,19 +419,17 @@ async function handleXPlanList(_: Electron.IpcMainInvokeEvent, filters?: {
     }
 
     const stmt = prepare(query);
-    const plans = stmt.all(...params);
+    const plans = stmt.all(...params) as ContentPlanDBRow[];
 
-    return { success: true, plans };
-  } catch (error: any) {
-    safeLog.error('[X/Plan] List error:', error.message);
-    return { success: false, plans: [], error: error.message };
+    return { success: true, plans: plans as unknown as ContentPlanResult[] };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Plan] List error:', errorMessage);
+    return { success: false, plans: [], error: errorMessage };
   }
 }
 
-async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: {
-  id: string;
-  approvedBy: string;
-}): Promise<{ success: boolean; error?: string }> {
+async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: ApproveRejectData): Promise<GenericResult> {
   try {
     const { id, approvedBy } = data;
     const now = Date.now();
@@ -349,7 +445,7 @@ async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: {
       throw new Error('Content plan not found');
     }
 
-    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as { file_path: string | null } | undefined;
     if (plan?.file_path && fs.existsSync(plan.file_path)) {
       let content = fs.readFileSync(plan.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: approved');
@@ -364,16 +460,14 @@ async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Plan] Approved content plan: ${id}`);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[X/Plan] Approve error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Plan] Approve error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
-async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: {
-  id: string;
-  reason?: string;
-}): Promise<{ success: boolean; error?: string }> {
+async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: ApproveRejectData): Promise<GenericResult> {
   try {
     const { id, reason } = data;
     const now = Date.now();
@@ -383,13 +477,13 @@ async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: {
       SET status = 'rejected', updated_at = ?, metadata = json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ?)
       WHERE id = ?
     `);
-    const result = stmt.run(now, reason || '', id);
+    const result = stmt.run(now, reason ?? '', id);
 
     if (result.changes === 0) {
       throw new Error('Content plan not found');
     }
 
-    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as any;
+    const plan = prepare('SELECT file_path FROM x_content_plans WHERE id = ?').get(id) as { file_path: string | null } | undefined;
     if (plan?.file_path && fs.existsSync(plan.file_path)) {
       let content = fs.readFileSync(plan.file_path, 'utf-8');
       content = content.replace(/status: proposed/, 'status: rejected');
@@ -406,76 +500,77 @@ async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: {
 
     safeLog.log(`[X/Plan] Rejected content plan: ${id}`);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[X/Plan] Reject error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[X/Plan] Reject error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
 // ============== DRAFT HANDLERS (PLACEHOLDER - TO BE IMPLEMENTED) ==============
 
-async function handleXDraftCreate(): Promise<{ success: boolean; error?: string }> {
+async function handleXDraftCreate(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXDraftList(): Promise<{ success: boolean; drafts: any[]; error?: string }> {
-  return { success: false, drafts: [], error: 'Not implemented in this refactoring phase' };
+async function handleXDraftList(): Promise<ListResult<Record<string, unknown>>> {
+  return { success: false, data: [], error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXDraftApprove(): Promise<{ success: boolean; error?: string }> {
+async function handleXDraftApprove(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXDraftReject(): Promise<{ success: boolean; error?: string }> {
+async function handleXDraftReject(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
 // ============== SCHEDULE HANDLERS (PLACEHOLDER) ==============
 
-async function handleXScheduleCreate(): Promise<{ success: boolean; error?: string }> {
+async function handleXScheduleCreate(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXScheduleList(): Promise<{ success: boolean; schedules: any[]; error?: string }> {
-  return { success: false, schedules: [], error: 'Not implemented in this refactoring phase' };
+async function handleXScheduleList(): Promise<ListResult<Record<string, unknown>>> {
+  return { success: false, data: [], error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXScheduleUpdate(): Promise<{ success: boolean; error?: string }> {
+async function handleXScheduleUpdate(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXScheduleDelete(): Promise<{ success: boolean; error?: string }> {
+async function handleXScheduleDelete(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
 // ============== MENTION HANDLERS (PLACEHOLDER) ==============
 
-async function handleXMentionFetch(): Promise<{ success: boolean; mentions: any[]; error?: string }> {
-  return { success: false, mentions: [], error: 'Not implemented in this refactoring phase' };
+async function handleXMentionFetch(): Promise<ListResult<Record<string, unknown>>> {
+  return { success: false, data: [], error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXMentionList(): Promise<{ success: boolean; mentions: any[]; error?: string }> {
-  return { success: false, mentions: [], error: 'Not implemented in this refactoring phase' };
+async function handleXMentionList(): Promise<ListResult<Record<string, unknown>>> {
+  return { success: false, data: [], error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXMentionUpdate(): Promise<{ success: boolean; error?: string }> {
+async function handleXMentionUpdate(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXMentionReply(): Promise<{ success: boolean; error?: string }> {
+async function handleXMentionReply(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
 // ============== REPLY GUY HANDLERS (PLACEHOLDER) ==============
 
-async function handleXReplyGuyListHotMentions(): Promise<{ success: boolean; mentions: any[]; error?: string }> {
-  return { success: false, mentions: [], error: 'Not implemented in this refactoring phase' };
+async function handleXReplyGuyListHotMentions(): Promise<ListResult<Record<string, unknown>>> {
+  return { success: false, data: [], error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXReplyGuyCreateQuickDraft(): Promise<{ success: boolean; error?: string }> {
+async function handleXReplyGuyCreateQuickDraft(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleXReplyGuyPostNow(): Promise<{ success: boolean; error?: string }> {
+async function handleXReplyGuyPostNow(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }

@@ -1421,7 +1421,7 @@ export default function InboxPanel() {
                                   )}
                                 </>
                               );
-                            } catch (e) {
+                            } catch {
                               return null;
                             }
                           })()}
