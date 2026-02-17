@@ -63,7 +63,7 @@ interface WidgetManifest {
   widgets?: Array<Record<string, unknown>>;
 }
 
-interface GlobalWithCache extends NodeJS.Global {
+interface GlobalWithCache extends Record<string, unknown> {
   _agentRegistryCache?: Record<string, AgentRegistryEntry>;
   _agentRegistryCacheTime?: number;
 }

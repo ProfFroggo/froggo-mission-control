@@ -123,7 +123,7 @@ interface WidgetResult {
   error?: string;
 }
 
-interface GlobalWithCache extends NodeJS.Global {
+interface GlobalWithCache extends Record<string, unknown> {
   _agentRegistryCache?: Record<string, AgentRegistryEntry>;
   _agentRegistryCacheTime?: number;
 }
