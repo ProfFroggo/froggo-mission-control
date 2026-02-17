@@ -556,7 +556,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                       </h4>
                       <div className="space-y-2">
                         {details.brainNotes.map((note, i) => (
-                          <div key={i} className="bg-clawd-bg rounded-lg p-3 text-sm">
+                          <div key={`${note}-${i}`} className="bg-clawd-bg rounded-lg p-3 text-sm">
                             <pre className="whitespace-pre-wrap font-mono text-xs">{note}</pre>
                           </div>
                         ))}

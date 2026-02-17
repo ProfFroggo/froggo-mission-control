@@ -21,7 +21,7 @@ import {
   sanitizeUrl,
   escapeHtml,
   sanitizeEventDescription,
-} from '../src/utils/sanitize';
+} from './sanitize';
 
 describe('sanitize utilities', () => {
   beforeEach(() => {

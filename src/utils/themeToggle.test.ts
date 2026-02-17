@@ -19,7 +19,7 @@ import {
   toggleTheme, 
   getThemeDisplayName,
   Theme,
-} from '../src/utils/themeToggle';
+} from './themeToggle';
 
 describe('themeToggle utilities', () => {
   const mockDocument = {

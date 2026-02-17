@@ -36,8 +36,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error details for debugging
-    console.error('[ErrorBoundary] Caught error:', error);
-    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
+    logger.error('Caught error:', error);
+    logger.error('Component stack:', errorInfo.componentStack);
 
     this.setState({ errorInfo });
 
@@ -83,7 +83,7 @@ Time: ${new Date().toISOString()}
       // Show feedback - using alert for simplicity as toast might not be available in error state
       alert('Error details copied to clipboard. Please share with the development team.');
     }).catch((err) => {
-      console.error('[ErrorBoundary] Failed to copy error details to clipboard:', err);
+      logger.error('Failed to copy error details to clipboard:', err);
     });
   };
 

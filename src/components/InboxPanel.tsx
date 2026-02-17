@@ -10,6 +10,9 @@ import AIAssistancePanel from './AIAssistancePanel';
 import IconBadge from './IconBadge';
 import MarkdownMessage from './MarkdownMessage';
 import { matchTaskToAgent } from '../lib/agents';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('InboxPanel');
 
 type ApprovalType = 'tweet' | 'reply' | 'email' | 'message' | 'task' | 'action';
 
@@ -126,7 +129,7 @@ export default function InboxPanel() {
     try {
       // Check if running in Electron with clawdbot API
       if (!window.clawdbot?.inbox?.list) {
-        console.debug('[InboxPanel] clawdbot.inbox not available (web mode)');
+        logger.debug('clawdbot.inbox not available (web mode)');
         setItems([]);
         return;
       }
@@ -679,7 +682,7 @@ export default function InboxPanel() {
       
       const result = await window.clawdbot?.tasks.sync(taskData);
       if (!result?.success) {
-        console.error('[Inbox] Task creation failed:', result?.error);
+        logger.error('Task creation failed:', result?.error);
       } else {
         // SAFEGUARD: Verify the status is correct after a brief delay
         setTimeout(async () => {
@@ -889,7 +892,7 @@ export default function InboxPanel() {
         showToast('success', 'Revision task created', 'Check Tasks tab');
         await window.clawdbot?.tasks.update?.(taskData.id, { status: 'in-progress' });
       } else {
-        console.error('[Inbox] Task creation failed:', result);
+        logger.error('Task creation failed:', result);
         showToast('error', 'Revision task failed', result?.error || 'Unknown error');
       }
     }

@@ -365,7 +365,7 @@ export default function ContextControlBoard() {
               ) : (
                 <div className="space-y-4">
                   {chatHistory.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={`${msg.role}-${msg.content.substring(0, 20)}-${i}`} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] p-3 rounded-xl ${
                         msg.role === 'user' 
                           ? 'bg-clawd-accent text-white' 

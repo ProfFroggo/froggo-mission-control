@@ -1175,7 +1175,7 @@ export default function MeetingsPanel() {
                         <div className="p-4 border-t border-clawd-border max-h-96 overflow-y-auto">
                           <div className="space-y-2">
                             {meetingTranscript.map((line, i) => (
-                              <p key={i} className="text-sm text-clawd-text bg-clawd-bg rounded-lg px-3 py-2">
+                              <p key={`${line.substring(0, 30)}-${i}`} className="text-sm text-clawd-text bg-clawd-bg rounded-lg px-3 py-2">
                                 {line}
                               </p>
                             ))}
@@ -1266,7 +1266,7 @@ export default function MeetingsPanel() {
                         </div>
                         <div className="p-4 max-h-96 overflow-y-auto space-y-2">
                           {selectedMeeting.transcript.map((line, i) => (
-                            <p key={i} className="text-sm text-clawd-text bg-clawd-bg rounded-lg px-3 py-2">
+                            <p key={`${line.substring(0, 30)}-${i}`} className="text-sm text-clawd-text bg-clawd-bg rounded-lg px-3 py-2">
                               {line}
                             </p>
                           ))}
