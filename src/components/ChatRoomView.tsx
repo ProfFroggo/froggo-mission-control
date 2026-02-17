@@ -639,7 +639,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   <div
                     className={`px-4 py-3 rounded-2xl ${
                       isUser
-                        ? 'bg-clawd-accent/10 border border-clawd-accent/30 rounded-tr-sm'
+                        ? 'bg-clawd-accent/50 text-white rounded-tr-sm'
                         : `bg-clawd-surface/90 backdrop-blur-sm border ${theme?.border || 'border-clawd-border'} rounded-tl-sm shadow-sm`
                     }`}
                   >

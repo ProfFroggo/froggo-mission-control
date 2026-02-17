@@ -1332,7 +1332,7 @@ const MessageItem = memo(function MessageItem({
           <div
             className={`relative px-4 py-3 rounded-2xl shadow-sm ${
               isUser
-                ? 'bg-clawd-accent text-white rounded-tr-sm'
+                ? 'bg-clawd-accent/50 text-white rounded-tr-sm'
                 : 'bg-clawd-surface text-clawd-text border border-clawd-border rounded-tl-sm'
             }`}
           >
