@@ -178,7 +178,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
             <div className="flex gap-3">
               {/* Icon Picker */}
               <div className="w-24">
-                <label className="block text-xs font-medium mb-1 text-clawd-text-dim">Icon</label>
+                <span className="block text-xs font-medium mb-1 text-clawd-text-dim">Icon</span>
                 <div className="grid grid-cols-4 gap-1 p-1 bg-clawd-surface border border-clawd-border rounded-lg">
                   {iconOptions.map((icon) => (
                     <button
@@ -197,19 +197,21 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
               {/* Name & Description */}
               <div className="flex-1 space-y-2">
                 <div>
-                  <label className="block text-xs font-medium mb-1 text-clawd-text-dim">Name</label>
+                  <label htmlFor="folder-name" className="block text-xs font-medium mb-1 text-clawd-text-dim">Name</label>
                   <input
+                    id="folder-name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Client Work"
                     className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
-                    autoFocus
+                    /* autoFocus removed for accessibility */
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1 text-clawd-text-dim">Description (optional)</label>
+                  <label htmlFor="folder-description" className="block text-xs font-medium mb-1 text-clawd-text-dim">Description (optional)</label>
                   <input
+                    id="folder-description"
                     type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -221,7 +223,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
 
               {/* Color Picker */}
               <div className="w-28">
-                <label className="block text-xs font-medium mb-1 text-clawd-text-dim">Color</label>
+                <span className="block text-xs font-medium mb-1 text-clawd-text-dim">Color</span>
                 <div className="grid grid-cols-5 gap-1 p-1 bg-clawd-surface border border-clawd-border rounded-lg">
                   {colorOptions.map((color) => (
                     <button

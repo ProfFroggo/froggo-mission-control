@@ -87,17 +87,17 @@ export default function ProjectSelector() {
           <div className="mb-8 p-4 rounded-xl border border-clawd-border bg-clawd-surface">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-clawd-text-dim mb-1.5">
+                <label htmlFor="project-title" className="block text-xs font-medium text-clawd-text-dim mb-1.5">
                   Title
                 </label>
                 <input
+                  id="project-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="My Writing Project"
                   className="w-full px-3 py-2 rounded-lg bg-clawd-bg border border-clawd-border text-clawd-text text-sm placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
-                  autoFocus
                 />
               </div>
               <div>

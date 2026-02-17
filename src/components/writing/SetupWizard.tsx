@@ -97,6 +97,7 @@ export default function SetupWizard() {
               {/* Custom type name input */}
               {selectedType === 'other' && (
                 <input
+                  id="custom-type-input"
                   type="text"
                   value={customType}
                   onChange={(e) => setCustomType(e.target.value)}
@@ -108,10 +109,11 @@ export default function SetupWizard() {
 
             {/* Brain dump textarea */}
             <div>
-              <label className="block text-xs font-medium text-clawd-text-dim mb-2">
+              <label htmlFor="brain-dump-textarea" className="block text-xs font-medium text-clawd-text-dim mb-2">
                 Describe your book idea
               </label>
               <textarea
+                id="brain-dump-textarea"
                 value={brainDump}
                 onChange={(e) => setBrainDump(e.target.value)}
                 rows={6}

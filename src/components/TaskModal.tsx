@@ -593,7 +593,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   onChange={e => setTitle(e.target.value)}
                   placeholder="What needs to be done?"
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                  autoFocus
+                  /* autoFocus removed for accessibility - users can focus naturally */
                 />
               </div>
 

@@ -163,6 +163,10 @@ export default function DraggableVideoWindow({
           viewMode !== 'fullwidth' ? 'cursor-move' : ''
         }`}
         onMouseDown={handleDragStart}
+        onKeyDown={(e) => { if (viewMode !== 'fullwidth' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const rect = containerRef.current?.getBoundingClientRect(); if (rect) { setDragStart({ x: e.clientX - rect.left, y: e.clientY - rect.top }); setIsDragging(true); } }}}
+        role="button"
+        tabIndex={viewMode !== 'fullwidth' ? 0 : -1}
+        aria-label="Drag video window"
       >
         <div className="flex items-center gap-2">
           <Move size={12} className="text-clawd-text-dim" />
@@ -219,6 +223,10 @@ export default function DraggableVideoWindow({
         <div
           className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
           onMouseDown={handleResizeStart}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const rect = containerRef.current?.getBoundingClientRect(); if (rect) { setResizeStart({ x: e.clientX, y: e.clientY, w: rect.width, h: rect.height }); setIsResizing(true); } }}}
+          role="button"
+          tabIndex={0}
+          aria-label="Resize video window"
         >
           <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/40 rounded-br" />
         </div>

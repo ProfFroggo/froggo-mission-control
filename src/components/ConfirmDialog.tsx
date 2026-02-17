@@ -124,10 +124,11 @@ export default function ConfirmDialog({
       <BaseModalBody>
         {requireInput && (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-clawd-text">
+            <label htmlFor="confirm-input" className="block text-sm font-medium text-clawd-text">
               {requireInput.hint}
             </label>
             <input
+              id="confirm-input"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}

@@ -82,6 +82,9 @@ export default function ThreadListItem({
     <>
       <div
         onClick={handleClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); }}}
+        role="button"
+        tabIndex={0}
         className={`bg-clawd-bg border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-clawd-accent/50 ${
           hasUnread ? 'border-clawd-accent/30 bg-clawd-accent/5' : 'border-clawd-border'
         }`}

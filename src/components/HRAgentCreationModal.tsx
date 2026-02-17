@@ -430,7 +430,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
                 placeholder={stage === 'creating' ? 'Creating agent...' : 'Type your response...'}
                 disabled={stage === 'creating'}
                 className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-3 py-2 text-sm text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-teal-500/50 disabled:opacity-50"
-                autoFocus
+                /* autoFocus removed for accessibility */
               />
               <button onClick={handleSend}
                 disabled={!input.trim() || stage === 'creating'}

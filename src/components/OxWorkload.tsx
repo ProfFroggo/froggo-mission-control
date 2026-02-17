@@ -86,6 +86,9 @@ export default function OxWorkload() {
                         <div
                           key={task.id}
                           onClick={() => setSelectedTask(task.id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTask(task.id); }}}
+                          role="button"
+                          tabIndex={0}
                           className={`p-3 rounded-lg bg-slate-800 border border-slate-700 hover:border-amber-600/50 cursor-pointer transition-colors ${
                             selectedTask === task.id ? 'ring-2 ring-amber-500' : ''
                           }`}
