@@ -401,6 +401,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     recent: (limit?: number, includeArchived?: boolean) => ipcRenderer.invoke('messages:recent', limit, includeArchived),
     context: (messageId: string, platform: string, limit?: number) => ipcRenderer.invoke('messages:context', messageId, platform, limit),
     send: (platform: string, to: string, message: string) => ipcRenderer.invoke('messages:send', { platform, to, message }),
+    unread: () => ipcRenderer.invoke('messages:unread'),
     onUpdate: (cb: (data: any) => void) => {
       const handler = (_: any, data: any) => cb(data);
       ipcRenderer.on('comms-updated', handler);

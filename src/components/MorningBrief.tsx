@@ -91,6 +91,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
       // Fetch data - wait for Electron IPC to be ready with retry
       let pendingApprovals = 0;
+      let unreadMessages = 0;
       let upcomingEventsData: any[] = [];
       let weatherData: BriefData['weather'] = undefined;
       let overnightData: BriefData['overnightActivity'] = undefined;
@@ -114,6 +115,17 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         }
         // Wait before next attempt (longer delays)
         await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+      
+      // Fetch unread messages count
+      try {
+        const unreadResult = await (window as any).clawdbot?.messages?.unread?.();
+        if (unreadResult?.success) {
+          unreadMessages = unreadResult.count || 0;
+        }
+      } catch (e) {
+        console.error('[MorningBrief] Unread messages error:', e);
+        // Keep as 0 on error - not critical
       }
       
       // Fetch work calendar events (from user settings)
@@ -352,7 +364,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         greeting,
         timeOfDay,
         pendingApprovals,
-        unreadMessages: 0, // TODO: Fetch from messaging
+        unreadMessages,
         upcomingEvents,
         recentActivity: [],
         urgentItems,

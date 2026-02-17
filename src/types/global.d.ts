@@ -640,6 +640,7 @@ declare global {
       // Messages (wacli)
       messages: {
         recent: (limit?: number) => Promise<{ success: boolean; chats: MessageChat[] }>;
+        unread: () => Promise<{ success: boolean; count: number; byPlatform?: { [platform: string]: number } }>;
       };
       // Email (gog CLI)
       email: {
