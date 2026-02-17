@@ -186,6 +186,11 @@ export default function ContentCalendar() {
               <div
                 key={date.toISOString()}
                 onClick={() => setSelectedDate(date)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedDate(date); } }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Select date ${date.toLocaleDateString()}${today ? ', today' : ''}${dayItems.length > 0 ? `, ${dayItems.length} items` : ''}`}
+                aria-pressed={selectedDate?.toDateString() === date.toDateString()}
                 className={`min-h-24 p-2 rounded-xl border cursor-pointer transition-all ${
                   today
                     ? 'bg-clawd-accent/10 border-clawd-accent/30'

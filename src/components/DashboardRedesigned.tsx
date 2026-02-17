@@ -405,6 +405,10 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         key={task.id} 
                         className="group p-4 hover:bg-clawd-bg/30 transition-all cursor-pointer border-l-4 border-transparent hover:border-l-blue-400"
                         onClick={() => onNavigate?.('kanban')}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate?.('kanban'); } }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Task: ${task.title}, status: ${task.status}`}
                       >
                         <div className="flex items-start gap-4">
                           <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${

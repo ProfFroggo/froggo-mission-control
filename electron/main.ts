@@ -8826,7 +8826,7 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     // Default dimensions for horizontal pill toolbar (was 80x400 for vertical sidebar)
     // Expanded: ~600x80, Collapsed: ~250x80
     const windowWidth = data?.width || savedBounds?.width || 650;
-    const windowHeight = data?.height || savedBounds?.height || 100;
+    const windowHeight = data?.height || savedBounds?.height || 60;
     const windowX = data?.x !== undefined ? data.x : (savedBounds?.x !== undefined ? savedBounds.x : screenWidth - windowWidth - 20);
     const windowY = data?.y !== undefined ? data.y : (savedBounds?.y !== undefined ? savedBounds.y : Math.floor((screenHeight - windowHeight) / 2));
     

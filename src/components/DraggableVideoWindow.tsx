@@ -118,6 +118,10 @@ export default function DraggableVideoWindow({
           top: position.y,
         }}
         onClick={() => setViewMode('compact')}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewMode('compact'); } }}
+        role="button"
+        tabIndex={0}
+        aria-label="Expand video window"
       >
         <div className="flex items-center gap-2 px-3 py-2">
           {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
@@ -130,6 +134,7 @@ export default function DraggableVideoWindow({
               onClose();
             }}
             className="p-1 rounded hover:bg-clawd-border text-clawd-text-dim hover:text-error transition-colors"
+            aria-label="Close video window"
           >
             <X size={14} />
           </button>

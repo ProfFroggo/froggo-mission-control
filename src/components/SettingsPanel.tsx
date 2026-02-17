@@ -411,8 +411,9 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Gateway URL</label>
+                  <label htmlFor="gateway-url" className="block text-sm text-clawd-text-dim mb-1">Gateway URL</label>
                   <input
+                    id="gateway-url"
                     type="text"
                     value={settings.gatewayUrl}
                     onChange={(e) => setSettings(s => ({ ...s, gatewayUrl: e.target.value }))}
@@ -420,8 +421,9 @@ export default function SettingsPanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Token (optional)</label>
+                  <label htmlFor="gateway-token" className="block text-sm text-clawd-text-dim mb-1">Token (optional)</label>
                   <input
+                    id="gateway-token"
                     type="password"
                     value={settings.gatewayToken}
                     onChange={(e) => setSettings(s => ({ ...s, gatewayToken: e.target.value }))}
@@ -443,8 +445,9 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">Default Panel on Startup</label>
+                  <label htmlFor="default-panel" className="block text-sm text-clawd-text-dim mb-2">Default Panel on Startup</label>
                   <select
+                    id="default-panel"
                     value={settings.defaultPanel}
                     onChange={(e) => setSettings(s => ({ ...s, defaultPanel: e.target.value }))}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
@@ -591,7 +594,7 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">Color Mode</label>
+                  <label htmlFor="color-mode" className="block text-sm text-clawd-text-dim mb-2">Color Mode</label>
                   <div className="flex gap-2">
                     {(['dark', 'light', 'system'] as const).map((t) => (
                       <button
@@ -612,7 +615,7 @@ export default function SettingsPanel() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">Accent Color</label>
+                  <label htmlFor="accent-color" className="block text-sm text-clawd-text-dim mb-2">Accent Color</label>
                   <div className="flex gap-2 flex-wrap">
                     {['#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#10b981'].map((color) => (
                       <button
@@ -622,10 +625,12 @@ export default function SettingsPanel() {
                           settings.accentColor === color ? 'border-white scale-110' : 'border-transparent'
                         }`}
                         style={{ backgroundColor: color }}
+                        aria-label={`Accent color ${color}`}
                       />
                     ))}
                   </div>
                   <input
+                    id="accent-color"
                     type="color"
                     value={settings.accentColor}
                     onChange={(e) => setSettings(s => ({ ...s, accentColor: e.target.value }))}
@@ -928,7 +933,6 @@ export default function SettingsPanel() {
                       {editingShortcut === shortcut.id ? (
                         <input
                           type="text"
-                          autoFocus
                           value={shortcut.currentKey}
                           onChange={(e) => handleShortcutEdit(shortcut.id, e.target.value)}
                           onBlur={() => setEditingShortcut(null)}

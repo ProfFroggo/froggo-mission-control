@@ -745,11 +745,13 @@ Be thorough but only include real people, not generic references.`;
             // Manual Mode
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Contact Type */}
-              <div>
-                <label className="block text-sm text-clawd-text-dim mb-2">Contact Type</label>
-                <div className="flex gap-3">
+              <div role="group" aria-labelledby="contact-type-label">
+                <span id="contact-type-label" className="block text-sm text-clawd-text-dim mb-2">Contact Type</span>
+                <div className="flex gap-3" role="radiogroup" aria-label="Contact type selection">
                   <button
                     type="button"
+                    role="radio"
+                    aria-checked={contactType === 'personal'}
                     onClick={() => setContactType('personal')}
                     className={`flex-1 p-3 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${
                       contactType === 'personal'
@@ -762,6 +764,8 @@ Be thorough but only include real people, not generic references.`;
                   </button>
                   <button
                     type="button"
+                    role="radio"
+                    aria-checked={contactType === 'professional'}
                     onClick={() => setContactType('professional')}
                     className={`flex-1 p-3 rounded-lg border text-sm flex items-center justify-center gap-2 transition-colors ${
                       contactType === 'professional'
@@ -777,23 +781,24 @@ Be thorough but only include real people, not generic references.`;
 
               {/* Name */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Name *</label>
+                <label htmlFor="contact-name" className="block text-sm text-clawd-text-dim mb-1">Name *</label>
                 <input
+                  id="contact-name"
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Full name"
                   aria-label="Contact name"
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                  autoFocus
                 />
               </div>
 
               {/* Relationship & Role */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Relationship</label>
+                  <label htmlFor="contact-relationship" className="block text-sm text-clawd-text-dim mb-1">Relationship</label>
                   <input
+                    id="contact-relationship"
                     type="text"
                     value={relationship}
                     onChange={e => setRelationship(e.target.value)}
@@ -803,8 +808,9 @@ Be thorough but only include real people, not generic references.`;
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Role/Title</label>
+                  <label htmlFor="contact-role" className="block text-sm text-clawd-text-dim mb-1">Role/Title</label>
                   <input
+                    id="contact-role"
                     type="text"
                     value={role}
                     onChange={e => setRole(e.target.value)}
@@ -818,10 +824,11 @@ Be thorough but only include real people, not generic references.`;
               {/* Company & Location */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-company" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                     <Briefcase size={14} /> Company
                   </label>
                   <input
+                    id="contact-company"
                     type="text"
                     value={company}
                     onChange={e => setCompany(e.target.value)}
@@ -831,10 +838,11 @@ Be thorough but only include real people, not generic references.`;
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-location" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                     <MapPin size={14} /> Location
                   </label>
                   <input
+                    id="contact-location"
                     type="text"
                     value={location}
                     onChange={e => setLocation(e.target.value)}
@@ -848,10 +856,11 @@ Be thorough but only include real people, not generic references.`;
               {/* Email & Phone */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-email" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                     <Mail size={14} /> Email
                   </label>
                   <input
+                    id="contact-email"
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
@@ -861,10 +870,11 @@ Be thorough but only include real people, not generic references.`;
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                  <label htmlFor="contact-phone" className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                     <Phone size={14} /> Phone
                   </label>
                   <input
+                    id="contact-phone"
                     type="tel"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
@@ -877,8 +887,9 @@ Be thorough but only include real people, not generic references.`;
 
               {/* Context */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Context</label>
+                <label htmlFor="contact-context" className="block text-sm text-clawd-text-dim mb-1">Context</label>
                 <textarea
+                  id="contact-context"
                   value={context}
                   onChange={e => setContext(e.target.value)}
                   placeholder="How you know them, what they do, why they're important..."
@@ -890,8 +901,9 @@ Be thorough but only include real people, not generic references.`;
 
               {/* Notes */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Notes</label>
+                <label htmlFor="contact-notes" className="block text-sm text-clawd-text-dim mb-1">Notes</label>
                 <textarea
+                  id="contact-notes"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Any additional notes or details..."

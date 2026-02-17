@@ -438,8 +438,11 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 }, ref) => {
   const { isMuted: _isMuted, toggleMuted: _toggleMuted, isMeetingActive, toggleMeeting } = useStore();
 
-  // Toolbar state
-  const [state, setState] = useState<ToolbarState>(loadState);
+  // Toolbar state — floating always starts expanded, never persists collapse
+  const [state, setState] = useState<ToolbarState>(() => {
+    const s = loadState();
+    return isFloating ? { ...s, isCollapsed: false } : s;
+  });
   const [dragging, setDragging] = useState(false);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const dragStartRef = useRef<{ mouseX: number; mouseY: number; elX: number; elY: number } | null>(null);
@@ -487,17 +490,17 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setAgentChatModalOpen(false);
   };
 
-  // Persist toolbar state
+  // Persist toolbar state (not in floating mode — don't clobber in-app state)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    if (!isFloating) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [state, isFloating]);
 
   // Floating mode: resize window when panels open/close
   const anyPanelOpen = quickMessageOpen || agentCallModalOpen || contextChatOpen || taskShortcutsOpen || agentChatModalOpen || callDialogOpen || agentChatOpen;
   useEffect(() => {
     if (!isFloating) return;
     const w = window as any;
-    const h = anyPanelOpen ? 500 : 68;
+    const h = anyPanelOpen ? 520 : 60;
     w.clawdbot?.toolbar?.resize?.(h);
   }, [isFloating, anyPanelOpen]);
 

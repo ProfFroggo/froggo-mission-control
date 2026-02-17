@@ -1345,7 +1345,6 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 onChange={(e) => setReopenReason(e.target.value)}
                 placeholder="Enter reason for reopening (required)..."
                 className="w-full h-32 bg-clawd-bg border border-clawd-border rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-clawd-accent"
-                autoFocus
               />
               {reopenReason.trim().length === 0 && (
                 <p className="text-xs text-error mt-2">

@@ -413,6 +413,10 @@ export default function ConnectedAccountsPanel() {
                 key={account.id}
                 className="bg-clawd-surface rounded-xl border border-clawd-border p-4 hover:border-clawd-accent transition-colors cursor-pointer group"
                 onClick={() => handleAccountClick(account)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAccountClick(account); } }}
+                role="button"
+                tabIndex={0}
+                aria-label={`${account.email} account - ${account.authStatus === 'connected' ? 'connected' : account.authStatus === 'expired' ? 'expired' : 'error'}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4 flex-1">
@@ -500,10 +504,16 @@ export default function ConnectedAccountsPanel() {
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={() => setShowDetailModal(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowDetailModal(false); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close account detail modal"
         >
           <div 
             className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
           >
             {/* Modal Header */}
             <div className="flex items-start justify-between mb-6">
@@ -679,10 +689,16 @@ export default function ConnectedAccountsPanel() {
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={() => !addingAccount && setShowAddModal(false)}
+          onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === 'Escape') && !addingAccount) { e.preventDefault(); setShowAddModal(false); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close add account modal"
         >
           <div 
             className="bg-clawd-surface rounded-xl border border-clawd-border p-6 max-w-2xl w-full"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6">

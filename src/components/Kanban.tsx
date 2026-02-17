@@ -866,8 +866,20 @@ export default function Kanban() {
 
       {/* Keyboard Shortcuts Modal */}
       {showKeyboardHelp && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowKeyboardHelp(false)} role="button" tabIndex={-1} aria-label="Close keyboard shortcuts">
-          <div className="bg-clawd-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-clawd-border" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" 
+          onClick={() => setShowKeyboardHelp(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowKeyboardHelp(false); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close keyboard shortcuts"
+        >
+          <div 
+            className="bg-clawd-surface rounded-2xl p-6 max-w-md w-full mx-4 border border-clawd-border" 
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
+            role="presentation"
+          >
             <div className="flex items-center justify-between mb-4">
               <h2 className="icon-text text-lg font-semibold">
                 <Keyboard size={20} className="flex-shrink-0" /> Keyboard Shortcuts
@@ -1060,6 +1072,10 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Task: ${task.title}, status: ${task.status}`}
       className={`bg-clawd-bg rounded-xl p-3 border-2 transition-all cursor-pointer group relative ${
         isDragging ? 'opacity-50 scale-105 rotate-2 shadow-lg' : ''
       } ${
@@ -1096,11 +1112,20 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
             {/* Priority Picker Modal */}
             {showPriority && priorityBtnPos && createPortal(
               <>
-                <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} role="button" tabIndex={-1} aria-label="Close priority dropdown" />
+                <div 
+                  className="fixed inset-0 z-[100]" 
+                  onClick={() => setShowPriority(false)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowPriority(false); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Close priority dropdown"
+                />
                 <div 
                   className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
                   style={{ top: `${priorityBtnPos.top}px`, left: `${priorityBtnPos.left}px` }}
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  role="presentation"
                 >
                   <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Set Priority</div>
                   <div className="space-y-1">

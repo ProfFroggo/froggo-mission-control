@@ -430,7 +430,7 @@ export default function ContentScheduler() {
             {/* Media Upload */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Media (optional)</label>
+                <label htmlFor="media-upload" className="text-sm font-medium">Media (optional)</label>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -442,6 +442,7 @@ export default function ContentScheduler() {
               </div>
               
               <input
+                id="media-upload"
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/quicktime"
@@ -532,8 +533,9 @@ export default function ContentScheduler() {
             {/* Date/Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Date</label>
+                <label htmlFor="schedule-date" className="block text-sm text-clawd-text-dim mb-1">Date</label>
                 <input
+                  id="schedule-date"
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
@@ -543,8 +545,9 @@ export default function ContentScheduler() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Time</label>
+                <label htmlFor="schedule-time" className="block text-sm text-clawd-text-dim mb-1">Time</label>
                 <input
+                  id="schedule-time"
                   type="time"
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
