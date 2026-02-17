@@ -402,8 +402,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
         <div className="p-6 space-y-6">
           {/* Basic Info */}
           <div>
-            <label className="block text-sm font-medium mb-2">Name</label>
+            <label htmlFor="automation-name" className="block text-sm font-medium mb-2">Name</label>
             <input
+              id="automation-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -413,8 +414,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-2">Description (optional)</label>
+            <label htmlFor="automation-description" className="block text-sm font-medium mb-2">Description (optional)</label>
             <textarea
+              id="automation-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this automation do?"
@@ -432,8 +434,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">When this happens...</label>
+                <label htmlFor="automation-trigger" className="block text-sm font-medium mb-2">When this happens...</label>
                 <select
+                  id="automation-trigger"
                   value={triggerType}
                   onChange={(e) => setTriggerType(e.target.value as any)}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
@@ -449,8 +452,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               {/* Trigger-specific config */}
               {triggerType === 'keyword' && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
+                  <label htmlFor="automation-keywords" className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
                   <input
+                    id="automation-keywords"
                     type="text"
                     value={triggerConfig.keywords?.join(', ') || ''}
                     onChange={(e) => setTriggerConfig({ 
@@ -465,8 +469,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               
               {triggerType === 'time' && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Interval</label>
+                  <label htmlFor="automation-interval" className="block text-sm font-medium mb-2">Interval</label>
                   <select
+                    id="automation-interval"
                     value={triggerConfig.interval || '1h'}
                     onChange={(e) => setTriggerConfig({ ...triggerConfig, interval: e.target.value })}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
@@ -483,8 +488,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               
               {triggerType === 'follower' && (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Action</label>
+                  <label htmlFor="automation-follower-action" className="block text-sm font-medium mb-2">Action</label>
                   <select
+                    id="automation-follower-action"
                     value={triggerConfig.action || 'follow'}
                     onChange={(e) => setTriggerConfig({ ...triggerConfig, action: e.target.value })}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
@@ -586,8 +592,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Max per hour</label>
+                <label htmlFor="automation-max-per-hour" className="block text-sm font-medium mb-2">Max per hour</label>
                 <input
+                  id="automation-max-per-hour"
                   type="number"
                   value={maxPerHour}
                   onChange={(e) => setMaxPerHour(parseInt(e.target.value) || 0)}
@@ -598,8 +605,9 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Max per day</label>
+                <label htmlFor="automation-max-per-day" className="block text-sm font-medium mb-2">Max per day</label>
                 <input
+                  id="automation-max-per-day"
                   type="number"
                   value={maxPerDay}
                   onChange={(e) => setMaxPerDay(parseInt(e.target.value) || 0)}
