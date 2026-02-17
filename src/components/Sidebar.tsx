@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, Kanban, Bot, MessageSquare, Settings, ChevronLeft, ChevronRight, Bell, Inbox, FolderOpen, Calendar, Code, Sparkles, BarChart2, Mail, Cloud, HelpCircle, SlidersHorizontal,  Users, Mic, MessagesSquare, DollarSign, PenLine } from 'lucide-react';
+import { Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
 import { usePanelConfigStore } from '../store/panelConfig';
 import { FocusModeSelector, useFocusMode } from './FocusMode';
+import { ViewRegistry } from '../core/ViewRegistry';
 
-// X logo as SVG component
-const XIcon = ({ size = 20 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
+// View IDs are dynamic — any registered view ID is valid
+type View = string;
 
 interface SidebarProps {
   currentView: View;
@@ -21,30 +16,7 @@ interface SidebarProps {
   onWidthChange?: (width: number) => void; // Callback for width changes
 }
 
-// Icon map for panel config lookups
-const panelIconMap: Record<string, any> = {
-  inbox: Mail,
-  dashboard: LayoutDashboard,
-  analytics: BarChart2,
-  kanban: Kanban,
-  agents: Bot,
-  agentdms: MessagesSquare,
-  twitter: XIcon,
-  meetings: Users,
-  voicechat: Mic,
-  chat: MessageSquare,
-  accounts: Cloud,
-  approvals: Inbox,
-  context: Sparkles,
-  codeagent: Code,
-  library: FolderOpen,
-  schedule: Calendar,
-  notifications: Bell,
-  finance: DollarSign,
-  writing: PenLine,
-};
-
-// Static items removed - Context, Dev, Library, and Schedule are now managed by panel config
+// Icons are now provided by ViewRegistry — no hardcoded icon map needed
 
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange }: SidebarProps) {
   const [expanded, setExpanded] = useState(true); // Open by default
@@ -134,7 +106,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             .sort((a, b) => a.order - b.order)
             .filter(p => p.visible)
             .map((p, idx) => {
-              const Icon = panelIconMap[p.id];
+              const Icon = ViewRegistry.getIcon(p.id);
               if (!Icon) return null;
               const id = p.id as View;
               const label = p.label;
