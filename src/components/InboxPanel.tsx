@@ -158,8 +158,8 @@ export default function InboxPanel() {
             }));
           allItems = [...taskItems, ...allItems];
         }
-      } catch (e) {
-
+      } catch (_e) {
+        // Task items unavailable, continue with other inbox items
       }
       
       // BUGFIX: Filter out items currently being processed OR recently approved to prevent flash
@@ -662,8 +662,8 @@ export default function InboxPanel() {
       if (item.metadata) {
         try {
           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-        } catch (e) {
-
+        } catch (_e) {
+          // Keep metadata as-is if JSON parse fails
         }
       }
       
@@ -685,8 +685,8 @@ export default function InboxPanel() {
         setTimeout(async () => {
           try {
             await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
-          } catch (e) {
-
+          } catch (_e) {
+            // Non-blocking: status update is best-effort
           }
         }, 500);
       }

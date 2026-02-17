@@ -303,8 +303,8 @@ export default function EnhancedSettingsPanel() {
     if (saved) {
       try {
         return { ...defaultSettings, ...JSON.parse(saved) };
-      } catch (e) {
-
+      } catch (_e) {
+        // Ignore malformed saved settings, fall back to defaults
       }
     }
     return defaultSettings;

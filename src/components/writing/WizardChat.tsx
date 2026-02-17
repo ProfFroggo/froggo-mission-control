@@ -55,6 +55,7 @@ export default function WizardChat() {
         plan: state.plan,
       });
     } catch {
+      // Session persist failure is non-blocking
     }
   }, [sessionId]);
 

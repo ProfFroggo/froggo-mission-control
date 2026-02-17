@@ -51,5 +51,6 @@ export async function endVoiceSession(sessionId: number): Promise<void> {
       body: JSON.stringify({ ended_at: Date.now() })
     });
   } catch {
+    // Session end log failure is non-blocking
   }
 }

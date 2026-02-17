@@ -30,8 +30,8 @@ export async function loadSettings(): Promise<AppSettings> {
       notifyListeners();
       return cachedSettings!;
     }
-  } catch (e) {
-
+  } catch (_e) {
+    // Settings load failed — return cached or empty
   }
   return cachedSettings || {};
 }

@@ -312,6 +312,7 @@ export default function EpicCalendar() {
 
       if (response.success) {
         if (response.errors && response.errors.length > 0) {
+          setError(`${response.errors.length} calendar(s) failed to load`);
         }
 
         setEvents(response.events);

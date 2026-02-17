@@ -218,6 +218,7 @@ export default function ConnectedAccountsPanel() {
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
+          showToast('warning', 'Import partial', `${result.errors.length} account(s) had errors`);
         }
         loadAccounts();
       } else {
