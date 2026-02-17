@@ -403,7 +403,6 @@ async function handleTaskPokeInternal(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     safeLog.log('[Tasks] Internal poke:', taskId, title);
-    // TODO: Implement internal notification
     return { success: true };
   } catch (error) {
     safeLog.error('[Tasks] Internal poke error:', (error as Error).message);
