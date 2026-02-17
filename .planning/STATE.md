@@ -2,17 +2,17 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-13)
+See: .planning/PROJECT.md (updated 2026-02-17)
 
-**Core value:** Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters -- then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
-**Current focus:** Planning next milestone
+**Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
+**Current focus:** v3.0 milestone — requirements defined, roadmap pending
 
 ## Current Position
 
-Phase: v2.1 complete, next milestone not yet defined
+Phase: Not started (requirements defined, creating roadmap)
 Plan: —
-Status: Ready for next milestone
-Last activity: 2026-02-13 — v2.1 milestone complete
+Status: Defining roadmap
+Last activity: 2026-02-17 — Milestone v3.0 started
 
 ## Performance Metrics
 
@@ -34,13 +34,22 @@ Last activity: 2026-02-13 — v2.1 milestone complete
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-
 Carried forward:
 - Keep preload namespace as `clawdbot` (cosmetic rename deferred)
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+- Work on feature branches off `dev`, PRs to `dev`, then `dev` → `main`
+
+### Key Architecture Notes
+
+- Chat consistency target: use Chat page (`src/components/ChatPanel.tsx`) style as reference
+- X/Twitter page: `src/components/XTwitter*.tsx` (check exact file names)
+- Finance page: `src/components/Finance*.tsx`
+- Writing layout: `src/components/writing/ProjectEditor.tsx` (react-resizable-panels)
+- Library: `src/components/Library*.tsx`
+- Dark mode: Tailwind dark: classes, theme vars in `tailwind.config.*`
+- Agents page: `src/components/AgentsPanel.tsx` or similar
 
 ### Pending Todos
 
@@ -48,10 +57,12 @@ Carried forward:
 
 ### Blockers/Concerns
 
-- None
+- Finance page fully non-functional — may need IPC handler wiring investigation before planning
+- Writing pane widths — likely a react-resizable-panels defaultSize/minSize config issue
+- X/Twitter automation builder — was previously built, needs to be found/restored (check git history)
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: v2.1 milestone archived
+Last session: 2026-02-17
+Stopped at: v3.0 requirements defined, roadmap being created
 Resume file: None
