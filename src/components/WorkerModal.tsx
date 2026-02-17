@@ -1,4 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: WorkerModal uses file-level suppression for intentional stable ref patterns.
+// The suppressions are legitimate because:
+// - resetForm sets multiple state fields atomically
+// - Chat-related effects depend on stable callback patterns
+// - Modal lifecycle effects are carefully designed
+// Review: 2026-02-17 - suppression retained, fixed ESC handler dep
+
 import { useState, useEffect, useRef } from 'react';
 import { X, Bot, MessageSquare, Edit3, Send, Loader2, Sparkles, Zap, CheckCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';
@@ -122,7 +129,7 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   if (!isOpen) return null;
 

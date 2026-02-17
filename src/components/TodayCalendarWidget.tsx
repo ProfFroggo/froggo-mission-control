@@ -17,13 +17,13 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
     setLoading(true);
     setError(null);
     try {
-      if (!(window as any).clawdbot?.calendar?.today) {
+      if (!window.clawdbot?.calendar?.today) {
         logger.debug('calendar.today() not available');
         setEvents([]);
         return;
       }
 
-      const result = await (window as any).clawdbot.calendar.today();
+      const result = await window.clawdbot.calendar.today();
       if (result?.success && result.events) {
         // Sort by start time
         const sorted = result.events.sort((a: CalendarEvent, b: CalendarEvent) => {

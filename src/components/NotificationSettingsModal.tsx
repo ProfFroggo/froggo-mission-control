@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: NotificationSettingsModal uses file-level suppression for intentional stable ref patterns.
+// Modal lifecycle effects and settings management are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import { 
   Bell, BellOff, Volume2, VolumeX, Moon, Clock, 

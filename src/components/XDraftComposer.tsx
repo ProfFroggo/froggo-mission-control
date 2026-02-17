@@ -38,7 +38,7 @@ export default function XDraftComposer() {
   const loadApprovedPlans = async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot.xPlan.list({ 
+      const result = await window.clawdbot.xPlan.list({ 
         status: 'approved', 
         limit: 50 
       });
@@ -106,7 +106,7 @@ export default function XDraftComposer() {
         tweets: tweets.filter(t => t.trim())
       });
       
-      const result = await (window as any).clawdbot.xDraft.create({
+      const result = await window.clawdbot.xDraft.create({
         planId: selectedPlanId,
         version,
         content,
@@ -122,7 +122,7 @@ export default function XDraftComposer() {
       } else {
         throw new Error(result.error || 'Failed to create draft');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[XDraftComposer] Submit error:', error;
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {

@@ -147,7 +147,7 @@ export default function SkillsTab() {
           '',
         ].join('\n');
         // Write SKILL.md to ~/.clawdbot/skills/<slug>/
-        await (window as any).clawdbot?.exec?.run(
+        await window.clawdbot?.exec?.run(
           `mkdir -p ~/.clawdbot/skills/${slug} && cat > ~/.clawdbot/skills/${slug}/SKILL.md << 'EOFSKILL'\n${skillMd}\nEOFSKILL`
         );
         showToast('success', `${localName.trim()} created in ~/.clawdbot/skills/`);

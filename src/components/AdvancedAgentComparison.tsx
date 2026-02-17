@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import {
   Users,
@@ -53,6 +52,7 @@ export default function AdvancedAgentComparison({
   const [metrics, setMetrics] = useState<AgentMetrics[]>([]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // loadData re-initializes comparison data, adding to deps causes unnecessary re-runs
   useEffect(() => {
     if (isOpen) {
       loadData();

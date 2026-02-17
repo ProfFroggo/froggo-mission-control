@@ -17,7 +17,7 @@ export default function InboxWidget() {
     setLoading(true);
     setError(null);
     try {
-      const result = await (window as any).clawdbot?.inbox?.list();
+      const result = await window.clawdbot?.inbox?.list();
       if (result?.success && Array.isArray(result.items)) {
         // Count pending/unread items
         const pending = result.items.filter(

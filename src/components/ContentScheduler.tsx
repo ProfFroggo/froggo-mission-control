@@ -63,7 +63,7 @@ export default function ContentScheduler() {
   const loadSchedule = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.schedule?.list();
+      const result = await window.clawdbot?.schedule?.list();
       if (result?.success) {
         setItems(result.items || []);
       }
@@ -84,7 +84,7 @@ export default function ContentScheduler() {
   // Clean up old uploads on mount (7 days)
   useEffect(() => {
     const cleanup = async () => {
-      const result = await (window as any).clawdbot?.media?.cleanup();
+      const result = await window.clawdbot?.media?.cleanup();
       if (result?.success && result.deletedCount > 0) {
         // Media cleanup completed
       }
@@ -129,7 +129,7 @@ export default function ContentScheduler() {
         }
         
         // Upload to backend
-        const result = await (window as any).clawdbot?.media?.upload(file.name, base64Data);
+        const result = await window.clawdbot?.media?.upload(file.name, base64Data);
         
         if (result?.success) {
           setMediaFile({
@@ -172,7 +172,7 @@ export default function ContentScheduler() {
   const handleRemoveMedia = async () => {
     if (mediaFile) {
       // Delete from backend
-      await (window as any).clawdbot?.media?.delete(mediaFile.path);
+      await window.clawdbot?.media?.delete(mediaFile.path);
     }
     setMediaFile(null);
     setMediaPreview(null);
@@ -212,8 +212,8 @@ export default function ContentScheduler() {
       };
 
       const result = editingId
-        ? await (window as any).clawdbot?.schedule?.update(editingId, item)
-        : await (window as any).clawdbot?.schedule?.add(item);
+        ? await window.clawdbot?.schedule?.update(editingId, item)
+        : await window.clawdbot?.schedule?.add(item);
 
       if (result?.success) {
         showToast('success', editingId ? 'Updated' : 'Scheduled', `${typeConfig[formType].label} scheduled for ${new Date(scheduledFor).toLocaleString()}`);
@@ -229,7 +229,7 @@ export default function ContentScheduler() {
 
   const handleCancel = async (id: string) => {
     try {
-      const result = await (window as any).clawdbot?.schedule?.cancel(id);
+      const result = await window.clawdbot?.schedule?.cancel(id);
       if (result?.success) {
         showToast('success', 'Cancelled', 'Scheduled item cancelled');
         loadSchedule();
@@ -241,7 +241,7 @@ export default function ContentScheduler() {
 
   const handleSendNow = async (id: string) => {
     try {
-      const result = await (window as any).clawdbot?.schedule?.sendNow(id);
+      const result = await window.clawdbot?.schedule?.sendNow(id);
       if (result?.success) {
         showToast('success', 'Sent', 'Item sent immediately');
         loadSchedule();
@@ -456,6 +456,15 @@ export default function ContentScheduler() {
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDrop}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      // Keyboard drop - could implement if needed
+                    }
+                  }}
+                  aria-label="Drag and drop zone for media files"
                   className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                     isDragging 
                       ? 'border-clawd-accent bg-clawd-accent/10' 

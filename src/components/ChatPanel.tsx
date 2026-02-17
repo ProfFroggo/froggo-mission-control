@@ -153,7 +153,7 @@ export default function ChatPanel() {
           showToast('Failed to star message', 'error');
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 'Toggle star error:', error;
       showToast('Error toggling star', 'error');
     }
@@ -242,7 +242,10 @@ export default function ChatPanel() {
   };
 
   const filteredMessages = useMemo(() => {
-    const visible = messages.filter(msg => !isSystemReply(msg.content));
+    const visible = messages.filter(msg =>
+      !isSystemReply(msg.content) &&
+      (msg.streaming || (msg.content && msg.content.trim().length > 0))
+    );
     if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
     return visible.filter(msg => 
@@ -580,7 +583,7 @@ export default function ChatPanel() {
       } else {
         showToast('error', 'Not available', 'Suggestion feature not available');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[Chat] Suggestion error:', error;
       showToast('error', 'Failed to generate', error.message || 'Unknown error');
     } finally {
@@ -596,7 +599,7 @@ export default function ChatPanel() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if ((!text && attachments.length === 0) || !connected || loading) return;
+    if ((!text && attachments.length === 0) || !connected) return;
     
     // Clear suggestions when sending
     setSuggestedReplies([]);
@@ -625,7 +628,7 @@ export default function ChatPanel() {
           // Image: Save to temp file and tell AI to use vision
           try {
             const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
-            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
           } catch (_e) {
@@ -636,7 +639,7 @@ export default function ChatPanel() {
           // PDF: Save and suggest extraction
           try {
             const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
-            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
           } catch (_e) {
@@ -648,7 +651,7 @@ export default function ChatPanel() {
             showToast('info', 'Transcribing audio...', att.name);
             const base64 = att.dataUrl.split(',')[1];
             const audioBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
-            const result = await (window as any).clawdbot?.whisper?.transcribe(audioBuffer);
+            const result = await window.clawdbot?.whisper?.transcribe(audioBuffer);
             
             if (result?.transcript) {
               fileContents.push(`\n\n🎤 AUDIO TRANSCRIPTION: ${att.name}\n\`\`\`\n${result.transcript}\n\`\`\``);
@@ -663,7 +666,7 @@ export default function ChatPanel() {
           // Other files: save and include path
           try {
             const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
-            await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+            await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
           } catch (_e) {
@@ -727,7 +730,7 @@ export default function ChatPanel() {
         }
       }, 120000);
       
-    } catch (e: any) {
+    } catch (e: unknown) {
       const friendlyError = getUserFriendlyError(e, {
         action: 'send your message',
         resource: 'chat'
@@ -834,6 +837,15 @@ export default function ChatPanel() {
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          // Keyboard drop - could implement if needed
+        }
+      }}
+      aria-label="Chat panel - drop files here"
     >
       {/* Drag overlay */}
       {isDragging && (
@@ -1198,7 +1210,7 @@ export default function ChatPanel() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={connected ? `ChatMessage ${selectedAgent.name}...` : "Waiting for connection..."}
-              disabled={!connected || loading}
+              disabled={!connected}
               rows={1}
               className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
             />
@@ -1206,7 +1218,7 @@ export default function ChatPanel() {
           
           <button
             onClick={sendMessage}
-            disabled={(!input.trim() && attachments.length === 0) || !connected || loading}
+            disabled={(!input.trim() && attachments.length === 0) || !connected}
             className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}

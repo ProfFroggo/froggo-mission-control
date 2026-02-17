@@ -176,6 +176,7 @@ export default function InboxPanel() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // loadInbox wrapped in useCallback, safe to call without adding to deps
   }, []);
 
   useEffect(() => {
@@ -258,6 +259,7 @@ export default function InboxPanel() {
 
   // Enhanced Keyboard shortcuts (Gmail-style)
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // handleKeyDown recreates on each render, capturing latest state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle if in input/textarea or if modal is open
@@ -469,6 +471,7 @@ export default function InboxPanel() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // handleKeyDown recreates on each render, safe pattern
   }, [filteredPending, focusedIndex, expandedId, selectedIds, filter, sortMode, sortAscending, gKeyPressed, showKeyboardHelp, rejectDialogItem, scheduleModal, showAgentWarning]);
 
   // Check if agent is still active on this task
@@ -605,7 +608,7 @@ export default function InboxPanel() {
         } else {
           showToast('error', 'Failed to create send task', result?.error);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // '[Inbox] Stage 1 email approval error:', error;
         showToast('error', 'Approval failed', error.message);
       }
@@ -1716,7 +1719,7 @@ export default function InboxPanel() {
                             showToast('error', 'Email failed', result?.error);
                             loadInbox(); // Revert
                           }
-                        } catch (e: any) {
+                        } catch (e: unknown) {
                           showToast('error', 'Send error', e.message);
                           loadInbox();
                         }
@@ -1795,7 +1798,7 @@ export default function InboxPanel() {
                         } else {
                           showToast('error', 'Failed to schedule', (result as any).error || 'Unknown error');
                         }
-                      } catch (e: any) {
+                      } catch (e: unknown) {
                         showToast('error', 'Schedule error', e.message);
                       }
                       
@@ -2009,7 +2012,7 @@ export default function InboxPanel() {
                     } else {
                       showToast('error', 'Failed to abort agent', result?.stderr || 'Unknown error');
                     }
-                  } catch (err: any) {
+                  } catch (err: unknown) {
                     showToast('error', 'Abort failed', err.message);
                   } finally {
                     setAbortingAgent(false);

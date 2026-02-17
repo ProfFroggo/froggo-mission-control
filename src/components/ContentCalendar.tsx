@@ -39,7 +39,7 @@ export default function ContentCalendar() {
   const loadScheduledItems = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.schedule?.list().catch((err: any) => { logger.error('Failed to list schedule:', err); return null; });
+      const result = await window.clawdbot?.schedule?.list().catch((err: any) => { logger.error('Failed to list schedule:', err); return null; });
       if (result?.items) {
         setItems(result.items.map((item: any) => ({
           ...item,

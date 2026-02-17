@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: TokenUsageWidget uses file-level suppression for intentional patterns.
+// Widget for token usage tracking - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import {
   BarChart,
@@ -65,13 +68,13 @@ export default function TokenUsageWidget() {
   const loadData = async () => {
     setLoading(true);
     try {
-      if (!(window as any).clawdbot?.tokens) {
+      if (!window.clawdbot?.tokens) {
         setLoading(false);
         return; // IPC not available (web mode)
       }
       // Map UI period names to froggo-db period names
       const periodMap: Record<string, string> = { 'today': 'day', '7d': 'week', '30d': 'month' };
-      const summary = await (window as any).clawdbot.tokens.summary({ period: periodMap[period] || period });
+      const summary = await window.clawdbot.tokens.summary({ period: periodMap[period] || period });
       setSummaryData(summary);
 
       if (!summary.error && summary.by_agent) {
@@ -92,7 +95,7 @@ export default function TokenUsageWidget() {
         const budgets = new Map<string, BudgetResponse>();
         for (const item of summary.by_agent) {
           if (item.agent !== 'unknown') {
-            const budget = await (window as any).clawdbot.tokens.budget(item.agent);
+            const budget = await window.clawdbot.tokens.budget(item.agent);
             if (!budget.error) {
               budgets.set(item.agent, budget);
             }

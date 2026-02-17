@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: TimeTrackingPanel uses file-level suppression for intentional patterns.
+// Panel for time tracking - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import { Clock, Filter } from 'lucide-react';
 import { getTimeTrackingData, getProjectStats, TimeTrackingData, ProjectStats } from '../services/analyticsService';

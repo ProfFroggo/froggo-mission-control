@@ -108,7 +108,7 @@ export default function ChapterEditor() {
       editor.commands.setContent(activeChapterContent, { emitUpdate: false });
       isSettingContent.current = false;
     }
-  }, [activeChapterId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeChapterId]); // eslint-disable-line react-hooks/exhaustive-deps -- editor ref is stable
 
   // Watch pendingInsert from chat pane and insert content into editor
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function ChapterEditor() {
         break;
     }
     clearPendingInsert();
-  }, [pendingInsert]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingInsert]); // eslint-disable-line react-hooks/exhaustive-deps -- editor ref and store actions are stable
 
   // Cleanup: flush save on unmount
   useEffect(() => {

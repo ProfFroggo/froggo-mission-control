@@ -24,7 +24,7 @@ function notifyListeners() {
 
 export async function loadSettings(): Promise<AppSettings> {
   try {
-    const resp = await (window as any).clawdbot?.settings?.get();
+    const resp = await window.clawdbot?.settings?.get();
     if (resp?.success) {
       cachedSettings = resp.settings || {};
       notifyListeners();

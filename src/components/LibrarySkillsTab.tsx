@@ -21,7 +21,7 @@ export default function LibrarySkillsTab() {
     setLoading(true);
     try {
       // Load from froggo-db skill_evolution table
-      const result = await (window as any).clawdbot?.skills?.list();
+      const result = await window.clawdbot?.skills?.list();
       if (result?.success) {
         setSkills(result.skills || []);
       }

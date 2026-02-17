@@ -48,7 +48,7 @@ export default function ChatPane() {
 
     const loadHistory = async () => {
       try {
-        const result = await (window as any).clawdbot?.writing?.chat?.loadHistory(activeProjectId);
+        const result = await window.clawdbot?.writing?.chat?.loadHistory(activeProjectId);
         if (result?.success && result.messages) {
           loadMessages(result.messages);
         } else {
@@ -60,13 +60,13 @@ export default function ChatPane() {
     };
 
     loadHistory();
-  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeProjectId]); // eslint-disable-line react-hooks/exhaustive-deps -- store actions are stable
 
   const handleClearChat = useCallback(async () => {
     if (!activeProjectId) return;
     clearMessages();
     try {
-      await (window as any).clawdbot?.writing?.chat?.clearHistory(activeProjectId);
+      await window.clawdbot?.writing?.chat?.clearHistory(activeProjectId);
     } catch {
       // Clear failure is non-critical
     }
@@ -155,8 +155,8 @@ export default function ChatPane() {
 
           // Persist both messages to disk
           try {
-            (window as any).clawdbot?.writing?.chat?.appendMessage(activeProjectId, userMessage);
-            (window as any).clawdbot?.writing?.chat?.appendMessage(activeProjectId, assistantMessage);
+            window.clawdbot?.writing?.chat?.appendMessage(activeProjectId, userMessage);
+            window.clawdbot?.writing?.chat?.appendMessage(activeProjectId, assistantMessage);
           } catch {
             // Persistence failure is non-critical
           }
@@ -167,7 +167,7 @@ export default function ChatPane() {
           setStreamContent('');
         },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(e.message || 'Failed to send');
       setStreaming(false);
       setStreamContent('');

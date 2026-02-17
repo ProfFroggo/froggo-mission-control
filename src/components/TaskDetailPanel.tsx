@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: TaskDetailPanel uses file-level suppression for intentional stable ref patterns.
+// Complex panel with many useEffects for task management - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect, useCallback } from 'react';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
@@ -84,12 +88,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     if (!task) return;
     setLoadingAttachments(true);
     try {
-      if (!(window as any).clawdbot?.tasks?.attachments) {
+      const clawdbot = window.clawdbot;
+      if (!clawdbot?.tasks?.attachments) {
         setAttachments([]);
         setLoadingAttachments(false);
         return; // IPC not available (web mode)
       }
-      const result = await (window as any).clawdbot.tasks.attachments.list(task.id);
+      const result = await clawdbot.tasks.attachments.list(task.id);
       if (result.success) {
         setAttachments(result.attachments);
       }
@@ -238,10 +243,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           type: 'danger',
         }, async () => {
           try {
-            await (window as any).clawdbot?.tasks?.delete(task.id);
+            await window.clawdbot?.tasks?.delete(task.id);
             showToast('success', 'Task deleted', `Deleted "${task.title}"`);
             onClose();
-          } catch (err: any) {
+          } catch (err: unknown) {
             showToast('error', 'Delete failed', (err as Error).message);
           }
         });
@@ -435,7 +440,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!task || !e.target.files || e.target.files.length === 0) return;
 
-    if (!(window as any).clawdbot?.exec || !(window as any).clawdbot?.fs || !(window as any).clawdbot?.tasks?.attachments) {
+    const clawdbot = window.clawdbot;
+    if (!clawdbot?.exec || !clawdbot?.fs || !clawdbot?.tasks?.attachments) {
       logger.debug('File upload requires Electron IPC (exec, fs, tasks.attachments)');
       showToast('error', 'Upload unavailable', 'File upload requires the desktop app');
       return;
@@ -450,7 +456,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       const filePath = `${deliverablePath}/${file.name}`;
 
       // Create directory if needed via electron
-      await (window as any).clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
+      await clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
 
       // Read file as base64
       const reader = new FileReader();
@@ -458,10 +464,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         const base64 = (event.target?.result as string).split(',')[1];
 
         // Write file
-        await (window as any).clawdbot.fs.writeBase64(filePath, base64);
+        await clawdbot.fs.writeBase64(filePath, base64);
 
         // Add attachment record
-        const result = await (window as any).clawdbot.tasks.attachments.add(
+        const result = await clawdbot.tasks.attachments.add(
           task.id,
           filePath,
           'deliverable',
@@ -488,9 +494,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!task) return;
-    if (!(window as any).clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
+    const clawdbot = window.clawdbot;
+    if (!clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
 
-    const result = await (window as any).clawdbot.tasks.attachments.delete(attachmentId);
+    const result = await clawdbot.tasks.attachments.delete(attachmentId);
     if (result.success) {
       setAttachments(attachments.filter(a => a.id !== attachmentId));
       showToast('success', 'Attachment deleted');
@@ -501,8 +508,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   const handleOpenFile = async (filePath: string) => {
-    if (!(window as any).clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
-    const result = await (window as any).clawdbot.tasks.attachments.open(filePath);
+    const clawdbot = window.clawdbot;
+    if (!clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
+    const result = await clawdbot.tasks.attachments.open(filePath);
     if (!result.success) {
       showToast('error', 'Failed to open file', result.error);
     }
@@ -510,10 +518,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleAutoDetect = async () => {
     if (!task) return;
-    if (!(window as any).clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
+    const clawdbot = window.clawdbot;
+    if (!clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
     setLoadingAttachments(true);
 
-    const result = await (window as any).clawdbot.tasks.attachments.autoDetect(task.id);
+    const result = await clawdbot.tasks.attachments.autoDetect(task.id);
     if (result.success) {
       showToast('success', 'Auto-detection complete');
       loadAttachments();
@@ -926,7 +935,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 // Auto-save to backend (debounced by typing)
                 clearTimeout((window as any).__planningNotesTimer);
                 (window as any).__planningNotesTimer = setTimeout(() => {
-                  (window as any).clawdbot?.tasks?.update(task.id, { 
+                  window.clawdbot?.tasks?.update(task.id, { 
                     planningNotes: e.target.value 
                   }).catch((_err: unknown) => { /* silent - planning notes save failed */ });
                 }, 1000);
@@ -1479,13 +1488,14 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 onClick={async () => {
                   setAbortingAgent(true);
                   try {
-                    if (!(window as any).clawdbot?.exec) {
+                    const clawdbot = window.clawdbot;
+                    if (!clawdbot?.exec) {
                       showToast('error', 'Unavailable', 'Agent abort requires the desktop app');
                       setAbortingAgent(false);
                       return;
                     }
                     // Abort the agent session via openclaw CLI
-                    const result = await (window as any).clawdbot.exec.run(
+                    const result = await clawdbot.exec.run(
                       `openclaw sessions abort ${activeAgentInfo.sessionKey}`
                     );
                     

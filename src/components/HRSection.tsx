@@ -24,7 +24,7 @@ export default function HRSection() {
   const loadTeamHealth = useCallback(async () => {
     try {
       // Load from IPC bridge if available, otherwise use defaults
-      const dbExec = (window as any).clawdbot?.db?.exec;
+      const dbExec = window.clawdbot?.db?.exec;
       if (dbExec) {
         const statsRes = await dbExec(`
           SELECT 

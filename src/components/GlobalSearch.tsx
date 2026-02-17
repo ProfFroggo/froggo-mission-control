@@ -183,7 +183,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
     try {
       // Search froggo-db (tasks, facts, messages) - now with BM25 relevance scoring
-      const dbResult = await (window as any).clawdbot?.search?.local(q);
+      const dbResult = await window.clawdbot?.search?.local(q);
       if (dbResult?.success && dbResult.results) {
         allResults.push(...dbResult.results.map((r: any) => ({
           id: r.id || `db-${Date.now()}`,
@@ -199,7 +199,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
       }
 
       // Search emails
-      const emailResult = await (window as any).clawdbot?.email?.search(q);
+      const emailResult = await window.clawdbot?.email?.search(q);
       if (emailResult?.success && emailResult.emails?.threads) {
         allResults.push(...emailResult.emails.threads.slice(0, 5).map((e: any) => ({
           id: e.id,
@@ -237,7 +237,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
       }
 
       // Search WhatsApp messages
-      const whatsappResult = await (window as any).clawdbot?.search?.whatsapp(q);
+      const whatsappResult = await window.clawdbot?.search?.whatsapp(q);
       if (whatsappResult?.success && whatsappResult.messages?.length > 0) {
         allResults.push(...whatsappResult.messages.slice(0, 5).map((m: any) => ({
           id: m.id || `wa-${Date.now()}`,
@@ -251,7 +251,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
       }
 
       // Search agents from database
-      const agentResult = await (window as any).clawdbot?.agents?.search(q);
+      const agentResult = await window.clawdbot?.agents?.search(q);
       if (agentResult?.success && agentResult.agents?.length > 0) {
         allResults.push(...agentResult.agents.map((a: any) => ({
           id: `agent-${a.id}`,

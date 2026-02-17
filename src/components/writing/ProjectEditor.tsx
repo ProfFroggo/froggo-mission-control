@@ -110,7 +110,7 @@ export default function ProjectEditor() {
       }
     }, 50);
     return () => clearTimeout(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable, only runs on mount
 
   // Track collapse state via onResize (asPercentage 0 = collapsed)
   const handleChaptersResize = useCallback((size: PanelSize) => {

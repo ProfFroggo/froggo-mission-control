@@ -60,6 +60,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       streamCleanupRef.current?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // initChat re-initializes state, adding it to deps causes unnecessary re-runs
   }, [agentId]);
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
     try {
       // Spawn a real agent session via IPC
-      const ipc = (window as any).clawdbot?.agents;
+      const ipc = window.clawdbot?.agents;
       if (!ipc?.spawnChat) {
         throw new Error('Agent chat IPC not available — are you running in the Electron app?');
       }
@@ -106,7 +107,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       } else {
         throw new Error(result?.error || 'No session key returned');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       // '[AgentChat] Failed to spawn chat session:', e?.message;
       setMessages([{
         role: 'system',
@@ -175,7 +176,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       streamCleanupRef.current = unsub;
 
       // Send the message to the real session via IPC
-      const ipc = (window as any).clawdbot?.agents;
+      const ipc = window.clawdbot?.agents;
       const result = ipc?.chat
         ? await ipc.chat(sessionKey, userText)
         : await gateway.sendToSession(sessionKey, userText);
@@ -241,7 +242,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         window.removeEventListener('beforeunload', cleanupTimeout);
       };
 
-    } catch (e: any) {
+    } catch (e: unknown) {
       // 'Failed to send message:', e;
       setStreamingContent('');
       setMessages(prev => [...prev, {

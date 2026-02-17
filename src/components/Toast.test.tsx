@@ -5,13 +5,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ToastContainer, { showToast, dismissToast, ToastType } from './components/Toast';
+import ToastContainer, { showToast, dismissToast, ToastType, ToastItem } from './Toast';
 
 describe('Toast component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset toast state
-    jest.resetModules();
   });
 
   afterEach(() => {
@@ -29,8 +27,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      // Re-import to get fresh state
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       expect(screen.getByText('Success!')).toBeInTheDocument();
@@ -47,7 +43,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       expect(screen.getByText('Error!')).toBeInTheDocument();
@@ -64,7 +59,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       expect(screen.getByText('Warning!')).toBeInTheDocument();
@@ -80,7 +74,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       expect(screen.getByText('Info')).toBeInTheDocument();
@@ -96,7 +89,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       const closeButton = screen.getByRole('button', { name: /dismiss/i });
@@ -117,7 +109,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       expect(screen.getByText('Auto Dismiss')).toBeInTheDocument();
@@ -142,7 +133,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       const { unmount } = render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       unmount();
@@ -165,7 +155,6 @@ describe('Toast component', () => {
       };
       const onDismiss = vi.fn();
       
-      const { ToastItem } = require('../src/components/Toast');
       render(<ToastItem toast={toast} onDismiss={onDismiss} />);
       
       expect(screen.getByText('Title Only')).toBeInTheDocument();
@@ -175,19 +164,16 @@ describe('Toast component', () => {
 
   describe('ToastContainer', () => {
     it('should render nothing when no toasts', () => {
-      const { ToastContainer } = require('../src/components/Toast');
       const { container } = render(<ToastContainer />);
       
       expect(container.firstChild).toBeNull();
     });
 
     it('should render toasts when present', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('success', 'Test Title', 'Test Message');
+        showToast('success', 'Test Title', 'Test Message');
       });
       
       await waitFor(() => {
@@ -197,14 +183,12 @@ describe('Toast component', () => {
     });
 
     it('should render multiple toasts', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('success', 'Toast 1', 'Message 1');
-        showToastFn('error', 'Toast 2', 'Message 2');
-        showToastFn('warning', 'Toast 3');
+        showToast('success', 'Toast 1', 'Message 1');
+        showToast('error', 'Toast 2', 'Message 2');
+        showToast('warning', 'Toast 3');
       });
       
       await waitFor(() => {
@@ -215,12 +199,10 @@ describe('Toast component', () => {
     });
 
     it('should dismiss toast and update list', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('info', 'To Be Dismissed');
+        showToast('info', 'To Be Dismissed');
       });
       
       await waitFor(() => {
@@ -238,12 +220,10 @@ describe('Toast component', () => {
 
   describe('showToast function', () => {
     it('should create toast with correct parameters', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('success', 'Success Title', 'Success message');
+        showToast('success', 'Success Title', 'Success message');
       });
       
       await waitFor(() => {
@@ -252,12 +232,10 @@ describe('Toast component', () => {
     });
 
     it('should handle alternate signature (title first)', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('Alternate Title', 'success', 'Alternate message');
+        showToast('Alternate Title', 'success', 'Alternate message');
       });
       
       await waitFor(() => {
@@ -266,13 +244,11 @@ describe('Toast component', () => {
     });
 
     it('should generate unique IDs', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('success', 'Toast 1');
-        showToastFn('success', 'Toast 2');
+        showToast('success', 'Toast 1');
+        showToast('success', 'Toast 2');
       });
       
       await waitFor(() => {
@@ -284,13 +260,10 @@ describe('Toast component', () => {
     it('should handle custom duration', async () => {
       vi.useFakeTimers();
       
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      const onDismiss = vi.fn();
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('info', 'Quick Toast', undefined, 500);
+        showToast('info', 'Quick Toast', undefined, 500);
       });
       
       await waitFor(() => {
@@ -311,13 +284,11 @@ describe('Toast component', () => {
 
   describe('dismissToast function', () => {
     it('should remove specific toast by ID', async () => {
-      const { ToastContainer, showToast: showToastFn, dismissToast: dismissToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('info', 'Toast to Keep');
-        showToastFn('error', 'Toast to Dismiss');
+        showToast('info', 'Toast to Keep');
+        showToast('error', 'Toast to Dismiss');
       });
       
       await waitFor(() => {
@@ -326,7 +297,7 @@ describe('Toast component', () => {
       });
       
       act(() => {
-        dismissToastFn('Toast to Dismiss');
+        dismissToast('Toast to Dismiss');
       });
       
       await waitFor(() => {
@@ -336,12 +307,10 @@ describe('Toast component', () => {
     });
 
     it('should handle dismissing non-existent toast', async () => {
-      const { ToastContainer, showToast: showToastFn, dismissToast: dismissToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('info', 'Existing Toast');
+        showToast('info', 'Existing Toast');
       });
       
       await waitFor(() => {
@@ -350,7 +319,7 @@ describe('Toast component', () => {
       
       // Should not throw
       act(() => {
-        dismissToastFn('non-existent-id');
+        dismissToast('non-existent-id');
       });
       
       expect(screen.getByText('Existing Toast')).toBeInTheDocument();
@@ -359,15 +328,13 @@ describe('Toast component', () => {
 
   describe('toast types', () => {
     it('should support all toast types', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       const types: ToastType[] = ['success', 'error', 'warning', 'info'];
       
       types.forEach(type => {
         act(() => {
-          showToastFn(type as ToastType, `${type} title`, `${type} message`);
+          showToast(type as ToastType, `${type} title`, `${type} message`);
         });
       });
       
@@ -381,12 +348,10 @@ describe('Toast component', () => {
 
   describe('accessibility', () => {
     it('should have aria-label on dismiss button', async () => {
-      const { ToastContainer, showToast: showToastFn } = require('../src/components/Toast');
-      
       render(<ToastContainer />);
       
       act(() => {
-        showToastFn('info', 'Accessible Toast');
+        showToast('info', 'Accessible Toast');
       });
       
       await waitFor(() => {
@@ -395,8 +360,7 @@ describe('Toast component', () => {
       });
     });
 
-    it('should have role region for notifications', async () => {
-      const { ToastContainer } = require('../src/components/Toast');
+    it('should have role region for notifications', () => {
       const { container } = render(<ToastContainer />);
       
       const region = container.querySelector('[role="region"]');

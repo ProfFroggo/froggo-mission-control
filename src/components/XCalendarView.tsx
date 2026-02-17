@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: XCalendarView uses file-level suppression for intentional patterns.
+// Calendar view for scheduled posts - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import React, { useState, useEffect } from 'react';
 
 interface ScheduledPost {

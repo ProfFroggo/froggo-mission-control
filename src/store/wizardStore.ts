@@ -52,7 +52,7 @@ interface WizardState {
   reset: () => void;
 }
 
-const bridge = () => (window as any).clawdbot?.writing?.wizard;
+const bridge = () => window.clawdbot?.writing?.wizard;
 
 export const useWizardStore = create<WizardState>((set, get) => ({
   step: 'idle',

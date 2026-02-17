@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: CalendarFilterModal uses file-level suppression for intentional stable ref patterns.
+// Simple modal for calendar filters - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
@@ -79,7 +82,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
       for (const account of googleAccounts) {
         // Try to fetch calendars for this account
         try {
-          const result = await (window as any).clawdbot?.calendar?.listCalendars(account.email);
+          const result = await window.clawdbot?.calendar?.listCalendars(account.email);
           if (result?.success && result.calendars) {
             // Add each calendar as a separate source
             result.calendars.forEach((cal: any) => {

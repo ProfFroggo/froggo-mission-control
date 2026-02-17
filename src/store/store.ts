@@ -231,7 +231,7 @@ interface Store {
 
 // Execute approved items via direct IPC calls
 async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; error?: string }> {
-  const clawdbot = (window as any).clawdbot;
+  const clawdbot = window.clawdbot;
 
   try {
     switch (item.type) {
@@ -345,7 +345,7 @@ export const useStore = create<Store>()(
         try {
           get().setLoading('sessions', true);
           // Use IPC handler instead of WebSocket RPC (sessions.list RPC method doesn't exist)
-          const result = await (window as any).clawdbot?.sessions?.list();
+          const result = await window.clawdbot?.sessions?.list();
           if (result?.success && result?.sessions) {
             set({ sessions: result.sessions || [] });
           }
@@ -361,7 +361,7 @@ export const useStore = create<Store>()(
       loadGatewaySessions: async () => {
         try {
           // Use IPC handler instead of WebSocket RPC (sessions.list RPC method doesn't exist)
-          const result = await (window as any).clawdbot?.sessions?.list();
+          const result = await window.clawdbot?.sessions?.list();
           if (result?.success && result?.sessions && Array.isArray(result.sessions)) {
             const now = Date.now();
             const fiveMinutes = 5 * 60 * 1000;
@@ -510,7 +510,7 @@ export const useStore = create<Store>()(
       loadTasksFromDB: async () => {
         try {
           get().setLoading('tasks', true);
-          const result = await (window as any).clawdbot?.tasks?.list();
+          const result = await window.clawdbot?.tasks?.list();
           if (result?.success && Array.isArray(result.tasks)) {
             // Convert froggo-db tasks to store format (backend already filters archived/cancelled)
             const tasksWithoutSubtasks = result.tasks.map((t: { id: string; title: string; description?: string; status: string; priority?: string; project?: string; assigned_to?: string; reviewerId?: string; reviewer_id?: string; reviewStatus?: string; review_status?: string; planning_notes?: string; planningNotes?: string; due_date?: string; last_agent_update?: string; created_at?: number; updated_at?: number; last_activity_at?: number }) => ({
@@ -541,7 +541,7 @@ export const useStore = create<Store>()(
               const batchResults = await Promise.all(
                 batch.map(async (task: Task) => {
                   try {
-                    const subtaskResult = await (window as any).clawdbot?.tasks?.subtasks?.list(task.id);
+                    const subtaskResult = await window.clawdbot?.tasks?.subtasks?.list(task.id);
                     if (subtaskResult?.success) {
                       return { ...task, subtasks: subtaskResult.subtasks || [] };
                     }
@@ -578,7 +578,7 @@ export const useStore = create<Store>()(
           tasks: [...s.tasks, newTask]
         }));
         // Sync to froggo-db
-        (window as any).clawdbot?.tasks?.sync(newTask).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+        window.clawdbot?.tasks?.sync(newTask).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
       },
       updateTask: (id: string, updates: Partial<Task>) => {
         // Snapshot original values for rollback
@@ -592,7 +592,7 @@ export const useStore = create<Store>()(
         }));
 
         // Persist to database via IPC
-        (window as any).clawdbot?.tasks?.update(id, updates)
+        window.clawdbot?.tasks?.update(id, updates)
           .then((result: { success?: boolean; error?: string }) => {
             if (!result?.success) {
               console.error('[Store] Task update failed:', result?.error);
@@ -663,7 +663,7 @@ export const useStore = create<Store>()(
         // Broadcast status change to main session
         gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         // Sync to froggo-db
-        (window as any).clawdbot?.tasks?.update(task.id, { status }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+        window.clawdbot?.tasks?.update(task.id, { status }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         
         // Log activity to task_activity table
         get().logTaskActivity(id, 'status_changed', `Status changed from ${previousStatus} to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
@@ -677,7 +677,7 @@ export const useStore = create<Store>()(
       },
       deleteTask: async (id: string) => {
         try {
-          await (window as any).clawdbot?.tasks?.delete(id);
+          await window.clawdbot?.tasks?.delete(id);
         } catch (e) {
           console.error('Failed to delete task from DB:', e);
         }
@@ -696,7 +696,7 @@ export const useStore = create<Store>()(
             : `[TASK_UNASSIGNED] "${task.title}" unassigned`;
           gateway.sendToSession('main', msg).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
           // Sync to froggo-db
-          (window as any).clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+          window.clawdbot?.tasks?.update(task.id, { assignedTo: agentId || '' }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
           
           // Log activity to task_activity table
           const action = agent ? 'assigned' : 'unassigned';
@@ -719,7 +719,7 @@ export const useStore = create<Store>()(
       // Subtask operations (DB-backed)
       loadSubtasksForTask: async (taskId: string) => {
         try {
-          const result = await (window as any).clawdbot?.tasks?.subtasks?.list(taskId);
+          const result = await window.clawdbot?.tasks?.subtasks?.list(taskId);
           if (result?.success) {
             // Update the task in state with loaded subtasks
             set((s: Store) => ({
@@ -746,7 +746,7 @@ export const useStore = create<Store>()(
         };
 
         try {
-          const result = await (window as any).clawdbot?.tasks?.subtasks?.add(taskId, {
+          const result = await window.clawdbot?.tasks?.subtasks?.add(taskId, {
             id: subtaskId,
             title,
             description,
@@ -773,7 +773,7 @@ export const useStore = create<Store>()(
 
       updateSubtask: async (subtaskId: string, updates: { completed?: boolean; completedBy?: string; title?: string; assignedTo?: string }) => {
         try {
-          const result = await (window as any).clawdbot?.tasks?.subtasks?.update(subtaskId, updates);
+          const result = await window.clawdbot?.tasks?.subtasks?.update(subtaskId, updates);
           if (result?.success) {
             // Update local state
             set((s: Store) => ({
@@ -801,7 +801,7 @@ export const useStore = create<Store>()(
 
       deleteSubtask: async (taskId: string, subtaskId: string) => {
         try {
-          const result = await (window as any).clawdbot?.tasks?.subtasks?.delete(subtaskId);
+          const result = await window.clawdbot?.tasks?.subtasks?.delete(subtaskId);
           if (result?.success) {
             set((s: Store) => ({
               tasks: s.tasks.map((t: Task) => t.id === taskId
@@ -820,7 +820,7 @@ export const useStore = create<Store>()(
       // Task Activity operations (DB-backed)
       loadTaskActivity: async (taskId: string, limit?: number) => {
         try {
-          const result = await (window as any).clawdbot?.tasks?.activity?.list(taskId, limit);
+          const result = await window.clawdbot?.tasks?.activity?.list(taskId, limit);
           if (result?.success) {
             return result.activities || [];
           }
@@ -832,7 +832,7 @@ export const useStore = create<Store>()(
 
       logTaskActivity: async (taskId: string, action: string, message: string, agentId?: string, details?: string) => {
         try {
-          const result = await (window as any).clawdbot?.tasks?.activity?.add(taskId, {
+          const result = await window.clawdbot?.tasks?.activity?.add(taskId, {
             action,
             message,
             agentId,
@@ -851,7 +851,7 @@ export const useStore = create<Store>()(
         try {
           get().setLoading('agents', true);
           // Fetch agents from gateway using the new IPC handler
-          const result = await (window as any).clawdbot?.agents?.list();
+          const result = await window.clawdbot?.agents?.list();
           if (result?.success && Array.isArray(result.agents) && result.agents.length > 0) {
             // Map CLI fields (identityName, identityEmoji) to store fields (name, avatar)
             interface CliAgent {
@@ -914,7 +914,7 @@ export const useStore = create<Store>()(
 
         try {
           // Update froggo-db FIRST to prevent race with polling
-          await (window as any).clawdbot?.tasks?.update(taskId, { 
+          await window.clawdbot?.tasks?.update(taskId, { 
             status: 'in-progress',
             assignedTo: agentId 
           });
@@ -931,7 +931,7 @@ export const useStore = create<Store>()(
 
           // IMMEDIATELY spawn agent via openclaw CLI (don't wait for DB triggers)
           try {
-            await (window as any).clawdbot?.agents?.spawnForTask?.(taskId, agentId);
+            await window.clawdbot?.agents?.spawnForTask?.(taskId, agentId);
           } catch (_spawnErr) {
             // Agent spawn failure is non-blocking — task still proceeds
           }
@@ -1053,7 +1053,7 @@ Start now.`;
           }));
           
           // Also remove from file-based approval queue
-          (window as any).clawdbot?.approvals?.remove?.(id).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+          window.clawdbot?.approvals?.remove?.(id).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
           
           // Execute the action asynchronously
           executeApproval(item).then(async (result) => {
@@ -1070,7 +1070,7 @@ Start now.`;
               updatedAt: Date.now(),
             };
             // Sync to DB instead of local-only state
-            await (window as any).clawdbot?.tasks?.sync?.(taskData);
+            await window.clawdbot?.tasks?.sync?.(taskData);
             useStore.getState().loadTasksFromDB();
 
             // Notify main session
@@ -1085,7 +1085,7 @@ Start now.`;
         const item = state.approvals.find((a: ApprovalItem) => a.id === id);
         if (item) {
           // Log rejection to froggo-db
-          (window as any).clawdbot?.rejections?.log({
+          window.clawdbot?.rejections?.log({
             type: item.type,
             title: item.title,
             content: item.content,
@@ -1095,7 +1095,7 @@ Start now.`;
           gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         }
         // Remove from file-based queue
-        (window as any).clawdbot?.approvals?.remove?.(id).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+        window.clawdbot?.approvals?.remove?.(id).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         set((s: Store) => ({
           approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id), // Delete from inbox
         }));
@@ -1115,13 +1115,13 @@ Start now.`;
             updatedAt: Date.now(),
           };
           // Remove from file-based queue
-          (window as any).clawdbot?.approvals?.remove?.(id).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+          window.clawdbot?.approvals?.remove?.(id).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
           // Remove from local approvals list
           set((s: Store) => ({
             approvals: s.approvals.filter((a: ApprovalItem) => a.id !== id),
           }));
           // Sync task to DB (not local-only)
-          (window as any).clawdbot?.tasks?.sync?.(revisionTask).then(() => {
+          window.clawdbot?.tasks?.sync?.(revisionTask).then(() => {
             useStore.getState().loadTasksFromDB();
           }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
           // Notify for revision
@@ -1134,7 +1134,11 @@ Start now.`;
           if (window.clawdbot?.inbox?.list) {
             const result = await window.clawdbot.inbox.list();
             if (result?.success && Array.isArray(result.items)) {
-              const approvalItems: ApprovalItem[] = result.items.map((item: InboxItem) => ({
+              // Filter to only show human-review items (not agent review)
+              const humanReviewItems = result.items.filter((item: any) => 
+                item.status === 'human-review' || item.type === 'approval'
+              );
+              const approvalItems: ApprovalItem[] = humanReviewItems.map((item: InboxItem) => ({
                 id: String(item.id),
                 type: item.type as ApprovalType,
                 title: item.title,
@@ -1219,8 +1223,8 @@ if (gateway.connected) {
 }
 
 // Set up IPC listener for task notifications from file watcher
-if (typeof window !== 'undefined' && (window as any).clawdbot?.tasks?.onNotification) {
-  (window as any).clawdbot.tasks.onNotification((notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => {
+if (typeof window !== 'undefined' && window.clawdbot?.tasks?.onNotification) {
+  window.clawdbot.tasks.onNotification((notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => {
     useStore.getState().loadTasksFromDB();
     useStore.getState().addActivity({
       type: 'task',
@@ -1297,8 +1301,8 @@ gateway.on('tasks.refresh', () => {
 // If events are missed, add specific gateway.on('event.name') listener.
 
 // Listen for direct gateway broadcasts from main process (real-time task updates)
-if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
-  (window as any).clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: unknown }) => {
+if (typeof window !== 'undefined' && window.clawdbot?.gateway?.onBroadcast) {
+  window.clawdbot.gateway.onBroadcast((data: { type: string; event: string; payload: unknown }) => {
     storeLogger.debug('[Store] Gateway broadcast received:', data.event, (data.payload as { id?: string })?.id);
     if (data.event === 'task.created' || data.event === 'task.updated') {
       debouncedTaskRefresh();

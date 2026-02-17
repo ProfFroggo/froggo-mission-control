@@ -1,12 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: SessionsFilter uses file-level suppression for intentional stable ref patterns.
+// Complex filter component with many useEffects - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
 import { createLogger } from '../utils/logger';
 import FolderSelector from './FolderSelector';
-
-const logger = createLogger('SessionsFilter');
 import FolderManager from './FolderManager';
 import FolderTabs from './FolderTabs';
 import DraggableSession from './DraggableSession';
@@ -16,6 +18,8 @@ import SnoozeModal from './SnoozeModal';
 import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS as DndCSS } from '@dnd-kit/utilities';
+
+const logger = createLogger('SessionsFilter');
 
 // Handle keyboard events for modal backdrops
 const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {

@@ -50,21 +50,21 @@ export class MeetingTranscriber {
    * Execute SQL via Froggo Dashboard IPC
    */
   private async dbExec(sql: string, params: any[] = []): Promise<void> {
-    if (!(window as any).clawdbot?.db?.exec) {
+    if (!window.clawdbot?.db?.exec) {
       return;
     }
-    await (window as any).clawdbot.db.exec(sql, params);
+    await window.clawdbot.db.exec(sql, params);
   }
 
   /**
    * Query SQL via Froggo Dashboard IPC
    */
   private async dbQuery(sql: string, params: any[] = []): Promise<any[]> {
-    if (!(window as any).clawdbot?.db?.query) {
+    if (!window.clawdbot?.db?.query) {
       return [];
     }
     try {
-      const result = await (window as any).clawdbot.db.query(sql, params);
+      const result = await window.clawdbot.db.query(sql, params);
       return result || [];
     } catch (error) {
       // '[MeetingTranscriber] Query failed:', error;

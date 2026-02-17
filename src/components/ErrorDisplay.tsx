@@ -71,7 +71,7 @@ export default function ErrorDisplay({
         window.location.reload();
         break;
       case 'restart':
-        (window as any).clawdbot?.app?.restart?.();
+        window.clawdbot?.app?.restart?.();
         break;
       case 'navigate':
         if (action.url) {

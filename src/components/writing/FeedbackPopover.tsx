@@ -247,7 +247,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
           // Log the feedback interaction
           try {
-            (window as any).clawdbot?.writing?.feedback?.log(activeProjectId, {
+            window.clawdbot?.writing?.feedback?.log(activeProjectId, {
               chapterId: activeChapterId,
               agentId: selectedAgent,
               selectedText,
@@ -265,7 +265,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           setStreaming(false);
         },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(e.message || 'Failed to send');
       setStreaming(false);
     }
@@ -303,7 +303,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
           // Log as fact-check interaction
           try {
-            (window as any).clawdbot?.writing?.feedback?.log(activeProjectId, {
+            window.clawdbot?.writing?.feedback?.log(activeProjectId, {
               type: 'fact-check',
               chapterId: activeChapterId,
               agentId: 'researcher',
@@ -322,7 +322,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           setStreaming(false);
         },
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(e.message || 'Failed to send');
       setStreaming(false);
     }
@@ -348,7 +348,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
     // Log the accept
     try {
-      (window as any).clawdbot?.writing?.feedback?.log(activeProjectId, {
+      window.clawdbot?.writing?.feedback?.log(activeProjectId, {
         chapterId: activeChapterId,
         agentId: selectedAgent,
         selectedText: getSelectedText(editor),
