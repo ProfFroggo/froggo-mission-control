@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 13 of 21 (Global UI Consistency)
-Plan: 01 of N in phase 13 — COMPLETE
+Plan: 02 of N in phase 13 — COMPLETE
 Status: In progress (Wave 1 executing)
-Last activity: 2026-02-17 — Completed 13-01-PLAN.md (CSS token definitions)
+Last activity: 2026-02-17 — Completed 13-02-PLAN.md (per-agent theme borders in AgentPanel)
 
-Progress: ░░░░░░░░░░░░░░░░░░░ (13-01 complete)
+Progress: ░░░░░░░░░░░░░░░░░░░ (13-01, 13-02 complete)
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Phase 13 decisions:
 - bg-alt: #1a1a1a (dark) / #f4f4f5 (light) — input field background layer
 - bg0: #0a0a0a (dark) / #fafafa (light) — alias for deepest bg layer
 - card: #141414 (dark) / #ffffff (light) — alias for surface/card layer
+- Agent card borders: always use theme.border from getAgentTheme(), never hard-coded border-clawd-border/50
 
 ### Pending Todos
 
@@ -64,6 +65,6 @@ Phase 13 decisions:
 
 ## Session Continuity
 
-Last session: 2026-02-17T23:38:36Z
-Stopped at: Completed 13-01-PLAN.md (missing CSS token definitions)
+Last session: 2026-02-17T23:39:01Z
+Stopped at: Completed 13-02-PLAN.md (per-agent theme borders in AgentPanel)
 Resume file: None
