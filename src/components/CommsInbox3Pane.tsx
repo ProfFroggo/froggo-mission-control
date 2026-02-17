@@ -947,7 +947,7 @@ function RightPane({
     if (showAIPanel && !loadingSuggestions && suggestedReplies.length === 0 && conversation) {
       generateSuggestions();
     }
-  }, [showAIPanel, conversation, loadingSuggestions, suggestedReplies.length, generateSuggestions]);
+  }, [showAIPanel, conversation]);
 
   const buildThreadContext = () => {
     const threadMessages: Array<{role: string, content: string}> = [];
@@ -982,7 +982,7 @@ function RightPane({
     return result;
   };
 
-  const generateSuggestions = useCallback(async () => {
+  const generateSuggestions = async () => {
     if (!conversation) return;
     setLoadingSuggestions(true);
     try {
@@ -1026,7 +1026,7 @@ function RightPane({
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [aiAnalysis, conversation, callAIReply]);
+  };
 
   const generateFromIntent = async () => {
     if (!aiIntent.trim()) return;
