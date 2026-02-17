@@ -1,27 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Video, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
 
-interface CalendarEvent {
-  id: string;
-  summary: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-  };
-  end: {
-    dateTime?: string;
-    date?: string;
-  };
-  location?: string;
-  conferenceData?: {
-    entryPoints?: Array<{
-      uri: string;
-      entryPointType: string;
-    }>;
-  };
-  account?: string;
-}
-
 interface TodayCalendarWidgetProps {
   onNavigate?: (view: 'schedule') => void;
 }
