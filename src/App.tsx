@@ -6,30 +6,10 @@ import PerformanceProfiler from './components/PerformanceProfiler';
 import { toggleTheme, getThemeDisplayName } from './utils/themeToggle';
 import { showToast } from './components/Toast';
 import { safeStorage } from './utils/safeStorage';
-// Import protected panels with error boundaries
-import {
-  Dashboard,
-  Kanban,
-  AgentPanel,
-  ChatPanel,
-  MeetingsPanel,
-  VoiceChatPanel,
-  SettingsPanel,
-  NotificationsPanel,
-  XPanel,
-  InboxPanel,
-  CommsInbox3Pane,
-  LibraryPanel,
-  SchedulePanel,
-  CodeAgentDashboard,
-  ContextControlBoard,
-  AnalyticsDashboard,
-  ConnectedAccountsPanel,
-  DMFeed,
-  FinancePanel,
-  WritingWorkspace,
-  ErrorBoundary
-} from './components/ProtectedPanels';
+import { ErrorBoundary } from './components/ProtectedPanels';
+// Register all core views (side-effect import — must come before first render)
+import './core/CoreViews.tsx';
+import { ViewRegistry } from './core/ViewRegistry';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
@@ -43,7 +23,8 @@ import EditPanelsModal from './components/EditPanelsModal';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
+// View IDs are dynamic — any registered view ID is valid
+type View = string;
 
 function App() {
   const [currentView, setCurrentView] = useState<View>(() => {
@@ -369,28 +350,19 @@ function App() {
         >
           <PerformanceProfiler id={`${currentView}-panel`}>
             <Suspense fallback={<LoadingPanel />}>
-              {currentView === 'dashboard' && <Dashboard onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />}
-              {currentView === 'kanban' && <Kanban />}
-              {currentView === 'agents' && <AgentPanel />}
-              {currentView === 'finance' && <FinancePanel />}
-              {currentView === 'chat' && <ChatPanel />}
-              {currentView === 'agentdms' && <DMFeed />}
-              {currentView === 'meetings' && <MeetingsPanel />}
-              {currentView === 'voicechat' && <VoiceChatPanel />}
-              {currentView === 'settings' && <SettingsPanel />}
-              {currentView === 'notifications' && <NotificationsPanel />}
-              {currentView === 'twitter' && <XPanel />}
-              {currentView === 'inbox' && <CommsInbox3Pane />}
-              {currentView === 'approvals' && <InboxPanel />}
-              {currentView === 'comms' && <CommsInbox3Pane />}
-              {currentView === 'library' && <LibraryPanel />}
-              {currentView === 'schedule' && <SchedulePanel />}
-              {currentView === 'codeagent' && <CodeAgentDashboard />}
-              {currentView === 'context' && <ContextControlBoard />}
-              {currentView === 'analytics' && <AnalyticsDashboard />}
-              {currentView === 'accounts' && <ConnectedAccountsPanel />}
-              {currentView === 'writing' && <WritingWorkspace />}
-              {currentView === 'contacts' && <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />}
+              {/* Dynamic view rendering — driven by ViewRegistry */}
+              {currentView === 'contacts'
+                ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+                : (() => {
+                    const reg = ViewRegistry.get(currentView);
+                    if (!reg) return null;
+                    const Comp = reg.component;
+                    if (currentView === 'dashboard') {
+                      return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
+                    }
+                    return <Comp />;
+                  })()
+              }
             </Suspense>
           </PerformanceProfiler>
         </main>
