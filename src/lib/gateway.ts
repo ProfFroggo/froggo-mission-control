@@ -80,7 +80,11 @@ class Gateway {
   private offlineQueue: QueuedAction[] = [];
   private maxOfflineQueueSize = 50;
   private lastError: string | null = null;
-  
+
+  // Event listener references for cleanup
+  private visibilityChangeHandler: (() => void) | null = null;
+  private onlineHandler: (() => void) | null = null;
+
   // Heartbeat
   private heartbeatInterval: number | null = null;
   private heartbeatTimeout: number | null = null;
@@ -94,17 +98,18 @@ class Gateway {
 
   constructor() {
     if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
+      this.visibilityChangeHandler = () => {
         if (document.visibilityState === 'visible') {
           logger.debug('[Gateway] Tab visible, checking connection...');
           this.checkConnection();
         }
-      });
-      
-      window.addEventListener('online', () => {
+      };
+      this.onlineHandler = () => {
         logger.debug('[Gateway] Network online, reconnecting...');
         this.reconnectNow();
-      });
+      };
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+      window.addEventListener('online', this.onlineHandler);
     }
   }
 
@@ -343,19 +348,29 @@ class Gateway {
       this.connectTimeoutTimer = null;
     }
     this.stopHeartbeat();
-    
+
+    // Cleanup global event listeners
+    if (typeof document !== 'undefined' && this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+      this.visibilityChangeHandler = null;
+    }
+    if (typeof window !== 'undefined' && this.onlineHandler) {
+      window.removeEventListener('online', this.onlineHandler);
+      this.onlineHandler = null;
+    }
+
     for (const [_id, p] of this.pending) {
       clearTimeout(p.timer);
       p.reject(new Error('Connection closed'));
     }
     this.pending.clear();
-    
+
     if (this.ws) {
-      try { 
+      try {
         this.ws.onclose = null;
         this.ws.onerror = null;
         this.ws.onmessage = null;
-        this.ws.close(); 
+        this.ws.close();
       } catch { /* ignore */ }
       this.ws = null;
     }
