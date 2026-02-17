@@ -133,7 +133,7 @@ export default function InboxPanel() {
       
       // Load inbox items
       const result = await window.clawdbot?.inbox.list();
-      let allItems = result.success ? (result.items || []) : [];
+      let allItems: InboxItem[] = result.success ? (result.items || []) : [];
       
       // Also load tasks in "review" status that haven't been reviewed yet
       try {
