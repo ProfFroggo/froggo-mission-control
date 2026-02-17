@@ -47,37 +47,51 @@ const STAGE_PROMPTS: Record<Stage, string> = {
   done: '',
 };
 
-const HR_RESPONSES: Record<string, string[]> = {
-  greeting: [
-    "Hey! 🎓 Ready to add someone new to the team? Let's build them together.",
-    "I'll walk you through creating a new agent. It'll just take a minute!",
-  ],
-  name_ack: [
-    "Great name! I like it.",
-    "Nice choice!",
-    "Perfect — solid name.",
-  ],
-  role_ack: [
-    "Excellent focus area. We could use that on the team.",
-    "Good call — that's a gap we should fill.",
-    "Smart. Let's build around that specialty.",
-  ],
-  style_ack: [
-    "Got it — that'll shape how they approach tasks.",
-    "Makes sense for the role. I'll bake that in.",
-  ],
-  skills_ack: [
-    "Solid skill set. I'll make sure they're proficient in those.",
-    "Good picks. Those will be their core competencies.",
-  ],
-  personality_auto: [
-    "I'll craft a personality that fits the role perfectly.",
-    "Leave it to me — I know what works for this kind of agent.",
-  ],
-};
-
-function pickRandom(arr: string[]): string {
-  return arr[Math.floor(Math.random() * arr.length)];
+function hrAck(type: 'name' | 'role' | 'style' | 'skills' | 'personality_auto', value: string): string {
+  switch (type) {
+    case 'name': {
+      const picks = [
+        `Love it — **${value}** is a great name for an agent.`,
+        `**${value}** — nice. That'll stick.`,
+        `Perfect. **${value}** has a good ring to it.`,
+      ];
+      return picks[Math.floor(Math.random() * picks.length)];
+    }
+    case 'role': {
+      const picks = [
+        `${value} — that's exactly the kind of specialty we need on the team.`,
+        `Great focus. A dedicated ${value} will fill a real gap here.`,
+        `Solid. ${value} is a high-value role. Let's build them right.`,
+      ];
+      return picks[Math.floor(Math.random() * picks.length)];
+    }
+    case 'style': {
+      const picks = [
+        `"${value}" — got it. I'll wire that into how they think and work.`,
+        `Perfect framing. That work style will shape everything about them.`,
+        `Makes sense. I'll make sure "${value}" comes through in their approach.`,
+      ];
+      return picks[Math.floor(Math.random() * picks.length)];
+    }
+    case 'skills': {
+      const list = value.split(',').map(s => s.trim()).filter(Boolean);
+      const preview = list.slice(0, 2).join(', ') + (list.length > 2 ? ` and ${list.length - 2} more` : '');
+      const picks = [
+        `${preview} — solid core competencies. They'll be sharp.`,
+        `Good picks. I'll make sure they're genuinely proficient in all of those.`,
+        `${preview} — exactly what this role needs. Locked in.`,
+      ];
+      return picks[Math.floor(Math.random() * picks.length)];
+    }
+    case 'personality_auto': {
+      const picks = [
+        `Leave it to me — I'll craft something that fits the role and style perfectly.`,
+        `I'll design a personality that makes them feel like a real team member.`,
+        `On it. I know exactly what'll work here.`,
+      ];
+      return picks[Math.floor(Math.random() * picks.length)];
+    }
+  }
 }
 
 const AGENT_COLORS = [
@@ -133,8 +147,12 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
   useEffect(() => { scrollStepsToBottom(); }, [creationSteps, scrollStepsToBottom]);
 
   useEffect(() => {
+    const greetings = [
+      "Hey! 🎓 Ready to add someone new to the team? Let's build them together.",
+      "I'll walk you through creating a new agent. It'll just take a minute!",
+    ];
     const timer = setTimeout(() => {
-      addHRMessage(pickRandom(HR_RESPONSES.greeting));
+      addHRMessage(greetings[Math.floor(Math.random() * greetings.length)]);
       setTimeout(() => {
         addHRMessage(STAGE_PROMPTS.name);
         setStage('name');
@@ -179,23 +197,31 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     const name = text.replace(/[^a-zA-Z0-9\s-_]/g, '').trim();
     setAgentData(prev => ({ ...prev, name }));
     simulateTyping(() => {
-      addHRMessage(pickRandom(HR_RESPONSES.name_ack));
+      addHRMessage(hrAck('name', name));
       setTimeout(() => { addHRMessage(STAGE_PROMPTS.role); setStage('role'); }, 500);
     });
   };
 
+  const EMOJI_MAP: Record<string, string> = {
+    devops: '🔧', qa: '🧪', test: '🧪', design: '🎨', data: '📊',
+    security: '🔒', ml: '🧠', ai: '🧠', mobile: '📱', cloud: '☁️',
+    frontend: '🖥️', backend: '⚙️', database: '🗄️', support: '🎧',
+    writer: '✍️', writing: '✍️', author: '📚', book: '📚', illustrat: '🎨',
+    children: '🧒', story: '📖', creative: '🎭', publish: '📰',
+    market: '📣', social: '📱', finance: '💰', legal: '⚖️', research: '🔬',
+    analytic: '📊', video: '🎬', audio: '🎵', photo: '📷',
+  };
+
+  const emojiForRole = (role: string): string => {
+    const lower = role.toLowerCase();
+    return Object.entries(EMOJI_MAP).find(([k]) => lower.includes(k))?.[1] || '🤖';
+  };
+
   const handleRole = (text: string) => {
-    setAgentData(prev => ({ ...prev, role: text }));
-    const emojiMap: Record<string, string> = {
-      devops: '🔧', qa: '🧪', test: '🧪', design: '🎨', data: '📊',
-      security: '🔒', ml: '🧠', ai: '🧠', mobile: '📱', cloud: '☁️',
-      frontend: '🖥️', backend: '⚙️', database: '🗄️', support: '🎧',
-    };
-    const lower = text.toLowerCase();
-    const emoji = Object.entries(emojiMap).find(([k]) => lower.includes(k))?.[1] || '🤖';
-    setAgentData(prev => ({ ...prev, emoji }));
+    const emoji = emojiForRole(text);
+    setAgentData(prev => ({ ...prev, role: text, emoji }));
     simulateTyping(() => {
-      addHRMessage(pickRandom(HR_RESPONSES.role_ack));
+      addHRMessage(hrAck('role', text));
       setTimeout(() => { addHRMessage(STAGE_PROMPTS.style); setStage('style'); }, 500);
     });
   };
@@ -203,7 +229,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
   const handleStyle = (text: string) => {
     setAgentData(prev => ({ ...prev, style: text }));
     simulateTyping(() => {
-      addHRMessage(pickRandom(HR_RESPONSES.style_ack));
+      addHRMessage(hrAck('style', text));
       setTimeout(() => { addHRMessage(STAGE_PROMPTS.skills); setStage('skills'); }, 500);
     });
   };
@@ -212,7 +238,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     const skills = text.split(/[,;]/).map(s => s.trim()).filter(Boolean);
     setAgentData(prev => ({ ...prev, skills }));
     simulateTyping(() => {
-      addHRMessage(pickRandom(HR_RESPONSES.skills_ack));
+      addHRMessage(hrAck('skills', text));
       setTimeout(() => { addHRMessage(STAGE_PROMPTS.personality); setStage('personality'); }, 500);
     });
   };
@@ -222,23 +248,24 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     if (isAuto) {
       const personality = `${agentData.style}. Specializes in ${agentData.role}. Reliable and focused.`;
       setAgentData(prev => ({ ...prev, personality }));
-      simulateTyping(() => { addHRMessage(pickRandom(HR_RESPONSES.personality_auto)); showReview(); }, 400);
+      simulateTyping(() => { addHRMessage(hrAck('personality_auto', '')); showReview(); }, 400);
     } else {
       setAgentData(prev => ({ ...prev, personality: text }));
       simulateTyping(() => { addHRMessage("Love it — personality locked in."); showReview(); }, 400);
     }
   };
 
-  const showReview = () => {
+  const showReview = (data?: typeof agentData) => {
+    const d = data || agentData;
     setTimeout(() => {
       setStage('review');
       const reviewText =
         `Here's what I've got:\n\n` +
-        `**${agentData.emoji} ${agentData.name}**\n` +
-        `**Role:** ${agentData.role}\n` +
-        `**Style:** ${agentData.style}\n` +
-        `**Skills:** ${agentData.skills.join(', ')}\n` +
-        `**Personality:** ${agentData.personality || 'Auto-generated'}\n\n` +
+        `**${d.emoji} ${d.name}**\n` +
+        `**Role:** ${d.role}\n` +
+        `**Style:** ${d.style}\n` +
+        `**Skills:** ${d.skills.join(', ')}\n` +
+        `**Personality:** ${d.personality || 'Auto-generated'}\n\n` +
         `Look good? Say **"create"** to bring them to life, or tell me what to change.`;
       addHRMessage(reviewText);
     }, 600);
@@ -246,10 +273,70 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
   const handleReview = (text: string) => {
     const lower = text.toLowerCase();
-    if (lower.includes('create') || lower.includes('yes') || lower.includes('go') || lower.includes('ship') || lower.includes('do it') || lower.includes('looks good')) {
+
+    // Confirm → create
+    if (lower.includes('create') || lower.includes('yes') || lower.includes('go') || lower.includes('looks good') || lower.includes('ship') || lower.includes('do it') || lower.includes('perfect') || lower.includes('good')) {
       createAgent();
+      return;
+    }
+
+    // Parse "field: new value" format — e.g. "role: Children's book author"
+    const fieldMatch = text.match(/^(name|role|style|skills|personality)\s*:\s*(.+)/i);
+    if (fieldMatch) {
+      const field = fieldMatch[1].toLowerCase();
+      const value = fieldMatch[2].trim();
+      setAgentData(prev => {
+        const updated = { ...prev };
+        if (field === 'name')        updated.name = value.replace(/[^a-zA-Z0-9\s-_]/g, '').trim();
+        if (field === 'role')        { updated.role = value; updated.emoji = emojiForRole(value); }
+        if (field === 'style')       updated.style = value;
+        if (field === 'skills')      updated.skills = value.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+        if (field === 'personality') updated.personality = value;
+        simulateTyping(() => {
+          addHRMessage(`Updated ${field}. Here's the revised summary:`);
+          showReview(updated);
+        }, 300);
+        return updated;
+      });
+      return;
+    }
+
+    // Natural language field detection
+    const updates: Partial<typeof agentData> = {};
+    if (lower.includes('role') || lower.includes('speciali') || lower.includes('job')) {
+      // Extract what comes after role-related words
+      const val = text.replace(/.*?(role|speciali[a-z]+|job)[:\s]+/i, '').trim();
+      if (val) { updates.role = val; updates.emoji = emojiForRole(val); }
+    }
+    if (lower.includes('name') || lower.includes('call')) {
+      const val = text.replace(/.*?(name|call\s+(?:them|her|him|it))[:\s]+/i, '').trim().replace(/[^a-zA-Z0-9\s-_]/g, '').trim();
+      if (val) updates.name = val;
+    }
+    if (lower.includes('skill') || lower.includes('capabilit')) {
+      const val = text.replace(/.*?(skills?|capabilit[a-z]*)[:\s]+/i, '').trim();
+      if (val) updates.skills = val.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+    }
+    if (lower.includes('personalit') || lower.includes('trait')) {
+      const val = text.replace(/.*?(personalit[a-z]*|traits?)[:\s]+/i, '').trim();
+      if (val) updates.personality = val;
+    }
+    if (lower.includes('style') || lower.includes('work') || lower.includes('approach')) {
+      const val = text.replace(/.*?(style|work\s+style|approach)[:\s]+/i, '').trim();
+      if (val) updates.style = val;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      setAgentData(prev => {
+        const updated = { ...prev, ...updates };
+        simulateTyping(() => {
+          const fields = Object.keys(updates).join(', ');
+          addHRMessage(`Got it — updated ${fields}. Here's the revised summary:`);
+          showReview(updated);
+        }, 300);
+        return updated;
+      });
     } else {
-      addHRMessage("No problem — what would you like to change? (name, role, style, skills, or personality)");
+      addHRMessage("What would you like to change? You can say something like \"role: Children's Book Author\" or just tell me which field to update.");
     }
   };
 
