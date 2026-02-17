@@ -8804,42 +8804,39 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
       floatingToolbarWindow = null;
     }
     
-    // Load saved position/size if available
+    // Load saved position only (not size — size is fixed)
     const configPath = path.join(os.homedir(), 'froggo', 'config', 'floating-toolbar.json');
-    let savedBounds = null;
+    let savedPos: { x?: number; y?: number } = {};
     try {
       if (fs.existsSync(configPath)) {
-        savedBounds = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const saved = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        savedPos = { x: saved.x, y: saved.y };
       }
-    } catch (error) {
-      // Ignore errors reading saved position
-    }
-    
+    } catch { /* ignore */ }
+
     // Get current screen where main window is
-    const currentDisplay = mainWindow 
+    const currentDisplay = mainWindow
       ? screen.getDisplayNearestPoint(mainWindow.getBounds())
       : screen.getPrimaryDisplay();
-    
+
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
-    
-    // Use provided position, or saved position, or default
-    // Default dimensions for horizontal pill toolbar (was 80x400 for vertical sidebar)
-    // Expanded: ~600x80, Collapsed: ~250x80
-    const windowWidth = data?.width || savedBounds?.width || 650;
-    const windowHeight = data?.height || savedBounds?.height || 60;
-    const windowX = data?.x !== undefined ? data.x : (savedBounds?.x !== undefined ? savedBounds.x : screenWidth - windowWidth - 20);
-    const windowY = data?.y !== undefined ? data.y : (savedBounds?.y !== undefined ? savedBounds.y : Math.floor((screenHeight - windowHeight) / 2));
-    
+
+    // Fixed size — window is always tall enough to show panels (transparent above pill)
+    const TOOLBAR_W = 700;
+    const TOOLBAR_H = 520;
+    const windowX = data?.x ?? savedPos.x ?? (screenWidth - TOOLBAR_W - 20);
+    const windowY = data?.y ?? savedPos.y ?? (screenHeight - TOOLBAR_H - 40);
+
     // Create floating toolbar window
     floatingToolbarWindow = new BrowserWindow({
-      width: windowWidth,
-      height: windowHeight,
+      width: TOOLBAR_W,
+      height: TOOLBAR_H,
       x: windowX,
       y: windowY,
       alwaysOnTop: true,
       frame: false,
       transparent: true,
-      resizable: true,
+      resizable: false,
       minimizable: false,
       maximizable: false,
       skipTaskbar: true,
@@ -8850,37 +8847,33 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
         preload: path.join(__dirname, 'preload.js'),
       },
     });
-    
-    // Load the toolbar URL (we'll create a dedicated route for this)
+
+    // Transparent areas pass through mouse events; renderer toggles this on hover
+    floatingToolbarWindow.on('ready-to-show', () => {
+      if (floatingToolbarWindow && !floatingToolbarWindow.isDestroyed()) {
+        floatingToolbarWindow.setIgnoreMouseEvents(true, { forward: true });
+      }
+    });
+
+    // Load the toolbar URL
     const toolbarUrl = isDev
       ? 'http://localhost:5173/#/floating-toolbar'
       : `file://${path.join(__dirname, '../dist/index.html')}#/floating-toolbar`;
-    
+
     floatingToolbarWindow.loadURL(toolbarUrl);
-    
-    // Open DevTools in development
-    if (isDev) {
-      floatingToolbarWindow.webContents.openDevTools({ mode: 'detach' });
-    }
-    
-    // Save position on move or resize
+
+    // Save position on move
     const savePosition = () => {
       if (!floatingToolbarWindow || floatingToolbarWindow.isDestroyed()) return;
-      const bounds = floatingToolbarWindow.getBounds();
-      const configPath = path.join(os.homedir(), 'froggo', 'config', 'floating-toolbar.json');
+      const b = floatingToolbarWindow.getBounds();
       try {
-        const configDir = path.dirname(configPath);
-        if (!fs.existsSync(configDir)) {
-          fs.mkdirSync(configDir, { recursive: true });
-        }
-        fs.writeFileSync(configPath, JSON.stringify(bounds, null, 2), 'utf-8');
-      } catch (error) {
-        safeLog.error('[Toolbar] Error saving position:', error);
-      }
+        const dir = path.dirname(configPath);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(configPath, JSON.stringify({ x: b.x, y: b.y }, null, 2), 'utf-8');
+      } catch { /* ignore */ }
     };
-    
+
     floatingToolbarWindow.on('moved', savePosition);
-    floatingToolbarWindow.on('resized', savePosition);
     
     // Clean up when window is closed
     floatingToolbarWindow.on('closed', () => {
@@ -8935,6 +8928,15 @@ ipcMain.handle('toolbar:getState', async () => {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
+});
+
+ipcMain.on('toolbar:setIgnoreMouseEvents', (event, ignore: boolean) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      win.setIgnoreMouseEvents(ignore, { forward: true });
+    }
+  } catch { /* ignore */ }
 });
 
 ipcMain.handle('toolbar:resize', async (event, height: number) => {
