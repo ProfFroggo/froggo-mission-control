@@ -46,7 +46,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
   useEffect(() => {
     loadComparisonData();
-  }, [agentIds]);
+  }, [agentIds, loadComparisonData]);
 
   // ESC key to close
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- handleClose is stable modal handler
 
   const loadComparisonData = async () => {
     setLoading(true);

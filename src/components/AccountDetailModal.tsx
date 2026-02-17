@@ -62,7 +62,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- handleClose is stable modal handler
 
   const getStatusColor = () => {
     switch (account.status) {

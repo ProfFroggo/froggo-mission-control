@@ -48,7 +48,7 @@ export default function FilePreviewModal({ isOpen, onClose, file }: FilePreviewM
     // Use capture phase
     window.addEventListener('keydown', handleEsc, { capture: true });
     return () => window.removeEventListener('keydown', handleEsc, { capture: true });
-  }, [isOpen]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps -- handleClose is stable modal handler
 
   if (!isOpen || !file) return null;
 

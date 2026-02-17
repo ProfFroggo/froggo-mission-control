@@ -34,7 +34,7 @@ export default function AgentTokenDetailModal({
     if (isOpen && agent) {
       loadSessionLog();
     }
-  }, [isOpen, agent]);
+  }, [isOpen, agent, loadSessionLog]);
 
   const loadSessionLog = async () => {
     if (!agent) return;
