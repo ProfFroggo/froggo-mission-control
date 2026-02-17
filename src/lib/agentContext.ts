@@ -70,8 +70,8 @@ async function loadPersonalities(): Promise<Record<string, any>> {
         personalitiesData = JSON.parse(r.stdout);
         return personalitiesData!;
       }
-    } catch (err) {
-
+    } catch (_err) {
+      // Exec approach failed — fall through to fetch
     }
   }
   
@@ -82,8 +82,8 @@ async function loadPersonalities(): Promise<Record<string, any>> {
       personalitiesData = await resp.json();
       return personalitiesData!;
     }
-  } catch (err) {
-
+  } catch (_err) {
+    // Both load paths failed
   }
   
   console.error('[AgentContext] ❌ Failed to load personalities');
@@ -118,8 +118,8 @@ async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
         }
       }
     }
-  } catch (e) {
-
+  } catch (_e) {
+    // exec approach failed — fall through to gateway fallback
   }
   
   // Fallback: try gateway froggo-db
@@ -162,8 +162,8 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
         }))
         .slice(0, 10);
     }
-  } catch (e) {
-
+  } catch (_e) {
+    // Session load failed — return empty
   }
   return [];
 }

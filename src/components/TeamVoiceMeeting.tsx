@@ -284,6 +284,7 @@ Respond as ${agentName(agentId)}:`;
       }),
       geminiLive.on('disconnected', () => {
         if (isActiveRef.current) {
+          // Meeting was active — could add reconnect logic here
         }
       }),
     ];

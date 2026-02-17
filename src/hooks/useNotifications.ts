@@ -49,13 +49,8 @@ export function useNotifications() {
   }, []);
 
   const updatePreferences = useCallback(async (updates: Partial<NotificationPreferences>) => {
-    try {
-      await window.clawdbot?.notifications.updatePrefs(updates);
-      await loadPreferences();
-    } catch (error) {
-      // '[useNotifications] Failed to update preferences:', error;
-      throw error;
-    }
+    await window.clawdbot?.notifications.updatePrefs(updates);
+    await loadPreferences();
   }, [loadPreferences]);
 
   const sendNotification = useCallback(async (options: {
@@ -67,21 +62,11 @@ export function useNotifications() {
     actions?: { type: string; text: string }[];
     data?: any;
   }) => {
-    try {
-      await window.clawdbot?.notifications.send(options as unknown as Notification);
-    } catch (error) {
-      // '[useNotifications] Failed to send notification:', error;
-      throw error;
-    }
+    await window.clawdbot?.notifications.send(options as unknown as Notification);
   }, []);
 
   const testNotification = useCallback(async () => {
-    try {
-      await window.clawdbot?.notifications.test();
-    } catch (error) {
-      // '[useNotifications] Failed to test notification:', error;
-      throw error;
-    }
+    await window.clawdbot?.notifications.test();
   }, []);
 
   // Handle incoming notifications

@@ -348,8 +348,8 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           setVideoActive(true);
           addSystemMessage('📹 Camera active');
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
-        } catch (e: any) {
-
+        } catch (_e) {
+          // Camera activation failed silently — video mode already reset by state
         }
       } else if (videoMode === 'screen') {
         // Show picker instead of auto-sharing

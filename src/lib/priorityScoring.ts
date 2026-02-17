@@ -145,8 +145,8 @@ async function loadVips(): Promise<VipInfo[]> {
       vipCacheTime = now;
       return vipInfoList;
     }
-  } catch (error) {
-
+  } catch (_error) {
+    // VIP list load failed — score without VIP boosts
   }
   
   return [];

@@ -932,7 +932,8 @@ export const useStore = create<Store>()(
           // IMMEDIATELY spawn agent via openclaw CLI (don't wait for DB triggers)
           try {
             await (window as any).clawdbot?.agents?.spawnForTask?.(taskId, agentId);
-          } catch (spawnErr) {
+          } catch (_spawnErr) {
+            // Agent spawn failure is non-blocking — task still proceeds
           }
 
           get().addActivity({

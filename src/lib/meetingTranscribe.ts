@@ -130,11 +130,11 @@ export class MeetingTranscriber {
     if (!meetingId) throw new Error('No active meeting');
 
 
-    try {
-      this.activeStream = await this.ai.live.connect({
+    this.activeStream = await this.ai.live.connect({
         model: 'gemini-live-2.5-flash-preview',
         callbacks: {
           onopen: () => {
+            // Connection established — no action needed
           },
           onmessage: (message: any) => {
             if (message.serverContent?.inputTranscription) {
@@ -152,6 +152,7 @@ export class MeetingTranscriber {
             }
 
             if (message.serverContent?.outputTranscription) {
+              // AI output transcription available — not currently displayed
             }
           },
           onerror: (error: any) => {
@@ -173,10 +174,6 @@ Do not respond or engage - only transcribe what you hear.`,
       });
 
       await this.streamAudioToTranscription(audioStream);
-    } catch (error) {
-      // '[MeetingTranscriber] Failed to start transcription:', error;
-      throw error;
-    }
   }
 
   /**

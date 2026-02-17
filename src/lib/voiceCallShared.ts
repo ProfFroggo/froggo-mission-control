@@ -41,15 +41,17 @@ interface ToolCallArgs {
   note?: string;
   content?: string;
   days?: number;
-  [key: string]: unknown;
+  task_title?: string;
+  [key: string]: string | number | boolean | undefined;
 }
 
 interface ToolResult {
   success?: boolean;
   output?: string;
   task_created?: string;
-  tasks?: string;
+  tasks?: string | { id: string; title: string; status: string; priority: string }[];
   agent_spawned?: string;
+  agent?: string;
   error?: string;
   content?: string;
   stdout?: string;
@@ -59,12 +61,9 @@ interface ToolResult {
   query?: string;
   raw?: string;
   message?: string;
-}
-
-interface ExecResult {
-  success?: boolean;
-  stdout?: string;
-  stderr?: string;
+  note?: string;
+  personality?: string;
+  active_sessions?: number;
 }
 
 interface DuckDuckGoResult {
@@ -573,8 +572,8 @@ export async function executeToolCall(fnName: string, args: ToolCallArgs, curren
         return { content: (r.stdout || '').slice(0, 3000) };
       }
       case 'send_whatsapp': {
-        const to = (args.to || '').replace(/"/g, '\\"');
-        const msg = (args.message || '').replace(/"/g, '\\"');
+        const to = String(args.to || '').replace(/"/g, '\\"');
+        const msg = String(args.message || '').replace(/"/g, '\\"');
         const r = await exec(`openclaw message --action send --channel whatsapp --target "${to}" --message "${msg}" 2>&1`);
         return { success: r.success, output: r.stdout?.trim() || r.stderr?.trim() };
       }
