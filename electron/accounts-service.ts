@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
+import * as Imap from 'imap';
 import { createLogger } from './logger';
 
 const execAsync = promisify(exec);
@@ -324,15 +325,179 @@ class AccountsService {
 
   /**
    * Authenticate iCloud account (app-specific password)
+   * Uses IMAP over SSL to connect to imap.mail.me.com:993
    */
-  private async authenticateICloud(_request: AddAccountRequest) {
-    // TODO: Implement iCloud authentication
-    // This would involve storing app-specific password securely
-    // and testing connection to iCloud services
-    return {
-      success: false,
-      error: 'iCloud authentication not yet implemented',
-    };
+  private async authenticateICloud(request: AddAccountRequest) {
+    const { email, appPassword } = request;
+
+    if (!appPassword) {
+      return {
+        success: false,
+        error: 'App-specific password is required for iCloud authentication',
+      };
+    }
+
+    try {
+      // Encrypt and store the app password securely
+      const encryptedPassword = this.encryptPassword(appPassword);
+      const passwordPath = path.join(
+        os.homedir(),
+        'clawd',
+        'data',
+        `icloud-${this.sanitizeEmail(email)}.pass`
+      );
+      
+      fs.mkdirSync(path.dirname(passwordPath), { recursive: true });
+      fs.writeFileSync(passwordPath, encryptedPassword, { mode: 0o600 });
+
+      // Test IMAP connection
+      const connectionResult = await this.testICloudConnection(email, appPassword);
+
+      if (!connectionResult.success) {
+        // Clean up stored password if connection fails
+        try {
+          fs.unlinkSync(passwordPath);
+        } catch {}
+        return connectionResult;
+      }
+
+      logger.info(`[AccountsService] iCloud authentication successful for ${email}`);
+
+      return {
+        success: true,
+        metadata: {
+          ...connectionResult.metadata,
+          passwordPath,
+        },
+      };
+    } catch (err) {
+      logger.error('[AccountsService] iCloud authentication error:', err);
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'iCloud authentication failed',
+      };
+    }
+  }
+
+  /**
+   * Test iCloud IMAP connection
+   * Connects to imap.mail.me.com:993 with SSL
+   */
+  private async testICloudConnection(email: string, appPassword: string): Promise<{
+    success: boolean;
+    metadata?: Record<string, unknown>;
+    error?: string;
+  }> {
+    return new Promise((resolve) => {
+      const imap = new Imap({
+        user: email,
+        password: appPassword,
+        host: 'imap.mail.me.com',
+        port: 993,
+        tls: true,
+        tlsOptions: {
+          servername: 'imap.mail.me.com',
+        },
+        connTimeout: 15000,
+        authTimeout: 10000,
+      });
+
+      const timeout = setTimeout(() => {
+        imap.end();
+        resolve({
+          success: false,
+          error: 'IMAP connection timeout',
+        });
+      }, 20000);
+
+      imap.once('ready', () => {
+        clearTimeout(timeout);
+        
+        // Connection successful, get mailbox info
+        imap.getBoxes((err, boxes) => {
+          imap.end();
+          
+          if (err) {
+            resolve({
+              success: false,
+              error: `IMAP error: ${err.message}`,
+            });
+            return;
+          }
+
+          const boxCount = boxes ? Object.keys(boxes).length : 0;
+          
+          resolve({
+            success: true,
+            metadata: {
+              connected: true,
+              mailboxCount: boxCount,
+              host: 'imap.mail.me.com',
+              port: 993,
+            },
+          });
+        });
+      });
+
+      imap.once('error', (err) => {
+        clearTimeout(timeout);
+        imap.end();
+        
+        let errorMessage = 'IMAP connection failed';
+        if (err.message) {
+          errorMessage = err.message.includes('Invalid credentials') 
+            ? 'Invalid app-specific password. Please generate a new one at appleid.apple.com'
+            : err.message;
+        }
+        
+        resolve({
+          success: false,
+          error: errorMessage,
+        });
+      });
+
+      imap.connect();
+    });
+  }
+
+  /**
+   * Encrypt password using the service's encryption key
+   */
+  private encryptPassword(password: string): string {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-gcm', this.encryptionKey, iv);
+    const encrypted = Buffer.concat([cipher.update(password, 'utf8'), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    
+    // Format: iv:authTag:encryptedData
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+  }
+
+  /**
+   * Decrypt password
+   */
+  private decryptPassword(encryptedData: string): string {
+    const parts = encryptedData.split(':');
+    if (parts.length !== 3) {
+      throw new Error('Invalid encrypted data format');
+    }
+
+    const [ivHex, authTagHex, encryptedHex] = parts;
+    const iv = Buffer.from(ivHex, 'hex');
+    const authTag = Buffer.from(authTagHex, 'hex');
+    const encrypted = Buffer.from(encryptedHex, 'hex');
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', this.encryptionKey, iv);
+    decipher.setAuthTag(authTag);
+    
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+  }
+
+  /**
+   * Sanitize email for use in file paths
+   */
+  private sanitizeEmail(email: string): string {
+    return email.replace(/[^a-zA-Z0-9@._-]/g, '_');
   }
 
   /**
@@ -353,6 +518,40 @@ class AccountsService {
         account.lastChecked = Date.now();
         account.errorMessage = result.error;
         account.metadata = result.success ? result.metadata : account.metadata;
+        account.updatedAt = Date.now();
+        
+        this.saveAccounts();
+
+        return {
+          success: result.success,
+          account: account.email,
+          metadata: result.metadata,
+          error: result.error,
+        };
+      }
+
+      if (account.provider === 'icloud') {
+        // Load stored password
+        const passwordPath = account.metadata?.passwordPath as string;
+        if (!passwordPath || !fs.existsSync(passwordPath)) {
+          account.status = 'error';
+          account.lastChecked = Date.now();
+          account.errorMessage = 'Stored iCloud password not found';
+          account.updatedAt = Date.now();
+          this.saveAccounts();
+          return { success: false, error: 'iCloud password not found. Please re-authenticate.' };
+        }
+
+        const encryptedPassword = fs.readFileSync(passwordPath, 'utf8');
+        const appPassword = this.decryptPassword(encryptedPassword);
+
+        const result = await this.testICloudConnection(account.email, appPassword);
+
+        // Update account status
+        account.status = result.success ? 'connected' : 'error';
+        account.lastChecked = Date.now();
+        account.errorMessage = result.error;
+        account.metadata = result.success ? { ...account.metadata, ...result.metadata } : account.metadata;
         account.updatedAt = Date.now();
         
         this.saveAccounts();
