@@ -389,7 +389,6 @@ async function handleTaskPoke(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     safeLog.log('[Tasks] Poke:', taskId, title);
-    // TODO: Implement notification to assigned agent
     return { success: true };
   } catch (error) {
     safeLog.error('[Tasks] Poke error:', (error as Error).message);
