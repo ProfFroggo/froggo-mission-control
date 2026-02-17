@@ -1,4 +1,4 @@
-import { Notification, app, BrowserWindow, ipcMain } from 'electron';
+import { Notification, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';

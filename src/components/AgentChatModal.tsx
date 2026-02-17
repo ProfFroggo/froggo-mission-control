@@ -268,18 +268,36 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
 
   if (!agent) return null;
 
+  // Handle backdrop click with keyboard support
+  const handleBackdropClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if ('key' in e && e.key !== 'Enter' && e.key !== 'Escape') return;
+    handleClose();
+  };
+
+  // Handle inner click with keyboard support
+  const handleInnerClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    if ('key' in e && e.key !== 'Enter') return;
+  };
+
   return (
     <div 
       className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`} 
-      onClick={handleClose}
+      onClick={handleBackdropClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleBackdropClick}
+      aria-label="Close modal backdrop"
     >
       <div 
         className={`glass-modal rounded-xl max-w-3xl w-full h-[80vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`} 
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleInnerClick}
+        role="presentation"
+        onKeyDown={handleInnerClick}
       >
         {/* Header */}
         <div className="p-4 border-b border-clawd-border flex items-center justify-between">

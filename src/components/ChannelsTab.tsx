@@ -136,6 +136,11 @@ export default function ChannelsTab() {
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-clawd-bg/50 transition-colors"
                   onClick={() => setExpandedChannel(isExpanded ? null : channel.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedChannel(isExpanded ? null : channel.id); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                  aria-label={`${channel.label} channel - ${isExpanded ? 'collapse' : 'expand'}`}
                 >
                   <span className="text-2xl">{CHANNEL_ICONS[channel.id] || '📡'}</span>
                   <div className="flex-1">

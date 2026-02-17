@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
-  Plus, MessageSquare, CheckCircle, Search, Send, X, UserPlus, Brain,
+  Plus, MessageSquare, CheckCircle, Search, Send, X,
   ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
   ExternalLink,
 } from 'lucide-react';
@@ -433,7 +433,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
-  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact, onAddSkill, onNavigate: _onNavigate, currentView = 'dashboard',
+  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact: _onAddContact, onAddSkill: _onAddSkill, onNavigate: _onNavigate, currentView = 'dashboard',
 }, ref) => {
   const { isMuted: _isMuted, toggleMuted: _toggleMuted, isMeetingActive, toggleMeeting } = useStore();
 
@@ -1249,33 +1249,13 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             <button onClick={onNewTask} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="New Task">
               <Plus size={16} className="text-clawd-text-dim" />
             </button>
-            {onAddContact && (
-              <button onClick={onAddContact} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Add Contact (⌘⇧N)">
-                <UserPlus size={16} className="text-clawd-text-dim" />
-              </button>
-            )}
-            {onAddSkill && (
-              <button onClick={onAddSkill} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Add Skill (⌘⇧K)">
-                <Brain size={16} className="text-clawd-text-dim" />
-              </button>
-            )}
-
-            {/* FEATURE 3: Context Chat */}
+            {/* Context Chat */}
             <button
               onClick={() => { closeAllModals(); setContextChatOpen(!contextChatOpen); }}
               className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
               title={`Chat about ${getViewLabel(currentView)}`}
             >
               <Sparkles size={16} className={contextChatOpen ? '' : 'text-clawd-text-dim'} />
-            </button>
-
-            {/* FEATURE 4: Task Shortcuts */}
-            <button
-              onClick={() => { closeAllModals(); setTaskShortcutsOpen(!taskShortcutsOpen); }}
-              className={`p-2.5 rounded-full transition-colors ${taskShortcutsOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
-              title="Task Shortcuts"
-            >
-              <ListTodo size={16} className={taskShortcutsOpen ? '' : 'text-clawd-text-dim'} />
             </button>
 
             <div className="w-px h-6 bg-clawd-border mx-0.5" />

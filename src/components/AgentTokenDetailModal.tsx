@@ -101,14 +101,32 @@ export default function AgentTokenDetailModal({
 
   const theme = getAgentTheme(agent);
 
+  // Handle backdrop click with keyboard support
+  const handleBackdropClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if ('key' in e && e.key !== 'Enter' && e.key !== 'Escape') return;
+    onClose();
+  };
+
+  // Handle inner click with keyboard support
+  const handleInnerClick = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.stopPropagation();
+    if ('key' in e && e.key !== 'Enter') return;
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-      onClick={onClose}
+      onClick={handleBackdropClick}
+      onKeyDown={handleBackdropClick}
+      role="button"
+      tabIndex={0}
+      aria-label="Close token detail modal"
     >
       <div
         className="bg-clawd-bg border border-clawd-border rounded-2xl w-[600px] max-h-[80vh] flex flex-col shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleInnerClick}
+        onKeyDown={handleInnerClick}
+        role="presentation"
       >
         {/* Header */}
         <div className="p-5 border-b border-clawd-border flex items-center justify-between">

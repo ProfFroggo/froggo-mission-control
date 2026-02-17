@@ -246,6 +246,12 @@ export default function BaseModal({
       <div
         className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none"
         onClick={handleBackdropClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') handleBackdropClick(e as any);
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close modal"
       >
         {/* Modal Content - Enhanced responsive sizing and transitions */}
         <div
@@ -267,6 +273,7 @@ export default function BaseModal({
             maxHeight,
           }}
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
           {/* Floating Close Button - Enhanced visibility and responsive positioning */}
           {showCloseButton && closeButtonPosition === 'floating' && (

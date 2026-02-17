@@ -990,7 +990,6 @@ export default function ChatPanel() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search messages..."
               className="w-full bg-clawd-surface border border-clawd-border rounded-lg pl-10 pr-10 py-2 text-sm focus:outline-none focus:border-clawd-accent"
-              autoFocus
             />
             {searchQuery && (
               <button
@@ -1089,7 +1088,11 @@ export default function ChatPanel() {
                   key={att.id}
                   className="flex items-center gap-2 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent transition-colors cursor-pointer"
                   onClick={() => setPreviewFile(att)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPreviewFile(att); } }}
                   title="Click to preview"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Preview attachment ${att.name}`}
                 >
                   <Icon size={16} className="text-clawd-accent" />
                   <span className="text-sm truncate max-w-32">{att.name}</span>
