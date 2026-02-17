@@ -8,7 +8,7 @@ import { showToast } from './Toast';
 type ToolbarMode = 'collapsed' | 'expanded';
 
 export default function FloatingToolbar() {
-  const [activeCall, setActiveCall] = useState<{agentName: string} | null>(null);
+  const [activeCall] = useState<{agentName: string} | null>(null);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
   const [agentCallModalOpen, setAgentCallModalOpen] = useState(false);
   const [mode, setMode] = useState<ToolbarMode>('expanded');
@@ -16,7 +16,7 @@ export default function FloatingToolbar() {
   const [agentChatModalOpen, setAgentChatModalOpen] = useState(false);
   const [contextChatOpen, setContextChatOpen] = useState(false);
   const [taskShortcutsOpen, setTaskShortcutsOpen] = useState(false);
-  const [callRinging, setCallRinging] = useState(false);
+  const [callRinging] = useState(false);
   
   useEffect(() => {
     // Listen for toolbar closed event
@@ -51,7 +51,12 @@ export default function FloatingToolbar() {
   
   const handleClose = async () => {
     try {
-      await window.electron.toolbar.close();
+      // Use popIn to dock back, then close; fallback to window.close()
+      if (window.clawdbot?.toolbar) {
+        await window.clawdbot.toolbar.popIn();
+      } else {
+        window.close();
+      }
     } catch (error) {
       console.error('Close error:', error);
       window.close();

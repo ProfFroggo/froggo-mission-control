@@ -1020,7 +1020,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
           let data;
           try {
             data = JSON.parse(r.stdout);
-          } catch (e) {
+          } catch {
             return { output: 'Search failed - invalid response format' };
           }
           

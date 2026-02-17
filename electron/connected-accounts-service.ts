@@ -62,6 +62,7 @@ export interface AccountTypeInfo {
 }
 
 // Encryption utilities — uses Electron safeStorage (OS keychain)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _encrypt(text: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('safeStorage encryption not available');
@@ -70,6 +71,7 @@ function _encrypt(text: string): string {
   return encrypted.toString('base64');
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _decrypt(text: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('safeStorage encryption not available');

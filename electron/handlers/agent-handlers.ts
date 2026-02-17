@@ -20,6 +20,8 @@ import {
 import * as path from 'path';
 import * as fs from 'fs';
 
+// ============== INTERFACES ==============
+
 interface AgentRegistryEntry {
   role: string;
   description: string;
@@ -28,6 +30,105 @@ interface AgentRegistryEntry {
   aliases: string[];
   clawdAgentId: string;
 }
+
+interface Agent {
+  id: string;
+  identityName: string;
+  identityEmoji: string;
+  description: string;
+  workspace: string;
+  model: string;
+  isDefault: boolean;
+  [key: string]: unknown;
+}
+
+interface AgentDBRow {
+  id: string;
+  name: string | null;
+  role: string | null;
+  description: string | null;
+  color: string | null;
+  image_path: string | null;
+  status: string;
+  trust_tier: string | null;
+}
+
+interface Session {
+  session_key: string;
+  agent_id: string;
+  channel: string;
+  last_message_at: number;
+  message_count: number;
+  [key: string]: unknown;
+}
+
+interface SessionsListResult {
+  success: boolean;
+  sessions: Session[];
+  count?: number;
+  path?: string;
+  error?: string;
+}
+
+interface AgentListResult {
+  success: boolean;
+  agents: Agent[];
+  error?: string;
+}
+
+interface RegistryResult {
+  success: boolean;
+  registry?: Record<string, AgentRegistryEntry>;
+  error?: string;
+}
+
+interface GenericResult {
+  success: boolean;
+  error?: string;
+}
+
+interface MetricsResult {
+  success: boolean;
+  metrics?: Record<string, unknown>;
+  error?: string;
+}
+
+interface AgentDetailsResult {
+  success: boolean;
+  agent?: Record<string, unknown>;
+  error?: string;
+}
+
+interface SpawnResult {
+  success: boolean;
+  sessionKey?: string;
+  error?: string;
+}
+
+interface ChatResult {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
+
+interface CreateAgentResult {
+  success: boolean;
+  agentId?: string;
+  error?: string;
+}
+
+interface WidgetResult {
+  success: boolean;
+  widgets?: Array<Record<string, unknown>>;
+  error?: string;
+}
+
+interface GlobalWithCache extends NodeJS.Global {
+  _agentRegistryCache?: Record<string, AgentRegistryEntry>;
+  _agentRegistryCacheTime?: number;
+}
+
+// ============== HANDLER REGISTRATION ==============
 
 export function registerAgentHandlers(): void {
   // Gateway token
@@ -63,8 +164,11 @@ async function handleGatewayGetToken(): Promise<string> {
   for (const cfgPath of configPaths) {
     try {
       if (fs.existsSync(cfgPath)) {
-        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
-        const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
+        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8')) as Record<string, unknown>;
+        const gateway = cfg.gateway as Record<string, unknown> | undefined;
+        const controlUi = gateway?.controlUi as Record<string, unknown> | undefined;
+        const auth = (controlUi?.auth as Record<string, unknown>) ?? (gateway?.auth as Record<string, unknown>);
+        const token = auth?.token as string | undefined;
         if (token) return token;
       }
     } catch { /* ignore */ }
@@ -74,7 +178,7 @@ async function handleGatewayGetToken(): Promise<string> {
 
 // ============== AGENTS LIST ==============
 
-async function handleAgentsList(): Promise<{ success: boolean; agents: any[] }> {
+async function handleAgentsList(): Promise<AgentListResult> {
   return new Promise((resolve) => {
     exec(
       'openclaw agents list --json',
@@ -91,7 +195,7 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[] }> 
         }
 
         try {
-          const rawAgents = JSON.parse(stdout || '[]');
+          const rawAgents = JSON.parse(stdout || '[]') as Array<Record<string, unknown>>;
           if (rawAgents.length === 0) {
             const agents = getAgentsFromDB();
             resolve({ success: agents.length > 0, agents });
@@ -99,9 +203,10 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[] }> 
           }
 
           safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
-          resolve({ success: true, agents: rawAgents });
-        } catch (parseError: any) {
-          safeLog.warn('[Agents] Parse failed, falling back to DB:', parseError.message);
+          resolve({ success: true, agents: rawAgents as unknown as Agent[] });
+        } catch (parseError: unknown) {
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+          safeLog.warn('[Agents] Parse failed, falling back to DB:', errorMessage);
           const agents = getAgentsFromDB();
           resolve({ success: agents.length > 0, agents });
         }
@@ -110,39 +215,34 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[] }> 
   });
 }
 
-function getAgentsFromDB(): any[] {
+function getAgentsFromDB(): Agent[] {
   try {
     const rows = prepare(`
       SELECT id, name, role, description, color, image_path, status, trust_tier 
       FROM agent_registry 
       WHERE status = 'active' 
       ORDER BY name
-    `).all() as any[];
+    `).all() as AgentDBRow[];
 
-    return rows.map((r: any) => ({
+    return rows.map((r): Agent => ({
       id: r.id,
-      identityName: r.name || r.id,
+      identityName: r.name ?? r.id,
       identityEmoji: '🤖',
-      description: r.role || r.description || '',
+      description: r.role ?? r.description ?? '',
       workspace: agentWorkspace(r.id),
       model: '',
       isDefault: r.id === 'froggo',
     }));
-  } catch (e: any) {
-    safeLog.error('[Agents] DB fallback failed:', e.message);
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    safeLog.error('[Agents] DB fallback failed:', errorMessage);
     return [];
   }
 }
 
 // ============== SESSIONS LIST ==============
 
-async function handleSessionsList(_: Electron.IpcMainInvokeEvent, activeMinutes?: number): Promise<{
-  success: boolean;
-  sessions: any[];
-  count?: number;
-  path?: string;
-  error?: string;
-}> {
+async function handleSessionsList(_: Electron.IpcMainInvokeEvent, activeMinutes?: number): Promise<SessionsListResult> {
   return new Promise((resolve) => {
     const args = ['sessions', 'list', '--json'];
     if (activeMinutes) {
@@ -163,17 +263,19 @@ async function handleSessionsList(_: Electron.IpcMainInvokeEvent, activeMinutes?
         }
 
         try {
-          const data = JSON.parse(stdout || '{}');
-          safeLog.log(`[Sessions] Loaded ${data.sessions?.length || 0} sessions from gateway`);
+          const data = JSON.parse(stdout || '{}') as Record<string, unknown>;
+          const sessions = (data.sessions as Session[]) ?? [];
+          safeLog.log(`[Sessions] Loaded ${sessions.length} sessions from gateway`);
           resolve({
             success: true,
-            sessions: data.sessions || [],
-            count: data.count || 0,
-            path: data.path
+            sessions,
+            count: (data.count as number) ?? 0,
+            path: (data.path as string) ?? undefined
           });
-        } catch (parseError: any) {
-          safeLog.warn('[Sessions] Parse failed:', parseError.message);
-          resolve({ success: false, error: parseError.message, sessions: [] });
+        } catch (parseError: unknown) {
+          const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+          safeLog.warn('[Sessions] Parse failed:', errorMessage);
+          resolve({ success: false, error: errorMessage, sessions: [] });
         }
       }
     );
@@ -185,134 +287,95 @@ async function handleSessionsList(_: Electron.IpcMainInvokeEvent, activeMinutes?
 function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
   const registryPath = path.join(__dirname, '..', 'agent-registry.json');
   try {
-    const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
-    return data.agents || {};
-  } catch (err) {
-    safeLog.error('Failed to load agent registry, using empty:', err);
+    const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8')) as Record<string, unknown>;
+    return (data.agents as Record<string, AgentRegistryEntry>) ?? {};
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    safeLog.error('Failed to load agent registry, using empty:', errorMessage);
     return {};
   }
 }
 
 function getAgentRegistry(): Record<string, AgentRegistryEntry> {
   const now = Date.now();
-  const global_any = global as any;
-  if (!global_any._agentRegistryCache || now - (global_any._agentRegistryCacheTime || 0) > 60000) {
-    global_any._agentRegistryCache = loadAgentRegistry();
-    global_any._agentRegistryCacheTime = now;
+  const globalAny = global as GlobalWithCache;
+  if (!globalAny._agentRegistryCache || now - (globalAny._agentRegistryCacheTime ?? 0) > 60000) {
+    globalAny._agentRegistryCache = loadAgentRegistry();
+    globalAny._agentRegistryCacheTime = now;
   }
-  return global_any._agentRegistryCache;
+  return globalAny._agentRegistryCache ?? {};
 }
 
-async function handleGetAgentRegistry(): Promise<any[]> {
+async function handleGetAgentRegistry(): Promise<Array<Record<string, unknown>>> {
   try {
     const agents = prepare(`
       SELECT id, name, role, description, color, image_path, status, trust_tier 
       FROM agent_registry 
       WHERE status = 'active' 
       ORDER BY name
-    `).all();
+    `).all() as Array<Record<string, unknown>>;
     safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
     return agents;
-  } catch (error: any) {
-    safeLog.error('[AgentRegistry] Error:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[AgentRegistry] Error:', errorMessage);
     return [];
   }
 }
 
-async function handleAgentsGetRegistry(): Promise<{
-  success: boolean;
-  registry?: Record<string, AgentRegistryEntry>;
-  error?: string;
-}> {
+async function handleAgentsGetRegistry(): Promise<RegistryResult> {
   try {
     const registry = getAgentRegistry();
     return { success: true, registry };
-  } catch (error: any) {
-    safeLog.error('[Agents] Get registry error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[Agents] Get registry error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
 // ============== AGENT METRICS (PLACEHOLDER) ==============
 
-async function handleAgentsGetMetrics(): Promise<{
-  success: boolean;
-  metrics?: any;
-  error?: string;
-}> {
+async function handleAgentsGetMetrics(): Promise<MetricsResult> {
   // Implementation would be extracted from main.ts lines 6234-6403
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsGetDetails(): Promise<{
-  success: boolean;
-  agent?: any;
-  error?: string;
-}> {
+async function handleAgentsGetDetails(): Promise<AgentDetailsResult> {
   // Implementation would be extracted from main.ts lines 6404-6523
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsAddSkill(): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+async function handleAgentsAddSkill(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsUpdateSkill(): Promise<{
-  success: boolean;
-  error?: string;
-}> {
+async function handleAgentsUpdateSkill(): Promise<GenericResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsSearch(): Promise<{
-  success: boolean;
-  results?: any[];
-  error?: string;
-}> {
+async function handleAgentsSearch(): Promise<{ success: boolean; results?: Array<Record<string, unknown>>; error?: string }> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsSpawnForTask(): Promise<{
-  success: boolean;
-  sessionKey?: string;
-  error?: string;
-}> {
+async function handleAgentsSpawnForTask(): Promise<SpawnResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsSpawnChat(): Promise<{
-  success: boolean;
-  sessionKey?: string;
-  error?: string;
-}> {
+async function handleAgentsSpawnChat(): Promise<SpawnResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsChat(): Promise<{
-  success: boolean;
-  response?: string;
-  error?: string;
-}> {
+async function handleAgentsChat(): Promise<ChatResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
-async function handleAgentsCreate(): Promise<{
-  success: boolean;
-  agentId?: string;
-  error?: string;
-}> {
+async function handleAgentsCreate(): Promise<CreateAgentResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }
 
 // ============== WIDGET MANIFEST SCANNER (PLACEHOLDER) ==============
 
-async function handleWidgetScanManifest(): Promise<{
-  success: boolean;
-  widgets?: any[];
-  error?: string;
-}> {
+async function handleWidgetScanManifest(): Promise<WidgetResult> {
   return { success: false, error: 'Not implemented in this refactoring phase' };
 }

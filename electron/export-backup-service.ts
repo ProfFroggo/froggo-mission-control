@@ -512,7 +512,7 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
 
   try {
     data = JSON.parse(content);
-  } catch (error) {
+  } catch {
     throw new Error('Invalid JSON format');
   }
 

@@ -25,6 +25,7 @@ interface ApprovedDraft {
   approved_by: string;
   created_at: number;
   approved_at: number;
+  draft_metadata?: string;
 }
 
 interface TimeSlot {
@@ -56,13 +57,13 @@ export const XCalendarView: React.FC = () => {
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(endOfWeek.getDate() + 7);
       
-      const result = await window.electron.xSchedule.list({
+      const result = await window.clawdbot?.xSchedule?.list({
         dateFrom: startOfWeek.getTime(),
         dateTo: endOfWeek.getTime(),
       });
       
-      if (result.success) {
-        setScheduled(result.scheduled);
+      if (result?.success) {
+        setScheduled((result.scheduled ?? []) as ScheduledPost[]);
       }
     } catch (error) {
       console.error('Error loading scheduled posts:', error);
@@ -71,13 +72,13 @@ export const XCalendarView: React.FC = () => {
 
   const loadApprovedDrafts = async () => {
     try {
-      const result = await window.electron.xDraft.list({ status: 'approved' });
+      const result = await window.clawdbot?.xDraft?.list({ status: 'approved' });
       
-      if (result.success) {
+      if (result?.success) {
         // Filter out drafts that are already scheduled
         const scheduledDraftIds = new Set(scheduled.map(s => s.draft_id));
-        const unscheduled = result.drafts.filter(d => !scheduledDraftIds.has(d.id));
-        setApprovedDrafts(unscheduled);
+        const unscheduled = (result.drafts ?? []).filter((d: unknown) => !scheduledDraftIds.has((d as ApprovedDraft).id));
+        setApprovedDrafts(unscheduled as ApprovedDraft[]);
       }
       setLoading(false);
     } catch (error) {
@@ -143,13 +144,13 @@ export const XCalendarView: React.FC = () => {
 
   const handleSchedule = async (draftId: string, scheduledFor: number, reason: string) => {
     try {
-      const result = await window.electron.xSchedule.create({
+      const result = await window.clawdbot?.xSchedule?.create({
         draftId,
         scheduledFor,
         timeSlotReason: reason,
       });
       
-      if (result.success) {
+      if (result?.success) {
         await loadScheduled();
         await loadApprovedDrafts();
         setSelectedDraft(null);
@@ -160,14 +161,14 @@ export const XCalendarView: React.FC = () => {
     }
   };
 
-  const handleReschedule = async (scheduleId: string, newTime: number) => {
+  const _handleReschedule = async (scheduleId: string, newTime: number) => {
     try {
-      const result = await window.electron.xSchedule.update({
+      const result = await window.clawdbot?.xSchedule?.update({
         id: scheduleId,
         scheduledFor: newTime,
       });
       
-      if (result.success) {
+      if (result?.success) {
         await loadScheduled();
       }
     } catch (error) {
@@ -177,9 +178,9 @@ export const XCalendarView: React.FC = () => {
 
   const handleUnschedule = async (scheduleId: string) => {
     try {
-      const result = await window.electron.xSchedule.delete({ id: scheduleId });
+      const result = await window.clawdbot?.xSchedule?.delete({ id: scheduleId });
       
-      if (result.success) {
+      if (result?.success) {
         await loadScheduled();
         await loadApprovedDrafts();
       }

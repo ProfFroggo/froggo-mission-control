@@ -13,6 +13,87 @@ import { prepare } from './database';
 import { safeLog } from './logger';
 import { agentWorkspace } from './paths';
 
+// ============== INTERFACES ==============
+
+interface AgentRegistryEntry {
+  role: string;
+  description: string;
+  capabilities: string[];
+  prompt: string;
+  aliases: string[];
+  clawdAgentId: string;
+}
+
+interface Agent {
+  id: string;
+  identityName: string;
+  identityEmoji: string;
+  description: string;
+  workspace: string;
+  model: string;
+  isDefault: boolean;
+  [key: string]: unknown;
+}
+
+interface AgentDBRow {
+  id: string;
+  name: string | null;
+  role: string | null;
+  description: string | null;
+  color: string | null;
+  image_path: string | null;
+  status: string;
+  trust_tier: string | null;
+}
+
+interface SessionDBRow {
+  session_key: string;
+  agent_id: string;
+  channel: string;
+  last_message_at: number;
+  message_count: number;
+  [key: string]: unknown;
+}
+
+interface ActiveSessionRow extends SessionDBRow {
+  agent_name: string | null;
+}
+
+interface WidgetManifest {
+  widgets?: Array<Record<string, unknown>>;
+}
+
+interface GlobalWithCache extends NodeJS.Global {
+  _agentRegistryCache?: Record<string, AgentRegistryEntry>;
+  _agentRegistryCacheTime?: number;
+}
+
+interface AgentListResult {
+  success: boolean;
+  agents: Agent[];
+  error?: string;
+}
+
+interface SessionsListResult {
+  success: boolean;
+  sessions: SessionDBRow[];
+  error?: string;
+}
+
+interface ActiveSessionsResult {
+  success: boolean;
+  sessions: Array<Record<string, unknown>>;
+  error?: string;
+}
+
+interface WidgetScanResult {
+  success: boolean;
+  widgets?: Array<Record<string, unknown>>;
+  error?: string;
+}
+
+// ============== HANDLER REGISTRATION ==============
+
 export function registerAgentHandlers(): void {
   ipcMain.handle('gateway:getToken', handleGatewayGetToken);
   ipcMain.handle('agents:list', handleAgentsList);
@@ -34,8 +115,11 @@ async function handleGatewayGetToken(): Promise<string> {
     try {
       const fs = await import('fs');
       if (fs.existsSync(cfgPath)) {
-        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
-        const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
+        const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf-8')) as Record<string, unknown>;
+        const gateway = cfg.gateway as Record<string, unknown> | undefined;
+        const controlUi = gateway?.controlUi as Record<string, unknown> | undefined;
+        const auth = (controlUi?.auth as Record<string, unknown>) ?? (gateway?.auth as Record<string, unknown>);
+        const token = auth?.token as string | undefined;
         if (token) return token;
       }
     } catch { /* ignore missing config */ }
@@ -43,12 +127,12 @@ async function handleGatewayGetToken(): Promise<string> {
   return '';
 }
 
-async function handleAgentsList(): Promise<{ success: boolean; agents: any[]; error?: string }> {
+async function handleAgentsList(): Promise<AgentListResult> {
   return new Promise((resolve) => {
     exec('openclaw agents list --json', { 
       timeout: 10000, 
       env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } 
-    }, (error, stdout, _stderr) => {
+    }, (error, stdout) => {
       if (error) {
         safeLog.warn('[Agents] CLI failed, falling back to DB:', error.message);
         const agents = getAgentsFromDB();
@@ -57,7 +141,7 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[]; er
       }
 
       try {
-        const rawAgents = JSON.parse(stdout || '[]');
+        const rawAgents = JSON.parse(stdout || '[]') as Array<Record<string, unknown>>;
         if (rawAgents.length === 0) {
           safeLog.warn('[Agents] CLI returned empty, falling back to DB');
           const agents = getAgentsFromDB();
@@ -66,9 +150,10 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[]; er
         }
 
         safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
-        resolve({ success: true, agents: rawAgents });
-      } catch (parseError: any) {
-        safeLog.warn('[Agents] Parse failed, falling back to DB:', parseError.message);
+        resolve({ success: true, agents: rawAgents as unknown as Agent[] });
+      } catch (parseError: unknown) {
+        const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+        safeLog.warn('[Agents] Parse failed, falling back to DB:', errorMessage);
         const agents = getAgentsFromDB();
         resolve({ success: agents.length > 0, agents });
       }
@@ -76,26 +161,27 @@ async function handleAgentsList(): Promise<{ success: boolean; agents: any[]; er
   });
 }
 
-function getAgentsFromDB(): any[] {
+function getAgentsFromDB(): Agent[] {
   try {
     const rows = prepare(`
       SELECT id, name, role, description, color, image_path, status, trust_tier 
       FROM agent_registry 
       WHERE status = 'active' 
       ORDER BY name
-    `).all() as any[];
+    `).all() as AgentDBRow[];
     
-    return rows.map((r: any) => ({
+    return rows.map((r): Agent => ({
       id: r.id,
-      identityName: r.name || r.id,
+      identityName: r.name ?? r.id,
       identityEmoji: '🤖',
-      description: r.role || r.description || '',
+      description: r.role ?? r.description ?? '',
       workspace: agentWorkspace(r.id),
       model: '',
       isDefault: r.id === 'froggo',
     }));
-  } catch (e: any) {
-    safeLog.error('[Agents] DB fallback failed:', e.message);
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    safeLog.error('[Agents] DB fallback failed:', errorMessage);
     return [];
   }
 }
@@ -103,7 +189,7 @@ function getAgentsFromDB(): any[] {
 async function handleSessionsList(
   _: Electron.IpcMainInvokeEvent, 
   activeMinutes?: number
-): Promise<{ success: boolean; sessions: any[]; error?: string }> {
+): Promise<SessionsListResult> {
   try {
     let sql = `
       SELECT s.session_key, s.agent_id, s.channel, s.last_message_at, 
@@ -111,7 +197,7 @@ async function handleSessionsList(
       FROM sessions s
       LEFT JOIN session_messages m ON s.session_key = m.session_key
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     
     if (activeMinutes) {
       const cutoff = Date.now() - (activeMinutes * 60 * 1000);
@@ -121,18 +207,20 @@ async function handleSessionsList(
     
     sql += ' GROUP BY s.session_key ORDER BY s.last_message_at DESC LIMIT 500';
     
-    const sessions = prepare(sql).all(...params);
+    const sessions = prepare(sql).all(...params) as SessionDBRow[];
     return { success: true, sessions };
-  } catch (error: any) {
-    safeLog.error('[Sessions] List error:', error.message);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[Sessions] List error:', errorMessage);
     return { success: false, sessions: [] };
   }
 }
 
-async function handleGetAgentRegistry(): Promise<Record<string, any>> {
+async function handleGetAgentRegistry(): Promise<Record<string, AgentRegistryEntry>> {
   const now = Date.now();
-  const cache = (global as any)._agentRegistryCache;
-  const cacheTime = (global as any)._agentRegistryCacheTime || 0;
+  const globalAny = global as GlobalWithCache;
+  const cache = globalAny._agentRegistryCache;
+  const cacheTime = globalAny._agentRegistryCacheTime ?? 0;
   
   // Cache with 60s TTL
   if (cache && now - cacheTime < 60000) {
@@ -140,22 +228,23 @@ async function handleGetAgentRegistry(): Promise<Record<string, any>> {
   }
   
   const registry = loadAgentRegistry();
-  (global as any)._agentRegistryCache = registry;
-  (global as any)._agentRegistryCacheTime = now;
+  globalAny._agentRegistryCache = registry;
+  globalAny._agentRegistryCacheTime = now;
   return registry;
 }
 
-function loadAgentRegistry(): Record<string, any> {
+function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs');
+    const fs = require('fs') as typeof import('fs');
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require('path');
+    const path = require('path') as typeof import('path');
     const registryPath = path.join(__dirname, 'agent-registry.json');
-    const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
-    return data.agents || {};
-  } catch (err) {
-    safeLog.error('Failed to load agent registry, using empty:', err);
+    const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8')) as Record<string, unknown>;
+    return (data.agents as Record<string, AgentRegistryEntry>) ?? {};
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    safeLog.error('Failed to load agent registry, using empty:', errorMessage);
     return {};
   }
 }
@@ -163,7 +252,7 @@ function loadAgentRegistry(): Record<string, any> {
 async function handleWidgetScanManifest(
   _: Electron.IpcMainInvokeEvent, 
   agentId: string
-): Promise<{ success: boolean; widgets?: any[]; error?: string }> {
+): Promise<WidgetScanResult> {
   try {
     const fs = await import('fs');
     const path = await import('path');
@@ -173,15 +262,16 @@ async function handleWidgetScanManifest(
       return { success: true, widgets: [] };
     }
     
-    const manifest = JSON.parse(fs.readFileSync(widgetPath, 'utf-8'));
-    return { success: true, widgets: manifest.widgets || [] };
-  } catch (error: any) {
-    safeLog.error('[Widget] Scan error:', error.message);
-    return { success: false, error: error.message };
+    const manifest = JSON.parse(fs.readFileSync(widgetPath, 'utf-8')) as WidgetManifest;
+    return { success: true, widgets: manifest.widgets ?? [] };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[Widget] Scan error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
 
-async function handleAgentsGetActiveSessions(): Promise<{ success: boolean; sessions: any[]; error?: string }> {
+async function handleAgentsGetActiveSessions(): Promise<ActiveSessionsResult> {
   try {
     const sessions = prepare(`
       SELECT s.*, a.name as agent_name 
@@ -189,11 +279,12 @@ async function handleAgentsGetActiveSessions(): Promise<{ success: boolean; sess
       LEFT JOIN agent_registry a ON s.agent_id = a.id
       WHERE s.last_message_at > ?
       ORDER BY s.last_message_at DESC
-    `).all(Date.now() - 24 * 60 * 60 * 1000); // Last 24 hours
+    `).all(Date.now() - 24 * 60 * 60 * 1000) as ActiveSessionRow[]; // Last 24 hours
     
-    return { success: true, sessions };
-  } catch (error: any) {
-    safeLog.error('[Agents] Get active sessions error:', error.message);
+    return { success: true, sessions: sessions as Array<Record<string, unknown>> };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    safeLog.error('[Agents] Get active sessions error:', errorMessage);
     return { success: false, sessions: [] };
   }
 }
