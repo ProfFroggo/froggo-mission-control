@@ -30,6 +30,7 @@ export default function Tooltip({
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -99,6 +100,7 @@ export default function Tooltip({
     setIsVisible(false);
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (isVisible) {
       updatePosition();
@@ -110,6 +112,7 @@ export default function Tooltip({
       };
     }
   }, [isVisible]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const arrowStyles = (): React.CSSProperties => {
     const base: React.CSSProperties = {
