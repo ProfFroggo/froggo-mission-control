@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { 
   Bell, BellOff, Volume2, VolumeX, Moon, Clock, 

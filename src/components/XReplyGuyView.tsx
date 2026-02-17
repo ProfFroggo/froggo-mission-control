@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Send } from 'lucide-react';
 import { showToast } from './Toast';

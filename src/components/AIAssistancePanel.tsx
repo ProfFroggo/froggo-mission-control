@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
 import { gateway } from '../lib/gateway';

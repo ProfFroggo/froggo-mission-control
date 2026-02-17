@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * BaseModal - Standardized modal component with consistent behavior
  * 

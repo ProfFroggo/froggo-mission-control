@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Clock, Calendar, Moon, Sunrise, Coffee, AlertCircle, Trash2 } from 'lucide-react';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';

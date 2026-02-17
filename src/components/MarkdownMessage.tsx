@@ -141,6 +141,8 @@ function formatInline(text: string): React.ReactNode {
     return `<a href="${sanitizedUrl}" class="text-clawd-accent hover:underline underline-offset-2 font-medium" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
   });
 
+  // SECURITY: content is escapeHtml()'d first; only safe tags (strong/code/a) are re-introduced
+  // via controlled regex. URLs are validated by sanitizeUrl() (utils/sanitize.ts).
   return <span dangerouslySetInnerHTML={{ __html: remaining }} />;
 }
 

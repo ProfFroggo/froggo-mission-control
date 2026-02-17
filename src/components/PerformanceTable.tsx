@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';

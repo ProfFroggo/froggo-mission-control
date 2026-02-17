@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/store';

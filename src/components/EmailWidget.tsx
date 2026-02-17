@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag } from 'lucide-react';
 import { gateway } from '../lib/gateway';

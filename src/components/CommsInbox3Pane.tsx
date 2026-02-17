@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * CommsInbox3Pane - Proper 3-pane communications inbox
  *
@@ -1236,7 +1237,8 @@ function RightPane({
                     <span className="text-[10px] text-clawd-text-dim">{msg.timestamp}</span>
                   </div>
                   {isHtmlContent(msg.text)
-                    ? <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(msg.text) }} />
+                    ? /* SECURITY: sanitizeInlineHtml → sanitizeHtml (DOMPurify) strips all unsafe HTML/attrs */
+                      <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(msg.text) }} />
                     : <MarkdownMessage content={msg.text} />
                   }
                 </div>

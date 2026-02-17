@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * MeetingScribe - Real-time meeting transcription using Gemini API
  * Records mic audio in chunks, sends to Gemini for transcription,

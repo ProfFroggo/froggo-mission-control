@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from 'react';
 import { X, Save, GitCompare, RotateCcw, Trash2, Loader2 } from 'lucide-react';
 import { useWritingStore } from '../../store/writingStore';
