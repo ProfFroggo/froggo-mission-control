@@ -1155,7 +1155,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </div>
 
           {/* Input */}
-          <div className="px-3 py-2.5 border-t border-clawd-border flex gap-2">
+          <div className="px-3 py-2.5 border-t border-clawd-border bg-clawd-surface flex gap-2">
             <input
               type="text"
               value={chatInput}
