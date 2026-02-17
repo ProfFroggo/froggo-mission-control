@@ -99,7 +99,8 @@ export const XCalendarView: React.FC = () => {
       content = { tweets: [{ text: draft.content }] };
     }
     
-    const isThread = content.tweets && content.tweets.length > 1;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _isThread = content.tweets && content.tweets.length > 1;
     const metadata = draft.draft_metadata ? JSON.parse(draft.draft_metadata) : {};
     const contentType = metadata.content_type || 'educational';
     
@@ -161,6 +162,7 @@ export const XCalendarView: React.FC = () => {
     }
   };
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _handleReschedule = async (scheduleId: string, newTime: number) => {
     try {
       const result = await window.clawdbot?.xSchedule?.update({

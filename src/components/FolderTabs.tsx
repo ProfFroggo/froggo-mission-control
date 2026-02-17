@@ -5,14 +5,6 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, horizontalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  conversation_count: number;
-}
-
 interface FolderTabsProps {
   selectedFolder: number | null;
   onSelectFolder: (folderId: number | null) => void;

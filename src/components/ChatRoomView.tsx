@@ -32,6 +32,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
 
   // Helper to get agent name/emoji from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [showMentions, setShowMentions] = useState(false);
@@ -160,6 +161,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     setStopped(true);
   }, [roomId, room, updateMessage]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _clearPending = () => {
     if (pendingAgentRef.current) {
       setTypingAgents(prev => {

@@ -1,4 +1,4 @@
-import { Users, Bot, CheckSquare, Activity, Loader2 } from 'lucide-react';
+import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentAvatar from './AgentAvatar';
 import WidgetLoading from './WidgetLoading';

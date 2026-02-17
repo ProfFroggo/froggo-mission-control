@@ -33,7 +33,7 @@ class Logger {
     return LOG_LEVELS[level] >= LOG_LEVELS[config.level];
   }
 
-  private formatMessage(level: LogLevel, message: string): string {
+  private formatMessage(_level: LogLevel, message: string): string {
     return `[${this.context}] ${message}`;
   }
 
