@@ -174,6 +174,100 @@ export const XCalendarView: React.FC = () => {
     }
   };
 
+  const renderDayView = () => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const day = new Date(currentDate);
+    day.setHours(0, 0, 0, 0);
+    
+    // Get posts for this day
+    const dayPosts = scheduled.filter(s => {
+      const scheduledDate = new Date(s.scheduled_for);
+      return scheduledDate.toDateString() === day.toDateString();
+    });
+    
+    return (
+      <div className="h-full flex flex-col">
+        {/* Day header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-lg font-semibold text-white">
+            {day.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </div>
+          <div className="text-sm text-clawd-text-dim">
+            {dayPosts.length} post{dayPosts.length !== 1 ? 's' : ''} scheduled
+          </div>
+        </div>
+        
+        {/* Day timeline */}
+        <div className="flex-1 overflow-auto">
+          <div className="space-y-1">
+            {hours.map(hour => {
+              const postsInHour = dayPosts.filter(s => {
+                const scheduledDate = new Date(s.scheduled_for);
+                return scheduledDate.getHours() === hour;
+              });
+              
+              return (
+                <div key={hour} className="flex gap-4">
+                  <div className="w-16 py-3 text-xs text-clawd-text-dim text-right">
+                    {hour.toString().padStart(2, '0')}:00
+                  </div>
+                  <div className="flex-1 py-2 px-4 bg-clawd-surface rounded-lg border border-clawd-border hover:bg-clawd-bg-alt transition-colors min-h-[80px]">
+                    {postsInHour.length > 0 ? (
+                      <div className="space-y-2">
+                        {postsInHour.map(post => {
+                          let content;
+                          try {
+                            content = JSON.parse(post.draft_content);
+                          } catch {
+                            content = { tweets: [{ text: post.draft_content }] };
+                          }
+                          
+                          const firstTweet = content.tweets?.[0]?.text || post.draft_content;
+                          const preview = firstTweet.slice(0, 150) + (firstTweet.length > 150 ? '...' : '');
+                          const timeStr = new Date(post.scheduled_for).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          });
+                          
+                          return (
+                            <div 
+                              key={post.id}
+                              className="bg-info-subtle border border-info rounded p-3"
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-medium text-info">{timeStr}</span>
+                                <button
+                                  onClick={() => handleUnschedule(post.id)}
+                                  className="text-error hover:text-error/80 text-xs"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              <p className="text-sm text-clawd-text">{preview}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-clawd-text-dim text-sm">
+                        No posts scheduled
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderWeekView = () => {
     const startOfWeek = new Date(currentDate);
     startOfWeek.setHours(0, 0, 0, 0);
@@ -444,7 +538,7 @@ export const XCalendarView: React.FC = () => {
         
         {/* Calendar grid */}
         <div className="flex-1 overflow-auto p-4">
-          {viewMode === 'week' ? renderWeekView() : <div>Day view coming soon</div>}
+          {viewMode === 'week' ? renderWeekView() : renderDayView()}
         </div>
       </div>
     </div>
