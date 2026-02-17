@@ -232,7 +232,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             metadata: s,
           })));
         }
-      } catch (e) {
+      } catch (_e) {
         // Gateway not connected or sessions unavailable - skip sessions search
       }
 

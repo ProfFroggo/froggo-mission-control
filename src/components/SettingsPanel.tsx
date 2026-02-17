@@ -236,7 +236,7 @@ export default function SettingsPanel() {
         const imported = JSON.parse(e.target?.result as string);
         setSettings({ ...defaultSettings, ...imported });
         showToast('success', 'Settings imported', 'Your preferences have been restored');
-      } catch (error) {
+      } catch (_error) {
         showToast('error', 'Import failed', 'Invalid settings file');
       }
     };

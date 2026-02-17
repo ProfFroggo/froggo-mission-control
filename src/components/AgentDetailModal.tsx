@@ -72,7 +72,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
       if (ipc?.getDetails) {
         ipcDetails = await ipc.getDetails(agentId);
       }
-    } catch (e) {
+    } catch (_e) {
       // IPC failed, will fall back to store data
     }
 
@@ -145,7 +145,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
         if (result?.stdout) {
           rulesContent = result.stdout;
         }
-      } catch (e) {
+      } catch (_e) {
         rulesContent = `Could not load rules for ${agentId}`;
       }
     }
@@ -159,7 +159,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
           const files = memResult.stdout.trim().split('\n');
           brainNotes = files.map((f: string) => `📝 ${f}`);
         }
-      } catch (e) {
+      } catch (_e) {
         // OK
       }
     }

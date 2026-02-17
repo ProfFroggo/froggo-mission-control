@@ -44,7 +44,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     };
   }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     // Clean up stream listener
     streamCleanupRef.current?.();
     setIsClosing(true);
@@ -52,14 +52,14 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       onClose();
       setIsClosing(false);
     }, 200);
-  };
+  }, [onClose]);
 
   useEffect(() => {
     initChat();
     return () => {
       streamCleanupRef.current?.();
     };
-  }, [agentId]);
+  }, [agentId, initChat]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,9 +75,9 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, []);
+  }, [handleClose]);
 
-  const initChat = async () => {
+  const initChat = useCallback(async () => {
     setSpawning(true);
     setMessages([{
       role: 'system',
@@ -114,7 +114,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       }]);
     }
     setSpawning(false);
-  };
+  }, [agentId, agent?.name]);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionKey || sending) return;

@@ -1765,7 +1765,7 @@ export default function CommsInbox3Pane() {
         setAllMessages(prev => prev.map(m =>
           m.id === selectedConversation.id ? { ...m, is_read: true } : m
         ));
-      } catch (e) { /* ignore */ }
+      } catch (_e) { /* ignore */ }
 
       // Trigger AI analysis
       if (selectedConversation.platform !== 'system') {

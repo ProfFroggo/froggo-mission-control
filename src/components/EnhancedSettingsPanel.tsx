@@ -382,7 +382,7 @@ export default function EnhancedSettingsPanel() {
         const imported = JSON.parse(e.target?.result as string);
         setSettings({ ...defaultSettings, ...imported });
         showToast('success', 'Settings imported', 'Your preferences have been restored');
-      } catch (error) {
+      } catch (_error) {
         showToast('error', 'Import failed', 'Invalid settings file');
       }
     };
@@ -465,7 +465,7 @@ export default function EnhancedSettingsPanel() {
           }
         });
         showToast('success', 'Cache cleared', 'Cached data has been removed');
-      } catch (e) {
+      } catch (_e) {
         showToast('error', 'Failed to clear cache', 'An error occurred');
       }
     }
@@ -476,7 +476,7 @@ export default function EnhancedSettingsPanel() {
       try {
         // This would call backend cleanup
         showToast('info', 'Cleanup started', 'Old data is being removed...');
-      } catch (e) {
+      } catch (_e) {
         showToast('error', 'Cleanup failed', 'An error occurred');
       }
     }

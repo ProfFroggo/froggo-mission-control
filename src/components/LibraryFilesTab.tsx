@@ -250,7 +250,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           }
         };
         reader.readAsArrayBuffer(file);
-      } catch (error) {
+      } catch (_error) {
         showToast('error', 'Upload failed', file.name);
       }
     }

@@ -37,7 +37,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
           isAllDay: !!e.start?.date && !e.start?.dateTime,
         })));
       }
-    } catch (e) {
+    } catch (_e) {
       setError('Failed to load calendar');
     } finally {
       setLoading(false);
@@ -165,7 +165,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
         });
       }
       setEmails(allEmails);
-    } catch (e) {
+    } catch (_e) {
       setError('Failed to load emails');
     } finally {
       setLoading(false);
@@ -363,7 +363,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
       } else {
         setError(result?.error || 'Could not load messages');
       }
-    } catch (e) {
+    } catch (_e) {
       setError('Failed to load messages');
     } finally {
       setLoading(false);
