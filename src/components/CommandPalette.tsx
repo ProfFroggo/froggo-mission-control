@@ -11,6 +11,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
+import { useFocusMode } from './FocusMode';
 
 interface Command {
   id: string;
@@ -34,6 +35,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   const { addActivity, connected } = useStore();
   const dialogRef = useFocusTrap(isOpen);
   const announce = useAnnounce();
+  const { setFocusMode } = useFocusMode();
 
   const commands: Command[] = [
     // Navigation
@@ -136,28 +138,24 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     
     // Focus Modes
     { id: 'focus-work', icon: <Coffee size={16} />, label: 'Work Mode', category: 'Focus', action: () => {
-      localStorage.setItem('focusMode', JSON.stringify('work'));
+      setFocusMode('work');
       showToast('info', 'Work Mode', 'Focus on work tasks');
       onClose();
-      window.location.reload();
     }},
     { id: 'focus-family', icon: <Home size={16} />, label: 'Family Time', category: 'Focus', action: () => {
-      localStorage.setItem('focusMode', JSON.stringify('family'));
+      setFocusMode('family');
       showToast('info', 'Family Time', 'Only urgent notifications');
       onClose();
-      window.location.reload();
     }},
     { id: 'focus-dnd', icon: <Moon size={16} />, label: 'Do Not Disturb', category: 'Focus', action: () => {
-      localStorage.setItem('focusMode', JSON.stringify('dnd'));
+      setFocusMode('dnd');
       showToast('info', 'DND Active', 'All notifications muted');
       onClose();
-      window.location.reload();
     }},
     { id: 'focus-off', icon: <Sun size={16} />, label: 'Turn Off Focus Mode', category: 'Focus', action: () => {
-      localStorage.setItem('focusMode', 'null');
+      setFocusMode(null);
       showToast('info', 'Focus Mode Off');
       onClose();
-      window.location.reload();
     }},
     
     // System

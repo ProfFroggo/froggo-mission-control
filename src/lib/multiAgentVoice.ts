@@ -3,7 +3,7 @@
  * Ported from Ox, adapted with Froggo as 6th agent + Gemini transcription
  */
 
-// @ts-ignore
+// @ts-expect-error - @google/genai types not yet available
 import { GoogleGenAI, Modality } from '@google/genai';
 import { getGeminiVoiceForAgent } from './geminiLiveService';
 

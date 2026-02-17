@@ -4,7 +4,7 @@
  * Adapted for Froggo Dashboard (uses window.clawdbot.db IPC)
  */
 
-// @ts-ignore
+// @ts-expect-error - @google/genai types not yet available
 import { GoogleGenAI } from '@google/genai';
 
 export interface Meeting {
