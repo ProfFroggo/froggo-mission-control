@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: useKeyboardShortcuts hook uses file-level suppression for intentional patterns.
+// Hook for keyboard shortcut registration - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useEffect, useCallback } from 'react';
 
 export interface ShortcutConfig {

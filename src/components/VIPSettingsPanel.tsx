@@ -1,8 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 // LEGACY: This file uses file-level suppression for intentional stable ref patterns.
 // The suppressions are legitimate because:
 // - Most callbacks are stable (modal handlers, event handlers)
-// - Dependencies on store values like categoryFilter are intentional
+// - like categoryFilter are Dependencies on store values intentional
 // Review: 2026-02-17 - suppression retained for stability
 
 import { useState, useEffect } from 'react';

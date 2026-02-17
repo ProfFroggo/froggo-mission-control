@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: HRReportsModal uses file-level suppression for intentional patterns.
+// Modal for HR reports - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';

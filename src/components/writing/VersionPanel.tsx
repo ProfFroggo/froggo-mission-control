@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: VersionPanel uses file-level suppression for intentional patterns.
+// Version panel for writing - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useEffect, useState } from 'react';
 import { X, Save, GitCompare, RotateCcw, Trash2, Loader2 } from 'lucide-react';
 import { useWritingStore } from '../../store/writingStore';

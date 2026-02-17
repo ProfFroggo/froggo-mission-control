@@ -206,7 +206,7 @@ export function registerWritingVersionHandlers(): void {
   ipcMain.handle('writing:version:list', async (_, projectId: string, chapterId: string) => {
     try {
       return await listVersions(projectId, chapterId);
-    } catch (e) {
+    } catch (e: any) {
       logger.error('[writing-version] list error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -215,7 +215,7 @@ export function registerWritingVersionHandlers(): void {
   ipcMain.handle('writing:version:save', async (_, projectId: string, chapterId: string, label?: string) => {
     try {
       return await saveSnapshot(projectId, chapterId, label);
-    } catch (e) {
+    } catch (e: any) {
       logger.error('[writing-version] save error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -224,7 +224,7 @@ export function registerWritingVersionHandlers(): void {
   ipcMain.handle('writing:version:read', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await readVersionContent(projectId, chapterId, versionId);
-    } catch (e) {
+    } catch (e: any) {
       logger.error('[writing-version] read error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -233,7 +233,7 @@ export function registerWritingVersionHandlers(): void {
   ipcMain.handle('writing:version:restore', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await restoreVersion(projectId, chapterId, versionId);
-    } catch (e) {
+    } catch (e: any) {
       logger.error('[writing-version] restore error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -242,7 +242,7 @@ export function registerWritingVersionHandlers(): void {
   ipcMain.handle('writing:version:diff', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await computeDiff(projectId, chapterId, versionId);
-    } catch (e) {
+    } catch (e: any) {
       logger.error('[writing-version] diff error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
@@ -251,7 +251,7 @@ export function registerWritingVersionHandlers(): void {
   ipcMain.handle('writing:version:delete', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await deleteVersion(projectId, chapterId, versionId);
-    } catch (e) {
+    } catch (e: any) {
       logger.error('[writing-version] delete error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }

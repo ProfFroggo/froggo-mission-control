@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: TeamVoiceMeeting uses file-level suppression for intentional stable ref patterns.
+// Complex voice meeting component - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2,

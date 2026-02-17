@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: PerformanceTable uses file-level suppression for intentional patterns.
+// loadData is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';

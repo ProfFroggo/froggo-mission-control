@@ -176,6 +176,7 @@ export default function InboxPanel() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // loadInbox wrapped in useCallback, safe to call without adding to deps
   }, []);
 
   useEffect(() => {
@@ -258,6 +259,7 @@ export default function InboxPanel() {
 
   // Enhanced Keyboard shortcuts (Gmail-style)
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // handleKeyDown recreates on each render, capturing latest state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle if in input/textarea or if modal is open
@@ -469,6 +471,7 @@ export default function InboxPanel() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // handleKeyDown recreates on each render, safe pattern
   }, [filteredPending, focusedIndex, expandedId, selectedIds, filter, sortMode, sortAscending, gKeyPressed, showKeyboardHelp, rejectDialogItem, scheduleModal, showAgentWarning]);
 
   // Check if agent is still active on this task

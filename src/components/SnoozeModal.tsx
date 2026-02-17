@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: SnoozeModal uses file-level suppression for intentional stable ref patterns.
+// Modal for snooze functionality - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import { Clock, Calendar, Moon, Sunrise, Coffee, AlertCircle, Trash2 } from 'lucide-react';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';

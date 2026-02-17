@@ -179,7 +179,7 @@ function getAgentsFromDB(): Agent[] {
       model: '',
       isDefault: r.id === 'froggo',
     }));
-  } catch (e: unknown) {
+  } catch (e: any) {
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
     safeLog.error('[Agents] DB fallback failed:', errorMessage);
     return [];

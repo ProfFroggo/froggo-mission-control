@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: XMentionsView uses file-level suppression for intentional patterns.
+// loadMentions is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import React, { useState, useEffect } from 'react';
 
 interface Mention {

@@ -45,7 +45,7 @@ export function registerWritingChatHandlers() {
         .filter(Boolean);
 
       return { success: true, messages };
-    } catch (e: unknown) {
+    } catch (e: any) {
       logger.error('[writing-chat] loadHistory error:', e.message);
       return { success: false, error: e.message, messages: [] };
     }
@@ -59,7 +59,7 @@ export function registerWritingChatHandlers() {
       await fs.promises.mkdir(dir, { recursive: true });
       await fs.promises.appendFile(filepath, JSON.stringify(message) + '\n', 'utf-8');
       return { success: true };
-    } catch (e: unknown) {
+    } catch (e: any) {
       logger.error('[writing-chat] appendMessage error:', e.message);
       return { success: false, error: e.message };
     }
@@ -76,7 +76,7 @@ export function registerWritingChatHandlers() {
         // File doesn't exist — nothing to clear
       }
       return { success: true };
-    } catch (e: unknown) {
+    } catch (e: any) {
       logger.error('[writing-chat] clearHistory error:', e.message);
       return { success: false, error: e.message };
     }

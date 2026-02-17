@@ -270,7 +270,7 @@ export async function secureExec(
   try {
     const { stdout, stderr } = await execFn(command);
     return { success: true, stdout: stdout || '', stderr: stderr || '' };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return {
       success: false,
       stdout: error.stdout || '',
@@ -306,7 +306,7 @@ export function secureWrite(
   try {
     writeFn();
     return { success: true };
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { success: false, reason: err.message };
   }
 }

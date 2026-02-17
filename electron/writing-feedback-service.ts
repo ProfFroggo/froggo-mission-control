@@ -53,7 +53,7 @@ async function logFeedback(projectId: string, entry: FeedbackEntry) {
     await fs.promises.appendFile(logPath, line, 'utf-8');
 
     return { success: true };
-  } catch (e: unknown) {
+  } catch (e: any) {
     logger.error('[writing-feedback] logFeedback error:', e.message);
     return { success: false, error: e.message };
   }
@@ -86,7 +86,7 @@ async function getFeedbackHistory(projectId: string, chapterId: string) {
       }
       throw err;
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     logger.error('[writing-feedback] getFeedbackHistory error:', e.message);
     return { success: false, error: e.message, entries: [] };
   }

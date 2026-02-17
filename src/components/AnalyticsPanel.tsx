@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 // LEGACY: AnalyticsPanel uses file-level suppression for intentional patterns.
 // loadAnalytics and related functions are redefined on each render but capture latest state - safe pattern.
 // Review: 2026-02-17 - suppression retained, pattern is safe
