@@ -91,7 +91,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         setAttachments(result.attachments);
       }
     } catch (err: unknown) {
-      console.error('Failed to load attachments:', err);
+      // 'Failed to load attachments:', err;
     } finally {
       setLoadingAttachments(false);
     }
@@ -345,7 +345,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         }
       }
     } catch (err: unknown) {
-      console.error('Failed to check for active agent:', err);
+      // 'Failed to check for active agent:', err;
     }
     return null;
   };

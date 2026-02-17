@@ -25,7 +25,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
         setFolders(result.folders);
       }
     } catch (error) {
-      console.error('[BulkFolderAssign] Failed to load folders:', error);
+      // '[BulkFolderAssign] Failed to load folders:', error;
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
 
       onClose();
     } catch (error) {
-      console.error('[BulkFolderAssign] Failed to assign folders:', error);
+      // '[BulkFolderAssign] Failed to assign folders:', error;
       showToast('error', 'Failed to assign folders. See console for details.');
     } finally {
       setAssigning(false);

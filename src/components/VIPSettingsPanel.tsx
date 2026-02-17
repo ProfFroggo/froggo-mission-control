@@ -63,7 +63,7 @@ export default function VIPSettingsPanel() {
       const data = await window.clawdbot?.vip.list(categoryFilter || undefined);
       setVips((data || []) as unknown as VipSender[]);
     } catch (error) {
-      console.error('[VIP] Load error:', error);
+      // '[VIP] Load error:', error;
       showToast('error', 'Failed to load VIPs');
     } finally {
       setLoading(false);
@@ -95,7 +95,7 @@ export default function VIPSettingsPanel() {
         showToast('error', result?.error || 'Failed to add VIP');
       }
     } catch (error: any) {
-      console.error('[VIP] Add error:', error);
+      // '[VIP] Add error:', error;
       showToast('error', error.message || 'Failed to add VIP');
     }
   };
@@ -121,7 +121,7 @@ export default function VIPSettingsPanel() {
         showToast('error', result?.error || 'Failed to update VIP');
       }
     } catch (error: any) {
-      console.error('[VIP] Update error:', error);
+      // '[VIP] Update error:', error;
       showToast('error', error.message || 'Failed to update VIP');
     }
   };
@@ -143,7 +143,7 @@ export default function VIPSettingsPanel() {
           showToast('error', result?.error || 'Failed to remove VIP');
         }
       } catch (error: any) {
-        console.error('[VIP] Remove error:', error);
+        // '[VIP] Remove error:', error;
         showToast('error', error.message || 'Failed to remove VIP');
       }
     });

@@ -71,7 +71,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
         setReason(snoozeData.snooze_reason || '');
       }
     } catch (err) {
-      console.error('[SnoozeModal] Failed to load current snooze:', err);
+      // '[SnoozeModal] Failed to load current snooze:', err;
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
         setError(result.error || 'Failed to set snooze');
       }
     } catch (err: any) {
-      console.error('[SnoozeModal] Failed to set snooze:', err);
+      // '[SnoozeModal] Failed to set snooze:', err;
       setError(err.message || 'Failed to set snooze');
     } finally {
       setSubmitting(false);
@@ -145,7 +145,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
         setError(result.error || 'Failed to unsnooze');
       }
     } catch (err: any) {
-      console.error('[SnoozeModal] Failed to unsnooze:', err);
+      // '[SnoozeModal] Failed to unsnooze:', err;
       setError(err.message || 'Failed to unsnooze');
     } finally {
       setSubmitting(false);

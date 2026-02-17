@@ -79,7 +79,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
           setStatus(result.status);
         }
       } catch (e) {
-        console.error('[TopBar] Status check failed:', e);
+        // '[TopBar] Status check failed:', e;
       }
     };
     checkStatus();

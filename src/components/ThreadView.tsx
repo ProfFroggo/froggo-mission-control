@@ -216,7 +216,7 @@ export default function ThreadView({
           setMessages(result.messages);
         }
       } catch (e) {
-        console.error('[ThreadView] Failed to load thread:', e);
+        // '[ThreadView] Failed to load thread:', e;
       } finally {
         setLoading(false);
       }
@@ -235,7 +235,7 @@ export default function ThreadView({
         setReplyText('');
       }
     } catch (e) {
-      console.error('[ThreadView] Failed to send reply:', e);
+      // '[ThreadView] Failed to send reply:', e;
     } finally {
       setSending(false);
     }

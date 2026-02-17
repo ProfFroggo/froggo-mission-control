@@ -204,7 +204,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
       await gateway.sendChatStreaming(prompt);
 
     } catch (error) {
-      console.error('Chat error:', error);
+      // 'Chat error:', error;
       setIsStreaming(false);
       setChatMessages(prev => [...prev, {
         id: `msg-${Date.now()}`,
@@ -224,7 +224,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           return parsed.contact;
         }
       } catch (e) {
-        console.error('Failed to parse contact JSON:', e);
+        // 'Failed to parse contact JSON:', e;
       }
     }
     return null;
@@ -286,7 +286,7 @@ Be thorough but only include real people, not generic references.`;
                 setParsedEntities(parsed.entities);
               }
             } catch (e) {
-              console.error('Failed to parse entities:', e);
+              // 'Failed to parse entities:', e;
               setStatusWithTimeout('error');
               setSaveMessage('Failed to parse file content');
             }
@@ -299,7 +299,7 @@ Be thorough but only include real people, not generic references.`;
       await gateway.sendChatStreaming(prompt);
 
     } catch (error) {
-      console.error('Parse error:', error);
+      // 'Parse error:', error;
       setIsParsing(false);
       setStatusWithTimeout('error');
       setSaveMessage('Failed to parse file');
@@ -367,7 +367,7 @@ Be thorough but only include real people, not generic references.`;
       }, 2000);
 
     } catch (error) {
-      console.error('Save error:', error);
+      // 'Save error:', error;
       setStatusWithTimeout('error');
       setSaveMessage('Failed to save contact');
     }
@@ -397,7 +397,7 @@ Be thorough but only include real people, not generic references.`;
         ['person', data.name, data.context || data.relationship || '']
       );
     } catch (error) {
-      console.error('[ContactModal] Failed to add to knowledge graph:', error);
+      // '[ContactModal] Failed to add to knowledge graph:', error;
     }
   };
 
@@ -409,7 +409,7 @@ Be thorough but only include real people, not generic references.`;
         ['person', data.name, factText, 'contact-modal']
       );
     } catch (error) {
-      console.error('[ContactModal] Failed to log fact:', error);
+      // '[ContactModal] Failed to log fact:', error;
     }
   };
 
@@ -436,7 +436,7 @@ Be thorough but only include real people, not generic references.`;
         assignedTo: 'researcher',
       });
     } catch (error) {
-      console.error('[ContactModal] Failed to create task:', error);
+      // '[ContactModal] Failed to create task:', error;
     }
   };
 

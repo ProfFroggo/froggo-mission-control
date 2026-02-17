@@ -68,7 +68,7 @@ export default function NewContentWidget() {
         setCounts({ files: 0, images: 0, reports: 0 });
       }
     } catch (err) {
-      console.error('[NewContentWidget] Load error:', err);
+      // '[NewContentWidget] Load error:', err;
       setError('Failed to load');
       setCounts({ files: 0, images: 0, reports: 0 });
     } finally {

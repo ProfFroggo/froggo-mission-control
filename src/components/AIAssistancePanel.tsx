@@ -64,7 +64,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
         generateSummary()
       ]);
     } catch (error: any) {
-      console.error('[AI Assistance] Error:', error);
+      // '[AI Assistance] Error:', error;
       showToast('error', 'AI assistance failed', error.message);
     } finally {
       setLoading(false);
@@ -90,7 +90,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       const parsed = parseSuggestions(response.content);
       setSuggestions(parsed);
     } catch (error) {
-      console.error('[AI Assistance] Suggestions error:', error);
+      // '[AI Assistance] Suggestions error:', error;
       setSuggestions([]);
     }
   };
@@ -114,7 +114,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       const parsed = parseSentiment(response.content);
       setSentiment(parsed);
     } catch (error) {
-      console.error('[AI Assistance] Sentiment error:', error);
+      // '[AI Assistance] Sentiment error:', error;
       setSentiment(null);
     }
   };
@@ -136,7 +136,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       
       setSummary(response.content);
     } catch (error) {
-      console.error('[AI Assistance] Summary error:', error);
+      // '[AI Assistance] Summary error:', error;
       setSummary('');
     }
   };
@@ -199,7 +199,6 @@ Provide a brief, actionable summary.`;
       // Extract JSON from response (handle cases where AI adds extra text)
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
-        console.debug('[AI Assistance] No JSON array found in suggestions response');
         return [];
       }
       
@@ -221,7 +220,6 @@ Provide a brief, actionable summary.`;
       // Extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        console.debug('[AI Assistance] No JSON object found in sentiment response');
         return null;
       }
       

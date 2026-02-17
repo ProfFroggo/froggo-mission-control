@@ -58,7 +58,7 @@ export default function HRSection() {
         });
       }
     } catch (e) {
-      console.error('Failed to load team health:', e);
+      // 'Failed to load team health:', e;
       setTeamHealth({ totalAgents: 6, avgProficiency: 7.0, skillGaps: [], recentTrainings: 0, agentsNeedingTraining: [] });
     } finally {
       setLoading(false);

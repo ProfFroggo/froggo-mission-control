@@ -291,7 +291,7 @@ export default function MeetingsPanel() {
         return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
       }
     } catch (err) {
-      console.error('[Meeting] Summary generation error:', err);
+      // '[Meeting] Summary generation error:', err;
     } finally {
       setGeneratingSummary(false);
     }
@@ -375,7 +375,7 @@ export default function MeetingsPanel() {
           }
           meetings.push({ filename, filepath, date, time, transcript, actionItems, tasksCreated, rawContent: content, source: 'file' });
         } catch (err) {
-          console.error('[Meetings] Error parsing:', filepath, err);
+          // '[Meetings] Error parsing:', filepath, err;
         }
       }
       meetings.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -391,7 +391,7 @@ export default function MeetingsPanel() {
       } catch { /* ignore */ }
       setPastMeetings(meetings);
     } catch (err) {
-      console.error('[Meetings] Error loading:', err);
+      // '[Meetings] Error loading:', err;
     } finally {
       setLoadingPastMeetings(false);
     }
@@ -423,7 +423,7 @@ export default function MeetingsPanel() {
       const result = await window.clawdbot?.exec.run(`mkdir -p $HOME/froggo/meetings && echo "${base64Content}" | base64 -d > "${filepath}"`);
       if (result.success) return filepath;
     } catch (err) {
-      console.error('[Meeting] Save error:', err);
+      // '[Meeting] Save error:', err;
     }
     return null;
   }, []);
@@ -556,7 +556,7 @@ export default function MeetingsPanel() {
             }
           }
         } catch (err) {
-          console.error('[Gemini] Message parse error:', err);
+          // '[Gemini] Message parse error:', err;
         }
       };
 
@@ -638,7 +638,7 @@ export default function MeetingsPanel() {
         }
       }
     } catch (err) {
-      console.error('[Gemini] Cleanup error:', err);
+      // '[Gemini] Cleanup error:', err;
     }
   }, []);
 
@@ -658,7 +658,7 @@ export default function MeetingsPanel() {
       const dbId = await saveMeetingToDb(title);
       setMeetingDbId(dbId);
     } catch (err) {
-      console.debug('[Meeting] DB save failed:', err);
+
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -672,7 +672,7 @@ export default function MeetingsPanel() {
       setShowTitleInput(false);
       setStatusMessage('Recording...');
     } catch (e) {
-      console.error('[Meeting] Failed to start:', e);
+      // '[Meeting] Failed to start:', e;
       setStatusMessage('Failed: ' + (e instanceof Error ? e.message : String(e)));
       setMeetingStartTime(null);
       listeningRef.current = false;
@@ -712,7 +712,7 @@ export default function MeetingsPanel() {
         try { await endMeetingInDb(meetingDbId, duration); } catch { /* ignore */ }
       }
     } catch (err) {
-      console.error('[Meeting] Error ending:', err);
+      // '[Meeting] Error ending:', err;
       setStatusMessage('Meeting ended with errors.');
       setMeetingActive(false);
       setMeetingStartTime(null);

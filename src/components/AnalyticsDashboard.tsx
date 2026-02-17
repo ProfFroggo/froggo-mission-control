@@ -169,7 +169,7 @@ export default function AnalyticsDashboard() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to export analytics:', error);
+      // 'Failed to export analytics:', error;
     }
   };
 

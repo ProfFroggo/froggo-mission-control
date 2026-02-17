@@ -101,7 +101,7 @@ function App() {
         const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
         root.style.setProperty('--clawd-accent-dim', `rgb(${r}, ${g}, ${b})`);
       } catch (e) {
-        console.error('[App] Failed to apply saved theme:', e);
+        // '[App] Failed to apply saved theme:', e;
       }
     }
   }, []);

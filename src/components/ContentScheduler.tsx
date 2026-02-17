@@ -68,7 +68,7 @@ export default function ContentScheduler() {
         setItems(result.items || []);
       }
     } catch (error) {
-      console.error('[Schedule] Load error:', error);
+      // '[Schedule] Load error:', error;
     } finally {
       setLoading(false);
     }

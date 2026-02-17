@@ -53,7 +53,7 @@ export default function EmailWidget() {
       setAccounts(results);
       setLastFetch(Date.now());
     } catch (e: any) {
-      console.error('Failed to fetch email:', e);
+      // 'Failed to fetch email:', e;
       setError('Could not load email');
     } finally {
       setLoading(false);

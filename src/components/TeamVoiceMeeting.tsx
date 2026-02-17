@@ -284,7 +284,6 @@ Respond as ${agentName(agentId)}:`;
       }),
       geminiLive.on('disconnected', () => {
         if (isActiveRef.current) {
-          console.debug('[TeamVoice] Gemini Live disconnected unexpectedly');
         }
       }),
     ];
@@ -420,7 +419,7 @@ Respond as ${agentName(agentId)}:`;
       await geminiLive.startMic();
       // geminiLive events will update listening state
     } catch (err: any) {
-      console.error('[TeamVoice] Failed to start mic:', err);
+      // '[TeamVoice] Failed to start mic:', err;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',
@@ -481,7 +480,7 @@ Respond as ${agentName(agentId)}:`;
 
       await startListening();
     } catch (err: any) {
-      console.error('[TeamVoice] Failed to start meeting:', err);
+      // '[TeamVoice] Failed to start meeting:', err;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',

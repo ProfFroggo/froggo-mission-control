@@ -22,7 +22,7 @@ export default function ProductivityHeatmap() {
       const heatmap = await getProductivityHeatmap(timeRange);
       setData(heatmap);
     } catch (error) {
-      console.error('Failed to load productivity heatmap:', error);
+      // 'Failed to load productivity heatmap:', error;
     } finally {
       setLoading(false);
     }

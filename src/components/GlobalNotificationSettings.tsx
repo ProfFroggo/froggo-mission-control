@@ -51,7 +51,7 @@ export default function GlobalNotificationSettings() {
         setBatchIntervalMinutes(Number(d.batch_interval_minutes || 15));
       }
     } catch (error) {
-      console.error('[GlobalNotificationSettings] Failed to load:', error);
+      // '[GlobalNotificationSettings] Failed to load:', error;
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function GlobalNotificationSettings() {
         showToast('error', 'Failed to save global notification settings');
       }
     } catch (error) {
-      console.error('[GlobalNotificationSettings] Save error:', error);
+      // '[GlobalNotificationSettings] Save error:', error;
       showToast('error', 'Error saving settings');
     } finally {
       setSaving(false);

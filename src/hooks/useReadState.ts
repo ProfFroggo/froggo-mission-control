@@ -34,7 +34,7 @@ export function useReadState(refreshInterval = 5000) {
       setStats(data);
       setError(null);
     } catch (err) {
-      console.error('[useReadState] Failed to fetch:', err);
+      // '[useReadState] Failed to fetch:', err;
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
@@ -59,7 +59,7 @@ export function useReadState(refreshInterval = 5000) {
       });
       fetchReadState(); // Refresh after marking
     } catch (err) {
-      console.error('[useReadState] Failed to mark read:', err);
+      // '[useReadState] Failed to mark read:', err;
     }
   }, [fetchReadState]);
 
@@ -72,7 +72,7 @@ export function useReadState(refreshInterval = 5000) {
       });
       fetchReadState(); // Refresh after marking
     } catch (err) {
-      console.error('[useReadState] Failed to mark replied:', err);
+      // '[useReadState] Failed to mark replied:', err;
     }
   }, [fetchReadState]);
 
@@ -105,7 +105,7 @@ export function useChatReadState(platform: string, chatId: string) {
       setUnreadMessages(unread);
       setUnrepliedMessages(unreplied);
     } catch (err) {
-      console.error('[useChatReadState] Failed to fetch:', err);
+      // '[useChatReadState] Failed to fetch:', err;
     } finally {
       setLoading(false);
     }

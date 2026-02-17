@@ -109,7 +109,7 @@ export function getErrorInfo(error: unknown, context?: ErrorContext): ErrorInfo 
       code: 'PERMISSION_DENIED',
       recovery: [
         { label: 'Go Back', action: 'navigate', url: '/' },
-        { label: 'Contact Support', action: 'contact' },
+        { label: 'Refresh', action: 'refresh' },
       ],
     };
   }

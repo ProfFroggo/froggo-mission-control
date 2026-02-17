@@ -59,7 +59,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
         set({ sources: result.sources || [] });
       }
     } catch (err) {
-      console.error('[researchStore] loadSources failed:', err);
+      // '[researchStore] loadSources failed:', err;
     } finally {
       set({ loading: false });
     }
@@ -81,7 +81,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
         if (listResult?.success) set({ sources: listResult.sources });
       }
     } catch (err) {
-      console.error('[researchStore] addSource failed:', err);
+      // '[researchStore] addSource failed:', err;
     }
   },
 
@@ -93,7 +93,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
         if (listResult?.success) set({ sources: listResult.sources });
       }
     } catch (err) {
-      console.error('[researchStore] updateSource failed:', err);
+      // '[researchStore] updateSource failed:', err;
     }
   },
 
@@ -106,7 +106,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
         if (get().editingId === id) set({ editingId: null });
       }
     } catch (err) {
-      console.error('[researchStore] deleteSource failed:', err);
+      // '[researchStore] deleteSource failed:', err;
     }
   },
 
@@ -122,7 +122,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
         }));
       }
     } catch (err) {
-      console.error('[researchStore] loadLinksForFact failed:', err);
+      // '[researchStore] loadLinksForFact failed:', err;
     }
   },
 
@@ -131,7 +131,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
       await bridge()?.links?.link(projectId, factId, sourceId);
       await get().loadLinksForFact(projectId, factId);
     } catch (err) {
-      console.error('[researchStore] linkSourceToFact failed:', err);
+      // '[researchStore] linkSourceToFact failed:', err;
     }
   },
 
@@ -140,7 +140,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
       await bridge()?.links?.unlink(projectId, factId, sourceId);
       await get().loadLinksForFact(projectId, factId);
     } catch (err) {
-      console.error('[researchStore] unlinkSourceFromFact failed:', err);
+      // '[researchStore] unlinkSourceFromFact failed:', err;
     }
   },
 
@@ -161,7 +161,7 @@ export const useResearchStore = create<ResearchState>((set, get) => ({
       }
       set({ factSourceMap: map });
     } catch (err) {
-      console.error('[researchStore] loadAllFactLinks failed:', err);
+      // '[researchStore] loadAllFactLinks failed:', err;
     }
   },
 }));

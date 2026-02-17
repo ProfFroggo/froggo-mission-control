@@ -28,7 +28,7 @@ export default function InboxWidget() {
         setUnreadCount(0);
       }
     } catch (err) {
-      console.error('[InboxWidget] Load error:', err);
+      // '[InboxWidget] Load error:', err;
       setError('Failed to load');
       setUnreadCount(0);
     } finally {

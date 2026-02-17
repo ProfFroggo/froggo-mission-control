@@ -172,7 +172,7 @@ export default function PerformanceBenchmarks() {
         setMetrics(compareMetrics);
       }
     } catch (error) {
-      console.error('Failed to load benchmarks:', error);
+      // 'Failed to load benchmarks:', error;
     } finally {
       setLoading(false);
     }

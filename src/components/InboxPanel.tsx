@@ -159,7 +159,7 @@ export default function InboxPanel() {
           allItems = [...taskItems, ...allItems];
         }
       } catch (e) {
-        console.debug('[InboxPanel] Failed to load review tasks:', e);
+
       }
       
       // BUGFIX: Filter out items currently being processed OR recently approved to prevent flash
@@ -168,7 +168,7 @@ export default function InboxPanel() {
       const filteredItems = allItems.filter(i => !processingItems.has(i.id) && !recentlyApprovedIds.current.has(i.id));
       setItems(filteredItems);
     } catch (error) {
-      console.error('Failed to load inbox:', error);
+      // 'Failed to load inbox:', error;
     } finally {
       setLoading(false);
     }
@@ -485,7 +485,7 @@ export default function InboxPanel() {
         return activeSession || null;
       }
     } catch (err) {
-      console.error('Failed to check for active agent:', err);
+      // 'Failed to check for active agent:', err;
     }
     return null;
   };
@@ -519,7 +519,7 @@ export default function InboxPanel() {
           }
         }
       } catch (err) {
-        console.error('Error checking for active agent:', err);
+        // 'Error checking for active agent:', err;
       }
     }
     
@@ -603,7 +603,7 @@ export default function InboxPanel() {
           showToast('error', 'Failed to create send task', result?.error);
         }
       } catch (error: any) {
-        console.error('[Inbox] Stage 1 email approval error:', error);
+        // '[Inbox] Stage 1 email approval error:', error;
         showToast('error', 'Approval failed', error.message);
       }
       clearProcessing();
@@ -663,7 +663,7 @@ export default function InboxPanel() {
         try {
           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         } catch (e) {
-          console.debug('[Inbox] Failed to parse metadata:', e);
+
         }
       }
       
@@ -686,13 +686,13 @@ export default function InboxPanel() {
           try {
             await window.clawdbot?.tasks.update(taskData.id, { status: 'in-progress' });
           } catch (e) {
-            console.debug('[Inbox] Status verify failed:', e);
+
           }
         }, 500);
       }
     } catch (error) {
       // Revert on error
-      console.error('[Inbox] Error in executeApproval:', error);
+      // '[Inbox] Error in executeApproval:', error;
       showToast('error', 'Approval failed', 'Reverting...');
       loadInbox(); // Reload to revert
     }
@@ -739,7 +739,7 @@ export default function InboxPanel() {
               status: 'in-progress' 
             });
           } catch (updateErr) {
-            console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
+            // '[Inbox] Failed to update task status on reject, retrying...', updateErr;
             // Retry once after a short delay
             setTimeout(async () => {
               try {
@@ -748,7 +748,7 @@ export default function InboxPanel() {
                   status: 'in-progress'
                 });
               } catch (retryErr) {
-                console.error('[Inbox] Retry also failed:', retryErr);
+                // '[Inbox] Retry also failed:', retryErr;
               }
             }, 2000);
           }
@@ -769,7 +769,7 @@ export default function InboxPanel() {
         reason: reason,
       });
     } catch (error) {
-      console.error('Reject error:', error);
+      // 'Reject error:', error;
     } finally {
       setProcessingItems(prev => {
         const next = new Set(prev);
@@ -810,12 +810,12 @@ export default function InboxPanel() {
           try {
             await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
           } catch (updateErr) {
-            console.error('[Inbox] Failed to update task status on reject, retrying...', updateErr);
+            // '[Inbox] Failed to update task status on reject, retrying...', updateErr;
             setTimeout(async () => {
               try {
                 await window.clawdbot?.tasks.update(meta.taskId, { status: 'in-progress' });
               } catch (retryErr) {
-                console.error('[Inbox] Retry also failed:', retryErr);
+                // '[Inbox] Retry also failed:', retryErr;
               }
             }, 2000);
           }
@@ -841,7 +841,7 @@ export default function InboxPanel() {
         gateway.sendToMain(`[REJECTION_LESSON] ${item.type}: "${item.title}"\nReason: ${reason}\n\nLearn from this.`);
       }
     } catch (error) {
-      console.error('[Inbox] Reject failed:', error);
+      // '[Inbox] Reject failed:', error;
       loadInbox(); // Revert
     }
   };

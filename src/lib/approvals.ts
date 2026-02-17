@@ -69,7 +69,7 @@ export async function loadApprovalsFromFile(path: string) {
       });
     }
   } catch (e) {
-    console.error('Failed to load approvals from file:', e);
+    // 'Failed to load approvals from file:', e;
   }
 }
 

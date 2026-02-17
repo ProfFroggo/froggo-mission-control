@@ -90,7 +90,7 @@ export default function AdvancedAgentComparison({
         setSelectedAgents(topAgents);
       }
     } catch (error) {
-      console.error('Failed to load agent data:', error);
+      // 'Failed to load agent data:', error;
     } finally {
       setLoading(false);
     }

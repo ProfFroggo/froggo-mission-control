@@ -33,7 +33,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
         setEntries(res?.result || []);
       }
     } catch (e) {
-      console.error('Failed to load training log:', e);
+      // 'Failed to load training log:', e;
     } finally {
       setLoading(false);
     }

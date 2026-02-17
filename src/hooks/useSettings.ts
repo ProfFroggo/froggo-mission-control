@@ -31,7 +31,7 @@ export async function loadSettings(): Promise<AppSettings> {
       return cachedSettings!;
     }
   } catch (e) {
-    console.debug('[useSettings] Failed to load settings:', e);
+
   }
   return cachedSettings || {};
 }

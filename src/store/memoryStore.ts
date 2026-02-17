@@ -87,7 +87,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         facts: factResult?.success ? factResult.facts : [],
       });
     } catch (err) {
-      console.error('[memoryStore] loadMemory failed:', err);
+      // '[memoryStore] loadMemory failed:', err;
     } finally {
       set({ loading: false });
     }
@@ -115,7 +115,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (listResult?.success) set({ characters: listResult.characters });
       }
     } catch (err) {
-      console.error('[memoryStore] addCharacter failed:', err);
+      // '[memoryStore] addCharacter failed:', err;
     }
   },
 
@@ -127,7 +127,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (listResult?.success) set({ characters: listResult.characters });
       }
     } catch (err) {
-      console.error('[memoryStore] updateCharacter failed:', err);
+      // '[memoryStore] updateCharacter failed:', err;
     }
   },
 
@@ -140,7 +140,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (get().editingId === id) set({ editingId: null });
       }
     } catch (err) {
-      console.error('[memoryStore] deleteCharacter failed:', err);
+      // '[memoryStore] deleteCharacter failed:', err;
     }
   },
 
@@ -154,7 +154,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (listResult?.success) set({ timeline: listResult.timeline });
       }
     } catch (err) {
-      console.error('[memoryStore] addTimelineEvent failed:', err);
+      // '[memoryStore] addTimelineEvent failed:', err;
     }
   },
 
@@ -166,7 +166,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (listResult?.success) set({ timeline: listResult.timeline });
       }
     } catch (err) {
-      console.error('[memoryStore] updateTimelineEvent failed:', err);
+      // '[memoryStore] updateTimelineEvent failed:', err;
     }
   },
 
@@ -179,7 +179,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (get().editingId === id) set({ editingId: null });
       }
     } catch (err) {
-      console.error('[memoryStore] deleteTimelineEvent failed:', err);
+      // '[memoryStore] deleteTimelineEvent failed:', err;
     }
   },
 
@@ -193,7 +193,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (listResult?.success) set({ facts: listResult.facts });
       }
     } catch (err) {
-      console.error('[memoryStore] addFact failed:', err);
+      // '[memoryStore] addFact failed:', err;
     }
   },
 
@@ -205,7 +205,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (listResult?.success) set({ facts: listResult.facts });
       }
     } catch (err) {
-      console.error('[memoryStore] updateFact failed:', err);
+      // '[memoryStore] updateFact failed:', err;
     }
   },
 
@@ -218,7 +218,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (get().editingId === id) set({ editingId: null });
       }
     } catch (err) {
-      console.error('[memoryStore] deleteFact failed:', err);
+      // '[memoryStore] deleteFact failed:', err;
     }
   },
 }));

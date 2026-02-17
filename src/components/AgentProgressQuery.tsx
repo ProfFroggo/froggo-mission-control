@@ -45,7 +45,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
           }
         }
       } catch (err) {
-        console.error('Failed to check active agent:', err);
+        // 'Failed to check active agent:', err;
       }
     };
 
@@ -88,7 +88,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
         setError('Could not fetch agent response. Check Sessions panel.');
       }
     } catch (err: any) {
-      console.error('Failed to query agent:', err);
+      // 'Failed to query agent:', err;
       setError(err.message || 'Failed to query agent');
       showToast('error', 'Query failed', err.message || 'Network error');
     } finally {

@@ -24,7 +24,7 @@ export default function DebugTab() {
         setLogCursor(logResult.cursor);
       }
     } catch (e) {
-      console.error('Debug load failed:', e);
+      // 'Debug load failed:', e;
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function DebugTab() {
         setLogCursor(result.cursor);
       }
     } catch (e) {
-      console.error('Failed to refresh logs:', e);
+      // 'Failed to refresh logs:', e;
     }
   };
 

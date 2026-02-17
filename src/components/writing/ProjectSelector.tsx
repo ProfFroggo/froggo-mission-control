@@ -58,10 +58,9 @@ export default function ProjectSelector() {
       confirmLabel: 'Delete',
       type: 'danger',
     }, async () => {
-      if (deleteTarget) {
-        await deleteProject(deleteTarget.id);
-        setDeleteTarget(null);
-      }
+      // Use `project` directly to avoid stale closure on deleteTarget state
+      await deleteProject(project.id);
+      setDeleteTarget(null);
     });
   };
 

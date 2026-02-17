@@ -94,7 +94,7 @@ async function fetchSessions(): Promise<any[]> {
       return result.sessions;
     }
   } catch (err) {
-    console.error('Failed to fetch sessions for status indicator:', err);
+    // 'Failed to fetch sessions for status indicator:', err;
   }
   return sessionCache.sessions || [];
 }

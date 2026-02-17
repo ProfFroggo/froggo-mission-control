@@ -63,7 +63,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
         setItems((result.ideas || []).map((idea: any) => ({ ...idea, itemType: 'research' as const })));
       }
     } catch (error) {
-      console.error('[XApprovalQueue] Load research error:', error);
+      // '[XApprovalQueue] Load research error:', error;
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
         setItems((result.plans || []).map((plan: any) => ({ ...plan, itemType: 'plan' as const })));
       }
     } catch (error) {
-      console.error('[XApprovalQueue] Load plans error:', error);
+      // '[XApprovalQueue] Load plans error:', error;
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
         setItems((result.drafts || []).map((draft: any) => ({ ...draft, itemType: 'draft' as const })));
       }
     } catch (error) {
-      console.error('[XApprovalQueue] Load drafts error:', error);
+      // '[XApprovalQueue] Load drafts error:', error;
     } finally {
       setLoading(false);
     }
@@ -124,7 +124,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
         throw new Error(result.error || 'Failed to approve');
       }
     } catch (error: any) {
-      console.error('[XApprovalQueue] Approve error:', error);
+      // '[XApprovalQueue] Approve error:', error;
       showToast('error', `Failed to approve: ${error.message}`);
     }
   };
@@ -156,7 +156,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
         throw new Error(result.error || 'Failed to reject');
       }
     } catch (error: any) {
-      console.error('[XApprovalQueue] Reject error:', error);
+      // '[XApprovalQueue] Reject error:', error;
       showToast('error', `Failed to reject: ${error.message}`);
     }
   };

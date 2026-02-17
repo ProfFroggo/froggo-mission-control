@@ -25,7 +25,7 @@ export async function logVoiceAction(
     });
   } catch (error) {
     // Non-blocking - don't fail voice on logging errors
-    console.debug('[VoiceLog] Failed to log action:', error);
+
   }
 }
 
@@ -39,7 +39,6 @@ export async function startVoiceSession(agent: AgentType): Promise<number | null
     const data = await res.json();
     return data.id ?? null;
   } catch {
-    console.debug('[VoiceLog] Failed to start session');
     return null;
   }
 }
@@ -52,6 +51,5 @@ export async function endVoiceSession(sessionId: number): Promise<void> {
       body: JSON.stringify({ ended_at: Date.now() })
     });
   } catch {
-    console.debug('[VoiceLog] Failed to end session');
   }
 }

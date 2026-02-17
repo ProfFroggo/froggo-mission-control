@@ -56,7 +56,7 @@ export default function NotificationsPanelV2() {
       setNotifications(active);
       setStats(currentStats);
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      // 'Failed to load notifications:', error;
       showToast('error', 'Failed to load notifications');
     } finally {
       setLoading(false);
@@ -68,7 +68,7 @@ export default function NotificationsPanelV2() {
       const prefs = await notificationService.getPreferences() as NotificationPreferences[];
       setPreferences(prefs);
     } catch (e) {
-      console.error('Failed to load preferences:', e);
+      // 'Failed to load preferences:', e;
     }
   }, []);
 

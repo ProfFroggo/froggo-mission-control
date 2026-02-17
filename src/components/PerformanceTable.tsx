@@ -50,7 +50,7 @@ export default function PerformanceTable() {
         setData(result.agents || []);
       }
     } catch (err) {
-      console.error('Failed to load performance data:', err);
+      // 'Failed to load performance data:', err;
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export default function PerformanceTable() {
         setAuditData(result.timeline || []);
       }
     } catch (err) {
-      console.error('Failed to load audit data:', err);
+      // 'Failed to load audit data:', err;
     } finally {
       setAuditLoading(false);
     }

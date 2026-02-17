@@ -101,7 +101,7 @@ export default function NotificationSettingsModal({
         setPriorityLevel(d.default_priority_level || 'normal');
       }
     } catch (error) {
-      console.error('[NotificationSettings] Failed to load:', error);
+      // '[NotificationSettings] Failed to load:', error;
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export default function NotificationSettingsModal({
         showToast('error', 'Save Failed', 'Failed to save notification settings');
       }
     } catch (error) {
-      console.error('[NotificationSettings] Save error:', error);
+      // '[NotificationSettings] Save error:', error;
       showToast('error', 'Save Failed', 'Error saving settings');
     } finally {
       setSaving(false);
@@ -158,7 +158,7 @@ export default function NotificationSettingsModal({
         await loadSettings(); // Reload to show defaults
       }
     } catch (error) {
-      console.error('[NotificationSettings] Reset error:', error);
+      // '[NotificationSettings] Reset error:', error;
     } finally {
       setSaving(false);
     }
@@ -181,7 +181,7 @@ export default function NotificationSettingsModal({
         onClose();
       }
     } catch (error) {
-      console.error('[NotificationSettings] Mute error:', error);
+      // '[NotificationSettings] Mute error:', error;
     } finally {
       setSaving(false);
     }
@@ -198,7 +198,7 @@ export default function NotificationSettingsModal({
         onClose();
       }
     } catch (error) {
-      console.error('[NotificationSettings] Unmute error:', error);
+      // '[NotificationSettings] Unmute error:', error;
     } finally {
       setSaving(false);
     }

@@ -29,7 +29,7 @@ export const useSnooze = () => {
         setSnoozed(snoozedMap);
       }
     } catch (error) {
-      console.error('Failed to fetch snoozed conversations:', error);
+      // 'Failed to fetch snoozed conversations:', error;
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export const useSnooze = () => {
       }
       return false;
     } catch (error) {
-      console.error('Failed to snooze conversation:', error);
+      // 'Failed to snooze conversation:', error;
       return false;
     }
   }, []);
@@ -87,7 +87,7 @@ export const useSnooze = () => {
       }
       return false;
     } catch (error) {
-      console.error('Failed to unsnooze conversation:', error);
+      // 'Failed to unsnooze conversation:', error;
       return false;
     }
   }, []);

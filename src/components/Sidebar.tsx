@@ -60,7 +60,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
         setInboxCount(result.items?.length || 0);
       }
     } catch (error) {
-      console.error('Failed to load inbox count:', error);
+      // 'Failed to load inbox count:', error;
     }
   };
   

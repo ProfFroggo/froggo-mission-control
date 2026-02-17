@@ -42,7 +42,6 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
     const updatePosition = () => {
       const element = document.querySelector(step.target);
       if (!element) {
-        console.debug(`Tour: Target element not found: ${step.target}`);
         return;
       }
 
@@ -399,7 +398,6 @@ export function useTour() {
   const startTour = (tourId: keyof typeof tours) => {
     const tour = tours[tourId];
     if (!tour) {
-      console.debug(`Tour not found: ${tourId}`);
       return;
     }
     setActiveTour(tour);

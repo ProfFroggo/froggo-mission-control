@@ -58,7 +58,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
         }
       }
     } catch (error) {
-      console.error('Failed to check expired snoozes:', error);
+      // 'Failed to check expired snoozes:', error;
     }
   }, [dismissed]);
 

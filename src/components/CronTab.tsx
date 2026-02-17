@@ -41,7 +41,7 @@ export default function CronTab() {
       const result = await gateway.getCronJobs();
       if (result?.jobs) setJobs(result.jobs);
     } catch (e) {
-      console.error('Failed to load cron jobs:', e);
+      // 'Failed to load cron jobs:', e;
     } finally {
       setLoading(false);
     }
@@ -58,7 +58,7 @@ export default function CronTab() {
       const result = await gateway.getCronRuns(jobId, 20);
       if (result?.entries) setRuns(prev => ({ ...prev, [jobId]: result.entries }));
     } catch (e) {
-      console.error('Failed to load runs:', e);
+      // 'Failed to load runs:', e;
     }
   };
 

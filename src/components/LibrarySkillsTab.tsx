@@ -26,7 +26,7 @@ export default function LibrarySkillsTab() {
         setSkills(result.skills || []);
       }
     } catch (error) {
-      console.error('[Skills] Load error:', error);
+      // '[Skills] Load error:', error;
     } finally {
       setLoading(false);
     }

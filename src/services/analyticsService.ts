@@ -109,7 +109,7 @@ async function fetchAnalyticsData(days: number): Promise<IPCAnalyticsData> {
       return result;
     }
   } catch (err) {
-    console.error('analytics:getData IPC failed:', err);
+    // 'analytics:getData IPC failed:', err;
   }
 
   // Return empty data on failure
@@ -215,7 +215,7 @@ export async function getTimeTrackingData(
       }));
     }
   } catch (err) {
-    console.error('analytics:timeTracking IPC failed:', err);
+    // 'analytics:timeTracking IPC failed:', err;
   }
   return [];
 }
@@ -237,7 +237,7 @@ export async function getProductivityHeatmap(
       }));
     }
   } catch (err) {
-    console.error('analytics:heatmap IPC failed:', err);
+    // 'analytics:heatmap IPC failed:', err;
   }
   return [];
 }
@@ -374,7 +374,7 @@ export async function getSubtaskStats(): Promise<any[]> {
       return result.data;
     }
   } catch (err) {
-    console.error('analytics:subtaskStats IPC failed:', err);
+    // 'analytics:subtaskStats IPC failed:', err;
   }
   return [];
 }

@@ -76,7 +76,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
         setRule(result.rule as unknown as Partial<FolderRule>);
       }
     } catch (error) {
-      console.error('[RuleEditor] Load error:', error);
+      // '[RuleEditor] Load error:', error;
       showToast('error', 'Failed to load rule');
     } finally {
       setLoading(false);
@@ -102,7 +102,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
         showToast('error', result.error || 'Failed to save rule');
       }
     } catch (error) {
-      console.error('[RuleEditor] Save error:', error);
+      // '[RuleEditor] Save error:', error;
       showToast('error', 'Failed to save rule');
     } finally {
       setSaving(false);
@@ -123,7 +123,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
         showToast('error', result.error || 'Failed to delete rule');
       }
     } catch (error) {
-      console.error('[RuleEditor] Delete error:', error);
+      // '[RuleEditor] Delete error:', error;
       showToast('error', 'Failed to delete rule');
     }
   };
@@ -174,7 +174,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
       setTestResult(result);
       showToast(result ? 'success' : 'info', result ? '✅ Rule matches!' : '❌ Rule does not match');
     } catch (error) {
-      console.error('[RuleEditor] Test error:', error);
+      // '[RuleEditor] Test error:', error;
       showToast('error', 'Test failed');
     } finally {
       setTesting(false);

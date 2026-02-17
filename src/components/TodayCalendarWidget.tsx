@@ -33,7 +33,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
         setEvents([]);
       }
     } catch (e) {
-      console.error('[TodayCalendar] Failed to load events:', e);
+      // '[TodayCalendar] Failed to load events:', e;
       setError('Failed to load calendar');
       setEvents([]);
     } finally {

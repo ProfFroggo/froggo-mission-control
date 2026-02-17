@@ -225,7 +225,7 @@ Be conversational, friendly, and help design an effective agent.`;
 
       await gateway.sendChatStreaming(prompt);
     } catch (error) {
-      console.error('Chat error:', error);
+      // 'Chat error:', error;
       setIsStreaming(false);
       setChatMessages((prev) => [
         ...prev,
@@ -255,7 +255,7 @@ Be conversational, friendly, and help design an effective agent.`;
           };
         }
       } catch (e) {
-        console.error('Failed to parse worker JSON:', e);
+        // 'Failed to parse worker JSON:', e;
       }
     }
     return null;
@@ -297,7 +297,7 @@ Be conversational, friendly, and help design an effective agent.`;
 
       // Worker created successfully
     } catch (error) {
-      console.error('Failed to create worker:', error);
+      // 'Failed to create worker:', error;
       const { showToast } = await import('./Toast');
       showToast('error', 'Worker Creation Failed', error instanceof Error ? error.message : 'Unknown error');
     }

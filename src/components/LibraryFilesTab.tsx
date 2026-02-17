@@ -104,7 +104,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         setFiles(allFiles);
       }
     } catch (error) {
-      console.error('[Library] Load error:', error);
+      // '[Library] Load error:', error;
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         loadFiles();
       }
     } catch (error) {
-      console.error('[Library] Upload error:', error);
+      // '[Library] Upload error:', error;
       showToast('error', 'Upload failed', String(error));
     }
   };

@@ -151,7 +151,7 @@ export default function ChatPanel() {
         }
       }
     } catch (error: any) {
-      console.error('Toggle star error:', error);
+      // 'Toggle star error:', error;
       showToast('Error toggling star', 'error');
     }
   };
@@ -180,7 +180,7 @@ export default function ChatPanel() {
     try {
       await window.clawdbot?.chat.saveMessage({ role, content, timestamp: Date.now(), sessionKey: selectedAgent.dbSessionKey });
     } catch (err) {
-      console.error(`[Chat] Error saving ${role} message:`, err);
+      // `[Chat] Error saving ${role} message:`, err;
     }
   };
 
@@ -311,7 +311,7 @@ export default function ChatPanel() {
       }
       setHistoryLoaded(true);
     } catch (e) {
-      console.error('[Chat] Failed to load history:', e);
+      // '[Chat] Failed to load history:', e;
       setHistoryLoaded(true); // Don't retry
     }
   }, [messages]);
@@ -578,7 +578,7 @@ export default function ChatPanel() {
         showToast('error', 'Not available', 'Suggestion feature not available');
       }
     } catch (error: any) {
-      console.error('[Chat] Suggestion error:', error);
+      // '[Chat] Suggestion error:', error;
       showToast('error', 'Failed to generate', error.message || 'Unknown error');
     } finally {
       setLoadingSuggestions(false);

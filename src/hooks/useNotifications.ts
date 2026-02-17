@@ -44,7 +44,7 @@ export function useNotifications() {
       const prefs = await window.clawdbot?.notifications.getPrefs();
       setPreferences((prefs as unknown as NotificationPreferences) || null);
     } catch (error) {
-      console.error('[useNotifications] Failed to load preferences:', error);
+      // '[useNotifications] Failed to load preferences:', error;
     }
   }, []);
 
@@ -53,7 +53,7 @@ export function useNotifications() {
       await window.clawdbot?.notifications.updatePrefs(updates);
       await loadPreferences();
     } catch (error) {
-      console.error('[useNotifications] Failed to update preferences:', error);
+      // '[useNotifications] Failed to update preferences:', error;
       throw error;
     }
   }, [loadPreferences]);
@@ -70,7 +70,7 @@ export function useNotifications() {
     try {
       await window.clawdbot?.notifications.send(options as unknown as Notification);
     } catch (error) {
-      console.error('[useNotifications] Failed to send notification:', error);
+      // '[useNotifications] Failed to send notification:', error;
       throw error;
     }
   }, []);
@@ -79,7 +79,7 @@ export function useNotifications() {
     try {
       await window.clawdbot?.notifications.test();
     } catch (error) {
-      console.error('[useNotifications] Failed to test notification:', error);
+      // '[useNotifications] Failed to test notification:', error;
       throw error;
     }
   }, []);
@@ -87,7 +87,6 @@ export function useNotifications() {
   // Handle incoming notifications
   useEffect(() => {
     const unsubscribe = window.clawdbot?.notifications.onReceived((notification: unknown) => {
-      console.debug('[useNotifications] Received:', notification);
       
       // Add to recent notifications
       setRecentNotifications(prev => {
@@ -105,7 +104,6 @@ export function useNotifications() {
   // Handle notification actions (from action buttons)
   useEffect(() => {
     const unsubscribe = window.clawdbot?.notifications.onAction((action: unknown) => {
-      console.debug('[useNotifications] Action triggered:', action);
       handleNotificationAction(action as NotificationAction);
     });
 
@@ -115,7 +113,6 @@ export function useNotifications() {
   // Handle navigation requests from notifications
   useEffect(() => {
     const unsubscribe = window.clawdbot?.onNavigate((view: string, data?: any) => {
-      console.debug('[useNotifications] Navigate to:', view, data);
       handleNavigationFromNotification(view, data);
     });
 
@@ -128,7 +125,6 @@ export function useNotifications() {
       case 'approve':
         // Approve approval request
         if (action.data?.itemId) {
-          console.debug('[useNotifications] Approving item:', action.data.itemId);
           // Navigate to inbox and auto-approve
           navigate(`/inbox?action=approve&id=${action.data.itemId}`);
         }
@@ -136,7 +132,6 @@ export function useNotifications() {
 
       case 'dismiss':
         // Dismiss notification
-        console.debug('[useNotifications] Dismissing notification');
         break;
 
       case 'view-task':
@@ -161,7 +156,6 @@ export function useNotifications() {
         break;
 
       default:
-        console.debug('[useNotifications] Unknown action type:', action.actionType);
     }
   }, [navigate]);
 
@@ -201,7 +195,6 @@ export function useNotifications() {
         break;
 
       default:
-        console.debug('[useNotifications] Unknown view:', view);
     }
   }, [navigate]);
 

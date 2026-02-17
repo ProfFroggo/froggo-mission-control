@@ -1017,7 +1017,7 @@ function RightPane({
       }
       setSuggestedReplies(suggestions);
     } catch (e) {
-      console.error('Failed to generate suggestions:', e);
+      // 'Failed to generate suggestions:', e;
       // Show the AI analysis draft if we have it, otherwise honest error
       if (aiAnalysis?.reply_draft) {
         setSuggestedReplies([aiAnalysis.reply_draft]);
@@ -1042,7 +1042,7 @@ function RightPane({
       }
       setAiIntent('');
     } catch (e) {
-      console.error('Failed to generate from intent:', e);
+      // 'Failed to generate from intent:', e;
       setReplyText(aiIntent);
     } finally {
       setGeneratingFromIntent(false);
@@ -1066,7 +1066,7 @@ function RightPane({
         setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
       }
     } catch (e) {
-      console.error('Failed to generate reply:', e);
+      // 'Failed to generate reply:', e;
       const name = (conversation.name || conversation.from || 'there').split(' ')[0];
       setReplyText(`Hi ${name}, thanks for your message. Let me look into this and get back to you shortly.`);
     } finally {
@@ -1474,7 +1474,7 @@ export default function CommsInbox3Pane() {
           setAccounts(detected);
         }
       } catch (e) {
-        console.error('[CommsInbox3Pane] Failed to load accounts:', e);
+        // '[CommsInbox3Pane] Failed to load accounts:', e;
       } finally {
         if (!cancelled) setLoadingAccounts(false);
       }
@@ -1651,7 +1651,7 @@ export default function CommsInbox3Pane() {
         computeCounts(msgs);
       }
     } catch (e) {
-      console.error('[CommsInbox3Pane] Failed to load:', e);
+      // '[CommsInbox3Pane] Failed to load:', e;
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -1735,7 +1735,7 @@ export default function CommsInbox3Pane() {
             setEmailMetadata({});
           }
         } catch (e) {
-          console.error('Failed to load email body:', e);
+          // 'Failed to load email body:', e;
           setEmailBody('');
           setEmailMetadata({});
         } finally {
@@ -1754,7 +1754,7 @@ export default function CommsInbox3Pane() {
             setThread([]);
           }
         } catch (e) {
-          console.error('Failed to load thread:', e);
+          // 'Failed to load thread:', e;
           setThread([]);
         } finally {
           setLoadingThread(false);
@@ -1781,7 +1781,7 @@ export default function CommsInbox3Pane() {
             processBatchAnalysis();
           }
         } catch (e) {
-          console.error('[AI] Analysis fetch error:', e);
+          // '[AI] Analysis fetch error:', e;
         }
       }
     };
@@ -1807,7 +1807,7 @@ export default function CommsInbox3Pane() {
         });
       }
     } catch (e) {
-      console.error('[AI] Batch analysis error:', e);
+      // '[AI] Batch analysis error:', e;
     } finally {
       setAnalysisLoading(false);
     }
@@ -1907,7 +1907,7 @@ export default function CommsInbox3Pane() {
         m.id === conv.id ? { ...m, is_read: newReadState } : m
       ));
     } catch (e) {
-      console.error('Failed to toggle read:', e);
+      // 'Failed to toggle read:', e;
     }
   };
 
@@ -1921,7 +1921,7 @@ export default function CommsInbox3Pane() {
         ));
       }
     } catch (e) {
-      console.error('Failed to toggle star:', e);
+      // 'Failed to toggle star:', e;
     }
   };
 

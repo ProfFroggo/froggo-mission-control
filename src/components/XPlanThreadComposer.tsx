@@ -53,7 +53,7 @@ export default function XPlanThreadComposer() {
         showToast('error', 'Unable to load research ideas. Please refresh.');
       }
     } catch (error) {
-      console.error('[XPlanComposer] Load research error:', error);
+      // '[XPlanComposer] Load research error:', error;
       showToast('error', 'Failed to load research ideas');
     } finally {
       setLoading(false);
@@ -101,7 +101,7 @@ export default function XPlanThreadComposer() {
         showToast('error', 'Failed to create content plan. Please try again.');
       }
     } catch (error: any) {
-      console.error('[XPlanComposer] Submit error:', error);
+      // '[XPlanComposer] Submit error:', error;
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {
       setSubmitting(false);

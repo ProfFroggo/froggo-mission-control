@@ -113,7 +113,7 @@ export default function SessionsFilter() {
           // Reset fail count on success
           setFailCount(0);
         } catch (error) {
-          console.error('[SessionsFilter] Poll failed:', error);
+          // '[SessionsFilter] Poll failed:', error;
           // Increment fail count for exponential backoff
           setFailCount(f => Math.min(f + 1, 6)); // Max 6 = 64x backoff
         } finally {
@@ -150,7 +150,7 @@ export default function SessionsFilter() {
         setFolderAssignments(assignments);
       }
     } catch (error) {
-      console.error('[SessionsFilter] Failed to load folders:', error);
+      // '[SessionsFilter] Failed to load folders:', error;
     }
   };
 
@@ -165,7 +165,7 @@ export default function SessionsFilter() {
       }
       setNotificationSettings(settings);
     } catch (error) {
-      console.error('[SessionsFilter] Failed to load notification settings:', error);
+      // '[SessionsFilter] Failed to load notification settings:', error;
     }
   };
 
@@ -180,7 +180,7 @@ export default function SessionsFilter() {
         setPinnedOrder(orderedKeys);
       }
     } catch (error) {
-      console.error('[SessionsFilter] Failed to load pinned sessions:', error);
+      // '[SessionsFilter] Failed to load pinned sessions:', error;
     }
   };
 
@@ -195,7 +195,7 @@ export default function SessionsFilter() {
         setSnoozedSessions(snoozeMap);
       }
     } catch (error) {
-      console.error('[SessionsFilter] Failed to load snoozed sessions:', error);
+      // '[SessionsFilter] Failed to load snoozed sessions:', error;
     }
   };
 
@@ -210,7 +210,7 @@ export default function SessionsFilter() {
         showToast('error', 'Pin Failed', result.error);
       }
     } catch (error) {
-      console.error('[SessionsFilter] Failed to toggle pin:', error);
+      // '[SessionsFilter] Failed to toggle pin:', error;
     }
   };
 
@@ -250,7 +250,7 @@ export default function SessionsFilter() {
         await loadPinnedSessions();
       }
     } catch (error) {
-      console.error('[SessionsFilter] Failed to reorder pins:', error);
+      // '[SessionsFilter] Failed to reorder pins:', error;
       await loadPinnedSessions();
     }
   };
@@ -407,7 +407,7 @@ export default function SessionsFilter() {
           }
         } catch (error) {
           errorCount++;
-          console.error(`[SessionsFilter] Error deleting ${sessionKey}:`, error);
+          // `[SessionsFilter] Error deleting ${sessionKey}:`, error;
         }
       }
       
@@ -423,7 +423,7 @@ export default function SessionsFilter() {
       await loadFolders();
       setSelectedSessions(new Set());
     } catch (error) {
-      console.error('[SessionsFilter] Bulk delete error:', error);
+      // '[SessionsFilter] Bulk delete error:', error;
       showToast('error', 'Delete Failed', 'Failed to delete conversations');
     }
   };
@@ -448,7 +448,7 @@ export default function SessionsFilter() {
           }
         } catch (error) {
           errorCount++;
-          console.error(`[SessionsFilter] Error archiving ${sessionKey}:`, error);
+          // `[SessionsFilter] Error archiving ${sessionKey}:`, error;
         }
       }
       
@@ -464,7 +464,7 @@ export default function SessionsFilter() {
       await loadFolders();
       setSelectedSessions(new Set());
     } catch (error) {
-      console.error('[SessionsFilter] Bulk archive error:', error);
+      // '[SessionsFilter] Bulk archive error:', error;
       showToast('error', 'Archive Failed', 'Failed to archive sessions');
     }
   };
@@ -488,7 +488,7 @@ export default function SessionsFilter() {
           }
         } catch (error) {
           errorCount++;
-          console.error(`[SessionsFilter] Error marking ${sessionKey} as read:`, error);
+          // `[SessionsFilter] Error marking ${sessionKey} as read:`, error;
         }
       }
       
@@ -503,7 +503,7 @@ export default function SessionsFilter() {
       await fetchSessions();
       setSelectedSessions(new Set());
     } catch (error) {
-      console.error('[SessionsFilter] Bulk mark read error:', error);
+      // '[SessionsFilter] Bulk mark read error:', error;
       showToast('error', 'Action Failed', 'Failed to mark conversations as read');
     }
   };
@@ -526,7 +526,7 @@ export default function SessionsFilter() {
         showToast('error', 'Assignment Failed', 'Failed to assign to folder');
       }
     } catch (error) {
-      console.error('[SessionsFilter] Error assigning folder:', error);
+      // '[SessionsFilter] Error assigning folder:', error;
       showToast('error', 'Assignment Failed', 'Failed to assign to folder');
     }
   };

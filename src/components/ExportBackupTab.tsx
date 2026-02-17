@@ -53,7 +53,7 @@ export default function ExportBackupTab() {
         setBackups(result.backups);
       }
     } catch (error) {
-      console.error('[ExportBackup] Failed to load backups:', error);
+      // '[ExportBackup] Failed to load backups:', error;
     }
   };
 
@@ -64,7 +64,7 @@ export default function ExportBackupTab() {
         setStats(result.stats);
       }
     } catch (error) {
-      console.error('[ExportBackup] Failed to load stats:', error);
+      // '[ExportBackup] Failed to load stats:', error;
     }
   };
 

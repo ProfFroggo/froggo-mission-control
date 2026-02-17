@@ -50,7 +50,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
         console.error('[FinanceChat] Error loading history:', result?.error);
       }
     } catch (error) {
-      console.error('[FinanceChat] Load history error:', error);
+      // '[FinanceChat] Load history error:', error;
     } finally {
       setInitializing(false);
     }
@@ -90,7 +90,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
         throw new Error(result?.error || 'Failed to get response from Finance Manager');
       }
     } catch (error: any) {
-      console.error('[FinanceChat] Send message error:', error);
+      // '[FinanceChat] Send message error:', error;
       setError(error.message || 'Failed to send message');
       showToast('error', 'Failed to send message to Finance Manager');
     } finally {
@@ -118,7 +118,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
         throw new Error(result?.error || 'Failed to clear history');
       }
     } catch (error: any) {
-      console.error('[FinanceChat] Clear history error:', error);
+      // '[FinanceChat] Clear history error:', error;
       showToast('error', 'Failed to clear chat history');
     }
   };

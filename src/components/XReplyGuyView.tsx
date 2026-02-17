@@ -47,7 +47,7 @@ export const XReplyGuyView: React.FC = () => {
         setMentions((result?.mentions ?? []) as HotMention[]);
       }
     } catch (error) {
-      console.error('Error loading hot mentions:', error);
+      // 'Error loading hot mentions:', error;
       showToast('error', 'Error', 'Failed to load hot mentions');
     } finally {
       setLoading(false);
@@ -96,7 +96,7 @@ export const XReplyGuyView: React.FC = () => {
         showToast('error', 'Draft Failed', result?.error || 'Could not create draft');
       }
     } catch (error) {
-      console.error('Error creating draft:', error);
+      // 'Error creating draft:', error;
       showToast('error', 'Error', 'Failed to create draft');
     }
   };
@@ -113,7 +113,7 @@ export const XReplyGuyView: React.FC = () => {
         showToast('error', 'Post Failed', result?.error || 'Could not post tweet');
       }
     } catch (error) {
-      console.error('Error posting:', error);
+      // 'Error posting:', error;
       showToast('error', 'Error', 'Failed to post tweet');
     } finally {
       setPosting(false);

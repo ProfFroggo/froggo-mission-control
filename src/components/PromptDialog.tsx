@@ -95,7 +95,7 @@ export default function PromptDialog({
       setValue('');
       onClose();
     } catch (error) {
-      console.error('Prompt submit failed:', error);
+      // 'Prompt submit failed:', error;
       setSubmitError(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setIsSubmitting(false);

@@ -38,7 +38,7 @@ export default function AgentUtilizationChart() {
       const utilization = await getAgentUtilization();
       setData(utilization);
     } catch (error) {
-      console.error('Failed to load agent utilization:', error);
+      // 'Failed to load agent utilization:', error;
     } finally {
       setLoading(false);
     }

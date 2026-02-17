@@ -120,7 +120,6 @@ export function evaluateCondition(
       break;
 
     default:
-      console.debug(`Unknown condition type: ${condition.type}`);
       result = false;
   }
 

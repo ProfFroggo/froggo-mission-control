@@ -94,7 +94,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
         set({ projects: result.projects || [] });
       }
     } catch (err) {
-      console.error('[writingStore] loadProjects failed:', err);
+      // '[writingStore] loadProjects failed:', err;
     } finally {
       set({ projectsLoading: false });
     }
@@ -108,7 +108,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
         return result.project?.id || null;
       }
     } catch (err) {
-      console.error('[writingStore] createProject failed:', err);
+      // '[writingStore] createProject failed:', err;
     }
     return null;
   },
@@ -128,7 +128,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       }
       await get().loadProjects();
     } catch (err) {
-      console.error('[writingStore] deleteProject failed:', err);
+      // '[writingStore] deleteProject failed:', err;
     }
   },
 
@@ -156,7 +156,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
         useMemoryStore.getState().loadMemory(projectId);
       }
     } catch (err) {
-      console.error('[writingStore] openProject failed:', err);
+      // '[writingStore] openProject failed:', err;
     }
   },
 
@@ -189,7 +189,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
         });
       }
     } catch (err) {
-      console.error('[writingStore] openChapter failed:', err);
+      // '[writingStore] openChapter failed:', err;
     } finally {
       set({ chapterLoading: false });
     }
@@ -215,7 +215,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
         return result.chapter?.id || null;
       }
     } catch (err) {
-      console.error('[writingStore] createChapter failed:', err);
+      // '[writingStore] createChapter failed:', err;
     }
     return null;
   },
@@ -228,7 +228,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       await bridge()?.chapter?.rename(activeProjectId, chapterId, title);
       await get().openProject(activeProjectId);
     } catch (err) {
-      console.error('[writingStore] renameChapter failed:', err);
+      // '[writingStore] renameChapter failed:', err;
     }
   },
 
@@ -248,7 +248,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       }
       await get().openProject(activeProjectId);
     } catch (err) {
-      console.error('[writingStore] deleteChapter failed:', err);
+      // '[writingStore] deleteChapter failed:', err;
     }
   },
 
@@ -260,7 +260,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       await bridge()?.chapter?.reorder(activeProjectId, chapterIds);
       await get().openProject(activeProjectId);
     } catch (err) {
-      console.error('[writingStore] reorderChapters failed:', err);
+      // '[writingStore] reorderChapters failed:', err;
     }
   },
 
@@ -274,7 +274,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
       // Refresh project to update word counts
       await get().openProject(activeProjectId);
     } catch (err) {
-      console.error('[writingStore] saveChapter failed:', err);
+      // '[writingStore] saveChapter failed:', err;
     }
   },
 

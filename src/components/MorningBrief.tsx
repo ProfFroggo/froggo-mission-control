@@ -111,7 +111,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
             }
           }
         } catch (e) {
-          console.error('[MorningBrief] Inbox error attempt', attempt + 1, ':', e);
+          // '[MorningBrief] Inbox error attempt', attempt + 1, ':', e;
         }
         // Wait before next attempt (longer delays)
         await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
@@ -124,7 +124,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           unreadMessages = unreadResult.count || 0;
         }
       } catch (e) {
-        console.error('[MorningBrief] Unread messages error:', e);
+        // '[MorningBrief] Unread messages error:', e;
         // Keep as 0 on error - not critical
       }
       
@@ -136,7 +136,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           upcomingEventsData = calendarResult.events;
         }
       } catch (e) {
-        console.error('[MorningBrief] Calendar error:', e);
+        // '[MorningBrief] Calendar error:', e;
       }
 
       // Fetch Gibraltar weather from wttr.in
@@ -155,7 +155,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           }
         }
       } catch (e) {
-        console.error('[MorningBrief] Weather error:', e);
+        // '[MorningBrief] Weather error:', e;
       }
 
       // Fetch overnight activity (23:00 yesterday to now)
@@ -202,7 +202,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           summary,
         };
       } catch (e) {
-        console.error('[MorningBrief] Overnight activity error:', e);
+        // '[MorningBrief] Overnight activity error:', e;
       }
 
       // Fetch session stats
@@ -249,7 +249,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           };
         }
       } catch (e) {
-        console.error('[MorningBrief] Session stats error:', e);
+        // '[MorningBrief] Session stats error:', e;
       }
 
       // Fetch agent stats
@@ -318,7 +318,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           };
         }
       } catch (e) {
-        console.error('[MorningBrief] Agent stats error:', e);
+        // '[MorningBrief] Agent stats error:', e;
       }
 
       // Fetch Twitter mentions
@@ -347,7 +347,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
             }));
         }
       } catch (e) {
-        console.error('[MorningBrief] Twitter mentions error:', e);
+        // '[MorningBrief] Twitter mentions error:', e;
       }
 
       const upcomingEvents = upcomingEventsData.slice(0, 3).map((e: any) => ({
@@ -375,7 +375,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         mentions: mentionsData,
       });
     } catch (error) {
-      console.error('Failed to load brief:', error);
+      // 'Failed to load brief:', error;
       // Set a minimal brief on error so UI doesn't blank
       setBrief({
         greeting: 'Good morning',

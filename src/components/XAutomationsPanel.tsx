@@ -85,7 +85,7 @@ export default function XAutomationsPanel() {
         setAutomations(result.automations);
       }
     } catch (e) {
-      console.error('Failed to load automations:', e);
+      // 'Failed to load automations:', e;
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ export default function XAutomationsPanel() {
         loadAutomations();
       }
     } catch (e) {
-      console.error('Failed to toggle automation:', e);
+      // 'Failed to toggle automation:', e;
     }
   };
   
@@ -111,7 +111,7 @@ export default function XAutomationsPanel() {
         loadAutomations();
       }
     } catch (e) {
-      console.error('Failed to delete automation:', e);
+      // 'Failed to delete automation:', e;
     }
   };
   

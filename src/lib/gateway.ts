@@ -139,7 +139,7 @@ class Gateway {
     try {
       this.ws = new WebSocket(this.gatewayUrl);
     } catch (err) {
-      console.error('[Gateway] Failed to create WebSocket:', err);
+      // '[Gateway] Failed to create WebSocket:', err;
       this.setState('disconnected');
       this.scheduleReconnect();
       return;
@@ -277,7 +277,7 @@ class Gateway {
           }
         }
       } catch (err) {
-        console.error('[Gateway] Parse error:', err);
+        // '[Gateway] Parse error:', err;
       }
     };
 
@@ -414,7 +414,7 @@ class Gateway {
         this.scheduleReconnect();
       }, this.HEARTBEAT_TIMEOUT);
     } catch (err) {
-      console.error('[Gateway] Heartbeat failed:', err);
+      // '[Gateway] Heartbeat failed:', err;
       this.cleanup();
       this.setState('disconnected');
       this.scheduleReconnect();
@@ -749,7 +749,7 @@ class Gateway {
           // Otherwise wait for streaming events
           logger.debug('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
         } catch (e: any) {
-          console.error('[Gateway] sendChat error:', e);
+          // '[Gateway] sendChat error:', e;
           clearTimeout(timeout);
           fail(e);
         }
