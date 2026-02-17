@@ -27,6 +27,7 @@ export default function EpicCalendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [partialError, setPartialError] = useState<string | null>(null);
   
   // Modal state
   const [showEventModal, setShowEventModal] = useState(false);
@@ -298,6 +299,7 @@ export default function EpicCalendar() {
   const fetchEvents = async () => {
     setLoading(true);
     setError(null);
+    setPartialError(null);
     try {
       // Use the new calendar aggregation service
       if (!window.clawdbot?.calendar?.aggregate) {
@@ -311,11 +313,12 @@ export default function EpicCalendar() {
       });
 
       if (response.success) {
+        // Track partial errors separately - events should still render
         if (response.errors && response.errors.length > 0) {
-          setError(`${response.errors.length} calendar(s) failed to load`);
+          setPartialError(`${response.errors.length} calendar(s) failed to load`);
         }
 
-        setEvents(response.events);
+        setEvents(response.events || []);
       } else {
         throw new Error(response.error || 'Failed to aggregate events');
       }
@@ -488,6 +491,22 @@ export default function EpicCalendar() {
 
       {/* Calendar View */}
       <div className="flex-1 overflow-auto">
+        {/* Partial error banner - shows above calendar when some calendars fail */}
+        {partialError && (
+          <div className="px-4 py-2 bg-warning-subtle border-b border-warning-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={14} className="text-warning" />
+              <span className="text-sm text-warning">{partialError}</span>
+            </div>
+            <button
+              onClick={() => setPartialError(null)}
+              className="text-warning hover:text-warning-dim transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {loading && events.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -495,7 +514,7 @@ export default function EpicCalendar() {
               <p className="text-clawd-text-dim">Loading calendar events...</p>
             </div>
           </div>
-        ) : error ? (
+        ) : error && events.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Calendar size={32} className="mx-auto mb-4 text-error" />
