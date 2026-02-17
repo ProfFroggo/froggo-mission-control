@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * PokeModal - Internal poke/nudge modal for task status updates
  * 

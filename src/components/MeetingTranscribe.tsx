@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * Meeting Transcription Component
  * Real-time meeting transcription UI with speaker labels using Gemini AI

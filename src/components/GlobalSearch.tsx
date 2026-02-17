@@ -594,7 +594,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                       )}
                     </div>
                     {/* Render snippet with HTML highlighting if it contains <mark> tags */}
-                    {/* SECURITY: Only mark tags are preserved, all other HTML is escaped */}
+                    {/* SECURITY: sanitizeSearchSnippet (DOMPurify) allows only <mark> tags; all other HTML stripped */}
                     {result.snippet?.includes('<mark>') ? (
                       <div
                         className="text-sm text-clawd-text-dim line-clamp-2"

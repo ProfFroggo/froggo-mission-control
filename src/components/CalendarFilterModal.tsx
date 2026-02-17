@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';

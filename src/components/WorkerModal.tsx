@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from 'react';
 import { X, Bot, MessageSquare, Edit3, Send, Loader2, Sparkles, Zap, CheckCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';

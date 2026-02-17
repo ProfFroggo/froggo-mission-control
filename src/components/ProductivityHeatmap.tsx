@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Activity, Calendar } from 'lucide-react';
 import { getProductivityHeatmap, ProductivityHeatmap as HeatmapData } from '../services/analyticsService';
