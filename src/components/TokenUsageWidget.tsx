@@ -287,6 +287,9 @@ export default function TokenUsageWidget() {
                       <span
                         className="text-sm font-medium cursor-pointer hover:underline"
                         onClick={() => setSelectedAgent(agent.agent)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent(agent.agent); } }}
+                        role="button"
+                        tabIndex={0}
                       >
                         {agent.agent}
                       </span>
@@ -319,6 +322,9 @@ export default function TokenUsageWidget() {
                       <span
                         className="text-sm font-medium cursor-pointer hover:underline"
                         onClick={() => setSelectedAgent(agent.agent)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent(agent.agent); } }}
+                        role="button"
+                        tabIndex={0}
                       >
                         {agent.agent}
                       </span>

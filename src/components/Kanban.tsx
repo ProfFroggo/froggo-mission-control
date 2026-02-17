@@ -1172,7 +1172,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           
           {showMenu && menuBtnPos && createPortal(
             <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} role="button" tabIndex={-1} aria-label="Close menu" />
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowMenu(false); } }} role="button" tabIndex={0} aria-label="Close menu" />
               <div className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl py-1 z-[101] min-w-40"
                 style={{ top: `${menuBtnPos.top}px`, left: `${menuBtnPos.left}px` }}>
                 <button
@@ -1324,11 +1324,13 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
           {/* Assign Agent Modal */}
           {showAssign && assignBtnPos && createPortal(
             <>
-              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} role="button" tabIndex={-1} aria-label="Close assign dropdown" />
+              <div className="fixed inset-0 z-[100]" onClick={() => setShowAssign(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowAssign(false); } }} role="button" tabIndex={0} aria-label="Close assign dropdown" />
               <div 
                 className="fixed bg-clawd-surface border border-clawd-border rounded-xl shadow-xl p-2 z-[101] min-w-[160px]"
                 style={{ top: `${assignBtnPos.top}px`, left: `${assignBtnPos.left}px` }}
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                role="presentation"
               >
                 <div className="text-xs text-clawd-text-dim mb-2 font-medium px-2">Assign to agent</div>
                 <div className="space-y-1">

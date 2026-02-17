@@ -378,6 +378,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <div
                   key={file.id}
                   onClick={() => handleViewFile(file)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewFile(file); } }}
+                  role="button"
+                  tabIndex={0}
                   className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 cursor-pointer transition-colors ${
                     selectedFile?.id === file.id ? 'border-clawd-accent' : ''
                   }`}
@@ -434,6 +437,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <div
                   key={file.id}
                   onClick={() => handleViewFile(file)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewFile(file); } }}
+                  role="button"
+                  tabIndex={0}
                   className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 cursor-pointer transition-colors ${
                     selectedFile?.id === file.id ? 'border-clawd-accent' : ''
                   }`}

@@ -141,10 +141,11 @@ export default function XPlanThreadComposer() {
           <div className="flex-1 overflow-y-auto space-y-6">
             {/* Research Idea Selector */}
             <div>
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="research-idea-select" className="block text-sm font-medium text-clawd-text mb-2">
                 Based on Research Idea <span className="text-error">*</span>
               </label>
               <select
+                id="research-idea-select"
                 aria-label="Select research idea"
                 value={selectedResearchId}
                 onChange={(e) => setSelectedResearchId(e.target.value)}
@@ -170,10 +171,11 @@ export default function XPlanThreadComposer() {
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="content-title" className="block text-sm font-medium text-clawd-text mb-2">
                 Content Title <span className="text-error">*</span>
               </label>
               <input
+                id="content-title"
                 type="text"
                 aria-label="Content title"
                 value={title}
@@ -186,9 +188,9 @@ export default function XPlanThreadComposer() {
 
             {/* Content Type */}
             <div>
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <span className="block text-sm font-medium text-clawd-text mb-2">
                 Content Type <span className="text-error">*</span>
-              </label>
+              </span>
               <div className="grid grid-cols-2 gap-2">
                 {CONTENT_TYPES.map((type) => (
                   <button
@@ -210,9 +212,9 @@ export default function XPlanThreadComposer() {
 
             {/* Thread Length */}
             <div>
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <span className="block text-sm font-medium text-clawd-text mb-2">
                 Thread Length <span className="text-error">*</span>
-              </label>
+              </span>
               <div className="grid grid-cols-3 gap-2">
                 {THREAD_LENGTHS.map((length) => (
                   <button
@@ -233,10 +235,11 @@ export default function XPlanThreadComposer() {
 
             {/* Description/Outline */}
             <div>
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="content-outline" className="block text-sm font-medium text-clawd-text mb-2">
                 Content Outline <span className="text-error">*</span>
               </label>
               <textarea
+                id="content-outline"
                 aria-label="Content outline"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}

@@ -433,10 +433,16 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
     <div 
       className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4"
       onClick={onDismiss}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDismiss(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close modal"
     >
       <div 
         className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="presentation"
       >
         {/* Header */}
         <div className="p-8 text-center border-b border-clawd-border bg-gradient-to-br from-clawd-accent/10 to-transparent">

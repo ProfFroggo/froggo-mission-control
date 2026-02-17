@@ -620,6 +620,10 @@ function EventCard({
           e.stopPropagation();
           onClick?.(event);
         }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onClick?.(event); } }}
+        role="button"
+        tabIndex={0}
+        aria-label={`View event: ${event.summary}`}
       >
         {!isAllDay && <span className="font-medium">{formatTime(start)} </span>}
         {event.summary}
@@ -639,6 +643,10 @@ function EventCard({
         e.stopPropagation();
         onClick?.(event);
       }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); onClick?.(event); } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View event: ${event.summary}`}
     >
       <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold flex-1">{event.summary}</h3>
@@ -1263,10 +1271,11 @@ function EventModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="event-title" className="block text-sm font-medium mb-2">
               Title <span className="text-error">*</span>
             </label>
             <input
+              id="event-title"
               type="text"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
@@ -1286,10 +1295,11 @@ function EventModal({
 
           {/* Account Selection */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="calendar-account" className="block text-sm font-medium mb-2">
               Calendar Account <span className="text-error">*</span>
             </label>
             <select
+              id="calendar-account"
               value={formData.account}
               onChange={(e) => setFormData({ ...formData, account: e.target.value })}
               className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent"
@@ -1352,11 +1362,12 @@ function EventModal({
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+            <label htmlFor="event-location" className="block text-sm font-medium mb-2 flex items-center gap-2">
               <MapPin size={16} />
               Location
             </label>
             <input
+              id="event-location"
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -1367,10 +1378,11 @@ function EventModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="event-description" className="block text-sm font-medium mb-2">
               Description
             </label>
             <textarea
+              id="event-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:ring-2 focus:ring-clawd-accent resize-none"

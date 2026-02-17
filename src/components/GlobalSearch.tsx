@@ -384,10 +384,16 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
     <div 
       className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close search"
     >
       <div 
         className="w-full max-w-3xl bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200"
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+        role="presentation"
       >
         {/* Search Input */}
         <div className="flex items-center gap-3 p-4 border-b border-clawd-border">
@@ -519,6 +525,9 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                       setQuery(item);
                       setShowHistory(false);
                     }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setQuery(item); setShowHistory(false); } }}
+                    role="button"
+                    tabIndex={0}
                     className={`p-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 ${
                       index === selectedIndex ? 'bg-clawd-accent/10 text-clawd-accent' : 'hover:bg-clawd-bg/50'
                     }`}
@@ -571,6 +580,9 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <div
                 key={`${result.type}-${result.id}-${index}`}
                 onClick={() => handleSelect(result)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(result); } }}
+                role="button"
+                tabIndex={0}
                 className={`p-4 border-b border-clawd-border cursor-pointer transition-all group ${
                   index === selectedIndex 
                     ? 'bg-clawd-accent/10 border-l-2 border-l-clawd-accent' 
