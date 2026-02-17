@@ -24,6 +24,7 @@ export interface XAutomationCondition {
 }
 
 export interface XAutomationAction {
+  id?: string;
   type: 'reply' | 'like' | 'retweet' | 'dm' | 'add_to_list';
   config: {
     template?: string;
@@ -505,7 +506,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             
             <div className="space-y-3 mb-4">
               {actions.map((action, index) => (
-                <div key={index} className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
+                <div key={action.id || `action-${index}`} className="bg-clawd-bg border border-clawd-border rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <div className="flex-1 space-y-3">
                       <select

@@ -273,7 +273,7 @@ export function VirtualGrid<T>({
       <div style={{ height: totalHeight, position: 'relative' }}>
         {visibleItems.map(({ index, row, col }) => (
           <div
-            key={index}
+            key={`${row}-${col}-${index}`}
             style={{
               position: 'absolute',
               top: row * (itemHeight + gap),
