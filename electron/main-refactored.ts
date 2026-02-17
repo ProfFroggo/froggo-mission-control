@@ -24,6 +24,7 @@ import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { initXApiTokens } from './x-api-client';
+import { prepare } from './database';
 import { db, closeDb } from './database';
 import { initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { safeLog } from './logger';

@@ -1,7 +1,29 @@
-import { app, BrowserWindow, shell, dialog, screen } from 'electron';
+import { app, BrowserWindow, shell, dialog, screen, ipcMain, systemPreferences, desktopCapturer } from 'electron';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as http from 'http';
 import * as path from 'path';
-import { exec, execFile } from 'child_process';
+import { exec, execFile, execSync } from 'child_process';
 import { promisify } from 'util';
+import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
+import { validateFsPath } from './fs-validation';
+import { accountsServiceV2 } from './accounts-service-v2';
+import { accountsService } from './accounts-service';
+import { calendarService } from './calendar-service';
+import { exportTasks as expTasks, exportAgentLogs as expAgentLogs, exportChatHistory as expChatHistory, createBackup as expCreateBackup, restoreBackup as expRestoreBackup, listBackups as expListBackups, getStats as expGetStats, cleanupOldBackups as expCleanupOldBackups, importTasks as expImportTasks } from './export-backup-service';
+
+const exportBackupService = {
+  exportTasks: expTasks,
+  exportAgentLogs: expAgentLogs,
+  exportChatHistory: expChatHistory,
+  createBackup: expCreateBackup,
+  restoreBackup: expRestoreBackup,
+  listBackups: expListBackups,
+  getStats: expGetStats,
+  cleanupOldBackups: expCleanupOldBackups,
+  importTasks: expImportTasks,
+};
+import { secureExec, getAuditLog, validateCommand } from './shell-security';
 // crypto imported but unused - removed during bug-hunt cleanup
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
@@ -14,7 +36,21 @@ import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
-import { initXApiTokens } from './x-api-client';
+import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
+import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM } from './x-api-client';
+
+// xApi namespace wrapper for backwards compatibility
+const xApi = {
+  postTweet: xPostTweet,
+  getMentions: xGetMentions,
+  getHomeTimeline: xGetHomeTimeline,
+  searchRecent: xSearchRecent,
+  getUserProfile: xGetUserProfile,
+  getThread: xGetThread,
+  followUser: xFollowUser,
+  sendDM: xSendDM,
+};
+import { prepare, closeDb, db, getSessionsDb, getSecurityDb } from './database';
 import {
   PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
   REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
@@ -764,6 +800,7 @@ app.whenReady().then(() => {
   });
 
   // Initialize Finance Agent Bridge
+  initializeFinanceAgentBridge().catch((err) => {
     safeLog.error('[Main] Failed to initialize Finance Agent Bridge:', err);
   });
 
