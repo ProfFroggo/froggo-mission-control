@@ -1038,7 +1038,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             {callTranscript.map((entry, i) => (
               <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
-                  entry.role === 'user' ? 'bg-info-subtle text-info'
+                  entry.role === 'user' ? 'bg-clawd-accent/50 text-white'
                   : entry.role === 'system' ? 'bg-clawd-bg text-clawd-text-dim italic text-[10px]'
                   : 'bg-clawd-border/50 text-clawd-text'
                 }`}>
@@ -1138,7 +1138,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-xl ${
                   msg.role === 'user'
-                    ? 'bg-clawd-accent/20 text-clawd-text'
+                    ? 'bg-clawd-accent/50 text-white'
                     : 'bg-clawd-border/50 text-clawd-text'
                 }`}>
                   {msg.content}
@@ -1155,7 +1155,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           </div>
 
           {/* Input */}
-          <div className="px-3 py-2.5 border-t border-clawd-border flex gap-2">
+          <div className="px-3 py-2.5 border-t border-clawd-border bg-clawd-surface flex gap-2">
             <input
               type="text"
               value={chatInput}
