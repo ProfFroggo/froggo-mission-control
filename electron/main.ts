@@ -53,9 +53,8 @@ const xApi = {
 import { prepare, closeDb, db, getSessionsDb, getSecurityDb } from './database';
 import {
   PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
-  REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
-  OPENCLAW_CONFIG_LEGACY, LOCAL_BIN, FROGGO_DB_CLI, TGCLI, DISCORDCLI,
-  CLAUDE_CLI, SHELL_PATH, agentWorkspace, verifyPaths,
+  REPORTS_DIR, FROGGO_DB, OPENCLAW_CONFIG, OPENCLAW_CONFIG_LEGACY,
+  FROGGO_DB_CLI, TGCLI, DISCORDCLI, CLAUDE_CLI, SHELL_PATH, agentWorkspace,
 } from './paths';
 
 // ============== AGENT REGISTRY ==============
@@ -190,7 +189,7 @@ ipcMain.handle('sessions:list', async (_, activeMinutes?: number) => {
         timeout: 10000, 
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } 
       },
-      (error, stdout, stderr) => {
+      (error, stdout, _stderr) => {
         if (error) {
           safeLog.warn('[Sessions] CLI failed:', error.message);
           resolve({ success: false, error: error.message, sessions: [] });
@@ -295,7 +294,7 @@ function debugLog(...args: any[]) {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
     fs.appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
-  } catch (e) { /* ignore */ }
+  } catch (_e) { /* ignore */ }
 }
 
 const safeLog = {
@@ -488,7 +487,7 @@ function createWindow() {
   });
 
   // SAFEGUARD: Send cleanup signal before window closes
-  mainWindow.on('close', (e) => {
+  mainWindow.on('close', () => {
     if (mainWindow) {
       safeLog.log('[Main] Window closing - sending cleanup signal...');
       safeSend('app-closing');
@@ -732,7 +731,7 @@ function startTaskNotifyWatcher() {
               }
             }
           }
-        } catch (e) {
+        } catch (_e) {
           // File might not exist or be invalid, ignore
         }
       }
@@ -1786,7 +1785,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
             }
             
             resolve(text);
-          } catch (parseError) {
+          } catch (_parseError) {
             // If not JSON, use raw output (strip debug lines)
             safeLog.log('[Tasks] Not JSON, using raw output');
             const lines = stdout.trim().split('\n');
@@ -2296,7 +2295,7 @@ ipcMain.handle('folders:rules:list', async () => {
       try {
         const parsed = f.rules ? JSON.parse(f.rules) : null;
         return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
-      } catch (e) {
+      } catch (_e) {
         return null;
       }
     }).filter(Boolean);
@@ -3513,7 +3512,6 @@ ipcMain.handle('screenshot:navigate', async (_, view: string) => {
 });
 
 // ============== SCHEDULE IPC HANDLERS ==============
-const scheduleDbPath = FROGGO_DB;
 
 ipcMain.handle('schedule:list', async () => {
   safeLog.log('[Schedule:list] Called');
@@ -4453,7 +4451,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
           timeout: 60000,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
-        (error, stdout, stderr) => {
+        (error, stdout, _stderr) => {
           if (error) {
             safeLog.error('[AI:Generate] CLI error:', error.message);
             reject(error);
@@ -4664,7 +4662,7 @@ ipcMain.handle('twitter:home', async (_, limit?: number) => {
   }
 });
 
-ipcMain.handle('twitter:queue-post', async (_, text: string, context?: string) => {
+ipcMain.handle('twitter:queue-post', async (_, text: string, _context?: string) => {
   // Queue tweet for approval via inbox
   const title = text.length > 50 ? `${text.slice(0, 47)}...` : text;
   const cmd = `froggo-db inbox-add --type tweet --title "${title.replace(/"/g, '\\"')}" --content "${text.replace(/"/g, '\\"')}" --channel dashboard`;
@@ -4842,7 +4840,6 @@ const initCommsDbTables = async () => {
 setTimeout(initCommsDbTables, 2000);
 
 // ============== BACKGROUND COMMS POLLING ==============
-let commsPollTimer: NodeJS.Timeout | null = null;
 let commsRefreshInProgress = false;
 
 async function refreshCommsBackground() {
@@ -4851,8 +4848,6 @@ async function refreshCommsBackground() {
   safeLog.log('[CommsPolling] Background refresh starting...');
 
   const allMessages: any[] = [];
-  const dbFile = FROGGO_DB;
-  const WACLI_PATH = '/opt/homebrew/bin/wacli';
   const DISCORDCLI_PATH = DISCORDCLI;
 
   const relativeTime = (dateStr: string): string => {
@@ -5483,7 +5478,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
           safeLog.log(`[Email] Body loaded for ${emailId} via ${subcmd} (${acct})`);
           return { success: true, body: stdout, emailId };
         }
-      } catch (e) {
+      } catch (_e) {
         // try next
       }
     }
