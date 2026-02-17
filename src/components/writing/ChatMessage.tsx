@@ -38,7 +38,7 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end mb-3 dark">
         <div className="max-w-[85%] bg-clawd-accent/10 border border-clawd-accent/30 rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
@@ -48,7 +48,7 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
 
   // Assistant message
   return (
-    <div className="flex justify-start mb-3 group">
+    <div className="flex justify-start mb-3 group dark">
       <div className="max-w-[90%]">
         <div className="text-xs text-clawd-text-dim mb-1 capitalize">{message.agent}</div>
         <div className="bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm text-sm text-clawd-text">
