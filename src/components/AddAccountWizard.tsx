@@ -26,6 +26,7 @@ const PROVIDER_INFO = {
     description: 'Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
     authMethods: ['app-password'] as const,
+    comingSoon: true,
   },
   microsoft: {
     name: 'Microsoft',
@@ -219,13 +220,17 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   <button
                     key={p}
                     onClick={() => {
+                      if (info.comingSoon) return;
                       setProvider(p);
                       setAuthMethod(info.authMethods[0]);
                     }}
+                    disabled={info.comingSoon}
                     className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                      provider === p
-                        ? 'border-clawd-accent bg-clawd-accent/10'
-                        : 'border-clawd-border hover:border-clawd-accent/50'
+                      info.comingSoon
+                        ? 'border-clawd-border opacity-50 cursor-not-allowed'
+                        : provider === p
+                          ? 'border-clawd-accent bg-clawd-accent/10'
+                          : 'border-clawd-border hover:border-clawd-accent/50'
                     }`}
                   >
                     <div className="flex items-center gap-4">
@@ -236,7 +241,14 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         {info.logo}
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-lg mb-1">{info.name}</div>
+                        <div className="font-semibold text-lg mb-1 flex items-center gap-2">
+                          {info.name}
+                          {info.comingSoon && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-warning/20 text-clawd-warning">
+                              Coming Soon
+                            </span>
+                          )}
+                        </div>
                         <div className="text-sm text-clawd-text-dim">{info.description}</div>
                       </div>
                       {provider === p && (
