@@ -347,7 +347,7 @@ export default function AgentPanel() {
                     )}
 
                     {/* Action buttons row — always visible */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-clawd-border/50">
+                    <div className={`flex items-center gap-2 pt-2 border-t ${theme.border}`}>
                       {agent.status === 'idle' && agentTasks.length > 0 && (
                         <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
                           className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
@@ -361,7 +361,7 @@ export default function AgentPanel() {
                         </button>
                       )}
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleExpanded(agent.id); }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-clawd-text-dim hover:text-clawd-text border border-clawd-border/50 rounded-lg hover:bg-clawd-border/30 transition-colors">
+                        className={`flex items-center gap-1 px-2.5 py-1.5 text-xs text-clawd-text-dim hover:text-clawd-text border ${theme.border} rounded-lg hover:bg-clawd-border/30 transition-colors`}>
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                         {isExpanded ? 'Less' : 'More'}
                       </button>
@@ -384,7 +384,7 @@ export default function AgentPanel() {
                     {isExpanded && (
                       // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
                       <div 
-                        className="mt-4 pt-4 border-t border-clawd-border/50 space-y-4" 
+                        className={`mt-4 pt-4 border-t ${theme.border} space-y-4`}
                         onClick={e => e.stopPropagation()}
                         onKeyDown={e => e.stopPropagation()}
                         role="region"

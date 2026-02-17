@@ -140,7 +140,7 @@ export default function OxAnalytics() {
             label="Avg Completion"
             value={`${stats.avgCompletionTime}m`}
             subtext="Per task"
-            color="bg-blue-600"
+            color="bg-clawd-accent"
           />
           <StatCard
             icon={AlertCircle}

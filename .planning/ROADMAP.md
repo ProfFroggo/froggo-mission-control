@@ -78,23 +78,18 @@
 
 **Milestone Goal:** Every page functions correctly in dark mode, X/Twitter page fully rebuilt with working calendar and automation builder, Finance page wired end-to-end, Writing panes usable, Library populated with real data.
 
-#### Phase 13: Global UI Consistency
+#### ✅ Phase 13: Global UI Consistency — COMPLETE 2026-02-18
 **Goal**: Every page looks and behaves correctly in dark mode with consistent UI components
 **Depends on**: Phase 12
 **Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05, UI-06
-**Success Criteria** (what must be TRUE):
-  1. All text inputs across every page show dark background with light text in dark mode — no white-on-white inputs anywhere
-  2. Agents page dropdown button borders and divider lines use theme color instead of hardcoded white
-  3. User message chat bubbles display at 50% opacity green — visually distinct from full-green without being jarring
-  4. Every chat dialogue across every page (Chat, X/Twitter, Finance, Writing) uses the same component and matches Chat page styling
-  5. Chat input bar sits at the same vertical position across all pages
-**Plans**: 4 plans
+**Plans**: 5 plans complete
 
 Plans:
-- [ ] 13-01-PLAN.md -- Define missing CSS tokens (bg-alt, bg0, card) for dark mode inputs
-- [ ] 13-02-PLAN.md -- Fix Agents page borders to use per-agent theme colors
-- [ ] 13-03-PLAN.md -- Standardize user chat bubbles (ChatPanel, ChatRoom, AgentModal, Writing)
-- [ ] 13-04-PLAN.md -- Standardize user chat bubbles (X/Twitter, Finance, Voice, QuickActions)
+- [x] 13-01-PLAN.md -- Define missing CSS tokens (bg-alt, bg0, card) for dark mode inputs
+- [x] 13-02-PLAN.md -- Fix Agents page borders to use per-agent theme colors
+- [x] 13-03-PLAN.md -- Standardize user chat bubbles (ChatPanel, ChatRoom, AgentModal, Writing)
+- [x] 13-04-PLAN.md -- Standardize user chat bubbles (X/Twitter, Finance, Voice, QuickActions)
+- [x] 13-05-PLAN.md -- Fix chat input bar flex layout alignment (pinned to bottom)
 
 #### Phase 14: X/Twitter Identity, Dark Mode & Tab Structure
 **Goal**: The X/Twitter page presents correctly (X branding, dark mode, clean tab order) with approval panels stripped from non-content tabs
@@ -242,7 +237,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 10. Jess Integration | v2.0 | 1/1 | Complete | 2026-02-13 |
 | 11. Chat Pane + 3-Pane Layout | v2.1 | 4/4 | Complete | 2026-02-13 |
 | 12. Setup Wizard | v2.1 | 4/4 | Complete | 2026-02-13 |
-| 13. Global UI Consistency | v3.0 | 0/2 | Not started | - |
+| 13. Global UI Consistency | v3.0 | 5/5 | Complete | 2026-02-18 |
 | 14. X/Twitter Identity + Tabs | v3.0 | 0/2 | Not started | - |
 | 15. X/Twitter Content Flow | v3.0 | 0/2 | Not started | - |
 | 16. X/Twitter Calendar | v3.0 | 0/2 | Not started | - |
