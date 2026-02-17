@@ -1,5 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { BarChart2, TrendingUp, Clock, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { useStore } from '../store/store';
 
 interface PerformanceStats {
@@ -34,6 +43,32 @@ export default function OxAnalytics() {
     ),
     totalHoursWorked: 12.5, // Would calculate from activity logs
   };
+
+  // Generate completion trend data for the past 7 days
+  const completionTrendData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const today = new Date();
+    const data = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const completed = myTasks.filter(t => {
+        if (t.status !== 'done' || !t.completedAt) return false;
+        return new Date(t.completedAt).toISOString().split('T')[0] === dateStr;
+      }).length;
+      
+      data.push({
+        day: days[date.getDay()],
+        date: dateStr,
+        completed,
+      });
+    }
+    
+    return data;
+  }, [myTasks]);
 
   const StatCard = ({ icon: Icon, label, value, subtext, color }: {
     icon: any;
@@ -130,15 +165,43 @@ export default function OxAnalytics() {
           />
         </div>
 
-        {/* Performance Chart Placeholder */}
+        {/* Task Completion Trend Chart */}
         <div className="p-6 rounded-xl bg-clawd-surface/50 border border-clawd-border mb-6">
           <h2 className="text-lg font-medium text-white mb-4">Task Completion Trend</h2>
-          <div className="h-48 flex items-center justify-center text-clawd-text-dim">
-            <div className="text-center">
-              <BarChart2 size={48} className="mx-auto mb-2 opacity-50" />
-              <p>Chart visualization coming soon</p>
-              <p className="text-xs">Will show completion trends over time</p>
-            </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={completionTrendData} margin={{ top: 10, right: 10, left: -20, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="#9CA3AF" 
+                  fontSize={12}
+                  tickLine={false}
+                />
+                <YAxis 
+                  stroke="#9CA3AF" 
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1f2937', 
+                    border: '1px solid #374151',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                  labelStyle={{ color: '#9CA3AF' }}
+                  formatter={(value: number) => [value, 'Completed']}
+                />
+                <Bar 
+                  dataKey="completed" 
+                  name="Completed" 
+                  fill="#22c55e" 
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
