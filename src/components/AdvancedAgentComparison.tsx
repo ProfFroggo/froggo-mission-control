@@ -51,13 +51,14 @@ export default function AdvancedAgentComparison({
   const [_loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<AgentMetrics[]>([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isOpen) {
       loadData();
     }
-  }, [isOpen, loadData]);
+  }, [isOpen]);
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
       const agentData = await getAgentUtilization();

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useWritingStore, WritingProject } from '../../store/writingStore';
 import { useWizardStore } from '../../store/wizardStore';
 import { Plus, BookOpen, BookText, Trash2, X, Wand2 } from 'lucide-react';
+import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 function relativeTime(ts: number): string {
   const now = Date.now();
@@ -33,6 +34,8 @@ export default function ProjectSelector() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'memoir' | 'novel'>('memoir');
   const [creating, setCreating] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<WritingProject | null>(null);
+  const deleteDialog = useConfirmDialog();
 
   const handleCreate = async () => {
     if (!title.trim() || creating) return;
@@ -48,9 +51,18 @@ export default function ProjectSelector() {
 
   const handleDelete = async (e: React.MouseEvent, project: WritingProject) => {
     e.stopPropagation();
-    if (window.confirm(`Delete "${project.title}"? This cannot be undone.`)) {
-      await deleteProject(project.id);
-    }
+    setDeleteTarget(project);
+    deleteDialog.showConfirm({
+      title: 'Delete Project',
+      message: `Delete "${project.title}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, async () => {
+      if (deleteTarget) {
+        await deleteProject(deleteTarget.id);
+        setDeleteTarget(null);
+      }
+    });
   };
 
   return (
@@ -208,6 +220,22 @@ export default function ProjectSelector() {
           </div>
         )}
       </div>
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => {
+          deleteDialog.closeConfirm();
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteProject(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+        {...deleteDialog.config}
+      />
     </div>
   );
 }

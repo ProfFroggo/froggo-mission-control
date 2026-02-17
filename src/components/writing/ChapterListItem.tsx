@@ -3,6 +3,7 @@ import { Pencil, Trash2, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { WritingChapter } from '../../store/writingStore';
+import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 interface ChapterListItemProps {
   chapter: WritingChapter;
@@ -22,6 +23,7 @@ export default function ChapterListItem({
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(chapter.title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const deleteDialog = useConfirmDialog();
 
   const {
     attributes,
@@ -61,9 +63,12 @@ export default function ChapterListItem({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Delete "${chapter.title}"? This cannot be undone.`)) {
-      onDelete();
-    }
+    deleteDialog.showConfirm({
+      title: 'Delete Chapter',
+      message: `Delete "${chapter.title}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, onDelete);
   };
 
   const handleStartRename = (e: React.MouseEvent) => {
@@ -94,57 +99,67 @@ export default function ChapterListItem({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center group">
-      <button
-        {...attributes}
-        {...listeners}
-        className="p-1 ml-1 text-clawd-text-dim hover:text-clawd-text cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label={`Drag to reorder ${chapter.title}`}
-      >
-        <GripVertical size={14} />
-      </button>
-      <button
-        onClick={onSelect}
-        className={`flex-1 text-left px-2 py-2 transition-colors relative ${
-          isActive
-            ? 'bg-clawd-border/50 border-l-2 border-l-clawd-accent'
-            : 'hover:bg-clawd-border/30 border-l-2 border-l-transparent'
-        }`}
-      >
-        <div className="flex items-start justify-between min-w-0">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-clawd-text-dim font-mono">
-                {chapter.position + 1}.
-              </span>
-              <span className="text-xs font-medium text-clawd-text truncate">
-                {chapter.title}
+    <>
+      <div ref={setNodeRef} style={style} className="flex items-center group">
+        <button
+          {...attributes}
+          {...listeners}
+          className="p-1 ml-1 text-clawd-text-dim hover:text-clawd-text cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label={`Drag to reorder ${chapter.title}`}
+        >
+          <GripVertical size={14} />
+        </button>
+        <button
+          onClick={onSelect}
+          className={`flex-1 text-left px-2 py-2 transition-colors relative ${
+            isActive
+              ? 'bg-clawd-border/50 border-l-2 border-l-clawd-accent'
+              : 'hover:bg-clawd-border/30 border-l-2 border-l-transparent'
+          }`}
+        >
+          <div className="flex items-start justify-between min-w-0">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-clawd-text-dim font-mono">
+                  {chapter.position + 1}.
+                </span>
+                <span className="text-xs font-medium text-clawd-text truncate">
+                  {chapter.title}
+                </span>
+              </div>
+              <span className="text-[10px] text-clawd-text-dim ml-4">
+                {chapter.wordCount.toLocaleString()} words
               </span>
             </div>
-            <span className="text-[10px] text-clawd-text-dim ml-4">
-              {chapter.wordCount.toLocaleString()} words
-            </span>
-          </div>
 
-          {/* Action buttons — visible on hover */}
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <button
-              onClick={handleStartRename}
-              className="p-1 rounded text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
-              title="Rename chapter"
-            >
-              <Pencil size={12} />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
-              title="Delete chapter"
-            >
-              <Trash2 size={12} />
-            </button>
+            {/* Action buttons — visible on hover */}
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <button
+                onClick={handleStartRename}
+                className="p-1 rounded text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border transition-colors"
+                title="Rename chapter"
+              >
+                <Pencil size={12} />
+              </button>
+              <button
+                onClick={handleDelete}
+                className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
+                title="Delete chapter"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
           </div>
-        </div>
-      </button>
-    </div>
+        </button>
+      </div>
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={deleteDialog.closeConfirm}
+        onConfirm={deleteDialog.config.onConfirm || (() => {})}
+        {...deleteDialog.config}
+      />
+    </>
   );
 }

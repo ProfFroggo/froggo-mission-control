@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Send } from 'lucide-react';
 import { showToast } from './Toast';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface HotMention {
   id: string;
@@ -25,6 +26,8 @@ export const XReplyGuyView: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [fastTrack, setFastTrack] = useState(true);
   const [posting, setPosting] = useState(false);
+  const [postNowDraftId, setPostNowDraftId] = useState<string | null>(null);
+  const postConfirmDialog = useConfirmDialog();
 
   useEffect(() => {
     loadHotMentions();
@@ -76,10 +79,17 @@ export const XReplyGuyView: React.FC = () => {
         
         // If fast-track, offer to post immediately
         if (fastTrack) {
-          const postNow = window.confirm('Draft is approved. Post immediately?');
-          if (postNow) {
-            await handlePostNow(result?.draftId ?? '');
-          }
+          postConfirmDialog.showConfirm({
+            title: 'Post Now',
+            message: 'Draft is approved. Post immediately?',
+            confirmLabel: 'Post',
+            type: 'info',
+          }, () => {
+            if (postNowDraftId) {
+              handlePostNow(postNowDraftId);
+            }
+          });
+          setPostNowDraftId(result?.draftId ?? '');
         }
       } else {
         showToast('error', 'Draft Failed', result?.error || 'Could not create draft');
@@ -311,6 +321,22 @@ export const XReplyGuyView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Post Confirmation Dialog */}
+      <ConfirmDialog
+        open={postConfirmDialog.open}
+        onClose={() => {
+          postConfirmDialog.closeConfirm();
+          setPostNowDraftId(null);
+        }}
+        onConfirm={() => {
+          if (postNowDraftId) {
+            handlePostNow(postNowDraftId);
+            setPostNowDraftId(null);
+          }
+        }}
+        {...postConfirmDialog.config}
+      />
     </div>
   );
 };

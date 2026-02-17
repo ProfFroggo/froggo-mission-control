@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, TrendingUp, Award, CheckCircle, Clock, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
@@ -46,7 +46,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
   useEffect(() => {
     loadComparisonData();
-  }, [agentIds, loadComparisonData]);
+  }, [agentIds]);
 
   // ESC key to close
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
     return () => window.removeEventListener('keydown', handleEsc);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- handleClose is stable modal handler
 
-  const loadComparisonData = async () => {
+  const loadComparisonData = useCallback(async () => {
     setLoading(true);
     try {
       const results: ComparisonData = {};
@@ -86,7 +86,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
       console.error('Failed to load comparison data:', e);
     }
     setLoading(false);
-  };
+  }, [agentIds, agents]);
 
   const getWinner = (metric: keyof ComparisonData[string]): string | null => {
     if (Object.keys(data).length === 0) return null;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
 
@@ -34,9 +34,9 @@ export default function AgentTokenDetailModal({
     if (isOpen && agent) {
       loadSessionLog();
     }
-  }, [isOpen, agent, loadSessionLog]);
+  }, [isOpen, agent]);
 
-  const loadSessionLog = async () => {
+  const loadSessionLog = useCallback(async () => {
     if (!agent) return;
 
     setLoading(true);
@@ -57,7 +57,7 @@ export default function AgentTokenDetailModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [agent]);
 
   if (!isOpen || !agent) return null;
 

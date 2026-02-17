@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 import { useResearchStore } from '../../store/researchStore';
 import { useWritingStore } from '../../store/writingStore';
 import SourceForm from './SourceForm';
 import type { ResearchSource } from '../../store/researchStore';
+import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 const typeBadge: Record<string, { abbr: string }> = {
   book: { abbr: 'BK' },
@@ -17,6 +18,8 @@ const typeBadge: Record<string, { abbr: string }> = {
 export default function SourceList() {
   const { sources, editingId, setEditingId, loadSources, addSource, updateSource, deleteSource } = useResearchStore();
   const { activeProjectId } = useWritingStore();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const deleteDialog = useConfirmDialog();
 
   // Load sources when tab becomes visible
   useEffect(() => {
@@ -28,9 +31,18 @@ export default function SourceList() {
   if (!activeProjectId) return null;
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Delete this source?')) {
-      deleteSource(activeProjectId, id);
-    }
+    setDeleteTarget(id);
+    deleteDialog.showConfirm({
+      title: 'Delete Source',
+      message: 'Delete this source?',
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, () => {
+      if (deleteTarget) {
+        deleteSource(activeProjectId, deleteTarget);
+        setDeleteTarget(null);
+      }
+    });
   };
 
   const handleSave = (data: Omit<ResearchSource, 'id' | 'created_at' | 'updated_at'>) => {
@@ -128,6 +140,22 @@ export default function SourceList() {
           </button>
         </div>
       )}
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => {
+          deleteDialog.closeConfirm();
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteSource(activeProjectId, deleteTarget);
+            setDeleteTarget(null);
+          }
+        }}
+        {...deleteDialog.config}
+      />
     </div>
   );
 }

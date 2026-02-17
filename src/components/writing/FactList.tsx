@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, Link2 } from 'lucide-react';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import { useResearchStore } from '../../store/researchStore';
 import FactForm from './FactForm';
+import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 const statusBadge: Record<string, string> = {
   verified: 'bg-success-subtle text-success',
@@ -24,6 +25,9 @@ export default function FactList() {
   const { activeProjectId } = useWritingStore();
   const { factSourceMap, loadAllFactLinks } = useResearchStore();
 
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const deleteDialog = useConfirmDialog();
+
   // Load linked source counts when facts change
   useEffect(() => {
     if (activeProjectId && facts.length > 0) {
@@ -34,9 +38,18 @@ export default function FactList() {
   if (!activeProjectId) return null;
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Delete this fact?')) {
-      deleteFact(activeProjectId, id);
-    }
+    setDeleteTarget(id);
+    deleteDialog.showConfirm({
+      title: 'Delete Fact',
+      message: 'Delete this fact? This cannot be undone.',
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, () => {
+      if (deleteTarget) {
+        deleteFact(activeProjectId, deleteTarget);
+        setDeleteTarget(null);
+      }
+    });
   };
 
   return (
@@ -117,6 +130,22 @@ export default function FactList() {
           </button>
         </div>
       )}
+
+      {/* Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => {
+          deleteDialog.closeConfirm();
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteFact(activeProjectId, deleteTarget);
+            setDeleteTarget(null);
+          }
+        }}
+        {...deleteDialog.config}
+      />
     </div>
   );
 }

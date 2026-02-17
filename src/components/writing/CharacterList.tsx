@@ -1,18 +1,32 @@
 import { Pencil, Trash2, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import CharacterForm from './CharacterForm';
+import { useConfirmDialog } from '../ConfirmDialog';
 
 export default function CharacterList() {
   const { characters, editingId, setEditingId, addCharacter, updateCharacter, deleteCharacter } = useMemoryStore();
   const { activeProjectId } = useWritingStore();
 
+  const [deleteTarget, setDeleteTarget] = useState<{id: string, name: string} | null>(null);
+  const deleteDialog = useConfirmDialog();
+
   if (!activeProjectId) return null;
 
   const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Delete character "${name}"?`)) {
-      deleteCharacter(activeProjectId, id);
-    }
+    setDeleteTarget({ id, name });
+    deleteDialog.showConfirm({
+      title: 'Delete Character',
+      message: `Delete character "${name}"?`,
+      confirmLabel: 'Delete',
+      type: 'danger',
+    }, () => {
+      if (deleteTarget) {
+        deleteCharacter(activeProjectId, deleteTarget.id);
+        setDeleteTarget(null);
+      }
+    });
   };
 
   return (
