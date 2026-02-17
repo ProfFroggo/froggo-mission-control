@@ -41,7 +41,7 @@ interface ResearchState {
   loadAllFactLinks: (projectId: string, factIds: string[]) => Promise<void>;
 }
 
-const bridge = () => (window as any).clawdbot?.writing?.research;
+const bridge = () => window.clawdbot?.writing?.research;
 
 export const useResearchStore = create<ResearchState>((set, get) => ({
   sources: [],

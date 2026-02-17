@@ -80,7 +80,7 @@ export default function XAutomationsPanel() {
   const loadAutomations = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.xAutomations?.list();
+      const result = await window.clawdbot?.xAutomations?.list();
       if (result?.success && result.automations) {
         setAutomations(result.automations);
       }
@@ -93,7 +93,7 @@ export default function XAutomationsPanel() {
   
   const toggleAutomation = async (id: string, enabled: boolean) => {
     try {
-      const result = await (window as any).clawdbot?.xAutomations?.toggle(id, enabled);
+      const result = await window.clawdbot?.xAutomations?.toggle(id, enabled);
       if (result?.success) {
         loadAutomations();
       }
@@ -106,7 +106,7 @@ export default function XAutomationsPanel() {
     if (!confirm('Are you sure you want to delete this automation?')) return;
     
     try {
-      const result = await (window as any).clawdbot?.xAutomations?.delete(id);
+      const result = await window.clawdbot?.xAutomations?.delete(id);
       if (result?.success) {
         loadAutomations();
       }
@@ -370,15 +370,15 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
       };
       
       const result = automation
-        ? await (window as any).clawdbot?.xAutomations?.update(automation.id, payload)
-        : await (window as any).clawdbot?.xAutomations?.create(payload);
+        ? await window.clawdbot?.xAutomations?.update(automation.id, payload)
+        : await window.clawdbot?.xAutomations?.create(payload);
       
       if (result?.success) {
         onSave();
       } else {
         showToast(`Failed to save: ${result?.error || 'Unknown error'}`, 'error');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast(`Failed to save: ${e.message}`, 'error');
     } finally {
       setSaving(false);

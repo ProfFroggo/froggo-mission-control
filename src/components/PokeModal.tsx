@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: PokeModal uses file-level suppression for intentional stable ref patterns.
+// Modal lifecycle effects and cleanup are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 /**
  * PokeModal - Internal poke/nudge modal for task status updates
  * 
@@ -71,7 +75,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     }]);
 
     try {
-      const ipc = (window as any).clawdbot;
+      const ipc = window.clawdbot;
       
       // Use the new internal poke handler
       if (ipc?.tasks?.pokeInternal) {
@@ -115,7 +119,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           timestamp: Date.now(),
         }]);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setMessages([{
         role: 'system',
         content: `❌ ${e.message || 'Failed to poke'}`,
@@ -139,7 +143,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     setStreamingContent('');
 
     try {
-      const ipc = (window as any).clawdbot?.agents;
+      const ipc = window.clawdbot?.agents;
       
       if (sessionKey && ipc?.chat) {
         // Stream listener
@@ -206,7 +210,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         }, 60000);
       } else {
         // No session - use pokeInternal for one-shot
-        const ipcTasks = (window as any).clawdbot?.tasks;
+        const ipcTasks = window.clawdbot?.tasks;
         if (ipcTasks?.pokeInternal) {
           const result = await ipcTasks.pokeInternal(taskId, `${taskTitle}\n\nUser follow-up: ${userText}`);
           setMessages(prev => [...prev, {
@@ -218,7 +222,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         }
         setSending(false);
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setMessages(prev => [...prev, {
         role: 'system',
         content: `⚠️ ${e.message || 'Failed to send'}`,

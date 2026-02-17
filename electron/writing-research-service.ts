@@ -93,7 +93,7 @@ function listSources(projectId: string) {
     const db = getDb(projectId);
     const sources = db.prepare('SELECT * FROM sources ORDER BY title').all() as ResearchSource[];
     return { success: true, sources };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] listSources error:', e.message);
     return { success: false, error: e.message, sources: [] };
   }
@@ -112,7 +112,7 @@ function createSource(projectId: string, data: Omit<ResearchSource, 'id' | 'crea
 
     const source = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource;
     return { success: true, source };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] createSource error:', e.message);
     return { success: false, error: e.message };
   }
@@ -140,7 +140,7 @@ function updateSource(projectId: string, id: string, data: Partial<ResearchSourc
 
     const source = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource;
     return { success: true, source };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] updateSource error:', e.message);
     return { success: false, error: e.message };
   }
@@ -152,7 +152,7 @@ function deleteSource(projectId: string, id: string) {
     const result = db.prepare('DELETE FROM sources WHERE id = ?').run(id);
     if (result.changes === 0) return { success: false, error: 'Source not found' };
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] deleteSource error:', e.message);
     return { success: false, error: e.message };
   }
@@ -171,7 +171,7 @@ function getSourcesForFact(projectId: string, factId: string) {
       ORDER BY s.title
     `).all(factId);
     return { success: true, sources };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] getSourcesForFact error:', e.message);
     return { success: false, error: e.message, sources: [] };
   }
@@ -187,7 +187,7 @@ function getFactsForSource(projectId: string, sourceId: string) {
       ORDER BY created_at DESC
     `).all(sourceId);
     return { success: true, facts };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] getFactsForSource error:', e.message);
     return { success: false, error: e.message, facts: [] };
   }
@@ -202,7 +202,7 @@ function linkSourceToFact(projectId: string, factId: string, sourceId: string, n
       VALUES (?, ?, ?, ?)
     `).run(factId, sourceId, notes || '', now);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] linkSourceToFact error:', e.message);
     return { success: false, error: e.message };
   }
@@ -213,7 +213,7 @@ function unlinkSourceFromFact(projectId: string, factId: string, sourceId: strin
     const db = getDb(projectId);
     db.prepare('DELETE FROM fact_sources WHERE fact_id = ? AND source_id = ?').run(factId, sourceId);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] unlinkSourceFromFact error:', e.message);
     return { success: false, error: e.message };
   }
@@ -230,7 +230,7 @@ function cleanOrphanedLinks(projectId: string, validFactIds: string[]) {
       db.prepare(`DELETE FROM fact_sources WHERE fact_id NOT IN (${placeholders})`).run(...validFactIds);
     }
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-research] cleanOrphanedLinks error:', e.message);
     return { success: false, error: e.message };
   }
@@ -243,7 +243,7 @@ export function closeResearchDb(projectId: string): void {
   if (db) {
     try {
       db.close();
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error(`[writing-research] Failed to close research.db for ${projectId}:`, e.message);
     }
     dbCache.delete(projectId);
@@ -254,7 +254,7 @@ export function closeAllResearchDbs(): void {
   for (const [projectId, db] of dbCache) {
     try {
       db.close();
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error(`[writing-research] Failed to close research.db for ${projectId}:`, e.message);
     }
   }

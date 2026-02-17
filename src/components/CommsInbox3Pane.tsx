@@ -973,7 +973,7 @@ function RightPane({
     if (intentOverride) {
       threadMessages.push({ role: 'user-intent', content: `User wants to say: ${intentOverride}` });
     }
-    const result = await (window as any).clawdbot?.ai?.generateReply({
+    const result = await window.clawdbot?.ai?.generateReply({
       threadMessages,
       platform: conversation?.platform,
       recipientName: conversation?.name || conversation?.from,
@@ -1457,7 +1457,7 @@ export default function CommsInbox3Pane() {
       try {
         // Fetch email accounts (from gog auth) and gateway channels in parallel
         const [emailResult, channelsResult] = await Promise.all([
-          (window as any).clawdbot?.email?.accounts?.()
+          window.clawdbot?.email?.accounts?.()
             .catch((err: any) => { console.error('[CommsInbox] Failed to get email accounts:', err); return null; }),
           gateway.getChannelsStatus().catch((err) => { console.error('[CommsInbox] Failed to get channels status:', err); return null; }),
         ]);
@@ -1631,7 +1631,7 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.messages?.recent(messageLimit, showArchived);
+      const result = await window.clawdbot?.messages?.recent(messageLimit, showArchived);
       if (result?.success && result.chats && isMounted.current) {
         const msgs = (result.chats as ConversationItem[]).map(m => {
           if (!m.timestamp) return m;
@@ -1690,7 +1690,7 @@ export default function CommsInbox3Pane() {
     loadMessages();
 
     // Listen for comms-updated events from background polling
-    const cleanup = (window as any).clawdbot?.messages?.onUpdate?.((_data: any) => {
+    const cleanup = window.clawdbot?.messages?.onUpdate?.((_data: any) => {
       if (isMounted.current) {
         loadMessages(true);
       }
@@ -1725,7 +1725,7 @@ export default function CommsInbox3Pane() {
         setLoadingBody(true);
         try {
           const emailId = selectedConversation.id.replace('email-', '');
-          const result = await (window as any).clawdbot?.email?.body(emailId, selectedConversation.account);
+          const result = await window.clawdbot?.email?.body(emailId, selectedConversation.account);
           if (result?.success && result.body) {
             const { body, metadata } = parseEmailBodyAndMeta(result.body);
             setEmailBody(body);
@@ -1744,7 +1744,7 @@ export default function CommsInbox3Pane() {
       } else {
         setLoadingThread(true);
         try {
-          const result = await (window as any).clawdbot?.messages?.context(
+          const result = await window.clawdbot?.messages?.context(
             selectedConversation.id, selectedConversation.platform, 20
           );
           if (result?.success && result.messages) {
@@ -1763,7 +1763,7 @@ export default function CommsInbox3Pane() {
 
       // Mark as read
       try {
-        await (window as any).clawdbot?.inbox?.markRead?.(selectedConversation.id, true);
+        await window.clawdbot?.inbox?.markRead?.(selectedConversation.id, true);
         setAllMessages(prev => prev.map(m =>
           m.id === selectedConversation.id ? { ...m, is_read: true } : m
         ));
@@ -1772,7 +1772,7 @@ export default function CommsInbox3Pane() {
       // Trigger AI analysis
       if (selectedConversation.platform !== 'system') {
         try {
-          const cached = await (window as any).clawdbot?.ai?.getAnalysis?.(selectedConversation.id, selectedConversation.platform);
+          const cached = await window.clawdbot?.ai?.getAnalysis?.(selectedConversation.id, selectedConversation.platform);
           if (cached?.success && cached.analysis) {
             setAiAnalyses(prev => new Map(prev).set(selectedConversation.id, cached.analysis));
           } else {
@@ -1796,7 +1796,7 @@ export default function CommsInbox3Pane() {
     try {
       const ids = Array.from(analysisBatchRef.current).slice(0, 10);
       analysisBatchRef.current.clear();
-      const result = await (window as any).clawdbot?.ai?.analyzeMessages?.(ids);
+      const result = await window.clawdbot?.ai?.analyzeMessages?.(ids);
       if (result?.success && result.analyses) {
         setAiAnalyses(prev => {
           const next = new Map(prev);
@@ -1830,26 +1830,26 @@ export default function CommsInbox3Pane() {
   // Create task/event handlers
   const handleCreateDetectedTask = async (task: { title: string; description: string }) => {
     try {
-      const result = await (window as any).clawdbot?.ai?.createDetectedTask?.(task);
+      const result = await window.clawdbot?.ai?.createDetectedTask?.(task);
       if (result?.success) {
         showToast('success', 'Task Created', task.title);
       } else {
         showToast('error', 'Failed', result?.error || 'Could not create task');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Error', e.message);
     }
   };
 
   const handleCreateDetectedEvent = async (event: { title: string; date: string; time?: string; duration?: string; location?: string }) => {
     try {
-      const result = await (window as any).clawdbot?.ai?.createDetectedEvent?.(event);
+      const result = await window.clawdbot?.ai?.createDetectedEvent?.(event);
       if (result?.success) {
         showToast('success', 'Event Created', event.title);
       } else {
         showToast('error', 'Failed', result?.error || 'Could not create event');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Error', e.message);
     }
   };
@@ -1887,13 +1887,13 @@ export default function CommsInbox3Pane() {
   const handleArchive = async (conv: ConversationItem) => {
     const sessionKey = `${conv.platform}:${conv.from || conv.name || ''}`;
     try {
-      await (window as any).clawdbot?.conversations?.archive?.(sessionKey);
+      await window.clawdbot?.conversations?.archive?.(sessionKey);
       setAllMessages(prev => prev.filter(m => m.id !== conv.id));
       if (selectedConversation?.id === conv.id) {
         setSelectedConversation(null);
       }
       showToast('success', 'Archived', `${conv.name || conv.from || 'Conversation'} archived`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Archive failed', e.message);
     }
   };
@@ -1902,7 +1902,7 @@ export default function CommsInbox3Pane() {
   const handleToggleRead = async (conv: ConversationItem) => {
     const newReadState = !conv.is_read;
     try {
-      await (window as any).clawdbot?.inbox?.markRead?.(conv.id, newReadState);
+      await window.clawdbot?.inbox?.markRead?.(conv.id, newReadState);
       setAllMessages(prev => prev.map(m =>
         m.id === conv.id ? { ...m, is_read: newReadState } : m
       ));
@@ -1914,7 +1914,7 @@ export default function CommsInbox3Pane() {
   // Toggle star
   const handleToggleStar = async (id: string) => {
     try {
-      const result = await (window as any).clawdbot?.inbox?.toggleStar?.(id);
+      const result = await window.clawdbot?.inbox?.toggleStar?.(id);
       if (result?.success) {
         setAllMessages(prev => prev.map(m =>
           m.id === id ? { ...m, is_starred: result.is_starred } : m
@@ -1930,7 +1930,7 @@ export default function CommsInbox3Pane() {
     if (!selectedConversation) return;
     const recipient = selectedConversation.from || selectedConversation.name || '';
     try {
-      const result = await (window as any).clawdbot?.messages?.send?.(
+      const result = await window.clawdbot?.messages?.send?.(
         selectedConversation.platform, recipient, text
       );
       if (result?.success) {
@@ -1945,7 +1945,7 @@ export default function CommsInbox3Pane() {
       } else {
         showToast('error', 'Send failed', result?.error || 'Unknown error');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Send failed', e.message);
     }
   };

@@ -340,7 +340,7 @@ Be thorough but only include real people, not generic references.`;
       const entry = formatContactEntry(contactData, timestamp);
 
       // Append to file using IPC
-      const result = await (window as any).clawdbot?.fs?.append(filePath, entry);
+      const result = await window.clawdbot?.fs?.append(filePath, entry);
       
       if (!result?.success) {
         throw new Error(result?.error || 'Failed to append to file');
@@ -392,7 +392,7 @@ Be thorough but only include real people, not generic references.`;
 
   const addToKnowledgeGraph = async (data: ExtractedContactData) => {
     try {
-      await (window as any).clawdbot?.db?.exec(
+      await window.clawdbot?.db?.exec(
         `INSERT INTO knowledge_nodes (type, name, description) VALUES (?, ?, ?)`,
         ['person', data.name, data.context || data.relationship || '']
       );
@@ -404,7 +404,7 @@ Be thorough but only include real people, not generic references.`;
   const logContactFact = async (data: ExtractedContactData) => {
     try {
       const factText = `Contact: ${data.name}${data.relationship ? ` (${data.relationship})` : ''}${data.role ? ` - ${data.role}` : ''}${data.company ? ` at ${data.company}` : ''}`;
-      await (window as any).clawdbot?.db?.exec(
+      await window.clawdbot?.db?.exec(
         `INSERT INTO facts (category, subject, content, source) VALUES (?, ?, ?, ?)`,
         ['person', data.name, factText, 'contact-modal']
       );

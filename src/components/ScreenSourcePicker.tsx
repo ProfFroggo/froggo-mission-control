@@ -30,7 +30,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
     setLoading(true);
     setError(null);
     try {
-      const api = (window as any).clawdbot?.screenCapture;
+      const api = window.clawdbot?.screenCapture;
       if (!api?.getSources) {
         // Fallback: use getDisplayMedia (browser will show its own picker)
         setError('no-electron');
@@ -42,7 +42,7 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         thumbnailSize: { width: 320, height: 180 },
       });
       setSources(result || []);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setError(e.message || 'Failed to get sources');
     }
     setLoading(false);

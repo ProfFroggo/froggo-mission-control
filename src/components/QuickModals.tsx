@@ -26,7 +26,7 @@ export function CalendarModal({ isOpen, onClose }: ModalProps) {
     setError(null);
     try {
       const calAccount = useUserSettings.getState().emailAccounts[0]?.email || '';
-      const result = calAccount ? await (window as any).clawdbot?.calendar?.events(calAccount, 3) : null;
+      const result = calAccount ? await window.clawdbot?.calendar?.events(calAccount, 3) : null;
       if (result?.success && result.events?.events) {
         setEvents(result.events.events.map((e: any) => ({
           id: e.id,
@@ -151,7 +151,7 @@ export function EmailModal({ isOpen, onClose }: ModalProps) {
     try {
       const allEmails: any[] = [];
       for (const acc of ACCOUNTS) {
-        const result = await (window as any).clawdbot?.email?.unread(acc.email);
+        const result = await window.clawdbot?.email?.unread(acc.email);
         const threads = result?.emails?.threads || result?.emails || [];
         threads.slice(0, 5).forEach((t: any) => {
           allEmails.push({
@@ -236,7 +236,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const clawdbot = (window as any).clawdbot;
+      const clawdbot = window.clawdbot;
       if (!clawdbot?.twitter?.mentions) {
         setError('X API not available');
         setLoading(false);
@@ -261,7 +261,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       } else {
         setError(result?.error || 'Could not load mentions');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       // '[Mentions] Error:', e;
       setError(e?.message || 'Failed to load mentions');
     } finally {
@@ -357,7 +357,7 @@ export function MessagesModal({ isOpen, onClose }: ModalProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await (window as any).clawdbot?.messages?.recent(10);
+      const result = await window.clawdbot?.messages?.recent(10);
       if (result?.success) {
         setMessages(result.chats || []);
       } else {

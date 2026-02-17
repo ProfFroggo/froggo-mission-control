@@ -67,7 +67,7 @@ interface WritingState {
   setActiveChapterContent: (content: string) => void;
 }
 
-const bridge = () => (window as any).clawdbot?.writing;
+const bridge = () => window.clawdbot?.writing;
 
 export const useWritingStore = create<WritingState>((set, get) => ({
   // Initial state

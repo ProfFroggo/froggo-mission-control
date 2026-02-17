@@ -281,7 +281,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
       addSystemMessage('⚙️ Creating workspace, DB entries, auth profiles, patching dashboard...');
 
-      const result = await (window as any).clawdbot.agents.create(config);
+      const result = await window.clawdbot.agents.create(config);
 
       if (!result.success) {
         throw new Error(result.error || 'Onboarding script failed');
@@ -319,7 +319,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       onAgentCreated?.(createdAgent);
       showToast(`${agentData.emoji} ${agentData.name} created!`, 'success');
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       setStage('review');
       addHRMessage(`Hmm, something went wrong: ${err.message}. Want to try again? Say "create" to retry.`);
       showToast('Agent creation failed', 'error');

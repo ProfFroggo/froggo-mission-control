@@ -74,7 +74,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Fetch recent chat messages to get agent's response
-      const chatResult = await (window as any).clawdbot?.chat?.recent?.(sessionKey, 1);
+      const chatResult = await window.clawdbot?.chat?.recent?.(sessionKey, 1);
 
       if (chatResult?.success && chatResult.messages && chatResult.messages.length > 0) {
         const lastMessage = chatResult.messages[0];
@@ -87,7 +87,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       } else {
         setError('Could not fetch agent response. Check Sessions panel.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 'Failed to query agent:', err;
       setError(err.message || 'Failed to query agent');
       showToast('error', 'Query failed', err.message || 'Network error');

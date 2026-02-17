@@ -29,7 +29,7 @@ export default function WizardReview() {
   const [error, setError] = useState<string | null>(null);
   const [newTheme, setNewTheme] = useState('');
 
-  const bridge = () => (window as any).clawdbot?.writing;
+  const bridge = () => window.clawdbot?.writing;
 
   if (!plan) {
     return (
@@ -143,7 +143,7 @@ export default function WizardReview() {
 
       // Reset wizard state
       useWizardStore.getState().reset();
-    } catch (e: any) {
+    } catch (e: unknown) {
       // '[WizardReview] create failed:', e;
       setError(e.message || 'Unknown error');
       setStep('review');

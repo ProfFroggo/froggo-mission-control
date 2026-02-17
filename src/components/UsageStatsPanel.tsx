@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: UsageStatsPanel uses file-level suppression for intentional patterns.
+// loadStats is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import { useState, useEffect } from 'react';
 import {
   MessageSquare,
@@ -35,7 +39,7 @@ export default function UsageStatsPanel() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const dbExec = (window as any).clawdbot?.db?.exec;
+      const dbExec = window.clawdbot?.db?.exec;
       if (!dbExec) throw new Error('Database not available');
 
       const cutoffDate = Date.now() - timeRange * 24 * 60 * 60 * 1000;

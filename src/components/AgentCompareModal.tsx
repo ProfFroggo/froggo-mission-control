@@ -70,7 +70,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
         const agent = agents.find(a => a.id === agentId);
         if (!agent) continue;
 
-        const details = await (window as any).clawdbot.agents.getDetails(agentId);
+        const details = await window.clawdbot.agents.getDetails(agentId);
         results[agentId] = {
           name: agent.name,
           avatar: agent.avatar || '',

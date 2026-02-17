@@ -1009,8 +1009,8 @@ export function forceReconnect() {
 
 // Set up listener for broadcast events from Electron main process
 // This enables real-time task updates when database changes happen
-if (typeof window !== 'undefined' && (window as any).clawdbot?.gateway?.onBroadcast) {
-  (window as any).clawdbot.gateway.onBroadcast((broadcastData: { type: string; event: string; payload: any }) => {
+if (typeof window !== 'undefined' && window.clawdbot?.gateway?.onBroadcast) {
+  window.clawdbot.gateway.onBroadcast((broadcastData: { type: string; event: string; payload: any }) => {
     logger.debug('[Gateway] Received broadcast from main:', broadcastData.event);
     // Emit the event locally to all listeners
     if (broadcastData.event && broadcastData.payload) {

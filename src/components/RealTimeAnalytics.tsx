@@ -40,7 +40,7 @@ export default function RealTimeAnalytics() {
 
     const updateMetrics = async () => {
       try {
-        const dbExec = (window as any).clawdbot?.db?.exec;
+        const dbExec = window.clawdbot?.db?.exec;
         if (!dbExec) return;
 
         // Get real-time counts

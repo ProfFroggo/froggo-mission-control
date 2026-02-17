@@ -58,7 +58,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
   const execCmd = async (cmd: string): Promise<{ ok: boolean; stdout: string; error?: string }> => {
     try {
-      const execFn = (window as any).clawdbot?.exec?.run;
+      const execFn = window.clawdbot?.exec?.run;
       if (!execFn) {
         logger.error('clawdbot.exec.run not available!');
         return { ok: false, stdout: '', error: 'Shell exec not available' };
@@ -109,7 +109,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
   const fetchTasks = async (): Promise<any[]> => {
     try {
-      const result = await (window as any).clawdbot?.tasks?.list();
+      const result = await window.clawdbot?.tasks?.list();
       if (result?.success && Array.isArray(result.tasks)) {
         const filtered = result.tasks.filter((t: any) => !['done', 'failed', 'cancelled'].includes(t.status));
         return filtered;

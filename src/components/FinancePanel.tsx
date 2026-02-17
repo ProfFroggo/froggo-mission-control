@@ -70,19 +70,19 @@ export default function FinancePanel() {
       setLoading(true);
       
       // Load transactions
-      const txResult = await (window as any).clawdbot?.finance?.getTransactions();
+      const txResult = await window.clawdbot?.finance?.getTransactions();
       if (txResult?.success) {
         setTransactions(txResult.transactions || []);
       }
 
       // Load family budget
-      const familyResult = await (window as any).clawdbot?.finance?.getBudgetStatus('family');
+      const familyResult = await window.clawdbot?.finance?.getBudgetStatus('family');
       if (familyResult?.success) {
         setFamilyBudget(familyResult.budget);
       }
 
       // Load crypto budget
-      const cryptoResult = await (window as any).clawdbot?.finance?.getBudgetStatus('crypto');
+      const cryptoResult = await window.clawdbot?.finance?.getBudgetStatus('crypto');
       if (cryptoResult?.success) {
         setCryptoBudget(cryptoResult.budget);
       }
@@ -96,7 +96,7 @@ export default function FinancePanel() {
   const loadAlerts = async () => {
     try {
       // Load alerts
-      const alertsResult = await (window as any).clawdbot?.finance?.getAlerts();
+      const alertsResult = await window.clawdbot?.finance?.getAlerts();
       if (alertsResult?.success) {
         const newAlerts = alertsResult.alerts || [];
         setAlerts(newAlerts);
@@ -127,7 +127,7 @@ export default function FinancePanel() {
       const text = await file.text();
       
       // Upload via IPC
-      const result = await (window as any).clawdbot?.finance?.uploadCSV(text, file.name);
+      const result = await window.clawdbot?.finance?.uploadCSV(text, file.name);
       
       if (result?.success) {
         showToast('success', 'Import Complete', `Imported ${result.imported} transactions (${result.skipped} duplicates skipped)`);
@@ -136,7 +136,7 @@ export default function FinancePanel() {
       } else {
         showToast('error', 'Upload Failed', result?.error || 'Unknown error');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[Finance] Upload error:', error;
       showToast('error', 'Upload Failed', error.message);
     }

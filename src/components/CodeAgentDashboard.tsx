@@ -47,11 +47,11 @@ export default function CodeAgentDashboard() {
     setLoading(true);
     try {
       // Safety check - bail if clawdbot APIs not available
-      if (!(window as any).clawdbot) {
+      if (!window.clawdbot) {
         return;
       }
       // Load recent git commits
-      const gitResult = await (window as any).clawdbot?.exec?.run(
+      const gitResult = await window.clawdbot?.exec?.run(
         'git log --oneline -20 --pretty=format:"%h|%s|%an|%at" 2>/dev/null || echo ""'
       ).catch((err: any) => {
         logger.error('Failed to fetch git commits:', err);
@@ -74,7 +74,7 @@ export default function CodeAgentDashboard() {
       }
 
       // Load sessions list - show all agent sessions
-      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
+      const sessionsResult = await window.clawdbot?.sessions?.list().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
       if (sessionsResult?.sessions) {
         const devSessions: DevSession[] = sessionsResult.sessions
           .filter((s: any) => {
@@ -105,7 +105,7 @@ export default function CodeAgentDashboard() {
       }
 
       // Load kanban tasks that are dev-related
-      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
+      const tasksResult = await window.clawdbot?.tasks?.list().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
       if (tasksResult?.tasks) {
         const devTasks: DevTask[] = tasksResult.tasks
           .filter((t: any) => {

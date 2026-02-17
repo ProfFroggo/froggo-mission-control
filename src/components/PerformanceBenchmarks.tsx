@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: PerformanceBenchmarks uses file-level suppression for intentional patterns.
+// loadBenchmarks is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import { useState, useEffect } from 'react';
 import {
   TrendingUp,
@@ -52,7 +56,7 @@ export default function PerformanceBenchmarks() {
   const loadBenchmarks = async () => {
     setLoading(true);
     try {
-      const dbExec = (window as any).clawdbot?.db?.exec;
+      const dbExec = window.clawdbot?.db?.exec;
       if (!dbExec) throw new Error('Database not available');
 
       const periods: BenchmarkData[] = [];

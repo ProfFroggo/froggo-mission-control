@@ -23,7 +23,7 @@ export default function HealthStatusWidget() {
 
   const loadSystemStatus = async () => {
     try {
-      const result = await (window as any).clawdbot.system.status();
+      const result = await window.clawdbot.system.status();
       
       if (result.success && result.status) {
         setStatus(result.status);
@@ -33,7 +33,7 @@ export default function HealthStatusWidget() {
       }
       
       setLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 'Failed to load system status:', err;
       setError(err.message || 'Failed to load');
       setLoading(false);

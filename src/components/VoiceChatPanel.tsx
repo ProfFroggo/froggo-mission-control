@@ -32,7 +32,7 @@ async function loadApiKey(): Promise<string> {
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
   // 2. Try IPC to main process secret store
   try {
-    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
   } catch (err) {
     // '[VoiceChatPanel] Failed to load API key from settings:', err;
@@ -176,7 +176,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         await ctx.resume();
         setAudioState('running');
         addSystemMessage('🔊 Audio enabled');
-      } catch (e: any) {
+      } catch (e: unknown) {
         addSystemMessage(`⚠️ Audio resume failed: ${e.message}`);
       }
     }
@@ -358,7 +358,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         // Show picker instead of auto-sharing
         setShowScreenPicker(true);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[VoiceChat] Connect failed:', err;
       addSystemMessage(`⚠️ Connection failed: ${err.message}`);
       setConnecting(false);
@@ -403,7 +403,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         } else {
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         addSystemMessage(`⚠️ Video failed: ${e.message}`);
       }
     }
@@ -433,7 +433,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       setActiveSourceId(source.id);
       addSystemMessage(`🖥️ Sharing: ${source.name}`);
       geminiLive.sendText(`[SYSTEM: Screen sharing is now active. Sharing: ${source.name}. You can see the user's screen.]`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       addSystemMessage(`⚠️ Screen share failed: ${e.message}`);
     }
   };
@@ -451,7 +451,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     setMessages(prev => [...prev, { id: nextId('u'), role: 'user', content: text, timestamp: Date.now() }]);
     try {
       await geminiLive.sendText(text);
-    } catch (e: any) {
+    } catch (e: unknown) {
       addSystemMessage(`⚠️ Send failed: ${e.message}`);
     }
   };
@@ -925,7 +925,7 @@ function isCleanId(id: unknown): boolean {
 
 // ── Tool call executor ──
 async function executeToolCall(fnName: string, args: Record<string, any>, currentAgent: ChatAgent): Promise<any> {
-  const exec = (window as any).clawdbot?.exec?.run;
+  const exec = window.clawdbot?.exec?.run;
   if (!exec) return { error: 'Exec not available' };
 
   try {
@@ -1103,7 +1103,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
       default:
         return { error: `Unknown tool: ${fnName}` };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     return { error: err.message };
   }
 }

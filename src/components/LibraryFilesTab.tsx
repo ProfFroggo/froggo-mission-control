@@ -73,11 +73,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setLoading(true);
     try {
       // Fetch library files
-      const libraryResult = await (window as any).clawdbot?.library?.list(selectedCategory === 'all' ? undefined : selectedCategory);
+      const libraryResult = await window.clawdbot?.library?.list(selectedCategory === 'all' ? undefined : selectedCategory);
       const libraryFiles: LibraryFile[] = libraryResult?.success ? (libraryResult.files || []) : [];
       
       // Fetch task attachments
-      const attachmentsResult = await (window as any).clawdbot?.tasks?.attachments?.listAll();
+      const attachmentsResult = await window.clawdbot?.tasks?.attachments?.listAll();
       const taskAttachments = attachmentsResult?.success ? (attachmentsResult.attachments || []) : [];
       
       // Convert task attachments to LibraryFile format
@@ -116,7 +116,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   const handleUpload = async () => {
     try {
-      const result = await (window as any).clawdbot?.library?.upload();
+      const result = await window.clawdbot?.library?.upload();
       if (result?.success) {
         showToast('success', 'File uploaded', result.file?.name);
         loadFiles();
@@ -135,7 +135,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       type: 'danger',
     }, async () => {
       try {
-        const result = await (window as any).clawdbot?.library?.delete(file.id);
+        const result = await window.clawdbot?.library?.delete(file.id);
         if (result?.success) {
           showToast('success', 'File deleted');
           loadFiles();
@@ -151,7 +151,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     if (!taskId) return;
     
     try {
-      const result = await (window as any).clawdbot?.library?.link(file.id, taskId);
+      const result = await window.clawdbot?.library?.link(file.id, taskId);
       if (result?.success) {
         showToast('success', 'Linked to task');
         loadFiles();
@@ -167,7 +167,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setViewerLoading(true);
     
     try {
-      const result = await (window as any).clawdbot?.library?.view(file.id);
+      const result = await window.clawdbot?.library?.view(file.id);
       if (result?.success) {
         setViewerContent(result);
       } else {
@@ -184,7 +184,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   const handleDownloadFile = async (file: LibraryFile) => {
     try {
-      const result = await (window as any).clawdbot?.library?.download(file.id);
+      const result = await window.clawdbot?.library?.download(file.id);
       if (result?.success) {
         showToast('success', 'File saved', result.path);
       } else if (result?.error !== 'Cancelled') {
@@ -197,7 +197,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
   const openInDefaultApp = () => {
     if (viewerContent?.path) {
-      (window as any).clawdbot?.shell?.openPath(viewerContent.path);
+      window.clawdbot?.shell?.openPath(viewerContent.path);
     }
   };
 
@@ -239,7 +239,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         // Convert file to upload format
         const reader = new FileReader();
         reader.onload = async () => {
-          const result = await (window as any).clawdbot?.library?.uploadBuffer({
+          const result = await window.clawdbot?.library?.uploadBuffer({
             name: file.name,
             type: file.type,
             buffer: reader.result,
@@ -262,6 +262,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          // Keyboard drop - could implement if needed
+        }
+      }}
+      aria-label="Library files drop zone"
     >
       {/* Drag overlay */}
       {isDragOver && (

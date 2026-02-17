@@ -140,7 +140,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         appPassword: authMethod === 'app-password' ? appPassword : undefined,
       };
 
-      const result = await (window as any).clawdbot?.accounts?.add(request);
+      const result = await window.clawdbot?.accounts?.add(request);
 
       if (result?.success) {
         setStep('success');
@@ -151,7 +151,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         setError(result?.error || 'Failed to connect account');
         setStep('auth');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to connect account');
       setStep('auth');
     }

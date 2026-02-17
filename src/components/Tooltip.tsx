@@ -101,6 +101,7 @@ export default function Tooltip({
   };
 
   /* eslint-disable react-hooks/exhaustive-deps */
+  // updatePosition uses stable refs, re-running on position changes is unnecessary overhead
   useEffect(() => {
     if (isVisible) {
       updatePosition();
@@ -172,6 +173,7 @@ export default function Tooltip({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ display: 'inline-block' }}
+        role="presentation"
       >
         {children}
       </div>

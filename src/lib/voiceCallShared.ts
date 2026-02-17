@@ -91,7 +91,7 @@ function agentBasePath(agentId: string): string {
  * Returns a formatted string for system instruction context.
  */
 export async function loadRecentChatHistory(agentId: string, limit = 20): Promise<string> {
-  const exec = (window as any).clawdbot?.exec?.run;
+  const exec = window.clawdbot?.exec?.run;
   if (!exec) return '';
 
   const sections: string[] = [];
@@ -427,7 +427,7 @@ export function buildAgentTools(): GeminiTool[] {
 // ── Tool call executor ──
 
 export async function executeToolCall(fnName: string, args: ToolCallArgs, currentAgent: AgentLike): Promise<ToolResult> {
-  const exec = (window as any).clawdbot?.exec?.run;
+  const exec = window.clawdbot?.exec?.run;
   if (!exec) return { error: 'Exec not available' };
 
   try {

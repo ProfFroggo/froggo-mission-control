@@ -10,7 +10,7 @@ import {
 import { useWizardStore, type ChatMessage as ChatMessageType } from '../../store/wizardStore';
 import ChatMessage from './ChatMessage';
 
-const bridge = () => (window as any).clawdbot?.writing?.wizard;
+const bridge = () => window.clawdbot?.writing?.wizard;
 
 export default function WizardChat() {
   const {
@@ -117,7 +117,7 @@ export default function WizardChat() {
             setStreamContent('');
           },
         });
-      } catch (e: any) {
+      } catch (e: unknown) {
         setError(e.message || 'Failed to send');
         setStreaming(false);
         setStreamContent('');
@@ -177,7 +177,7 @@ export default function WizardChat() {
           },
         },
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       setExtractionError(e.message || 'Extraction request failed');
       setStep('conversation');
       extractingRef.current = false;

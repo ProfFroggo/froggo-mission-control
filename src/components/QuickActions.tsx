@@ -523,7 +523,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     // Log transcripts to gateway session
     const logToGateway = (role: string, text: string) => {
       try {
-        const gateway = (window as any).clawdbot?.gateway;
+        const gateway = window.clawdbot?.gateway;
         if (gateway?.request) {
           gateway.request('chat.inject', {
             sessionKey: gateway.getSessionKey?.() || 'web:dashboard',
@@ -565,7 +565,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             try {
               result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
               logger.debug(`[QuickActions] Tool ${fc.name} result:`, result);
-            } catch (err: any) {
+            } catch (err: unknown) {
               // `[QuickActions] Tool ${fc.name} error:`, err;
               result = { error: (err as Error).message || 'Tool execution failed' };
               addTx('system', `⚠️ ${fc.name} failed: ${(err as Error).message}`);
@@ -575,7 +575,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           logger.debug('[QuickActions] Sending tool responses:', responses.length);
           await geminiLive.sendToolResponse(responses);
           logger.debug('[QuickActions] Tool responses sent');
-        } catch (err: any) {
+        } catch (err: unknown) {
           // '[QuickActions] Tool handler error:', err;
           addTx('system', `⚠️ Tool error: ${(err as Error).message}`);
         }
@@ -606,7 +606,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     if (envKey) return envKey;
     // 3. Try IPC to main process secret store
     try {
-      const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+      const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
       if (key) return key;
     } catch { /* ignore */ }
     return '';
@@ -678,7 +678,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         await geminiLive.sendText('Hey, you just picked up the phone. Greet me!');
         await geminiLive.startMic();
         if (!isMeetingActive) toggleMeeting();
-      } catch (err: any) {
+      } catch (err: unknown) {
         stopRinging();
         setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ ${(err as Error).message}` }]);
         setActiveCall(null);
@@ -764,7 +764,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setChatLoading(true);
     // Spawn session via IPC (ensures agent session exists)
     try {
-      const ipc = (window as any).clawdbot?.agents;
+      const ipc = window.clawdbot?.agents;
       if (ipc?.spawnChat) {
         await ipc.spawnChat(agent.id);
       }
@@ -781,7 +781,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
     setChatLoading(true);
     try {
-      const ipc = (window as any).clawdbot?.agents;
+      const ipc = window.clawdbot?.agents;
       if (ipc?.chat) {
         const sessionKey = `agent:${chatAgent.id}:main`;
         const result = await ipc.chat(sessionKey, msg);
@@ -1239,7 +1239,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </span>
             )}
             <button
-              onClick={isFloating ? () => (window as any).clawdbot?.toolbar?.popIn?.() : handlePopOut}
+              onClick={isFloating ? () => window.clawdbot?.toolbar?.popIn?.() : handlePopOut}
               className="p-2 rounded-full hover:bg-clawd-border transition-colors"
               title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
               style={isFloating ? noDrag : {}}
@@ -1308,7 +1308,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
             <div className="w-px h-6 bg-clawd-border mx-0.5" style={isFloating ? noDrag : {}} />
             <button
-              onClick={isFloating ? () => (window as any).clawdbot?.toolbar?.popIn?.() : handlePopOut}
+              onClick={isFloating ? () => window.clawdbot?.toolbar?.popIn?.() : handlePopOut}
               className="p-2 rounded-full hover:bg-clawd-border transition-colors"
               title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
               style={isFloating ? noDrag : {}}
@@ -1335,8 +1335,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         <div
           ref={toolbarRef}
           className="absolute bottom-4 left-1/2 -translate-x-1/2 relative pointer-events-auto"
-          onMouseEnter={() => (window as any).clawdbot?.toolbar?.setIgnoreMouseEvents?.(false)}
-          onMouseLeave={() => (window as any).clawdbot?.toolbar?.setIgnoreMouseEvents?.(true)}
+          role="presentation"
+          onMouseEnter={() => window.clawdbot?.toolbar?.setIgnoreMouseEvents?.(false)}
+          onMouseLeave={() => window.clawdbot?.toolbar?.setIgnoreMouseEvents?.(true)}
         >
           {pillContent}
         </div>

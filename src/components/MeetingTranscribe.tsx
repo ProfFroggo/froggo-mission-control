@@ -21,7 +21,7 @@ async function getApiKey(): Promise<string> {
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
   // 2. Try IPC to main process secret store
   try {
-    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
   } catch { /* ignore */ }
   // 3. Try localStorage
@@ -73,7 +73,7 @@ export default function MeetingTranscribe() {
         }]);
       });
       setTranscriber(t);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setInitError(err.message);
     }
     })();
@@ -266,7 +266,7 @@ export default function MeetingTranscribe() {
         await loadMeetings();
         await loadTranscripts(active.id);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setUploadError(err.message || 'Transcription failed');
     } finally {
       setIsUploading(false);

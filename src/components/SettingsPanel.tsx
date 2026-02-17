@@ -189,7 +189,7 @@ export default function SettingsPanel() {
     
     // Save automation settings to config file (for task-helpers.sh)
     try {
-      await (window as any).clawdbot?.settings?.save({
+      await window.clawdbot?.settings?.save({
         externalActionsEnabled: settings.externalActionsEnabled,
         rateLimitTweets: settings.rateLimitTweets,
         rateLimitEmails: settings.rateLimitEmails,
