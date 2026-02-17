@@ -384,9 +384,9 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               Quick Prompts
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {quickPrompts.map((item, i) => (
+              {quickPrompts.map((item) => (
                 <button
-                  key={i}
+                  key={item.text}
                   onClick={() => {
                     setInput(item.prompt);
                   }}
@@ -411,7 +411,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
             
             return (
               <div
-                key={i}
+                key={`${msg.role}-${msg.timestamp}-${i}`}
                 className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} ${
                   showAvatar ? 'mt-6' : 'mt-1.5'
                 }`}

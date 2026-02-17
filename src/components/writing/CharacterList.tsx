@@ -78,8 +78,8 @@ export default function CharacterList() {
               )}
               {char.traits.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {char.traits.map((t, i) => (
-                    <span key={i} className="text-[9px] px-1 py-0.5 rounded bg-clawd-border/50 text-clawd-text-dim">
+                  {char.traits.map((t) => (
+                    <span key={t} className="text-[9px] px-1 py-0.5 rounded bg-clawd-border/50 text-clawd-text-dim">
                       {t}
                     </span>
                   ))}

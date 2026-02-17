@@ -11,6 +11,9 @@ import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { geminiLive } from '../lib/geminiLiveService';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('TeamVoice');
 
 // Browser speech synthesis helpers (replaced googleTTS)
 function speakBrowser(text: string): Promise<void> {
@@ -563,7 +566,7 @@ Respond as ${agentName(agentId)}:`;
         const h = Math.max(0.12, level * (0.5 + Math.sin((Date.now() / 100) + i * 0.8) * 0.5));
         return (
           <div
-            key={i}
+            key={`bar-${i}`}
             className="rounded-full transition-all duration-75"
             style={{
               width: 3,

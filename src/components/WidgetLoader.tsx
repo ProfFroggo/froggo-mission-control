@@ -9,6 +9,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { loadAgentWidgets, canLoadWidgets, type WidgetDefinition } from '../lib/widgetRegistry';
 import ErrorBoundary from './ErrorBoundary';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('WidgetLoader');
 
 interface WidgetLoaderProps {
   agentId: string;
@@ -68,7 +71,7 @@ export default function WidgetLoader({ agentId, trustTier }: WidgetLoaderProps) 
         setLoading(false);
       })
       .catch((err) => {
-        console.error('[WidgetLoader] Failed to load widgets:', err);
+        logger.error('Failed to load widgets:', err);
         setError(err.message || 'Unknown error');
         setLoading(false);
       });

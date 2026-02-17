@@ -221,13 +221,13 @@ export const XContentMixTracker: React.FC = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'btn-primary' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
+            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'bg-info text-white' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
           >
             Last Week
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'btn-primary' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
+            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'bg-info text-white' : 'border border-clawd-border text-clawd-text hover:bg-clawd-surface'}`}
           >
             Last Month
           </button>

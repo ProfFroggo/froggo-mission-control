@@ -245,7 +245,7 @@ export default function SessionsFilter() {
     try {
       const result = await window.clawdbot?.pins.reorder(newOrder);
       if (!result?.success) {
-        console.error('[SessionsFilter] Failed to reorder pins:', result?.error);
+        logger.error('Failed to reorder pins:', result?.error);
         // Reload to restore correct order
         await loadPinnedSessions();
       }
@@ -403,7 +403,7 @@ export default function SessionsFilter() {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to delete ${sessionKey}:`, result?.error);
+            logger.error(`Failed to delete ${sessionKey}:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -444,7 +444,7 @@ export default function SessionsFilter() {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to archive ${sessionKey}:`, result?.error);
+            logger.error(`Failed to archive ${sessionKey}:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -484,7 +484,7 @@ export default function SessionsFilter() {
             successCount++;
           } else {
             errorCount++;
-            console.error(`[SessionsFilter] Failed to mark ${sessionKey} as read:`, result?.error);
+            logger.error(`Failed to mark ${sessionKey} as read:`, result?.error);
           }
         } catch (error) {
           errorCount++;
@@ -522,7 +522,7 @@ export default function SessionsFilter() {
         // Refresh folders and assignments
         await loadFolders();
       } else {
-        console.error('[SessionsFilter] Failed to assign folder:', result?.error);
+        logger.error('Failed to assign folder:', result?.error);
         showToast('error', 'Assignment Failed', 'Failed to assign to folder');
       }
     } catch (error) {

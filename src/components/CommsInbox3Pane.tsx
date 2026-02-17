@@ -837,8 +837,8 @@ function InboxDashboard({
               Suggested Tasks
             </h3>
             <div className="space-y-1.5">
-              {allTasks.slice(0, 5).map((item, i) => (
-                <div key={i} className="flex items-center gap-2 bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2">
+              {allTasks.slice(0, 5).map((item) => (
+                <div key={`${item.task.title}-${item.from}`} className="flex items-center gap-2 bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2">
                   <span className={`flex-shrink-0 ${platformColor(item.platform)}`}>{platformIcon(item.platform, 11)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{item.task.title}</p>
@@ -1172,9 +1172,9 @@ function RightPane({
           {/* Detected Tasks */}
           {aiAnalysis.tasks.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-1.5">
-              {aiAnalysis.tasks.map((task, i) => (
+              {aiAnalysis.tasks.map((task) => (
                 <button
-                  key={i}
+                  key={task.title}
                   onClick={() => onCreateTask?.(task)}
                   className="flex items-center gap-1 text-[10px] px-2 py-1 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/20 rounded-md hover:bg-clawd-accent/20 transition-colors"
                   title={task.description}
@@ -1189,9 +1189,9 @@ function RightPane({
           {/* Detected Events */}
           {aiAnalysis.events.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {aiAnalysis.events.map((event, i) => (
+              {aiAnalysis.events.map((event) => (
                 <button
-                  key={i}
+                  key={event.title || `${event.date}-${event.time}`}
                   onClick={() => onCreateEvent?.(event)}
                   className="flex items-center gap-1 text-[10px] px-2 py-1 bg-review-subtle text-review border border-review-border rounded-md hover:bg-review-subtle transition-colors"
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
@@ -1290,9 +1290,9 @@ function RightPane({
               </div>
             ) : (
               <div className="space-y-2">
-                {suggestedReplies.map((reply, i) => (
+                {suggestedReplies.map((reply) => (
                   <button
-                    key={i}
+                    key={reply.slice(0, 50)}
                     onClick={() => applySuggestion(reply)}
                     className="w-full text-left p-3 bg-clawd-bg border border-clawd-border rounded-lg hover:border-clawd-accent hover:bg-clawd-accent/5 transition-colors text-sm"
                   >

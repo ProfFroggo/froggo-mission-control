@@ -190,7 +190,7 @@ export const XCalendarView: React.FC = () => {
       <div className="h-full flex flex-col">
         {/* Day header */}
         <div className="flex items-center justify-between mb-4">
-          <div className="text-lg font-semibold text-white">
+          <div className="text-lg font-semibold text-clawd-text">
             {day.toLocaleDateString('en-US', { 
               weekday: 'long', 
               year: 'numeric', 
@@ -489,19 +489,19 @@ export const XCalendarView: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigateWeek('prev')}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              className="px-3 py-1 border border-clawd-border rounded hover:bg-clawd-surface text-clawd-text"
             >
               ←
             </button>
             <button
               onClick={() => navigateWeek('next')}
-              className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+              className="px-3 py-1 border border-clawd-border rounded hover:bg-clawd-surface text-clawd-text"
             >
               →
             </button>
             <button
               onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-1 border border-clawd-border rounded hover:bg-clawd-surface"
+              className="px-3 py-1 border border-clawd-border rounded hover:bg-clawd-surface text-clawd-text"
             >
               Today
             </button>

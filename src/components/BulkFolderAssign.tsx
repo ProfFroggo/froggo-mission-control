@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, FolderPlus, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { showToast } from './Toast';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('BulkFolderAssign');
 
 interface BulkFolderAssignProps {
   sessionKeys: string[];
@@ -60,7 +63,7 @@ export default function BulkFolderAssign({ sessionKeys, onClose }: BulkFolderAss
           );
           
           if (!result.success) {
-            console.error(`[BulkFolderAssign] Failed to assign ${sessionKey} to folder ${folderId}:`, result.error);
+            logger.error(`Failed to assign ${sessionKey} to folder ${folderId}:`, result.error);
           }
         }
       }

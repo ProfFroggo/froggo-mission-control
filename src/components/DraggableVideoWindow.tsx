@@ -11,6 +11,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Maximize2, Monitor, Video, Move } from 'lucide-react';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('VideoWindow');
 
 interface DraggableVideoWindowProps {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -42,7 +45,7 @@ export default function DraggableVideoWindow({
   useEffect(() => {
     if (videoRef.current && videoStream) {
       videoRef.current.srcObject = videoStream;
-      videoRef.current.play().catch(e => console.error('Video play failed:', e));
+      videoRef.current.play().catch(e => logger.error('Video play failed:', e));
     }
   }, [videoStream, videoRef]);
 

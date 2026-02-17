@@ -430,8 +430,8 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       {/* Parsed alternatives (after streaming completes) */}
       {!streaming && alternatives.length > 0 && (
         <div className="mt-2 space-y-2">
-          {alternatives.map((alt, i) => (
-            <FeedbackAlternative key={i} index={i} text={alt.text} commentary={alt.commentary} onAccept={handleAccept} />
+          {alternatives.map((alt) => (
+            <FeedbackAlternative key={alt.text} index={alternatives.indexOf(alt)} text={alt.text} commentary={alt.commentary} onAccept={handleAccept} />
           ))}
           <button
             onClick={handleDismiss}
