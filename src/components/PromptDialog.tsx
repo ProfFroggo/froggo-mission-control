@@ -72,6 +72,7 @@ export default function PromptDialog({
 }: PromptDialogProps) {
   const [value, setValue] = useState(defaultValue);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
 
   useEffect(() => {
@@ -88,12 +89,14 @@ export default function PromptDialog({
     if (!value.trim()) return;
     
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await onSubmit(value);
       setValue('');
       onClose();
     } catch (error) {
       console.error('Prompt submit failed:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Something went wrong');
     } finally {
       setIsSubmitting(false);
     }
@@ -162,6 +165,11 @@ export default function PromptDialog({
             className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-primary focus:border-transparent"
             disabled={isSubmitting}
           />
+        )}
+
+        {/* Error */}
+        {submitError && (
+          <p className="text-sm text-error mt-2">{submitError}</p>
         )}
 
         {/* Actions */}
