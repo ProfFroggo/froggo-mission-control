@@ -111,24 +111,24 @@ export default function NotificationSettingsModal({
     try {
       const updatedSettings = {
         notification_level: notificationLevel,
-        sound_enabled: soundEnabled,
+        sound_enabled: soundEnabled ? 1 : 0,
         sound_type: soundType,
-        desktop_notifications: desktopNotifications,
-        quiet_hours_enabled: quietHoursEnabled,
+        desktop_notifications: desktopNotifications ? 1 : 0,
+        quiet_hours_enabled: quietHoursEnabled ? 1 : 0,
         quiet_start: quietStart,
         quiet_end: quietEnd,
         keyword_alerts: keywordAlerts,
         priority_level: priorityLevel,
         notification_frequency: notificationFrequency,
-        show_message_preview: showMessagePreview,
-        badge_count_enabled: badgeCountEnabled,
+        show_message_preview: showMessagePreview ? 1 : 0,
+        badge_count_enabled: badgeCountEnabled ? 1 : 0,
         mute_until: muteUntil,
         notes: notes,
       };
 
       const result = await window.clawdbot?.notificationSettings.set(
         sessionKey,
-        updatedSettings as NotificationPrefs
+        updatedSettings as unknown as NotificationPrefs
       );
 
       if (result?.success) {

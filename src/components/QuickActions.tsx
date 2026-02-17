@@ -430,7 +430,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
-  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact, onAddSkill, onNavigate, currentView = 'dashboard',
+  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact, onAddSkill, onNavigate: _onNavigate, currentView = 'dashboard',
 }, ref) => {
   const { isMuted: _isMuted, toggleMuted: _toggleMuted, isMeetingActive, toggleMeeting } = useStore();
 

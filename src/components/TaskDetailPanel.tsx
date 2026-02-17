@@ -888,7 +888,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 (window as any).__planningNotesTimer = setTimeout(() => {
                   (window as any).clawdbot?.tasks?.update(task.id, { 
                     planningNotes: e.target.value 
-                  }).catch((_err) => { /* silent - planning notes save failed */ });
+                  }).catch((_err: unknown) => { /* silent - planning notes save failed */ });
                 }, 1000);
               }}
               placeholder="Planning notes, brainstorming, research..."

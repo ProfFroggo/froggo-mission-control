@@ -130,10 +130,20 @@ async function loadVips(): Promise<VipInfo[]> {
   try {
     // Check if running in Electron with clawdbot API
     if (window.clawdbot?.vip?.list) {
-      const vips = await window.clawdbot.vip.list();
-      vipCache = vips;
+      const vips: VIPContact[] = await window.clawdbot.vip.list();
+      // Convert to VipInfo format
+      const vipInfoList: VipInfo[] = vips.map(v => ({
+        id: typeof v.id === 'string' ? parseInt(v.id) || 0 : v.id,
+        identifier: v.identifier,
+        identifier_type: v.type,
+        label: v.label || '',
+        priority_boost: v.boost || 0,
+        category: v.category,
+        notes: v.notes,
+      }));
+      vipCache = vipInfoList;
       vipCacheTime = now;
-      return vips;
+      return vipInfoList;
     }
   } catch (error) {
     console.debug('[VIP] Failed to load VIPs:', error);

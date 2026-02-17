@@ -41,7 +41,7 @@ export function useNotifications() {
   const loadPreferences = useCallback(async () => {
     try {
       const prefs = await window.clawdbot?.notifications.getPrefs();
-      setPreferences(prefs);
+      setPreferences((prefs as unknown as NotificationPreferences) || null);
     } catch (error) {
       console.error('[useNotifications] Failed to load preferences:', error);
     }
@@ -67,7 +67,7 @@ export function useNotifications() {
     data?: any;
   }) => {
     try {
-      await window.clawdbot?.notifications.send(options);
+      await window.clawdbot?.notifications.send(options as unknown as Notification);
     } catch (error) {
       console.error('[useNotifications] Failed to send notification:', error);
       throw error;
@@ -85,12 +85,12 @@ export function useNotifications() {
 
   // Handle incoming notifications
   useEffect(() => {
-    const unsubscribe = window.clawdbot?.notifications.onReceived((notification: SystemNotification) => {
+    const unsubscribe = window.clawdbot?.notifications.onReceived((notification: unknown) => {
       console.debug('[useNotifications] Received:', notification);
       
       // Add to recent notifications
       setRecentNotifications(prev => {
-        const updated = [notification, ...prev];
+        const updated = [notification as SystemNotification, ...prev];
         // Keep last 50 notifications
         return updated.slice(0, 50);
       });
@@ -103,9 +103,9 @@ export function useNotifications() {
 
   // Handle notification actions (from action buttons)
   useEffect(() => {
-    const unsubscribe = window.clawdbot?.notifications.onAction((action: NotificationAction) => {
+    const unsubscribe = window.clawdbot?.notifications.onAction((action: unknown) => {
       console.debug('[useNotifications] Action triggered:', action);
-      handleNotificationAction(action);
+      handleNotificationAction(action as NotificationAction);
     });
 
     return unsubscribe;

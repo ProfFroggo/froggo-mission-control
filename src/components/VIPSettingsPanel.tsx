@@ -60,7 +60,7 @@ export default function VIPSettingsPanel() {
     setLoading(true);
     try {
       const data = await window.clawdbot?.vip.list(categoryFilter || undefined);
-      setVips(data || []);
+      setVips((data || []) as unknown as VipSender[]);
     } catch (error) {
       console.error('[VIP] Load error:', error);
       showToast('error', 'Failed to load VIPs');
