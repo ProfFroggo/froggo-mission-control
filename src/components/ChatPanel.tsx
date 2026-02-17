@@ -487,7 +487,7 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [loading, selectedAgent?.dbSessionKey, speakResponses]);
+  }, [loading, selectedAgent, selectedAgent?.dbSessionKey, speakResponses, speak]);
 
   // Setup voice recognition
   useEffect(() => {
