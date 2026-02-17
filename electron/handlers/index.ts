@@ -17,4 +17,4 @@ export { registerXTwitterHandlers } from './x-twitter-handlers';
 // export { registerSettingsHandlers } from './settings-handlers';
 // export { registerVoiceHandlers } from './voice-handlers';
 // export { registerMediaHandlers } from './media-handlers';
-// export { registerToolbarHandlers } from './toolbar-handlers';
+export { registerToolbarHandlers } from './toolbar-handlers';
