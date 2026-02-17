@@ -31,8 +31,6 @@ const HOVER_BG_MAP: Record<string, string> = {
   'bg-rose-500/8': 'hover:bg-rose-500/8',
   'bg-cyan-500/8': 'hover:bg-cyan-500/8',
   'bg-indigo-500/8': 'hover:bg-indigo-500/8',
-  'bg-info-subtle': 'hover:bg-info-subtle',
-  'bg-warning-subtle': 'hover:bg-warning-subtle',
   'bg-clawd-surface': 'hover:bg-clawd-surface',
 };
 

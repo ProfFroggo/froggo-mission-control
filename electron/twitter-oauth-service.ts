@@ -5,15 +5,12 @@
  * Enables tweet posting, liking, retweeting via x-api CLI
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as crypto from 'crypto';
 import * as https from 'https';
 import * as querystring from 'querystring';
 import * as fs from 'fs';
 import { createLogger } from '../src/utils/logger';
 
-const execAsync = promisify(exec);
+// const execAsync = promisify(exec);
 const logger = createLogger('TwitterOAuth');
 
 // Twitter API endpoints
