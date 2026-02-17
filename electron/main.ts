@@ -1,18 +1,10 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer, shell, dialog, screen } from 'electron';
+import { app, BrowserWindow, shell, dialog, screen } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs';
-import { exec, execSync, execFile } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
-import * as os from 'os';
 // crypto imported but unused - removed during bug-hunt cleanup
-import * as http from 'http';
-import { calendarService } from './calendar-service';
-import { accountsService } from './accounts-service';
-import { accountsServiceV2 } from './accounts-service-v2';
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
-import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
-import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { registerWritingProjectHandlers } from './writing-project-service';
 import { registerWritingFeedbackHandlers } from './writing-feedback-service';
@@ -22,12 +14,7 @@ import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
-import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
-import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
-import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
-import { validateFsPath } from './fs-validation';
-import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
 import {
   PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
   REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
@@ -777,7 +764,6 @@ app.whenReady().then(() => {
   });
 
   // Initialize Finance Agent Bridge
-  initializeFinanceAgentBridge().catch(err => {
     safeLog.error('[Main] Failed to initialize Finance Agent Bridge:', err);
   });
 
