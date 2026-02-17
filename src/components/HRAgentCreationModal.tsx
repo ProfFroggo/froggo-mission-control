@@ -66,7 +66,8 @@ function buildSteps(agentId: string): CreationStep[] {
     { id: 'db',           label: 'Register in agent database', detail: 'froggo.db agent_registry',              status: 'pending' },
     { id: 'identity',     label: 'Generate identity files',    detail: 'SOUL.md · IDENTITY.md · MEMORY.md · HEARTBEAT.md · STATE.md', status: 'pending' },
     { id: 'symlinks',     label: 'Link shared context',        detail: 'AGENTS.md · TOOLS.md · USER.md',        status: 'pending' },
-    { id: 'headshot',     label: 'Generate headshot',          detail: 'Pixar-style avatar via Designer',        status: 'pending' },
+    { id: 'headshot',     label: 'Generate headshot',          detail: 'Pixar-style avatar → public/agent-profiles/', status: 'pending' },
+    { id: 'db_image',     label: 'Link image in database',     detail: 'Update agent_registry image_path',      status: 'pending' },
     { id: 'openclaw',     label: 'Register in OpenClaw',       detail: 'Add to openclaw.json agents list',      status: 'pending' },
     { id: 'gateway',      label: 'Restart gateway',            detail: 'Apply configuration',                   status: 'pending' },
     { id: 'hr_handoff',   label: 'Hand off to HR',             detail: 'HR finishes onboarding autonomously',   status: 'pending' },
@@ -239,7 +240,9 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     const heartbeat = `# ${cfg.name} Heartbeat\n\n**Agent:** ${cfg.id}\n**Status:** Starting up\n**Last seen:** —\n`;
     const state = `# ${cfg.name} State\n\n**Current task:** None\n**Mood:** Ready\n`;
 
-    const headshotPrompt = `Generate a Pixar-style avatar headshot for a new team member named ${cfg.name}. Role: ${cfg.role}. Personality: ${cfg.personality}. Cute, round-faced, expressive, vibrant colours. Save the image to ${agentDir}/headshot.png and the visual concept notes to ${agentDir}/headshot-concept.md`;
+    const profilesDir = `${home}/froggo-dashboard/public/agent-profiles`;
+    const headshotDest = `${profilesDir}/${cfg.id}.png`;
+    const headshotPrompt = `Generate a Pixar-style avatar headshot for a new team member named ${cfg.name}. Role: ${cfg.role}. Personality: ${cfg.personality}. Cute, round-faced, expressive, vibrant colours. Save the final image to ${headshotDest} and also copy it to ${agentDir}/headshot.png. Save visual concept notes to ${agentDir}/headshot-concept.md`;
 
     const hrHandoffMsg = `New agent infrastructure is fully set up and live. Please complete onboarding for ${cfg.name} (ID: ${cfg.id}, Role: ${cfg.role}):\n1. Polish SOUL.md with full personality depth, working style, communication norms, and team context\n2. Create an onboarding kanban task with a detailed subtask checklist (verify tools access, test messaging, confirm capabilities, intro to team)\n3. Set up any agent-specific skills or config needed for their role\n4. Send Kevin a brief welcome message introducing ${cfg.name} to the team\nWorkspace: ${agentDir}`;
 
@@ -251,7 +254,8 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       { id: 'db',           cmd: `/opt/homebrew/bin/froggo-db agent-onboard --name "${cfg.id}" --role "${cfg.role}" --emoji "${cfg.emoji}" --capabilities "${cfg.capabilities.join(',')}"` },
       { id: 'identity',     cmd: `printf '%s' ${JSON.stringify(soul)} > "${agentDir}/SOUL.md" && printf '%s' ${JSON.stringify(identity)} > "${agentDir}/IDENTITY.md" && printf '%s' ${JSON.stringify(memory)} > "${agentDir}/MEMORY.md" && printf '%s' ${JSON.stringify(heartbeat)} > "${agentDir}/HEARTBEAT.md" && printf '%s' ${JSON.stringify(state)} > "${agentDir}/STATE.md"` },
       { id: 'symlinks',     cmd: `ln -sf "${froggoShared}/AGENTS.md" "${agentDir}/AGENTS.md" && ln -sf "${froggoShared}/TOOLS.md" "${agentDir}/TOOLS.md" && ln -sf "${froggoShared}/USER.md" "${agentDir}/USER.md"` },
-      { id: 'headshot',     cmd: `openclaw agent --agent hr --message ${JSON.stringify(headshotPrompt)} --json` },
+      { id: 'headshot',     cmd: `mkdir -p "${profilesDir}" && openclaw agent --agent hr --message ${JSON.stringify(headshotPrompt)} --json` },
+      { id: 'db_image',     cmd: `sqlite3 "${home}/froggo/data/froggo.db" "UPDATE agent_registry SET image_path='${cfg.id}.png' WHERE id='${cfg.id}'"` },
       { id: 'openclaw',     cmd: `python3 -c "import json\npath='${home}/.openclaw/openclaw.json'\nwith open(path) as f: cfg=json.load(f)\nif not any(a['id']=='${cfg.id}' for a in cfg['agents']['list']):\n    cfg['agents']['list'].append({'id':'${cfg.id}','workspace':'${agentDir}'})\n    with open(path,'w') as f: json.dump(cfg,f,indent=2)\nprint('ok')\n"` },
       { id: 'gateway',      cmd: `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway && sleep 2` },
       { id: 'hr_handoff',   cmd: `openclaw agent --agent hr --message ${JSON.stringify(hrHandoffMsg)} --json` },
