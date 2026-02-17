@@ -616,7 +616,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             )}
             
             <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${
-              msg.role === 'user' ? 'bg-clawd-accent text-white'
+              msg.role === 'user' ? 'bg-clawd-accent/50 text-white'
                 : msg.role === 'system' ? 'bg-clawd-border/50 text-clawd-text-dim text-xs italic px-3 py-1.5'
                 : 'bg-clawd-card text-clawd-text border border-clawd-border'
             }`}>
