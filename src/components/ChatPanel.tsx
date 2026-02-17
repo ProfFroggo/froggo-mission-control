@@ -112,7 +112,7 @@ export default function ChatPanel() {
       }
     };
     loadStarredIds();
-  }, [messages.length, selectedAgent?.id]);
+  }, [selectedAgent]);
 
   // Toggle star on a message
   const handleToggleStar = async (msg: ChatMessage, e: React.MouseEvent) => {
@@ -172,7 +172,7 @@ export default function ChatPanel() {
       }
     };
     loadFromDb();
-  }, []); // Only on mount - agent switching handled by handleAgentSwitch
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- Only on mount - agent switching handled by handleAgentSwitch
 
   // Save message to database helper
   const saveMessageToDb = async (role: string, content: string) => {
@@ -277,7 +277,7 @@ export default function ChatPanel() {
     if (connected && !historyLoaded) {
       loadHistory();
     }
-  }, [connected, historyLoaded]);
+  }, [connected, historyLoaded, loadHistory]);
 
   const loadHistory = async () => {
     // If we already have messages (from DB), don't overwrite with gateway history
@@ -487,7 +487,7 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [loading, selectedAgent?.dbSessionKey, speakResponses]);
+  }, [loading, selectedAgent?.dbSessionKey, speakResponses, selectedAgent, speak]);
 
   // Setup voice recognition
   useEffect(() => {
@@ -550,7 +550,7 @@ export default function ChatPanel() {
     }
   };
 
-  const generateSuggestions = async () => {
+  const generateSuggestions = useCallback(async () => {
     if (messages.length === 0 || loadingSuggestions) return;
     
     setLoadingSuggestions(true);
@@ -581,7 +581,7 @@ export default function ChatPanel() {
     } finally {
       setLoadingSuggestions(false);
     }
-  };
+  }, [messages, loadingSuggestions]);
 
   const applySuggestion = (suggestion: string) => {
     setInput(suggestion);
