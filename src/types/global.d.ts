@@ -51,14 +51,15 @@ declare global {
     id: string;
     title: string;
     description?: string;
-    status: 'todo' | 'in-progress' | 'review' | 'done';
+    status: 'todo' | 'in-progress' | 'review' | 'done' | 'internal-review';
     project?: string;
     assignedTo?: string;
-    priority?: 'p0' | 'p1' | 'p2' | 'p3';
+    priority?: 'p0' | 'p1' | 'p2' | 'p3' | string;
     createdAt?: number;
     updatedAt?: number;
     completedAt?: number;
     dueDate?: string;
+    subtasks?: SubtaskData[];
   }
 
   // ============================================
@@ -93,10 +94,12 @@ declare global {
   // ============================================
 
   interface ChatMessage {
+    id?: string;
     role: string;
     content: string;
     timestamp: number;
     sessionKey?: string;
+    streaming?: boolean;
   }
 
   // ============================================
@@ -302,6 +305,7 @@ declare global {
     sessionKey: string;
     until: string;
     reason?: string;
+    snooze_reason?: string;  // alias used in some components
     createdAt?: number;
   }
 
@@ -450,6 +454,29 @@ declare global {
   // ============================================
 
   interface NotificationPrefs {
+    // Per-conversation settings
+    notification_level?: string;
+    sound_enabled?: number;
+    sound_type?: string;
+    desktop_notifications?: number;
+    quiet_hours_enabled?: number;
+    quiet_start?: string;
+    quiet_end?: string;
+    keyword_alerts?: string;
+    priority_level?: string;
+    notification_frequency?: string;
+    show_message_preview?: number;
+    badge_count_enabled?: number;
+    mute_until?: string | null;
+    notes?: string;
+    // Global defaults
+    default_notification_level?: string;
+    default_sound_enabled?: number;
+    default_sound_type?: string;
+    default_desktop_notifications?: number;
+    default_priority_level?: string;
+    batch_interval_minutes?: number;
+    // Legacy
     enabled?: boolean;
     sound?: boolean;
     desktop?: boolean;
@@ -500,7 +527,7 @@ declare global {
       // Task sync to froggo-db
       tasks: {
         sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
-        update: (taskId: string, updates: { status?: string; assignedTo?: string }) => Promise<{ success: boolean }>;
+        update: (taskId: string, updates: { status?: string; assignedTo?: string; reviewStatus?: string; priority?: string; title?: string; description?: string }) => Promise<{ success: boolean }>;
         list: (status?: string) => Promise<{ success: boolean; tasks: Task[] }>;
         start: (taskId: string) => Promise<{ success: boolean }>;
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;

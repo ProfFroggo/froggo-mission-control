@@ -82,7 +82,7 @@ export default function NotificationSettingsModal({
         setNotificationFrequency(s.notification_frequency || 'instant');
         setShowMessagePreview(s.show_message_preview === 1);
         setBadgeCountEnabled(s.badge_count_enabled === 1);
-        setMuteUntil(s.mute_until);
+        setMuteUntil(s.mute_until ?? null);
         setNotes(s.notes || '');
       } else if (defaultsResult?.success && defaultsResult?.defaults) {
         // No custom settings, use global defaults
@@ -128,7 +128,7 @@ export default function NotificationSettingsModal({
 
       const result = await window.clawdbot?.notificationSettings.set(
         sessionKey,
-        updatedSettings
+        updatedSettings as NotificationPrefs
       );
 
       if (result?.success) {

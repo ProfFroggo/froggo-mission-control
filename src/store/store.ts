@@ -298,11 +298,12 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
       }
     }
     return { success: true };
-  } catch (e) {
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
     console.error('[Approval] Failed to execute:', e);
     // Notify agent about the failure so it can retry or handle
-    await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${e.message}\n\nContent: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
-    return { success: false, error: e.message };
+    await gateway.sendToSession('main', `[APPROVAL_EXEC_FAILED] ${item.type}: "${item.title}" - Error: ${errorMessage}\n\nContent: ${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -310,8 +311,10 @@ async function executeApproval(item: ApprovalItem): Promise<{ success: boolean; 
 // No fallback agents - agents are loaded exclusively from the gateway registry
 // This prevents phantom/duplicate agents from appearing in the UI
 
+type PersistedStore = Pick<Store, 'activities' | 'xDrafts'>;
+
 export const useStore = create<Store>()(
-  persist(
+  persist<Store, [], [], PersistedStore>(
     (set, get) => ({
       connected: false,
       setConnected: (connected: boolean) => set({ connected }),

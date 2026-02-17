@@ -21,20 +21,12 @@ interface AttachedFile {
   dataUrl?: string;
 }
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-  streaming?: boolean;
-}
-
 export default function ChatPanel() {
   const { addActivity } = useStore();
   const { rooms, activeRoomId, setActiveRoom, createRoom } = useChatRoomStore();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [speakResponses, setSpeakResponses] = useState(false);
@@ -62,7 +54,7 @@ export default function ChatPanel() {
   }, [chatAgents.length, selectedAgent]);
   
   // Cache messages per agent so switching is instant
-  const messageCacheRef = useRef<Map<string, Message[]>>(new Map());
+  const messageCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -123,7 +115,7 @@ export default function ChatPanel() {
   }, [messages.length, selectedAgent?.id]);
 
   // Toggle star on a message
-  const handleToggleStar = async (msg: Message, e: React.MouseEvent) => {
+  const handleToggleStar = async (msg: ChatMessage, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (!window.clawdbot?.starred) {
@@ -131,8 +123,8 @@ export default function ChatPanel() {
       return;
     }
 
-    const messageId = parseInt(msg.id);
-    const isStarred = starredMessageIds.has(msg.id);
+    const messageId = parseInt(msg.id ?? '0');
+    const isStarred = starredMessageIds.has(msg.id ?? '');
 
     try {
       if (isStarred) {
@@ -141,10 +133,10 @@ export default function ChatPanel() {
         if (result?.success) {
           setStarredMessageIds(prev => {
             const next = new Set(prev);
-            next.delete(msg.id);
+            next.delete(msg.id ?? '');
             return next;
           });
-          showToast('Message unstarred', 'success');
+          showToast('ChatMessage unstarred', 'success');
         } else {
           showToast('Failed to unstar message', 'error');
         }
@@ -152,8 +144,8 @@ export default function ChatPanel() {
         // Star
         const result = await window.clawdbot?.starred.star(messageId);
         if (result?.success) {
-          setStarredMessageIds(prev => new Set(prev).add(msg.id));
-          showToast('Message starred', 'success');
+          setStarredMessageIds(prev => new Set(prev).add(msg.id ?? ''));
+          showToast('ChatMessage starred', 'success');
         } else {
           showToast('Failed to star message', 'error');
         }
@@ -297,7 +289,7 @@ export default function ChatPanel() {
     try {
       const res = await gateway.getChatHistory(30);
       if (res?.messages && Array.isArray(res.messages)) {
-        const history: Message[] = res.messages
+        const history: ChatMessage[] = res.messages
           .filter((m: any) => m.role === 'user' || m.role === 'assistant')
           .map((m: any, i: number) => {
             // Extract text from content (handle both string and array formats)
@@ -377,7 +369,7 @@ export default function ChatPanel() {
             sessionKey: selectedAgent.dbSessionKey,
           }).then((result: any) => {
             if (result?.success) {
-              // Message saved successfully
+              // ChatMessage saved successfully
             }
           }).catch((err: any) => {
             console.error('[Chat] Error saving assistant message (handleEnd):', err);
@@ -457,7 +449,7 @@ export default function ChatPanel() {
           // Send to main session via gateway WebSocket (sends to Discord #get_shit_done)
           gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
             .then(() => {
-              showToast('success', 'Routed to Brain', 'Message sent to main session');
+              showToast('success', 'Routed to Brain', 'ChatMessage sent to main session');
             })
             .catch((err: any) => {
               console.error('[Chat] Brain routing error:', err);
@@ -680,7 +672,7 @@ export default function ChatPanel() {
       content = text + fileContents.join('');
     }
 
-    const userMsg: Message = {
+    const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-u`,
       role: 'user',
       content: text + (attachments.length > 0 ? `\n\n📎 ${attachments.length} file(s) attached` : ''),
@@ -1054,7 +1046,7 @@ export default function ChatPanel() {
             const showAvatar = idx === 0 || filteredMessages[idx - 1]?.role !== msg.role;
             const isLastInGroup = idx === filteredMessages.length - 1 || filteredMessages[idx + 1]?.role !== msg.role;
             const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const isStarred = starredMessageIds.has(msg.id);
+            const isStarred = starredMessageIds.has(msg.id ?? '');
             
             return (
               <MessageItem
@@ -1193,11 +1185,11 @@ export default function ChatPanel() {
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
-              aria-label={`Message input for ${selectedAgent.name}`}
+              aria-label={`ChatMessage input for ${selectedAgent.name}`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={connected ? `Message ${selectedAgent.name}...` : "Waiting for connection..."}
+              placeholder={connected ? `ChatMessage ${selectedAgent.name}...` : "Waiting for connection..."}
               disabled={!connected || loading}
               rows={1}
               className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
@@ -1232,18 +1224,18 @@ export default function ChatPanel() {
 }
 
 // ============================================
-// Memoized Message Item Component
+// Memoized ChatMessage Item Component
 // ============================================
 
 interface MessageItemProps {
-  msg: Message;
+  msg: ChatMessage;
   isUser: boolean;
   showAvatar: boolean;
   isLastInGroup: boolean;
   time: string;
   isStarred: boolean;
   selectedAgent: ChatAgent;
-  onToggleStar: (msg: Message, e: React.MouseEvent) => void;
+  onToggleStar: (msg: ChatMessage, e: React.MouseEvent) => void;
 }
 
 const MessageItem = memo(function MessageItem({
@@ -1273,7 +1265,7 @@ const MessageItem = memo(function MessageItem({
         )}
       </div>
 
-      {/* Message content column */}
+      {/* ChatMessage content column */}
       <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[75%] sm:max-w-[70%] lg:max-w-[65%] min-w-[120px]`}>
         {/* Sender name (only on first message in group) */}
         {showAvatar && (
@@ -1284,9 +1276,9 @@ const MessageItem = memo(function MessageItem({
           </div>
         )}
 
-        {/* Message bubble with actions */}
+        {/* ChatMessage bubble with actions */}
         <div className="relative group w-full">
-          {/* Message actions bar (appears on hover) */}
+          {/* ChatMessage actions bar (appears on hover) */}
           {!msg.streaming && (
             <div className={`absolute ${isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 ${isStarred ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-all duration-100`}>
               <button
@@ -1316,7 +1308,7 @@ const MessageItem = memo(function MessageItem({
             </div>
           )}
 
-          {/* Message bubble */}
+          {/* ChatMessage bubble */}
           <div
             className={`relative px-4 py-3 rounded-2xl shadow-sm ${
               isUser
