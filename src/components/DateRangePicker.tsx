@@ -74,7 +74,6 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
       <button
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); setIsOpen(!isOpen); } }}
-        role="button"
         tabIndex={0}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -88,12 +87,9 @@ export default function DateRangePicker({ value, onChange, presets = true }: Dat
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
+          <button
+            className="fixed inset-0 z-40 w-full h-full bg-black/20 cursor-default"
             onClick={() => setIsOpen(false)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setIsOpen(false); } }}
-            role="button"
-            tabIndex={0}
             aria-label="Close date range picker"
           />
 

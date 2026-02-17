@@ -883,8 +883,9 @@ export default function EnhancedSettingsPanel() {
               >
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
+                    <label htmlFor="font-family" className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
                     <select
+                      id="font-family"
                       aria-label="Font family select"
                       value={settings.fontFamily}
                       onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}

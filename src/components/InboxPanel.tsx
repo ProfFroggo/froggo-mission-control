@@ -1917,8 +1917,14 @@ export default function InboxPanel() {
 
       {/* Agent Still Active Warning Modal */}
       {showAgentWarning && activeAgentSession && pendingApprovalItem && (
-        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50" onClick={() => setShowAgentWarning(false)} role="button" tabIndex={-1} aria-label="Close agent warning">
-          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 bg-transparent border-0 cursor-default"
+          onClick={() => setShowAgentWarning(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') setShowAgentWarning(false); }}
+          aria-label="Close agent warning"
+          type="button"
+        >
+          <div role="dialog" aria-modal="true" aria-label="Agent active warning" className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4">
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-warning-subtle rounded-lg">
@@ -2023,7 +2029,7 @@ export default function InboxPanel() {
               </button>
             </div>
           </div>
-        </div>
+        </button>
       )}
       </div>
 

@@ -92,6 +92,7 @@ export default function OxGuardrails() {
                 {['coder', 'writer', 'researcher', 'chief'].map(type => (
                   <label
                     key={type}
+                    htmlFor={`agent-type-${type}`}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
                       settings.allowedAgentTypes.includes(type)
                         ? 'bg-amber-600 text-white'
@@ -99,6 +100,7 @@ export default function OxGuardrails() {
                     }`}
                   >
                     <input
+                      id={`agent-type-${type}`}
                       type="checkbox"
                       checked={settings.allowedAgentTypes.includes(type)}
                       onChange={e => {
@@ -126,13 +128,14 @@ export default function OxGuardrails() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-clawd-text-dim mb-2">
+              <span className="block text-sm text-clawd-text-dim mb-2">
                 Require Approval For
-              </label>
+              </span>
               <div className="flex flex-wrap gap-2">
                 {['external', 'financial', 'api-keys', 'emails', 'deployments'].map(category => (
                   <label
                     key={category}
+                    htmlFor={`approval-${category}`}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
                       settings.requireApprovalFor.includes(category)
                         ? 'bg-error-subtle text-error border border-red-600'
@@ -140,6 +143,7 @@ export default function OxGuardrails() {
                     }`}
                   >
                     <input
+                      id={`approval-${category}`}
                       type="checkbox"
                       checked={settings.requireApprovalFor.includes(category)}
                       onChange={e => {
@@ -158,7 +162,7 @@ export default function OxGuardrails() {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm text-clawd-text-dim">Auto-escalate stuck tasks</label>
+                <span className="text-sm text-clawd-text-dim">Auto-escalate stuck tasks</span>
                 <p className="text-xs text-clawd-text-dim">Notify Froggo if task exceeds max duration</p>
               </div>
               <button
@@ -175,7 +179,7 @@ export default function OxGuardrails() {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm text-clawd-text-dim">Notify Froggo on completion</label>
+                <span className="text-sm text-clawd-text-dim">Notify Froggo on completion</span>
                 <p className="text-xs text-clawd-text-dim">Send TASK_COMPLETE via protocol</p>
               </div>
               <button
@@ -200,10 +204,11 @@ export default function OxGuardrails() {
           </h2>
           
           <div>
-            <label className="block text-sm text-clawd-text-dim mb-2">
+            <label htmlFor="max-task-duration" className="block text-sm text-clawd-text-dim mb-2">
               Max Task Duration (minutes)
             </label>
             <input
+              id="max-task-duration"
               type="number"
               min={30}
               max={1440}

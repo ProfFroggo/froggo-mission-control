@@ -280,8 +280,8 @@ export default function ExportBackupTab() {
         <div className="space-y-4">
           {/* Format Selector */}
           <div>
-            <label className="block text-sm text-clawd-text-dim mb-2">Export Format</label>
-            <div className="flex gap-2">
+            <span className="block text-sm text-clawd-text-dim mb-2">Export Format</span>
+            <div className="flex gap-2" role="radiogroup" aria-label="Export format">
               <button
                 onClick={() => setExportFormat('json')}
                 className={`px-4 py-2 rounded-lg border transition-colors ${
@@ -402,10 +402,11 @@ export default function ExportBackupTab() {
 
           {/* Cleanup Settings */}
           <div className="pt-4 border-t border-clawd-border">
-            <label className="block text-sm font-medium mb-2">Retention Policy</label>
+            <label htmlFor="backup-count" className="block text-sm font-medium mb-2">Retention Policy</label>
             <div className="flex items-center gap-3">
               <span className="text-sm text-clawd-text-dim">Keep last</span>
               <input
+                id="backup-count"
                 type="number"
                 min="1"
                 max="100"

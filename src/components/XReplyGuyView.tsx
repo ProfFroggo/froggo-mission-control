@@ -185,6 +185,7 @@ export const XReplyGuyView: React.FC = () => {
               className="w-full px-3 py-2 text-sm border border-clawd-border rounded resize-none focus:outline-none focus:ring-2 focus:ring-info bg-clawd-bg text-clawd-text"
               rows={4}
               maxLength={280}
+              /* eslint-disable-next-line jsx-a11y/no-autofocus */
               autoFocus
             />
             
@@ -273,8 +274,9 @@ export const XReplyGuyView: React.FC = () => {
         {/* Filters */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-clawd-text-dim">Min Likes:</label>
+            <label htmlFor="min-likes" className="text-xs text-clawd-text-dim">Min Likes:</label>
             <input
+              id="min-likes"
               type="number"
               value={minLikes}
               onChange={(e) => setMinLikes(parseInt(e.target.value) || 0)}
@@ -283,8 +285,9 @@ export const XReplyGuyView: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-clawd-text-dim">Min Retweets:</label>
+            <label htmlFor="min-retweets" className="text-xs text-clawd-text-dim">Min Retweets:</label>
             <input
+              id="min-retweets"
               type="number"
               value={minRetweets}
               onChange={(e) => setMinRetweets(parseInt(e.target.value) || 0)}

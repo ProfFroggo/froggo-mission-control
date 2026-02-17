@@ -341,8 +341,9 @@ export default function LibraryTemplatesTab() {
             <h2 className="text-lg font-semibold mb-4">New Template</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Name</label>
+                <label htmlFor="template-name" className="block text-sm text-clawd-text-dim mb-1">Name</label>
                 <input
+                  id="template-name"
                   type="text"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
@@ -351,8 +352,9 @@ export default function LibraryTemplatesTab() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Type</label>
+                <label htmlFor="template-type" className="block text-sm text-clawd-text-dim mb-1">Type</label>
                 <select
+                  id="template-type"
                   value={newTemplate.type}
                   onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value as Template['type'] })}
                   className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent"
@@ -364,8 +366,9 @@ export default function LibraryTemplatesTab() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Content</label>
+                <label htmlFor="template-content" className="block text-sm text-clawd-text-dim mb-1">Content</label>
                 <textarea
+                  id="template-content"
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
                   className="w-full h-32 px-3 py-2 bg-clawd-bg border border-clawd-border rounded-xl focus:outline-none focus:border-clawd-accent resize-none"

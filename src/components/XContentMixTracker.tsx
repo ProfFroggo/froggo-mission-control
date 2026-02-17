@@ -166,8 +166,9 @@ export const XContentMixTracker: React.FC = () => {
 
         {/* Target adjuster */}
         <div className="mt-2 flex items-center gap-2">
-          <label className="text-xs text-clawd-text-dim">Target:</label>
+          <label htmlFor={`target-${item.type}`} className="text-xs text-clawd-text-dim">Target:</label>
           <input
+            id={`target-${item.type}`}
             type="number"
             value={item.target}
             onChange={(e) => updateTarget(item.type, parseInt(e.target.value) || 0)}

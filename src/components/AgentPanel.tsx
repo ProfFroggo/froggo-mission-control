@@ -380,6 +380,7 @@ export default function AgentPanel() {
 
                     {/* Expanded details */}
                     {isExpanded && (
+                      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
                       <div 
                         className="mt-4 pt-4 border-t border-clawd-border/50 space-y-4" 
                         onClick={e => e.stopPropagation()}

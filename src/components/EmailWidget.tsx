@@ -128,10 +128,12 @@ export default function EmailWidget() {
           </div>
         ) : (
           accounts.map((account) => (
-            <div
+            <button
               key={account.email}
               onClick={() => quickCheck(account.label)}
-              className="p-3 hover:bg-clawd-bg/50 transition-colors cursor-pointer group"
+              onKeyDown={(e) => { if (e.key === 'Enter') quickCheck(account.label); }}
+              className="w-full p-3 hover:bg-clawd-bg/50 transition-colors cursor-pointer group text-left"
+              aria-label={`Quick check ${account.label} account`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -163,7 +165,7 @@ export default function EmailWidget() {
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           ))
         )}
       </div>

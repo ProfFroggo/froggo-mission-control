@@ -104,10 +104,11 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
       {reminders.map((reminder) => (
-        <div
+        <button
           key={reminder.session_id}
-          className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer"
+          className="w-full bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer text-left"
           onClick={() => handleReminderClick(reminder.session_id)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleReminderClick(reminder.session_id); }}
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
@@ -146,7 +147,7 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
           <div className="mt-3 text-xs text-warning text-center">
             Click to view conversation
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

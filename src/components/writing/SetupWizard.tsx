@@ -71,9 +71,9 @@ export default function SetupWizard() {
           <div className="p-6 rounded-xl border border-clawd-border bg-clawd-surface space-y-6">
             {/* Book type selector */}
             <div>
-              <label className="block text-xs font-medium text-clawd-text-dim mb-2">
+              <span className="block text-xs font-medium text-clawd-text-dim mb-2">
                 Book Type
-              </label>
+              </span>
               <div className="flex gap-2">
                 {typeOptions.map((opt) => {
                   const Icon = opt.icon;

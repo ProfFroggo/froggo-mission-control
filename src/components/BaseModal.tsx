@@ -244,17 +244,17 @@ export default function BaseModal({
       />
 
       {/* Modal Container - Proper z-index layering and responsive padding */}
-      <div
-        className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none"
+      <button
+        className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none bg-transparent border-0 cursor-default"
         onClick={handleBackdropClick}
         onKeyDown={(e) => {
           if (e.key === 'Escape') handleBackdropClick(e as any);
         }}
-        role="button"
-        tabIndex={0}
         aria-label="Close modal"
+        type="button"
       >
         {/* Modal Content - Enhanced responsive sizing and transitions */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
           ref={modalRef}
           role="dialog"
@@ -290,7 +290,7 @@ export default function BaseModal({
 
           {children}
         </div>
-      </div>
+      </button>
     </>
   );
 }

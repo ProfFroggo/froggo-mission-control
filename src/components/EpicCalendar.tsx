@@ -1283,7 +1283,6 @@ function EventModal({
                 errors.summary ? 'border-error' : 'border-clawd-border'
               }`}
               placeholder="Event title"
-              autoFocus
             />
             {errors.summary && (
               <p className="text-sm text-error mt-1 flex items-center gap-1">

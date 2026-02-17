@@ -54,10 +54,10 @@ function Separator() {
 }
 
 export default function EditorToolbar({ editor }: EditorToolbarProps) {
-  if (!editor) return null;
-
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+
+  if (!editor) return null;
 
   const handleLink = () => {
     if (editor.isActive('link')) {
@@ -195,7 +195,6 @@ export default function EditorToolbar({ editor }: EditorToolbarProps) {
             onChange={(e) => setUrlInput(e.target.value)}
             placeholder="https://example.com"
             className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent"
-            autoFocus
             onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
           />
         </BaseModalBody>
