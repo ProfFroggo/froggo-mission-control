@@ -454,7 +454,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                   {/* Message Bubble */}
                   <div className={`px-4 py-3 transition-all ${
                     msg.role === 'user' 
-                      ? 'bg-clawd-accent/10 border border-clawd-accent/30' 
+                      ? 'bg-clawd-accent/50 text-white'
                       : msg.role === 'assistant' 
                         ? 'bg-clawd-surface/90 backdrop-blur-sm border border-clawd-border shadow-sm' 
                         : 'bg-warning-subtle border border-warning-border text-warning'
