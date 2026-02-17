@@ -31,7 +31,7 @@
  * ```
  */
 
-import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package, LucideProps } from 'lucide-react';
+import { LucideIcon, Inbox, CheckCircle, Search, FolderOpen, Bell, Layout, Wallet, Package } from 'lucide-react';
 import { ReactNode } from 'react';
 
 interface EmptyStateAction {
@@ -67,18 +67,6 @@ interface EmptyStateWithIcon extends EmptyStateBaseProps {
 }
 
 type EmptyStateProps = EmptyStateWithType | EmptyStateWithIcon;
-
-// Icon mapping for presets
-const iconMap: Record<string, React.ComponentType<LucideProps>> = {
-  inbox: Inbox,
-  tasks: CheckCircle,
-  search: Search,
-  files: FolderOpen,
-  notifications: Bell,
-  kanban: Layout,
-  finance: Wallet,
-  generic: Package,
-};
 
 // Preset configurations
 const presets: Record<string, { icon: LucideIcon; title: string; description: string }> = {
@@ -146,12 +134,12 @@ export default function EmptyState(props: EmptyStateProps) {
     : 'py-16 px-8';
 
   // Render action button or element
-  const renderAction = () => {
+  const renderAction = (): React.ReactElement | null => {
     if (!action) return null;
     
     // If action is a React element, render it directly
     if (typeof action === 'object' && '$$typeof' in action) {
-      return action;
+      return action as React.ReactElement;
     }
     
     // Otherwise, it's an EmptyStateAction config

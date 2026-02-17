@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Phone, PhoneOff, Minimize2, X, GripVertical, Search, Plus, UserPlus, Brain,
-  Sparkles, ListTodo, MessageSquare, ChevronLeft, ChevronRight, RotateCcw, ExternalLink
+  Phone, PhoneOff, X, GripVertical, Search, Plus, UserPlus, Brain,
+  Sparkles, ListTodo, MessageSquare, ChevronLeft, ChevronRight, ExternalLink
 } from 'lucide-react';
 import { showToast } from './Toast';
 
