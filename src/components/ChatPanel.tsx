@@ -150,7 +150,7 @@ export default function ChatPanel() {
           showToast('Failed to star message', 'error');
         }
       }
-    } catch {
+    } catch (error: any) {
       console.error('Toggle star error:', error);
       showToast('Error toggling star', 'error');
     }
@@ -575,7 +575,7 @@ export default function ChatPanel() {
       } else {
         showToast('error', 'Not available', 'Suggestion feature not available');
       }
-    } catch {
+    } catch (error: any) {
       console.error('[Chat] Suggestion error:', error);
       showToast('error', 'Failed to generate', error.message || 'Unknown error');
     } finally {
@@ -722,7 +722,7 @@ export default function ChatPanel() {
         }
       }, 120000);
       
-    } catch {
+    } catch (e: any) {
       const friendlyError = getUserFriendlyError(e, {
         action: 'send your message',
         resource: 'chat'

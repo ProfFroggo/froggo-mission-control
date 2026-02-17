@@ -9,6 +9,7 @@
 
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Existing service imports (already modularized)
 import { notificationService, setupNotificationHandlers } from './notification-service';
@@ -23,13 +24,17 @@ import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { initXApiTokens } from './x-api-client';
-import { prepare, closeDb } from './database';
+import { prepare } from './database';
+import { db, closeDb } from './database';
 import { initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { safeLog } from './logger';
 
-// Path constants - only importing what's actually used
+// Path constants
 import {
-  verifyPaths,
+  PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
+  REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
+  OPENCLAW_CONFIG_LEGACY, LOCAL_BIN, FROGGO_DB_CLI, TGCLI, DISCORDCLI,
+  CLAUDE_CLI, SHELL_PATH, agentWorkspace, verifyPaths,
 } from './paths';
 
 // NEW: Modular IPC handlers
@@ -46,6 +51,7 @@ import {
 // ============== WINDOW MANAGEMENT ==============
 
 let mainWindow: BrowserWindow | null = null;
+let floatingToolbarWindow: BrowserWindow | null = null;
 
 function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({

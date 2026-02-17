@@ -237,7 +237,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             await (window as any).clawdbot?.tasks?.delete(task.id);
             showToast('success', 'Task deleted', `Deleted "${task.title}"`);
             onClose();
-          } catch {
+          } catch (err: any) {
             showToast('error', 'Delete failed', (err as Error).message);
           }
         });
