@@ -6,6 +6,9 @@
  */
 
 import { z } from 'zod';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('WidgetRegistry');
 
 // Widget manifest schema validation
 export const WidgetManifestSchema = z.object({
@@ -49,7 +52,7 @@ export async function loadAgentWidgets(agentId: string): Promise<WidgetDefinitio
     // Validate manifest schema
     const manifest = WidgetManifestSchema.parse(manifestData);
 
-    console.debug(`[WidgetRegistry] Loaded ${manifest.widgets.length} widget(s) for ${agentId}`);
+    logger.debug(`Loaded ${manifest.widgets.length} widget(s) for ${agentId}`);
     return manifest.widgets;
 
   } catch (err) {

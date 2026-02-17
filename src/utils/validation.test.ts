@@ -5,7 +5,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   validate,
-  validateRule,
   commonRules,
   sanitizeInput,
   validateFile,

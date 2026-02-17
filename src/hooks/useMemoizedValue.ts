@@ -12,6 +12,9 @@
  */
 
 import { useRef } from 'react';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('useMemoizedValue');
 
 /**
  * Deep equality check for objects and arrays
@@ -142,8 +145,8 @@ export function useMemoizedValueWithProfiling<T>(
     const duration = performance.now() - start;
 
     if (duration > thresholdMs) {
-      console.debug(
-        `[Performance] ${label} took ${duration.toFixed(2)}ms (threshold: ${thresholdMs}ms)`
+      logger.debug(
+        `${label} took ${duration.toFixed(2)}ms (threshold: ${thresholdMs}ms)`
       );
     }
 

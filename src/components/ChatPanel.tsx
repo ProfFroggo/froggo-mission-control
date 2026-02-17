@@ -12,6 +12,9 @@ import { useStore } from '../store/store';
 import { useChatRoomStore } from '../store/chatRoomStore';
 import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('ChatPanel');
 
 interface AttachedFile {
   id: string;
@@ -402,7 +405,7 @@ export default function ChatPanel() {
               // ChatMessage saved successfully
             }
           }).catch((err: any) => {
-            console.error('[Chat] Error saving assistant message (handleEnd):', err);
+            logger.error('Error saving assistant message (handleEnd):', err);
           });
         }
         
@@ -416,7 +419,7 @@ export default function ChatPanel() {
           const brainMessage = brainMatch[1].trim();
           // Send to main session via gateway WebSocket
           gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
-            .catch((err: any) => console.error('[Chat] Brain routing error:', err));
+            .catch((err: any) => logger.error('Brain routing error:', err));
         }
         
         setLoading(false);
@@ -464,7 +467,7 @@ export default function ChatPanel() {
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => {
-            console.error('[Chat] Error saving assistant message:', err);
+            logger.error('Error saving assistant message:', err);
           });
         }
         
@@ -482,7 +485,7 @@ export default function ChatPanel() {
               showToast('success', 'Routed to Brain', 'ChatMessage sent to main session');
             })
             .catch((err: any) => {
-              console.error('[Chat] Brain routing error:', err);
+              logger.error('Brain routing error:', err);
               showToast('error', 'Brain routing failed', err.message);
             });
         }
@@ -494,7 +497,7 @@ export default function ChatPanel() {
     };
 
     const handleError = (data: any) => {
-      console.error('[Chat] Error:', data);
+      logger.error('Chat error:', data);
       if (currentMsgIdRef.current) {
         const friendlyError = getUserFriendlyError(data, {
           action: 'send your message',

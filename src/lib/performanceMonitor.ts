@@ -4,6 +4,10 @@
  * Tracks render performance and logs slow renders
  */
 
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('PerformanceMonitor');
+
 interface RenderMetrics {
   componentName: string;
   phase: 'mount' | 'update' | 'nested-update';
@@ -78,8 +82,8 @@ export function logRender(
   if (actualDuration > SLOW_RENDER_THRESHOLD) {
     stats.slowRenders++;
     componentStat.slowRenders++;
-    console.debug(
-      `[Performance] Slow render detected: ${id} took ${actualDuration.toFixed(2)}ms (${phase})`,
+    logger.debug(
+      `Slow render detected: ${id} took ${actualDuration.toFixed(2)}ms (${phase})`,
       { metrics }
     );
   }
@@ -128,12 +132,13 @@ export function resetStats() {
  * Print performance report to console
  */
 export function printPerformanceReport() {
-  console.group('📊 Performance Report');
-  console.debug('Slow renders:', stats.slowRenders, `(${((stats.slowRenders / stats.totalRenders) * 100).toFixed(1)}%)`);
-  console.debug('Average duration:', stats.averageDuration.toFixed(2), 'ms');
-  console.debug('Max duration:', stats.maxDuration.toFixed(2), 'ms');
-  console.table(getSlowestComponents(10));
-  console.groupEnd();
+  logger.debug('Performance Report');
+  logger.debug('Slow renders:', stats.slowRenders, `(${((stats.slowRenders / stats.totalRenders) * 100).toFixed(1)}%)`);
+  logger.debug('Average duration:', stats.averageDuration.toFixed(2), 'ms');
+  logger.debug('Max duration:', stats.maxDuration.toFixed(2), 'ms');
+  // Table logging - convert to array for structured logging
+  const slowest = getSlowestComponents(10);
+  logger.debug('Slowest components:', slowest);
 }
 
 // Expose to window for debugging

@@ -10,6 +10,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('Analytics');
 
 interface Stat {
   label: string;

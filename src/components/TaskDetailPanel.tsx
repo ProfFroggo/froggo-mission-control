@@ -8,6 +8,9 @@ import { showToast } from './Toast';
 import AgentAvatar from './AgentAvatar';
 import PokeModal from './PokeModal';
 import { gateway } from '@/lib/gateway';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface TaskAttachment {
@@ -436,7 +439,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     if (!task || !e.target.files || e.target.files.length === 0) return;
 
     if (!(window as any).clawdbot?.exec || !(window as any).clawdbot?.fs || !(window as any).clawdbot?.tasks?.attachments) {
-      console.debug('[TaskDetailPanel] File upload requires Electron IPC (exec, fs, tasks.attachments)');
+      logger.debug('File upload requires Electron IPC (exec, fs, tasks.attachments)');
       showToast('error', 'Upload unavailable', 'File upload requires the desktop app');
       return;
     }
@@ -488,7 +491,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!task) return;
-    if (!(window as any).clawdbot?.tasks?.attachments) { console.debug('[TaskDetailPanel] IPC not available'); return; }
+    if (!(window as any).clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
 
     const result = await (window as any).clawdbot.tasks.attachments.delete(attachmentId);
     if (result.success) {
@@ -501,7 +504,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   const handleOpenFile = async (filePath: string) => {
-    if (!(window as any).clawdbot?.tasks?.attachments) { console.debug('[TaskDetailPanel] IPC not available'); return; }
+    if (!(window as any).clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
     const result = await (window as any).clawdbot.tasks.attachments.open(filePath);
     if (!result.success) {
       showToast('error', 'Failed to open file', result.error);
@@ -510,7 +513,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
   const handleAutoDetect = async () => {
     if (!task) return;
-    if (!(window as any).clawdbot?.tasks?.attachments) { console.debug('[TaskDetailPanel] IPC not available'); return; }
+    if (!(window as any).clawdbot?.tasks?.attachments) { logger.debug('IPC not available'); return; }
     setLoadingAttachments(true);
 
     const result = await (window as any).clawdbot.tasks.attachments.autoDetect(task.id);
