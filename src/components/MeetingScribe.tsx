@@ -428,7 +428,7 @@ export default function MeetingScribe() {
     const dateStr = now.toISOString().slice(0, 10);
     const timeStr = now.toTimeString().slice(0, 5).replace(':', '');
     const filename = `${dateStr}-${timeStr}.md`;
-    const filepath = `$HOME/clawd/meetings/${filename}`;
+    const filepath = `$HOME/froggo/meetings/${filename}`;
     
     const lines = [
       `# Meeting Notes - ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
@@ -460,7 +460,7 @@ export default function MeetingScribe() {
     const base64Content = btoa(unescape(encodeURIComponent(content)));
     
     try {
-      const cmd = `mkdir -p $HOME/clawd/meetings && echo "${base64Content}" | base64 -d > "${filepath}"`;
+      const cmd = `mkdir -p $HOME/froggo/meetings && echo "${base64Content}" | base64 -d > "${filepath}"`;
       const res = await window.clawdbot?.exec?.run(cmd);
       if (res.success) {
         result.savedPath = filepath;

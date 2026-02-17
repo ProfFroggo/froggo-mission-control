@@ -80,10 +80,10 @@ export default function EpicCalendar() {
         command += ` --location "${location.replace(/"/g, '\\"')}"`;
       }
 
-      const response = await window.electron!.execute(command);
+      const response = await (window as any).clawdbot?.exec?.run(command);
       
-      if (response.error) {
-        throw new Error(response.stderr || 'Failed to create event');
+      if (!response?.success) {
+        throw new Error(response?.reason || response?.stderr || 'Failed to create event');
       }
 
       // Refresh events after successful creation
@@ -120,10 +120,10 @@ export default function EpicCalendar() {
         command += ` --location "${location.replace(/"/g, '\\"')}"`;
       }
 
-      const response = await window.electron!.execute(command);
+      const response = await (window as any).clawdbot?.exec?.run(command);
       
-      if (response.error) {
-        throw new Error(response.stderr || 'Failed to update event');
+      if (!response?.success) {
+        throw new Error(response?.reason || response?.stderr || 'Failed to update event');
       }
 
       // Optimistic update - update local state immediately
@@ -159,10 +159,10 @@ export default function EpicCalendar() {
   const deleteEvent = async (eventId: string, account: string): Promise<boolean> => {
     try {
       const command = `GOG_ACCOUNT=${account} gog calendar events delete --event-id "${eventId}"`;
-      const response = await window.electron!.execute(command);
+      const response = await (window as any).clawdbot?.exec?.run(command);
       
-      if (response.error) {
-        throw new Error(response.stderr || 'Failed to delete event');
+      if (!response?.success) {
+        throw new Error(response?.reason || response?.stderr || 'Failed to delete event');
       }
 
       // Optimistic update - remove from local state immediately
@@ -253,10 +253,10 @@ export default function EpicCalendar() {
 
       const command = `GOG_ACCOUNT=${event.account} gog calendar events update --event-id "${event.id}" --summary "${event.summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
       
-      const response = await window.electron!.execute(command);
+      const response = await (window as any).clawdbot?.exec?.run(command);
       
-      if (response.error) {
-        throw new Error(response.stderr || 'Failed to reschedule event');
+      if (!response?.success) {
+        throw new Error(response?.reason || response?.stderr || 'Failed to reschedule event');
       }
 
       // Optimistic update

@@ -28,11 +28,11 @@ interface Agent {
 }
 
 const contextFiles: ContextFile[] = [
-  { name: 'SOUL.md', path: '/Users/worker/clawd/SOUL.md', icon: Brain, description: 'Personality and identity' },
-  { name: 'MEMORY.md', path: '/Users/worker/clawd/MEMORY.md', icon: Book, description: 'Long-term memories' },
-  { name: 'USER.md', path: '/Users/worker/clawd/USER.md', icon: User, description: 'User information' },
-  { name: 'AGENTS.md', path: '/Users/worker/clawd/AGENTS.md', icon: Bot, description: 'Agent system config' },
-  { name: 'TOOLS.md', path: '/Users/worker/clawd/TOOLS.md', icon: Wrench, description: 'Tool notes' },
+  { name: 'SOUL.md', path: '~/froggo/SOUL.md', icon: Brain, description: 'Personality and identity' },
+  { name: 'MEMORY.md', path: '~/froggo/MEMORY.md', icon: Book, description: 'Long-term memories' },
+  { name: 'USER.md', path: '~/froggo/USER.md', icon: User, description: 'User information' },
+  { name: 'AGENTS.md', path: '~/froggo/AGENTS.md', icon: Bot, description: 'Agent system config' },
+  { name: 'TOOLS.md', path: '~/froggo/TOOLS.md', icon: Wrench, description: 'Tool notes' },
 ];
 
 export default function ContextControlBoard() {
@@ -90,14 +90,14 @@ export default function ContextControlBoard() {
     try {
       // List skills from skill directory
       const result = await (window as any).clawdbot?.exec?.run(
-        'ls -1 /opt/homebrew/lib/node_modules/clawdbot/skills 2>/dev/null || echo ""'
+        'ls -1 /opt/homebrew/lib/node_modules/openclaw/skills 2>/dev/null || echo ""'
       );
       if (result?.stdout) {
         const skillNames = result.stdout.trim().split('\n').filter(Boolean);
         const loadedSkills: Skill[] = skillNames.map((name: string) => ({
           name,
           description: '',
-          location: `/opt/homebrew/lib/node_modules/clawdbot/skills/${name}/SKILL.md`,
+          location: `/opt/homebrew/lib/node_modules/openclaw/skills/${name}/SKILL.md`,
           enabled: true,
         }));
         setSkills(loadedSkills);
@@ -112,9 +112,9 @@ export default function ContextControlBoard() {
   const loadAgents = useCallback(async () => {
     setLoading(true);
     try {
-      // Load from agents directory
+      // Load from agent workspaces (Pattern A: ~/agent-{id}/)
       const result = await (window as any).clawdbot?.exec?.run(
-        'ls -1 ~/clawd/agents 2>/dev/null || echo ""'
+        'ls -d ~/agent-*/ 2>/dev/null | xargs -I{} basename {} | sort || echo ""'
       );
       if (result?.stdout) {
         const agentDirs = result.stdout.trim().split('\n').filter(Boolean);

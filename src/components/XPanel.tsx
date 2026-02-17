@@ -790,7 +790,7 @@ export default function XPanel() {
                   
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm ${planComposeText.length > 260 ? 'text-warning' : planComposeText.length > 280 ? 'text-error' : 'text-clawd-text-dim'}`}>
+                      <span className={`text-sm ${planComposeText.length > 280 ? 'text-error' : planComposeText.length > 260 ? 'text-warning' : 'text-clawd-text-dim'}`}>
                         {planComposeText.length}/280
                       </span>
                       

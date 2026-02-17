@@ -78,7 +78,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
   const cancelTask = async (taskId: string): Promise<boolean> => {
     const ts = Date.now();
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET cancelled = 1, updated_at = ${ts} WHERE id = '${taskId}'"`;
+    const cmd = `sqlite3 ~/froggo/data/froggo.db "UPDATE tasks SET cancelled = 1, updated_at = ${ts} WHERE id = '${taskId}'"`;
     const result = await execCmd(cmd);
     return result.ok;
   };
@@ -86,7 +86,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
   const updateTaskField = async (taskId: string, field: string, value: string): Promise<boolean> => {
     const ts = Date.now();
     const escaped = value.replace(/'/g, "''");
-    const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET ${field} = '${escaped}', updated_at = ${ts} WHERE id = '${taskId}'"`;
+    const cmd = `sqlite3 ~/froggo/data/froggo.db "UPDATE tasks SET ${field} = '${escaped}', updated_at = ${ts} WHERE id = '${taskId}'"`;
     const result = await execCmd(cmd);
     return result.ok;
   };
@@ -377,7 +377,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
             setExecutionLog(prev => [...prev, `  → Clearing agent from "${task?.title?.slice(0, 25)}..."`]);
             await delay(300);
             const ts = Date.now();
-            const cmd = `sqlite3 ~/clawd/data/froggo.db "UPDATE tasks SET assigned_to = NULL, updated_at = ${ts} WHERE id = '${id}'"`;
+            const cmd = `sqlite3 ~/froggo/data/froggo.db "UPDATE tasks SET assigned_to = NULL, updated_at = ${ts} WHERE id = '${id}'"`;
             const result = await execCmd(cmd);
             if (result.ok) fixed++;
           }
