@@ -48,9 +48,9 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
     if (selectedItem) {
       generateAssistance();
     }
-  }, [selectedItem]);
+  }, [selectedItem, generateAssistance]);
 
-  const generateAssistance = async () => {
+  const generateAssistance = useCallback(async () => {
     if (!selectedItem) return;
     
     setLoading(true);
