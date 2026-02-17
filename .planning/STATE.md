@@ -4,17 +4,17 @@
 
 See: .planning/PROJECT.md (updated 2026-02-13)
 
-**Core value:** Kevin can create a new book project by conversing with an AI agent that plans the story arc, chapter outline, themes, and characters -- then write in a 3-pane layout where AI chat dialogue drives content into the workspace.
-**Current focus:** Phase 13 - Global UI Consistency
+**Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
+**Current focus:** v3.0 milestone — Phase 14 (X/Twitter Identity + Tabs), ready to plan
 
 ## Current Position
 
-Phase: 13 of 21 (Global UI Consistency)
-Plan: 05 of N in phase 13 — COMPLETE
-Status: In progress (Wave 3 executing)
-Last activity: 2026-02-17 — Completed 13-05-PLAN.md (chat input bar bottom alignment in XAgentChatPane, FinanceAgentChat, ChatRoomView, QuickActions)
+Phase: 14 of 21 (X/Twitter Identity + Tabs)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-02-18 — Phase 13 complete (5 plans, all verified)
 
-Progress: ░░░░░░░░░░░░░░░░░░░ (13-01, 13-02, 13-03, 13-04, 13-05 complete)
+Progress: [█░░░░░░░░░░░░░░░░░░░] 11% (v3.0, 1/9 phases)
 
 ## Performance Metrics
 
