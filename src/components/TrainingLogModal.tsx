@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, BookOpen, TrendingUp, Clock, CheckCircle, AlertCircle, Target } from 'lucide-react';
 
 interface TrainingEntry {

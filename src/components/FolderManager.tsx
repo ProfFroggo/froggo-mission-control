@@ -114,8 +114,8 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     setEditingId(folder.id);
     setFormData({
       name: folder.name,
-      icon: folder.icon,
-      color: folder.color,
+      icon: folder.icon ?? '',
+      color: folder.color ?? '',
       description: folder.description || '',
     });
   };
