@@ -35,6 +35,7 @@ import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-
 import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
+import { registerToolbarHandlers } from './handlers/toolbar-handlers';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM } from './x-api-client';
@@ -438,6 +439,9 @@ function createWindow() {
 
   // Writing wizard state persistence
   registerWritingWizardHandlers();
+
+  // Register Toolbar handlers
+  registerToolbarHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
