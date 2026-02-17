@@ -481,16 +481,7 @@ export default function ChatPanel() {
       }
     };
 
-    const unsub1 = gateway.on('chat.delta', handleDelta);
-    const unsub2 = gateway.on('chat.message', handleMessage);
-    const unsub3 = gateway.on('chat.end', handleEnd);
-    const unsub4 = gateway.on('chat.error', handleError);
-    const unsub5 = gateway.on('chat', handleChatEvent);
-
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [loading, selectedAgent?.dbSessionKey, speakResponses, selectedAgent]);
-
-  // Speak function (moved before useEffect that depends on it to fix stale closure)
+  // Speak function (must be before useEffect that uses it)
   const speak = useCallback((text: string) => {
     if (!text) return;
     
@@ -518,6 +509,15 @@ export default function ChatPanel() {
     if (voice) utterance.voice = voice;
     window.speechSynthesis.speak(utterance);
   }, []);
+
+    const unsub1 = gateway.on('chat.delta', handleDelta);
+    const unsub2 = gateway.on('chat.message', handleMessage);
+    const unsub3 = gateway.on('chat.end', handleEnd);
+    const unsub4 = gateway.on('chat.error', handleError);
+    const unsub5 = gateway.on('chat', handleChatEvent);
+
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
+  }, [loading, selectedAgent?.dbSessionKey, speakResponses, selectedAgent, speak]);
 
   // Setup voice recognition
   useEffect(() => {
