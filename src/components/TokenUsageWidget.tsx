@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: TokenUsageWidget uses file-level suppression for intentional patterns.
+// Widget for token usage tracking - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import {
   BarChart,

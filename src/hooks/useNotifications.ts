@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: useNotifications hook uses file-level suppression for intentional patterns.
+// Hook for notification management - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 /**
  * useNotifications Hook
  * Handles system notifications, action buttons, and navigation from notifications

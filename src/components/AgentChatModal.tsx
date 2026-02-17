@@ -60,6 +60,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       streamCleanupRef.current?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // initChat re-initializes state, adding it to deps causes unnecessary re-runs
   }, [agentId]);
 
   useEffect(() => {

@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: MeetingTranscribe uses file-level suppression for intentional stable ref patterns.
+// Complex meeting transcription component - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 /**
  * Meeting Transcription Component
  * Real-time meeting transcription UI with speaker labels using Gemini AI

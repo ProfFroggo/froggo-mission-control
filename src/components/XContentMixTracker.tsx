@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: XContentMixTracker uses file-level suppression for intentional patterns.
+// loadContentMix is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
 

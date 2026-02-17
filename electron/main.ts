@@ -35,7 +35,6 @@ import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-
 import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
-import { registerToolbarHandlers } from './handlers/toolbar-handlers';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM } from './x-api-client';
@@ -101,7 +100,7 @@ function getDefaultGogEmail(): string {
       env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
     }).toString();
     const gogData = JSON.parse(gogList);
-    const accounts = (gogData.accounts || []).filter((a: unknown) => a.services?.includes('gmail'));
+    const accounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail'));
     return accounts[0]?.email || '';
   } catch {
     return '';
@@ -109,10 +108,10 @@ function getDefaultGogEmail(): string {
 }
 
 // ============== AGENTS LIST FROM GATEWAY ==============
-function getAgentsFromDB()= unknown[] {
+function getAgentsFromDB(): any[] {
   try {
     const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all() as any[];
-    return rows.map((r: unknown) => ({
+    return rows.map((r: any) => ({
       id: r.id,
       identityName: r.name || r.id,
       identityEmoji: '🤖',
@@ -121,7 +120,7 @@ function getAgentsFromDB()= unknown[] {
       model: '',
       isDefault: r.id === 'froggo',
     }));
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Agents] DB fallback failed:', e.message);
     return [];
   }
@@ -167,7 +166,7 @@ ipcMain.handle('agents:list', async () => {
 
         safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
         resolve({ success: true, agents: rawAgents });
-      } catch (parseError: unknown) {
+      } catch (parseError: any) {
         safeLog.warn('[Agents] Parse failed, falling back to DB:', (parseError as any).message);
         const agents = getAgentsFromDB();
         resolve({ success: agents.length > 0, agents });
@@ -206,7 +205,7 @@ ipcMain.handle('sessions:list', async (_, activeMinutes?: number) => {
             count: data.count || 0,
             path: data.path
           });
-        } catch (parseError: unknown) {
+        } catch (parseError: any) {
           safeLog.warn('[Sessions] Parse failed:', parseError.message);
           resolve({ success: false, error: parseError.message, sessions: [] });
         }
@@ -221,7 +220,7 @@ ipcMain.handle('get-agent-registry', async () => {
     const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all();
     safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
     return agents;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[AgentRegistry] Error:', error.message);
     return [];
   }
@@ -254,7 +253,7 @@ ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
     }
 
     // Read and parse manifest
-    let manifest: unknown;
+    let manifest: any;
     try {
       const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
       manifest = JSON.parse(manifestContent);
@@ -280,7 +279,7 @@ ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
     safeLog.log(`[WidgetManifest] Loaded manifest for ${agentId}`);
     return manifest;
 
-  } catch (err: unknown) {
+  } catch (err: any) {
     safeLog.error('[WidgetManifest] Error reading manifest:', err.message);
     return { error: err.message };
   }
@@ -290,7 +289,7 @@ ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
 // Prevents "write EPIPE" crashes during app shutdown or when streams are closed
 // Debug file logger for agent issues
 const debugLogPath = '/tmp/clawd-dashboard-debug.log';
-function debugLog(...args= unknown[]) {
+function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
@@ -338,7 +337,7 @@ const safeLog = {
 };
 
 // Global EPIPE handler - prevent uncaught exceptions from crashing the app
-process.on('uncaughtException', (error= unknown) => {
+process.on('uncaughtException', (error: any) => {
   // EPIPE errors during shutdown are expected - ignore them
   if (error.code === 'EPIPE' || error.code === 'ERR_STREAM_DESTROYED') {
     return;
@@ -356,7 +355,7 @@ process.on('uncaughtException', (error= unknown) => {
 });
 
 // Handle promise rejections
-process.on('unhandledRejection', (reason= unknown) => {
+process.on('unhandledRejection', (reason: any) => {
   safeLog.error('[UNHANDLED REJECTION]', reason);
 });
 
@@ -440,9 +439,6 @@ function createWindow() {
   // Writing wizard state persistence
   registerWritingWizardHandlers();
 
-  // Register Toolbar handlers
-  registerToolbarHandlers();
-
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
     mainWindow.loadURL('http://localhost:5173');
@@ -506,7 +502,7 @@ function createWindow() {
 }
 
 // Safe wrapper for webContents.send to prevent EPIPE crashes
-function safeSend(channel: string, ...args= unknown[]) {
+function safeSend(channel: string, ...args: any[]) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     try {
       mainWindow.webContents.send(channel, ...args);
@@ -525,7 +521,7 @@ const taskNotifyPath = path.join(DATA_DIR, 'task-notify.json');
 let lastTaskNotifyMtime = 0;
 
 // Helper function to emit task events for real-time Dashboard updates
-function emitTaskEvent(eventType: string, taskId: string, payload: Record<string, unknown> = {}) {
+function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
   // Get task data from database for the event payload
   try {
     const task = prepare(`SELECT id, title, description, status, project, assigned_to, reviewerId as reviewer_id, priority, due_date, updated_at FROM tasks WHERE id = ?`).get(taskId) as any;
@@ -561,7 +557,7 @@ function emitTaskEvent(eventType: string, taskId: string, payload: Record<string
     });
 
     safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[TaskEvents] Failed to get task data:', error.message);
   }
 }
@@ -573,10 +569,10 @@ const SCHEDULE_CHECK_INTERVAL = 30000; // 30 seconds
 // Process scheduled items that are overdue
 async function processScheduledItems() {
   // Query for pending items and filter in JS (handles various datetime formats)
-  let items= unknown[] = [];
+  let items: any[] = [];
   try {
     items = prepare("SELECT * FROM schedule WHERE status = 'pending'").all() as any[];
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[ScheduleProcessor] Query error:', e.message);
     return;
   }
@@ -599,7 +595,7 @@ async function processScheduledItems() {
   const updateScheduleStatus = (itemId: string, status: string, error?: string | null) => {
     try {
       prepare("UPDATE schedule SET status = ?, sent_at = datetime('now'), error = ? WHERE id = ?").run(status, error || null, itemId);
-    } catch (dbErr: unknown) {
+    } catch (dbErr: any) {
       safeLog.error('[ScheduleProcessor] DB update error:', dbErr);
     }
   };
@@ -608,7 +604,7 @@ async function processScheduledItems() {
     safeLog.log(`[ScheduleProcessor] Processing ${item.type}: ${item.id}`);
 
     let execCmd = '';
-    let metadata: Record<string, unknown> = {};
+    let metadata: any = {};
 
     try {
       if (item.metadata) {
@@ -631,7 +627,7 @@ async function processScheduledItems() {
           updateScheduleStatus(item.id, 'failed', result.error || 'Unknown tweet error');
         }
         continue;
-      } catch (e: unknown) {
+      } catch (e: any) {
         safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
       }
       execCmd = ''; // fallback cleared
@@ -904,7 +900,7 @@ app.on('activate', () => {
 ipcMain.handle('settings:getApiKey', async (_, keyName: string) => {
   try {
     return getSecret(keyName);
-  } catch (err: unknown) {
+  } catch (err: any) {
     safeLog.error('[Settings] getApiKey error:', err.message);
     return null;
   }
@@ -914,7 +910,7 @@ ipcMain.handle('settings:storeApiKey', async (_, keyName: string, value: string)
   try {
     storeSecret(keyName, value);
     return { success: true };
-  } catch (err: unknown) {
+  } catch (err: any) {
     safeLog.error('[Settings] storeApiKey error:', err.message);
     return { success: false, error: err.message };
   }
@@ -923,7 +919,7 @@ ipcMain.handle('settings:storeApiKey', async (_, keyName: string, value: string)
 ipcMain.handle('settings:hasApiKey', async (_, keyName: string) => {
   try {
     return hasSecret(keyName);
-  } catch (err: unknown) {
+  } catch (err: any) {
     safeLog.error('[Settings] hasApiKey error:', err.message);
     return false;
   }
@@ -933,7 +929,7 @@ ipcMain.handle('settings:deleteApiKey', async (_, keyName: string) => {
   try {
     deleteSecret(keyName);
     return { success: true };
-  } catch (err: unknown) {
+  } catch (err: any) {
     safeLog.error('[Settings] deleteApiKey error:', err.message);
     return { success: false, error: err.message };
   }
@@ -953,7 +949,7 @@ ipcMain.handle('screen:getSources', async (_, opts?: { types?: string[]; thumbna
       display_id: source.display_id,
       appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
     }));
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ScreenCapture] Failed to get sources:', error);
     return [];
   }
@@ -1022,7 +1018,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
         }
       });
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('Whisper failed:', error);
     try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
     return { error: error.message };
@@ -1118,8 +1114,8 @@ ipcMain.handle('agents:getActiveSessions', async () => {
     // Filter to recently active sessions (updated within last 2 minutes)
     const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
     const activeSessions = sessions
-      .filter((s: unknown) => s.updatedAt && s.updatedAt > twoMinutesAgo)
-      .map((s: unknown) => {
+      .filter((s: any) => s.updatedAt && s.updatedAt > twoMinutesAgo)
+      .map((s: any) => {
         // Extract agent ID from session key (format: agent:agentId:...)
         const parts = s.key.split(':');
         const agentId = parts[1];
@@ -1136,7 +1132,7 @@ ipcMain.handle('agents:getActiveSessions', async () => {
       });
 
     return { success: true, sessions: activeSessions };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[agents:getActiveSessions] Error:', error.message);
     return { success: false, sessions: [], error: error.message };
   }
@@ -1186,7 +1182,7 @@ ipcMain.handle('tasks:sync', async (_, task: {
 
         safeLog.log('[Tasks] Created:', task.id);
         resolve({ success: true });
-      } catch (err: unknown) {
+      } catch (err: any) {
         safeLog.error('[Tasks] Create error:', err.message);
         resolve({ success: false, error: err.message });
       }
@@ -1203,14 +1199,14 @@ ipcMain.handle('notification-settings:get', async (_, sessionKey: string) => {
   try {
     const row = prepare('SELECT * FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
     return { success: true, settings: row || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Get error:', error);
     return { success: false, settings: null };
   }
 });
 
 // Set/update notification settings for a conversation
-ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settings= unknown) => {
+ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settings: any) => {
   try {
     // Check if settings exist
     const existing = prepare('SELECT id FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
@@ -1218,7 +1214,7 @@ ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settin
     if (existing) {
       // UPDATE existing settings — build dynamic SET clause with parameterized values
       const setParts: string[] = [];
-      const params= unknown[] = [];
+      const params: any[] = [];
 
       if (settings.notification_level !== undefined) {
         setParts.push('notification_level = ?'); params.push(settings.notification_level);
@@ -1294,7 +1290,7 @@ ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settin
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Set error:', error);
     return { success: false, error: error.message };
   }
@@ -1305,7 +1301,7 @@ ipcMain.handle('notification-settings:delete', async (_, sessionKey: string) => 
   try {
     prepare('DELETE FROM conversation_notification_settings WHERE session_key = ?').run(sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -1316,17 +1312,17 @@ ipcMain.handle('notification-settings:global-defaults', async () => {
   try {
     const row = prepare('SELECT * FROM global_notification_defaults WHERE id = 1').get();
     return { success: true, defaults: row || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Get global defaults error:', error);
     return { success: false, defaults: null };
   }
 });
 
 // Update global notification defaults
-ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults= unknown) => {
+ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults: any) => {
   try {
     const setParts: string[] = [];
-    const params= unknown[] = [];
+    const params: any[] = [];
 
     if (defaults.default_notification_level !== undefined) {
       setParts.push('default_notification_level = ?'); params.push(defaults.default_notification_level);
@@ -1371,7 +1367,7 @@ ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults= 
 
     db.prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Set global defaults error:', error);
     return { success: false, error: error.message };
   }
@@ -1382,7 +1378,7 @@ ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: stri
   try {
     const row = prepare('SELECT * FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
     return { success: true, settings: row || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Get effective error:', error);
     return { success: false, settings: null };
   }
@@ -1412,7 +1408,7 @@ ipcMain.handle('notification-settings:mute', async (_, sessionKey: string, durat
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Mute error:', error);
     return { success: false, error: error.message };
   }
@@ -1423,7 +1419,7 @@ ipcMain.handle('notification-settings:unmute', async (_, sessionKey: string) => 
   try {
     prepare("UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = ?").run(sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Unmute error:', error);
     return { success: false, error: error.message };
   }
@@ -1438,7 +1434,7 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
       rejection.reason || ''
     );
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Rejections] Log error:', error);
     return { success: false, error: error.message };
   }
@@ -1447,7 +1443,7 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
 ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: string; assignedTo?: string; planningNotes?: string; reviewStatus?: string; reviewerId?: string }) => {
   try {
     const sqlFields: string[] = [];
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (updates.planningNotes !== undefined) {
       sqlFields.push('planning_notes = ?');
@@ -1498,7 +1494,7 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
     
     // If no updates provided, return success
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1510,7 +1506,7 @@ ipcMain.handle('tasks:list', async (_, status?: string) => {
     const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
     // Exclude cancelled AND archived tasks from main view
     let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
-    const params= unknown[] = [];
+    const params: any[] = [];
     if (status) {
       whereClause += ' AND status = ?';
       params.push(status);
@@ -1527,10 +1523,10 @@ ipcMain.handle('tasks:list', async (_, status?: string) => {
 
     // Get total done count (including archived) for display
     const { 'COUNT(*)': totalDone } = prepare(`SELECT COUNT(*) FROM tasks WHERE status='done' AND (cancelled IS NULL OR cancelled = 0)`).get() as any;
-    const totalArchived = totalDone - tasks.filter((t= unknown) => t.status === 'done').length;
+    const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
 
     return { success: true, tasks, totalDone, totalArchived };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[tasks:list] Error:', error.message);
     return { success: false, tasks: [] };
   }
@@ -1543,7 +1539,7 @@ ipcMain.handle('tasks:search', async (_, query: string, includeArchived = true) 
     const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
     const tasks = prepare(`SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE ? OR description LIKE ? OR id LIKE ?) ${archiveFilter} ORDER BY updated_at DESC LIMIT 100`).all(pattern, pattern, pattern);
     return { success: true, tasks };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[tasks:search] Error:', error.message);
     return { success: false, tasks: [] };
   }
@@ -1554,7 +1550,7 @@ ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
   try {
     const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
     return { success: true, task: task || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[tasks:getWithProgress] Error:', error.message);
     return { success: false, task: null };
   }
@@ -1578,7 +1574,7 @@ ipcMain.handle('analytics:getData', async (_, timeRange: string) => {
     const projects = prepare(`SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`).all();
 
     return { success: true, completions, created, agents, projects, days };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[analytics:getData] Error:', error.message);
     return { success: true, completions: [], created: [], agents: [], projects: [], days: 0 };
   }
@@ -1588,7 +1584,7 @@ ipcMain.handle('analytics:subtaskStats', async () => {
   try {
     const data = prepare(`SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`).all();
     return { success: true, data };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[analytics:subtaskStats] Error:', error.message);
     return { success: true, data: [] };
   }
@@ -1598,7 +1594,7 @@ ipcMain.handle('analytics:heatmap', async (_, days: number = 30) => {
   try {
     const data = prepare(`SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`).all();
     return { success: true, data };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[analytics:heatmap] Error:', error.message);
     return { success: true, data: [] };
   }
@@ -1638,7 +1634,7 @@ ipcMain.handle('analytics:timeTracking', async (_, projectFilter?: string) => {
       const data = prepare(query).all();
       return { success: true, data };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[analytics:timeTracking] Error:', error.message);
     return { success: true, data: [] };
   }
@@ -1680,7 +1676,7 @@ ipcMain.handle('tasks:delete', async (_, taskId: string) => {
       safeLog.warn('[Tasks] Delete: task not found:', taskId);
       return { success: false, error: 'Task not found' };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1704,7 +1700,7 @@ ipcMain.handle('tasks:archiveDone', async () => {
     const count = archive();
     safeLog.log(`[Tasks] Archived ${count} done tasks`);
     return { success: true, count };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Tasks] Archive done error:', error.message);
     return { success: false, error: error.message, count: 0 };
   }
@@ -1803,7 +1799,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
     
     safeLog.log(`[Tasks] Internal poke response from ${taskAgent}: ${response.slice(0, 100)}...`);
     return { success: true, agentId: taskAgent, response };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error(`[Tasks] Internal poke error: ${e.message}`);
     return { 
       success: true, 
@@ -1819,7 +1815,7 @@ const froggoDbPath = FROGGO_DB;
 ipcMain.handle('subtasks:list', async (_, taskId: string) => {
   try {
     const rows = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY position, created_at').all(taskId);
-    const subtasks = rows.map((st= unknown) => ({
+    const subtasks = rows.map((st: any) => ({
       id: st.id,
       taskId: st.task_id,
       title: st.title,
@@ -1832,7 +1828,7 @@ ipcMain.handle('subtasks:list', async (_, taskId: string) => {
       createdAt: st.created_at,
     }));
     return { success: true, subtasks };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] List error:', error);
     return { success: false, subtasks: [] };
   }
@@ -1881,7 +1877,7 @@ ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; 
     emitTaskEvent('task.updated', taskId);
 
     return { success: true, id: subtask.id };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Add error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1891,7 +1887,7 @@ ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { comple
   try {
     const now = Date.now();
     const sets: string[] = ['updated_at = ?'];
-    const params= unknown[] = [now];
+    const params: any[] = [now];
 
     if (updates.completed !== undefined) {
       sets.push('completed = ?');
@@ -1941,7 +1937,7 @@ ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { comple
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -1969,7 +1965,7 @@ ipcMain.handle('subtasks:delete', async (_, subtaskId: string) => {
     }
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1985,7 +1981,7 @@ ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
     });
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Reorder error:', error.message);
     return { success: false };
   }
@@ -1996,7 +1992,7 @@ ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
   try {
     const lim = limit || 50;
     const rows = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?').all(taskId, lim);
-    const activities = rows.map((a= unknown) => ({
+    const activities = rows.map((a: any) => ({
       id: a.id,
       taskId: a.task_id,
       agentId: a.agent_id,
@@ -2006,7 +2002,7 @@ ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
       timestamp: a.timestamp,
     }));
     return { success: true, activities };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Activity] List error:', error);
     return { success: false, activities: [] };
   }
@@ -2028,7 +2024,7 @@ ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string
     emitTaskEvent('task.updated', taskId);
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Activity] Add error:', error.message);
     return { success: false };
   }
@@ -2039,7 +2035,7 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
   try {
     const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id = ? ORDER BY uploaded_at DESC').all(taskId);
     return { success: true, attachments };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] List error:', error);
     return { success: false, attachments: [] };
   }
@@ -2050,7 +2046,7 @@ ipcMain.handle('attachments:listAll', async () => {
   try {
     const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC').all();
     return { success: true, attachments };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] ListAll error:', error);
     return { success: false, attachments: [] };
   }
@@ -2119,7 +2115,7 @@ ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, ca
         uploaded_at: now
       }
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -2143,7 +2139,7 @@ ipcMain.handle('attachments:delete', async (_, attachmentId: number) => {
     exec(activityCmd, () => {});
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Attachments] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -2186,7 +2182,7 @@ ipcMain.handle('folders:list', async () => {
   try {
     const folders = prepare('SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name').all();
     return { success: true, folders };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] List error:', error);
     return { success: false, folders: [] };
   }
@@ -2201,7 +2197,7 @@ ipcMain.handle('folders:create', async (_, folder: { name: string; icon?: string
   try {
     const result = prepare('INSERT INTO message_folders (name, icon, color, description) VALUES (?, ?, ?, ?)').run(folder.name, icon, color, description);
     return { success: true, folderId: Number(result.lastInsertRowid) };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Create error:', error);
     return { success: false, error: error.message };
   }
@@ -2210,7 +2206,7 @@ ipcMain.handle('folders:create', async (_, folder: { name: string; icon?: string
 // Update folder properties
 ipcMain.handle('folders:update', async (_, folderId: number, updates: { name?: string; icon?: string; color?: string; description?: string; sort_order?: number }) => {
   const setParts: string[] = [];
-  const params= unknown[] = [];
+  const params: any[] = [];
 
   if (updates.name) { setParts.push('name = ?'); params.push(updates.name); }
   if (updates.icon) { setParts.push('icon = ?'); params.push(updates.icon); }
@@ -2227,7 +2223,7 @@ ipcMain.handle('folders:update', async (_, folderId: number, updates: { name?: s
   try {
     db.prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -2238,7 +2234,7 @@ ipcMain.handle('folders:delete', async (_, folderId: number) => {
   try {
     prepare('DELETE FROM message_folders WHERE id = ?').run(folderId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -2249,7 +2245,7 @@ ipcMain.handle('folders:assign', async (_, folderId: number, sessionKey: string,
   try {
     prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (?, ?, ?)').run(folderId, sessionKey, notes || null);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Assign error:', error);
     return { success: false, error: error.message };
   }
@@ -2260,7 +2256,7 @@ ipcMain.handle('folders:unassign', async (_, folderId: number, sessionKey: strin
   try {
     prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(folderId, sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Unassign error:', error);
     return { success: false, error: error.message };
   }
@@ -2271,7 +2267,7 @@ ipcMain.handle('folders:for-conversation', async (_, sessionKey: string) => {
   try {
     const folders = prepare('SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = ? ORDER BY f.sort_order, f.name').all(sessionKey);
     return { success: true, folders };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Get for conversation error:', error);
     return { success: false, folders: [] };
   }
@@ -2282,7 +2278,7 @@ ipcMain.handle('folders:conversations', async (_, folderId: number) => {
   try {
     const conversations = prepare('SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ? ORDER BY added_at DESC').all(folderId);
     return { success: true, conversations };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Folders] Get conversations error:', error);
     return { success: false, conversations: [] };
   }
@@ -2295,7 +2291,7 @@ ipcMain.handle('folders:conversations', async (_, folderId: number) => {
 ipcMain.handle('folders:rules:list', async () => {
   try {
     const folders = prepare('SELECT f.id, f.name as folder_name, f.rules FROM message_folders f WHERE f.is_smart = 1').all() as any[];
-    const rules = folders.map((f= unknown) => {
+    const rules = folders.map((f: any) => {
       try {
         const parsed = f.rules ? JSON.parse(f.rules) : null;
         return parsed ? { ...parsed, folderId: f.id, folderName: f.folder_name } : null;
@@ -2304,7 +2300,7 @@ ipcMain.handle('folders:rules:list', async () => {
       }
     }).filter(Boolean);
     return { success: true, rules };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FolderRules] List error:', error);
     return { success: false, rules: [] };
   }
@@ -2319,19 +2315,19 @@ ipcMain.handle('folders:rules:get', async (_, folderId: number) => {
       return { success: true, rule };
     }
     return { success: true, rule: null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Get error:', error);
     return { success: false, rule: null };
   }
 });
 
 // Save rules for a folder
-ipcMain.handle('folders:rules:save', async (_, folderId: number, rule= unknown) => {
+ipcMain.handle('folders:rules:save', async (_, folderId: number, rule: any) => {
   try {
     const rulesJson = JSON.stringify(rule);
     prepare('UPDATE message_folders SET rules = ?, is_smart = 1 WHERE id = ?').run(rulesJson, folderId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Save error:', error);
     return { success: false, error: error.message };
   }
@@ -2342,14 +2338,14 @@ ipcMain.handle('folders:rules:delete', async (_, folderId: number) => {
   try {
     prepare('UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ?').run(folderId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Delete error:', error);
     return { success: false, error: error.message };
   }
 });
 
 // Auto-assign conversation based on rules
-ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversationData= unknown) => {
+ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversationData: any) => {
   try {
     const folders = prepare('SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL').all() as any[];
     const matchedFolderIds: number[] = [];
@@ -2367,19 +2363,19 @@ ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversation
     }
 
     return { success: true, matchedFolderIds };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Auto-assign error:', error);
     return { success: false, matchedFolderIds: [] };
   }
 });
 
 // Simple rule evaluation (matching subset of folderRules.ts logic)
-function evaluateRuleSimple(rule: Record<string, unknown>, data: Record<string, unknown>): boolean {
+function evaluateRuleSimple(rule: any, data: any): boolean {
   if (!rule.enabled || !rule.conditions || rule.conditions.length === 0) {
     return false;
   }
 
-  const results = rule.conditions.map((cond= unknown) => {
+  const results = rule.conditions.map((cond: any) => {
     let result = false;
 
     switch (cond.type) {
@@ -2425,7 +2421,7 @@ ipcMain.handle('pins:list', async () => {
   try {
     const pins = prepare('SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC').all();
     return { success: true, pins };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] List error:', error);
     return { success: false, pins: [] };
   }
@@ -2436,7 +2432,7 @@ ipcMain.handle('pins:is-pinned', async (_, sessionKey: string) => {
   try {
     const row = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
     return { success: true, pinned: !!row };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] Is-pinned error:', error);
     return { success: false, pinned: false };
   }
@@ -2462,7 +2458,7 @@ ipcMain.handle('pins:pin', async (_, sessionKey: string, notes?: string) => {
 
     safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] Pin error:', error);
     return { success: false, error: error.message };
   }
@@ -2474,7 +2470,7 @@ ipcMain.handle('pins:unpin', async (_, sessionKey: string) => {
     prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
     safeLog.log('[Pins] Unpinned:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] Unpin error:', error);
     return { success: false, error: error.message };
   }
@@ -2507,7 +2503,7 @@ ipcMain.handle('pins:toggle', async (_, sessionKey: string) => {
       safeLog.log('[Pins] Toggled:', sessionKey, '-> pinned at order', nextOrder);
       return { success: true, pinned: true };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] Toggle error:', error);
     return { success: false, error: error.message };
   }
@@ -2528,7 +2524,7 @@ ipcMain.handle('pins:reorder', async (_, sessionKeys: string[]) => {
     }
     safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] Reorder error:', error);
     return { success: false, error: 'Reorder failed' };
   }
@@ -2539,7 +2535,7 @@ ipcMain.handle('pins:count', async () => {
   try {
     const result = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
     return { success: true, count: result?.count || 0 };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Pins] Count error:', error);
     return { success: false, count: 0 };
   }
@@ -2553,7 +2549,7 @@ ipcMain.handle('snooze:list', async () => {
   try {
     const snoozes = prepare('SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC').all();
     return { success: true, snoozes };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] List error:', error);
     return { success: false, snoozes: [] };
   }
@@ -2564,7 +2560,7 @@ ipcMain.handle('snooze:get', async (_, sessionKey: string) => {
   try {
     const row = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
     return { success: true, snooze: row || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] Get error:', error);
     return { success: false, snooze: null };
   }
@@ -2587,7 +2583,7 @@ ipcMain.handle('snooze:set', async (_, sessionKey: string, snoozeUntil: number, 
 
     safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] Set error:', error);
     return { success: false, error: error.message };
   }
@@ -2616,7 +2612,7 @@ ipcMain.handle('snooze:unset', async (_, sessionKey: string) => {
 
     safeLog.log('[Snooze] Unsnoozed:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] Unset error:', error);
     return { success: false, error: error.message };
   }
@@ -2628,7 +2624,7 @@ ipcMain.handle('snooze:markReminderSent', async (_, sessionKey: string) => {
     prepare('UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = ?').run(sessionKey);
     safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] Mark reminder error:', error);
     return { success: false, error: error.message };
   }
@@ -2640,7 +2636,7 @@ ipcMain.handle('snooze:expired', async () => {
     const now = Date.now();
     const snoozes = prepare('SELECT * FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
     return { success: true, snoozes };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] Expired list error:', error);
     return { success: false, snoozes: [] };
   }
@@ -2652,7 +2648,7 @@ ipcMain.handle('snooze:history', async (_, sessionKey: string, limit: number = 1
     const safeLimit = Math.max(1, Math.min(Math.floor(limit), 100));
     const history = prepare('SELECT * FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
     return { success: true, history };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Snooze] History error:', error);
     return { success: false, history: [] };
   }
@@ -2801,7 +2797,7 @@ ipcMain.handle('calendar:events:create', async (_, event: {
         metadata: event.metadata
       }
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Calendar] Create error:', error);
     return { success: false, error: error.message };
   }
@@ -2827,7 +2823,7 @@ ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
 }) => {
   // Build dynamic SET clause with parameterized values
   const setParts: string[] = [];
-  const params= unknown[] = [];
+  const params: any[] = [];
 
   if (updates.title !== undefined) { setParts.push('title = ?'); params.push(updates.title); }
   if (updates.description !== undefined) { setParts.push('description = ?'); params.push(updates.description); }
@@ -2874,7 +2870,7 @@ ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
     ).get(eventId);
 
     return { success: true, event: updatedEvent || null };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Calendar] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -2918,7 +2914,7 @@ ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
       }
       return { success: false, error: result.error };
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Execute] Tweet exception:', e.message);
     if (taskId) {
       exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
@@ -2988,7 +2984,7 @@ ipcMain.handle('inbox:addWithMetadata', async (_, item: {
 
     safeLog.log('[Inbox:addWithMetadata] Added successfully');
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Inbox:addWithMetadata] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3005,7 +3001,7 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
 
     safeLog.log('[Inbox:list] SUCCESS - Found', (items as any[]).length, 'items with status:', effectiveStatus);
     return { success: true, items };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Inbox:list] Error:', error);
     return { success: false, items: [], error: error.message };
   }
@@ -3033,7 +3029,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
       }
 
       // Build metadata with injection detection result
-      const metadata: Record<string, unknown> = {};
+      const metadata: any = {};
       if (injectionResult && injectionResult.detected) {
         metadata.injectionWarning = {
           detected: true,
@@ -3060,7 +3056,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
           success: true,
           injectionWarning: injectionResult?.detected ? injectionResult : null
         });
-      } catch (error: unknown) {
+      } catch (error: any) {
         safeLog.error('[Inbox] Add error:', error);
         resolve({ success: false, error: error.message });
       }
@@ -3079,7 +3075,7 @@ ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?
 
   try {
     const setClauses: string[] = [];
-    const params= unknown[] = [];
+    const params: any[] = [];
 
     if (updates.status) {
       setClauses.push('status = ?');
@@ -3098,7 +3094,7 @@ ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?
     params.push(id);
     prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Inbox:update] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3111,7 +3107,7 @@ ipcMain.handle('inbox:approveAll', async () => {
 
     prepare("UPDATE inbox SET status = 'approved', reviewed_at = datetime('now') WHERE status = 'pending'").run();
     return { success: true, count };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Inbox:approveAll] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3123,7 +3119,7 @@ ipcMain.handle('inbox:listRevisions', async () => {
   try {
     const items = prepare("SELECT * FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
     return { success: true, items };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Inbox] List revisions error:', error);
     return { success: false, items: [] };
   }
@@ -3158,7 +3154,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
     // Mark original as 'revised' (completed state)
     try {
       prepare("UPDATE inbox SET status = 'revised', reviewed_at = datetime('now') WHERE id = ?").run(originalId);
-    } catch (updateErr: unknown) {
+    } catch (updateErr: any) {
       safeLog.error('[Inbox] Update original error:', updateErr);
       // Still return success since the revision was created
     }
@@ -3169,7 +3165,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
     safeSend('inbox-updated', { revision: true, originalId });
 
     return { success: true, message: 'Revision submitted for approval' };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Inbox] Revision error:', error);
     return { success: false, error: error.message };
   }
@@ -3196,7 +3192,7 @@ ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
         sourceChannel: item.source_channel,
       }
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -3314,7 +3310,7 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
   });
 });
 
-ipcMain.handle('inbox:filter', async (_, criteria= unknown) => {
+ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
     // Pass criteria via stdin using execSync input option to avoid shell injection
     try {
@@ -3324,7 +3320,7 @@ ipcMain.handle('inbox:filter', async (_, criteria= unknown) => {
       );
       const results = result.trim().split('\n').filter(Boolean);
       resolve({ success: true, results });
-    } catch (error: unknown) {
+    } catch (error: any) {
       resolve({ success: false, error: error.message || 'Filter failed' });
     }
   });
@@ -3536,7 +3532,7 @@ ipcMain.handle('schedule:list', async () => {
     `);
 
     const rows = prepare('SELECT * FROM schedule ORDER BY scheduled_for ASC').all() as any[];
-    const items = rows.map((row= unknown) => ({
+    const items = rows.map((row: any) => ({
       id: row.id,
       type: row.type,
       content: row.content,
@@ -3549,7 +3545,7 @@ ipcMain.handle('schedule:list', async () => {
     }));
     safeLog.log('[Schedule:list] Parsed', items.length, 'items');
     return { success: true, items };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Schedule:list] Error:', e);
     return { success: true, items: [] };
   }
@@ -3611,7 +3607,7 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
     }
 
     return { success: true, id };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Schedule:add] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3627,7 +3623,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
       body: JSON.stringify({ action: 'remove', jobId: id })
     }).catch((err) => safeLog.error('[Cron] Failed to remove job via API:', err));
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -3635,7 +3631,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
 ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; content?: string; scheduledFor?: string; metadata?: any }) => {
   try {
     const setClauses: string[] = [];
-    const params= unknown[] = [];
+    const params: any[] = [];
 
     if (item.type) {
       setClauses.push('type = ?');
@@ -3659,7 +3655,7 @@ ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; c
     params.push(id);
     prepare(`UPDATE schedule SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -3713,7 +3709,7 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
               execError ? execError.message.slice(0, 500) : null,
               id
             );
-          } catch (dbErr: unknown) {
+          } catch (dbErr: any) {
             safeLog.error('[Schedule:sendNow] DB update error:', dbErr);
           }
           resolve({ success: !execError, error: execError?.message });
@@ -3722,7 +3718,7 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
     }
 
     return { success: false, error: 'Unknown item type' };
-  } catch (e: unknown) {
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 });
@@ -3755,7 +3751,7 @@ ipcMain.handle('search:telegram', async (_, query: string) => {
         const chats = result.chats || result || [];
         resolve({ 
           success: true, 
-          messages: Array.isArray(chats) ? chats.map((c= unknown) => ({
+          messages: Array.isArray(chats) ? chats.map((c: any) => ({
             id: c.id,
             type: 'chat',
             content: `Chat: ${c.name || c.title}`,
@@ -3786,7 +3782,7 @@ ipcMain.handle('search:whatsapp', async (_, query: string) => {
         const messages = result.data?.messages || [];
         resolve({ 
           success: true, 
-          messages: messages.map((m= unknown) => ({
+          messages: messages.map((m: any) => ({
             id: m.MsgID,
             content: m.Text || m.DisplayText,
             from: m.ChatName,
@@ -3812,7 +3808,7 @@ ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string)
     const buffer = Buffer.from(base64Data, 'base64');
     fs.writeFileSync(check.resolved, buffer);
     return { success: true, path: check.resolved };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FS] Write error:', error);
     return { success: false, error: error.message };
   }
@@ -3827,7 +3823,7 @@ ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => 
     }
     const content = fs.readFileSync(check.resolved, encoding as BufferEncoding || 'utf8');
     return { success: true, content };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FS] Read error:', error);
     return { success: false, error: error.message };
   }
@@ -3850,32 +3846,14 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
 
     fs.appendFileSync(check.resolved, content);
     return { success: true, path: check.resolved };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FS] Append error:', error);
     return { success: false, error: error.message };
   }
 });
 
-// Query SQL against froggo.db — SELECT only, returns { rows= unknown[] }
-ipcMain.handle('db:query', async (_, query: string, params?= unknown[]) => {
-  try {
-    const queryLower = query.trim().toLowerCase();
-    if (!queryLower.startsWith('select')) {
-      return { success: false, error: 'Only SELECT queries are allowed via db:query' };
-    }
-
-    const stmt = prepare(query);
-    const bindParams = params && params.length > 0 ? params : [];
-    const rows = stmt.all(...bindParams);
-    return { success: true, rows };
-  } catch (error: unknown) {
-    safeLog.error('[DB] Query error:', error);
-    return { success: false, rows: [], error: error.message };
-  }
-});
-
 // Execute SQL against froggo.db (parameterized via better-sqlite3)
-ipcMain.handle('db:exec', async (_, query: string, params?= unknown[]) => {
+ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
   try {
     // For safety, only allow SELECT and INSERT statements from the renderer
     const queryLower = query.trim().toLowerCase();
@@ -3893,7 +3871,7 @@ ipcMain.handle('db:exec', async (_, query: string, params?= unknown[]) => {
       const result = stmt.all(...bindParams);
       return { success: true, result };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[DB] Exec error:', error);
     return { success: false, error: error.message };
   }
@@ -3928,7 +3906,7 @@ ipcMain.handle('media:upload', async (_, fileName: string, base64Data: string) =
       fileName: uniqueFileName,
       size: stats.size 
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Media] Upload error:', error);
     return { success: false, error: error.message };
   }
@@ -3948,7 +3926,7 @@ ipcMain.handle('media:delete', async (_, filePath: string) => {
     }
     
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Media] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -3974,7 +3952,7 @@ ipcMain.handle('media:cleanup', async () => {
     
     safeLog.log('[Media] Cleanup complete:', deletedCount, 'files deleted');
     return { success: true, deletedCount };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Media] Cleanup error:', error);
     return { success: false, error: error.message };
   }
@@ -3990,7 +3968,7 @@ ipcMain.handle('library:list', async (_, category?: string) => {
   }
 
   try {
-    let rawFiles= unknown[];
+    let rawFiles: any[];
     if (category) {
       rawFiles = prepare('SELECT * FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as any[];
     } else {
@@ -3998,7 +3976,7 @@ ipcMain.handle('library:list', async (_, category?: string) => {
     }
 
     // Transform snake_case to camelCase for frontend
-    const files = rawFiles.map((f= unknown) => {
+    const files = rawFiles.map((f: any) => {
       // Safely parse JSON fields
       let linkedTasks: string[] = [];
       let tags: string[] = [];
@@ -4031,7 +4009,7 @@ ipcMain.handle('library:list', async (_, category?: string) => {
 
     safeLog.log(`[library:list] Returning ${files.length} files`);
     return { success: true, files };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[library:list] Error:', error);
     return { success: true, files: [] };
   }
@@ -4093,7 +4071,7 @@ ipcMain.handle('library:upload', async () => {
     );
 
     return { success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4112,7 +4090,7 @@ ipcMain.handle('library:delete', async (_, fileId: string) => {
     // Delete from database
     prepare('DELETE FROM library WHERE id = ?').run(fileId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Library] Delete error:', error);
     return { success: false };
   }
@@ -4136,7 +4114,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
     );
 
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Library] Link error:', error);
     return { success: false };
   }
@@ -4191,7 +4169,7 @@ ipcMain.handle('library:view', async (_, fileId: string) => {
         viewType: 'binary'
       };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4224,7 +4202,7 @@ ipcMain.handle('library:download', async (_, fileId: string) => {
     // Copy file to chosen location
     fs.copyFileSync(sourcePath, saveResult.filePath);
     return { success: true, path: saveResult.filePath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4249,7 +4227,7 @@ ipcMain.handle('shell:openPath', async (_, filePath: string) => {
     } else {
       return { success: false, error: result };
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4394,7 +4372,7 @@ ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; descrip
     
     safeLog.log('[AI:Task] Created task:', task.title, result.trim());
     return { success: true, result: result.trim() };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[AI:Task] Error:', e);
     return { success: false, error: e.message };
   }
@@ -4436,7 +4414,7 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
     
     safeLog.log('[AI:Event] Created event:', event.title, result.trim());
     return { success: true, result: result.trim() };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[AI:Event] Error:', e);
     return { success: false, error: e.message };
   }
@@ -4500,7 +4478,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
           safeLog.warn('[AI:Generate] Could not find JSON in response, using raw text');
           return { success: true, ideas: [{ idea: response, hook: '' }] };
         }
-      } catch (parseError: unknown) {
+      } catch (parseError: any) {
         safeLog.error('[AI:Generate] JSON parse error:', parseError.message);
         return { success: true, ideas: [{ idea: response, hook: '' }] };
       }
@@ -4508,7 +4486,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
       // For chat type, return raw response
       return { success: true, response };
     }
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[AI:Generate] Error:', e);
     return { success: false, error: e.message };
   }
@@ -4560,13 +4538,13 @@ ipcMain.handle('ai:generateReply', async (_, context: {
   if (!scheduleContext) {
     try {
       const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
-      scheduleContext = events.map((e= unknown) => `${e.title} at ${e.start_time}`).join('; ');
+      scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
     } catch (err) { safeLog.debug('[AIReply] Failed to load schedule context:', err); }
   }
   if (!taskCtx) {
     try {
       const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
-      taskCtx = tasks.map((t= unknown) => t.title).join('; ');
+      taskCtx = tasks.map((t: any) => t.title).join('; ');
     } catch (err) { safeLog.debug('[AIReply] Failed to load task context:', err); }
   }
 
@@ -4619,7 +4597,7 @@ Rules:
     const draft = data.content?.[0]?.text?.trim() || '';
     safeLog.log('[AI] Reply generated, length:', draft.length);
     return { success: true, draft };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[AI] Reply generation error:', e.message);
     return { success: false, error: e.message };
   }
@@ -4637,8 +4615,8 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
       return { success: true, analysis: null };
     }
 
-    let tasks= unknown[] = [];
-    let events= unknown[] = [];
+    let tasks: any[] = [];
+    let events: any[] = [];
     try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch (err) { safeLog.debug('[AIAnalysis] Failed to parse tasks:', err); }
     try { events = row.events ? JSON.parse(row.events) : []; } catch (err) { safeLog.debug('[AIAnalysis] Failed to parse events:', err); }
 
@@ -4653,7 +4631,7 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
         reply_needed: !!row.reply_needed,
       },
     };
-  } catch (e: unknown) {
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 });
@@ -4666,7 +4644,7 @@ ipcMain.handle('twitter:mentions', async () => {
     const mentions = await xApi.getMentions(20);
     safeLog.log('[Twitter] Got', mentions.length, 'mentions');
     return { success: true, mentions };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Twitter] Mentions error:', e.message);
     return { success: false, mentions: [], error: e.message };
   }
@@ -4678,7 +4656,7 @@ ipcMain.handle('twitter:home', async (_, limit?: number) => {
     const tweets = await xApi.getHomeTimeline(limit || 20);
     safeLog.log('[Twitter] Got', tweets.length, 'home tweets');
     return { success: true, tweets };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Twitter] Home error:', e.message);
     return { success: false, tweets: [], error: e.message };
   }
@@ -4744,9 +4722,9 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
     if (raw && raw.trim().startsWith('[')) {
       const cached = JSON.parse(raw);
       // Transform to match expected format
-      return cached.map((m= unknown) => {
+      return cached.map((m: any) => {
         // Parse metadata — may be string, double-quoted string, or object
-        let meta: Record<string, unknown> = {};
+        let meta: any = {};
         if (m.metadata) {
           try {
             meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata) : m.metadata;
@@ -4796,7 +4774,7 @@ const getCommsFromCache = async (limit: number): Promise<any[] | null> => {
 };
 
 // Write messages to froggo-db cache
-const writeCommsToCache = async (messages= unknown[]): Promise<void> => {
+const writeCommsToCache = async (messages: any[]): Promise<void> => {
   try {
     // Transform to froggo-db format
     const cacheData = messages.map(m => ({
@@ -4863,14 +4841,13 @@ setTimeout(initCommsDbTables, 2000);
 
 // ============== BACKGROUND COMMS POLLING ==============
 let commsRefreshInProgress = false;
-let commsPollTimer: NodeJS.Timeout | null = null;
 
 async function refreshCommsBackground() {
   if (commsRefreshInProgress) return;
   commsRefreshInProgress = true;
   safeLog.log('[CommsPolling] Background refresh starting...');
 
-  const allMessages= unknown[] = [];
+  const allMessages: any[] = [];
   const DISCORDCLI_PATH = DISCORDCLI;
 
   const relativeTime = (dateStr: string): string => {
@@ -5020,8 +4997,8 @@ async function refreshCommsBackground() {
       if (gogAuthRaw) {
         const gogData = JSON.parse(gogAuthRaw);
         const gmailAccts = (gogData.accounts || [])
-          .filter((a: unknown) => a.services?.includes('gmail'))
-          .map((a= unknown) => a.email);
+          .filter((a: any) => a.services?.includes('gmail'))
+          .map((a: any) => a.email);
         if (gmailAccts.length > 0) emailAccounts = gmailAccts;
       }
     } catch (err) { safeLog.debug('[Email] Failed to discover email accounts:', err); }
@@ -5059,6 +5036,7 @@ async function refreshCommsBackground() {
 }
 
 function startCommsPolling() {
+  let commsPollTimer: NodeJS.Timeout;
   // Initial background refresh after 10s
   setTimeout(() => {
     refreshCommsBackground().then(() => {
@@ -5086,7 +5064,7 @@ ipcMain.handle('inbox:check-history', async () => {
     const status = JSON.parse(result);
     safeLog.log('[Inbox] Historical data check:', status);
     return { success: true, ...status };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Inbox] Historical data check failed:', e);
     return { success: false, error: e.message };
   }
@@ -5105,7 +5083,7 @@ ipcMain.handle('inbox:trigger-backfill', async (_, days = 60) => {
       }
     });
     return { success: true, message: 'Backfill started in background' };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Inbox] Backfill trigger failed:', e);
     return { success: false, error: e.message };
   }
@@ -5176,7 +5154,7 @@ ipcMain.handle('messages:recent', async (_, limit?: number, includeArchived = fa
 // ============== MESSAGE CONTEXT HANDLER ==============
 ipcMain.handle('messages:context', async (_, messageId: string, platform: string, limit?: number) => {
   const lim = limit || 5;
-  const messages= unknown[] = [];
+  const messages: any[] = [];
   
   const runCmd = (cmd: string, timeout = 10000): Promise<string> => {
     return new Promise((resolve) => {
@@ -5251,7 +5229,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
     }
     
     return { success: true, messages };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Messages:Context] Error:', e);
     return { success: false, messages: [], error: e.message };
   }
@@ -5291,7 +5269,7 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
     
     safeLog.log(`[Messages:Send] Sent to ${platform}:${to}:`, result);
     return { success: true, result };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Messages:Send] Error:', e);
     return { success: false, error: e.message };
   }
@@ -5325,7 +5303,7 @@ ipcMain.handle('messages:unread', async () => {
       count: result.total_unread || 0,
       byPlatform
     };
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('[Messages:Unread] Error:', e);
     return { success: false, count: 0, error: e.message };
   }
@@ -5340,7 +5318,7 @@ ipcMain.handle('conversations:archive', async (_, sessionKey: string) => {
     prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(ARCHIVE_FOLDER_ID, sessionKey, 'user');
     safeLog.log('[Conversations] Archived:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Conversations] Archive error:', error);
     return { success: false, error: error.message };
   }
@@ -5354,7 +5332,7 @@ ipcMain.handle('conversations:unarchive', async (_, sessionKey: string) => {
     prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(ARCHIVE_FOLDER_ID, sessionKey);
     safeLog.log('[Conversations] Unarchived:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Conversations] Unarchive error:', error);
     return { success: false, error: error.message };
   }
@@ -5375,7 +5353,7 @@ ipcMain.handle('conversations:archived', async () => {
     ).all(ARCHIVE_FOLDER_ID);
     safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
     return { success: true, conversations };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Conversations] Archived list error:', error);
     return { success: false, conversations: [] };
   }
@@ -5399,7 +5377,7 @@ ipcMain.handle('conversations:markRead', async (_, sessionKey: string) => {
     prepare("UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = ? AND (is_read IS NULL OR is_read = 0)").run(sessionKey);
     safeLog.log('[Conversations] Marked as read:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Conversations] Mark read error:', error);
     return { success: false, error: error.message };
   }
@@ -5418,7 +5396,7 @@ ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
     })();
     safeLog.log('[Conversations] Deleted:', sessionKey);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Conversations] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -5438,8 +5416,8 @@ ipcMain.handle('email:accounts', async () => {
       try {
         const data = JSON.parse(stdout);
         const gmailAccounts = (data.accounts || [])
-          .filter((a: unknown) => a.services?.includes('gmail'))
-          .map((a= unknown) => ({
+          .filter((a: any) => a.services?.includes('gmail'))
+          .map((a: any) => ({
             email: a.email,
             label: a.email.split('@')[0],
           }));
@@ -5483,7 +5461,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
     try {
       const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
       const gogData = JSON.parse(gogList);
-      tryAccounts = (gogData.accounts || []).filter((a: unknown) => a.services?.includes('gmail')).map((a= unknown) => a.email);
+      tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
     } catch (err) { safeLog.debug('[Email] Failed to get accounts for email body:', err); }
   }
 
@@ -5529,56 +5507,6 @@ ipcMain.handle('email:search', async (_, query: string, account?: string) => {
         resolve({ success: true, emails, account: acct });
       } catch {
         resolve({ success: true, emails: [], raw: stdout, account: acct });
-      }
-    });
-  });
-});
-
-// Search for starred emails
-ipcMain.handle('email:starred', async (_, account?: string) => {
-  if (!account) return { success: false, count: 0, error: 'No email account specified' };
-  const acct = account;
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:starred" --json --limit 1`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Email] Starred error:', error);
-        resolve({ success: false, count: 0, error: error.message });
-        return;
-      }
-      try {
-        const emails = JSON.parse(stdout);
-        // Get actual count from Gmail (approximate based on threads returned)
-        const count = emails.threads?.length || emails.length || 0;
-        resolve({ success: true, count, account: acct });
-      } catch {
-        resolve({ success: true, count: 0, account: acct });
-      }
-    });
-  });
-});
-
-// Search for @action labeled emails (important/starred/unread)
-ipcMain.handle('email:action', async (_, account?: string) => {
-  if (!account) return { success: false, count: 0, error: 'No email account specified' };
-  const acct = account;
-  // Search for important emails: unread + starred + prioritized
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread (is:starred OR has:important)" --json --limit 1`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Email] Action search error:', error);
-        resolve({ success: false, count: 0, error: error.message });
-        return;
-      }
-      try {
-        const emails = JSON.parse(stdout);
-        const count = emails.threads?.length || emails.length || 0;
-        resolve({ success: true, count, account: acct });
-      } catch {
-        resolve({ success: true, count: 0, account: acct });
       }
     });
   });
@@ -5754,8 +5682,8 @@ async function runImportantEmailCheck() {
     if (gogAuthRaw) {
       const gogData = JSON.parse(gogAuthRaw);
       const gmailAccts = (gogData.accounts || [])
-        .filter((a: unknown) => a.services?.includes('gmail'))
-        .map((a= unknown) => a.email);
+        .filter((a: any) => a.services?.includes('gmail'))
+        .map((a: any) => a.email);
       if (gmailAccts.length > 0) emailAccounts = gmailAccts;
     }
   } catch (e) {
@@ -5798,7 +5726,7 @@ async function runImportantEmailCheck() {
               "INSERT INTO inbox (type, title, content, context, status, source_channel, created) VALUES (?, ?, ?, ?, 'pending', 'email', datetime('now'))"
             ).run('email', title, content, `${important.priority} priority`);
             safeLog.log(`[Email] Created inbox item: ${title}`);
-          } catch (err: unknown) {
+          } catch (err: any) {
             safeLog.error('[Email] Failed to create inbox item:', err);
           }
           
@@ -5866,7 +5794,7 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
   });
 });
 
-ipcMain.handle('calendar:createEvent', async (_, params= unknown) => {
+ipcMain.handle('calendar:createEvent', async (_, params: any) => {
   const { account, title, start, end, location, description, attendees, isAllDay, recurrence, _timeZone } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary'; // Use primary calendar
@@ -5889,7 +5817,7 @@ ipcMain.handle('calendar:createEvent', async (_, params= unknown) => {
   if (description) cmd += ` --description "${description.replace(/"/g, '\\"')}"`;
   
   if (attendees && attendees.length > 0) {
-    const attendeeEmails = attendees.map((a= unknown) => a.email).join(',');
+    const attendeeEmails = attendees.map((a: any) => a.email).join(',');
     cmd += ` --attendees "${attendeeEmails}"`;
   }
   
@@ -5915,7 +5843,7 @@ ipcMain.handle('calendar:createEvent', async (_, params= unknown) => {
   });
 });
 
-ipcMain.handle('calendar:updateEvent', async (_, params= unknown) => {
+ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
   const { account, eventId, title, start, end, location, description, attendees, isAllDay, _timeZone } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
@@ -5940,7 +5868,7 @@ ipcMain.handle('calendar:updateEvent', async (_, params= unknown) => {
   if (description !== undefined) cmd += ` --description "${description.replace(/"/g, '\\"')}"`;
   
   if (attendees && attendees.length > 0) {
-    const attendeeEmails = attendees.map((a= unknown) => a.email).join(',');
+    const attendeeEmails = attendees.map((a: any) => a.email).join(',');
     cmd += ` --attendees "${attendeeEmails}"`;
   }
   
@@ -5959,7 +5887,7 @@ ipcMain.handle('calendar:updateEvent', async (_, params= unknown) => {
   });
 });
 
-ipcMain.handle('calendar:deleteEvent', async (_, params= unknown) => {
+ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
   const { account, eventId } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
@@ -6014,7 +5942,7 @@ ipcMain.handle('calendar:listAccounts', async () => {
       env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
     }).toString();
     const gogData = JSON.parse(gogList);
-    knownAccounts = (gogData.accounts || []).map((a= unknown) => a.email).filter(Boolean);
+    knownAccounts = (gogData.accounts || []).map((a: any) => a.email).filter(Boolean);
   } catch {
     safeLog.warn('[Calendar] Failed to discover gog accounts for listAccounts');
   }
@@ -6123,7 +6051,7 @@ ipcMain.handle('accounts:list', async () => {
     // Use V2 service for OAuth status detection
     const result = await accountsServiceV2.listAccounts();
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Accounts] List error:', error);
     return { success: false, accounts: [], error: error.message };
   }
@@ -6141,7 +6069,7 @@ ipcMain.handle('accounts:add', async (_, request: {
     safeLog.log('[Accounts] Adding account:', request.email);
     const result = await accountsService.addAccount(request as any);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Accounts] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -6152,7 +6080,7 @@ ipcMain.handle('accounts:test', async (_, accountId: string) => {
   try {
     const result = await accountsService.testAccount(accountId);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Accounts] Test error:', error);
     return { success: false, error: error.message };
   }
@@ -6164,7 +6092,7 @@ ipcMain.handle('accounts:refresh', async (_, accountId: string) => {
     safeLog.log('[Accounts] Refreshing OAuth for:', accountId);
     const result = await accountsServiceV2.refreshAccount(accountId);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Accounts] Refresh error:', error);
     return { success: false, error: error.message };
   }
@@ -6176,7 +6104,7 @@ ipcMain.handle('accounts:remove', async (_, accountId: string) => {
     safeLog.log('[Accounts] Removing account:', accountId);
     const result = await accountsServiceV2.removeAccount(accountId);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Accounts] Remove error:', error);
     return { success: false, error: error.message };
   }
@@ -6194,7 +6122,7 @@ ipcMain.handle('calendar:aggregate', async (_, options?: {
     const result = await calendarService.aggregateEvents(options || {});
     safeLog.log(`[Calendar:aggregate] Success: ${result.events.length} events from ${Object.keys(result.sources.google).length} sources`);
     return { success: true, ...result };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Calendar:aggregate] Error:', error);
     return { success: false, error: error.message, events: [], sources: { google: {}, missionControl: 0 }, errors: [] };
   }
@@ -6205,7 +6133,7 @@ ipcMain.handle('calendar:clearCache', async (_, source?: 'google' | 'mission-con
     calendarService.clearCache(source);
     safeLog.log(`[Calendar:clearCache] Cleared cache for: ${source || 'all'}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Calendar:clearCache] Error:', error);
     return { success: false, error: error.message };
   }
@@ -6216,7 +6144,7 @@ ipcMain.handle('calendar:cacheStats', async () => {
     const stats = calendarService.getCacheStats();
     safeLog.log('[Calendar:cacheStats] Stats:', stats);
     return { success: true, stats };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Calendar:cacheStats] Error:', error);
     return { success: false, error: error.message };
   }
@@ -6230,7 +6158,7 @@ ipcMain.handle('connectedAccounts:list', async () => {
     // Use V2 service for real gog accounts with OAuth status
     const result = await accountsServiceV2.listAccounts();
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] List error:', error);
     return { success: false, accounts: [], error: error.message };
   }
@@ -6240,7 +6168,7 @@ ipcMain.handle('connectedAccounts:get', async (_, accountId: string) => {
   try {
     const account = await connectedAccountsService.getAccount(accountId);
     return { success: true, account };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get error:', error);
     return { success: false, account: null, error: error.message };
   }
@@ -6250,7 +6178,7 @@ ipcMain.handle('connectedAccounts:getPermissions', async (_, accountId: string) 
   try {
     const permissions = await connectedAccountsService.getAccountPermissions(accountId);
     return { success: true, permissions };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get permissions error:', error);
     return { success: false, permissions: [], error: error.message };
   }
@@ -6260,17 +6188,17 @@ ipcMain.handle('connectedAccounts:getAvailableTypes', async () => {
   try {
     const types = await connectedAccountsService.getAvailableAccountTypes();
     return { success: true, types };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get available types error:', error);
     return { success: false, types: [], error: error.message };
   }
 });
 
-ipcMain.handle('connectedAccounts:add', async (_, accountType: string, options?= unknown) => {
+ipcMain.handle('connectedAccounts:add', async (_, accountType: string, options?: any) => {
   try {
     const result = await connectedAccountsService.addAccount(accountType, options);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -6280,7 +6208,7 @@ ipcMain.handle('connectedAccounts:remove', async (_, accountId: string) => {
   try {
     const result = await connectedAccountsService.removeAccount(accountId);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Remove error:', error);
     return { success: false, error: error.message };
   }
@@ -6292,7 +6220,7 @@ ipcMain.handle('connectedAccounts:refresh', async (_, accountId: string) => {
     safeLog.log('[ConnectedAccounts] Refreshing OAuth for:', accountId);
     const result = await accountsServiceV2.refreshAccount(accountId);
     return result;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Refresh error:', error);
     return { success: false, error: error.message };
   }
@@ -6302,7 +6230,7 @@ ipcMain.handle('connectedAccounts:getSyncHistory', async (_, accountId: string, 
   try {
     const history = await connectedAccountsService.getSyncHistory(accountId, limit);
     return { success: true, history };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get sync history error:', error);
     return { success: false, history: [], error: error.message };
   }
@@ -6312,7 +6240,7 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
   try {
     const result = await connectedAccountsService.importGoogleAccounts();
     return { success: true, ...result };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Import Google error:', error);
     return { success: false, imported: 0, errors: [error.message] };
   }
@@ -6568,8 +6496,8 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   
   // Each query is independently try/caught so one failure doesn't kill all data
   let taskStats = { total: 0, completed: 0 };
-  let recentTasks= unknown[] = [];
-  let skills= unknown[] = [];
+  let recentTasks: any[] = [];
+  let skills: any[] = [];
   let brainNotes: string[] = [];
   let agentRules = 'AGENT.md not found';
 
@@ -6580,7 +6508,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
     const parsed = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
     taskStats = { total: parsed.total || 0, completed: parsed.completed || 0 };
     safeLog.log(`[agents:getDetails] taskStats for ${agentId}: total=${taskStats.total}, completed=${taskStats.completed}`);
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] taskStats query failed for ${agentId}:`, e.message);
   }
 
@@ -6588,7 +6516,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   try {
     const recentTasksCmd = `sqlite3 "${froggoDbPath}" "SELECT id, title, status, completed_at, metadata FROM tasks WHERE assigned_to IN (${dbIdsSql}) AND (cancelled IS NULL OR cancelled = 0) ORDER BY COALESCE(completed_at, updated_at) DESC LIMIT 10" -json`;
     const recentTasksResult = execSync(recentTasksCmd, { encoding: 'utf-8' });
-    recentTasks = JSON.parse(recentTasksResult || '[]').map((task= unknown) => {
+    recentTasks = JSON.parse(recentTasksResult || '[]').map((task: any) => {
       let outcome = 'unknown';
       try {
         const metadata = task.metadata ? JSON.parse(task.metadata) : {};
@@ -6598,7 +6526,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       }
       return { ...task, outcome, completedAt: task.completed_at };
     });
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] recentTasks query failed for ${agentId}:`, e.message);
   }
 
@@ -6606,14 +6534,14 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   try {
     const skillsCmd = `sqlite3 "${froggoDbPath}" "SELECT skill_name as name, proficiency, last_used, success_count, failure_count FROM skill_evolution ORDER BY proficiency DESC" -json`;
     const skillsResult = execSync(skillsCmd, { encoding: 'utf-8' });
-    skills = JSON.parse(skillsResult || '[]').map((s: unknown) => ({
+    skills = JSON.parse(skillsResult || '[]').map((s: any) => ({
       name: s.name,
       proficiency: s.proficiency,
       lastUsed: s.last_used,
       successCount: s.success_count,
       failureCount: s.failure_count,
     }));
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] skills query failed for ${agentId}:`, e.message);
   }
 
@@ -6621,8 +6549,8 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   try {
     const brainNotesCmd = `sqlite3 "${froggoDbPath}" "SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`;
     const brainNotesResult = execSync(brainNotesCmd, { encoding: 'utf-8' });
-    brainNotes = JSON.parse(brainNotesResult || '[]').map((row= unknown) => row.description);
-  } catch (e: unknown) {
+    brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.description);
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] brainNotes query failed for ${agentId}:`, e.message);
   }
 
@@ -6672,7 +6600,7 @@ ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
   try {
     prepare("INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES (?, 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')").run(skill);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -6681,7 +6609,7 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
   try {
     prepare("UPDATE skill_evolution SET proficiency = ?, updated_at = datetime('now') WHERE skill_name = ?").run(proficiency, skillName);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -6696,7 +6624,7 @@ ipcMain.handle('agents:search', async (_, query: string) => {
   }
 
   const q = query.toLowerCase();
-  const results= unknown[] = [];
+  const results: any[] = [];
 
   for (const [agentId, def] of Object.entries(agentDefinitions)) {
     const searchable = `${agentId} ${def.role} ${def.description} ${def.capabilities.join(' ')}`.toLowerCase();
@@ -6770,7 +6698,7 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
     });
 
     return { success: true, output: result };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[agents:spawnForTask] Error:', error.message);
     return { success: false, error: error.message };
   }
@@ -6801,7 +6729,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
           
           try {
             const sessions = JSON.parse(stdout);
-            const sessionExists = sessions.sessions?.some((s= unknown) => s.key === sessionKey);
+            const sessionExists = sessions.sessions?.some((s: any) => s.key === sessionKey);
             
             if (!sessionExists) {
               safeLog.log(`[agents:spawnChat] Session ${sessionKey} not found, spawning...`);
@@ -6836,13 +6764,13 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
           }
         });
       });
-    } catch (checkError: unknown) {
+    } catch (checkError: any) {
       safeLog.warn(`[agents:spawnChat] Session check failed, continuing anyway:`, checkError.message);
       debugLog(`[agents:spawnChat] Session check failed:`, checkError.message);
     }
     
     return { success: true, sessionKey };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
     debugLog(`Failed to spawn chat for ${agentId}:`, error.message, error.stack);
     return { success: false, error: error.message || 'Failed to spawn chat session' };
@@ -6883,7 +6811,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
       response = cliResult || 'No response from agent';
       safeLog.log(`[agents:chat] CLI success, response length: ${response.length}`);
       debugLog(`[agents:chat] CLI success, response length: ${response.length}, preview: ${response.slice(0, 200)}`);
-    } catch (cliErr: unknown) {
+    } catch (cliErr: any) {
       safeLog.error(`[agents:chat] CLI agent failed: ${cliErr.message}`);
       debugLog(`[agents:chat] CLI agent error:`, cliErr.message, cliErr.stack);
       
@@ -6893,7 +6821,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
     }
     
     return { success: true, response };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('Agent chat error:', error);
     return { success: false, error: error.message || 'Unknown error', response: `❌ Error: ${error.message || 'Unknown error'}` };
   }
@@ -6953,7 +6881,7 @@ ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: str
 
     // Build parameterized query
     let query = 'SELECT agent_id, model, input_tokens, output_tokens, total_tokens, created_at FROM sessions';
-    const params= unknown[] = [];
+    const params: any[] = [];
     const whereClauses: string[] = [];
     if (minTimestamp > 0) { whereClauses.push('created_at >= ?'); params.push(minTimestamp); }
     if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
@@ -7005,7 +6933,7 @@ ipcMain.handle('tokens:summary', async (_, args?: { agent?: string; period?: str
     })).sort((a, b) => b.total_all - a.total_all);
 
     return { by_agent, period: args?.period || 'all' };
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { error: err.message, by_agent: [] };
   }
 });
@@ -7021,7 +6949,7 @@ ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; 
     const since = args?.since || 0;
 
     let query = 'SELECT session_id, agent_id, model, input_tokens, output_tokens, total_tokens, created_at, updated_at FROM sessions';
-    const params= unknown[] = [];
+    const params: any[] = [];
     const whereClauses: string[] = [];
     if (args?.agent) { whereClauses.push('agent_id = ?'); params.push(args.agent); }
     if (since > 0) { whereClauses.push('created_at >= ?'); params.push(since); }
@@ -7044,7 +6972,7 @@ ipcMain.handle('tokens:log', async (_, args?: { agent?: string; limit?: number; 
     }));
 
     return { entries };
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { error: err.message, entries: [] };
   }
 });
@@ -7096,7 +7024,7 @@ ipcMain.handle('tokens:budget', async (_, agent: string) => {
       over_budget: overBudget,
       hard_limit: budgetRow.hard_limit === 1,
     };
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { error: err.message };
   }
 });
@@ -7114,7 +7042,7 @@ ipcMain.handle('get-performance-report', async (_, args?: { days?: number }) => 
       }
     );
     return JSON.parse(result);
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { error: err.message, agents: [] };
   }
 });
@@ -7131,7 +7059,7 @@ ipcMain.handle('get-agent-audit', async (_, args: { agentId: string; days?: numb
       }
     );
     return JSON.parse(result);
-  } catch (err: unknown) {
+  } catch (err: any) {
     return { error: err.message, timeline: [] };
   }
 });
@@ -7143,7 +7071,7 @@ ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: stri
     // Show all messages including expired ones (users want to see agent communication history)
     const rows = prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
     return rows;
-  } catch (e: unknown) {
+  } catch (e: any) {
     safeLog.error('get-dm-history error:', e);
     return [];
   }
@@ -7166,7 +7094,7 @@ ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: strin
   try {
     prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, 'dashboard', msg.role, msg.content);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -7175,7 +7103,7 @@ ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: s
   const session = sessionKey || 'dashboard';
   try {
     const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, 'dashboard', limit) as any[];
-    const messages = rows.reverse().map((r: unknown) => ({
+    const messages = rows.reverse().map((r: any) => ({
       id: `db-${r.id}`,
       role: r.role,
       content: r.content,
@@ -7257,7 +7185,7 @@ Suggestions:`;
             suggestions
           });
         }
-      } catch (parseError: unknown) {
+      } catch (parseError: any) {
         safeLog.error('[SuggestedReplies] Parse error:', parseError.message);
         resolve({
           success: false,
@@ -7323,7 +7251,7 @@ ipcMain.handle('starred:list', async (_, options?: { category?: string; sessionK
         try {
           const starred = JSON.parse(stdout);
           resolve({ success: true, starred });
-        } catch (e: unknown) {
+        } catch (e: any) {
           safeLog.error('[Starred] Parse error:', e.message);
           resolve({ success: false, error: e.message, starred: [] });
         }
@@ -7346,7 +7274,7 @@ ipcMain.handle('starred:search', async (_, query: string, limit?: number) => {
         try {
           const results = JSON.parse(stdout);
           resolve({ success: true, results });
-        } catch (e: unknown) {
+        } catch (e: any) {
           safeLog.error('[Starred] Parse error:', e.message);
           resolve({ success: false, error: e.message, results: [] });
         }
@@ -7430,7 +7358,7 @@ ipcMain.handle('security:listKeys', async () => {
     const secDb = getSecurityDb();
     const keys = secDb.prepare('SELECT * FROM api_keys ORDER BY created_at DESC').all();
     return { success: true, keys };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] List keys error:', error);
     return { success: false, keys: [], error: error.message };
   }
@@ -7446,7 +7374,7 @@ ipcMain.handle('security:addKey', async (_, key: { name: string; service: string
       id, key.name, key.service, key.key, now
     );
     return { success: true, id };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] Add key error:', error);
     return { success: false, error: error.message };
   }
@@ -7458,7 +7386,7 @@ ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
     const secDb = getSecurityDb();
     secDb.prepare('DELETE FROM api_keys WHERE id = ?').run(keyId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] Delete key error:', error);
     return { success: false, error: error.message };
   }
@@ -7470,7 +7398,7 @@ ipcMain.handle('security:listAuditLogs', async () => {
     const secDb = getSecurityDb();
     const logs = secDb.prepare('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all();
     return { success: true, logs };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] List audit logs error:', error);
     return { success: false, logs: [], error: error.message };
   }
@@ -7483,7 +7411,7 @@ ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { st
     const secDb = getSecurityDb();
     secDb.prepare('UPDATE audit_logs SET status = ? WHERE id = ?').run(updates.status, logId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] Update audit log error:', error);
     return { success: false, error: error.message };
   }
@@ -7495,7 +7423,7 @@ ipcMain.handle('security:listAlerts', async () => {
     const secDb = getSecurityDb();
     const alerts = secDb.prepare('SELECT * FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all();
     return { success: true, alerts };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] List alerts error:', error);
     return { success: false, alerts: [], error: error.message };
   }
@@ -7507,7 +7435,7 @@ ipcMain.handle('security:dismissAlert', async (_, alertId: string) => {
     const secDb = getSecurityDb();
     secDb.prepare('UPDATE security_alerts SET dismissed = 1 WHERE id = ?').run(alertId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] Dismiss alert error:', error);
     return { success: false, error: error.message };
   }
@@ -7554,7 +7482,7 @@ ipcMain.handle('security:runAudit', async () => {
       alerts: output.alerts || [],
       summary: output.summary || 'Audit complete'
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Security] Run audit error:', error);
     return { 
       success: false, 
@@ -7573,7 +7501,7 @@ ipcMain.handle('export:tasks', async (_, options: { format: 'json' | 'csv'; filt
     safeLog.log('[Export] Exporting tasks with format:', options.format);
     const filepath = await exportBackupService.exportTasks(options);
     return { success: true, filepath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Export] Task export error:', error);
     return { success: false, error: error.message };
   }
@@ -7585,7 +7513,7 @@ ipcMain.handle('export:agentLogs', async (_, options: { format: 'json' | 'csv'; 
     safeLog.log('[Export] Exporting agent logs');
     const filepath = await exportBackupService.exportAgentLogs(options);
     return { success: true, filepath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Export] Agent logs export error:', error);
     return { success: false, error: error.message };
   }
@@ -7597,7 +7525,7 @@ ipcMain.handle('export:chatHistory', async (_, options: { format: 'json' | 'csv'
     safeLog.log('[Export] Exporting chat history');
     const filepath = await exportBackupService.exportChatHistory(options);
     return { success: true, filepath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Export] Chat history export error:', error);
     return { success: false, error: error.message };
   }
@@ -7609,7 +7537,7 @@ ipcMain.handle('backup:create', async (_, options?: { includeAttachments?: boole
     safeLog.log('[Backup] Creating database backup');
     const filepath = await exportBackupService.createBackup(options);
     return { success: true, filepath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Backup] Create backup error:', error);
     return { success: false, error: error.message };
   }
@@ -7621,7 +7549,7 @@ ipcMain.handle('backup:restore', async (_, backupPath: string) => {
     safeLog.log('[Backup] Restoring from:', backupPath);
     await exportBackupService.restoreBackup(backupPath);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Backup] Restore error:', error);
     return { success: false, error: error.message };
   }
@@ -7632,7 +7560,7 @@ ipcMain.handle('backup:list', async () => {
   try {
     const backups = await exportBackupService.listBackups();
     return { success: true, backups };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Backup] List backups error:', error);
     return { success: false, backups: [], error: error.message };
   }
@@ -7644,7 +7572,7 @@ ipcMain.handle('backup:cleanup', async (_, keepCount: number) => {
     safeLog.log('[Backup] Cleaning up old backups, keeping:', keepCount);
     const deletedCount = await exportBackupService.cleanupOldBackups(keepCount);
     return { success: true, deletedCount };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Backup] Cleanup error:', error);
     return { success: false, error: error.message };
   }
@@ -7656,7 +7584,7 @@ ipcMain.handle('import:tasks', async (_, filepath: string) => {
     safeLog.log('[Import] Importing tasks from:', filepath);
     const result = await exportBackupService.importTasks(filepath);
     return { success: true, ...result };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Import] Import error:', error);
     return { success: false, error: error.message };
   }
@@ -7667,7 +7595,7 @@ ipcMain.handle('exportBackup:stats', async () => {
   try {
     const stats = await exportBackupService.getStats();
     return { success: true, stats };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[ExportBackup] Stats error:', error);
     return { success: false, stats: null, error: error.message };
   }
@@ -7678,7 +7606,7 @@ ipcMain.handle('dashboardAgents:status', async () => {
   try {
     const status = getDashboardAgentsStatus();
     return { success: true, agents: status };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[DashboardAgents] Status error:', error);
     return { success: false, agents: [], error: error.message };
   }
@@ -7707,7 +7635,7 @@ ipcMain.handle('hrReports:list', async () => {
       })
       .sort((a, b) => b.createdAt - a.createdAt); // Newest first
     return { success: true, reports };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[HRReports] List error:', error);
     return { success: false, reports: [], error: error.message };
   }
@@ -7722,7 +7650,7 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
     }
     const content = fs.readFileSync(filePath, 'utf-8');
     return { success: true, content };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[HRReports] Read error:', error);
     return { success: false, error: error.message };
   }
@@ -7736,14 +7664,9 @@ ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
   try {
     const cmd = `froggo-db finance-transactions --limit ${limit} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    // froggo-db may return plain text when no records found
-    if (!stdout.startsWith('[') && !stdout.startsWith('{')) {
-      return { success: true, transactions: [] };
-    }
-    const transactions = JSON.parse(stdout);
-    return { success: true, transactions: Array.isArray(transactions) ? transactions : [] };
-  } catch (error: unknown) {
+    const transactions = JSON.parse(result.stdout);
+    return { success: true, transactions };
+  } catch (error: any) {
     safeLog.error('[Finance] Get transactions error:', error.message);
     return { success: false, transactions: [], error: error.message };
   }
@@ -7753,14 +7676,9 @@ ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'cryp
   try {
     const cmd = `froggo-db finance-budget-status --type ${budgetType} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    // froggo-db may return plain text when no budgets found
-    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
-      return { success: true, budget: null };
-    }
-    const budget = JSON.parse(stdout);
+    const budget = JSON.parse(result.stdout);
     return { success: true, budget };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Finance] Get budget status error:', error.message);
     return { success: false, budget: null, error: error.message };
   }
@@ -7795,7 +7713,7 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, _filename: str
       imported: uploadResult.imported || 0,
       skipped: uploadResult.skipped || 0
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Finance] Upload CSV error:', error.message);
     return { success: false, imported: 0, skipped: 0, error: error.message };
   }
@@ -7805,13 +7723,9 @@ ipcMain.handle('finance:getAlerts', async () => {
   try {
     const cmd = `froggo-db finance-alerts --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
-      return { success: true, alerts: [] };
-    }
-    const parsed = JSON.parse(stdout);
-    return { success: true, alerts: parsed.alerts || (Array.isArray(parsed) ? parsed : []) };
-  } catch (error: unknown) {
+    const alerts = JSON.parse(result.stdout);
+    return { success: true, alerts: alerts.alerts || [] };
+  } catch (error: any) {
     safeLog.error('[Finance] Get alerts error:', error.message);
     return { success: false, alerts: [], error: error.message };
   }
@@ -7821,13 +7735,9 @@ ipcMain.handle('finance:getInsights', async () => {
   try {
     const cmd = `froggo-db finance-insights --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
-      return { success: true, insights: [] };
-    }
-    const parsed = JSON.parse(stdout);
-    return { success: true, insights: parsed.insights || (Array.isArray(parsed) ? parsed : []) };
-  } catch (error: unknown) {
+    const insights = JSON.parse(result.stdout);
+    return { success: true, insights: insights.insights || [] };
+  } catch (error: any) {
     safeLog.error('[Finance] Get insights error:', error.message);
     return { success: false, insights: [], error: error.message };
   }
@@ -7842,7 +7752,7 @@ ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
     `);
     stmt.run(Date.now(), insightId);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Finance] Dismiss insight error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7883,7 +7793,7 @@ ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: numbe
     } else {
       throw new Error(response.error || 'Analysis failed');
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Finance] Trigger analysis error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7891,13 +7801,13 @@ ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: numbe
 
 // ── Finance Agent Communication ──
 
-ipcMain.handle('financeAgent:sendMessage', async (_, message: string, context?= unknown) => {
+ipcMain.handle('financeAgent:sendMessage', async (_, message: string, context?: any) => {
   try {
     safeLog.log('[FinanceAgent] Sending message to Finance Manager:', message.substring(0, 100));
     const bridge = getFinanceAgentBridge();
     const response = await bridge.sendMessage(message, context);
     return response;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Send message error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7908,7 +7818,7 @@ ipcMain.handle('financeAgent:getChatHistory', async () => {
     const bridge = getFinanceAgentBridge();
     const history = bridge.getChatHistory();
     return { success: true, messages: history };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Get chat history error:', error.message);
     return { success: false, messages: [], error: error.message };
   }
@@ -7919,7 +7829,7 @@ ipcMain.handle('financeAgent:clearHistory', async () => {
     const bridge = getFinanceAgentBridge();
     await bridge.clearChatHistory();
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Clear history error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7931,7 +7841,7 @@ ipcMain.handle('financeAgent:triggerAnalysis', async (_, analysisType?: 'csv_upl
     const bridge = getFinanceAgentBridge();
     const response = await bridge.triggerAnalysis(analysisType);
     return response;
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Trigger analysis error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7942,7 +7852,7 @@ ipcMain.handle('financeAgent:getStatus', async () => {
     const bridge = getFinanceAgentBridge();
     const status = bridge.getStatus();
     return { success: true, status };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Get status error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7999,7 +7909,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
     
     safeLog.log(`[X/Research] Created research idea: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Research] Propose error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8008,7 +7918,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
 ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?: number }) => {
   try {
     let query = 'SELECT * FROM x_research_ideas';
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (filters?.status) {
       query += ' WHERE status = ?';
@@ -8026,7 +7936,7 @@ ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?:
     const ideas = stmt.all(...params);
     
     // Parse JSON fields
-    const parsed = ideas.map((idea= unknown) => {
+    const parsed = ideas.map((idea: any) => {
       let citations: string[] = [];
       try {
         citations = idea.citations ? JSON.parse(idea.citations) : [];
@@ -8041,7 +7951,7 @@ ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?:
     });
     
     return { success: true, ideas: parsed };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Research] List error:', error.message);
     return { success: false, ideas: [], error: error.message };
   }
@@ -8081,7 +7991,7 @@ ipcMain.handle('x:research:approve', async (_, data: { id: string; approvedBy: s
     
     safeLog.log(`[X/Research] Approved research idea: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Research] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8123,7 +8033,7 @@ ipcMain.handle('x:research:reject', async (_, data: { id: string; reason?: strin
     
     safeLog.log(`[X/Research] Rejected research idea: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Research] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8193,7 +8103,7 @@ ${description}
     
     safeLog.log(`[X/Plan] Created content plan: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Plan] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8202,7 +8112,7 @@ ${description}
 ipcMain.handle('x:plan:list', async (_, filters?: { status?: string; contentType?: string; limit?: number }) => {
   try {
     let query = 'SELECT * FROM x_content_plans WHERE 1=1';
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (filters?.status) {
       query += ' AND status = ?';
@@ -8225,7 +8135,7 @@ ipcMain.handle('x:plan:list', async (_, filters?: { status?: string; contentType
     const plans = stmt.all(...params);
     
     return { success: true, plans };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Plan] List error:', error.message);
     return { success: false, plans: [], error: error.message };
   }
@@ -8265,7 +8175,7 @@ ipcMain.handle('x:plan:approve', async (_, data: { id: string; approvedBy: strin
     
     safeLog.log(`[X/Plan] Approved content plan: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Plan] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8307,7 +8217,7 @@ ipcMain.handle('x:plan:reject', async (_, data: { id: string; reason?: string })
     
     safeLog.log(`[X/Plan] Rejected content plan: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Plan] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8382,7 +8292,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
     
     safeLog.log(`[X/Draft] Created draft: ${id}`);
     return { success: true, id, filePath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Draft] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8391,7 +8301,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
 ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: string; limit?: number }) => {
   try {
     let query = 'SELECT * FROM x_drafts WHERE 1=1';
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (filters?.status) {
       query += ' AND status = ?';
@@ -8414,7 +8324,7 @@ ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: s
     const drafts = stmt.all(...params);
     
     // Parse JSON fields
-    const parsed = drafts.map((draft= unknown) => {
+    const parsed = drafts.map((draft: any) => {
       let media_paths: string[] = [];
       try {
         media_paths = draft.media_paths ? JSON.parse(draft.media_paths) : [];
@@ -8429,7 +8339,7 @@ ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: s
     });
     
     return { success: true, drafts: parsed };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Draft] List error:', error.message);
     return { success: false, drafts: [], error: error.message };
   }
@@ -8469,7 +8379,7 @@ ipcMain.handle('x:draft:approve', async (_, data: { id: string; approvedBy: stri
     
     safeLog.log(`[X/Draft] Approved draft: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Draft] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8511,7 +8421,7 @@ ipcMain.handle('x:draft:reject', async (_, data: { id: string; reason?: string }
     
     safeLog.log(`[X/Draft] Rejected draft: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Draft] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8550,7 +8460,7 @@ ipcMain.handle('x:schedule:create', async (_, data: {
     
     safeLog.log(`[X/Schedule] Created scheduled post: ${id} for ${new Date(scheduledFor).toISOString()}`);
     return { success: true, id };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8574,7 +8484,7 @@ ipcMain.handle('x:schedule:list', async (_, filters?: {
       WHERE 1=1
     `;
     
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (filters?.status) {
       query += ' AND s.status = ?';
@@ -8602,7 +8512,7 @@ ipcMain.handle('x:schedule:list', async (_, filters?: {
     const results = stmt.all(...params);
     
     return { success: true, scheduled: results };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8618,7 +8528,7 @@ ipcMain.handle('x:schedule:update', async (_, data: {
     const now = Date.now();
     
     let query = 'UPDATE x_scheduled_posts SET updated_at = ?';
-    const params= unknown[] = [now];
+    const params: any[] = [now];
     
     if (scheduledFor !== undefined) {
       query += ', scheduled_for = ?';
@@ -8642,7 +8552,7 @@ ipcMain.handle('x:schedule:update', async (_, data: {
     
     safeLog.log(`[X/Schedule] Updated scheduled post: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8661,7 +8571,7 @@ ipcMain.handle('x:schedule:delete', async (_, data: { id: string }) => {
     
     safeLog.log(`[X/Schedule] Deleted scheduled post: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8742,7 +8652,7 @@ ipcMain.handle('x:mention:fetch', async () => {
     
     safeLog.log(`[X/Mentions] Fetched mentions: ${newCount} new, ${updatedCount} updated`);
     return { success: true, new: newCount, updated: updatedCount };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] Fetch error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8759,7 +8669,7 @@ ipcMain.handle('x:mention:list', async (_, filters?: {
       WHERE 1=1
     `;
     
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (filters?.replyStatus) {
       query += ' AND reply_status = ?';
@@ -8782,7 +8692,7 @@ ipcMain.handle('x:mention:list', async (_, filters?: {
     const results = stmt.all(...params);
     
     return { success: true, mentions: results };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8800,7 +8710,7 @@ ipcMain.handle('x:mention:update', async (_, data: {
     const now = Date.now();
     
     let query = 'UPDATE x_mentions SET updated_at = ?';
-    const params= unknown[] = [now];
+    const params: any[] = [now];
     
     if (replyStatus) {
       query += ', reply_status = ?';
@@ -8834,7 +8744,7 @@ ipcMain.handle('x:mention:update', async (_, data: {
     
     safeLog.log(`[X/Mentions] Updated mention: ${id}`);
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8873,7 +8783,7 @@ ipcMain.handle('x:mention:reply', async (_, data: {
     } else {
       throw new Error('Failed to post reply');
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] Reply error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8972,7 +8882,7 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     safeLog.log('[Toolbar] Floating toolbar window created');
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Toolbar] Pop-out error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8994,7 +8904,7 @@ ipcMain.handle('toolbar:popIn', async () => {
     }
     
     return { success: false, error: 'No floating toolbar window' };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[Toolbar] Pop-in error:', error.message);
     return { success: false, error: error.message };
   }
@@ -9010,7 +8920,7 @@ ipcMain.handle('toolbar:getState', async () => {
       isFloating,
       bounds,
     };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -9035,7 +8945,7 @@ ipcMain.handle('toolbar:resize', async (event, height: number) => {
       win.setBounds({ x: bounds.x, y: newY, width: bounds.width, height: clampedH });
     }
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -9059,7 +8969,7 @@ ipcMain.handle('x:replyGuy:listHotMentions', async (_, filters?: {
       WHERE m.reply_status = 'pending'
     `;
     
-    const params= unknown[] = [];
+    const params: any[] = [];
     
     if (filters?.minLikes) {
       query += ' AND like_count >= ?';
@@ -9084,7 +8994,7 @@ ipcMain.handle('x:replyGuy:listHotMentions', async (_, filters?: {
     const results = stmt.all(...params);
     
     return { success: true, mentions: results };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/ReplyGuy] List hot mentions error:', error.message);
     return { success: false, error: error.message };
   }
@@ -9170,7 +9080,7 @@ ${replyText}
     
     safeLog.log(`[X/ReplyGuy] Created quick draft: ${id} (fast-track: ${fastTrack})`);
     return { success: true, id, draftPath };
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/ReplyGuy] Create quick draft error:', error.message);
     return { success: false, error: error.message };
   }
@@ -9235,7 +9145,7 @@ ipcMain.handle('x:replyGuy:postNow', async (_, data: {
     } else {
       throw new Error('Failed to post tweet');
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     safeLog.error('[X/ReplyGuy] Post now error:', error.message);
     return { success: false, error: error.message };
   }

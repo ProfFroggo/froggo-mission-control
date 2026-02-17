@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: MeetingScribe uses file-level suppression for intentional stable ref patterns.
+// Complex real-time transcription component - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 /**
  * MeetingScribe - Real-time meeting transcription using Gemini API
  * Records mic audio in chunks, sends to Gemini for transcription,

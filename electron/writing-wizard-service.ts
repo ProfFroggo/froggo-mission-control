@@ -30,7 +30,7 @@ async function saveWizardState(sessionId: string, state: Record<string, unknown>
       'utf-8',
     );
     return { success: true };
-  } catch (e) {
+  } catch (e: any) {
     logger.error('[writing-wizard] saveWizardState error:', e instanceof Error ? e.message : String(e));
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
@@ -70,7 +70,7 @@ async function listPendingWizards() {
     }
 
     return { success: true, wizards };
-  } catch (e) {
+  } catch (e: any) {
     logger.error('[writing-wizard] listPendingWizards error:', e instanceof Error ? e.message : String(e));
     return { success: false, error: e instanceof Error ? e.message : String(e), wizards: [] };
   }
@@ -83,7 +83,7 @@ async function deleteWizardState(sessionId: string) {
       force: true,
     });
     return { success: true };
-  } catch (e: unknown) {
+  } catch (e: any) {
     logger.error('[writing-wizard] deleteWizardState error:', e.message);
     return { success: false, error: e.message };
   }

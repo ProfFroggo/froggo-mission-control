@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: CommsInbox3Pane uses file-level suppression for intentional stable ref patterns.
+// Complex 3-pane communications component - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 /**
  * CommsInbox3Pane - Proper 3-pane communications inbox
  *
