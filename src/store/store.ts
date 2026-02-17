@@ -1134,7 +1134,11 @@ Start now.`;
           if (window.clawdbot?.inbox?.list) {
             const result = await window.clawdbot.inbox.list();
             if (result?.success && Array.isArray(result.items)) {
-              const approvalItems: ApprovalItem[] = result.items.map((item: InboxItem) => ({
+              // Filter to only show human-review items (not agent review)
+              const humanReviewItems = result.items.filter((item: any) => 
+                item.status === 'human-review' || item.type === 'approval'
+              );
+              const approvalItems: ApprovalItem[] = humanReviewItems.map((item: InboxItem) => ({
                 id: String(item.id),
                 type: item.type as ApprovalType,
                 title: item.title,
