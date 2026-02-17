@@ -25,7 +25,7 @@ const exportBackupService = {
 };
 import { secureExec, getAuditLog, validateCommand } from './shell-security';
 // crypto imported but unused - removed during bug-hunt cleanup
-import { notificationService, setupNotificationHandlers } from './notification-service';
+import { setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { registerWritingProjectHandlers } from './writing-project-service';
@@ -8843,7 +8843,7 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
       minimizable: false,
       maximizable: false,
       skipTaskbar: true,
-      hasShadow: true,
+      hasShadow: false,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,

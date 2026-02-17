@@ -4,7 +4,6 @@
  */
 
 import { BrowserWindow } from 'electron';
-import * as path from 'path';
 import { notificationService } from './notification-service';
 import { prepare } from './database';
 import { OPENCLAW_DIR } from './paths';

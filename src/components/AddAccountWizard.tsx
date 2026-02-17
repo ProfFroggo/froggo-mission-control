@@ -261,15 +261,15 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email Address</label>
+                <label htmlFor="email-input" className="block text-sm font-medium mb-2">Email Address</label>
                 <input
+                  id="email-input"
                   type="email"
                   aria-label="Email address input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={`your.email@${provider === 'google' ? 'gmail.com' : provider === 'microsoft' ? 'outlook.com' : 'example.com'}`}
                   className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-3 focus:outline-none focus:border-clawd-accent"
-                  autoFocus
                 />
               </div>
 
@@ -418,15 +418,15 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">App-Specific Password</label>
+                    <label htmlFor="app-password" className="block text-sm font-medium mb-2">App-Specific Password</label>
                     <input
+                      id="app-password"
                       type="password"
                       aria-label="App-specific password input"
                       value={appPassword}
                       onChange={(e) => setAppPassword(e.target.value)}
                       placeholder="xxxx-xxxx-xxxx-xxxx"
                       className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-3 focus:outline-none focus:border-clawd-accent font-mono"
-                      autoFocus
                     />
                   </div>
 

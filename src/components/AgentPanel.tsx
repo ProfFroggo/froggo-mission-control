@@ -244,6 +244,11 @@ export default function AgentPanel() {
                     isCompareSelected ? 'border-review-border' : theme.border
                   } ${isExpanded ? '' : 'cursor-pointer'}`}
                   onClick={() => !isExpanded && toggleExpanded(agent.id)}
+                  onKeyDown={(e) => { if (!isExpanded && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleExpanded(agent.id); } }}
+                  role="button"
+                  tabIndex={isExpanded ? -1 : 0}
+                  aria-expanded={isExpanded}
+                  aria-label={isExpanded ? `${agent.name} details expanded` : `${agent.name} - press Enter to expand`}
                 >
                   {/* Color accent bar */}
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-b" style={{ backgroundColor: theme.color }} />
@@ -375,7 +380,13 @@ export default function AgentPanel() {
 
                     {/* Expanded details */}
                     {isExpanded && (
-                      <div className="mt-4 pt-4 border-t border-clawd-border/50 space-y-4" onClick={e => e.stopPropagation()}>
+                      <div 
+                        className="mt-4 pt-4 border-t border-clawd-border/50 space-y-4" 
+                        onClick={e => e.stopPropagation()}
+                        onKeyDown={e => e.stopPropagation()}
+                        role="region"
+                        aria-label={`${agent.name} expanded details`}
+                      >
                         <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={metrics} />
 
                         <div>
