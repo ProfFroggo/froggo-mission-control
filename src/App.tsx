@@ -446,7 +446,6 @@ function App() {
               try {
                 const result = await (window as any).clawdbot?.inbox?.approveAll();
                 if (result?.success) {
-                  const { showToast } = await import('./components/Toast');
                   showToast('success', 'Approved all', `${result.count} items approved`);
                 }
               } catch {

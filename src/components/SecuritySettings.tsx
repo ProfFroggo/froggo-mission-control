@@ -468,6 +468,7 @@ export default function SecuritySettings() {
                 <input
                   id="api-key-value"
                   type="password"
+                  autoComplete="off"
                   value={newKey.key}
                   onChange={(e) => setNewKey(k => ({ ...k, key: e.target.value }))}
                   placeholder="sk-..."

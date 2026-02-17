@@ -3856,6 +3856,24 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
   }
 });
 
+// Query SQL against froggo.db — SELECT only, returns { rows: any[] }
+ipcMain.handle('db:query', async (_, query: string, params?: any[]) => {
+  try {
+    const queryLower = query.trim().toLowerCase();
+    if (!queryLower.startsWith('select')) {
+      return { success: false, error: 'Only SELECT queries are allowed via db:query' };
+    }
+
+    const stmt = prepare(query);
+    const bindParams = params && params.length > 0 ? params : [];
+    const rows = stmt.all(...bindParams);
+    return { success: true, rows };
+  } catch (error: any) {
+    safeLog.error('[DB] Query error:', error);
+    return { success: false, rows: [], error: error.message };
+  }
+});
+
 // Execute SQL against froggo.db (parameterized via better-sqlite3)
 ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
   try {

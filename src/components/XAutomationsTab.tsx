@@ -69,17 +69,14 @@ export default function XAutomationsTab() {
   const loadAutomations = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.db?.query(
-        'SELECT * FROM x_automations ORDER BY created_at DESC'
-      );
-      
-      if (result?.rows) {
-        const parsed = result.rows.map((row: any) => ({
+      const result = await (window as any).clawdbot?.xAutomations?.list();
+      if (result?.automations) {
+        const parsed = result.automations.map((row: any) => ({
           ...row,
-          enabled: row.enabled === 1,
-          trigger_config: JSON.parse(row.trigger_config || '{}'),
-          conditions: row.conditions ? JSON.parse(row.conditions) : null,
-          actions: JSON.parse(row.actions || '[]'),
+          enabled: Boolean(row.enabled),
+          trigger_config: typeof row.trigger_config === 'string' ? JSON.parse(row.trigger_config || '{}') : (row.trigger_config || {}),
+          conditions: row.conditions && typeof row.conditions === 'string' ? JSON.parse(row.conditions) : row.conditions,
+          actions: typeof row.actions === 'string' ? JSON.parse(row.actions || '[]') : (row.actions || []),
         }));
         setAutomations(parsed);
       }
@@ -92,10 +89,7 @@ export default function XAutomationsTab() {
 
   const toggleAutomation = async (id: string, currentState: boolean) => {
     try {
-      await (window as any).clawdbot?.db?.execute(
-        'UPDATE x_automations SET enabled = ?, updated_at = ? WHERE id = ?',
-        [currentState ? 0 : 1, Date.now(), id]
-      );
+      await (window as any).clawdbot?.xAutomations?.toggle(id, !currentState);
       await loadAutomations();
     } catch (error) {
       // 'Failed to toggle automation:', error;
@@ -106,10 +100,7 @@ export default function XAutomationsTab() {
     if (!confirm('Are you sure you want to delete this automation?')) return;
     
     try {
-      await (window as any).clawdbot?.db?.execute(
-        'DELETE FROM x_automations WHERE id = ?',
-        [id]
-      );
+      await (window as any).clawdbot?.xAutomations?.delete(id);
       await loadAutomations();
     } catch (error) {
       // 'Failed to delete automation:', error;
@@ -169,27 +160,22 @@ export default function XAutomationsTab() {
     }
 
     try {
-      const id = editingAutomation?.id || `auto-${Date.now()}`;
-      const now = Date.now();
+      const automationData = {
+        name: builderName,
+        description: builderDescription,
+        trigger_type: builderTriggerType,
+        trigger_config: JSON.stringify(builderTriggerConfig),
+        actions: JSON.stringify(builderActions),
+        max_executions_per_hour: builderMaxHourly,
+        max_executions_per_day: builderMaxDaily,
+      };
 
-      const query = editingAutomation
-        ? `UPDATE x_automations SET 
-           name = ?, description = ?, trigger_type = ?, trigger_config = ?,
-           actions = ?, max_executions_per_hour = ?, max_executions_per_day = ?,
-           updated_at = ?
-           WHERE id = ?`
-        : `INSERT INTO x_automations 
-           (id, name, description, enabled, trigger_type, trigger_config, conditions, actions,
-            max_executions_per_hour, max_executions_per_day, total_executions, created_at, updated_at)
-           VALUES (?, ?, ?, 1, ?, ?, NULL, ?, ?, ?, 0, ?, ?)`;
+      if (editingAutomation) {
+        await (window as any).clawdbot?.xAutomations?.update(editingAutomation.id, automationData);
+      } else {
+        await (window as any).clawdbot?.xAutomations?.create(automationData);
+      }
 
-      const params = editingAutomation
-        ? [builderName, builderDescription, builderTriggerType, JSON.stringify(builderTriggerConfig),
-           JSON.stringify(builderActions), builderMaxHourly, builderMaxDaily, now, id]
-        : [id, builderName, builderDescription, builderTriggerType, JSON.stringify(builderTriggerConfig),
-           JSON.stringify(builderActions), builderMaxHourly, builderMaxDaily, now, now];
-
-      await (window as any).clawdbot?.db?.execute(query, params);
       await loadAutomations();
       closeBuilder();
       showToast('success', 'Automation Saved', editingAutomation ? 'Changes saved successfully' : 'New automation created');

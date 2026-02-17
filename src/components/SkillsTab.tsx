@@ -276,6 +276,7 @@ export default function SkillsTab() {
                         <input
                           id={`api-key-${skill.key}`}
                           type="password"
+                          autoComplete="off"
                           value={apiKeyInputs[skill.key] || ''}
                           onChange={e => setApiKeyInputs(prev => ({ ...prev, [skill.key]: e.target.value }))}
                           placeholder={skill.hasApiKey ? '••••••••' : 'Enter API key'}

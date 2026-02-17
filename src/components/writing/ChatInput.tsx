@@ -37,7 +37,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="bg-clawd-surface border-t border-clawd-border p-3 space-y-2">
+    <div className="bg-clawd-surface border-t border-clawd-border p-3 space-y-2 dark">
       <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={disabled} />
       <div className="flex items-end gap-2">
         <textarea
@@ -51,7 +51,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
           placeholder="Ask the agent..."
           rows={1}
           disabled={disabled}
-          className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
+          className="flex-1 bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50 dark"
         />
         <button
           onClick={handleSendClick}

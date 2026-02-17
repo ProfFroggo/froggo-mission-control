@@ -186,7 +186,7 @@ export default function ChatPane() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-clawd-surface border-r border-clawd-border">
+    <div className="flex flex-col h-full bg-clawd-surface border-r border-clawd-border dark">
       {/* Header */}
       <div className="px-3 py-2 border-b border-clawd-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">

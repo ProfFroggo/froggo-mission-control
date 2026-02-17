@@ -316,6 +316,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Database
   db: {
     exec: (query: string, params?: any[]) => ipcRenderer.invoke('db:exec', query, params),
+    query: (query: string, params?: any[]) => ipcRenderer.invoke('db:query', query, params),
   },
   // Media uploads
   media: {

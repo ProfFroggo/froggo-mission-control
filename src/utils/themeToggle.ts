@@ -66,8 +66,8 @@ export function getCurrentTheme(): ThemeState {
         theme: settings.theme || 'dark',
         accentColor: settings.accentColor || '#22c55e',
       };
-    } catch (e) {
-      // '[themeToggle] Failed to parse settings:', e;
+    } catch (_e) {
+      // '[themeToggle] Failed to parse settings'
     }
   }
   return { theme: 'dark', accentColor: '#22c55e' };
@@ -107,8 +107,8 @@ export function toggleTheme(): Theme {
       const settings = JSON.parse(saved);
       settings.theme = newTheme;
       safeStorage.setItem('froggo-settings', JSON.stringify(settings));
-    } catch (e) {
-      // '[themeToggle] Failed to save theme:', e;
+    } catch (_e) {
+      // '[themeToggle] Failed to save theme'
     }
   }
 

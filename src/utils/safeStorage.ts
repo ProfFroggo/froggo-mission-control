@@ -7,7 +7,7 @@ export const safeStorage = {
   getItem(key: string): string | null {
     try {
       return localStorage.getItem(key);
-    } catch (error) {
+    } catch (_error) {
 
       return null;
     }
@@ -17,7 +17,7 @@ export const safeStorage = {
     try {
       localStorage.setItem(key, value);
       return true;
-    } catch (error) {
+    } catch (_error) {
 
       return false;
     }
@@ -27,7 +27,7 @@ export const safeStorage = {
     try {
       localStorage.removeItem(key);
       return true;
-    } catch (error) {
+    } catch (_error) {
 
       return false;
     }
@@ -37,7 +37,7 @@ export const safeStorage = {
     try {
       const item = localStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : defaultValue;
-    } catch (error) {
+    } catch (_error) {
 
       return defaultValue;
     }
@@ -47,7 +47,7 @@ export const safeStorage = {
     try {
       localStorage.setItem(key, JSON.stringify(value));
       return true;
-    } catch (error) {
+    } catch (_error) {
 
       return false;
     }
