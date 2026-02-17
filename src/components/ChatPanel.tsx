@@ -271,15 +271,8 @@ export default function ChatPanel() {
     return () => { unsub(); };
   }, []);
 
-  // Load chat history when connected (only if DB didn't have messages)
-  // DB is the source of truth - gateway history is fallback only
-  useEffect(() => {
-    if (connected && !historyLoaded) {
-      loadHistory();
-    }
-  }, [connected, historyLoaded, loadHistory]);
-
-  const loadHistory = async () => {
+  // Load chat history helper (wrapped in useCallback to fix stale closure)
+  const loadHistory = useCallback(async () => {
     // If we already have messages (from DB), don't overwrite with gateway history
     if (messages.length > 0) {
       setHistoryLoaded(true);
@@ -321,7 +314,15 @@ export default function ChatPanel() {
       console.error('[Chat] Failed to load history:', e);
       setHistoryLoaded(true); // Don't retry
     }
-  };
+  }, [messages]);
+
+  // Load chat history when connected (only if DB didn't have messages)
+  // DB is the source of truth - gateway history is fallback only
+  useEffect(() => {
+    if (connected && !historyLoaded) {
+      loadHistory();
+    }
+  }, [connected, historyLoaded, loadHistory]);
 
   // Setup streaming listeners
   useEffect(() => {
@@ -487,31 +488,9 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [loading, selectedAgent?.dbSessionKey, speakResponses, selectedAgent, speak]);
+  }, [loading, selectedAgent?.dbSessionKey, speakResponses, selectedAgent]);
 
-  // Setup voice recognition
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((r: any) => r[0].transcript)
-          .join('');
-        setInput(transcript);
-      };
-
-      recognition.onend = () => setListening(false);
-      recognition.onerror = () => setListening(false);
-
-      recognitionRef.current = recognition;
-    }
-  }, []);
-
+  // Speak function (moved before useEffect that depends on it to fix stale closure)
   const speak = useCallback((text: string) => {
     if (!text) return;
     
@@ -538,6 +517,29 @@ export default function ChatPanel() {
     const voice = voices.find(v => v.name.includes('Samantha') || v.lang === 'en-US');
     if (voice) utterance.voice = voice;
     window.speechSynthesis.speak(utterance);
+  }, []);
+
+  // Setup voice recognition
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((r: any) => r[0].transcript)
+          .join('');
+        setInput(transcript);
+      };
+
+      recognition.onend = () => setListening(false);
+      recognition.onerror = () => setListening(false);
+
+      recognitionRef.current = recognition;
+    }
   }, []);
 
   const toggleVoice = () => {
