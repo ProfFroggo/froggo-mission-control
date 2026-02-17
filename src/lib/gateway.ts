@@ -623,7 +623,7 @@ class Gateway {
   }
 
   sendChat(message: string): Promise<{ content: string }> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       if (!this.connected) {
         reject(new Error('Not connected'));
         return;
@@ -709,33 +709,36 @@ class Gateway {
         }
       }, 120000);
 
-      try {
-        logger.debug('[Gateway] sendChat calling request...');
-        const result = await this.request('chat.send', { 
-          message, 
-          sessionKey: this.sessionKey, 
-          idempotencyKey,
-        });
-        logger.debug('[Gateway] sendChat request returned:', JSON.stringify(result));
-        
-        // Capture runId to filter streaming events
-        if (result?.runId) {
-          ourRunId = result.runId;
-          logger.debug('[Gateway] Tracking runId:', ourRunId);
-        }
-        
-        // If we got a direct response (non-streaming), use it
-        if (result?.content) {
+      // Kick off the async request without making the executor itself async
+      void (async () => {
+        try {
+          logger.debug('[Gateway] sendChat calling request...');
+          const result = await this.request('chat.send', { 
+            message, 
+            sessionKey: this.sessionKey, 
+            idempotencyKey,
+          });
+          logger.debug('[Gateway] sendChat request returned:', JSON.stringify(result));
+          
+          // Capture runId to filter streaming events
+          if (result?.runId) {
+            ourRunId = result.runId;
+            logger.debug('[Gateway] Tracking runId:', ourRunId);
+          }
+          
+          // If we got a direct response (non-streaming), use it
+          if (result?.content) {
+            clearTimeout(timeout);
+            finish(result.content);
+          }
+          // Otherwise wait for streaming events
+          logger.debug('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
+        } catch (e: any) {
+          console.error('[Gateway] sendChat error:', e);
           clearTimeout(timeout);
-          finish(result.content);
+          fail(e);
         }
-        // Otherwise wait for streaming events
-        logger.debug('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
-      } catch (e: any) {
-        console.error('[Gateway] sendChat error:', e);
-        clearTimeout(timeout);
-        fail(e);
-      }
+      })();
     });
   }
 
