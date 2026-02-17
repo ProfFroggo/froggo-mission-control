@@ -31,4 +31,12 @@ module.exports = {
     }],
     'no-console': ['warn', { allow: ['warn', 'error'] }],
   },
+  overrides: [
+    {
+      files: ['electron/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-unused-vars': 'off',
+      },
+    },
+  ],
 };

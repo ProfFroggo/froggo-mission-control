@@ -37,7 +37,7 @@ export const useUserSettings = create<UserSettingsState>()(
     {
       name: 'clawd-user-settings',
       partialize: (state) => {
-        const { updateSettings, reset, ...data } = state;
+        const { updateSettings: _updateSettings, reset: _reset, ...data } = state;
         return data;
       },
     }
