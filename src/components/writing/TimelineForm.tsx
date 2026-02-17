@@ -36,7 +36,6 @@ export default function TimelineForm({ event, onCancel, onSave, nextPosition }: 
         onChange={(e) => setDate(e.target.value)}
         placeholder="Date (e.g. Summer 1995)"
         className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-border text-clawd-text text-xs placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
-        autoFocus
       />
       <textarea
         value={description}

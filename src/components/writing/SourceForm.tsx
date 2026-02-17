@@ -48,7 +48,6 @@ export default function SourceForm({ source, onCancel, onSave }: SourceFormProps
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title (required)"
         className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-border text-clawd-text text-xs placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
-        autoFocus
       />
       <input
         type="text"

@@ -144,10 +144,11 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Reason input */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="snooze-reason" className="block text-sm font-medium text-clawd-text mb-2">
                 Reason (optional)
               </label>
               <input
+                id="snooze-reason"
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
@@ -158,9 +159,9 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
 
             {/* Quick options */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <div className="block text-sm font-medium text-clawd-text mb-2">
                 Quick Snooze
-              </label>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {QUICK_OPTIONS.map((option) => (
                   <button

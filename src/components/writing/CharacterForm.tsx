@@ -37,7 +37,6 @@ export default function CharacterForm({ character, onCancel, onSave }: Character
         onChange={(e) => setName(e.target.value)}
         placeholder="Name"
         className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-border text-clawd-text text-xs placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent"
-        autoFocus
       />
       <input
         type="text"

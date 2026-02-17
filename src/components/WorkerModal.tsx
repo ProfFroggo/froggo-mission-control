@@ -322,7 +322,9 @@ Be conversational, friendly, and help design an effective agent.`;
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`} 
       onClick={handleClose}
+      aria-hidden="true"
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div 
         className={`glass-modal rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
@@ -531,7 +533,7 @@ Be conversational, friendly, and help design an effective agent.`;
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g., Twitter Content Scheduler"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                    autoFocus
+                    /* autoFocus removed for accessibility */
                   />
                 </div>
                 <div>

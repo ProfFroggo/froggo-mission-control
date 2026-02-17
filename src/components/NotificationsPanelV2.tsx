@@ -349,6 +349,15 @@ export default function NotificationsPanelV2() {
                       : 'bg-clawd-surface border-clawd-border shadow-card hover:shadow-card-hover'
                   }`}
                   onClick={() => handleNavigate(notif)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleNavigate(notif);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Notification: ${notif.title}`}
                 >
                   <div className="flex items-start gap-3">
                     <IconBadge icon={Icon} size={16} color={config?.color || 'bg-clawd-bg0/10 text-clawd-text-dim'} />

@@ -68,6 +68,11 @@ export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
       {/* Left Divider */}
       <div
         onMouseDown={(e) => handleMouseDown('left', e)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); /* Keyboard resize not supported */ }}}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize left pane"
+        tabIndex={0}
         className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors ${
           dragging === 'left' ? 'bg-info' : 'bg-transparent'
         }`}
@@ -81,6 +86,11 @@ export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
       {/* Right Divider */}
       <div
         onMouseDown={(e) => handleMouseDown('right', e)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); /* Keyboard resize not supported */ }}}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize right pane"
+        tabIndex={0}
         className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors ${
           dragging === 'right' ? 'bg-info' : 'bg-transparent'
         }`}

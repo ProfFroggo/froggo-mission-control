@@ -31,7 +31,6 @@ export default function FactForm({ fact, onCancel, onSave }: FactFormProps) {
         placeholder="Fact or claim"
         rows={2}
         className="w-full px-2 py-1 rounded bg-clawd-bg border border-clawd-border text-clawd-text text-xs placeholder:text-clawd-text-dim/50 focus:outline-none focus:border-clawd-accent resize-none"
-        autoFocus
       />
       <input
         type="text"

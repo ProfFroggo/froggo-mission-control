@@ -67,10 +67,11 @@ export default function OxGuardrails() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-clawd-text-dim mb-2">
+              <label htmlFor="max-sub-agents" className="block text-sm text-clawd-text-dim mb-2">
                 Maximum Active Sub-Agents
               </label>
               <input
+                id="max-sub-agents"
                 type="number"
                 min={1}
                 max={10}
@@ -84,9 +85,9 @@ export default function OxGuardrails() {
             </div>
             
             <div>
-              <label className="block text-sm text-clawd-text-dim mb-2">
+              <span className="block text-sm text-clawd-text-dim mb-2">
                 Allowed Agent Types
-              </label>
+              </span>
               <div className="flex flex-wrap gap-2">
                 {['coder', 'writer', 'researcher', 'chief'].map(type => (
                   <label
