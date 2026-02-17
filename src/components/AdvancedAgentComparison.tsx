@@ -55,9 +55,9 @@ export default function AdvancedAgentComparison({
     if (isOpen) {
       loadData();
     }
-  }, [isOpen]);
+  }, [isOpen, loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const agentData = await getAgentUtilization();
