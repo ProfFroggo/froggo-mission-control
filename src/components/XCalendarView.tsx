@@ -99,7 +99,6 @@ export const XCalendarView: React.FC = () => {
       content = { tweets: [{ text: draft.content }] };
     }
     
-    const isThread = content.tweets && content.tweets.length > 1;
     const metadata = draft.draft_metadata ? JSON.parse(draft.draft_metadata) : {};
     const contentType = metadata.content_type || 'educational';
     
@@ -158,21 +157,6 @@ export const XCalendarView: React.FC = () => {
       }
     } catch (error) {
       console.error('Error scheduling post:', error);
-    }
-  };
-
-  const _handleReschedule = async (scheduleId: string, newTime: number) => {
-    try {
-      const result = await window.clawdbot?.xSchedule?.update({
-        id: scheduleId,
-        scheduledFor: newTime,
-      });
-      
-      if (result?.success) {
-        await loadScheduled();
-      }
-    } catch (error) {
-      console.error('Error rescheduling post:', error);
     }
   };
 

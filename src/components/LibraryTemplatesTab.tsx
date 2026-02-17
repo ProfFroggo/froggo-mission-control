@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff, LayoutTemplate } from 'lucide-react';
+import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 // X logo component
@@ -209,7 +210,7 @@ export default function LibraryTemplatesTab() {
       {/* Templates List */}
       <div className="flex-1 overflow-y-auto p-6">
         {sortedTemplates.length === 0 ? (
-          <EmptyState type="generic" title="No templates" description="Create your first template" />
+          <EmptyState icon={LayoutTemplate} title="No templates" description="Create your first template" />
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {sortedTemplates.map(template => {

@@ -13,7 +13,7 @@ const logger = createLogger('GeminiLive');
 // Audio constants matching Gemini Live API requirements
 const SEND_SAMPLE_RATE = 16000;
 const RECEIVE_SAMPLE_RATE = 24000;
-const CHANNELS = 1;
+// const CHANNELS = 1; // reserved for future multi-channel support
 const MODEL = 'models/gemini-2.5-flash-native-audio-latest'; // ONLY native-audio models support bidiGenerateContent
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 

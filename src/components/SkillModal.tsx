@@ -423,7 +423,7 @@ Format as markdown with proper headings.`;
       const taskTitle = `Implement skill: ${skillData.name}`;
       const taskDesc = `${skillData.description || skillData.reason || ''}\n\nSkill location: ${skillPath}/SKILL.md\nReview instructions and implement the skill as described.`;
       
-      const taskResult = await (window as any).clawdbot?.exec?.run(
+      await (window as any).clawdbot?.exec?.run(
         `froggo-db task-add "${taskTitle}" --project "Skills" --status todo --assigned-to ${assignedAgent} --description "${taskDesc.replace(/"/g, '\\"')}"`
       );
 

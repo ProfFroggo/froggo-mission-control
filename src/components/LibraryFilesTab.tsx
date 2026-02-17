@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, Eye, X, ExternalLink } from 'lucide-react';
+import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, X, ExternalLink } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';

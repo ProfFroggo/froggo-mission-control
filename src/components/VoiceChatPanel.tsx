@@ -187,7 +187,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setConnecting(false);
         addSystemMessage('🔗 Connected — speak naturally');
       }),
-      geminiLive.on('disconnected', ({ code, reason }: { code?: number; reason?: string } = {}) => {
+      geminiLive.on('disconnected', ({ code }: { code?: number; reason?: string } = {}) => {
         const wasActive = callActiveRef.current;
         setConnecting(false);
         setListening(false);
@@ -205,7 +205,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           callActiveRef.current = false;
         }
       }),
-      geminiLive.on('reconnecting', ({ attempt, delayMs }: { attempt: number; delayMs: number }) => {
+      geminiLive.on('reconnecting', ({ attempt }: { attempt: number; delayMs: number }) => {
         setConnecting(true);
         addSystemMessage(`🔄 Reconnecting... (attempt ${attempt})`);
       }),
@@ -250,7 +250,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           return [...prev, { id: nextId(role === 'assistant' ? 'a' : 'u'), role, content: text, timestamp: Date.now() }];
         });
       }),
-      geminiLive.on('model-thinking', ({ text }: { text: string }) => {
+      geminiLive.on('model-thinking', (_evt: { text: string }) => {
         // Voice thinking update
       }),
       geminiLive.on('interrupted', () => {
@@ -393,7 +393,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       try {
         const mode = videoMode !== 'none' ? videoMode : 'camera';
         await geminiLive.startVideo(mode);
-        const stream = geminiLive.getVideoStream();
         setVideoActive(true);
         addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
         if (mode === 'screen') {

@@ -499,19 +499,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     }
   }, [quickMessageOpen]);
 
-  // ─── FEATURE 1: Meeting navigation ───
-  const _handleMeetingClick = () => {
-    if (isMeetingActive) {
-      // Already in meeting → navigate to meetings tab
-      onNavigate?.('meetings');
-    } else {
-      // Start meeting + navigate
-      toggleMeeting();
-      onNavigate?.('meetings');
-      showToast('success', 'Meeting Started', 'Navigated to meetings');
-    }
-  };
-
   // Agent context for voice calls
   const agentContextRef = useRef<AgentContext | null>(null);
   const activeCallAgentRef = useRef<{ id: string; name: string; role?: string } | null>(null);
@@ -531,7 +518,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             sessionKey: gateway.getSessionKey?.() || 'web:dashboard',
             role, message: text,
             // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
-          }).catch((err) => { console.error('[QuickActions] Failed to inject chat message:', err); });
+          }).catch((err: Error) => { console.error('[QuickActions] Failed to inject chat message:', err); });
         }
       } catch { /* ignore */ }
     };
@@ -593,7 +580,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
   const stopRinging = () => {
     ringRef.current?.stop(); ringRef.current = null;
-    if (ringCtxRef.current) { ringCtxRef.current.close().catch((err) => { console.error('[QuickActions] Failed to close ring context:', err); }); ringCtxRef.current = null; }
+    if (ringCtxRef.current) { ringCtxRef.current.close().catch((err: Error) => { console.error('[QuickActions] Failed to close ring context:', err); }); ringCtxRef.current = null; }
     setCallRinging(false);
   };
 
@@ -657,7 +644,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         // Load full agent context (SOUL.md, memory, tasks, etc.) + chat history
         invalidateAgentContext(agent.id);
         const [agentCtx, chatHistory] = await Promise.all([
-          loadAgentContext(agent.id).catch((err) => { console.error('[QuickActions] Failed to load agent context:', err); return null; }),
+          loadAgentContext(agent.id).catch((err: Error) => { console.error('[QuickActions] Failed to load agent context:', err); return null; }),
           loadRecentChatHistory(agent.id, 25),
         ]);
         agentContextRef.current = agentCtx;

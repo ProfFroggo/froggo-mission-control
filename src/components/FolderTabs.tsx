@@ -5,14 +5,6 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { SortableContext, horizontalListSortingStrategy, arrayMove, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  conversation_count: number;
-}
-
 interface FolderTabsProps {
   selectedFolder: number | null;
   onSelectFolder: (folderId: number | null) => void;
@@ -73,7 +65,7 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
     >
       <span className="text-lg">{folder.icon}</span>
       <span className="font-medium text-sm">{folder.name}</span>
-      {folder.conversation_count > 0 && (
+      {(folder.conversation_count ?? 0) > 0 && (
         <span className={`
           text-xs px-2 py-0.5 rounded-full
           ${isActive 
@@ -116,7 +108,7 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
         setFolders(sortedFolders);
         
         // Calculate total sessions count
-        const total = sortedFolders.reduce((sum: number, f: MessageFolder) => sum + f.conversation_count, 0);
+        const total = sortedFolders.reduce((sum: number, f: MessageFolder) => sum + (f.conversation_count ?? 0), 0);
         setAllSessionsCount(total);
       }
     } catch {

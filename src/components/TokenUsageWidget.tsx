@@ -297,7 +297,7 @@ export default function TokenUsageWidget() {
                 );
               }
 
-              const pctRaw = budget.percent_used ?? budget.percentage_used ?? 0;
+              const pctRaw = budget.percentage_used ?? budget.percentage_used ?? 0;
               const percentage = pctRaw > 1 ? pctRaw : pctRaw * 100; // normalize to 0-100
               const threshold = (budget.alert_threshold || 0.9) * 100;
               let barColor = getAgentTheme(agent.agent).color; // Green (< 70%)
