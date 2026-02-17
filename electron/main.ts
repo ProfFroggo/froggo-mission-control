@@ -5279,6 +5279,40 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
   }
 });
 
+// ============== MESSAGE UNREAD COUNT HANDLER ==============
+ipcMain.handle('messages:unread', async () => {
+  safeLog.log('[Messages:Unread] Handler called');
+  try {
+    // Query the message_read_state table for unread count
+    const result = prepare(`
+      SELECT
+        COUNT(*) as total_unread,
+        SUM(CASE WHEN platform = 'whatsapp' AND is_read = 0 THEN 1 ELSE 0 END) as whatsapp_unread,
+        SUM(CASE WHEN platform = 'telegram' AND is_read = 0 THEN 1 ELSE 0 END) as telegram_unread,
+        SUM(CASE WHEN platform = 'discord' AND is_read = 0 THEN 1 ELSE 0 END) as discord_unread,
+        SUM(CASE WHEN platform = 'email' AND is_read = 0 THEN 1 ELSE 0 END) as email_unread
+      FROM message_read_state
+      WHERE is_read = 0
+    `).get() as any;
+
+    const byPlatform: { [key: string]: number } = {};
+    if (result.whatsapp_unread > 0) byPlatform['whatsapp'] = result.whatsapp_unread;
+    if (result.telegram_unread > 0) byPlatform['telegram'] = result.telegram_unread;
+    if (result.discord_unread > 0) byPlatform['discord'] = result.discord_unread;
+    if (result.email_unread > 0) byPlatform['email'] = result.email_unread;
+
+    safeLog.log('[Messages:Unread] Total:', result.total_unread, 'By platform:', byPlatform);
+    return {
+      success: true,
+      count: result.total_unread || 0,
+      byPlatform
+    };
+  } catch (e: any) {
+    safeLog.error('[Messages:Unread] Error:', e);
+    return { success: false, count: 0, error: e.message };
+  }
+});
+
 // ============== CONVERSATION ARCHIVE HANDLERS ==============
 // Archive a conversation (assign to Archive folder)
 ipcMain.handle('conversations:archive', async (_, sessionKey: string) => {
