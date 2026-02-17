@@ -66,7 +66,7 @@ export default function XResearchIdeaEditor() {
         throw new Error(result.error || 'Failed to submit research idea');
       }
     } catch (error: any) {
-      console.error('[XResearchEditor] Submit error:', error);
+      // '[XResearchEditor] Submit error:', error;
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {
       setSubmitting(false);

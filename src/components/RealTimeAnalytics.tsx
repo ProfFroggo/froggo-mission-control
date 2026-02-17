@@ -116,7 +116,7 @@ export default function RealTimeAnalytics() {
 
         setLastUpdate(Date.now());
       } catch (error) {
-        console.error('Failed to update real-time metrics:', error);
+        // 'Failed to update real-time metrics:', error;
       }
     };
 

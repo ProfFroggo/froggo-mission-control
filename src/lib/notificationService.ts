@@ -103,7 +103,6 @@ class NotificationService {
     // Full refresh on gateway reconnect to catch missed events
     gateway.on('stateChange', ({ state, oldState }: { state: string; oldState: string }) => {
       if (state === 'connected' && oldState !== 'connected') {
-        console.debug('[NotificationService] Gateway reconnected, refreshing all');
         this.refresh();
       }
     });
@@ -111,7 +110,6 @@ class NotificationService {
     // Safety net: slow background refresh in case gateway events are missed
     // This is 10x slower than the old polling (5min vs 30s) — events are the primary path
     this.safetyInterval = setInterval(() => {
-      console.debug('[NotificationService] Safety net refresh');
       this.refresh();
     }, 300000); // 5 minutes
 
@@ -178,7 +176,7 @@ class NotificationService {
 
       this.statsListeners.forEach(l => l(this.cachedStats));
     } catch (e) {
-      console.error('[NotificationService] Refresh failed:', e);
+      // '[NotificationService] Refresh failed:', e;
     }
   }
 
@@ -217,7 +215,7 @@ class NotificationService {
       const taskNotifs = await this.fetchTaskNotifications();
       this.mergeNotifications('task', taskNotifs);
     } catch (e) {
-      console.error('[NotificationService] Task refresh failed:', e);
+      // '[NotificationService] Task refresh failed:', e;
     }
   }
 
@@ -229,7 +227,7 @@ class NotificationService {
       const approvalNotifs = await this.fetchApprovalNotifications();
       this.mergeNotifications('approval', approvalNotifs);
     } catch (e) {
-      console.error('[NotificationService] Approval refresh failed:', e);
+      // '[NotificationService] Approval refresh failed:', e;
     }
   }
 
@@ -241,7 +239,7 @@ class NotificationService {
       const msgNotifs = await this.fetchUnreadMessages();
       this.mergeNotifications('message', msgNotifs);
     } catch (e) {
-      console.error('[NotificationService] Message refresh failed:', e);
+      // '[NotificationService] Message refresh failed:', e;
     }
   }
 
@@ -356,7 +354,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      console.error('[NotificationService] Failed to fetch messages:', e);
+      // '[NotificationService] Failed to fetch messages:', e;
     }
 
     return notifications;
@@ -419,7 +417,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      console.error('[NotificationService] Failed to fetch task notifications:', e);
+      // '[NotificationService] Failed to fetch task notifications:', e;
     }
 
     return notifications;
@@ -462,7 +460,7 @@ class NotificationService {
         }
       }
     } catch (e) {
-      console.error('[NotificationService] Failed to fetch approvals:', e);
+      // '[NotificationService] Failed to fetch approvals:', e;
     }
 
     return notifications;

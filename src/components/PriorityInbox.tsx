@@ -291,7 +291,7 @@ export function usePriorityData() {
         setStats(result.stats);
       }
     } catch (e) {
-      console.error('Failed to fetch priority stats:', e);
+      // 'Failed to fetch priority stats:', e;
     }
   }, []);
 
@@ -302,7 +302,7 @@ export function usePriorityData() {
         setConfig(result.config);
       }
     } catch (e) {
-      console.error('Failed to fetch priority config:', e);
+      // 'Failed to fetch priority config:', e;
     }
   }, []);
 
@@ -313,7 +313,7 @@ export function usePriorityData() {
         setConfig((prev: any) => ({ ...prev, [key]: value }));
       }
     } catch (e) {
-      console.error('Failed to update config:', e);
+      // 'Failed to update config:', e;
     }
   }, []);
 
@@ -322,7 +322,7 @@ export function usePriorityData() {
       await (window as any).clawdbot?.priority?.recalculate(limit);
       await fetchStats();
     } catch (e) {
-      console.error('Failed to recalculate priorities:', e);
+      // 'Failed to recalculate priorities:', e;
     }
   }, [fetchStats]);
 

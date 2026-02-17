@@ -101,7 +101,7 @@ export default function TokenUsageWidget() {
         setBudgetData(budgets);
       }
     } catch (error) {
-      console.error('Failed to load token data:', error);
+      // 'Failed to load token data:', error;
     } finally {
       setLoading(false);
     }

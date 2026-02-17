@@ -47,7 +47,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
         setSkills(res?.result || []);
       }
     } catch (e) {
-      console.error('Failed to load skills:', e);
+      // 'Failed to load skills:', e;
     } finally {
       setLoading(false);
     }

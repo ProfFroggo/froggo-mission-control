@@ -136,7 +136,7 @@ export default function ConnectedAccountsPanel() {
         showToast('error', 'Failed to load accounts', result.error);
       }
     } catch (err: any) {
-      console.error('[ConnectedAccounts] Failed to load accounts:', err);
+      // '[ConnectedAccounts] Failed to load accounts:', err;
       showToast('error', 'Failed to load accounts', err.message);
     } finally {
       setLoading(false);
@@ -150,7 +150,7 @@ export default function ConnectedAccountsPanel() {
         setAvailableTypes(result.types || []);
       }
     } catch (err: any) {
-      console.error('Failed to load available types:', err);
+      // 'Failed to load available types:', err;
     }
   };
 
@@ -164,7 +164,7 @@ export default function ConnectedAccountsPanel() {
         setSelectedAccountPermissions(result.permissions || []);
       }
     } catch (err: any) {
-      console.error('Failed to load permissions:', err);
+      // 'Failed to load permissions:', err;
     }
     
     setShowDetailModal(true);
@@ -218,7 +218,6 @@ export default function ConnectedAccountsPanel() {
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
-          console.debug('Import errors:', result.errors);
         }
         loadAccounts();
       } else {

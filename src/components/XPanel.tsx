@@ -219,7 +219,7 @@ export default function XPanel() {
             tweets = JSON.parse(rawTrimmed);
           }
         } catch (parseErr: any) {
-          console.error('[XPanel] Failed to parse raw data:', parseErr.message);
+          // '[XPanel] Failed to parse raw data:', parseErr.message;
           // Try to extract partial valid JSON (common issue: truncated output)
           try {
             // Find the last complete object in the array
@@ -229,7 +229,7 @@ export default function XPanel() {
               tweets = JSON.parse(truncated);
             }
           } catch {
-            console.error('[XPanel] Could not recover partial JSON');
+            // '[XPanel] Could not recover partial JSON';
           }
         }
       }
@@ -242,11 +242,10 @@ export default function XPanel() {
         console.error('[XPanel] Timeline error from API:', result.error);
         addActivity({ type: 'error', message: `Failed to load timeline: ${result.error}`, timestamp: Date.now() });
       } else {
-        console.debug('[XPanel] No tweets available');
         addActivity({ type: 'error', message: 'No timeline data available', timestamp: Date.now() });
       }
     } catch (e: any) {
-      console.error('[XPanel] Exception in fetchTimeline:', e);
+      // '[XPanel] Exception in fetchTimeline:', e;
       addActivity({ type: 'error', message: `Failed to fetch timeline: ${e?.message}`, timestamp: Date.now() });
     } finally {
       setLoading(false);
@@ -289,7 +288,7 @@ export default function XPanel() {
         updateXDraft(draft.id, { status: 'draft' });
       }
     } catch (e: any) {
-      console.error('[X] Post error:', e);
+      // '[X] Post error:', e;
       addActivity({ type: 'error', message: `Post failed: ${e.message}`, timestamp: Date.now() });
       // Revert status on failure
       updateXDraft(draft.id, { status: 'draft' });

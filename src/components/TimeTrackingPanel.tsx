@@ -24,7 +24,7 @@ export default function TimeTrackingPanel() {
       setTasks(timeData);
       setProjects(projectData);
     } catch (error) {
-      console.error('Failed to load time tracking data:', error);
+      // 'Failed to load time tracking data:', error;
     } finally {
       setLoading(false);
     }

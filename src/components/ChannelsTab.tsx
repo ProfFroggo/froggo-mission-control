@@ -66,7 +66,7 @@ export default function ChannelsTab() {
         setChannels(parsed);
       }
     } catch (e) {
-      console.error('Failed to load channels:', e);
+      // 'Failed to load channels:', e;
       showToast('error', 'Failed to load channels', String(e));
     } finally {
       setLoading(false);

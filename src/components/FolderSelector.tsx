@@ -30,7 +30,7 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
         setAssignedFolders(assignedResult.folders || []);
       }
     } catch (error) {
-      console.error('[FolderSelector] Load error:', error);
+      // '[FolderSelector] Load error:', error;
       showToast('error', 'Failed to load folders');
     } finally {
       setLoading(false);
@@ -70,7 +70,7 @@ export default function FolderSelector({ sessionKey, onClose }: FolderSelectorPr
         }
       }
     } catch (error) {
-      console.error('[FolderSelector] Toggle error:', error);
+      // '[FolderSelector] Toggle error:', error;
       showToast('error', 'Failed to update folder assignment');
     } finally {
       setAssigningId(null);

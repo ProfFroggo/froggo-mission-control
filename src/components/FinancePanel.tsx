@@ -43,13 +43,6 @@ interface Alert {
   data?: any;
 }
 
-interface Insight {
-  type: string;
-  title: string;
-  description: string;
-  data?: any;
-}
-
 export default function FinancePanel() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [familyBudget, setFamilyBudget] = useState<Budget | null>(null);
@@ -57,7 +50,6 @@ export default function FinancePanel() {
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [, setInsights] = useState<Insight[]>([]);
   const [chatOpen, setChatOpen] = useState(true); // AI chat panel
   const lastAlertCheck = useRef<Set<string>>(new Set());
 
@@ -95,7 +87,7 @@ export default function FinancePanel() {
         setCryptoBudget(cryptoResult.budget);
       }
     } catch (error) {
-      console.error('[Finance] Load error:', error);
+      // '[Finance] Load error:', error;
     } finally {
       setLoading(false);
     }
@@ -120,13 +112,8 @@ export default function FinancePanel() {
         });
       }
 
-      // Load insights
-      const insightsResult = await (window as any).clawdbot?.finance?.getInsights();
-      if (insightsResult?.success) {
-        setInsights(insightsResult.insights || []);
-      }
     } catch (error) {
-      console.error('[Finance] Alerts load error:', error);
+      // '[Finance] Alerts load error:', error;
     }
   };
 
@@ -150,7 +137,7 @@ export default function FinancePanel() {
         showToast('error', 'Upload Failed', result?.error || 'Unknown error');
       }
     } catch (error: any) {
-      console.error('[Finance] Upload error:', error);
+      // '[Finance] Upload error:', error;
       showToast('error', 'Upload Failed', error.message);
     }
   };

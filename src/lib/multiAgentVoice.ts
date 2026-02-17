@@ -276,7 +276,7 @@ export class MultiAgentVoiceSystem {
         try {
           currentSession.liveSession.close();
         } catch (error) {
-          console.error('[MultiAgent] Error closing session:', error);
+          // '[MultiAgent] Error closing session:', error;
         }
         currentSession.liveSession = null;
         currentSession.isActive = false;
@@ -291,7 +291,7 @@ export class MultiAgentVoiceSystem {
       this.currentAgent = to;
       this.onAgentSwitchCallback?.(from, to);
     } catch (error) {
-      console.error(`Failed to switch to ${to}:`, error);
+      // `Failed to switch to ${to}:`, error;
       this.onStatusCallback?.(`Failed to connect to ${newSession.config.name}`);
       throw error;
     }
@@ -393,7 +393,7 @@ export class MultiAgentVoiceSystem {
       source.connect(this.outputAudioContext.destination);
       source.start();
     } catch (error) {
-      console.error('Failed to play audio:', error);
+      // 'Failed to play audio:', error;
     }
   }
 
@@ -491,7 +491,7 @@ export class MultiAgentVoiceSystem {
         try {
           session.liveSession.close();
         } catch (error) {
-          console.error('[MultiAgent] Error closing session during cleanup:', error);
+          // '[MultiAgent] Error closing session during cleanup:', error;
         }
         session.liveSession = null;
         session.isActive = false;

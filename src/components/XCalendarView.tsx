@@ -67,7 +67,7 @@ export const XCalendarView: React.FC = () => {
         setScheduled((result.scheduled ?? []) as ScheduledPost[]);
       }
     } catch (error) {
-      console.error('Error loading scheduled posts:', error);
+      // 'Error loading scheduled posts:', error;
     }
   };
 
@@ -83,7 +83,7 @@ export const XCalendarView: React.FC = () => {
       }
       setLoading(false);
     } catch (error) {
-      console.error('Error loading approved drafts:', error);
+      // 'Error loading approved drafts:', error;
       setLoading(false);
     }
   };
@@ -149,7 +149,7 @@ export const XCalendarView: React.FC = () => {
         setTimeSlots([]);
       }
     } catch (error) {
-      console.error('Error scheduling post:', error);
+      // 'Error scheduling post:', error;
     }
   };
 
@@ -162,7 +162,7 @@ export const XCalendarView: React.FC = () => {
         await loadApprovedDrafts();
       }
     } catch (error) {
-      console.error('Error unscheduling post:', error);
+      // 'Error unscheduling post:', error;
     }
   };
 

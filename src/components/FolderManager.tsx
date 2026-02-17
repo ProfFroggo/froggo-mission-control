@@ -33,7 +33,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
         showToast('error', 'Failed to load folders');
       }
     } catch (error) {
-      console.error('[FolderManager] Load error:', error);
+      // '[FolderManager] Load error:', error;
       showToast('error', 'Failed to load folders');
     } finally {
       setLoading(false);
@@ -61,7 +61,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
         showToast('error', result?.error || 'Failed to create folder');
       }
     } catch (error) {
-      console.error('[FolderManager] Create error:', error);
+      // '[FolderManager] Create error:', error;
       showToast('error', 'Failed to create folder');
     }
   };
@@ -83,7 +83,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
         showToast('error', result?.error || 'Failed to update folder');
       }
     } catch (error) {
-      console.error('[FolderManager] Update error:', error);
+      // '[FolderManager] Update error:', error;
       showToast('error', 'Failed to update folder');
     }
   };
@@ -104,7 +104,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
           showToast('error', result?.error || 'Failed to delete folder');
         }
       } catch (error) {
-        console.error('[FolderManager] Delete error:', error);
+        // '[FolderManager] Delete error:', error;
         showToast('error', 'Failed to delete folder');
       }
     });

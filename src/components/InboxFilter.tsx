@@ -72,7 +72,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
       try {
         setSavedFilters(JSON.parse(saved));
       } catch (e) {
-        console.error('Failed to load saved filters:', e);
+        // 'Failed to load saved filters:', e;
       }
     }
   }, []);

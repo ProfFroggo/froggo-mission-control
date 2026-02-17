@@ -90,7 +90,7 @@ export default function EpicCalendar() {
       await fetchEvents();
       return true;
     } catch (err) {
-      console.error('Failed to create event:', err);
+      // 'Failed to create event:', err;
       setError(`Failed to create event: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setTimeout(() => setError(null), 5000);
       return false;
@@ -146,7 +146,7 @@ export default function EpicCalendar() {
       await fetchEvents();
       return true;
     } catch (err) {
-      console.error('Failed to update event:', err);
+      // 'Failed to update event:', err;
       setError(`Failed to update event: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setTimeout(() => setError(null), 5000);
       // Rollback by refreshing
@@ -172,7 +172,7 @@ export default function EpicCalendar() {
       await fetchEvents();
       return true;
     } catch (err) {
-      console.error('Failed to delete event:', err);
+      // 'Failed to delete event:', err;
       setError(`Failed to delete event: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setTimeout(() => setError(null), 5000);
       // Rollback by refreshing
@@ -278,7 +278,7 @@ export default function EpicCalendar() {
       setShowRescheduleConfirm(false);
       setPendingReschedule(null);
     } catch (err) {
-      console.error('Failed to reschedule event:', err);
+      // 'Failed to reschedule event:', err;
       setError(`Failed to reschedule event: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setTimeout(() => setError(null), 5000);
       
@@ -312,7 +312,6 @@ export default function EpicCalendar() {
 
       if (response.success) {
         if (response.errors && response.errors.length > 0) {
-          console.debug('[EpicCalendar] Some sources had errors:', response.errors);
         }
 
         setEvents(response.events);
@@ -322,7 +321,7 @@ export default function EpicCalendar() {
     } catch (err: any) {
       const errorMsg = err?.message || 'Failed to fetch calendar events';
       setError(errorMsg);
-      console.error('[EpicCalendar] Error:', err);
+      // '[EpicCalendar] Error:', err;
     } finally {
       setLoading(false);
     }

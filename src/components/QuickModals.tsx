@@ -262,7 +262,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
         setError(result?.error || 'Could not load mentions');
       }
     } catch (e: any) {
-      console.error('[Mentions] Error:', e);
+      // '[Mentions] Error:', e;
       setError(e?.message || 'Failed to load mentions');
     } finally {
       setLoading(false);

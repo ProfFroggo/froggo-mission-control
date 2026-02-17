@@ -199,7 +199,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
         try {
           await (window as any).clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
         } catch (err) {
-          console.error('Failed to create deliverables directory:', err);
+          // 'Failed to create deliverables directory:', err;
           return;
         }
 
@@ -231,7 +231,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               'user'
             );
           } catch (error) {
-            console.error(`Error uploading file ${file.name}:`, error);
+            // `Error uploading file ${file.name}:`, error;
           }
         }
       })();
@@ -302,7 +302,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       await gateway.sendChatStreaming(prompt);
 
     } catch (error) {
-      console.error('Chat error:', error);
+      // 'Chat error:', error;
       setIsStreaming(false);
       setChatMessages(prev => [...prev, {
         id: `msg-${Date.now()}`,
@@ -330,7 +330,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
           };
         }
       } catch (e) {
-        console.error('Failed to parse task JSON:', e);
+        // 'Failed to parse task JSON:', e;
       }
     }
     return null;
@@ -378,7 +378,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       // Notify orchestrator via gateway
       await gateway.sendToMain(`[TASK_CREATED] New task needs review: "${task.title}" (${task.project})`);
     } catch (error) {
-      console.error('Failed to trigger orchestrator review:', error);
+      // 'Failed to trigger orchestrator review:', error;
     }
   };
 

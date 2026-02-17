@@ -53,7 +53,7 @@ export default function AgentTokenDetailModal({
       });
       setSessionLog(log || []);
     } catch (error) {
-      console.error('Failed to load session log:', error);
+      // 'Failed to load session log:', error;
       setSessionLog([]);
     } finally {
       setLoading(false);

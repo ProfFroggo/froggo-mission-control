@@ -56,7 +56,7 @@ export default function SecuritySettings() {
         setApiKeys(result.keys);
       }
     } catch (e) {
-      console.error('[Security] Failed to load API keys:', e);
+      // '[Security] Failed to load API keys:', e;
     }
   };
 
@@ -68,7 +68,7 @@ export default function SecuritySettings() {
         setAuditLogs(result.logs);
       }
     } catch (e) {
-      console.error('[Security] Failed to load audit logs:', e);
+      // '[Security] Failed to load audit logs:', e;
     }
   };
 
@@ -80,7 +80,7 @@ export default function SecuritySettings() {
         setAlerts(result.alerts);
       }
     } catch (e) {
-      console.error('[Security] Failed to load alerts:', e);
+      // '[Security] Failed to load alerts:', e;
     }
   };
 
@@ -174,7 +174,7 @@ export default function SecuritySettings() {
         loadAuditLogs();
       }
     } catch (e) {
-      console.error('[Security] Failed to update audit log:', e);
+      // '[Security] Failed to update audit log:', e;
     }
   };
 
@@ -186,7 +186,7 @@ export default function SecuritySettings() {
         loadAlerts();
       }
     } catch (e) {
-      console.error('[Security] Failed to dismiss alert:', e);
+      // '[Security] Failed to dismiss alert:', e;
     }
   };
 

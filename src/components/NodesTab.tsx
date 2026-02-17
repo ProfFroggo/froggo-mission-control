@@ -48,7 +48,7 @@ export default function NodesTab() {
         setPairRequests(pairResult.filter((r: any) => r.status === 'pending'));
       }
     } catch (e) {
-      console.error('Failed to load nodes:', e);
+      // 'Failed to load nodes:', e;
     } finally {
       setLoading(false);
     }

@@ -481,7 +481,7 @@ export class GeminiLiveService {
         // Let the auto-reconnect handle this via onclose
       }
     } catch (err) {
-      console.error('[GeminiLive] Parse error:', err);
+      // '[GeminiLive] Parse error:', err;
     }
   }
 
@@ -550,7 +550,7 @@ export class GeminiLiveService {
         this.reconnectAttempts = 0;
         logger.debug('[GeminiLive] Auto-reconnected successfully with context replay');
       } catch (err) {
-        console.error('[GeminiLive] Reconnect failed:', err);
+        // '[GeminiLive] Reconnect failed:', err;
         if (!this.intentionalDisconnect) this.scheduleReconnect();
       }
     }, delay);
@@ -655,7 +655,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.startMicLevelMonitor();
 
     } catch (err: any) {
-      console.error('[GeminiLive] Mic error:', err);
+      // '[GeminiLive] Mic error:', err;
       this.emit('error', { message: `Microphone failed: ${err.message}` });
     }
   }
@@ -724,7 +724,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
         await this.playbackCtx.resume();
         logger.debug('[GeminiLive] Playback AudioContext resumed');
       } catch (err) {
-        console.error('[GeminiLive] Failed to resume playback AudioContext:', err);
+        // '[GeminiLive] Failed to resume playback AudioContext:', err;
         return;
       }
     }
@@ -844,7 +844,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.videoInterval = setInterval(() => this.captureAndSendFrame(), 1000);
 
     } catch (err: any) {
-      console.error('[GeminiLive] Video error:', err);
+      // '[GeminiLive] Video error:', err;
       this.emit('error', { message: `Video capture failed: ${err.message}` });
     }
   }
@@ -975,7 +975,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       logger.debug('[GeminiLive] Sending tool response:', msg.slice(0, 500));
       this.ws.send(msg);
     } catch (err: any) {
-      console.error('[GeminiLive] Failed to send tool response:', err);
+      // '[GeminiLive] Failed to send tool response:', err;
       this.emit('error', { message: `Tool response failed: ${err.message}` });
     }
   }

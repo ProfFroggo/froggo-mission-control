@@ -103,7 +103,7 @@ export default function ContextControlBoard() {
         setSkills(loadedSkills);
       }
     } catch (e) {
-      console.error('Failed to load skills:', e);
+      // 'Failed to load skills:', e;
     } finally {
       setLoading(false);
     }
@@ -128,7 +128,7 @@ export default function ContextControlBoard() {
         setAgents(loadedAgents);
       }
     } catch (e) {
-      console.error('Failed to load agents:', e);
+      // 'Failed to load agents:', e;
     } finally {
       setLoading(false);
     }

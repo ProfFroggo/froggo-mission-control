@@ -129,11 +129,9 @@ export function resetStats() {
  */
 export function printPerformanceReport() {
   console.group('📊 Performance Report');
-  console.debug('Total renders:', stats.totalRenders);
   console.debug('Slow renders:', stats.slowRenders, `(${((stats.slowRenders / stats.totalRenders) * 100).toFixed(1)}%)`);
   console.debug('Average duration:', stats.averageDuration.toFixed(2), 'ms');
   console.debug('Max duration:', stats.maxDuration.toFixed(2), 'ms');
-  console.debug('\n🐢 Slowest components:');
   console.table(getSlowestComponents(10));
   console.groupEnd();
 }

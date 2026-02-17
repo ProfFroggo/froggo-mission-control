@@ -33,7 +33,7 @@ export default function TaskTrendsChart() {
       const trends = await getTaskCompletionTrends(timeRange);
       setData(trends);
     } catch (error) {
-      console.error('Failed to load task trends:', error);
+      // 'Failed to load task trends:', error;
     } finally {
       setLoading(false);
     }

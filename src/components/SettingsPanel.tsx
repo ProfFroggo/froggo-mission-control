@@ -197,7 +197,7 @@ export default function SettingsPanel() {
         defaultCalendarAccount: settings.defaultCalendarAccount,
       });
     } catch (e) {
-      console.error('[Settings] Failed to save automation settings:', e);
+      // '[Settings] Failed to save automation settings:', e;
     }
     
     setSaved(true);

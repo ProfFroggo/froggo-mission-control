@@ -62,7 +62,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         try {
           enabledIds = JSON.parse(savedFilters);
         } catch (e) {
-          console.debug('Failed to parse calendar-filter-preferences:', e);
+
           enabledIds = null;
         }
       }
@@ -106,7 +106,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
             });
           }
         } catch (e) {
-          console.error(`Failed to load calendars for ${account.email}:`, e);
+          // `Failed to load calendars for ${account.email}:`, e;
           // Still add the account even if fetch failed
           const sourceId = `google:${account.email}`;
           loadedSources.push({
@@ -149,7 +149,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
       setSources(loadedSources);
     } catch (e) {
-      console.error('Failed to load calendar sources:', e);
+      // 'Failed to load calendar sources:', e;
     } finally {
       setLoading(false);
       setRefreshing(false);

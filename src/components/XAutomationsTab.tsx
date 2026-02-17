@@ -84,7 +84,7 @@ export default function XAutomationsTab() {
         setAutomations(parsed);
       }
     } catch (error) {
-      console.error('Failed to load automations:', error);
+      // 'Failed to load automations:', error;
     } finally {
       setLoading(false);
     }
@@ -98,7 +98,7 @@ export default function XAutomationsTab() {
       );
       await loadAutomations();
     } catch (error) {
-      console.error('Failed to toggle automation:', error);
+      // 'Failed to toggle automation:', error;
     }
   };
 
@@ -112,7 +112,7 @@ export default function XAutomationsTab() {
       );
       await loadAutomations();
     } catch (error) {
-      console.error('Failed to delete automation:', error);
+      // 'Failed to delete automation:', error;
     }
   };
 
@@ -129,7 +129,7 @@ export default function XAutomationsTab() {
         showToast('error', 'Test Failed', result?.error || 'Unknown error');
       }
     } catch (error) {
-      console.error('Failed to test automation:', error);
+      // 'Failed to test automation:', error;
       showToast('error', 'Test Failed', String(error));
     }
   };
@@ -194,7 +194,7 @@ export default function XAutomationsTab() {
       closeBuilder();
       showToast('success', 'Automation Saved', editingAutomation ? 'Changes saved successfully' : 'New automation created');
     } catch (error) {
-      console.error('Failed to save automation:', error);
+      // 'Failed to save automation:', error;
       showToast('error', 'Save Failed', 'Failed to save automation: ' + error);
     }
   };

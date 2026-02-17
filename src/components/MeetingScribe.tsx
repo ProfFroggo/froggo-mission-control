@@ -234,7 +234,7 @@ export default function MeetingScribe() {
         setEntries(prev => prev.filter(e => e.id !== entryId));
       }
     } catch (err: any) {
-      console.error('[Scribe] Transcription error:', err);
+      // '[Scribe] Transcription error:', err;
       setEntries(prev => prev.map(e => 
         e.id === entryId 
           ? { ...e, text: `[Transcription failed: ${err.message}]`, isProcessing: false }
@@ -342,7 +342,7 @@ export default function MeetingScribe() {
       addActivity({ type: 'system', message: '🎙️ Meeting scribe started (Gemini)', timestamp: Date.now() });
       
     } catch (err: any) {
-      console.error('[Scribe] Failed to start:', err);
+      // '[Scribe] Failed to start:', err;
       setError(err.message || 'Failed to access microphone');
       isRecordingRef.current = false;
       setIsRecording(false);
@@ -467,7 +467,7 @@ export default function MeetingScribe() {
         // Scribe saved successfully
       }
     } catch (err) {
-      console.error('[Scribe] Save error:', err);
+      // '[Scribe] Save error:', err;
     }
     
     return result;
@@ -512,7 +512,7 @@ ${transcriptText}`,
         if (summaryText) setAiSummary(summaryText);
       }
     } catch (err) {
-      console.error('[Scribe] Summary error:', err);
+      // '[Scribe] Summary error:', err;
     } finally {
       setIsSummarizing(false);
     }
@@ -540,7 +540,7 @@ ${transcriptText}`,
     try {
       await gateway.sendChat(message);
     } catch (err) {
-      console.error('[Scribe] Failed to send to Froggo:', err);
+      // '[Scribe] Failed to send to Froggo:', err;
     }
   }, [entries, actionItems]);
 

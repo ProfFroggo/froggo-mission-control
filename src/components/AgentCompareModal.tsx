@@ -84,7 +84,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
 
       setData(results);
     } catch (e) {
-      console.error('Failed to load comparison data:', e);
+      // 'Failed to load comparison data:', e;
     }
     setLoading(false);
   }, [agentIds, agents]);

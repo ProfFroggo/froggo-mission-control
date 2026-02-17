@@ -48,7 +48,7 @@ export default function ActiveAgentIndicator({
           }
         }
       } catch (err) {
-        console.error('Failed to check active agent:', err);
+        // 'Failed to check active agent:', err;
         setIsActive(false);
       }
     };

@@ -48,7 +48,7 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         set({ versions: result.versions || [] });
       }
     } catch (err) {
-      console.error('[versionStore] loadVersions failed:', err);
+      // '[versionStore] loadVersions failed:', err;
     } finally {
       set({ loading: false });
     }
@@ -62,7 +62,7 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         return true;
       }
     } catch (err) {
-      console.error('[versionStore] saveVersion failed:', err);
+      // '[versionStore] saveVersion failed:', err;
     }
     return false;
   },
@@ -74,7 +74,7 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         await get().loadVersions(projectId, chapterId);
       }
     } catch (err) {
-      console.error('[versionStore] deleteVersion failed:', err);
+      // '[versionStore] deleteVersion failed:', err;
     }
   },
 
@@ -85,7 +85,7 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         return true;
       }
     } catch (err) {
-      console.error('[versionStore] restoreVersion failed:', err);
+      // '[versionStore] restoreVersion failed:', err;
     }
     return false;
   },
@@ -103,7 +103,7 @@ export const useVersionStore = create<VersionState>((set, get) => ({
         });
       }
     } catch (err) {
-      console.error('[versionStore] loadDiff failed:', err);
+      // '[versionStore] loadDiff failed:', err;
     } finally {
       set({ diffLoading: false });
     }

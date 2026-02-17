@@ -15,6 +15,64 @@ interface AgentLike {
   sessionKey?: string;
 }
 
+interface GatewaySession {
+  key?: string;
+  sessionKey?: string;
+  label?: string;
+  agentId?: string;
+  state?: string;
+  [key: string]: unknown;
+}
+
+interface ToolCallArgs {
+  title?: string;
+  assigned_to?: string;
+  priority?: string;
+  status?: string;
+  description?: string;
+  task_id?: string;
+  agent_id?: string;
+  message?: string;
+  command?: string;
+  path?: string;
+  max_lines?: number;
+  count?: number;
+  query?: string;
+  note?: string;
+  content?: string;
+  days?: number;
+  [key: string]: unknown;
+}
+
+interface ToolResult {
+  success?: boolean;
+  output?: string;
+  task_created?: string;
+  tasks?: string;
+  agent_spawned?: string;
+  error?: string;
+  content?: string;
+  stdout?: string;
+  stderr?: string;
+  results?: string[];
+  files?: string[];
+  query?: string;
+  raw?: string;
+  message?: string;
+}
+
+interface ExecResult {
+  success?: boolean;
+  stdout?: string;
+  stderr?: string;
+}
+
+interface DuckDuckGoResult {
+  Text?: string;
+  FirstURL?: string;
+  [key: string]: unknown;
+}
+
 type VideoMode = 'camera' | 'screen' | 'none';
 
 /** Resolve agent workspace base path. froggo/main share ~/froggo, others get ~/agent-{id} */
@@ -55,7 +113,7 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
       const sessionData = await sessionRes.json();
       const allSessions = sessionData.sessions || sessionData || [];
       // Find all sessions for this agent
-      const agentSessions = allSessions.filter((s: any) => {
+      const agentSessions = allSessions.filter((s: GatewaySession) => {
         const key = s.key || s.sessionKey || '';
         const label = s.label || '';
         // Match by key patterns: agent:{id}:*, chat:{id}, or label containing the agent
@@ -369,7 +427,7 @@ export function buildAgentTools(): GeminiTool[] {
 
 // ── Tool call executor ──
 
-export async function executeToolCall(fnName: string, args: Record<string, any>, currentAgent: AgentLike): Promise<any> {
+export async function executeToolCall(fnName: string, args: ToolCallArgs, currentAgent: AgentLike): Promise<ToolResult> {
   const exec = (window as any).clawdbot?.exec?.run;
   if (!exec) return { error: 'Exec not available' };
 
@@ -419,8 +477,8 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
         return {
           agent: args.agent_id,
           personality: ctx.personality ? `${ctx.personality.emoji} ${ctx.personality.name} - ${ctx.personality.role}` : 'Unknown',
-          tasks: ctx.tasks.map((t: any) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority })),
-          active_sessions: ctx.sessions.filter((s: any) => s.state === 'running' || s.state === 'active').length,
+          tasks: ctx.tasks.map((t: { id: string; title: string; status: string; priority: string }) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority })),
+          active_sessions: ctx.sessions.filter((s: GatewaySession) => s.state === 'running' || s.state === 'active').length,
         };
       }
       case 'read_file': {
@@ -452,7 +510,7 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
         const r = await exec(`curl -s "https://api.duckduckgo.com/?q=${q}&format=json&no_html=1&t=froggo" 2>&1`);
         try {
           const data = JSON.parse(r.stdout || '{}');
-          const results = (data.RelatedTopics || []).slice(0, 5).map((t: any) => t.Text || t.FirstURL).filter(Boolean);
+          const results = (data.RelatedTopics || []).slice(0, 5).map((t: DuckDuckGoResult) => t.Text || t.FirstURL).filter(Boolean);
           return { query: args.query, results: results.length ? results : [data.Abstract || 'No results found'] };
         } catch { return { query: args.query, raw: r.stdout?.trim()?.slice(0, 1500) || 'Search failed' }; }
       }
@@ -534,8 +592,8 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
       default:
         return { error: `Unknown tool: ${fnName}` };
     }
-  } catch (err: any) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 }
 

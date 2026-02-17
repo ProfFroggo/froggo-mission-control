@@ -41,7 +41,7 @@ export const XMentionsView: React.FC = () => {
       }
       setLoading(false);
     } catch (error) {
-      console.error('Error loading mentions:', error);
+      // 'Error loading mentions:', error;
       setLoading(false);
     }
   };
@@ -55,7 +55,7 @@ export const XMentionsView: React.FC = () => {
         await loadMentions();
       }
     } catch (error) {
-      console.error('Error fetching mentions:', error);
+      // 'Error fetching mentions:', error;
     } finally {
       setFetching(false);
     }
@@ -66,7 +66,7 @@ export const XMentionsView: React.FC = () => {
       await window.clawdbot?.xMention?.update({ id, replyStatus: status });
       await loadMentions();
     } catch (error) {
-      console.error('Error updating mention status:', error);
+      // 'Error updating mention status:', error;
     }
   };
 
@@ -75,7 +75,7 @@ export const XMentionsView: React.FC = () => {
       await window.clawdbot?.xMention?.update({ id, notes: noteText });
       setNotes({ ...notes, [id]: '' });
     } catch (error) {
-      console.error('Error saving notes:', error);
+      // 'Error saving notes:', error;
     }
   };
 
@@ -95,7 +95,7 @@ export const XMentionsView: React.FC = () => {
         await loadMentions();
       }
     } catch (error) {
-      console.error('Error replying to mention:', error);
+      // 'Error replying to mention:', error;
     }
   };
 

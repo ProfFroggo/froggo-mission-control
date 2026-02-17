@@ -71,7 +71,7 @@ export default function AnalyticsPanel() {
       setVelocity(vel);
       setSubtaskStats(subtasks);
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      // 'Failed to load analytics:', error;
     } finally {
       setLoading(false);
     }

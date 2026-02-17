@@ -42,7 +42,7 @@ export default function WeatherWidget() {
       setWeather(data);
       setLastFetch(Date.now());
     } catch (e: any) {
-      console.error('Failed to fetch weather:', e);
+      // 'Failed to fetch weather:', e;
       setError('Could not load weather');
     } finally {
       setLoading(false);

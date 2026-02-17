@@ -57,24 +57,21 @@ let personalitiesData: Record<string, any> | null = null;
 async function loadPersonalities(): Promise<Record<string, any>> {
   if (personalitiesData) return personalitiesData;
   
-  console.debug('[AgentContext] Loading personalities...');
   
   // In Electron, try exec first (file:// fetch doesn't work)
   const isElectron = !!(window as any).clawdbot?.exec?.run;
   
   if (isElectron) {
     try {
-      console.debug('[AgentContext] Electron mode - using exec...');
       const r = await (window as any).clawdbot.exec.run(
         'cat ~/froggo-dashboard/dist/agent-profiles/personalities.json'
       );
       if (r.success && r.stdout) {
         personalitiesData = JSON.parse(r.stdout);
-        console.debug('[AgentContext] ✅ Loaded from exec');
         return personalitiesData!;
       }
     } catch (err) {
-      console.debug('[AgentContext] Exec failed:', err);
+
     }
   }
   
@@ -83,11 +80,10 @@ async function loadPersonalities(): Promise<Record<string, any>> {
     const resp = await fetch('/agent-profiles/personalities.json');
     if (resp.ok) {
       personalitiesData = await resp.json();
-      console.debug('[AgentContext] ✅ Loaded from fetch');
       return personalitiesData!;
     }
   } catch (err) {
-    console.debug('[AgentContext] Fetch failed:', err);
+
   }
   
   console.error('[AgentContext] ❌ Failed to load personalities');
@@ -123,7 +119,7 @@ async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
       }
     }
   } catch (e) {
-    console.debug('[AgentContext] Failed to load tasks:', e);
+
   }
   
   // Fallback: try gateway froggo-db
@@ -167,7 +163,7 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
         .slice(0, 10);
     }
   } catch (e) {
-    console.debug('[AgentContext] Failed to load sessions:', e);
+
   }
   return [];
 }

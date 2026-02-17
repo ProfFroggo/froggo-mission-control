@@ -17,7 +17,7 @@ export const CircuitBreakerStatus: React.FC = () => {
         const status = await (window as any).clawdbot?.getCircuitStatus();
         setBreakers(status || {});
       } catch (err) {
-        console.error('Failed to fetch circuit status:', err);
+        // 'Failed to fetch circuit status:', err;
       }
     };
 

@@ -32,7 +32,7 @@ async function loadApiKey(): Promise<string> {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
   } catch (err) {
-    console.error('[VoiceChatPanel] Failed to load API key from settings:', err);
+    // '[VoiceChatPanel] Failed to load API key from settings:', err;
   }
   // 3. Check localStorage settings
   try {
@@ -269,7 +269,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             try {
               result = await executeToolCall(fc.name, fc.args || {}, selectedAgent);
             } catch (toolErr: any) {
-              console.error(`[VoiceChat] Tool execution error for ${fc.name}:`, toolErr);
+              // `[VoiceChat] Tool execution error for ${fc.name}:`, toolErr;
               result = { error: toolErr.message || 'Tool execution failed' };
               addSystemMessage(`⚠️ ${fc.name} failed: ${toolErr.message}`);
             }
@@ -282,12 +282,12 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           try {
             await geminiLive.sendToolResponse(responses);
           } catch (sendErr: any) {
-            console.error('[VoiceChat] Failed to send tool response:', sendErr);
+            // '[VoiceChat] Failed to send tool response:', sendErr;
             addSystemMessage(`⚠️ Tool response send failed: ${sendErr.message}`);
           }
         } catch (outerErr: any) {
           geminiLive.stopToolCallKeepalive();
-          console.error('[VoiceChat] Unexpected error in tool-call handler:', outerErr);
+          // '[VoiceChat] Unexpected error in tool-call handler:', outerErr;
           addSystemMessage(`⚠️ Tool call error: ${outerErr.message}`);
         }
       }),
@@ -349,14 +349,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           addSystemMessage('📹 Camera active');
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         } catch (e: any) {
-          console.debug('[VoiceChat] Video start failed:', e);
+
         }
       } else if (videoMode === 'screen') {
         // Show picker instead of auto-sharing
         setShowScreenPicker(true);
       }
     } catch (err: any) {
-      console.error('[VoiceChat] Connect failed:', err);
+      // '[VoiceChat] Connect failed:', err;
       addSystemMessage(`⚠️ Connection failed: ${err.message}`);
       setConnecting(false);
       callActiveRef.current = false;

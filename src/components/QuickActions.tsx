@@ -566,7 +566,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               result = await executeToolCall(fc.name, fc.args || {}, agent || { id: 'froggo', name: 'Froggo' });
               logger.debug(`[QuickActions] Tool ${fc.name} result:`, result);
             } catch (err: any) {
-              console.error(`[QuickActions] Tool ${fc.name} error:`, err);
+              // `[QuickActions] Tool ${fc.name} error:`, err;
               result = { error: (err as Error).message || 'Tool execution failed' };
               addTx('system', `⚠️ ${fc.name} failed: ${(err as Error).message}`);
             }
@@ -576,7 +576,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           await geminiLive.sendToolResponse(responses);
           logger.debug('[QuickActions] Tool responses sent');
         } catch (err: any) {
-          console.error('[QuickActions] Tool handler error:', err);
+          // '[QuickActions] Tool handler error:', err;
           addTx('system', `⚠️ Tool error: ${(err as Error).message}`);
         }
       }),
@@ -599,7 +599,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     // 1. Check localStorage settings
     try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
     catch (err) {
-      console.error('[QuickActions] Failed to parse settings from localStorage:', err);
+      // '[QuickActions] Failed to parse settings from localStorage:', err;
     }
     // 2. Check env vars
     const envKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY;
@@ -769,7 +769,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         await ipc.spawnChat(agent.id);
       }
     } catch (e) {
-      console.warn('[QuickActions] Failed to spawn agent chat session:', e);
+      // '[QuickActions] Failed to spawn agent chat session:', e;
     }
     setChatLoading(false);
   };
@@ -876,7 +876,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         showToast('error', 'Pop-out Failed', result.error || 'Could not create floating window');
       }
     } catch (error) {
-      console.error('Pop-out error:', error);
+      // 'Pop-out error:', error;
       showToast('error', 'Pop-out Failed', 'An error occurred');
     }
   };

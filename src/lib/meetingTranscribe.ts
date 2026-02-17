@@ -51,7 +51,6 @@ export class MeetingTranscriber {
    */
   private async dbExec(sql: string, params: any[] = []): Promise<void> {
     if (!(window as any).clawdbot?.db?.exec) {
-      console.debug('[MeetingTranscriber] db.exec not available');
       return;
     }
     await (window as any).clawdbot.db.exec(sql, params);
@@ -62,14 +61,13 @@ export class MeetingTranscriber {
    */
   private async dbQuery(sql: string, params: any[] = []): Promise<any[]> {
     if (!(window as any).clawdbot?.db?.query) {
-      console.debug('[MeetingTranscriber] db.query not available');
       return [];
     }
     try {
       const result = await (window as any).clawdbot.db.query(sql, params);
       return result || [];
     } catch (error) {
-      console.error('[MeetingTranscriber] Query failed:', error);
+      // '[MeetingTranscriber] Query failed:', error;
       return [];
     }
   }
@@ -122,7 +120,6 @@ export class MeetingTranscriber {
       [meetingId, title, meeting.started_at, JSON.stringify(participants), 'active']
     );
 
-    console.debug('[MeetingTranscriber] Created meeting:', meetingId, title);
     return meeting;
   }
 
@@ -132,14 +129,12 @@ export class MeetingTranscriber {
   async startTranscription(meetingId: string, audioStream: MediaStream): Promise<void> {
     if (!meetingId) throw new Error('No active meeting');
 
-    console.debug('[MeetingTranscriber] Starting transcription for meeting:', meetingId);
 
     try {
       this.activeStream = await this.ai.live.connect({
         model: 'gemini-live-2.5-flash-preview',
         callbacks: {
           onopen: () => {
-            console.debug('[MeetingTranscriber] Transcription stream connected');
           },
           onmessage: (message: any) => {
             if (message.serverContent?.inputTranscription) {
@@ -149,7 +144,6 @@ export class MeetingTranscriber {
               const speaker = this.detectSpeaker(text);
               const segment: TranscriptionSegment = { speaker, text, timestamp: Date.now() };
 
-              console.debug('[MeetingTranscriber] Transcript:', speaker, text);
               this.saveTranscript(meetingId, speaker, text);
 
               if (this.onTranscriptCallback) {
@@ -158,14 +152,12 @@ export class MeetingTranscriber {
             }
 
             if (message.serverContent?.outputTranscription) {
-              console.debug('[MeetingTranscriber] Agent output:', message.serverContent.outputTranscription.text);
             }
           },
           onerror: (error: any) => {
             console.error('[MeetingTranscriber] Stream error:', error);
           },
           onclose: () => {
-            console.debug('[MeetingTranscriber] Transcription stream closed');
             this.activeStream = null;
           }
         },
@@ -182,7 +174,7 @@ Do not respond or engage - only transcribe what you hear.`,
 
       await this.streamAudioToTranscription(audioStream);
     } catch (error) {
-      console.error('[MeetingTranscriber] Failed to start transcription:', error);
+      // '[MeetingTranscriber] Failed to start transcription:', error;
       throw error;
     }
   }
@@ -254,7 +246,7 @@ Do not respond or engage - only transcribe what you hear.`,
         [meetingId, speaker, text, Date.now()]
       );
     } catch (error) {
-      console.error('[MeetingTranscriber] Failed to save transcript:', error);
+      // '[MeetingTranscriber] Failed to save transcript:', error;
     }
   }
 
@@ -274,7 +266,6 @@ Do not respond or engage - only transcribe what you hear.`,
       [Date.now(), meetingId]
     );
 
-    console.debug('[MeetingTranscriber] Ended meeting:', meetingId);
   }
 
   /**
@@ -316,7 +307,6 @@ Do not respond or engage - only transcribe what you hear.`,
   async deleteMeeting(meetingId: string): Promise<void> {
     await this.dbExec(`DELETE FROM meeting_transcripts WHERE meeting_id = ?`, [meetingId]);
     await this.dbExec(`DELETE FROM meetings WHERE id = ?`, [meetingId]);
-    console.debug('[MeetingTranscriber] Deleted meeting:', meetingId);
   }
 
   /**

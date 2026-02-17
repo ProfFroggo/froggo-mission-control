@@ -304,7 +304,7 @@ export default function EnhancedSettingsPanel() {
       try {
         return { ...defaultSettings, ...JSON.parse(saved) };
       } catch (e) {
-        console.debug('Failed to parse froggo-settings:', e);
+
       }
     }
     return defaultSettings;
@@ -342,7 +342,7 @@ export default function EnhancedSettingsPanel() {
         defaultCalendarAccount: settings.defaultCalendarAccount,
       });
     } catch (e) {
-      console.error('[Settings] Failed to save automation settings:', e);
+      // '[Settings] Failed to save automation settings:', e;
     }
 
     setSaved(true);

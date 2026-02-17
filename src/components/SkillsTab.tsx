@@ -79,7 +79,7 @@ export default function SkillsTab() {
         setSkills(parsed);
       }
     } catch (e) {
-      console.error('Failed to load skills:', e);
+      // 'Failed to load skills:', e;
       showToast('error', 'Failed to load skills', String(e));
     } finally {
       setLoading(false);

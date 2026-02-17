@@ -120,7 +120,7 @@ export default function Kanban() {
           setActiveSessions(activeMap);
         }
       } catch (err) {
-        console.error('Failed to poll active sessions:', err);
+        // 'Failed to poll active sessions:', err;
       }
     };
     
@@ -164,7 +164,7 @@ export default function Kanban() {
       try {
         return JSON.parse(saved);
       } catch (e) {
-        console.error('Failed to parse column settings:', e);
+        // 'Failed to parse column settings:', e;
       }
     }
 

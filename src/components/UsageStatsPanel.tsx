@@ -128,7 +128,7 @@ export default function UsageStatsPanel() {
         totalConversations: sessionsResult?.result?.[0]?.count || 0,
       });
     } catch (error) {
-      console.error('Failed to load usage stats:', error);
+      // 'Failed to load usage stats:', error;
     } finally {
       setLoading(false);
     }

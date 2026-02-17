@@ -45,7 +45,6 @@ export default function CodeAgentDashboard() {
     try {
       // Safety check - bail if clawdbot APIs not available
       if (!(window as any).clawdbot) {
-        console.debug('[CodeAgentDashboard] Clawdbot APIs not available yet');
         return;
       }
       // Load recent git commits
@@ -128,7 +127,7 @@ export default function CodeAgentDashboard() {
       }
 
     } catch (error) {
-      console.error('Failed to load dev data:', error);
+      // 'Failed to load dev data:', error;
     } finally {
       setLoading(false);
     }

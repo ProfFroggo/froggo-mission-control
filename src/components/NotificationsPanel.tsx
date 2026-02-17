@@ -87,7 +87,7 @@ export default function NotificationsPanel() {
 
       setNotifications(items);
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      // 'Failed to load notifications:', error;
     } finally {
       setLoading(false);
     }

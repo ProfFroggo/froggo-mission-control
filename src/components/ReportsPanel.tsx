@@ -29,7 +29,7 @@ export default function ReportsPanel() {
       setWeeklyReport(weekly);
       setMonthlyReport(monthly);
     } catch (error) {
-      console.error('Failed to generate reports:', error);
+      // 'Failed to generate reports:', error;
     } finally {
       setLoading(false);
     }

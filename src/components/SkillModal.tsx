@@ -217,7 +217,7 @@ Return ONLY a JSON array of suggestions:
       const suggestions = extractSuggestionsFromResponse(response.content);
       setSuggestions(suggestions);
     } catch (error) {
-      console.error('Failed to load suggestions:', error);
+      // 'Failed to load suggestions:', error;
       setSuggestions([]);
     } finally {
       setLoadingSuggestions(false);
@@ -230,7 +230,7 @@ Return ONLY a JSON array of suggestions:
       try {
         return JSON.parse(jsonMatch[1]);
       } catch (e) {
-        console.error('Failed to parse suggestions JSON:', e);
+        // 'Failed to parse suggestions JSON:', e;
       }
     }
     return [];
@@ -324,7 +324,7 @@ Be conversational, friendly, and help structure the skill properly.`;
       await gateway.sendChatStreaming(prompt);
 
     } catch (error) {
-      console.error('Chat error:', error);
+      // 'Chat error:', error;
       setIsStreaming(false);
       setChatMessages(prev => [...prev, {
         id: `msg-${Date.now()}`,
@@ -344,7 +344,7 @@ Be conversational, friendly, and help structure the skill properly.`;
           return parsed.skill;
         }
       } catch (e) {
-        console.error('Failed to parse skill JSON:', e);
+        // 'Failed to parse skill JSON:', e;
       }
     }
     return null;
@@ -395,7 +395,7 @@ Format as markdown with proper headings.`;
       setInstructions(response.content);
       setMode('manual'); // Switch to manual to review/edit
     } catch (error) {
-      console.error('Failed to generate instructions:', error);
+      // 'Failed to generate instructions:', error;
     } finally {
       setLoadingSuggestions(false);
     }
@@ -433,7 +433,7 @@ Format as markdown with proper headings.`;
       showToast('success', 'Skill Created!', `${skillData.name} added and task assigned to ${assignedAgent}`);
 
     } catch (error) {
-      console.error('Failed to create skill:', error);
+      // 'Failed to create skill:', error;
       const { showToast } = await import('./Toast');
       showToast('error', 'Skill Creation Failed', error instanceof Error ? error.message : 'Unknown error');
     }

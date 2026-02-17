@@ -47,7 +47,7 @@ export default function XDraftComposer() {
         setContentPlans(result.plans || []);
       }
     } catch (error) {
-      console.error('[XDraftComposer] Load plans error:', error);
+      // '[XDraftComposer] Load plans error:', error;
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export default function XDraftComposer() {
         throw new Error(result.error || 'Failed to create draft');
       }
     } catch (error: any) {
-      console.error('[XDraftComposer] Submit error:', error);
+      // '[XDraftComposer] Submit error:', error;
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {
       setSubmitting(false);

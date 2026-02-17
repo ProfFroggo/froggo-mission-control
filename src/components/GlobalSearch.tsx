@@ -96,7 +96,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
       try {
         setSearchHistory(JSON.parse(history));
       } catch (e) {
-        console.error('Failed to load search history:', e);
+        // 'Failed to load search history:', e;
       }
     }
   }, []);
@@ -290,7 +290,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
       setSelectedIndex(0);
     } catch (error) {
-      console.error('[GlobalSearch] Error:', error);
+      // '[GlobalSearch] Error:', error;
       setResults([]);
     } finally {
       setLoading(false);

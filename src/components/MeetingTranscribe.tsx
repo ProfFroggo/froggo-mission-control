@@ -150,7 +150,7 @@ export default function MeetingTranscribe() {
       // Start recording immediately
       await startRecording(meeting.id);
     } catch (error) {
-      console.error('[MeetingTranscribe] Failed to start meeting:', error);
+      // '[MeetingTranscribe] Failed to start meeting:', error;
       showToast('error', 'Failed to start meeting');
     }
   }
@@ -170,7 +170,7 @@ export default function MeetingTranscribe() {
       await transcriber.startTranscription(meetingId, stream);
       setIsRecording(true);
     } catch (error) {
-      console.error('[MeetingTranscribe] Failed to start recording:', error);
+      // '[MeetingTranscribe] Failed to start recording:', error;
       showToast('error', 'Microphone access denied');
     }
   }
@@ -221,7 +221,7 @@ export default function MeetingTranscribe() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('[MeetingTranscribe] Failed to export transcript:', error);
+      // '[MeetingTranscribe] Failed to export transcript:', error;
       showToast('error', 'Failed to export transcript');
     }
   }

@@ -45,7 +45,7 @@ export const DMFeed: React.FC = () => {
         setMessages(msgs || []);
         setLoading(false);
       } catch (err) {
-        console.error('Failed to fetch DM history:', err);
+        // 'Failed to fetch DM history:', err;
         setMessages([]);
         setLoading(false);
       }

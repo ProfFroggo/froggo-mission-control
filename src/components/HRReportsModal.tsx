@@ -37,7 +37,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
         showToast('error', 'Failed to load reports', result?.error);
       }
     } catch (error) {
-      console.error('[HRReports] Load error:', error);
+      // '[HRReports] Load error:', error;
       showToast('error', 'Failed to load reports', String(error));
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
         setReportContent('');
       }
     } catch (error) {
-      console.error('[HRReports] Read error:', error);
+      // '[HRReports] Read error:', error;
       showToast('error', 'Failed to read report', String(error));
       setReportContent('');
     } finally {

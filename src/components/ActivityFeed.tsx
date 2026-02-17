@@ -66,7 +66,7 @@ const ActivityFeed = memo(function ActivityFeed() {
         setActivities(mapped);
       }
     } catch (e) {
-      console.error('Failed to fetch sessions:', e);
+      // 'Failed to fetch sessions:', e;
     } finally {
       setLoading(false);
     }

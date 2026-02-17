@@ -63,7 +63,7 @@ export const XContentMixTracker: React.FC = () => {
         })));
       }
     } catch (error) {
-      console.error('Error loading content mix:', error);
+      // 'Error loading content mix:', error;
     } finally {
       setLoading(false);
     }

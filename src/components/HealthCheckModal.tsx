@@ -71,7 +71,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
       }
       return { ok: true, stdout: result?.stdout || '' };
     } catch (e) {
-      console.error('[HealthCheck] exec error:', e);
+      // '[HealthCheck] exec error:', e;
       return { ok: false, stdout: '', error: String(e) };
     }
   };
@@ -112,7 +112,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
         return filtered;
       }
     } catch (e) {
-      console.error('[HealthCheck] fetchTasks error:', e);
+      // '[HealthCheck] fetchTasks error:', e;
     }
     return [];
   };
@@ -443,7 +443,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
           setExecutionLog(prev => [...prev, `✓ Converted ${fixed} priorit${fixed === 1 ? 'y' : 'ies'}`]);
         }
       } catch (e) {
-        console.error('[HealthCheck] Execution error:', e);
+        // '[HealthCheck] Execution error:', e;
         setExecutionLog(prev => [...prev, `✗ Error: ${String(e)}`]);
       }
       await delay(400);
@@ -460,7 +460,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
       await loadTasksFromDB();
       setExecutionLog(prev => [...prev, '✓ Board refreshed']);
     } catch (e) {
-      console.error('[HealthCheck] Refresh error:', e);
+      // '[HealthCheck] Refresh error:', e;
       setExecutionLog(prev => [...prev, `✗ Refresh failed: ${e}`]);
     }
 

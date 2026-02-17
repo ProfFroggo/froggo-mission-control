@@ -55,7 +55,6 @@ export default function WizardChat() {
         plan: state.plan,
       });
     } catch {
-      console.debug('[wizard] Failed to persist state');
     }
   }, [sessionId]);
 

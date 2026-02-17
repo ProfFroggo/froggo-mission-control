@@ -25,7 +25,7 @@ export default function LogsTab() {
         setFileInfo({ file: result.file, size: result.size });
       }
     } catch (e) {
-      console.error('Failed to load logs:', e);
+      // 'Failed to load logs:', e;
     } finally {
       setLoading(false);
     }

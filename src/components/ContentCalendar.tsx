@@ -44,7 +44,7 @@ export default function ContentCalendar() {
         })));
       }
     } catch (e) {
-      console.error('Failed to load schedule:', e);
+      // 'Failed to load schedule:', e;
     } finally {
       setLoading(false);
     }
