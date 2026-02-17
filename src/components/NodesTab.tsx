@@ -155,13 +155,17 @@ export default function NodesTab() {
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-clawd-bg/50 transition-colors"
                   onClick={() => setExpandedNode(isExpanded ? null : node.nodeId)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedNode(isExpanded ? null : node.nodeId); } }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
                 >
                   <div className={`p-2 rounded-lg ${node.connected ? 'bg-success-subtle' : 'bg-clawd-bg0/20'}`}>
                     {node.connected ? <Wifi size={20} className="text-success" /> : <WifiOff size={20} className="text-clawd-text-dim" />}
                   </div>
                   <div className="flex-1">
                     {isRenaming ? (
-                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} role="presentation">
                         <input
                           type="text"
                           value={renameValue}

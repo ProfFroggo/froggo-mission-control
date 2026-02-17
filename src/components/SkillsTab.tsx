@@ -308,8 +308,15 @@ export default function SkillsTab() {
 
       {/* Add Skill Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)} role="button" tabIndex={-1} aria-label="Close add skill modal">
-          <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" 
+          onClick={() => setShowAddModal(false)} 
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowAddModal(false); } }}
+          role="button" 
+          tabIndex={0} 
+          aria-label="Close add skill modal"
+        >
+          <div className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-lg" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} role="presentation">
             <div className="p-4 border-b border-clawd-border flex items-center justify-between">
               <h3 className="font-semibold">Add Skill</h3>
               <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-clawd-border rounded-lg">
@@ -334,8 +341,9 @@ export default function SkillsTab() {
 
               {addMode === 'hub' ? (
                 <div>
-                  <label className="block text-xs text-clawd-text-dim mb-1">Skill slug</label>
+                  <label htmlFor="skill-slug" className="block text-xs text-clawd-text-dim mb-1">Skill slug</label>
                   <input
+                    id="skill-slug"
                     type="text"
                     value={hubSlug}
                     onChange={e => setHubSlug(e.target.value)}
@@ -350,8 +358,9 @@ export default function SkillsTab() {
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs text-clawd-text-dim mb-1">Name</label>
+                    <label htmlFor="skill-name" className="block text-xs text-clawd-text-dim mb-1">Name</label>
                     <input
+                      id="skill-name"
                       type="text"
                       value={localName}
                       onChange={e => setLocalName(e.target.value)}
@@ -360,8 +369,9 @@ export default function SkillsTab() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-clawd-text-dim mb-1">Description</label>
+                    <label htmlFor="skill-description" className="block text-xs text-clawd-text-dim mb-1">Description</label>
                     <input
+                      id="skill-description"
                       type="text"
                       value={localDescription}
                       onChange={e => setLocalDescription(e.target.value)}
@@ -370,8 +380,9 @@ export default function SkillsTab() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-clawd-text-dim mb-1">Instructions (SKILL.md body)</label>
+                    <label htmlFor="skill-instructions" className="block text-xs text-clawd-text-dim mb-1">Instructions (SKILL.md body)</label>
                     <textarea
+                      id="skill-instructions"
                       value={localBody}
                       onChange={e => setLocalBody(e.target.value)}
                       placeholder="# My Skill&#10;&#10;Instructions for the agent..."

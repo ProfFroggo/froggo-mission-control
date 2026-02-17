@@ -179,10 +179,16 @@ export default function ThreadListItem({
         <div
           className="fixed inset-0 modal-backdrop flex items-center justify-center z-50"
           onClick={() => setShowModal(false)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowModal(false); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
         >
           <div
             className="bg-clawd-surface rounded-2xl border border-clawd-border w-full max-w-4xl h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
           >
             <ThreadView
               threadId={thread.thread_id}

@@ -521,13 +521,18 @@ ${skillData.instructions}
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`} 
       onClick={handleClose}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClose(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close modal"
     >
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className={`glass-modal rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+        role="presentation"
       >
         {/* Header */}
         <div className="p-6 border-b border-clawd-border">
@@ -613,6 +618,9 @@ ${skillData.instructions}
                       key={idx}
                       className="bg-clawd-surface border border-clawd-border rounded-xl p-4 hover:border-clawd-accent/50 transition-all cursor-pointer group"
                       onClick={() => handleSelectSuggestion(suggestion)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectSuggestion(suggestion); } }}
+                      role="button"
+                      tabIndex={0}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">

@@ -185,8 +185,9 @@ export default function WizardReview() {
         {/* Title & Type */}
         <div className={sectionClass}>
           <div>
-            <label className={labelClass}>Title</label>
+            <label htmlFor="plan-title" className={labelClass}>Title</label>
             <input
+              id="plan-title"
               type="text"
               value={plan.title}
               onChange={(e) => updateField('title', e.target.value)}
@@ -196,8 +197,9 @@ export default function WizardReview() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>Type</label>
+              <label htmlFor="plan-type" className={labelClass}>Type</label>
               <input
+                id="plan-type"
                 type="text"
                 value={plan.type}
                 onChange={(e) => updateField('type', e.target.value)}
@@ -206,8 +208,9 @@ export default function WizardReview() {
               />
             </div>
             <div>
-              <label className={labelClass}>Genre</label>
+              <label htmlFor="plan-genre" className={labelClass}>Genre</label>
               <input
+                id="plan-genre"
                 type="text"
                 value={plan.genre}
                 onChange={(e) => updateField('genre', e.target.value)}
@@ -220,8 +223,9 @@ export default function WizardReview() {
 
         {/* Premise */}
         <div className={sectionClass}>
-          <label className={labelClass}>Premise</label>
+          <label htmlFor="plan-premise" className={labelClass}>Premise</label>
           <textarea
+            id="plan-premise"
             value={plan.premise}
             onChange={(e) => updateField('premise', e.target.value)}
             className={textareaClass}
@@ -232,7 +236,7 @@ export default function WizardReview() {
 
         {/* Themes */}
         <div className={sectionClass}>
-          <label className={labelClass}>Themes</label>
+          <span className={labelClass}>Themes</span>
           <div className="flex flex-wrap gap-1.5 mb-2">
             {plan.themes.map((theme, i) => (
               <span
@@ -270,8 +274,9 @@ export default function WizardReview() {
 
         {/* Story Arc */}
         <div className={sectionClass}>
-          <label className={labelClass}>Story Arc</label>
+          <label htmlFor="plan-story-arc" className={labelClass}>Story Arc</label>
           <textarea
+            id="plan-story-arc"
             value={plan.storyArc}
             onChange={(e) => updateField('storyArc', e.target.value)}
             className={textareaClass}
@@ -384,8 +389,9 @@ export default function WizardReview() {
                   placeholder="Character description"
                 />
                 <div>
-                  <label className="text-[10px] text-clawd-text-dim">Traits (comma-separated)</label>
+                  <label htmlFor={`character-traits-${i}`} className="text-[10px] text-clawd-text-dim">Traits (comma-separated)</label>
                   <input
+                    id={`character-traits-${i}`}
                     type="text"
                     value={c.traits.join(', ')}
                     onChange={(e) =>

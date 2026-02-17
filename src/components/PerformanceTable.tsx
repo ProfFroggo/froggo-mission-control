@@ -248,10 +248,16 @@ export default function PerformanceTable() {
         <div
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-8"
           onClick={() => setSelectedAgent(null)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent(null); } }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
         >
           <div
             className="bg-clawd-surface border border-clawd-border rounded-2xl w-full max-w-4xl max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
           >
             <div className="p-6 border-b border-clawd-border sticky top-0 bg-clawd-surface">
               <h3 className="text-xl font-bold flex items-center gap-2">

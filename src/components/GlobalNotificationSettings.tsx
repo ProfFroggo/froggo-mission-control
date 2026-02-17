@@ -178,8 +178,9 @@ export default function GlobalNotificationSettings() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Default Notification Level */}
         <div>
-          <label className="block font-medium mb-2">Default Notification Level</label>
+          <label htmlFor="default-notification-level" className="block font-medium mb-2">Default Notification Level</label>
           <select
+            id="default-notification-level"
             value={defaultNotificationLevel}
             onChange={(e) => setDefaultNotificationLevel(e.target.value)}
             className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
@@ -192,11 +193,12 @@ export default function GlobalNotificationSettings() {
 
         {/* Default Priority Level */}
         <div>
-          <label className="block font-medium mb-2 flex items-center gap-2">
+          <label htmlFor="default-priority-level" className="block font-medium mb-2 flex items-center gap-2">
             <AlertCircle size={16} />
             Default Priority
           </label>
           <select
+            id="default-priority-level"
             value={defaultPriorityLevel}
             onChange={(e) => setDefaultPriorityLevel(e.target.value)}
             className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
@@ -211,10 +213,10 @@ export default function GlobalNotificationSettings() {
 
       {/* Sound Settings */}
       <div>
-        <label className="block font-medium mb-3 flex items-center gap-2">
+        <span className="block font-medium mb-3 flex items-center gap-2">
           <Volume2 size={16} />
           Sound
-        </label>
+        </span>
         <div className="space-y-3">
           <label className="flex items-center gap-3">
             <input
@@ -257,10 +259,10 @@ export default function GlobalNotificationSettings() {
 
       {/* Quiet Hours */}
       <div>
-        <label className="block font-medium mb-3 flex items-center gap-2">
+        <span className="block font-medium mb-3 flex items-center gap-2">
           <Moon size={16} />
           Quiet Hours
-        </label>
+        </span>
         <div className="space-y-3">
           <label className="flex items-center gap-3">
             <input
@@ -293,10 +295,10 @@ export default function GlobalNotificationSettings() {
 
       {/* Notification Batching */}
       <div>
-        <label className="block font-medium mb-3 flex items-center gap-2">
+        <span className="block font-medium mb-3 flex items-center gap-2">
           <Clock size={16} />
           Notification Batching
-        </label>
+        </span>
         <div className="space-y-3">
           <label className="flex items-center gap-3">
             <input
@@ -309,10 +311,11 @@ export default function GlobalNotificationSettings() {
           </label>
           {enableBatching && (
             <div className="ml-7">
-              <label className="block text-sm text-clawd-text-dim mb-2">
+              <label htmlFor="batch-interval" className="block text-sm text-clawd-text-dim mb-2">
                 Batch interval (minutes)
               </label>
               <input
+                id="batch-interval"
                 type="number"
                 value={batchIntervalMinutes}
                 onChange={(e) => setBatchIntervalMinutes(parseInt(e.target.value) || 15)}
