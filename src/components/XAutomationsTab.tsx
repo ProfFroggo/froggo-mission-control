@@ -120,7 +120,7 @@ export default function XAutomationsTab() {
     try {
       // Call the automation engine to test this automation
       const result = await (window as any).clawdbot?.exec?.run(
-        `~/clawd/scripts/x-automation-engine.sh test ${id}`
+        `~/froggo/scripts/x-automation-engine.sh test ${id}`
       );
       
       if (result?.success) {

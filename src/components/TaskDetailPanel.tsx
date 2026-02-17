@@ -445,8 +445,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     setUploadingFile(true);
 
     try {
-      // For now, we'll copy file to deliverables directory
-      const deliverablePath = `${(window as any).require('os').homedir()}/clawd/deliverables/${task.id}`;
+      // Copy file to deliverables directory (use ~/froggo path, shell-expandable)
+      const deliverablePath = `~/froggo/deliverables/${task.id}`;
       const filePath = `${deliverablePath}/${file.name}`;
 
       // Create directory if needed via electron

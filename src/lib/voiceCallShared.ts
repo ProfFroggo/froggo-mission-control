@@ -17,10 +17,10 @@ interface AgentLike {
 
 type VideoMode = 'camera' | 'screen' | 'none';
 
-/** Resolve agent workspace base path. froggo/main share ~/clawd, others get ~/clawd-{id} */
+/** Resolve agent workspace base path. froggo/main share ~/froggo, others get ~/agent-{id} */
 function agentBasePath(agentId: string): string {
-  if (agentId === 'froggo' || agentId === 'main') return '~/clawd';
-  return `~/clawd-${agentId}`;
+  if (agentId === 'froggo' || agentId === 'main') return '~/froggo';
+  return `~/agent-${agentId}`;
 }
 
 /**
@@ -178,7 +178,7 @@ export function buildAgentTools(): GeminiTool[] {
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'File path (e.g., ~/clawd/SOUL.md)' },
+          path: { type: 'string', description: 'File path (e.g., ~/froggo/SOUL.md)' },
           max_lines: { type: 'number', description: 'Max lines to read (default 100)' },
         },
         required: ['path'],
@@ -444,7 +444,7 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
       }
       case 'search_workspace': {
         const escapedQuery = args.query.replace(/"/g, '\\"');
-        const r = await exec(`grep -rl "${escapedQuery}" ~/clawd/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
+        const r = await exec(`grep -rl "${escapedQuery}" ~/froggo/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
       }
       case 'web_search': {
@@ -491,13 +491,13 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
         return { content: (r.stdout || '').slice(0, 3000) };
       }
       case 'read_team_state': {
-        const r = await exec(`cat ~/clawd/TEAM_STATE.md 2>/dev/null || echo "No TEAM_STATE.md yet"`);
+        const r = await exec(`cat ~/froggo/TEAM_STATE.md 2>/dev/null || echo "No TEAM_STATE.md yet"`);
         return { content: (r.stdout || '').slice(0, 5000) };
       }
       case 'update_team_state': {
         const content = (args.content || '').replace(/'/g, "'\\''");
         const timestamp = new Date().toLocaleString();
-        await exec(`cat > ~/clawd/TEAM_STATE.md << 'TEAMEOF'\n# Team State — All Agents\n_Last updated: ${timestamp}_\n\n${content}\nTEAMEOF`);
+        await exec(`cat > ~/froggo/TEAM_STATE.md << 'TEAMEOF'\n# Team State — All Agents\n_Last updated: ${timestamp}_\n\n${content}\nTEAMEOF`);
         return { success: true, message: 'Updated TEAM_STATE.md' };
       }
       case 'update_memory_md': {
@@ -523,8 +523,8 @@ export async function executeToolCall(fnName: string, args: Record<string, any>,
       case 'onboard_agent': {
         const { agent_id, name, role, emoji, color, personality, voice } = args;
         const voiceArg = voice || 'Puck';
-        const r = await exec(`bash ~/clawd/scripts/agent-onboard-full.sh "${agent_id}" "${name}" "${role}" "${emoji}" "${color}" "${personality}" "${voiceArg}" 2>&1`);
-        return { success: r.success, output: (r.stdout || r.stderr || '').slice(0, 2000), note: 'Dashboard rebuild needed: cd ~/clawd/clawd-dashboard && npm run electron:build' };
+        const r = await exec(`bash ~/froggo/scripts/agent-onboard-full.sh "${agent_id}" "${name}" "${role}" "${emoji}" "${color}" "${personality}" "${voiceArg}" 2>&1`);
+        return { success: r.success, output: (r.stdout || r.stderr || '').slice(0, 2000), note: 'Dashboard rebuild needed: cd ~/froggo-dashboard && npm run build:dev' };
       }
       case 'check_email': {
         const count = args.count || 5;
@@ -578,7 +578,7 @@ Don't narrate tool usage — just do it and report the result naturally.`);
 You have access to tools for task management, file reading, shell commands, web search, messaging, calendar, email, and memory.
 You can read and update your MEMORY.md (long-term memory) — use it to remember important decisions, lessons, and context across sessions.
 You have a STATE.md file — YOUR single source of truth for everything YOU are working on across ALL your sessions. When you start work, finish a task, hit a blocker, or make a decision — update STATE.md. Write the full state each time (overwrite, not append). This is how your other sessions pick up where you left off, and how other agents know what you're doing.
-There is also a TEAM_STATE.md at ~/clawd/ that Froggo maintains — a master view of what ALL agents are working on. You can read it with read_team_state.
+There is also a TEAM_STATE.md at ~/froggo/ that Froggo maintains — a master view of what ALL agents are working on. You can read it with read_team_state.
 Use tools proactively when the user asks you to do something. Don't ask for confirmation unless the action is destructive.
 When you learn something important or the user asks you to remember something, update your MEMORY.md.
 Report results naturally in conversation.`);

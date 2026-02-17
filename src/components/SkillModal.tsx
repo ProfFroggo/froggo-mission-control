@@ -407,7 +407,7 @@ Format as markdown with proper headings.`;
     try {
       // 1. Create skill directory
       const skillSlug = skillData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      const skillPath = `~/clawd/skills/${skillSlug}`;
+      const skillPath = `/opt/homebrew/lib/node_modules/openclaw/skills/${skillSlug}`;
       await (window as any).clawdbot?.exec?.run(`mkdir -p ${skillPath}`);
 
       // 2. Create SKILL.md
@@ -416,7 +416,7 @@ Format as markdown with proper headings.`;
 
       // 3. Track in skill_evolution table
       await (window as any).clawdbot?.exec?.run(
-        `sqlite3 ~/clawd/data/froggo.db "INSERT OR REPLACE INTO skill_evolution (skill_name, proficiency, notes) VALUES ('${skillData.name.replace(/'/g, "''")}', 0.1, 'Auto-created via Skills Add Flow')"`
+        `sqlite3 ~/froggo/data/froggo.db "INSERT OR REPLACE INTO skill_evolution (skill_name, proficiency, notes) VALUES ('${skillData.name.replace(/'/g, "''")}', 0.1, 'Auto-created via Skills Add Flow')"`
       );
 
       // 4. Auto-create Kanban implementation task

@@ -193,7 +193,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     if (selectedFiles.length > 0 && (window as any).clawdbot?.exec && (window as any).clawdbot?.fs && (window as any).clawdbot?.tasks?.attachments) {
       // Do file uploads in background
       (async () => {
-        const deliverablePath = `${(window as any).require('os').homedir()}/clawd/deliverables/${taskId}`;
+        const deliverablePath = `~/froggo/deliverables/${taskId}`;
         
         // Create directory
         try {

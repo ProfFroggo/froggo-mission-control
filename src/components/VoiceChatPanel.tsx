@@ -801,7 +801,7 @@ function buildAgentTools(): GeminiTool[] {
       parameters: {
         type: 'object',
         properties: {
-          path: { type: 'string', description: 'File path (e.g., ~/clawd/SOUL.md)' },
+          path: { type: 'string', description: 'File path (e.g., ~/froggo/SOUL.md)' },
           max_lines: { type: 'number', description: 'Max lines to read (default 100)' },
         },
         required: ['path'],
@@ -1000,7 +1000,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
       }
       case 'search_workspace': {
         const safeQuery = shellSafe(args.query);
-        const r = await exec(`grep -rl "${safeQuery}" ~/clawd/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
+        const r = await exec(`grep -rl "${safeQuery}" ~/froggo/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
       }
       case 'web_search': {
@@ -1155,8 +1155,8 @@ Use these proactively when needed:
 
 **CRITICAL:** When you don't know something (agent details, past work, workflow rules), USE TOOLS to look it up:
 - memory_search for "what did I do with [topic]"
-- read_file ~/clawd/SOUL.md for your full personality
-- read_file ~/clawd/AGENTS.md for workflow rules
+- read_file ~/froggo/SOUL.md for your full personality
+- read_file ~/froggo/AGENTS.md for workflow rules
 - run_command froggo-db task-list for current work
 - read_file ~/clawd-{agent}/SOUL.md for other agents' details
 

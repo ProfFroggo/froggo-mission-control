@@ -66,7 +66,7 @@ async function loadPersonalities(): Promise<Record<string, any>> {
     try {
       console.debug('[AgentContext] Electron mode - using exec...');
       const r = await (window as any).clawdbot.exec.run(
-        'cat ~/clawd/clawd-dashboard/dist/agent-profiles/personalities.json'
+        'cat ~/froggo-dashboard/dist/agent-profiles/personalities.json'
       );
       if (r.success && r.stdout) {
         personalitiesData = JSON.parse(r.stdout);
