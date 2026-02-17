@@ -6,13 +6,78 @@ const DEFAULT_GATEWAY_WS = 'ws://127.0.0.1:18789';
 const DEFAULT_TOKEN = '';
 const DEFAULT_SESSION_KEY = 'agent:froggo:dashboard'; // Default session key (overridable via setSessionKey)
 
+/** Session types - properly typed */
+interface SessionInfo {
+  key: string;
+  agentId?: string;
+  label?: string;
+  state?: string;
+  createdAt?: number;
+  lastActivity?: number;
+  [key: string]: unknown;
+}
+
+/** Cron job types - properly typed */
+interface CronJob {
+  id: string;
+  name?: string;
+  schedule: Record<string, unknown>;
+  enabled?: boolean;
+  lastRun?: number;
+  nextRun?: number;
+}
+
+interface CronRunEntry {
+  id: string;
+  jobId: string;
+  timestamp: number;
+  status: string;
+  output?: string;
+}
+
+interface NodeInfo {
+  id: string;
+  name?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+interface ConfigData {
+  [key: string]: unknown;
+}
+
+interface ConfigIssues {
+  path?: string;
+  message?: string;
+}
+
+/** Chat event data - properly typed */
+interface ChatEventData {
+  runId?: string;
+  message?: {
+    content?: Array<{ text?: string }>;
+  };
+  content?: string;
+  delta?: string;
+  state?: 'delta' | 'final' | 'error';
+  error?: boolean;
+}
+
+interface ChatErrorData {
+  message?: string;
+  error?: string;
+}
+
 /** Callback interface for per-runId event handling */
 export interface RunCallback {
-  onDelta?: (delta: string, payload: any) => void;
-  onMessage?: (content: string, payload: any) => void;
-  onEnd?: (payload: any) => void;
-  onError?: (error: string, payload: any) => void;
+  onDelta?: (delta: string, payload: ChatEventData) => void;
+  onMessage?: (content: string, payload: ChatEventData) => void;
+  onEnd?: (payload: ChatEventData) => void;
+  onError?: (error: string, payload: ChatErrorData) => void;
 }
+
+/** Generic listener type for gateway events - using any for backward compatibility with existing consumers */
+export type GatewayListener = (payload: any) => void;
 
 // Load settings from localStorage
 function getSettings(): { gatewayUrl: string; gatewayToken: string } {
@@ -47,7 +112,7 @@ async function ensureGatewayToken() {
   } catch { /* ignore */ }
 }
 
-type Listener = (event: any) => void;
+type Listener = GatewayListener;
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'authenticating' | 'connected';
 
@@ -62,7 +127,7 @@ interface QueuedAction {
 class Gateway {
   private ws: WebSocket | null = null;
   private seq = 0;
-  private pending = new Map<string, { resolve: (v: any) => void; reject: (e: Error) => void; timer: number }>();
+  private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: number }>();
   private listeners = new Map<string, Set<Listener>>();
   private state: ConnectionState = 'disconnected';
   private reconnectTimer: number | null = null;
@@ -488,7 +553,7 @@ class Gateway {
     });
   }
 
-  async request<T = any>(method: string, params: any = {}): Promise<T> {
+  async request<T = unknown>(method: string, params: Record<string, unknown> = {}): Promise<T> {
     // If offline, queue the action for later replay
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || this.state !== 'connected') {
       // Only queue write operations, not reads
@@ -577,7 +642,7 @@ class Gateway {
     return () => this.listeners.get(event)?.delete(listener);
   }
 
-  private emit(event: string, data: any) {
+  private emit(event: string, data: unknown) {
     this.listeners.get(event)?.forEach(l => {
       try { l(data); } catch (e) { console.error('[Gateway] Listener error:', e); }
     });
@@ -605,7 +670,7 @@ class Gateway {
         throw new Error('Not connected');
       }
     }
-    return this.request<{ sessions: any[] }>('sessions.list', {});
+    return this.request<{ sessions: SessionInfo[] }>('sessions.list', {});
   }
 
   async getAgentIdentity(sessionKey?: string) {
@@ -678,7 +743,7 @@ class Gateway {
       let ourRunId = '';
       
       // Listen for streaming events (gateway sends 'chat' with state field)
-      const unsub1 = this.on('chat', (data: any) => {
+      const unsub1 = this.on('chat', (event: string, data: ChatEventData) => {
         // Only process events for OUR request (filter out other sessions like Discord)
         if (ourRunId && data.runId && data.runId !== ourRunId) {
           // Different runId, ignore - this is from another session
@@ -699,11 +764,11 @@ class Gateway {
       });
 
       // Also listen for legacy event names
-      const unsub2 = this.on('chat.delta', (data: any) => {
+      const unsub2 = this.on('chat.delta', (_event: string, data: ChatEventData) => {
         if (data.delta) responseContent += data.delta;
       });
 
-      const unsub3 = this.on('chat.message', (data: any) => {
+      const unsub3 = this.on('chat.message', (_event: string, data: ChatEventData) => {
         if (data.content) responseContent = data.content;
       });
 
@@ -711,7 +776,7 @@ class Gateway {
         finish(responseContent);
       });
       
-      const unsub5 = this.on('chat.error', (data: any) => {
+      const unsub5 = this.on('chat.error', (_event: string, data: ChatErrorData) => {
         fail(new Error(data.message || data.error || 'Chat error'));
       });
 
@@ -748,10 +813,10 @@ class Gateway {
           }
           // Otherwise wait for streaming events
           logger.debug('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
-        } catch (e: any) {
+        } catch (e: unknown) {
           // '[Gateway] sendChat error:', e;
           clearTimeout(timeout);
-          fail(e);
+          fail(e instanceof Error ? e : new Error(String(e)));
         }
       })();
     });
@@ -860,15 +925,15 @@ class Gateway {
 
   // --- Cron ---
   async getCronJobs() {
-    return this.request<{ jobs: any[] }>('cron.list', { includeDisabled: true });
+    return this.request<{ jobs: CronJob[] }>('cron.list', { includeDisabled: true });
   }
   async getCronStatus() {
     return this.request('cron.status', {});
   }
-  async addCronJob(job: any) {
+  async addCronJob(job: Record<string, unknown>) {
     return this.request('cron.add', job);
   }
-  async updateCronJob(id: string, patch: any) {
+  async updateCronJob(id: string, patch: Record<string, unknown>) {
     return this.request('cron.update', { id, patch });
   }
   async removeCronJob(id: string) {
@@ -878,7 +943,7 @@ class Gateway {
     return this.request('cron.run', { id, mode });
   }
   async getCronRuns(id: string, limit = 20) {
-    return this.request<{ entries: any[] }>('cron.runs', { id, limit });
+    return this.request<{ entries: CronRunEntry[] }>('cron.runs', { id, limit });
   }
 
   // --- Skills ---
@@ -897,7 +962,7 @@ class Gateway {
 
   // --- Nodes ---
   async getNodes() {
-    return this.request<{ nodes: any[] }>('node.list', {});
+    return this.request<{ nodes: NodeInfo[] }>('node.list', {});
   }
   async describeNode(nodeId: string) {
     return this.request('node.describe', { nodeId });
@@ -917,10 +982,10 @@ class Gateway {
 
   // --- Config ---
   async getConfig() {
-    return this.request<{ exists: boolean; valid: boolean; hash: string; config: any; raw: string; issues?: any[] }>('config.get', {});
+    return this.request<{ exists: boolean; valid: boolean; hash: string; config: ConfigData; raw: string; issues?: ConfigIssues[] }>('config.get', {});
   }
   async getConfigSchema() {
-    return this.request<{ schema: any; uiHints: any; version: string }>('config.schema', {});
+    return this.request<{ schema: Record<string, unknown>; uiHints: Record<string, unknown>; version: string }>('config.schema', {});
   }
   async applyConfig(raw: string, baseHash: string, restartDelayMs = 2000) {
     return this.request('config.apply', { raw, baseHash, restartDelayMs });
