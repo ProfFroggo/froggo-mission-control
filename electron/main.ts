@@ -1,17 +1,32 @@
-import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer, shell, dialog } from 'electron';
-import * as path from 'path';
+import { app, BrowserWindow, shell, dialog, screen, ipcMain, systemPreferences, desktopCapturer } from 'electron';
 import * as fs from 'fs';
-import { exec, execSync, execFile } from 'child_process';
 import * as os from 'os';
-// crypto imported but unused - removed during bug-hunt cleanup
 import * as http from 'http';
-import { calendarService } from './calendar-service';
-import { accountsService } from './accounts-service';
+import * as path from 'path';
+import { exec, execFile, execSync } from 'child_process';
+import { promisify } from 'util';
+import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
+import { validateFsPath } from './fs-validation';
 import { accountsServiceV2 } from './accounts-service-v2';
+import { accountsService } from './accounts-service';
+import { calendarService } from './calendar-service';
+import { exportTasks as expTasks, exportAgentLogs as expAgentLogs, exportChatHistory as expChatHistory, createBackup as expCreateBackup, restoreBackup as expRestoreBackup, listBackups as expListBackups, getStats as expGetStats, cleanupOldBackups as expCleanupOldBackups, importTasks as expImportTasks } from './export-backup-service';
+
+const exportBackupService = {
+  exportTasks: expTasks,
+  exportAgentLogs: expAgentLogs,
+  exportChatHistory: expChatHistory,
+  createBackup: expCreateBackup,
+  restoreBackup: expRestoreBackup,
+  listBackups: expListBackups,
+  getStats: expGetStats,
+  cleanupOldBackups: expCleanupOldBackups,
+  importTasks: expImportTasks,
+};
+import { secureExec, getAuditLog, validateCommand } from './shell-security';
+// crypto imported but unused - removed during bug-hunt cleanup
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
-import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
-import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { registerWritingProjectHandlers } from './writing-project-service';
 import { registerWritingFeedbackHandlers } from './writing-feedback-service';
@@ -21,12 +36,21 @@ import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
-import * as xApi from './x-api-client';
-import { initXApiTokens } from './x-api-client';
-import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
-import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
-import { validateFsPath } from './fs-validation';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
+import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM } from './x-api-client';
+
+// xApi namespace wrapper for backwards compatibility
+const xApi = {
+  postTweet: xPostTweet,
+  getMentions: xGetMentions,
+  getHomeTimeline: xGetHomeTimeline,
+  searchRecent: xSearchRecent,
+  getUserProfile: xGetUserProfile,
+  getThread: xGetThread,
+  followUser: xFollowUser,
+  sendDM: xSendDM,
+};
+import { prepare, closeDb, db, getSessionsDb, getSecurityDb } from './database';
 import {
   PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
   REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
@@ -50,7 +74,7 @@ function loadAgentRegistry(): Record<string, AgentRegistryEntry> {
     const data = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
     return data.agents || {};
   } catch (err) {
-    console.error('Failed to load agent registry, using empty:', err);
+    safeLog.error('Failed to load agent registry, using empty:', err);
     return {};
   }
 }
@@ -115,7 +139,7 @@ ipcMain.handle('gateway:getToken', async () => {
         const token = cfg.gateway?.controlUi?.auth?.token || cfg.gateway?.auth?.token;
         if (token) return token;
       }
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[GatewayToken] Config read failed:', err); }
   }
   return '';
 });
@@ -230,8 +254,14 @@ ipcMain.handle('widget:scan-manifest', async (_, agentId: string) => {
     }
 
     // Read and parse manifest
-    const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
-    const manifest = JSON.parse(manifestContent);
+    let manifest: any;
+    try {
+      const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
+      manifest = JSON.parse(manifestContent);
+    } catch (parseError) {
+      safeLog.error('[WidgetManifest] Failed to parse manifest JSON:', parseError);
+      return { error: 'Invalid manifest JSON' };
+    }
 
     // Validate component paths don't escape widget directory
     const widgetDir = path.dirname(manifestPath);
@@ -264,35 +294,44 @@ function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
     const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
-    require('fs').appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
+    fs.appendFileSync(debugLogPath, `[${ts}] ${msg}\n`);
   } catch (e) { /* ignore */ }
 }
 
 const safeLog = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
         console.log(...args);
       }
-    } catch (e: any) {
+    } catch {
       // Silently ignore EPIPE and other stream errors
     }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
         console.error(...args);
       }
-    } catch (e: any) {
+    } catch {
       // Silently ignore stream errors
     }
   },
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
         console.warn(...args);
       }
-    } catch (e: any) {
+    } catch {
+      // Silently ignore stream errors
+    }
+  },
+  debug: (...args: unknown[]) => {
+    try {
+      if (process.stdout.writable) {
+        console.debug(...args);
+      }
+    } catch {
       // Silently ignore stream errors
     }
   }
@@ -310,7 +349,7 @@ process.on('uncaughtException', (error: any) => {
     if (process.stderr.writable) {
       safeLog.error('[UNCAUGHT EXCEPTION]', error);
     }
-  } catch { /* ignore */ }
+  } catch (err) { safeLog.debug('[ExceptionHandler] Failed to log exception:', err); }
   
   // Don't exit for EPIPE-like errors, but consider exiting for severe errors
   // For now, keep running to avoid data loss
@@ -761,13 +800,13 @@ app.whenReady().then(() => {
   });
 
   // Initialize Finance Agent Bridge
-  initializeFinanceAgentBridge().catch(err => {
+  initializeFinanceAgentBridge().catch((err) => {
     safeLog.error('[Main] Failed to initialize Finance Agent Bridge:', err);
   });
 
   // Check for updates (prod only, non-blocking)
   if (!isDev && !app.getName().includes('Dev')) {
-    checkForUpdates().catch(() => {});
+    checkForUpdates().catch((err) => safeLog.error('[Updates] Failed to check for updates:', err));
   }
 });
 
@@ -799,7 +838,7 @@ async function checkForUpdates(): Promise<void> {
               shell.openExternal(release.html_url || `https://github.com/ProfFroggo/froggo_bot/releases/tag/v${remoteVersion}`);
             }
           }
-        } catch { /* ignore */ }
+        } catch (err) { safeLog.debug('[UpdateCheck] Dialog error:', err); }
         resolve();
       });
     });
@@ -863,7 +902,7 @@ ipcMain.handle('settings:getApiKey', async (_, keyName: string) => {
   try {
     return getSecret(keyName);
   } catch (err: any) {
-    console.error('[Settings] getApiKey error:', err.message);
+    safeLog.error('[Settings] getApiKey error:', err.message);
     return null;
   }
 });
@@ -873,7 +912,7 @@ ipcMain.handle('settings:storeApiKey', async (_, keyName: string, value: string)
     storeSecret(keyName, value);
     return { success: true };
   } catch (err: any) {
-    console.error('[Settings] storeApiKey error:', err.message);
+    safeLog.error('[Settings] storeApiKey error:', err.message);
     return { success: false, error: err.message };
   }
 });
@@ -882,7 +921,7 @@ ipcMain.handle('settings:hasApiKey', async (_, keyName: string) => {
   try {
     return hasSecret(keyName);
   } catch (err: any) {
-    console.error('[Settings] hasApiKey error:', err.message);
+    safeLog.error('[Settings] hasApiKey error:', err.message);
     return false;
   }
 });
@@ -892,7 +931,7 @@ ipcMain.handle('settings:deleteApiKey', async (_, keyName: string) => {
     deleteSecret(keyName);
     return { success: true };
   } catch (err: any) {
-    console.error('[Settings] deleteApiKey error:', err.message);
+    safeLog.error('[Settings] deleteApiKey error:', err.message);
     return { success: false, error: err.message };
   }
 });
@@ -1013,7 +1052,7 @@ try {
     const match = content.match(/ELEVENLABS_API_KEY=(.+)/);
     if (match) elevenlabsApiKey = match[1].trim();
   }
-} catch { /* ignore */ }
+} catch (err) { safeLog.debug('[TTS] Failed to load ElevenLabs API key:', err); }
 
 ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
   const outputPath = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
@@ -1064,7 +1103,13 @@ ipcMain.handle('agents:getActiveSessions', async () => {
       );
     });
 
-    const data = JSON.parse(result);
+    let data: { sessions?: Array<{ key: string; updatedAt?: number }> } = { sessions: [] };
+    try {
+      data = JSON.parse(result);
+    } catch (parseError) {
+      safeLog.error('[ActiveSessions] Failed to parse sessions JSON:', parseError);
+      return [];
+    }
     const sessions = data.sessions || [];
     
     // Filter to recently active sessions (updated within last 2 minutes)
@@ -1089,7 +1134,7 @@ ipcMain.handle('agents:getActiveSessions', async () => {
 
     return { success: true, sessions: activeSessions };
   } catch (error: any) {
-    console.error('[agents:getActiveSessions] Error:', error.message);
+    safeLog.error('[agents:getActiveSessions] Error:', error.message);
     return { success: false, sessions: [], error: error.message };
   }
 });
@@ -1687,7 +1732,7 @@ ipcMain.handle('tasks:pokeInternal', async (_, taskId: string, title: string) =>
                 resolve(taskData.assigned_to);
                 return;
               }
-            } catch { /* ignore */ }
+            } catch (err) { safeLog.debug('[Poke] Failed to parse task data:', err); }
           }
           resolve('froggo'); // Default to froggo
         }
@@ -3269,7 +3314,6 @@ ipcMain.handle('inbox:search', async (_, query: string, limit: number = 50) => {
 ipcMain.handle('inbox:filter', async (_, criteria: any) => {
   return new Promise((resolve) => {
     // Pass criteria via stdin using execSync input option to avoid shell injection
-    const { execSync } = require('child_process');
     try {
       const result = execSync(
         `${path.join(SCRIPTS_DIR, 'inbox-filter.sh')} filter`,
@@ -3449,7 +3493,6 @@ ipcMain.handle('screenshot:capture', async (_, outputPath: string) => {
     if (mainWindow) {
       mainWindow.webContents.capturePage().then((image) => {
         const pngBuffer = image.toPNG();
-        const fs = require('fs');
         fs.writeFileSync(outputPath, pngBuffer);
         resolve({ success: true, path: outputPath, size: pngBuffer.length });
       }).catch((err) => {
@@ -3580,7 +3623,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'remove', jobId: id })
-    }).catch(() => {});
+    }).catch((err) => safeLog.error('[Cron] Failed to remove job via API:', err));
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -3638,7 +3681,13 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
         return { success: false, error: result.error };
       }
     } else if (item.type === 'email') {
-      const meta = item.metadata ? JSON.parse(item.metadata) : {};
+      let meta: Record<string, string> = {};
+      try {
+        meta = item.metadata ? JSON.parse(item.metadata) : {};
+      } catch (e) {
+        safeLog.error('[ScheduleProcessor] Failed to parse email metadata:', e);
+        meta = {};
+      }
       const recipient = meta.recipient || meta.to || '';
       const account = meta.account || '';
 
@@ -3969,8 +4018,6 @@ ipcMain.handle('library:list', async (_, category?: string) => {
 });
 
 ipcMain.handle('library:upload', async () => {
-  const { dialog } = require('electron');
-  
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: [
@@ -4058,7 +4105,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
     let linkedTasks: string[] = [];
     try {
       if (row && row.linked_tasks) linkedTasks = JSON.parse(row.linked_tasks);
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[LibraryLink] Failed to parse linked tasks:', err); }
 
     if (!linkedTasks.includes(taskId)) {
       linkedTasks.push(taskId);
@@ -4249,7 +4296,7 @@ try {
   if (!anthropicApiKey && fs.existsSync(keyPath)) {
     anthropicApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch { /* ignore */ }
+} catch (err) { safeLog.debug('[AI] Failed to load Anthropic API key:', err); }
 // Fallback: read from openclaw.json config
 if (!anthropicApiKey) {
   try {
@@ -4290,7 +4337,7 @@ try {
   if (!openaiApiKey && fs.existsSync(keyPath)) {
     openaiApiKey = fs.readFileSync(keyPath, 'utf-8').trim();
   }
-} catch { /* ignore */ }
+} catch (err) { safeLog.debug('[AI] Failed to load OpenAI API key:', err); }
 
 // Expose OpenAI API key to renderer (for Whisper transcription)
 ipcMain.handle('get-openai-key', async () => {
@@ -4494,13 +4541,13 @@ ipcMain.handle('ai:generateReply', async (_, context: {
     try {
       const events = prepare("SELECT title, start_time FROM calendar_events WHERE start_time > datetime('now') ORDER BY start_time LIMIT 5").all() as any[];
       scheduleContext = events.map((e: any) => `${e.title} at ${e.start_time}`).join('; ');
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[AIReply] Failed to load schedule context:', err); }
   }
   if (!taskCtx) {
     try {
       const tasks = prepare("SELECT title FROM tasks WHERE status='in-progress' AND (cancelled IS NULL OR cancelled=0) LIMIT 5").all() as any[];
       taskCtx = tasks.map((t: any) => t.title).join('; ');
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[AIReply] Failed to load task context:', err); }
   }
 
   let contextBlock = '';
@@ -4572,8 +4619,8 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
 
     let tasks: any[] = [];
     let events: any[] = [];
-    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch { /* ignore */ }
-    try { events = row.events ? JSON.parse(row.events) : []; } catch { /* ignore */ }
+    try { tasks = row.tasks ? JSON.parse(row.tasks) : []; } catch (err) { safeLog.debug('[AIAnalysis] Failed to parse tasks:', err); }
+    try { events = row.events ? JSON.parse(row.events) : []; } catch (err) { safeLog.debug('[AIAnalysis] Failed to parse events:', err); }
 
     return {
       success: true,
@@ -4959,7 +5006,7 @@ async function refreshCommsBackground() {
           .map((a: any) => a.email);
         if (gmailAccts.length > 0) emailAccounts = gmailAccts;
       }
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[Email] Failed to discover email accounts:', err); }
     for (const acct of emailAccounts) {
       try {
         const lastTs = await getFetchState('email', acct);
@@ -5135,14 +5182,18 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
       const query = `SELECT text, from_me, datetime(ts, 'unixepoch', 'localtime') as time FROM messages WHERE chat_jid='${jid}' ORDER BY ts DESC LIMIT ${lim}`;
       const raw = await runCmd(`sqlite3 "${waDbPath}" "${query}" -json`, 5000);
       if (raw) {
-        const rows = JSON.parse(raw);
-        for (const row of rows.reverse()) {
-          messages.push({
-            sender: row.from_me ? 'You' : contactName,
-            text: row.text || '',
-            timestamp: row.time || '',
-            fromMe: !!row.from_me,
-          });
+        try {
+          const rows = JSON.parse(raw);
+          for (const row of rows.reverse()) {
+            messages.push({
+              sender: row.from_me ? 'You' : contactName,
+              text: row.text || '',
+              timestamp: row.time || '',
+              fromMe: !!row.from_me,
+            });
+          }
+        } catch (e) {
+          safeLog.error('[History] Failed to parse WhatsApp messages:', e);
         }
       }
     } else if (platform === 'telegram') {
@@ -5225,6 +5276,40 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
   } catch (e: any) {
     safeLog.error('[Messages:Send] Error:', e);
     return { success: false, error: e.message };
+  }
+});
+
+// ============== MESSAGE UNREAD COUNT HANDLER ==============
+ipcMain.handle('messages:unread', async () => {
+  safeLog.log('[Messages:Unread] Handler called');
+  try {
+    // Query the message_read_state table for unread count
+    const result = prepare(`
+      SELECT
+        COUNT(*) as total_unread,
+        SUM(CASE WHEN platform = 'whatsapp' AND is_read = 0 THEN 1 ELSE 0 END) as whatsapp_unread,
+        SUM(CASE WHEN platform = 'telegram' AND is_read = 0 THEN 1 ELSE 0 END) as telegram_unread,
+        SUM(CASE WHEN platform = 'discord' AND is_read = 0 THEN 1 ELSE 0 END) as discord_unread,
+        SUM(CASE WHEN platform = 'email' AND is_read = 0 THEN 1 ELSE 0 END) as email_unread
+      FROM message_read_state
+      WHERE is_read = 0
+    `).get() as any;
+
+    const byPlatform: { [key: string]: number } = {};
+    if (result.whatsapp_unread > 0) byPlatform['whatsapp'] = result.whatsapp_unread;
+    if (result.telegram_unread > 0) byPlatform['telegram'] = result.telegram_unread;
+    if (result.discord_unread > 0) byPlatform['discord'] = result.discord_unread;
+    if (result.email_unread > 0) byPlatform['email'] = result.email_unread;
+
+    safeLog.log('[Messages:Unread] Total:', result.total_unread, 'By platform:', byPlatform);
+    return {
+      success: true,
+      count: result.total_unread || 0,
+      byPlatform
+    };
+  } catch (e: any) {
+    safeLog.error('[Messages:Unread] Error:', e);
+    return { success: false, count: 0, error: e.message };
   }
 });
 
@@ -5381,7 +5466,7 @@ ipcMain.handle('email:body', async (_, emailId: string, account?: string) => {
       const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }).toString();
       const gogData = JSON.parse(gogList);
       tryAccounts = (gogData.accounts || []).filter((a: any) => a.services?.includes('gmail')).map((a: any) => a.email);
-    } catch { /* ignore */ }
+    } catch (err) { safeLog.debug('[Email] Failed to get accounts for email body:', err); }
   }
 
   for (const acct of tryAccounts) {
@@ -5496,7 +5581,7 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   const combined = `${subjectLower} ${snippet.toLowerCase()}`;
   
   // Extract amounts (e.g., $1,500 or €500 or £1000)
-  const amountMatch = combined.match(/[\$€£]\s?[\d,]+(?:\.\d{2})?/);
+  const amountMatch = combined.match(/[$€£]\s?[\d,]+(?:\.\d{2})?/);
   const amount = amountMatch ? amountMatch[0] : undefined;
   
   // Priority: Urgent
@@ -5570,7 +5655,7 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   
   // Priority: Medium - Large amounts (>$500)
   if (amount) {
-    const numericAmount = parseFloat(amount.replace(/[\$€£,]/g, ''));
+    const numericAmount = parseFloat(amount.replace(/[$€£,]/g, ''));
     if (numericAmount >= 500) {
       return { id, from, subject, reason: `Contains amount: ${amount}`, priority: 'high', amount };
     }
@@ -6172,8 +6257,6 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
 
 // Shell execution for Code Agent Dashboard, Context Control Board
 ipcMain.handle('exec:run', async (_, command: string) => {
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
   const execAsync = promisify(exec);
 
   // Use the clawd workspace as default cwd for git commands
@@ -6621,7 +6704,7 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
 
     return { success: true, output: result };
   } catch (error: any) {
-    console.error('[agents:spawnForTask] Error:', error.message);
+    safeLog.error('[agents:spawnForTask] Error:', error.message);
     return { success: false, error: error.message };
   }
 });
@@ -6994,7 +7077,7 @@ ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: stri
     const rows = prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
     return rows;
   } catch (e: any) {
-    console.error('get-dm-history error:', e);
+    safeLog.error('get-dm-history error:', e);
     return [];
   }
 });
@@ -7558,7 +7641,7 @@ ipcMain.handle('hrReports:list', async () => {
       .sort((a, b) => b.createdAt - a.createdAt); // Newest first
     return { success: true, reports };
   } catch (error: any) {
-    console.error('[HRReports] List error:', error);
+    safeLog.error('[HRReports] List error:', error);
     return { success: false, reports: [], error: error.message };
   }
 });
@@ -7573,14 +7656,12 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
     const content = fs.readFileSync(filePath, 'utf-8');
     return { success: true, content };
   } catch (error: any) {
-    console.error('[HRReports] Read error:', error);
+    safeLog.error('[HRReports] Read error:', error);
     return { success: false, error: error.message };
   }
 });
 // ============== FINANCE MODULE ==============
 const execPromise = (cmd: string, opts?: { timeout?: number }) => {
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
   return promisify(exec)(cmd, opts);
 };
 
@@ -7860,10 +7941,19 @@ ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?:
     const ideas = stmt.all(...params);
     
     // Parse JSON fields
-    const parsed = ideas.map((idea: any) => ({
-      ...idea,
-      citations: idea.citations ? JSON.parse(idea.citations) : []
-    }));
+    const parsed = ideas.map((idea: any) => {
+      let citations: string[] = [];
+      try {
+        citations = idea.citations ? JSON.parse(idea.citations) : [];
+      } catch (e) {
+        safeLog.warn('[X/Research] Failed to parse citations for idea', idea.id, ':', e);
+        citations = [];
+      }
+      return {
+        ...idea,
+        citations
+      };
+    });
     
     return { success: true, ideas: parsed };
   } catch (error: any) {
@@ -8239,10 +8329,19 @@ ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: s
     const drafts = stmt.all(...params);
     
     // Parse JSON fields
-    const parsed = drafts.map((draft: any) => ({
-      ...draft,
-      media_paths: draft.media_paths ? JSON.parse(draft.media_paths) : []
-    }));
+    const parsed = drafts.map((draft: any) => {
+      let media_paths: string[] = [];
+      try {
+        media_paths = draft.media_paths ? JSON.parse(draft.media_paths) : [];
+      } catch (e) {
+        safeLog.warn('[X/Draft] Failed to parse media_paths for draft', draft.id, ':', e);
+        media_paths = [];
+      }
+      return {
+        ...draft,
+        media_paths
+      };
+    });
     
     return { success: true, drafts: parsed };
   } catch (error: any) {
@@ -8718,8 +8817,8 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     // Get current screen where main window is
     const currentDisplay = mainWindow 
-      ? require('electron').screen.getDisplayNearestPoint(mainWindow.getBounds())
-      : require('electron').screen.getPrimaryDisplay();
+      ? screen.getDisplayNearestPoint(mainWindow.getBounds())
+      : screen.getPrimaryDisplay();
     
     const { width: screenWidth, height: screenHeight } = currentDisplay.workArea;
     

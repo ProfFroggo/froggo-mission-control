@@ -2,14 +2,6 @@ import { useState, useEffect } from 'react';
 import { X, FolderPlus, CheckSquare, Square, Loader2 } from 'lucide-react';
 import { showToast } from './Toast';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  description?: string;
-}
-
 interface BulkFolderAssignProps {
   sessionKeys: string[];
   onClose: () => void;

@@ -1,444 +1,503 @@
 export {};
 
-// ============================================
-// Base Types
-// ============================================
-
-interface VoskWord {
-  word: string;
-  start: number;
-  end: number;
-  conf: number;
-}
-
-interface VoskAudioResult {
-  final?: boolean;
-  text?: string;
-  partial?: string;
-  words?: VoskWord[];
-  error?: string;
-}
-
-interface SubtaskData {
-  id: string;
-  taskId?: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  completedAt?: number;
-  completedBy?: string;
-  assignedTo?: string;
-  position?: number;
-  createdAt?: number;
-}
-
-interface ActivityData {
-  id: number;
-  taskId: string;
-  agentId?: string;
-  action: string;
-  message: string;
-  details?: string;
-  timestamp: number;
-}
-
-// ============================================
-// Task Types
-// ============================================
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
-  project?: string;
-  assignedTo?: string;
-  priority?: 'p0' | 'p1' | 'p2' | 'p3';
-  createdAt?: number;
-  updatedAt?: number;
-  completedAt?: number;
-  dueDate?: string;
-}
-
-// ============================================
-// Inbox Types
-// ============================================
-
-interface InboxItem {
-  id: number;
-  type: string;
-  title: string;
-  content: string;
-  context?: string;
-  channel?: string;
-  status?: string;
-  createdAt?: number;
-  metadata?: string;
-}
-
-interface RevisionItem {
-  id: number;
-  type: string;
-  title: string;
-  originalContent: string;
-  feedback: string;
-  context: string;
-  created: string;
-  sourceChannel: string;
-}
-
-// ============================================
-// Chat Types
-// ============================================
-
-interface ChatMessage {
-  role: string;
-  content: string;
-  timestamp: number;
-  sessionKey?: string;
-}
-
-// ============================================
-// Library Types
-// ============================================
-
-interface LibraryFile {
-  id: string;
-  name: string;
-  path: string;
-  size?: number;
-  type?: string;
-  category?: string;
-  createdAt?: number;
-}
-
-// ============================================
-// Schedule Types
-// ============================================
-
-interface ScheduleItem {
-  id: string;
-  type: string;
-  content: string;
-  scheduledFor: string;
-  metadata?: Record<string, unknown>;
-}
-
-// ============================================
-// Search Types
-// ============================================
-
-interface SearchResult {
-  id: string;
-  title: string;
-  snippet?: string;
-  type?: string;
-}
-
-// ============================================
-// X/Twitter Types
-// ============================================
-
-interface XTweet {
-  id: string;
-  text: string;
-  authorId?: string;
-  createdAt?: string;
-}
-
-interface XMention {
-  id: string;
-  text: string;
-  authorUsername?: string;
-  createdAt?: string;
-}
-
-// ============================================
-// Message Types
-// ============================================
-
-interface MessageChat {
-  id: string;
-  name?: string;
-  platform: string;
-  lastMessage?: string;
-  timestamp?: number;
-}
-
-// ============================================
-// Email Types
-// ============================================
-
-interface Email {
-  id: string;
-  subject: string;
-  from: string;
-  to?: string;
-  body?: string;
-  date?: string;
-  account?: string;
-}
-
-// ============================================
-// Calendar Types
-// ============================================
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  start: string;
-  end?: string;
-  description?: string;
-  location?: string;
-  account?: string;
-  source?: 'google' | 'mission-control';
-}
-
-interface CalendarCacheEntry {
-  key: string;
-  age: number;
-  valid: boolean;
-  eventCount: number;
-}
-
-interface CalendarCacheStats {
-  totalEntries: number;
-  validEntries: number;
-  expiredEntries: number;
-  entries: CalendarCacheEntry[];
-}
-
-// ============================================
-// Session Types
-// ============================================
-
-interface Session {
-  sessionKey: string;
-  agentId?: string;
-  channel?: string;
-  lastMessageAt?: number;
-  messageCount?: number;
-}
-
-interface SessionMessage {
-  role: string;
-  content: string;
-  timestamp: number;
-  agentId?: string;
-}
-
-// ============================================
-// Folder Types
-// ============================================
-
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon?: string;
-  color?: string;
-  description?: string;
-  sortOrder?: number;
-}
-
-interface FolderRule {
-  id?: number;
-  folderId: number;
-  conditions: Array<{
-    field: string;
-    operator: string;
-    value: string;
-  }>;
-}
-
-// ============================================
-// VIP Types
-// ============================================
-
-interface VIPContact {
-  id: number | string;
-  identifier: string;
-  label?: string;
-  type?: string;
-  category?: string;
-  boost?: number;
-  notes?: string;
-}
-
-// ============================================
-// Snooze Types
-// ============================================
-
-interface SnoozeEntry {
-  sessionKey: string;
-  until: string;
-  reason?: string;
-  createdAt?: number;
-}
-
-// ============================================
-// Starred Types
-// ============================================
-
-interface StarredMessage {
-  id: number;
-  messageId: number;
-  sessionKey?: string;
-  content?: string;
-  note?: string;
-  category?: string;
-  starredAt?: number;
-}
-
-interface StarredStats {
-  total: number;
-  byCategory?: Array<{ category: string; count: number }>;
-}
-
-// ============================================
-// Agent Registry Types
-// ============================================
-
-interface AgentRegistryEntry {
-  id: string;
-  name: string;
-  role: string;
-  description: string;
-  color: string;
-  image_path: string;
-  status: string;
-  trust_tier: string;
-}
-
-// ============================================
-// DM Feed Types
-// ============================================
-
-interface DMMessage {
-  id: number;
-  correlation_id: string;
-  from_agent: string;
-  to_agent: string;
-  message_type: string;
-  subject: string;
-  body: string;
-  status: string;
-  created_at: number;
-  read_at: number | null;
-}
-
-// ============================================
-// Circuit Breaker Types
-// ============================================
-
-interface CircuitBreakerStatus {
-  state: 'closed' | 'open' | 'half_open';
-  consecutive_failures: number;
-  last_failure_time: number | null;
-  suspended_until: number | null;
-  last_state_change: number;
-}
-
-// ============================================
-// Performance Types
-// ============================================
-
-interface AgentPerformance {
-  agent_id: string;
-  status: string;
-  success_rate: number;
-  avg_completion_hours: number;
-  clara_approval_rate: number;
-  tokens_per_task: number;
-  total_tasks: number;
-  total_cost: number;
-}
-
-interface PerformanceReport {
-  days: number;
-  agents: AgentPerformance[];
-  error?: string;
-}
-
-// ============================================
-// Audit Types
-// ============================================
-
-interface AuditTimelineEntry {
-  timestamp: string;
-  type: 'lifecycle' | 'activity';
-  action: string;
-  task_id?: string;
-  message?: string;
-  outcome?: string;
-  field?: string;
-  from_value?: string;
-  to_value?: string;
-  changed_by?: string;
-  reason?: string;
-}
-
-interface AgentAudit {
-  agent_id: string;
-  days: number;
-  timeline: AuditTimelineEntry[];
-  error?: string;
-}
-
-// ============================================
-// Widget Types
-// ============================================
-
-interface WidgetManifest {
-  version?: string;
-  widgets?: WidgetDefinition[];
-  error?: string;
-}
-
-interface WidgetDefinition {
-  id: string;
-  name: string;
-  component: string;
-  permissions: string[];
-  panelType: 'dashboard' | 'sidebar' | 'modal';
-  icon: string;
-  description: string;
-}
-
-// ============================================
-// Settings Types
-// ============================================
-
-interface UserSettings {
-  theme?: 'light' | 'dark' | 'system';
-  notifications?: boolean;
-  sidebarCollapsed?: boolean;
-  [key: string]: unknown;
-}
-
-// ============================================
-// Notification Types
-// ============================================
-
-interface NotificationPrefs {
-  enabled?: boolean;
-  sound?: boolean;
-  desktop?: boolean;
-  [key: string]: unknown;
-}
-
-interface Notification {
-  id: string;
-  title: string;
-  body?: string;
-  icon?: string;
-  data?: Record<string, unknown>;
-}
-
-// ============================================
-// Window API
-// ============================================
-
 declare global {
+  // ============================================
+  // Base Types
+  // ============================================
+
+  interface VoskWord {
+    word: string;
+    start: number;
+    end: number;
+    conf: number;
+  }
+
+  interface VoskAudioResult {
+    final?: boolean;
+    text?: string;
+    partial?: string;
+    words?: VoskWord[];
+    error?: string;
+  }
+
+  interface SubtaskData {
+    id: string;
+    taskId?: string;
+    title: string;
+    description?: string;
+    completed: boolean;
+    completedAt?: number;
+    completedBy?: string;
+    assignedTo?: string;
+    position?: number;
+    createdAt?: number;
+  }
+
+  interface ActivityData {
+    id: number;
+    taskId: string;
+    agentId?: string;
+    action: string;
+    message: string;
+    details?: string;
+    timestamp: number;
+  }
+
+  // ============================================
+  // Task Types
+  // ============================================
+
+  interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    status: 'todo' | 'in-progress' | 'review' | 'done' | 'internal-review';
+    project?: string;
+    assignedTo?: string;
+    priority?: 'p0' | 'p1' | 'p2' | 'p3' | string;
+    createdAt?: number;
+    updatedAt?: number;
+    completedAt?: number;
+    dueDate?: string;
+    subtasks?: SubtaskData[];
+  }
+
+  // ============================================
+  // Inbox Types
+  // ============================================
+
+  interface InboxItem {
+    id: number | string;
+    type: string;
+    title: string;
+    content: string;
+    context?: string;
+    channel?: string;
+    source_channel?: string;
+    status?: string;
+    createdAt?: number;
+    created?: string;
+    metadata?: string;
+    isTask?: boolean;
+  }
+
+  interface RevisionItem {
+    id: number;
+    type: string;
+    title: string;
+    originalContent: string;
+    feedback: string;
+    context: string;
+    created: string;
+    sourceChannel: string;
+  }
+
+  // ============================================
+  // Chat Types
+  // ============================================
+
+  interface ChatMessage {
+    id?: string;
+    role: string;
+    content: string;
+    timestamp: number;
+    sessionKey?: string;
+    streaming?: boolean;
+  }
+
+  // ============================================
+  // Library Types
+  // ============================================
+
+  interface LibraryFile {
+    id: string;
+    name: string;
+    path: string;
+    size?: number;
+    type?: string;
+    category?: string;
+    createdAt?: number;
+  }
+
+  // ============================================
+  // Schedule Types
+  // ============================================
+
+  interface ScheduleItem {
+    id: string;
+    type: string;
+    content: string;
+    scheduledFor: string;
+    metadata?: Record<string, unknown>;
+  }
+
+  // ============================================
+  // Search Types
+  // ============================================
+
+  interface SearchResult {
+    id: string;
+    title: string;
+    snippet?: string;
+    type?: string;
+  }
+
+  // ============================================
+  // X/Twitter Types
+  // ============================================
+
+  interface XTweet {
+    id: string;
+    text: string;
+    authorId?: string;
+    createdAt?: string;
+  }
+
+  interface XMention {
+    id: string;
+    text: string;
+    authorUsername?: string;
+    createdAt?: string;
+  }
+
+  // ============================================
+  // Message Types
+  // ============================================
+
+  interface MessageChat {
+    id: string;
+    name?: string;
+    platform: string;
+    lastMessage?: string;
+    timestamp?: number;
+  }
+
+  // ============================================
+  // Email Types
+  // ============================================
+
+  interface Email {
+    id: string;
+    subject: string;
+    from: string;
+    to?: string;
+    body?: string;
+    date?: string;
+    account?: string;
+  }
+
+  // ============================================
+  // Calendar Types
+  // ============================================
+
+  interface CalendarEvent {
+    id: string;
+    summary: string;
+    title?: string;  // alias for summary in some contexts
+    description?: string;
+    location?: string;
+    account?: string;
+    source?: 'google' | 'mission-control';
+    start: {
+      dateTime?: string;
+      date?: string;
+      timeZone?: string;
+    };
+    end?: {
+      dateTime?: string;
+      date?: string;
+      timeZone?: string;
+    };
+    attendees?: Array<{
+      email: string;
+      responseStatus: string;
+      organizer?: boolean;
+    }>;
+    conferenceData?: {
+      entryPoints?: Array<{
+        uri: string;
+        entryPointType: string;
+      }>;
+    };
+    colorId?: string;
+  }
+
+  interface CalendarCacheEntry {
+    key: string;
+    age: number;
+    valid: boolean;
+    eventCount: number;
+  }
+
+  interface CalendarCacheStats {
+    totalEntries: number;
+    validEntries: number;
+    expiredEntries: number;
+    entries: CalendarCacheEntry[];
+  }
+
+  // ============================================
+  // Session Types
+  // ============================================
+
+  interface Session {
+    sessionKey: string;
+    agentId?: string;
+    channel?: string;
+    lastMessageAt?: number;
+    messageCount?: number;
+  }
+
+  interface SessionMessage {
+    role: string;
+    content: string;
+    timestamp: number;
+    agentId?: string;
+  }
+
+  // ============================================
+  // Folder Types
+  // ============================================
+
+  interface MessageFolder {
+    id: number;
+    name: string;
+    icon?: string;
+    color?: string;
+    description?: string;
+    sort_order?: number;
+    sortOrder?: number;
+    is_smart?: number;
+    conversation_count?: number;
+  }
+
+  interface AssignedFolder extends MessageFolder {
+    added_at: string;
+    notes?: string;
+  }
+
+  interface FolderRule {
+    id?: number;
+    folderId: number;
+    conditions: Array<{
+      field: string;
+      operator: string;
+      value: string;
+    }>;
+  }
+
+  // ============================================
+  // VIP Types
+  // ============================================
+
+  interface VIPContact {
+    id: number | string;
+    identifier: string;
+    label?: string;
+    type?: string;
+    category?: string;
+    boost?: number;
+    notes?: string;
+  }
+
+  // ============================================
+  // Snooze Types
+  // ============================================
+
+  interface SnoozeEntry {
+    sessionKey: string;
+    until: string;
+    reason?: string;
+    snooze_reason?: string;  // alias used in some components
+    createdAt?: number;
+  }
+
+  // ============================================
+  // Starred Types
+  // ============================================
+
+  interface StarredMessage {
+    id: number;
+    messageId: number;
+    sessionKey?: string;
+    content?: string;
+    note?: string;
+    category?: string;
+    starredAt?: number;
+  }
+
+  interface StarredStats {
+    total: number;
+    byCategory?: Array<{ category: string; count: number }>;
+  }
+
+  // ============================================
+  // Agent Registry Types
+  // ============================================
+
+  interface AgentRegistryEntry {
+    id: string;
+    name: string;
+    role: string;
+    description: string;
+    color: string;
+    image_path: string;
+    status: string;
+    trust_tier: string;
+  }
+
+  // ============================================
+  // DM Feed Types
+  // ============================================
+
+  interface DMMessage {
+    id: number;
+    correlation_id: string;
+    from_agent: string;
+    to_agent: string;
+    message_type: string;
+    subject: string;
+    body: string;
+    status: string;
+    created_at: number;
+    read_at: number | null;
+  }
+
+  // ============================================
+  // Circuit Breaker Types
+  // ============================================
+
+  interface CircuitBreakerStatus {
+    state: 'closed' | 'open' | 'half_open';
+    consecutive_failures: number;
+    last_failure_time: number | null;
+    suspended_until: number | null;
+    last_state_change: number;
+  }
+
+  // ============================================
+  // Performance Types
+  // ============================================
+
+  interface AgentPerformance {
+    agent_id: string;
+    status: string;
+    success_rate: number;
+    avg_completion_hours: number;
+    clara_approval_rate: number;
+    tokens_per_task: number;
+    total_tasks: number;
+    total_cost: number;
+  }
+
+  interface PerformanceReport {
+    days: number;
+    agents: AgentPerformance[];
+    error?: string;
+  }
+
+  // ============================================
+  // Audit Types
+  // ============================================
+
+  interface AuditTimelineEntry {
+    timestamp: string;
+    type: 'lifecycle' | 'activity';
+    action: string;
+    task_id?: string;
+    message?: string;
+    outcome?: string;
+    field?: string;
+    from_value?: string;
+    to_value?: string;
+    changed_by?: string;
+    reason?: string;
+  }
+
+  interface AgentAudit {
+    agent_id: string;
+    days: number;
+    timeline: AuditTimelineEntry[];
+    error?: string;
+  }
+
+  // ============================================
+  // Widget Types
+  // ============================================
+
+  interface WidgetManifest {
+    version?: string;
+    widgets?: WidgetDefinition[];
+    error?: string;
+  }
+
+  interface WidgetDefinition {
+    id: string;
+    name: string;
+    component: string;
+    permissions: string[];
+    panelType: 'dashboard' | 'sidebar' | 'modal';
+    icon: string;
+    description: string;
+  }
+
+  // ============================================
+  // Settings Types
+  // ============================================
+
+  interface UserSettings {
+    theme?: 'light' | 'dark' | 'system';
+    notifications?: boolean;
+    sidebarCollapsed?: boolean;
+    [key: string]: unknown;
+  }
+
+  // ============================================
+  // Notification Types
+  // ============================================
+
+  interface NotificationPrefs {
+    // Per-conversation settings
+    notification_level?: string;
+    sound_enabled?: number;
+    sound_type?: string;
+    desktop_notifications?: number;
+    quiet_hours_enabled?: number;
+    quiet_start?: string;
+    quiet_end?: string;
+    keyword_alerts?: string;
+    priority_level?: string;
+    notification_frequency?: string;
+    show_message_preview?: number;
+    badge_count_enabled?: number;
+    mute_until?: string | null;
+    notes?: string;
+    // Global defaults
+    default_notification_level?: string;
+    default_sound_enabled?: number;
+    default_sound_type?: string;
+    default_desktop_notifications?: number;
+    default_priority_level?: string;
+    batch_interval_minutes?: number;
+    // Legacy
+    enabled?: boolean;
+    sound?: boolean;
+    desktop?: boolean;
+    [key: string]: unknown;
+  }
+
+  interface Notification {
+    id: string;
+    title: string;
+    body?: string;
+    icon?: string;
+    data?: Record<string, unknown>;
+  }
+
+  // ============================================
+  // Window API
+  // ============================================
+
   interface Window {
     electron?: {
       execute: (command: string) => Promise<{ stdout?: string; stderr?: string; error?: string }>;
@@ -471,7 +530,7 @@ declare global {
       // Task sync to froggo-db
       tasks: {
         sync: (task: { id: string; title: string; status: string; project?: string; assignedTo?: string; description?: string }) => Promise<{ success: boolean; error?: string }>;
-        update: (taskId: string, updates: { status?: string; assignedTo?: string }) => Promise<{ success: boolean }>;
+        update: (taskId: string, updates: { status?: string; assignedTo?: string; reviewStatus?: string; priority?: string; title?: string; description?: string }) => Promise<{ success: boolean }>;
         list: (status?: string) => Promise<{ success: boolean; tasks: Task[] }>;
         start: (taskId: string) => Promise<{ success: boolean }>;
         complete: (taskId: string, outcome?: string) => Promise<{ success: boolean }>;
@@ -581,6 +640,7 @@ declare global {
       // Messages (wacli)
       messages: {
         recent: (limit?: number) => Promise<{ success: boolean; chats: MessageChat[] }>;
+        unread: () => Promise<{ success: boolean; count: number; byPlatform?: { [platform: string]: number } }>;
       };
       // Email (gog CLI)
       email: {
@@ -639,7 +699,7 @@ declare global {
         delete: (folderId: number) => Promise<{ success: boolean; error?: string }>;
         assign: (folderId: number, sessionKey: string, notes?: string) => Promise<{ success: boolean; error?: string }>;
         unassign: (folderId: number, sessionKey: string) => Promise<{ success: boolean; error?: string }>;
-        forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: MessageFolder[]; error?: string }>;
+        forConversation: (sessionKey: string) => Promise<{ success: boolean; folders: AssignedFolder[]; error?: string }>;
         conversations: (folderId: number) => Promise<{ success: boolean; conversations: unknown[]; error?: string }>;
         rules: {
           get: (folderId: number) => Promise<{ success: boolean; rule?: FolderRule; error?: string }>;
@@ -733,6 +793,103 @@ declare global {
       finance?: {
         triggerAnalysis: (options: { daysBack?: number; focus?: string }) => Promise<{ success: boolean; error?: string }>;
         dismissInsight: (insightId: string) => Promise<{ success: boolean; error?: string }>;
+        getTransactions: (limit?: number) => Promise<{ success: boolean; transactions?: unknown[]; error?: string }>;
+        getBudgetStatus: (budgetType: 'family' | 'crypto') => Promise<{ success: boolean; status?: unknown; error?: string }>;
+        uploadCSV: (csvContent: string, filename: string) => Promise<{ success: boolean; error?: string }>;
+        getAlerts: () => Promise<{ success: boolean; alerts?: unknown[]; error?: string }>;
+        getInsights: () => Promise<{ success: boolean; insights?: unknown[]; error?: string }>;
+      };
+      // Finance Agent
+      financeAgent?: {
+        sendMessage: (message: string, context?: unknown) => Promise<{ success: boolean; response?: string; error?: string }>;
+        getChatHistory: () => Promise<{ success: boolean; history?: unknown[]; error?: string }>;
+        clearHistory: () => Promise<{ success: boolean; error?: string }>;
+        triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => Promise<{ success: boolean; error?: string }>;
+        getStatus: () => Promise<{ success: boolean; status?: unknown; error?: string }>;
+      };
+      // HR Reports
+      hrReports?: {
+        list: () => Promise<{ success: boolean; files?: string[]; error?: string }>;
+        read: (filename: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+      };
+      // X Automations
+      xAutomations?: {
+        list: () => Promise<{ success: boolean; automations?: unknown[]; error?: string }>;
+        get: (id: string) => Promise<{ success: boolean; automation?: unknown; error?: string }>;
+        create: (automation: {
+          name: string;
+          description?: string;
+          trigger_type: string;
+          trigger_config: string;
+          conditions?: string;
+          actions: string;
+          max_executions_per_hour?: number;
+          max_executions_per_day?: number;
+        }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+        toggle: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+        executions: (automationId?: string, limit?: number) => Promise<{ success: boolean; executions?: unknown[]; error?: string }>;
+        rateLimit: (automationId: string) => Promise<{ success: boolean; rateLimit?: unknown; error?: string }>;
+      };
+      // X Research
+      xResearch?: {
+        propose: (data: { title: string; description: string; citations: string[]; proposedBy: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; limit?: number }) => Promise<{ success: boolean; ideas?: unknown[]; error?: string }>;
+        approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
+        reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Plan
+      xPlan?: {
+        create: (data: { researchIdeaId: string; title: string; contentType: string; threadLength: number; description: string; proposedBy: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; contentType?: string; limit?: number }) => Promise<{ success: boolean; plans?: unknown[]; error?: string }>;
+        approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
+        reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Draft
+      xDraft?: {
+        create: (data: { planId: string; version: string; content: string; mediaUrls?: string[]; proposedBy: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; planId?: string; limit?: number }) => Promise<{ success: boolean; drafts?: unknown[]; error?: string }>;
+        approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
+        reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Schedule
+      xSchedule?: {
+        create: (data: { draftId: string; scheduledFor: number; timeSlotReason?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: (filters?: { status?: string; dateFrom?: number; dateTo?: number; limit?: number }) => Promise<{ success: boolean; scheduled?: unknown[]; error?: string }>;
+        update: (data: { id: string; scheduledFor?: number; status?: string }) => Promise<{ success: boolean; error?: string }>;
+        delete: (data: { id: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // X Mention
+      xMention?: {
+        fetch: () => Promise<{ success: boolean; count?: number; error?: string }>;
+        list: (filters?: { replyStatus?: string; limit?: number; offset?: number }) => Promise<{ success: boolean; mentions?: unknown[]; error?: string }>;
+        update: (data: { id: string; replyStatus?: string; repliedAt?: number; repliedWithId?: string; notes?: string }) => Promise<{ success: boolean; error?: string }>;
+        reply: (data: { mentionId: string; replyText: string; tweetId: string }) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
+      };
+      // X Reply Guy
+      xReplyGuy?: {
+        listHotMentions: (filters?: { minLikes?: number; minRetweets?: number; limit?: number }) => Promise<{ success: boolean; mentions?: unknown[]; error?: string }>;
+        createQuickDraft: (data: { mentionId: string; replyText: string; fastTrack?: boolean }) => Promise<{ success: boolean; draftId?: string; error?: string }>;
+        postNow: (data: { draftId: string }) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
+      };
+      // Writing Module
+      writing?: {
+        project: {
+          list: () => Promise<{ success: boolean; projects?: unknown[]; error?: string }>;
+          create: (title: string, type: string) => Promise<{ success: boolean; id?: string; error?: string }>;
+          get: (id: string) => Promise<{ success: boolean; project?: unknown; error?: string }>;
+          update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+          delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+        };
+        chapter?: {
+          list: (projectId: string) => Promise<{ success: boolean; chapters?: unknown[]; error?: string }>;
+          create: (projectId: string, data: Record<string, unknown>) => Promise<{ success: boolean; id?: string; error?: string }>;
+          get: (id: string) => Promise<{ success: boolean; chapter?: unknown; error?: string }>;
+          update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+          delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+          reorder: (projectId: string, ids: string[]) => Promise<{ success: boolean; error?: string }>;
+        };
       };
     };
   }

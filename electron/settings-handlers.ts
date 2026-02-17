@@ -38,120 +38,120 @@ export function registerSettingsHandlers(): void {
 // ============ SETTINGS HANDLERS ============
 
 async function handleSettingsGetApiKey(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   keyName: string
 ): Promise<{ success: boolean; value?: string; error?: string }> {
   try {
     const value = getSecret(keyName);
     return { success: true, value: value || '' };
-  } catch (error: any) {
-    safeLog.error('[Settings] Get API key error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Settings] Get API key error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleSettingsStoreApiKey(
-  _: Electron.IpcMainInvokeEvent, 
-  keyName: string, 
+  _: Electron.IpcMainInvokeEvent,
+  keyName: string,
   value: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     storeSecret(keyName, value);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Settings] Store API key error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Settings] Store API key error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleSettingsHasApiKey(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   keyName: string
 ): Promise<{ success: boolean; has: boolean; error?: string }> {
   try {
     const has = hasSecret(keyName);
     return { success: true, has };
-  } catch (error: any) {
-    safeLog.error('[Settings] Has API key error:', error.message);
-    return { success: false, has: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Settings] Has API key error:', (error as Error).message);
+    return { success: false, has: false, error: (error as Error).message };
   }
 }
 
 async function handleSettingsDeleteApiKey(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   keyName: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     deleteSecret(keyName);
     return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Settings] Delete API key error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Settings] Delete API key error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 // ============ SCREEN CAPTURE HANDLERS ============
 
 async function handleScreenGetSources(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }
-): Promise<{ success: boolean; sources?: any[]; error?: string }> {
+): Promise<{ success: boolean; sources?: Array<{ id: string; name: string; thumbnail: string }>; error?: string }> {
   try {
     const sources = await desktopCapturer.getSources({
-      types: opts?.types as any || ['window', 'screen'],
+      types: opts?.types as Array<'window' | 'screen'> || ['window', 'screen'],
       thumbnailSize: opts?.thumbnailSize || { width: 150, height: 150 },
     });
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       sources: sources.map(s => ({
         id: s.id,
         name: s.name,
         thumbnail: s.thumbnail.toDataURL(),
       }))
     };
-  } catch (error: any) {
-    safeLog.error('[Screen] Get sources error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Screen] Get sources error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 // ============ MEDIA PERMISSION HANDLERS ============
 
-async function handleMediaCheckPermissions(): Promise<{ 
-  success: boolean; 
-  camera?: string; 
-  microphone?: string; 
-  error?: string 
+async function handleMediaCheckPermissions(): Promise<{
+  success: boolean;
+  camera?: string;
+  microphone?: string;
+  error?: string
 }> {
   try {
     const camera = systemPreferences.getMediaAccessStatus('camera');
     const microphone = systemPreferences.getMediaAccessStatus('microphone');
-    
+
     return { success: true, camera, microphone };
-  } catch (error: any) {
-    safeLog.error('[Media] Check permissions error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Media] Check permissions error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleMediaRequestPermission(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   mediaType: 'camera' | 'microphone'
 ): Promise<{ success: boolean; granted: boolean; error?: string }> {
   try {
     const granted = await systemPreferences.askForMediaAccess(mediaType);
     return { success: true, granted };
-  } catch (error: any) {
-    safeLog.error('[Media] Request permission error:', error.message);
-    return { success: false, granted: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Media] Request permission error:', (error as Error).message);
+    return { success: false, granted: false, error: (error as Error).message };
   }
 }
 
 // ============ WHISPER HANDLERS ============
 
 async function handleWhisperTranscribe(
-  _: Electron.IpcMainInvokeEvent, 
+  _: Electron.IpcMainInvokeEvent,
   audioData: ArrayBuffer
 ): Promise<{ success: boolean; text?: string; error?: string }> {
   try {
@@ -159,30 +159,30 @@ async function handleWhisperTranscribe(
     const fs = await import('fs');
     const os = await import('os');
     const path = await import('path');
-    
+
     const tempFile = path.join(os.tmpdir(), `whisper-${Date.now()}.webm`);
     fs.writeFileSync(tempFile, Buffer.from(audioData));
-    
+
     // Call whisper CLI
     return new Promise((resolve) => {
       exec(`whisper "${tempFile}" --model tiny --language en --output_format txt`, {
         timeout: 30000,
-      }, (error, stdout, stderr) => {
+      }, (error, stdout) => {
         // Cleanup temp file
         try { fs.unlinkSync(tempFile); } catch { /* ignore */ }
-        
+
         if (error) {
           safeLog.error('[Whisper] Transcribe error:', error.message);
           resolve({ success: false, error: error.message });
           return;
         }
-        
+
         resolve({ success: true, text: stdout.trim() });
       });
     });
-  } catch (error: any) {
-    safeLog.error('[Whisper] Transcribe error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Whisper] Transcribe error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -203,20 +203,20 @@ async function handleWhisperCheck(): Promise<{ success: boolean; available: bool
 async function handleVoiceGetModelUrl(): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     // Return local model URL or fetch from config
-    const url = process.env.VITE_GEMINI_API_KEY 
+    const url = process.env.VITE_GEMINI_API_KEY
       ? `wss://generativelanguage.googleapis.com/ws?key=${process.env.VITE_GEMINI_API_KEY}`
       : null;
-    
+
     return { success: true, url: url || '' };
-  } catch (error: any) {
-    safeLog.error('[Voice] Get model URL error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Voice] Get model URL error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }
 
 async function handleVoiceSpeak(
-  _: Electron.IpcMainInvokeEvent, 
-  text: string, 
+  _: Electron.IpcMainInvokeEvent,
+  text: string,
   voice?: string
 ): Promise<{ success: boolean; audioPath?: string; error?: string }> {
   try {
@@ -224,10 +224,10 @@ async function handleVoiceSpeak(
     const fs = await import('fs');
     const os = await import('os');
     const path = await import('path');
-    
+
     const outputPath = path.join(os.tmpdir(), `tts-${Date.now()}.aiff`);
     const voiceArg = voice ? `-v "${voice}"` : '';
-    
+
     return new Promise((resolve) => {
       exec(`say ${voiceArg} -o "${outputPath}" "${text.replace(/"/g, '\\"')}"`, {
         timeout: 30000,
@@ -237,12 +237,12 @@ async function handleVoiceSpeak(
           resolve({ success: false, error: error.message });
           return;
         }
-        
+
         resolve({ success: true, audioPath: outputPath });
       });
     });
-  } catch (error: any) {
-    safeLog.error('[Voice] Speak error:', error.message);
-    return { success: false, error: error.message };
+  } catch (error) {
+    safeLog.error('[Voice] Speak error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
   }
 }

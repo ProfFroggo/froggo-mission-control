@@ -11,8 +11,10 @@ import * as crypto from 'crypto';
 import * as https from 'https';
 import * as querystring from 'querystring';
 import * as fs from 'fs';
+import { createLogger } from '../src/utils/logger';
 
 const execAsync = promisify(exec);
+const logger = createLogger('TwitterOAuth');
 
 // Twitter API endpoints
 const REQUEST_TOKEN_URL = 'https://api.twitter.com/oauth/request_token';
@@ -253,7 +255,7 @@ class TwitterOAuthService {
     ].join('\n');
 
     fs.writeFileSync(credFile, content, { mode: 0o600 });
-    console.log(`[TwitterOAuth] Credentials stored in ${credFile}`);
+    logger.info(`[TwitterOAuth] Credentials stored in ${credFile}`);
   }
 
   /**
@@ -286,7 +288,7 @@ class TwitterOAuthService {
         screenName: creds.X_SCREEN_NAME,
       };
     } catch (error) {
-      console.error('[TwitterOAuth] Failed to load credentials:', error);
+      logger.error('[TwitterOAuth] Failed to load credentials:', error);
       return null;
     }
   }

@@ -72,7 +72,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
     try {
       const result = await window.clawdbot!.folders.rules.get(folderId);
       if (result.success && result.rule) {
-        setRule(result.rule);
+        setRule(result.rule as unknown as Partial<FolderRule>);
       }
     } catch (error) {
       console.error('[RuleEditor] Load error:', error);
@@ -92,7 +92,8 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
     setSaving(true);
     try {
-      const result = await window.clawdbot!.folders.rules.save(folderId, rule);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await window.clawdbot!.folders.rules.save(folderId, rule as any);
       if (result.success) {
         showToast('success', 'Rule saved successfully');
         onSave?.();

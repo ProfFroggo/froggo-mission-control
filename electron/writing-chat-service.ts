@@ -11,6 +11,9 @@ import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingChat');
 
 // ── IPC Registration ──
 
@@ -43,7 +46,7 @@ export function registerWritingChatHandlers() {
 
       return { success: true, messages };
     } catch (e: any) {
-      console.error('[writing-chat] loadHistory error:', e.message);
+      logger.error('[writing-chat] loadHistory error:', e.message);
       return { success: false, error: e.message, messages: [] };
     }
   });
@@ -57,7 +60,7 @@ export function registerWritingChatHandlers() {
       await fs.promises.appendFile(filepath, JSON.stringify(message) + '\n', 'utf-8');
       return { success: true };
     } catch (e: any) {
-      console.error('[writing-chat] appendMessage error:', e.message);
+      logger.error('[writing-chat] appendMessage error:', e.message);
       return { success: false, error: e.message };
     }
   });
@@ -74,10 +77,10 @@ export function registerWritingChatHandlers() {
       }
       return { success: true };
     } catch (e: any) {
-      console.error('[writing-chat] clearHistory error:', e.message);
+      logger.error('[writing-chat] clearHistory error:', e.message);
       return { success: false, error: e.message };
     }
   });
 
-  console.debug('[writing-chat] IPC handlers registered');
+  logger.debug('[writing-chat] IPC handlers registered');
 }

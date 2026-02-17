@@ -185,13 +185,13 @@ export default function ThreadListItem({
               threadId={thread.thread_id}
               metadata={thread}
               onClose={() => setShowModal(false)}
-              onToggleStar={(msgId) => {
+              onToggleStar={(_msgId) => {
                 // FUTURE: Implement message-level star toggle with backend API
               }}
-              onMarkRead={(msgId, isRead) => {
+              onMarkRead={(_msgId, _isRead) => {
                 // FUTURE: Implement message-level read toggle with backend API
               }}
-              onReply={(threadId, message) => {
+              onReply={(_threadId, _message) => {
                 // FUTURE: Implement reply functionality with backend API
                 setShowModal(false);
               }}

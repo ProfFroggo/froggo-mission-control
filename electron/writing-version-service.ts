@@ -12,6 +12,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { writingProjectPath, writingChapterPath, writingVersionsPath } from './paths';
 import { diffWords, Change } from 'diff';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingVersion');
 
 // ── Types ──
 
@@ -204,7 +207,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await listVersions(projectId, chapterId);
     } catch (e) {
-      console.error('[writing-version] list error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] list error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -213,7 +216,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await saveSnapshot(projectId, chapterId, label);
     } catch (e) {
-      console.error('[writing-version] save error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] save error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -222,7 +225,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await readVersionContent(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] read error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] read error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -231,7 +234,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await restoreVersion(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] restore error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] restore error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -240,7 +243,7 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await computeDiff(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] diff error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] diff error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
@@ -249,10 +252,10 @@ export function registerWritingVersionHandlers(): void {
     try {
       return await deleteVersion(projectId, chapterId, versionId);
     } catch (e) {
-      console.error('[writing-version] delete error:', e instanceof Error ? e.message : String(e));
+      logger.error('[writing-version] delete error:', e instanceof Error ? e.message : String(e));
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   });
 
-  console.debug('[writing-version] IPC handlers registered');
+  logger.debug('[writing-version] IPC handlers registered');
 }

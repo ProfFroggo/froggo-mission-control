@@ -3,6 +3,7 @@
  * Ported from Ox, adapted with Froggo as 6th agent + Gemini transcription
  */
 
+// @ts-ignore
 import { GoogleGenAI, Modality } from '@google/genai';
 import { getGeminiVoiceForAgent } from './geminiLiveService';
 
@@ -179,7 +180,8 @@ Keep responses brief for voice - 2-3 sentences unless the user asks for more.`
 };
 
 export class MultiAgentVoiceSystem {
-  private apiKey: string;
+  // Store API key for potential future use (e.g., reconnection)
+  private _apiKey: string;
   private sessions: Map<AgentType, AgentSession>;
   private currentAgent: AgentType | null;
   private sharedContext: SharedContext;
@@ -195,8 +197,8 @@ export class MultiAgentVoiceSystem {
   private onStatusCallback?: (status: string) => void;
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.ai = new GoogleGenAI({ apiKey });
+    this._apiKey = apiKey;
+    this.ai = new GoogleGenAI({ apiKey: this._apiKey });
     this.sessions = new Map();
     this.currentAgent = null;
     this.sharedContext = {

@@ -4,6 +4,7 @@
  * Adapted for Froggo Dashboard (uses window.clawdbot.db IPC)
  */
 
+// @ts-ignore
 import { GoogleGenAI } from '@google/genai';
 
 export interface Meeting {

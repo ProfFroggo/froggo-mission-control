@@ -8,19 +8,22 @@ import * as path from 'path';
 import { notificationService } from './notification-service';
 import { prepare } from './database';
 import { OPENCLAW_DIR } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('NotificationEvents');
 
 const safeLog = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
-        console.debug(...args);
+        logger.debug(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
-        console.error(...args);
+        logger.error(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },

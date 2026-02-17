@@ -191,7 +191,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
               <div key={item.id} className="bg-clawd-bg-alt border border-clawd-border rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-clawd-text">{item.title}</h4>
+                    <h4 className="text-sm font-semibold text-clawd-text">{('title' in item ? item.title : item.id)}</h4>
                     <p className="text-xs text-clawd-text-dim mt-1">
                       Proposed by {item.proposed_by} • {new Date(item.created_at).toLocaleDateString()}
                     </p>

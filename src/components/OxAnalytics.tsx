@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BarChart2, TrendingUp, Clock, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
 import { useStore } from '../store/store';
 

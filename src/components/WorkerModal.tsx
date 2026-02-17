@@ -349,6 +349,9 @@ Be conversational, friendly, and help design an effective agent.`;
           <div className="flex gap-2">
             <button
               onClick={() => setMode('chat')}
+              type="button"
+              aria-pressed={mode === 'chat'}
+              aria-label="Chat with Froggo mode"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'chat'
                   ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
@@ -361,6 +364,9 @@ Be conversational, friendly, and help design an effective agent.`;
             </button>
             <button
               onClick={() => setMode('manual')}
+              type="button"
+              aria-pressed={mode === 'manual'}
+              aria-label="Manual entry mode"
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
                 mode === 'manual'
                   ? 'bg-clawd-accent text-white border-clawd-accent shadow-lg shadow-clawd-accent/20'
@@ -469,6 +475,7 @@ Be conversational, friendly, and help design an effective agent.`;
                     </div>
                     <button
                       onClick={handleCreateFromChat}
+                      aria-label="Create and start worker agent"
                       className="w-full px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <Zap size={16} />
@@ -516,8 +523,9 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Name & Role */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Worker Name *</label>
+                  <label htmlFor="worker-name" className="block text-sm text-clawd-text-dim mb-1">Worker Name *</label>
                   <input
+                    id="worker-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -527,8 +535,9 @@ Be conversational, friendly, and help design an effective agent.`;
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Role/Title</label>
+                  <label htmlFor="worker-role" className="block text-sm text-clawd-text-dim mb-1">Role/Title</label>
                   <input
+                    id="worker-role"
                     type="text"
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
@@ -540,8 +549,9 @@ Be conversational, friendly, and help design an effective agent.`;
 
               {/* Task Description */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Task Description *</label>
+                <label htmlFor="worker-task-description" className="block text-sm text-clawd-text-dim mb-1">Task Description *</label>
                 <textarea
+                  id="worker-task-description"
                   value={taskDescription}
                   onChange={(e) => setTaskDescription(e.target.value)}
                   placeholder="What does this worker do? What workflows will they handle?"
@@ -552,8 +562,9 @@ Be conversational, friendly, and help design an effective agent.`;
 
               {/* Capabilities */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Capabilities</label>
+                <label htmlFor="worker-capabilities" className="block text-sm text-clawd-text-dim mb-1">Capabilities</label>
                 <input
+                  id="worker-capabilities"
                   type="text"
                   value={capabilities}
                   onChange={(e) => setCapabilities(e.target.value)}
@@ -565,13 +576,14 @@ Be conversational, friendly, and help design an effective agent.`;
 
               {/* Model Selection */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Model</label>
+                <span className="block text-sm text-clawd-text-dim mb-1">Model</span>
                 <div className="grid grid-cols-2 gap-3">
                   {MODEL_OPTIONS.map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
                       onClick={() => setModel(opt.id as 'sonnet' | 'opus')}
+                      aria-pressed={model === opt.id}
                       className={`p-3 rounded-lg border text-left transition-all ${
                         model === opt.id
                           ? 'border-clawd-accent bg-clawd-accent/10'

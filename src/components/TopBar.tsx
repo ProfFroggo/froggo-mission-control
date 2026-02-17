@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Inbox, Loader, Wifi, WifiOff, WifiHigh } from 'lucide-react';
+import { Inbox, Loader, Wifi, WifiOff } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 import { showToast } from './Toast';

@@ -74,7 +74,7 @@ export default function ConfigTab() {
               type: 'object', value: JSON.stringify(val, null, 2),
             });
           } else {
-            traverse(val, path, section);
+            traverse(val as Record<string, unknown>, path, section);
           }
         } else if (typeof val === 'boolean') {
           sectionMap[section].push({ path, key, label: key, type: 'boolean', value: val });
@@ -89,7 +89,7 @@ export default function ConfigTab() {
       }
     };
 
-    traverse(cfg, '', '');
+    traverse(cfg as Record<string, unknown>, '', '');
 
     const built: ConfigSection[] = Object.entries(sectionMap).map(([key, fields]) => ({
       key,
@@ -231,15 +231,15 @@ export default function ConfigTab() {
                         ) : field.type === 'number' ? (
                           <div>
                             <label className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input type="number" value={field.value}
-                              onChange={e => updateField(field.path, Number(e.target.value))}
+                            <input type="number" value={typeof field.value === 'number' ? field.value : (typeof field.value === 'string' ? Number(field.value) : 0)}
+                              onChange={e => updateField(field.path, e.target.valueAsNumber || 0)}
                               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
                               aria-label={field.label} />
                           </div>
                         ) : field.type === 'string' ? (
                           <div>
                             <label className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input type={field.sensitive ? 'password' : 'text'} value={field.value}
+                            <input type={field.sensitive ? 'password' : 'text'} value={typeof field.value === 'string' ? field.value : ''}
                               onChange={e => updateField(field.path, e.target.value)}
                               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
                               aria-label={field.label} />
@@ -247,7 +247,7 @@ export default function ConfigTab() {
                         ) : field.type === 'object' ? (
                           <div>
                             <label className="block text-sm font-medium mb-1">{field.label}</label>
-                            <pre className="p-3 bg-clawd-bg rounded-lg text-xs font-mono max-h-32 overflow-auto text-clawd-text-dim">{field.value}</pre>
+                            <pre className="p-3 bg-clawd-bg rounded-lg text-xs font-mono max-h-32 overflow-auto text-clawd-text-dim">{String(field.value)}</pre>
                           </div>
                         ) : null}
                       </div>

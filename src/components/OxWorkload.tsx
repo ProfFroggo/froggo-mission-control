@@ -2,16 +2,6 @@ import { useState } from 'react';
 import { Kanban, Clock, Play, CheckCircle, Eye, ChevronRight } from 'lucide-react';
 import { useStore } from '../store/store';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
-  priority: string;
-  assignedTo: string;
-  subtasks?: { id: string; title: string; done: boolean }[];
-}
-
 export default function OxWorkload() {
   const { tasks } = useStore();
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
@@ -44,7 +34,7 @@ export default function OxWorkload() {
 
   const getSubtaskProgress = (task: Task) => {
     if (!task.subtasks || task.subtasks.length === 0) return null;
-    const done = task.subtasks.filter(s => s.done).length;
+    const done = task.subtasks.filter((s: SubtaskData) => s.completed).length;
     return { done, total: task.subtasks.length };
   };
 
@@ -90,7 +80,7 @@ export default function OxWorkload() {
                     </div>
                   ) : (
                     columnTasks.map(task => {
-                      const progress = getSubtaskProgress(task);
+                      const progress = getSubtaskProgress(task as unknown as Task);
                       
                       return (
                         <div
@@ -101,7 +91,7 @@ export default function OxWorkload() {
                           }`}
                         >
                           <div className="flex items-start gap-2 mb-2">
-                            <span className={`w-2 h-2 rounded-full mt-1.5 ${getPriorityColor(task.priority)}`} />
+                            <span className={`w-2 h-2 rounded-full mt-1.5 ${getPriorityColor(task.priority ?? '')}`} />
                             <h3 className="text-sm font-medium text-white line-clamp-2">
                               {task.title}
                             </h3>

@@ -18,14 +18,6 @@ import { CSS as DndCSS } from '@dnd-kit/utilities';
 
 type ChannelFilter = 'all' | 'whatsapp' | 'telegram' | 'discord' | 'webchat' | 'agents';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  conversation_count: number;
-}
-
 // Sortable session component for pinned items
 function SortableSession({ sessionKey, children }: { sessionKey: string; children: React.ReactNode }) {
   const {
@@ -644,8 +636,10 @@ export default function SessionsFilter() {
 
         {/* Search */}
         <div className="relative mb-3">
+          <label htmlFor="sessions-search" className="sr-only">Search sessions</label>
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
           <input
+            id="sessions-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -655,6 +649,7 @@ export default function SessionsFilter() {
           {search && (
             <button
               onClick={() => setSearch('')}
+              aria-label="Clear search"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-clawd-text-dim hover:text-clawd-text"
             >
               <X size={14} />

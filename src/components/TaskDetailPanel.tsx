@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search } from 'lucide-react';
-import { useStore, Task, TaskStatus, Subtask, TaskActivity } from '../store/store';
+import { useStore, Task, Subtask, TaskActivity } from '../store/store';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
 import AgentAvatar from './AgentAvatar';
 import PokeModal from './PokeModal';
 import { gateway } from '@/lib/gateway';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
 interface TaskAttachment {
   id: number;
@@ -28,6 +28,7 @@ interface TaskDetailPanelProps {
 
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
+  const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
   const [activities, setActivities] = useState<TaskActivity[]>([]);
@@ -36,7 +37,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
-  const [poking, setPoking] = useState(false);
+  const [poking, _setPoking] = useState(false);
   const [showPokeModal, setShowPokeModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showReopenModal, setShowReopenModal] = useState(false);
@@ -88,7 +89,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       if (result.success) {
         setAttachments(result.attachments);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to load attachments:', err);
     } finally {
       setLoadingAttachments(false);
@@ -237,7 +238,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             showToast('success', 'Task deleted', `Deleted "${task.title}"`);
             onClose();
           } catch (err: any) {
-            showToast('error', 'Delete failed', err.message);
+            showToast('error', 'Delete failed', (err as Error).message);
           }
         });
         return;
@@ -342,7 +343,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           };
         }
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to check for active agent:', err);
     }
     return null;
@@ -386,8 +387,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       
       // Refresh activity to show the reopen entry
       loadActivity();
-    } catch (err) {
-      showToast('error', 'Failed to reopen', err.message);
+    } catch (err: unknown) {
+      showToast('error', 'Failed to reopen', (err as Error).message);
     }
   };
 
@@ -475,8 +476,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         setUploadingFile(false);
       };
       reader.readAsDataURL(file);
-    } catch (err) {
-      showToast('error', 'Upload failed', err.message);
+    } catch (err: unknown) {
+      showToast('error', 'Upload failed', (err as Error).message);
       setUploadingFile(false);
     }
     
@@ -887,7 +888,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 (window as any).__planningNotesTimer = setTimeout(() => {
                   (window as any).clawdbot?.tasks?.update(task.id, { 
                     planningNotes: e.target.value 
-                  }).catch((err) => { console.error('[TaskDetail] Failed to load subtasks:', err); });
+                  }).catch((_err: unknown) => { /* silent - planning notes save failed */ });
                 }, 1000);
               }}
               placeholder="Planning notes, brainstorming, research..."
@@ -1466,8 +1467,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     } else {
                       showToast('error', 'Failed to abort agent', result.stderr || result.error || 'Unknown error');
                     }
-                  } catch (err) {
-                    showToast('error', 'Abort failed', err.message);
+                  } catch (err: unknown) {
+                    showToast('error', 'Abort failed', (err as Error).message);
                   } finally {
                     setAbortingAgent(false);
                   }

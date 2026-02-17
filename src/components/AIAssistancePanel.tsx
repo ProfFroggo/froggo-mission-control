@@ -208,8 +208,8 @@ Provide a brief, actionable summary.`;
         text: s.text || '',
         tone: s.tone || 'professional',
       }));
-    } catch (error) {
-      console.error('[AI Assistance] Failed to parse suggestions:', error);
+    } catch {
+      // Parse error handled gracefully - return empty suggestions
       return [];
     }
   };
@@ -231,8 +231,8 @@ Provide a brief, actionable summary.`;
         urgency: parsed.urgency || 'low',
         actionItems: parsed.actionItems || [],
       };
-    } catch (error) {
-      console.error('[AI Assistance] Failed to parse sentiment:', error);
+    } catch {
+      // Parse error handled gracefully - return null sentiment
       return null;
     }
   };

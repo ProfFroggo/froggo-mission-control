@@ -12,6 +12,9 @@ import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingMemory');
 
 // ── Types ──
 
@@ -77,7 +80,7 @@ async function listCharacters(projectId: string) {
     const characters = await readJsonArray<CharacterProfile>(filepath);
     return { success: true, characters };
   } catch (e: any) {
-    console.error('[writing-memory] listCharacters error:', e.message);
+    logger.error('[writing-memory] listCharacters error:', e.message);
     return { success: false, error: e.message, characters: [] };
   }
 }
@@ -102,7 +105,7 @@ async function createCharacter(projectId: string, data: Omit<CharacterProfile, '
     await writeJson(filepath, characters);
     return { success: true, character };
   } catch (e: any) {
-    console.error('[writing-memory] createCharacter error:', e.message);
+    logger.error('[writing-memory] createCharacter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -120,7 +123,7 @@ async function updateCharacter(projectId: string, id: string, updates: Partial<C
     await writeJson(filepath, characters);
     return { success: true, character: characters[idx] };
   } catch (e: any) {
-    console.error('[writing-memory] updateCharacter error:', e.message);
+    logger.error('[writing-memory] updateCharacter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -138,7 +141,7 @@ async function deleteCharacter(projectId: string, id: string) {
     await writeJson(filepath, filtered);
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-memory] deleteCharacter error:', e.message);
+    logger.error('[writing-memory] deleteCharacter error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -151,7 +154,7 @@ async function listTimeline(projectId: string) {
     const timeline = await readJsonArray<TimelineEvent>(filepath);
     return { success: true, timeline };
   } catch (e: any) {
-    console.error('[writing-memory] listTimeline error:', e.message);
+    logger.error('[writing-memory] listTimeline error:', e.message);
     return { success: false, error: e.message, timeline: [] };
   }
 }
@@ -176,7 +179,7 @@ async function createTimelineEvent(projectId: string, data: Omit<TimelineEvent, 
     await writeJson(filepath, timeline);
     return { success: true, event };
   } catch (e: any) {
-    console.error('[writing-memory] createTimelineEvent error:', e.message);
+    logger.error('[writing-memory] createTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -194,7 +197,7 @@ async function updateTimelineEvent(projectId: string, id: string, updates: Parti
     await writeJson(filepath, timeline);
     return { success: true, event: timeline[idx] };
   } catch (e: any) {
-    console.error('[writing-memory] updateTimelineEvent error:', e.message);
+    logger.error('[writing-memory] updateTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -212,7 +215,7 @@ async function deleteTimelineEvent(projectId: string, id: string) {
     await writeJson(filepath, filtered);
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-memory] deleteTimelineEvent error:', e.message);
+    logger.error('[writing-memory] deleteTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -225,7 +228,7 @@ async function listFacts(projectId: string) {
     const facts = await readJsonArray<VerifiedFact>(filepath);
     return { success: true, facts };
   } catch (e: any) {
-    console.error('[writing-memory] listFacts error:', e.message);
+    logger.error('[writing-memory] listFacts error:', e.message);
     return { success: false, error: e.message, facts: [] };
   }
 }
@@ -249,7 +252,7 @@ async function createFact(projectId: string, data: Omit<VerifiedFact, 'id' | 'cr
     await writeJson(filepath, facts);
     return { success: true, fact };
   } catch (e: any) {
-    console.error('[writing-memory] createFact error:', e.message);
+    logger.error('[writing-memory] createFact error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -267,7 +270,7 @@ async function updateFact(projectId: string, id: string, updates: Partial<Verifi
     await writeJson(filepath, facts);
     return { success: true, fact: facts[idx] };
   } catch (e: any) {
-    console.error('[writing-memory] updateFact error:', e.message);
+    logger.error('[writing-memory] updateFact error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -285,7 +288,7 @@ async function deleteFact(projectId: string, id: string) {
     await writeJson(filepath, filtered);
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-memory] deleteFact error:', e.message);
+    logger.error('[writing-memory] deleteFact error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -323,5 +326,5 @@ export function registerWritingMemoryHandlers() {
   ipcMain.handle('writing:memory:facts:delete', async (_, projectId: string, id: string) =>
     deleteFact(projectId, id));
 
-  console.debug('[writing-memory] IPC handlers registered');
+  logger.debug('[writing-memory] IPC handlers registered');
 }

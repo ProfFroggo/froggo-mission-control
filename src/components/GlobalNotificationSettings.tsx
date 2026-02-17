@@ -37,18 +37,18 @@ export default function GlobalNotificationSettings() {
         const d = result.defaults;
         setDefaults(d);
         
-        setDefaultNotificationLevel(d.default_notification_level || 'all');
+        setDefaultNotificationLevel(String(d.default_notification_level || 'all'));
         setDefaultSoundEnabled(d.default_sound_enabled === 1);
-        setDefaultSoundType(d.default_sound_type || 'default');
+        setDefaultSoundType(String(d.default_sound_type || 'default'));
         setDefaultDesktopNotifications(d.default_desktop_notifications === 1);
         setQuietHoursEnabled(d.quiet_hours_enabled === 1);
-        setQuietStart(d.quiet_start || '22:00');
-        setQuietEnd(d.quiet_end || '08:00');
-        setDefaultPriorityLevel(d.default_priority_level || 'normal');
+        setQuietStart(String(d.quiet_start || '22:00'));
+        setQuietEnd(String(d.quiet_end || '08:00'));
+        setDefaultPriorityLevel(String(d.default_priority_level || 'normal'));
         setDoNotDisturbEnabled(d.do_not_disturb_enabled === 1);
-        setDndUntil(d.dnd_until || '');
+        setDndUntil(String(d.dnd_until || ''));
         setEnableBatching(d.enable_batching === 1);
-        setBatchIntervalMinutes(d.batch_interval_minutes || 15);
+        setBatchIntervalMinutes(Number(d.batch_interval_minutes || 15));
       }
     } catch (error) {
       console.error('[GlobalNotificationSettings] Failed to load:', error);
@@ -62,20 +62,20 @@ export default function GlobalNotificationSettings() {
     try {
       const updatedDefaults = {
         default_notification_level: defaultNotificationLevel,
-        default_sound_enabled: defaultSoundEnabled,
+        default_sound_enabled: defaultSoundEnabled ? 1 : 0,
         default_sound_type: defaultSoundType,
-        default_desktop_notifications: defaultDesktopNotifications,
-        quiet_hours_enabled: quietHoursEnabled,
+        default_desktop_notifications: defaultDesktopNotifications ? 1 : 0,
+        quiet_hours_enabled: quietHoursEnabled ? 1 : 0,
         quiet_start: quietStart,
         quiet_end: quietEnd,
         default_priority_level: defaultPriorityLevel,
-        do_not_disturb_enabled: doNotDisturbEnabled,
+        do_not_disturb_enabled: doNotDisturbEnabled ? 1 : 0,
         dnd_until: dndUntil || null,
-        enable_batching: enableBatching,
+        enable_batching: enableBatching ? 1 : 0,
         batch_interval_minutes: batchIntervalMinutes,
       };
 
-      const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults);
+      const result = await window.clawdbot!.notificationSettings.setGlobalDefaults(updatedDefaults as unknown as NotificationPrefs);
 
       if (result.success) {
         showToast('success', 'Global notification settings saved successfully!');

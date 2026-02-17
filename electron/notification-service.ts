@@ -2,20 +2,37 @@ import { Notification, app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { createLogger } from '../src/utils/logger';
 
-// Safe logger
+const logger = createLogger('Notification');
+
+// Safe logger (legacy - being migrated)
 const safeLog = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     try {
       if (process.stdout.writable) {
-        console.debug(...args);
+        logger.debug(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     try {
       if (process.stderr.writable) {
-        console.error(...args);
+        logger.error(args.map(a => String(a)).join(' '));
+      }
+    } catch { /* ignore */ }
+  },
+  warn: (...args: unknown[]) => {
+    try {
+      if (process.stderr.writable) {
+        logger.warn(args.map(a => String(a)).join(' '));
+      }
+    } catch { /* ignore */ }
+  },
+  debug: (...args: unknown[]) => {
+    try {
+      if (process.stdout.writable) {
+        logger.debug(args.map(a => String(a)).join(' '));
       }
     } catch { /* ignore */ }
   },
@@ -104,7 +121,7 @@ class NotificationService {
     silent?: boolean;
     urgency?: 'low' | 'normal' | 'critical';
     actions?: { type: string; text: string }[];
-    data?: any;
+    data?: Record<string, unknown>;
   }) {
     // Check if notifications are enabled globally
     if (!this.preferences.enabled) {
@@ -193,6 +210,7 @@ class NotificationService {
   private getSubtitleForType(type: string): string | undefined {
     const subtitleMap: Record<string, string> = {
       'task-completed': 'Task Completed',
+      'task-assigned': 'Task Assigned',
       'agent-failure': 'Agent Alert',
       'approval-request': 'Approval Needed',
       'chat-mention': 'New Mention',
@@ -202,7 +220,7 @@ class NotificationService {
     return subtitleMap[type];
   }
 
-  private handleNotificationClick(type: string, data?: any) {
+  private handleNotificationClick(type: string, data?: Record<string, unknown>) {
     if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
 
     // Focus the window
@@ -214,6 +232,7 @@ class NotificationService {
     // Navigate to relevant view
     const viewMap: Record<string, string> = {
       'task-completed': 'tasks',
+      'task-assigned': 'tasks',
       'agent-failure': 'agents',
       'approval-request': 'inbox',
       'chat-mention': 'chat',
@@ -225,7 +244,7 @@ class NotificationService {
     }
   }
 
-  private handleNotificationAction(actionType: string, data?: any) {
+  private handleNotificationAction(actionType: string, data?: Record<string, unknown>) {
     if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
 
     // Send action to renderer
@@ -280,7 +299,7 @@ class NotificationService {
     });
   }
 
-  info(title: string, body: string, data?: any) {
+  info(title: string, body: string, data?: Record<string, unknown>) {
     this.show({
       type: 'info',
       title,
@@ -310,7 +329,15 @@ export function setupNotificationHandlers(mainWindow: BrowserWindow) {
   });
 
   // Send notification
-  ipcMain.handle('notifications:send', async (_, options: any) => {
+  ipcMain.handle('notifications:send', async (_, options: {
+    type: 'task-completed' | 'agent-failure' | 'approval-request' | 'chat-mention' | 'info';
+    title: string;
+    body: string;
+    silent?: boolean;
+    urgency?: 'low' | 'normal' | 'critical';
+    actions?: { type: string; text: string }[];
+    data?: Record<string, unknown>;
+  }) => {
     await notificationService.show(options);
     return { success: true };
   });
