@@ -159,7 +159,11 @@ export default function EmptyState(props: EmptyStateProps) {
   };
 
   return (
-    <div className={`${baseClasses} ${compactClasses} ${className}`}>
+    <div 
+      className={`${baseClasses} ${compactClasses} ${className}`}
+      role="status"
+      aria-live="polite"
+    >
       {/* Icon Container */}
       <div className="empty-state-icon">
         <Icon 
