@@ -8937,6 +8937,22 @@ ipcMain.handle('toolbar:getState', async () => {
   }
 });
 
+ipcMain.handle('toolbar:resize', async (event, height: number) => {
+  try {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      const bounds = win.getBounds();
+      const clampedH = Math.max(60, Math.min(700, Math.round(height)));
+      const delta = clampedH - bounds.height;
+      const newY = Math.max(0, bounds.y - delta); // expand upward
+      win.setBounds({ x: bounds.x, y: newY, width: bounds.width, height: clampedH });
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
 // ============== X/TWITTER REPLY GUY HANDLERS ==============
 
 ipcMain.handle('x:replyGuy:listHotMentions', async (_, filters?: {

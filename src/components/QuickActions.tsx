@@ -57,6 +57,7 @@ interface QuickActionsProps {
   onAddSkill?: () => void;
   onNavigate?: (view: string) => void;
   currentView?: string;
+  isFloating?: boolean;
 }
 
 export interface QuickActionsRef {
@@ -433,7 +434,7 @@ function TaskShortcutsModal({ isOpen, onClose }: {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
-  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact: _onAddContact, onAddSkill: _onAddSkill, onNavigate: _onNavigate, currentView = 'dashboard',
+  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact: _onAddContact, onAddSkill: _onAddSkill, onNavigate: _onNavigate, currentView = 'dashboard', isFloating = false,
 }, ref) => {
   const { isMuted: _isMuted, toggleMuted: _toggleMuted, isMeetingActive, toggleMeeting } = useStore();
 
@@ -490,6 +491,15 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
+
+  // Floating mode: resize window when panels open/close
+  const anyPanelOpen = quickMessageOpen || agentCallModalOpen || contextChatOpen || taskShortcutsOpen || agentChatModalOpen || callDialogOpen || agentChatOpen;
+  useEffect(() => {
+    if (!isFloating) return;
+    const w = window as any;
+    const h = anyPanelOpen ? 500 : 68;
+    w.clawdbot?.toolbar?.resize?.(h);
+  }, [isFloating, anyPanelOpen]);
 
   useImperativeHandle(ref, () => ({
     openQuickMessage: () => { closeAllModals(); setQuickMessageOpen(true); },
@@ -909,19 +919,26 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     ? { left: dragPos.x, top: dragPos.y, right: 'auto', bottom: 'auto' }
     : getSnapPosition(state.snapEdge);
 
+  // For floating mode: CSS drag styles
+  const noDrag = isFloating ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {};
+  const dragStyle = isFloating ? { WebkitAppRegion: 'drag' } as React.CSSProperties : {};
+
   return (
     <div
       ref={toolbarRef}
-      className={`fixed z-40 ${dragging ? '' : 'transition-all duration-300 ease-out'}`}
-      style={{ ...snapStyle, position: 'fixed' }}
+      className={isFloating
+        ? 'relative w-full h-full flex flex-col-reverse items-center'
+        : `fixed z-40 ${dragging ? '' : 'transition-all duration-300 ease-out'}`
+      }
+      style={isFloating ? {} : { ...snapStyle, position: 'fixed' }}
     >
       {/* ─── Modals (positioned above/below toolbar based on snap edge) ─── */}
 
       {/* Quick Message Modal */}
       {quickMessageOpen && !state.isCollapsed && (
         <div className={`absolute w-80 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-4 ${
-          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isLeft ? 'left-0' : 'right-0'}`}>
+          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-medium flex items-center gap-2">
               <MessageSquare size={16} className="text-clawd-accent" />
@@ -955,7 +972,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 2: Agent Call Modal */}
       {agentCallModalOpen && !state.isCollapsed && (
-        <div className={`absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={`absolute ${isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
           <AgentCallModal
             isOpen={agentCallModalOpen}
             onClose={() => setAgentCallModalOpen(false)}
@@ -968,8 +985,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* FEATURE 2b: Active Call Window (agent image / video + transcript + controls) */}
       {callDialogOpen && activeCall && (
         <div className={`absolute w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden ${
-          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isLeft ? 'left-0' : 'right-0'}`}>
+          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
 
           {/* Agent image / / Screen share area */}
           <div className="relative w-full aspect-square bg-black overflow-hidden">
@@ -1079,8 +1096,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* Agent Chat Picker */}
       {agentChatModalOpen && !state.isCollapsed && (
         <div className={`absolute w-72 bg-clawd-surface border border-clawd-border rounded-xl shadow-2xl p-3 ${
-          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isLeft ? 'left-0' : 'right-0'} max-h-80 overflow-y-auto`}>
+          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'} max-h-80 overflow-y-auto`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium flex items-center gap-2">
               <MessageSquare size={14} className="text-clawd-accent" />
@@ -1109,8 +1126,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* Agent Chat Interface */}
       {agentChatOpen && chatAgent && (
         <div className={`absolute w-[320px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl overflow-hidden ${
-          isTop ? 'top-full mt-2' : 'bottom-full mb-2'
-        } ${isLeft ? 'left-0' : 'right-0'}`}>
+          isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'
+        } ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
           {/* Header */}
           <div className="flex items-center justify-between px-3 py-2.5 bg-clawd-bg/50 border-b border-clawd-border">
             <div className="flex items-center gap-2">
@@ -1175,7 +1192,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 3: Context Chat Modal */}
       {contextChatOpen && !state.isCollapsed && (
-        <div className={`absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={`absolute ${isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
           <ContextChatModal
             isOpen={contextChatOpen}
             onClose={() => setContextChatOpen(false)}
@@ -1187,7 +1204,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* FEATURE 4: Task Shortcuts Modal */}
       {taskShortcutsOpen && !state.isCollapsed && (
-        <div className={`absolute ${isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isLeft ? 'left-0' : 'right-0'}`}>
+        <div className={`absolute ${isFloating ? 'bottom-[72px] left-1/2 -translate-x-1/2' : isTop ? 'top-full mt-2' : 'bottom-full mb-2'} ${isFloating ? '' : isLeft ? 'left-0' : 'right-0'}`}>
           <TaskShortcutsModal
             isOpen={taskShortcutsOpen}
             onClose={() => setTaskShortcutsOpen(false)}
@@ -1197,15 +1214,17 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* ─── Toolbar ─── */}
       <div
-        className={`flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full shadow-lg transition-all duration-300 px-1.5 py-1 ${
-          dragging ? 'cursor-grabbing shadow-2xl scale-105 opacity-90' : ''
-        }`}
+        className={`flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full transition-all duration-300 px-1.5 py-1 ${
+          isFloating ? 'shadow-none' : 'shadow-lg'
+        } ${dragging ? 'cursor-grabbing shadow-2xl scale-105 opacity-90' : ''}`}
+        style={isFloating ? noDrag : {}}
       >
         {/* Drag Handle */}
         <div
           className="drag-handle p-2 cursor-grab active:cursor-grabbing hover:bg-clawd-border rounded-full transition-colors select-none"
           title="Drag to reposition"
-          onMouseDown={handleMouseDown}
+          onMouseDown={isFloating ? undefined : handleMouseDown}
+          style={isFloating ? dragStyle : {}}
         >
           <GripVertical size={16} className="text-clawd-text-dim pointer-events-none" />
         </div>
@@ -1224,29 +1243,35 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 : activeCall ? 'bg-red-500 text-white' : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
               }`}
               title={activeCall ? activeCall.agentName : 'Call Agent'}
+              style={isFloating ? noDrag : {}}
             >
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
             {activeCall && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error" style={isFloating ? noDrag : {}}>
                 <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
-            <button onClick={handlePopOut} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Pop out as floating window">
+            <button
+              onClick={isFloating ? () => (window as any).clawdbot?.toolbar?.popIn?.() : handlePopOut}
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors"
+              title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
+              style={isFloating ? noDrag : {}}
+            >
               <ExternalLink size={14} className="text-clawd-text-dim" />
             </button>
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Expand toolbar">
+            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Expand toolbar" style={isFloating ? noDrag : {}}>
               <ChevronLeft size={16} className="text-clawd-text-dim" />
             </button>
           </>
         ) : (
           <>
             {/* Standard actions */}
-            <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Search (⌘/)">
+            <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="Search (⌘/)" style={isFloating ? noDrag : {}}>
               <Search size={16} className="text-clawd-text-dim" />
             </button>
-            <button onClick={onNewTask} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="New Task">
+            <button onClick={onNewTask} className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" title="New Task" style={isFloating ? noDrag : {}}>
               <Plus size={16} className="text-clawd-text-dim" />
             </button>
             {/* Context Chat */}
@@ -1254,11 +1279,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               onClick={() => { closeAllModals(); setContextChatOpen(!contextChatOpen); }}
               className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
               title={`Chat about ${getViewLabel(currentView)}`}
+              style={isFloating ? noDrag : {}}
             >
               <Sparkles size={16} className={contextChatOpen ? '' : 'text-clawd-text-dim'} />
             </button>
 
-            <div className="w-px h-6 bg-clawd-border mx-0.5" />
+            <div className="w-px h-6 bg-clawd-border mx-0.5" style={isFloating ? noDrag : {}} />
 
             {/* Agent Chat button */}
             <button
@@ -1271,6 +1297,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 agentChatOpen || agentChatModalOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
               }`}
               title="Chat with Agent"
+              style={isFloating ? noDrag : {}}
             >
               <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-clawd-text-dim'} />
             </button>
@@ -1289,20 +1316,28 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
               }`}
               title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
+              style={isFloating ? noDrag : {}}
             >
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
 
-            <div className="w-px h-6 bg-clawd-border mx-0.5" />
-            <button onClick={handlePopOut} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Pop out as floating window">
+            <div className="w-px h-6 bg-clawd-border mx-0.5" style={isFloating ? noDrag : {}} />
+            <button
+              onClick={isFloating ? () => (window as any).clawdbot?.toolbar?.popIn?.() : handlePopOut}
+              className="p-2 rounded-full hover:bg-clawd-border transition-colors"
+              title={isFloating ? 'Dock toolbar' : 'Pop out as floating window'}
+              style={isFloating ? noDrag : {}}
+            >
               <ExternalLink size={14} className="text-clawd-text-dim" />
             </button>
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Collapse toolbar">
+            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Collapse toolbar" style={isFloating ? noDrag : {}}>
               <ChevronRight size={16} className="text-clawd-text-dim" />
             </button>
-            <button onClick={resetPosition} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Reset position">
-              <RotateCcw size={14} className="text-clawd-text-dim" />
-            </button>
+            {!isFloating && (
+              <button onClick={resetPosition} className="p-2 rounded-full hover:bg-clawd-border transition-colors" title="Reset position">
+                <RotateCcw size={14} className="text-clawd-text-dim" />
+              </button>
+            )}
           </>
         )}
       </div>
