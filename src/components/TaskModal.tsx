@@ -585,8 +585,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               {/* Title */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Title *</label>
+                <label htmlFor="task-title" className="block text-sm text-clawd-text-dim mb-1">Title *</label>
                 <input
+                  id="task-title"
                   type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
@@ -598,8 +599,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Description */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Description</label>
+                <label htmlFor="task-description" className="block text-sm text-clawd-text-dim mb-1">Description</label>
                 <textarea
+                  id="task-description"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Add more details, context, or instructions for the agent..."
@@ -610,13 +612,14 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Priority */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                   <Flag size={14} /> Priority
-                </label>
+                </span>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setPriority('')}
+                    aria-label="No priority"
                     className={`flex-1 p-2 rounded-lg border text-sm transition-colors ${
                       !priority
                         ? 'border-clawd-accent bg-clawd-accent/10'
@@ -630,12 +633,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       key={p.id}
                       type="button"
                       onClick={() => setPriority(p.id)}
+                      aria-label={`Priority: ${p.label}`}
                       className={`flex-1 p-2 rounded-lg border text-sm flex items-center justify-center gap-1 transition-colors ${
                         priority === p.id
                           ? `border-clawd-accent ${p.bg} ${p.color}`
                           : 'border-clawd-border hover:border-clawd-accent/50'
                       }`}
-                      title={p.label}
                     >
                       {p.icon}
                     </button>
@@ -645,11 +648,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Due Date */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                   <Calendar size={14} /> Due Date
-                </label>
+                </span>
                 <div className="flex gap-2">
                   <input
+                    id="task-due-date"
                     type="datetime-local"
                     value={dueDate}
                     onChange={e => setDueDate(e.target.value)}
@@ -658,6 +662,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <button
                     type="button"
                     onClick={() => setQuickDue(1)}
+                    aria-label="Due in 1 hour"
                     className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
                   >
                     1h
@@ -665,6 +670,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <button
                     type="button"
                     onClick={() => setQuickDue(4)}
+                    aria-label="Due in 4 hours"
                     className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
                   >
                     4h
@@ -672,6 +678,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <button
                     type="button"
                     onClick={() => setQuickDue(24)}
+                    aria-label="Due in 1 day"
                     className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
                   >
                     1d
@@ -679,6 +686,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   <button
                     type="button"
                     onClick={() => setQuickDue(168)}
+                    aria-label="Due in 1 week"
                     className="px-2 py-1 text-xs bg-clawd-surface border border-clawd-border rounded-lg hover:border-clawd-accent/50"
                   >
                     1w
@@ -689,8 +697,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
               {/* Project & Status Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Project</label>
+                  <label htmlFor="task-project" className="block text-sm text-clawd-text-dim mb-1">Project</label>
                   <input
+                    id="task-project"
                     type="text"
                     value={project}
                     onChange={e => setProject(e.target.value)}
@@ -699,8 +708,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Status</label>
+                  <label htmlFor="task-status" className="block text-sm text-clawd-text-dim mb-1">Status</label>
                   <select
+                    id="task-status"
                     value={status}
                     onChange={e => setStatus(e.target.value as TaskStatus)}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
@@ -715,13 +725,15 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Assign to Agent */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                   <Bot size={14} /> Assign to Agent (Worker)
-                </label>
+                </span>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setAssignedTo('')}
+                    aria-label="No agent assigned"
+                    aria-pressed={!assignedTo}
                     className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
                       !assignedTo
                         ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
@@ -738,6 +750,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         key={agent.id}
                         type="button"
                         onClick={() => setAssignedTo(agent.id)}
+                        aria-label={`Assign to ${agent.name}`}
+                        aria-pressed={assignedTo === agent.id}
                         className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
                           assignedTo === agent.id
                             ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
@@ -753,9 +767,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* Assign Reviewer */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                   👀 Agent Reviewer
-                </label>
+                </span>
                 <div className="grid grid-cols-3 gap-2">
                   {agents
                     .filter(agent => agent.id !== assignedTo)
@@ -764,6 +778,8 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         key={agent.id}
                         type="button"
                         onClick={() => setReviewerId(agent.id)}
+                        aria-label={`Assign ${agent.name} as reviewer`}
+                        aria-pressed={reviewerId === agent.id}
                         className={`p-2 rounded-lg border text-left text-sm flex items-center gap-2 transition-colors ${
                           reviewerId === agent.id
                             ? 'border-clawd-accent bg-clawd-accent/10 text-clawd-accent'
@@ -783,9 +799,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
 
               {/* File Attachments */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
+                <span className="block text-sm text-clawd-text-dim mb-1 flex items-center gap-1">
                   <Upload size={14} /> Attach Files (Optional)
-                </label>
+                </span>
                 <div className="space-y-2">
                   {/* File Input */}
                   <div>
@@ -828,6 +844,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                           <button
                             type="button"
                             onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                            aria-label={`Remove file ${file.name}`}
                             className="p-1 hover:bg-error/20 hover:text-error rounded transition-colors flex-shrink-0"
                             title="Remove file"
                           >
@@ -855,6 +872,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 <button
                   type="submit"
                   disabled={!title.trim()}
+                  aria-disabled={!title.trim()}
                   className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   Create Task
