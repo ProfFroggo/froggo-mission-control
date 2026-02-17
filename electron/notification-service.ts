@@ -210,6 +210,7 @@ class NotificationService {
   private getSubtitleForType(type: string): string | undefined {
     const subtitleMap: Record<string, string> = {
       'task-completed': 'Task Completed',
+      'task-assigned': 'Task Assigned',
       'agent-failure': 'Agent Alert',
       'approval-request': 'Approval Needed',
       'chat-mention': 'New Mention',
@@ -231,6 +232,7 @@ class NotificationService {
     // Navigate to relevant view
     const viewMap: Record<string, string> = {
       'task-completed': 'tasks',
+      'task-assigned': 'tasks',
       'agent-failure': 'agents',
       'approval-request': 'inbox',
       'chat-mention': 'chat',
