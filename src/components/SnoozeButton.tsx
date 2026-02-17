@@ -167,7 +167,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   <button
                     key={option.label}
                     onClick={() => handleQuickSnooze(option)}
-                    className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                    className="px-3 py-2 bg-clawd-accent hover:bg-clawd-accent-dim text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     {option.label}
                   </button>
