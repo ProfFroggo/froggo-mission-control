@@ -180,9 +180,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
           {/* Quick Action Pills - Large & Prominent */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {quickActions.map(({ icon: Icon, label, color }, i) => (
+            {quickActions.map(({ icon: Icon, label, color }) => (
               <button
-                key={i}
+                key={label}
                 onClick={() => handleQuickAction(label)}
                 disabled={loadingAction === label}
                 className={`group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${color} 
