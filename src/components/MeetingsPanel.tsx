@@ -126,7 +126,7 @@ export default function MeetingsPanel() {
 
   // Transcript & action items
   const [meetingTranscript, setMeetingTranscript] = useState<string[]>([]);
-  const [meetingTranscriptLines, setMeetingTranscriptLines] = useState<TranscriptLine[]>([]);
+  const [_meetingTranscriptLines, setMeetingTranscriptLines] = useState<TranscriptLine[]>([]);
   const [meetingActionItems, setMeetingActionItems] = useState<ActionItem[]>([]);
   const [meetingEndSummary, setMeetingEndSummary] = useState<{
     savedPath: string | null;
@@ -244,12 +244,12 @@ export default function MeetingsPanel() {
 
   const loadDbMeetings = useCallback(async (): Promise<PastMeeting[]> => {
     await ensureMeetingTables();
-    const rows = await dbQuery(`SELECT * FROM meetings WHERE status = 'ended' ORDER BY started_at DESC LIMIT 50`);
+    const rows = await dbQuery<Record<string, unknown> & { id: string; title?: string; file_path?: string; started_at: number; duration?: number; summary?: string }>(`SELECT * FROM meetings WHERE status = 'ended' ORDER BY started_at DESC LIMIT 50`);
     const meetings: PastMeeting[] = [];
     for (const row of rows) {
-      const transcripts = await dbQuery(
+      const transcripts = await dbQuery<TranscriptRow & Record<string, unknown>>(
         `SELECT text, cleaned_text FROM meeting_transcripts WHERE meeting_id = ? ORDER BY timestamp ASC`,
-        [row.id]
+        [row.id as string]
       );
       meetings.push({
         id: row.id,
@@ -323,7 +323,8 @@ export default function MeetingsPanel() {
     return items;
   }, []);
 
-  const extractTasksFromText = useCallback((text: string): string[] => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _extractTasksFromText = useCallback((text: string): string[] => {
     const tasks: string[] = [];
     for (const pattern of TASK_EXTRACTION_PATTERNS) {
       let match;

@@ -5,7 +5,7 @@
  * Supports: real-time audio, camera/screen video, text input, interruptions.
  */
 
-import { getVoiceProfile } from '../config/agent-voices';
+// import removed from '../config/agent-voices';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('GeminiLive');
@@ -534,6 +534,7 @@ export class GeminiLiveService {
           ).join('\n');
           
           // Send context as a system message
+          if (!this.ws) return;
           this.ws.send(JSON.stringify({
             clientContent: {
               turns: [{

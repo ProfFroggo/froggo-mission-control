@@ -188,7 +188,7 @@ export default function ThreadListItem({
               onToggleStar={(msgId) => {
                 // FUTURE: Implement message-level star toggle with backend API
               }}
-              onMarkRead={(msgId, isRead) => {
+              onMarkRead={(_msgId, isRead) => {
                 // FUTURE: Implement message-level read toggle with backend API
               }}
               onReply={(threadId, message) => {

@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
-  Plus, MessageSquare, CheckCircle, Search, Zap, Send, X, UserPlus, Brain,
-  ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff,
-  Video, Users, ListTodo, Play, Pause, Square, ArrowRight, Sparkles, Monitor, Camera, CameraOff,
+  Plus, MessageSquare, CheckCircle, Search, Send, X, UserPlus, Brain,
+  ChevronLeft, ChevronRight, GripVertical, RotateCcw, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
   ExternalLink,
 } from 'lucide-react';
 import { showToast } from './Toast';
@@ -431,9 +430,9 @@ function TaskShortcutsModal({ isOpen, onClose }: {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
-  onNewTask, onSearch, onApproveAll, onAddContact, onAddSkill, onNavigate, currentView = 'dashboard',
+  onNewTask, onSearch, onApproveAll: _onApproveAll, onAddContact, onAddSkill, onNavigate, currentView = 'dashboard',
 }, ref) => {
-  const { isMuted, toggleMuted, isMeetingActive, toggleMeeting } = useStore();
+  const { isMuted: _isMuted, toggleMuted: _toggleMuted, isMeetingActive, toggleMeeting } = useStore();
 
   // Toolbar state
   const [state, setState] = useState<ToolbarState>(loadState);
@@ -501,7 +500,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   }, [quickMessageOpen]);
 
   // ─── FEATURE 1: Meeting navigation ───
-  const handleMeetingClick = () => {
+  const _handleMeetingClick = () => {
     if (isMeetingActive) {
       // Already in meeting → navigate to meetings tab
       onNavigate?.('meetings');
@@ -570,8 +569,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               logger.debug(`[QuickActions] Tool ${fc.name} result:`, result);
             } catch (err: any) {
               console.error(`[QuickActions] Tool ${fc.name} error:`, err);
-              result = { error: err.message || 'Tool execution failed' };
-              addTx('system', `⚠️ ${fc.name} failed: ${err.message}`);
+              result = { error: (err as Error).message || 'Tool execution failed' };
+              addTx('system', `⚠️ ${fc.name} failed: ${(err as Error).message}`);
             }
             responses.push({ id: fc.id, name: fc.name, response: result });
           }
@@ -580,7 +579,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           logger.debug('[QuickActions] Tool responses sent');
         } catch (err: any) {
           console.error('[QuickActions] Tool handler error:', err);
-          addTx('system', `⚠️ Tool error: ${err.message}`);
+          addTx('system', `⚠️ Tool error: ${(err as Error).message}`);
         }
       }),
     ];
@@ -601,7 +600,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const getGeminiApiKey = async (): Promise<string> => {
     // 1. Check localStorage settings
     try { const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}'); if (s.geminiApiKey) return s.geminiApiKey; }
-    catch (err) {
+    catch (err: unknown) {
       console.error('[QuickActions] Failed to parse settings from localStorage:', err);
     }
     // 2. Check env vars
@@ -683,7 +682,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         if (!isMeetingActive) toggleMeeting();
       } catch (err: any) {
         stopRinging();
-        setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ ${err.message}` }]);
+        setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ ${(err as Error).message}` }]);
         setActiveCall(null);
         saveActiveCall(null);
       }
@@ -794,7 +793,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       } else {
         setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Chat IPC not available' }]);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Failed to get response' }]);
     }
     setChatLoading(false);
@@ -979,9 +978,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
           isTop ? 'top-full mt-2' : 'bottom-full mb-2'
         } ${isLeft ? 'left-0' : 'right-0'}`}>
 
-          {/* Agent image / Video / Screen share area */}
+          {/* Agent image / / Screen share area */}
           <div className="relative w-full aspect-square bg-black overflow-hidden">
-            {/* Video element (camera or screen share) — hidden until active */}
+            {/* element (camera or screen share) — hidden until active */}
             <video
               ref={callVideoRef}
               autoPlay
