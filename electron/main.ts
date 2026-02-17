@@ -5572,7 +5572,6 @@ function detectImportantEmail(email: any): ImportantEmailResult | null {
   const snippet = email.snippet || '';
   
   const subjectLower = subject.toLowerCase();
-  const fromLower = from.toLowerCase();
   const combined = `${subjectLower} ${snippet.toLowerCase()}`;
   
   // Extract amounts (e.g., $1,500 or €500 or £1000)
@@ -5795,7 +5794,7 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
 });
 
 ipcMain.handle('calendar:createEvent', async (_, params: any) => {
-  const { account, title, start, end, location, description, attendees, isAllDay, recurrence, timeZone } = params;
+  const { account, title, start, end, location, description, attendees, isAllDay, recurrence, _timeZone } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary'; // Use primary calendar
   
@@ -5844,7 +5843,7 @@ ipcMain.handle('calendar:createEvent', async (_, params: any) => {
 });
 
 ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
-  const { account, eventId, title, start, end, location, description, attendees, isAllDay, timeZone } = params;
+  const { account, eventId, title, start, end, location, description, attendees, isAllDay, _timeZone } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
   
@@ -6036,7 +6035,7 @@ ipcMain.handle('calendar:testConnection', async (_, account: string) => {
         const data = JSON.parse(stdout);
         const calendars = data.calendars || data || [];
         resolve({ success: true, calendarsCount: calendars.length, account });
-      } catch (parseError) {
+      } catch (_parseError) {
         resolve({ success: false, error: 'Failed to parse response' });
       }
     });
@@ -6521,7 +6520,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       try {
         const metadata = task.metadata ? JSON.parse(task.metadata) : {};
         outcome = metadata.outcome || (task.status === 'done' ? 'success' : 'ongoing');
-      } catch (e) {
+      } catch (_e) {
         outcome = task.status === 'done' ? 'success' : 'ongoing';
       }
       return { ...task, outcome, completedAt: task.completed_at };
@@ -6558,7 +6557,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
   try {
     const agentMdPath = path.join(PROJECT_ROOT, 'agents', agentId, 'AGENT.md');
     agentRules = fs.readFileSync(agentMdPath, 'utf-8');
-  } catch (e) {
+  } catch (_e) {
     try {
       const altPaths = [
         path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'),
@@ -6656,7 +6655,7 @@ ipcMain.handle('agents:search', async (_, query: string) => {
         );
         const recent = JSON.parse(recentResult || '[]');
         recentTask = recent[0]?.title || '';
-      } catch (e) {
+      } catch (_e) {
         // DB query failed, continue with defaults
       }
 
@@ -7082,7 +7081,7 @@ ipcMain.handle('get-circuit-status', async () => {
     const stateFile = path.join(os.homedir(), '.openclaw', 'dispatcher-state.json');
     const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
     return state.circuit_breakers || {};
-  } catch (e) {
+  } catch (_e) {
     return {};
   }
 });
@@ -7684,7 +7683,7 @@ ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'cryp
   }
 });
 
-ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: string) => {
+ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, _filename: string) => {
   try {
     // Write CSV to temp file
     const tmpPath = path.join(app.getPath('temp'), `upload-${Date.now()}.csv`);
