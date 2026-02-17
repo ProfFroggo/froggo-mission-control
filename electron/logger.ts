@@ -47,97 +47,16 @@ class Logger {
                       level === 'warn' ? console.warn : console.info;
         logFn(this.formatMessage(level, message), ...args);
       }
-    } catch (e: any) {
+    } catch {
       // Silently ignore EPIPE and other stream errors
     }
   }
 
-  debug(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('debug')) {
-      this.safeLog('debug', message, ...args);
-    }
-  }
-
-  info(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('info')) {
-      this.safeLog('info', message, ...args);
-    }
-  }
-
-  warn(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('warn')) {
-      this.safeLog('warn', message, ...args);
-    }
-  }
-
-  error(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('error')) {
-      this.safeLog('error', message, ...args);
-    }
-  }
+  debug(message: string, ...args: unknown[])  { if (this.shouldLog('debug')) this.safeLog('debug', message, ...args); }
+  info(message: string,  ...args: unknown[])  { if (this.shouldLog('info'))  this.safeLog('info',  message, ...args); }
+  warn(message: string,  ...args: unknown[])  { if (this.shouldLog('warn'))  this.safeLog('warn',  message, ...args); }
+  error(message: string, ...args: unknown[])  { if (this.shouldLog('error')) this.safeLog('error', message, ...args); }
+  log(message: string,   ...args: unknown[])  { this.info(message, ...args); }
 }
-
-/**
- * Create a logger instance for a specific context
- */
-export function createLogger(context: string): Logger {
-  return new Logger(context);
-}
-
-/**
- * Set global log level
- */
-export function setLogLevel(level: LogLevel): void {
-  config.level = level;
-}
-
-/**
- * Get current log level
- */
-export function getLogLevel(): LogLevel {
-  return config.level;
-}
-
-/**
- * Safe console logging that won't crash on EPIPE
- */
-export const safeLog = {
-  debug: (...args: any[]) => {
-    try {
-      if (process.stdout.writable) {
-        console.debug(...args);
-      }
-    } catch (e: any) {
-      // Silently ignore EPIPE and other stream errors
-    }
-  },
-  log: (...args: any[]) => {
-    try {
-      if (process.stdout.writable) {
-        console.log(...args);
-      }
-    } catch (e: any) {
-      // Silently ignore EPIPE and other stream errors
-    }
-  },
-  error: (...args: any[]) => {
-    try {
-      if (process.stderr.writable) {
-        console.error(...args);
-      }
-    } catch (e: any) {
-      // Silently ignore stream errors
-    }
-  },
-  warn: (...args: any[]) => {
-    try {
-      if (process.stderr.writable) {
-        console.warn(...args);
-      }
-    } catch (e: any) {
-      // Silently ignore stream errors
-    }
-  }
-};
 
 export default Logger;

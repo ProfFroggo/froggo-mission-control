@@ -12,7 +12,7 @@
 import { ipcMain } from 'electron';
 import { prepare } from './database';
 import { safeLog } from './logger';
-import { emitTaskEvent } from './events';
+import { emitTaskEvent, emitNotificationEvent } from './events';
 
 // Task row interface
 interface TaskRow {
@@ -190,6 +190,12 @@ async function handleTaskUpdate(
     if (updates.assignedTo !== undefined) {
       sqlFields.push('assigned_to = ?');
       params.push(updates.assignedTo);
+      
+      // Notify the newly assigned agent
+      const task = prepare('SELECT title FROM tasks WHERE id = ?').get(taskId) as { title: string } | undefined;
+      if (task && updates.assignedTo) {
+        notifyTaskAssignment(taskId, task.title, updates.assignedTo);
+      }
     }
     
     if (sqlFields.length > 0) {
@@ -382,14 +388,77 @@ async function handleTaskArchiveDone(): Promise<{ success: boolean; archived?: n
   }
 }
 
+// ============ TASK NOTIFICATION HELPERS ============
+
+/**
+ * Send notification when a task is assigned to an agent
+ */
+function notifyTaskAssignment(taskId: string, taskTitle: string, assignedAgent: string | null | undefined): void {
+  if (!assignedAgent) return;
+  
+  const notification = {
+    type: 'task-assigned' as const,
+    taskId,
+    title: 'Task Assigned',
+    body: `You've been assigned: ${taskTitle}`,
+    agentId: assignedAgent,
+    data: { taskId, taskTitle, assignedAgent },
+  };
+  
+  // Emit notification event to renderer
+  emitNotificationEvent('task-assigned', notification);
+  
+  safeLog.log('[Tasks] Notification sent to agent:', assignedAgent, 'for task:', taskId);
+}
+
+/**
+ * Send internal task notification (poke) to agent
+ */
+function sendTaskPokeNotification(taskId: string, taskTitle: string, agentId: string | null | undefined, isInternal: boolean): void {
+  if (!agentId) return;
+  
+  const notification = {
+    type: isInternal ? 'task-poke-internal' as const : 'task-poke' as const,
+    taskId,
+    title: isInternal ? 'Task Update' : 'Task Reminder',
+    body: isInternal 
+      ? `Task updated: ${taskTitle}`
+      : `Reminder: ${taskTitle}`,
+    agentId,
+    data: { taskId, taskTitle, agentId, isInternal },
+  };
+  
+  // Emit notification event to renderer
+  emitNotificationEvent(isInternal ? 'task-poke-internal' : 'task-poke', notification);
+  
+  safeLog.log('[Tasks] Poke notification sent:', agentId, 'task:', taskId, 'internal:', isInternal);
+}
+
 async function handleTaskPoke(
   _: Electron.IpcMainInvokeEvent,
   taskId: string,
-  title: string
+  title?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    safeLog.log('[Tasks] Poke:', taskId, title);
-    // TODO: Implement notification to assigned agent
+    // Get task info if title not provided
+    let taskTitle = title;
+    let assignedAgent: string | null | undefined;
+    
+    if (!taskTitle) {
+      const task = prepare('SELECT title, assigned_to FROM tasks WHERE id = ?').get(taskId) as { title: string; assigned_to?: string } | undefined;
+      if (task) {
+        taskTitle = task.title;
+        assignedAgent = task.assigned_to;
+      }
+    }
+    
+    safeLog.log('[Tasks] Poke:', taskId, 'agent:', assignedAgent);
+    
+    // Send notification to assigned agent
+    if (assignedAgent) {
+      sendTaskPokeNotification(taskId, taskTitle || 'Task', assignedAgent, false);
+    }
+    
     return { success: true };
   } catch (error) {
     safeLog.error('[Tasks] Poke error:', (error as Error).message);
@@ -400,11 +469,28 @@ async function handleTaskPoke(
 async function handleTaskPokeInternal(
   _: Electron.IpcMainInvokeEvent,
   taskId: string,
-  title: string
+  title?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    safeLog.log('[Tasks] Internal poke:', taskId, title);
-    // TODO: Implement internal notification
+    // Get task info if title not provided
+    let taskTitle = title;
+    let assignedAgent: string | null | undefined;
+    
+    if (!taskTitle) {
+      const task = prepare('SELECT title, assigned_to FROM tasks WHERE id = ?').get(taskId) as { title: string; assigned_to?: string } | undefined;
+      if (task) {
+        taskTitle = task.title;
+        assignedAgent = task.assigned_to;
+      }
+    }
+    
+    safeLog.log('[Tasks] Internal poke:', taskId, 'agent:', assignedAgent);
+    
+    // Send internal notification to assigned agent
+    if (assignedAgent) {
+      sendTaskPokeNotification(taskId, taskTitle || 'Task', assignedAgent, true);
+    }
+    
     return { success: true };
   } catch (error) {
     safeLog.error('[Tasks] Internal poke error:', (error as Error).message);

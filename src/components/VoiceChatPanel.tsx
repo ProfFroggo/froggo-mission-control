@@ -173,7 +173,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         await ctx.resume();
         setAudioState('running');
         addSystemMessage('🔊 Audio enabled');
-      } catch (e: any) {
+      } catch {
         addSystemMessage(`⚠️ Audio resume failed: ${e.message}`);
       }
     }
@@ -348,14 +348,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           setVideoActive(true);
           addSystemMessage('📹 Camera active');
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
-        } catch (e: any) {
+        } catch {
           console.debug('[VoiceChat] Video start failed:', e);
         }
       } else if (videoMode === 'screen') {
         // Show picker instead of auto-sharing
         setShowScreenPicker(true);
       }
-    } catch (err: any) {
+    } catch {
       console.error('[VoiceChat] Connect failed:', err);
       addSystemMessage(`⚠️ Connection failed: ${err.message}`);
       setConnecting(false);
@@ -400,7 +400,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         } else {
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         }
-      } catch (e: any) {
+      } catch {
         addSystemMessage(`⚠️ Video failed: ${e.message}`);
       }
     }
@@ -430,7 +430,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       setActiveSourceId(source.id);
       addSystemMessage(`🖥️ Sharing: ${source.name}`);
       geminiLive.sendText(`[SYSTEM: Screen sharing is now active. Sharing: ${source.name}. You can see the user's screen.]`);
-    } catch (e: any) {
+    } catch {
       addSystemMessage(`⚠️ Screen share failed: ${e.message}`);
     }
   };
@@ -448,7 +448,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     setMessages(prev => [...prev, { id: nextId('u'), role: 'user', content: text, timestamp: Date.now() }]);
     try {
       await geminiLive.sendText(text);
-    } catch (e: any) {
+    } catch {
       addSystemMessage(`⚠️ Send failed: ${e.message}`);
     }
   };
@@ -1100,7 +1100,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
       default:
         return { error: `Unknown tool: ${fnName}` };
     }
-  } catch (err: any) {
+  } catch {
     return { error: err.message };
   }
 }

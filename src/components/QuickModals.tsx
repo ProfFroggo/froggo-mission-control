@@ -261,7 +261,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       } else {
         setError(result?.error || 'Could not load mentions');
       }
-    } catch (e: any) {
+    } catch {
       console.error('[Mentions] Error:', e);
       setError(e?.message || 'Failed to load mentions');
     } finally {

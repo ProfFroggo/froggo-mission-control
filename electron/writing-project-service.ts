@@ -511,7 +511,7 @@ async function reorderChapters(projectId: string, chapterIds: string[]) {
       // Rename file if position changed
       if (newFilename !== ch.filename) {
         const oldPath = writingChapterPath(projectId, ch.filename);
-        const newPath = writingChapterPath(projectId, newFilename);
+        // const newPath = writingChapterPath(projectId, newFilename);
         try {
           // Use a temp name to avoid collisions during reorder
           const tmpPath = writingChapterPath(projectId, `_tmp_${ch.id}.md`);

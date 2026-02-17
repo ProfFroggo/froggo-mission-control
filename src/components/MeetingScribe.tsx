@@ -232,7 +232,7 @@ export default function MeetingScribe() {
         // Remove empty placeholder
         setEntries(prev => prev.filter(e => e.id !== entryId));
       }
-    } catch (err: any) {
+    } catch {
       console.error('[Scribe] Transcription error:', err);
       setEntries(prev => prev.map(e => 
         e.id === entryId 
@@ -340,7 +340,7 @@ export default function MeetingScribe() {
       
       addActivity({ type: 'system', message: '🎙️ Meeting scribe started (Gemini)', timestamp: Date.now() });
       
-    } catch (err: any) {
+    } catch {
       console.error('[Scribe] Failed to start:', err);
       setError(err.message || 'Failed to access microphone');
       isRecordingRef.current = false;

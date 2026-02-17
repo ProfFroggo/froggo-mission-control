@@ -221,7 +221,7 @@ async function handleVoiceSpeak(
 ): Promise<{ success: boolean; audioPath?: string; error?: string }> {
   try {
     // Use say command or similar TTS
-    const fs = await import('fs');
+    await import("fs");
     const os = await import('os');
     const path = await import('path');
 

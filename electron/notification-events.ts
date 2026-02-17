@@ -4,10 +4,8 @@
  */
 
 import { BrowserWindow } from 'electron';
-import * as path from 'path';
 import { notificationService } from './notification-service';
 import { prepare } from './database';
-import { OPENCLAW_DIR } from './paths';
 import { createLogger } from '../src/utils/logger';
 
 const logger = createLogger('NotificationEvents');
@@ -151,7 +149,7 @@ function createMessageWatcher(_mainWindow: BrowserWindow): EventWatcher {
           (msg as any).session_key
         );
       }
-    } catch (error: any) {
+    } catch {
       // Messages table might not exist in all setups, that's ok
     }
   };
@@ -204,7 +202,7 @@ function createReviewWatcher(_mainWindow: BrowserWindow): EventWatcher {
           (task as any).id
         );
       }
-    } catch (error: any) {
+    } catch {
       // Ignore - table might not exist
     }
   };

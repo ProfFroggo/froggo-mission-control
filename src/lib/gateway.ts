@@ -731,7 +731,7 @@ class Gateway {
         }
         // Otherwise wait for streaming events
         logger.debug('[Gateway] sendChat waiting for streaming events for runId:', ourRunId);
-      } catch (e: any) {
+      } catch {
         console.error('[Gateway] sendChat error:', e);
         clearTimeout(timeout);
         fail(e);
