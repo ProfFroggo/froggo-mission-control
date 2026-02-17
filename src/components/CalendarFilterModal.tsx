@@ -365,7 +365,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="flex items-center gap-2 px-6 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
           >
             <Calendar size={16} />
             Apply Filters

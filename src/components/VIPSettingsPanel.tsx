@@ -505,7 +505,7 @@ export default function VIPSettingsPanel() {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleAdd}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent hover:bg-clawd-accent-dim
                            text-white rounded-lg transition-colors"
                 >
                   <CheckCircle size={16} />
