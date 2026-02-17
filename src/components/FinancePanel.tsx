@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet } from 'lucide-react';
+import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet } from 'lucide-react';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
@@ -57,7 +57,7 @@ export default function FinancePanel() {
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [insights, setInsights] = useState<Insight[]>([]);
+  const [, setInsights] = useState<Insight[]>([]);
   const [chatOpen, setChatOpen] = useState(true); // AI chat panel
   const lastAlertCheck = useRef<Set<string>>(new Set());
 
