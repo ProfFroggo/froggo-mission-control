@@ -133,9 +133,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   useEffect(() => {
     if (agentId) {
       const agent = chatAgents.find(a => a.id === agentId);
-      if (agent && agent.id !== selectedAgent.id) setSelectedAgent(agent);
+      if (agent && agent.id !== selectedAgent?.id) setSelectedAgent(agent);
     }
-  }, [agentId]);
+  }, [agentId, chatAgents, selectedAgent]);
   
   // Load agent context
   useEffect(() => {

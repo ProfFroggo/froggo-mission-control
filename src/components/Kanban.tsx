@@ -451,7 +451,7 @@ export default function Kanban() {
     try {
       await deleteTask(taskId);
       showToast('success', 'Task deleted');
-    } catch (error) {
+    } catch (_error) {
       showToast('error', 'Failed to delete task');
     } finally {
       setDeletingTasks(prev => {
@@ -473,7 +473,7 @@ export default function Kanban() {
       } else {
         showToast('error', 'Failed to archive tasks');
       }
-    } catch (error) {
+    } catch (_error) {
       showToast('error', 'Failed to archive tasks');
     } finally {
       setIsArchiving(false);
@@ -485,7 +485,7 @@ export default function Kanban() {
     try {
       await spawnAgentForTask(taskId);
       showToast('success', 'Agent spawned successfully');
-    } catch (error) {
+    } catch (_error) {
       showToast('error', 'Failed to spawn agent');
     } finally {
       setSpawningTasks(prev => {

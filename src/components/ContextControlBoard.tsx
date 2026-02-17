@@ -161,7 +161,7 @@ export default function ContextControlBoard() {
         const data = await response.json();
         setChatHistory(prev => [...prev, { role: 'assistant', content: data.reply || 'No response' }]);
       }
-    } catch (e) {
+    } catch (_e) {
       setChatHistory(prev => [...prev, { role: 'assistant', content: 'Failed to get response' }]);
     } finally {
       setChatLoading(false);

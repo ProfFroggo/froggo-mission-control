@@ -51,7 +51,7 @@ export default function ChatPanel() {
     if (!selectedAgent && chatAgents.length > 0) {
       setSelectedAgent(chatAgents[0]);
     }
-  }, [chatAgents.length, selectedAgent]);
+  }, [chatAgents, chatAgents.length, selectedAgent]);
   
   // Cache messages per agent so switching is instant
   const messageCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
@@ -487,7 +487,7 @@ export default function ChatPanel() {
     const unsub5 = gateway.on('chat', handleChatEvent);
 
     return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
-  }, [speakResponses, selectedAgent?.dbSessionKey]);
+  }, [loading, selectedAgent?.dbSessionKey, speakResponses]);
 
   // Setup voice recognition
   useEffect(() => {
@@ -613,7 +613,7 @@ export default function ChatPanel() {
             const base64 = att.dataUrl.split(',')[1];
             const decoded = atob(base64);
             fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
-          } catch (e) {
+          } catch (_e) {
             fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
           }
         } else if (att.type.startsWith('image/')) {
@@ -623,7 +623,7 @@ export default function ChatPanel() {
             await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
-          } catch (e) {
+          } catch (_e) {
             // Fallback: include base64 data URL so agent can still see the image
             fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
           }
@@ -634,7 +634,7 @@ export default function ChatPanel() {
             await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
-          } catch (e) {
+          } catch (_e) {
             fileContents.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
           }
         } else if (att.type.startsWith('audio/') || ['.mp3', '.wav', '.m4a', '.ogg', '.webm', '.flac'].some(ext => att.name.toLowerCase().endsWith(ext))) {
@@ -661,7 +661,7 @@ export default function ChatPanel() {
             await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
-          } catch (e) {
+          } catch (_e) {
             fileContents.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
           }
         }

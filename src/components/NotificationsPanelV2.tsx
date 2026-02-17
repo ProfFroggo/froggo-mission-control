@@ -118,7 +118,7 @@ export default function NotificationsPanelV2() {
         p.type === type ? { ...p, [field]: value } : p
       ));
       showToast('success', 'Preferences updated');
-    } catch (e) {
+    } catch (_e) {
       showToast('error', 'Failed to update preferences');
     }
   };

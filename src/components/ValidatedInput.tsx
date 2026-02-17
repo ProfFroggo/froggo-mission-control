@@ -25,7 +25,6 @@ export function ValidatedInput({
   rules = [],
   onValidation,
   onChange,
-  showValidation = true,
   helpText,
   className = '',
   ...inputProps
@@ -119,7 +118,6 @@ export function ValidatedTextarea({
   rules = [],
   onValidation,
   onChange,
-  showValidation = true,
   helpText,
   maxLength,
   showCharCount = true,
