@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Calendar, Mail, MessageSquare, Mic, ListTodo, Bot, Settings, Moon, Sun, Zap, Inbox, Brain, Database, Plus, FileText, Home, Coffee, Play, Terminal, RefreshCw } from 'lucide-react';
 import { useFocusTrap, useAnnounce } from '../hooks/useAccessibility';
+import PromptDialog, { usePromptDialog } from './PromptDialog';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -36,6 +37,28 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
   const dialogRef = useFocusTrap(isOpen);
   const announce = useAnnounce();
   const { setFocusMode } = useFocusMode();
+
+  // Prompt dialog for text input (replaces window.prompt)
+  const promptDialog = usePromptDialog();
+
+  // Helper to show prompt and execute action with result
+  const withPrompt = useCallback((
+    options: { title: string; message?: string; placeholder?: string; multiline?: boolean },
+    action: (value: string) => void | Promise<void>
+  ) => {
+    promptDialog.showPrompt(options, action);
+  }, [promptDialog]);
+
+  // Helper for two-step prompts (like add fact with category)
+  const withPrompt2 = useCallback((
+    options1: { title: string; message?: string; placeholder?: string },
+    options2: { title: string; message?: string; placeholder?: string },
+    action: (value1: string, value2: string) => void | Promise<void>
+  ) => {
+    promptDialog.showPrompt(options1, async (value1) => {
+      promptDialog.showPrompt(options2, (value2) => action(value1, value2));
+    });
+  }, [promptDialog]);
 
   const commands: Command[] = [
     // Navigation
@@ -87,22 +110,30 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     
     // Memory
     { id: 'memory-search', icon: <Brain size={16} />, label: 'Search Memory (froggo-db)', category: 'Memory', action: async () => {
-      const searchQuery = window.prompt('Search memory for:');
-      if (searchQuery && connected) {
-        await gateway.sendChat(`Search froggo-db for: ${searchQuery}`);
-        addActivity({ type: 'chat', message: `Memory search: ${searchQuery}`, timestamp: Date.now() });
-        onNavigate('chat');
-      }
-      onClose();
+      withPrompt(
+        { title: 'Search Memory', message: 'Enter search query:', placeholder: 'Search for...' },
+        async (searchQuery) => {
+          if (connected) {
+            await gateway.sendChat(`Search froggo-db for: ${searchQuery}`);
+            addActivity({ type: 'chat', message: `Memory search: ${searchQuery}`, timestamp: Date.now() });
+            onNavigate('chat');
+          }
+          onClose();
+        }
+      );
     }},
     { id: 'memory-fact', icon: <Database size={16} />, label: 'Add Fact to Memory', category: 'Memory', action: async () => {
-      const fact = window.prompt('Add fact:');
-      const category = window.prompt('Category (preference/decision/learning/person/project):') || 'learning';
-      if (fact && connected) {
-        await gateway.sendChat(`[SYSTEM] Add to froggo-db: froggo-db add-fact "${fact}" --category ${category}`);
-        addActivity({ type: 'system', message: `Added fact: ${fact.slice(0, 30)}...`, timestamp: Date.now() });
-      }
-      onClose();
+      withPrompt2(
+        { title: 'Add Fact', message: 'Enter fact:', placeholder: 'Fact to remember...' },
+        { title: 'Category', message: 'Enter category:', placeholder: 'learning' },
+        async (fact, category) => {
+          if (connected) {
+            await gateway.sendChat(`[SYSTEM] Add to froggo-db: froggo-db add-fact "${fact}" --category ${category}`);
+            addActivity({ type: 'system', message: `Added fact: ${fact.slice(0, 30)}...`, timestamp: Date.now() });
+          }
+          onClose();
+        }
+      );
     }},
     
     // Settings

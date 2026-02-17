@@ -157,7 +157,7 @@ export default function ChapterListItem({
       <ConfirmDialog
         open={deleteDialog.open}
         onClose={deleteDialog.closeConfirm}
-        onConfirm={deleteDialog.config.onConfirm || (() => {})}
+        onConfirm={deleteDialog.onConfirm || (() => {})}
         {...deleteDialog.config}
       />
     </>
