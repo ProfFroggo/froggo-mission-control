@@ -39,7 +39,7 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
   if (isUser) {
     return (
       <div className="flex justify-end mb-3 dark">
-        <div className="max-w-[85%] bg-clawd-accent/10 border border-clawd-accent/30 rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
+        <div className="max-w-[85%] bg-clawd-accent/50 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm">
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
       </div>
