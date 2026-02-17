@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -48,9 +48,9 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
     if (selectedItem) {
       generateAssistance();
     }
-  }, [selectedItem]);
+  }, [selectedItem, generateAssistance]);
 
-  const generateAssistance = async () => {
+  const generateAssistance = useCallback(async () => {
     if (!selectedItem) return;
     
     setLoading(true);
@@ -67,9 +67,9 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedItem, generateSuggestions, analyzeSentiment, generateSummary]);
 
-  const generateSuggestions = async () => {
+  const generateSuggestions = useCallback(async () => {
     if (!selectedItem) return;
 
     try {
@@ -91,9 +91,9 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       console.error('[AI Assistance] Suggestions error:', error);
       setSuggestions([]);
     }
-  };
+  }, [selectedItem]);
 
-  const analyzeSentiment = async () => {
+  const analyzeSentiment = useCallback(async () => {
     if (!selectedItem) return;
 
     try {
@@ -115,9 +115,9 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       console.error('[AI Assistance] Sentiment error:', error);
       setSentiment(null);
     }
-  };
+  }, [selectedItem]);
 
-  const generateSummary = async () => {
+  const generateSummary = useCallback(async () => {
     if (!selectedItem) return;
 
     try {
@@ -137,7 +137,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       console.error('[AI Assistance] Summary error:', error);
       setSummary('');
     }
-  };
+  }, [selectedItem]);
 
   const buildSuggestionsPrompt = (item: InboxItem): string => {
     return `Analyze this ${item.type} and provide 3-4 contextually appropriate response suggestions.
