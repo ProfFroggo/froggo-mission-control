@@ -9,6 +9,9 @@ import {
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('Meetings');
 
 /**
  * MeetingsPanel — Redesigned Meeting Transcription & Workflow
@@ -178,7 +181,7 @@ export default function MeetingsPanel() {
     return () => {
       if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } }
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
-      if (audioContextRef.current) { audioContextRef.current.close().catch((err) => { console.error('[Meetings] Failed to close audio context:', err); }); }
+      if (audioContextRef.current) { audioContextRef.current.close().catch((err) => { logger.error('Failed to close audio context:', err); }); }
     };
   }, []);
 

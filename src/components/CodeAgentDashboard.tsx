@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle } from 'lucide-react';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('CodeAgent');
 
 interface DevSession {
   id: string;
@@ -51,7 +54,7 @@ export default function CodeAgentDashboard() {
       const gitResult = await (window as any).clawdbot?.exec?.run(
         'git log --oneline -20 --pretty=format:"%h|%s|%an|%at" 2>/dev/null || echo ""'
       ).catch((err: any) => {
-        console.error('[CodeAgentDashboard] Failed to fetch git commits:', err);
+        logger.error('Failed to fetch git commits:', err);
         return { stdout: '' };
       });
       
@@ -71,7 +74,7 @@ export default function CodeAgentDashboard() {
       }
 
       // Load sessions list - show all agent sessions
-      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch((err: any) => { console.error('[CodeAgent] Failed to list sessions:', err); return null; });
+      const sessionsResult = await (window as any).clawdbot?.sessions?.list().catch((err: any) => { logger.error('Failed to list sessions:', err); return null; });
       if (sessionsResult?.sessions) {
         const devSessions: DevSession[] = sessionsResult.sessions
           .filter((s: any) => {
@@ -102,7 +105,7 @@ export default function CodeAgentDashboard() {
       }
 
       // Load kanban tasks that are dev-related
-      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch((err: any) => { console.error('[CodeAgent] Failed to list tasks:', err); return null; });
+      const tasksResult = await (window as any).clawdbot?.tasks?.list().catch((err: any) => { logger.error('Failed to list tasks:', err); return null; });
       if (tasksResult?.tasks) {
         const devTasks: DevTask[] = tasksResult.tasks
           .filter((t: any) => {

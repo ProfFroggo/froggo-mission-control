@@ -3,6 +3,9 @@ import { Wifi, WifiOff, RefreshCw, Terminal, Activity, AlertCircle } from 'lucid
 import { gateway, reconnectGateway } from '../lib/gateway';
 import type { ConnectionState } from '../lib/gateway';
 import { showToast } from './Toast';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('DebugTab');
 
 export default function DebugTab() {
   const [gwState, setGwState] = useState<ConnectionState>(gateway.getState());
@@ -15,8 +18,8 @@ export default function DebugTab() {
     setLoading(true);
     try {
       const [sessResult, logResult] = await Promise.all([
-        gateway.getSessions().catch((err) => { console.error('[DebugTab] Failed to get sessions:', err); return null; }),
-        gateway.tailLogs({ limit: 50 }).catch((err) => { console.error('[DebugTab] Failed to tail logs:', err); return null; }),
+        gateway.getSessions().catch((err) => { logger.error('Failed to get sessions:', err); return null; }),
+        gateway.tailLogs({ limit: 50 }).catch((err) => { logger.error('Failed to tail logs:', err); return null; }),
       ]);
       if (sessResult?.sessions) setSessions(sessResult.sessions);
       if (logResult?.lines) {

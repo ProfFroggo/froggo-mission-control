@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle, Loader2, AlertTriangle, Sparkles, Flag, ArrowRight, Check, AlertCircle } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import { useStore } from '../store/store';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('HealthCheck');
 
 interface HealthCheckModalProps {
   onClose: () => void;
@@ -57,16 +60,16 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
     try {
       const execFn = (window as any).clawdbot?.exec?.run;
       if (!execFn) {
-        console.error('[HealthCheck] clawdbot.exec.run not available!');
+        logger.error('clawdbot.exec.run not available!');
         return { ok: false, stdout: '', error: 'Shell exec not available' };
       }
       const result = await execFn(cmd);
       if (result?.blocked) {
-        console.error('[HealthCheck] Command blocked:', result.reason);
+        logger.error('Command blocked:', result.reason);
         return { ok: false, stdout: '', error: `Blocked: ${result.reason}` };
       }
       if (!result?.success) {
-        console.error('[HealthCheck] Command failed:', result?.stderr);
+        logger.error('Command failed:', result?.stderr);
         return { ok: false, stdout: '', error: result?.stderr || 'Unknown error' };
       }
       return { ok: true, stdout: result?.stdout || '' };
