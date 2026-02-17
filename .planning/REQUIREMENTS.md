@@ -117,17 +117,66 @@
 
 ## Traceability
 
-*(Populated during roadmap creation)*
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmapper) | | |
+| UI-01 | Phase 13 — Global UI Consistency | Pending |
+| UI-02 | Phase 13 — Global UI Consistency | Pending |
+| UI-03 | Phase 13 — Global UI Consistency | Pending |
+| UI-04 | Phase 13 — Global UI Consistency | Pending |
+| UI-05 | Phase 13 — Global UI Consistency | Pending |
+| UI-06 | Phase 13 — Global UI Consistency | Pending |
+| XTW-01 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-02 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-03 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-04 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-05 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-06 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-07 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-08 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-09 | Phase 15 — X/Twitter Content Flow | Pending |
+| XTW-10 | Phase 15 — X/Twitter Content Flow | Pending |
+| XTW-11 | Phase 15 — X/Twitter Content Flow | Pending |
+| XTW-12 | Phase 15 — X/Twitter Content Flow | Pending |
+| XTW-13 | Phase 15 — X/Twitter Content Flow | Pending |
+| XTW-14 | Phase 16 — X/Twitter Calendar | Pending |
+| XTW-15 | Phase 16 — X/Twitter Calendar | Pending |
+| XTW-16 | Phase 16 — X/Twitter Calendar | Pending |
+| XTW-17 | Phase 16 — X/Twitter Calendar | Pending |
+| XTW-18 | Phase 16 — X/Twitter Calendar | Pending |
+| XTW-19 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-20 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-21 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-22 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-23 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-24 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-25 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-26 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-27 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-28 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-29 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-30 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-31 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| WRT-01 | Phase 19 — Writing Pane Layout | Pending |
+| WRT-02 | Phase 19 — Writing Pane Layout | Pending |
+| WRT-03 | Phase 19 — Writing Pane Layout | Pending |
+| WRT-04 | Phase 19 — Writing Pane Layout | Pending |
+| LIB-01 | Phase 20 — Library Population | Pending |
+| LIB-02 | Phase 20 — Library Population | Pending |
+| LIB-03 | Phase 20 — Library Population | Pending |
+| FIN-01 | Phase 21 — Finance End-to-End | Pending |
+| FIN-02 | Phase 21 — Finance End-to-End | Pending |
+| FIN-03 | Phase 21 — Finance End-to-End | Pending |
+| FIN-04 | Phase 21 — Finance End-to-End | Pending |
+| FIN-05 | Phase 21 — Finance End-to-End | Pending |
+| FIN-06 | Phase 21 — Finance End-to-End | Pending |
 
 **Coverage:**
-- v3.0 requirements: 46 total
-- Mapped to phases: TBD
-- Unmapped: TBD
+- v3.0 requirements: 50 total (UI: 6, XTW: 31, WRT: 4, LIB: 3, FIN: 6)
+- Mapped to phases: 50/50
+- Unmapped: 0
+
+Note: REQUIREMENTS.md header stated "46 total" — actual count is 50. XTW-01 through XTW-31 = 31 requirements. All 50 are mapped.
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 — initial definition*
+*Last updated: 2026-02-17 — traceability populated by roadmapper*
