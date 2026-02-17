@@ -25,6 +25,7 @@ export function ValidatedInput({
   rules = [],
   onValidation,
   onChange,
+  showValidation = true,
   helpText,
   className = '',
   ...inputProps

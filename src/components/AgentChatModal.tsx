@@ -59,7 +59,8 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     return () => {
       streamCleanupRef.current?.();
     };
-  }, [agentId, initChat]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -77,7 +78,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     return () => window.removeEventListener('keydown', handleEsc);
   }, [handleClose]);
 
-  const initChat = useCallback(async () => {
+  const initChat = async () => {
     setSpawning(true);
     setMessages([{
       role: 'system',
@@ -114,7 +115,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       }]);
     }
     setSpawning(false);
-  }, [agentId, agent?.name]);
+  };
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionKey || sending) return;
