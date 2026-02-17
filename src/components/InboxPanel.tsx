@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Inbox, Check, X, XCircle, MessageSquare, Send, Mail, Calendar, Bot, ChevronDown, ChevronUp, Edit3, Clock, Filter, CheckCircle, RefreshCw, AlertTriangle, ShieldAlert, CalendarClock, Loader2, ArrowUp, ArrowDown, TrendingUp, Sparkles, Play } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -121,7 +121,7 @@ export default function InboxPanel() {
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedItemForAI, setSelectedItemForAI] = useState<InboxItem | null>(null);
 
-  const loadInbox = async () => {
+  const loadInbox = useCallback(async () => {
     setLoading(true);
     try {
       // Check if running in Electron with clawdbot API
@@ -172,13 +172,14 @@ export default function InboxPanel() {
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadInbox();
     const interval = setInterval(loadInbox, 5000); // Poll every 5s
     return () => clearInterval(interval);
-  }, []);
+  }, [loadInbox]);
 
   // Helper to determine if an item is a review vs approval
   const isReviewItem = (item: InboxItem): boolean => {
@@ -253,6 +254,7 @@ export default function InboxPanel() {
   });
 
   // Enhanced Keyboard shortcuts (Gmail-style)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle if in input/textarea or if modal is open
@@ -463,6 +465,7 @@ export default function InboxPanel() {
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredPending, focusedIndex, expandedId, selectedIds, filter, sortMode, sortAscending, gKeyPressed, showKeyboardHelp, rejectDialogItem, scheduleModal, showAgentWarning]);
 
   // Check if agent is still active on this task
