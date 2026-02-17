@@ -425,6 +425,7 @@ export default function SettingsPanel() {
                   <input
                     id="gateway-token"
                     type="password"
+                    autoComplete="off"
                     value={settings.gatewayToken}
                     onChange={(e) => setSettings(s => ({ ...s, gatewayToken: e.target.value }))}
                     placeholder="Leave empty to use default"

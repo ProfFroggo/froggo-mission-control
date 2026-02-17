@@ -202,7 +202,8 @@ export default function MeetingsPanel() {
   const dbQuery = useCallback(async <T extends Record<string, unknown>>(sql: string, params: (string | number | boolean | null)[] = []): Promise<T[]> => {
     if (!(window as any).clawdbot?.db?.query) return [];
     try {
-      return (await (window as any).clawdbot.db.query(sql, params)) || [];
+      const res = await (window as any).clawdbot.db.query(sql, params);
+      return (res?.rows as T[]) || [];
     } catch { return []; }
   }, []);
 

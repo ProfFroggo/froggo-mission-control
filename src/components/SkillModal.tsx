@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Brain, Edit3, Lightbulb, MessageSquare, Send, Loader2, CheckCircle, Code, Search } from 'lucide-react';
 import { gateway } from '../lib/gateway';
+import { showToast } from './Toast';
 
 interface SkillModalProps {
   isOpen: boolean;
@@ -429,12 +430,10 @@ Format as markdown with proper headings.`;
       );
 
       // 5. Show success notification
-      const { showToast } = await import('./Toast');
       showToast('success', 'Skill Created!', `${skillData.name} added and task assigned to ${assignedAgent}`);
 
     } catch (error) {
       // 'Failed to create skill:', error;
-      const { showToast } = await import('./Toast');
       showToast('error', 'Skill Creation Failed', error instanceof Error ? error.message : 'Unknown error');
     }
   };

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Bot, MessageSquare, Edit3, Send, Loader2, Sparkles, Zap, CheckCircle } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
+import { showToast } from './Toast';
 
 interface WorkerModalProps {
   isOpen: boolean;
@@ -292,13 +293,11 @@ Be conversational, friendly, and help design an effective agent.`;
       });
 
       // Success notification
-      const { showToast } = await import('./Toast');
       showToast('success', 'Worker Created!', `${workerData.name} is starting up...`);
 
       // Worker created successfully
     } catch (error) {
       // 'Failed to create worker:', error;
-      const { showToast } = await import('./Toast');
       showToast('error', 'Worker Creation Failed', error instanceof Error ? error.message : 'Unknown error');
     }
   };

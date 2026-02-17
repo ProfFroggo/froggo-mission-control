@@ -141,6 +141,7 @@ export default function ProjectEditor() {
         panelRef={chaptersPanelRef}
         onResize={handleChaptersResize}
         className="h-full"
+        style={{ minHeight: 0, height: '100%' }}
       >
         <div className="h-full overflow-hidden [&>div]:!w-full">
           <ChapterSidebar />
@@ -159,6 +160,7 @@ export default function ProjectEditor() {
         panelRef={chatPanelRef}
         onResize={handleChatResize}
         className="h-full"
+        style={{ minHeight: 0, height: '100%' }}
       >
         <ChatPane />
       </Panel>
@@ -170,6 +172,7 @@ export default function ProjectEditor() {
         id="editor"
         minSize={30}
         className="h-full"
+        style={{ minHeight: 0, height: '100%' }}
       >
         <div className="relative h-full">
           {/* Collapse toggle buttons */}
