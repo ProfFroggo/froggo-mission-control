@@ -9,7 +9,6 @@
 
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
-import * as fs from 'fs';
 
 // Existing service imports (already modularized)
 import { notificationService, setupNotificationHandlers } from './notification-service';
@@ -30,12 +29,7 @@ import { initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { safeLog } from './logger';
 
 // Path constants
-import {
-  PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
-  REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
-  OPENCLAW_CONFIG_LEGACY, LOCAL_BIN, FROGGO_DB_CLI, TGCLI, DISCORDCLI,
-  CLAUDE_CLI, SHELL_PATH, agentWorkspace, verifyPaths,
-} from './paths';
+import { agentWorkspace, verifyPaths } from './paths';
 
 // NEW: Modular IPC handlers
 import {
@@ -51,7 +45,6 @@ import {
 // ============== WINDOW MANAGEMENT ==============
 
 let mainWindow: BrowserWindow | null = null;
-let floatingToolbarWindow: BrowserWindow | null = null;
 
 function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
