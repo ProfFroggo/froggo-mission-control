@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { Plus, X, Send, FileText } from 'lucide-react';
 import { showToast } from './Toast';
+import { useStore } from '../store/store';
 
 export default function XResearchIdeaEditor() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [citations, setCitations] = useState<string[]>(['']);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Get agent name from store - use researcher agent as default for research tasks
+  const { agents } = useStore();
+  const researcherAgent = agents.find(a => a.id === 'researcher');
+  const proposedBy = researcherAgent?.name || 'researcher';
 
   const handleAddCitation = () => {
     setCitations([...citations, '']);
@@ -47,7 +53,7 @@ export default function XResearchIdeaEditor() {
         title: title.trim(),
         description: description.trim(),
         citations: validCitations,
-        proposedBy: 'researcher', // TODO: Get from agent context
+        proposedBy,
       });
 
       if (result.success) {

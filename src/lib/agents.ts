@@ -107,7 +107,7 @@ export async function getAgentStatus(sessionKey: string): Promise<{
       status: 'running', // Would check actual status
       lastMessage: history.messages?.[0]?.content,
     };
-  } catch (e) {
+  } catch {
     return { status: 'error' };
   }
 }

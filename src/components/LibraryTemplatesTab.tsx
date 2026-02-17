@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff } from 'lucide-react';
+import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff, LayoutTemplate } from 'lucide-react';
+import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { showToast } from './Toast';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -8,8 +10,6 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
-import { showToast } from './Toast';
-import EmptyState from './EmptyState';
 
 interface Template {
   id: string;
@@ -209,7 +209,7 @@ export default function LibraryTemplatesTab() {
       {/* Templates List */}
       <div className="flex-1 overflow-y-auto p-6">
         {sortedTemplates.length === 0 ? (
-          <EmptyState type="generic" title="No templates" description="Create your first template" />
+          <EmptyState icon={LayoutTemplate} title="No templates" description="Create your first template" />
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {sortedTemplates.map(template => {

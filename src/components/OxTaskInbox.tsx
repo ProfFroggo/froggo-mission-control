@@ -2,17 +2,6 @@ import { useState } from 'react';
 import { Inbox, Clock, CheckCircle, AlertCircle, Play, RefreshCw } from 'lucide-react';
 import { useStore } from '../store/store';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
-  priority: string;
-  assignedTo: string;
-  createdAt: number;
-  subtasks?: { id: string; title: string; done: boolean }[];
-}
-
 export default function OxTaskInbox() {
   const { tasks } = useStore();
   const [filter, setFilter] = useState<'all' | 'todo' | 'in-progress'>('all');
@@ -101,13 +90,13 @@ export default function OxTaskInbox() {
                 {getStatusIcon(task.status)}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                    <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority ?? '')}`} />
                     <h3 className="font-medium text-white truncate">{task.title}</h3>
                   </div>
                   <p className="text-sm text-slate-400 line-clamp-2">{task.description}</p>
                   {task.subtasks && task.subtasks.length > 0 && (
                     <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                      <span>{task.subtasks.filter(s => s.done).length}/{task.subtasks.length} subtasks</span>
+                      <span>{task.subtasks.filter((s: SubtaskData) => s.completed).length}/{task.subtasks.length} subtasks</span>
                     </div>
                   )}
                 </div>

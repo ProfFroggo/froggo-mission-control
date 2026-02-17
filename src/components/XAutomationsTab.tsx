@@ -268,8 +268,9 @@ export default function XAutomationsTab() {
         {/* Basic Info */}
         <div className="bg-clawd-surface rounded-xl border border-clawd-border p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Automation Name</label>
+            <label htmlFor="automation-name" className="block text-sm font-medium mb-2">Automation Name</label>
             <input
+              id="automation-name"
               type="text"
               value={builderName}
               onChange={(e) => setBuilderName(e.target.value)}
@@ -278,8 +279,9 @@ export default function XAutomationsTab() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">Description (optional)</label>
+            <label htmlFor="automation-description" className="block text-sm font-medium mb-2">Description (optional)</label>
             <textarea
+              id="automation-description"
               value={builderDescription}
               onChange={(e) => setBuilderDescription(e.target.value)}
               placeholder="What does this automation do?"
@@ -327,8 +329,9 @@ export default function XAutomationsTab() {
           {/* Trigger Config */}
           {builderTriggerType === 'keyword' && (
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
+              <label htmlFor="trigger-keywords" className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
               <input
+                id="trigger-keywords"
                 type="text"
                 value={builderTriggerConfig.keywords?.join(', ') || ''}
                 onChange={(e) => setBuilderTriggerConfig({
@@ -343,8 +346,9 @@ export default function XAutomationsTab() {
 
           {builderTriggerType === 'time' && (
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">Interval</label>
+              <label htmlFor="trigger-interval" className="block text-sm font-medium mb-2">Interval</label>
               <select
+                id="trigger-interval"
                 value={builderTriggerConfig.interval || '1h'}
                 onChange={(e) => setBuilderTriggerConfig({ ...builderTriggerConfig, interval: e.target.value })}
                 className="w-full bg-clawd-bg border border-clawd-border rounded-lg p-3 outline-none focus:border-clawd-accent"
@@ -378,7 +382,7 @@ export default function XAutomationsTab() {
                 const Icon = getActionIcon(action.type);
                 
                 return (
-                  <div key={index} className="bg-clawd-bg rounded-lg border border-clawd-border p-4 space-y-3">
+                  <div key={action.id || `action-${index}`} className="bg-clawd-bg rounded-lg border border-clawd-border p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 font-medium">
                         <Icon size={16} />
@@ -394,6 +398,7 @@ export default function XAutomationsTab() {
 
                     {(action.type === 'reply' || action.type === 'dm') && (
                       <textarea
+                        id={`action-template-${index}`}
                         value={action.config.template || ''}
                         onChange={(e) => updateAction(index, { ...action.config, template: e.target.value })}
                         placeholder="Message template..."
@@ -404,6 +409,7 @@ export default function XAutomationsTab() {
 
                     {action.type === 'add_to_list' && (
                       <input
+                        id={`action-list-id-${index}`}
                         type="text"
                         value={action.config.list_id || ''}
                         onChange={(e) => updateAction(index, { ...action.config, list_id: e.target.value })}
@@ -441,8 +447,9 @@ export default function XAutomationsTab() {
           <h3 className="font-semibold">Rate Limits</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Max per hour</label>
+              <label htmlFor="max-per-hour" className="block text-sm font-medium mb-2">Max per hour</label>
               <input
+                id="max-per-hour"
                 type="number"
                 value={builderMaxHourly}
                 onChange={(e) => setBuilderMaxHourly(parseInt(e.target.value) || 10)}
@@ -452,8 +459,9 @@ export default function XAutomationsTab() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Max per day</label>
+              <label htmlFor="max-per-day" className="block text-sm font-medium mb-2">Max per day</label>
               <input
+                id="max-per-day"
                 type="number"
                 value={builderMaxDaily}
                 onChange={(e) => setBuilderMaxDaily(parseInt(e.target.value) || 50)}
@@ -591,7 +599,7 @@ export default function XAutomationsTab() {
                     {automation.actions.map((action: any, index: number) => {
                       const ActionIcon = getActionIcon(action.type);
                       return (
-                        <div key={index} className="flex items-center gap-1 px-3 py-1.5 bg-clawd-bg rounded-lg">
+                        <div key={`${automation.id}-${action.type}-${index}`} className="flex items-center gap-1 px-3 py-1.5 bg-clawd-bg rounded-lg">
                           <ActionIcon size={14} />
                           <span>{ACTION_OPTIONS.find(o => o.type === action.type)?.label}</span>
                         </div>

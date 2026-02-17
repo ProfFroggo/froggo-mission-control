@@ -11,8 +11,11 @@
  * - settings-handlers.ts: Settings, API keys, configuration
  */
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('Main');
 
 // Import handler modules
 import { registerTaskHandlers } from './task-handlers';
@@ -28,26 +31,26 @@ import { initializeDatabase } from './database';
 
 // Initialize handlers
 export function initializeIpcHandlers(): void {
-  console.info('[Main] Initializing IPC handlers...');
+  logger.info('[Main] Initializing IPC handlers...');
   
   // Register all handler modules
   registerTaskHandlers();
-  console.info('[Main] ✓ Task handlers registered');
+  logger.info('[Main] ✓ Task handlers registered');
   
   registerAgentHandlers();
-  console.info('[Main] ✓ Agent handlers registered');
+  logger.info('[Main] ✓ Agent handlers registered');
   
   registerNotificationHandlers();
-  console.info('[Main] ✓ Notification handlers registered');
+  logger.info('[Main] ✓ Notification handlers registered');
   
   registerSettingsHandlers();
-  console.info('[Main] ✓ Settings handlers registered');
+  logger.info('[Main] ✓ Settings handlers registered');
   
   // TODO: Register additional modules as they are migrated
   // registerChatHandlers();
   // registerXHandlers();
   
-  console.info('[Main] IPC handlers initialized');
+  logger.info('[Main] IPC handlers initialized');
 }
 
 // Legacy handlers that haven't been migrated yet

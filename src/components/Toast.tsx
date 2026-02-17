@@ -55,6 +55,7 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
       <button
         onClick={() => onDismiss(toast.id)}
         className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors"
+        aria-label="Dismiss notification"
       >
         <X size={14} />
       </button>

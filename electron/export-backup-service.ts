@@ -9,6 +9,9 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { prepare } from './database';
 import { FROGGO_DB, PROJECT_ROOT } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('ExportBackup');
 
 const execPromise = promisify(exec);
 
@@ -50,7 +53,7 @@ export interface BackupMetadata {
 /**
  * Convert JSON array to CSV format
  */
-function jsonToCsv(data: any[]): string {
+function jsonToCsv(data: Array<Record<string, unknown>>): string {
   if (data.length === 0) return '';
 
   // Get all unique keys from all objects
@@ -79,10 +82,10 @@ function jsonToCsv(data: any[]): string {
  * Export tasks with optional filters
  */
 export async function exportTasks(options: ExportOptions): Promise<string> {
-  console.debug('[ExportBackup] Exporting tasks with options:', options);
+  logger.debug('[ExportBackup] Exporting tasks with options:', options);
 
   const conditions: string[] = ['1=1'];
-  const params: any[] = [];
+  const params: unknown[] = [];
   const filters = options.filters || {};
 
   if (filters.status) {
@@ -131,11 +134,39 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
     ORDER BY t.created_at DESC
   `;
 
-  const tasks = prepare(sql).all(...params) as any[];
+  interface TaskRow {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    project: string;
+    assigned_to: string;
+    reviewer_id: string;
+    priority: string;
+    tags: string;
+    due_date: string;
+    created_at: number;
+    updated_at: number;
+    started_at: number;
+    completed_at: number;
+    planning_notes: string;
+    subtask_count: number;
+    completed_subtasks: number;
+    attachment_count: number;
+  }
+
+  const tasks = prepare(sql).all(...params) as TaskRow[];
 
   // Also fetch subtasks for each task
   const taskIds = tasks.map(t => t.id);
-  let subtasks: any[] = [];
+  interface SubtaskRow {
+    id: string;
+    task_id: string;
+    title: string;
+    completed: number;
+    created_at: number;
+  }
+  let subtasks: SubtaskRow[] = [];
 
   if (taskIds.length > 0) {
     const placeholders = taskIds.map(() => '?').join(',');
@@ -163,19 +194,19 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
     // CSV format
-    const tasksCSV = jsonToCsv(tasks);
+    const tasksCSV = jsonToCsv((tasks as unknown) as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, tasksCSV);
 
     // Also export subtasks to separate CSV
     if (subtasks.length > 0) {
       const subtasksFilename = `subtasks-export-${timestamp}.csv`;
       const subtasksFilepath = path.join(EXPORT_DIR, subtasksFilename);
-      const subtasksCSV = jsonToCsv(subtasks);
+      const subtasksCSV = jsonToCsv((subtasks as unknown) as Array<Record<string, unknown>>);
       fs.writeFileSync(subtasksFilepath, subtasksCSV);
     }
   }
 
-  console.debug('[ExportBackup] Tasks exported to:', filepath);
+  logger.debug('[ExportBackup] Tasks exported to:', filepath);
   return filepath;
 }
 
@@ -183,10 +214,10 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
  * Export agent activity logs
  */
 export async function exportAgentLogs(options: ExportOptions): Promise<string> {
-  console.debug('[ExportBackup] Exporting agent logs');
+  logger.debug('[ExportBackup] Exporting agent logs');
 
   const conditions: string[] = ['1=1'];
-  const params: any[] = [];
+  const params: unknown[] = [];
   const filters = options.filters || {};
 
   if (filters.dateFrom) {
@@ -215,7 +246,19 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
     ORDER BY a.created_at DESC
   `;
 
-  const logs = prepare(sql).all(...params) as any[];
+  interface LogRow {
+    id: number;
+    task_id: string;
+    activity_type: string;
+    details: string;
+    created_at: number;
+    agent_id: string;
+    metadata: string;
+    task_title: string;
+    task_project: string;
+  }
+
+  const logs = prepare(sql).all(...params) as LogRow[];
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   const filename = `agent-logs-${timestamp}.${options.format}`;
@@ -229,11 +272,11 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
     };
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
-    const csv = jsonToCsv(logs);
+    const csv = jsonToCsv((logs as unknown) as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, csv);
   }
 
-  console.debug('[ExportBackup] Agent logs exported to:', filepath);
+  logger.debug('[ExportBackup] Agent logs exported to:', filepath);
   return filepath;
 }
 
@@ -241,10 +284,10 @@ export async function exportAgentLogs(options: ExportOptions): Promise<string> {
  * Export chat history
  */
 export async function exportChatHistory(options: ExportOptions): Promise<string> {
-  console.debug('[ExportBackup] Exporting chat history');
+  logger.debug('[ExportBackup] Exporting chat history');
 
   const conditions: string[] = ['1=1'];
-  const params: any[] = [];
+  const params: unknown[] = [];
   const filters = options.filters || {};
 
   if (filters.dateFrom) {
@@ -271,7 +314,18 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
     ORDER BY timestamp DESC LIMIT 10000
   `;
 
-  const messages = prepare(sql).all(...params) as any[];
+  interface MessageRow {
+    id: number;
+    timestamp: number;
+    session_key: string;
+    channel: string;
+    role: string;
+    content: string;
+    message_id: string;
+    metadata: string;
+  }
+
+  const messages = prepare(sql).all(...params) as MessageRow[];
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   const filename = `chat-history-${timestamp}.${options.format}`;
@@ -285,11 +339,11 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
     };
     fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2));
   } else {
-    const csv = jsonToCsv(messages);
+    const csv = jsonToCsv((messages as unknown) as Array<Record<string, unknown>>);
     fs.writeFileSync(filepath, csv);
   }
 
-  console.debug('[ExportBackup] Chat history exported to:', filepath);
+  logger.debug('[ExportBackup] Chat history exported to:', filepath);
   return filepath;
 }
 
@@ -297,7 +351,7 @@ export async function exportChatHistory(options: ExportOptions): Promise<string>
  * Create full database backup
  */
 export async function createBackup(options: BackupOptions = {}): Promise<string> {
-  console.debug('[ExportBackup] Creating database backup');
+  logger.debug('[ExportBackup] Creating database backup');
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupFilename = `froggo-backup-${timestamp}.db`;
@@ -314,7 +368,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<string>
     WHERE type='table'
     ORDER BY name
   `).all() as any[];
-  const tables = tablesResult.map((t: any) => t.name);
+  const tables = tablesResult.map((t: { name: string }) => t.name);
 
   const metadata: BackupMetadata = {
     timestamp: new Date().toISOString(),
@@ -339,7 +393,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<string>
     }
   }
 
-  console.debug('[ExportBackup] Backup created:', backupPath);
+  logger.debug('[ExportBackup] Backup created:', backupPath);
   return backupPath;
 }
 
@@ -347,7 +401,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<string>
  * Restore database from backup
  */
 export async function restoreBackup(backupPath: string): Promise<void> {
-  console.debug('[ExportBackup] Restoring from backup:', backupPath);
+  logger.debug('[ExportBackup] Restoring from backup:', backupPath);
 
   if (!fs.existsSync(backupPath)) {
     throw new Error('Backup file not found');
@@ -356,22 +410,22 @@ export async function restoreBackup(backupPath: string): Promise<void> {
   // Create a backup of current database first
   const safeguardPath = DB_PATH + '.before-restore';
   fs.copyFileSync(DB_PATH, safeguardPath);
-  console.debug('[ExportBackup] Created safeguard backup:', safeguardPath);
+  logger.debug('[ExportBackup] Created safeguard backup:', safeguardPath);
 
   try {
     // Restore the backup
     fs.copyFileSync(backupPath, DB_PATH);
-    console.debug('[ExportBackup] Database restored successfully');
+    logger.debug('[ExportBackup] Database restored successfully');
 
     // Verify the restored database using parameterized query
     prepare('SELECT COUNT(*) as count FROM tasks').get();
-    console.debug('[ExportBackup] Database verification passed');
+    logger.debug('[ExportBackup] Database verification passed');
 
-  } catch (error: any) {
+  } catch (error) {
     // Restore failed, revert to safeguard
-    console.error('[ExportBackup] Restore failed, reverting:', error.message);
+    logger.error('[ExportBackup] Restore failed, reverting:', (error as Error).message);
     fs.copyFileSync(safeguardPath, DB_PATH);
-    throw new Error(`Restore failed: ${error.message}`);
+    throw new Error(`Restore failed: ${(error as Error).message}`);
   }
 }
 
@@ -434,12 +488,12 @@ export async function cleanupOldBackups(keepCount: number = 10): Promise<number>
       }
 
       deletedCount++;
-    } catch (error: any) {
-      console.error('[ExportBackup] Failed to delete backup:', backup.filename, error.message);
+    } catch (error) {
+      logger.error('[ExportBackup] Failed to delete backup:', backup.filename, (error as Error).message);
     }
   }
 
-  console.debug('[ExportBackup] Cleaned up', deletedCount, 'old backups');
+  logger.debug('[ExportBackup] Cleaned up', deletedCount, 'old backups');
   return deletedCount;
 }
 
@@ -447,18 +501,18 @@ export async function cleanupOldBackups(keepCount: number = 10): Promise<number>
  * Import tasks from JSON export
  */
 export async function importTasks(filepath: string): Promise<{ imported: number; skipped: number; errors: number }> {
-  console.debug('[ExportBackup] Importing tasks from:', filepath);
+  logger.debug('[ExportBackup] Importing tasks from:', filepath);
 
   if (!fs.existsSync(filepath)) {
     throw new Error('Import file not found');
   }
 
   const content = fs.readFileSync(filepath, 'utf-8');
-  let data: any;
+  let data: { tasks?: Record<string, unknown>[]; subtasks?: Record<string, unknown>[] };
 
   try {
     data = JSON.parse(content);
-  } catch (error) {
+  } catch {
     throw new Error('Invalid JSON format');
   }
 
@@ -487,8 +541,8 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
       prepare(`INSERT INTO tasks (${fields.join(', ')}) VALUES (${placeholders})`).run(...values);
       imported++;
 
-    } catch (error: any) {
-      console.error('[ExportBackup] Failed to import task:', task.id, error.message);
+    } catch (error) {
+      logger.error('[ExportBackup] Failed to import task:', task.id, (error as Error).message);
       errors++;
     }
   }
@@ -502,13 +556,13 @@ export async function importTasks(filepath: string): Promise<{ imported: number;
         const values = fields.map(k => subtask[k]);
 
         prepare(`INSERT OR IGNORE INTO subtasks (${fields.join(', ')}) VALUES (${placeholders})`).run(...values);
-      } catch (error: any) {
-        console.error('[ExportBackup] Failed to import subtask:', error.message);
+      } catch (error) {
+        logger.error('[ExportBackup] Failed to import subtask:', (error as Error).message);
       }
     }
   }
 
-  console.debug('[ExportBackup] Import complete:', { imported, skipped, errors });
+  logger.debug('[ExportBackup] Import complete:', { imported, skipped, errors });
   return { imported, skipped, errors };
 }
 

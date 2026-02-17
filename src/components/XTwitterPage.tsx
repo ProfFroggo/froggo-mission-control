@@ -32,7 +32,7 @@ export default function XTwitterPage() {
         <ThreePaneLayout>
           <XAgentChatPane tab={activeTab} />
           <XContentEditorPane tab={activeTab} />
-          {activeTab === 'drafts' || activeTab === 'calendar' ? <XApprovalQueuePane tab={activeTab} /> : null}
+          <XApprovalQueuePane tab={activeTab} />
         </ThreePaneLayout>
       </div>
     </div>

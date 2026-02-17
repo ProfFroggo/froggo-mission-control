@@ -38,6 +38,9 @@ export interface ConnectedAccount {
   }>;
   metadata?: Record<string, unknown>;
   authType: 'oauth' | 'app-password' | 'manual';
+  createdAt: number;
+  updatedAt: number;
+  tokenPath?: string;
 }
 
 /** Add account request shape */
@@ -49,8 +52,6 @@ interface AddAccountRequest {
   password?: string;
   appPassword?: string;
   tokenPath?: string;
-  createdAt: number;
-  updatedAt: number;
 }
 
 const ACCOUNTS_FILE = path.join(os.homedir(), 'clawd', 'data', 'connected-accounts.json');

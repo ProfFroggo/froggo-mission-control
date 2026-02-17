@@ -2,23 +2,6 @@ import { useState, useEffect } from 'react';
 import { Folder, Check, X } from 'lucide-react';
 import { showToast } from './Toast';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  conversation_count?: number;
-}
-
-interface AssignedFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  added_at: string;
-  notes?: string;
-}
-
 interface FolderSelectorProps {
   sessionKey: string;
   onClose?: () => void;

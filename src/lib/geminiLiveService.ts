@@ -5,7 +5,7 @@
  * Supports: real-time audio, camera/screen video, text input, interruptions.
  */
 
-import { getVoiceProfile } from '../config/agent-voices';
+// import removed from '../config/agent-voices';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('GeminiLive');
@@ -13,7 +13,7 @@ const logger = createLogger('GeminiLive');
 // Audio constants matching Gemini Live API requirements
 const SEND_SAMPLE_RATE = 16000;
 const RECEIVE_SAMPLE_RATE = 24000;
-const CHANNELS = 1;
+// const CHANNELS = 1; // reserved for future multi-channel support
 const MODEL = 'models/gemini-2.5-flash-native-audio-latest'; // ONLY native-audio models support bidiGenerateContent
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
@@ -162,7 +162,6 @@ export class GeminiLiveService {
   private playbackCtx: AudioContext | null = null;
   private playbackQueue: ArrayBuffer[] = [];
   private isPlaying = false;
-  private playbackSourceNode: AudioBufferSourceNode | null = null;
   private playbackGain: GainNode | null = null;
   private scheduledTime = 0;
 
@@ -194,7 +193,6 @@ export class GeminiLiveService {
   private toolCallKeepaliveTimer: ReturnType<typeof setInterval> | null = null;
 
   // Session resumption — allows reconnecting without losing context
-  private sessionHandle: string | null = null;
   
   // Context replay buffer - store recent conversation for reconnect
   private conversationHistory: Array<{role: 'user' | 'model', text: string}> = [];
@@ -473,8 +471,7 @@ export class GeminiLiveService {
       if (msg.sessionResumptionUpdate) {
         const update = msg.sessionResumptionUpdate;
         if (update.resumable && update.newHandle) {
-          this.sessionHandle = update.newHandle;
-          logger.debug('[GeminiLive] Session resumption handle updated');
+          logger.debug('[GeminiLive] Session resumption handle updated:', update.newHandle);
         }
       }
 
@@ -499,7 +496,7 @@ export class GeminiLiveService {
     this.stopVideo();
     this.clearPlayback();
     this.stopToolCallKeepalive();
-    this.sessionHandle = null; // Clear handle on intentional disconnect
+    // Session handle cleared on disconnect
     if (this.ws) {
       this.ws.close(1000, 'User disconnected');
       this.ws = null;
@@ -534,6 +531,7 @@ export class GeminiLiveService {
           ).join('\n');
           
           // Send context as a system message
+          if (!this.ws) return;
           this.ws.send(JSON.stringify({
             clientContent: {
               turns: [{
@@ -761,7 +759,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       source.start(startTime);
       this.scheduledTime = startTime + audioBuffer.duration;
 
-      this.playbackSourceNode = source;
+      void source; // Source is started and tracked by AudioContext
     }
 
     // Wait for last scheduled audio to finish, then check for more
@@ -786,7 +784,6 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.playbackCtx.close().catch((err) => { console.error('[GeminiLive] Failed to close playback context:', err); });
       this.playbackCtx = null;
     }
-    this.playbackSourceNode = null;
     this.playbackGain = null;
     this.scheduledTime = 0;
   }

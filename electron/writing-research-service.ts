@@ -13,6 +13,9 @@ import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingResearchDbPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingResearch');
 
 // -- Types --
 
@@ -91,7 +94,7 @@ function listSources(projectId: string) {
     const sources = db.prepare('SELECT * FROM sources ORDER BY title').all() as ResearchSource[];
     return { success: true, sources };
   } catch (e: any) {
-    console.error('[writing-research] listSources error:', e.message);
+    logger.error('[writing-research] listSources error:', e.message);
     return { success: false, error: e.message, sources: [] };
   }
 }
@@ -110,7 +113,7 @@ function createSource(projectId: string, data: Omit<ResearchSource, 'id' | 'crea
     const source = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource;
     return { success: true, source };
   } catch (e: any) {
-    console.error('[writing-research] createSource error:', e.message);
+    logger.error('[writing-research] createSource error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -138,7 +141,7 @@ function updateSource(projectId: string, id: string, data: Partial<ResearchSourc
     const source = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource;
     return { success: true, source };
   } catch (e: any) {
-    console.error('[writing-research] updateSource error:', e.message);
+    logger.error('[writing-research] updateSource error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -150,7 +153,7 @@ function deleteSource(projectId: string, id: string) {
     if (result.changes === 0) return { success: false, error: 'Source not found' };
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-research] deleteSource error:', e.message);
+    logger.error('[writing-research] deleteSource error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -169,7 +172,7 @@ function getSourcesForFact(projectId: string, factId: string) {
     `).all(factId);
     return { success: true, sources };
   } catch (e: any) {
-    console.error('[writing-research] getSourcesForFact error:', e.message);
+    logger.error('[writing-research] getSourcesForFact error:', e.message);
     return { success: false, error: e.message, sources: [] };
   }
 }
@@ -185,7 +188,7 @@ function getFactsForSource(projectId: string, sourceId: string) {
     `).all(sourceId);
     return { success: true, facts };
   } catch (e: any) {
-    console.error('[writing-research] getFactsForSource error:', e.message);
+    logger.error('[writing-research] getFactsForSource error:', e.message);
     return { success: false, error: e.message, facts: [] };
   }
 }
@@ -200,7 +203,7 @@ function linkSourceToFact(projectId: string, factId: string, sourceId: string, n
     `).run(factId, sourceId, notes || '', now);
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-research] linkSourceToFact error:', e.message);
+    logger.error('[writing-research] linkSourceToFact error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -211,7 +214,7 @@ function unlinkSourceFromFact(projectId: string, factId: string, sourceId: strin
     db.prepare('DELETE FROM fact_sources WHERE fact_id = ? AND source_id = ?').run(factId, sourceId);
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-research] unlinkSourceFromFact error:', e.message);
+    logger.error('[writing-research] unlinkSourceFromFact error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -228,7 +231,7 @@ function cleanOrphanedLinks(projectId: string, validFactIds: string[]) {
     }
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-research] cleanOrphanedLinks error:', e.message);
+    logger.error('[writing-research] cleanOrphanedLinks error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -241,7 +244,7 @@ export function closeResearchDb(projectId: string): void {
     try {
       db.close();
     } catch (e: any) {
-      console.error(`[writing-research] Failed to close research.db for ${projectId}:`, e.message);
+      logger.error(`[writing-research] Failed to close research.db for ${projectId}:`, e.message);
     }
     dbCache.delete(projectId);
   }
@@ -252,7 +255,7 @@ export function closeAllResearchDbs(): void {
     try {
       db.close();
     } catch (e: any) {
-      console.error(`[writing-research] Failed to close research.db for ${projectId}:`, e.message);
+      logger.error(`[writing-research] Failed to close research.db for ${projectId}:`, e.message);
     }
   }
   dbCache.clear();
@@ -283,5 +286,5 @@ export function registerWritingResearchHandlers(): void {
   ipcMain.handle('writing:research:links:cleanup', (_, projectId: string, validFactIds: string[]) =>
     cleanOrphanedLinks(projectId, validFactIds));
 
-  console.debug('[writing-research] IPC handlers registered');
+  logger.debug('[writing-research] IPC handlers registered');
 }

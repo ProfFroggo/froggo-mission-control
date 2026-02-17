@@ -18,6 +18,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { safeStorage } from 'electron';
 import { FROGGO_DB } from './paths';
+import { safeLog as logger } from './logger';
 
 const execAsync = promisify(exec);
 
@@ -61,6 +62,7 @@ export interface AccountTypeInfo {
 }
 
 // Encryption utilities — uses Electron safeStorage (OS keychain)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _encrypt(text: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('safeStorage encryption not available');
@@ -69,6 +71,7 @@ function _encrypt(text: string): string {
   return encrypted.toString('base64');
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _decrypt(text: string): string {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('safeStorage encryption not available');
@@ -78,7 +81,7 @@ function _decrypt(text: string): string {
 }
 
 // SQLite helpers
-async function dbQuery<T = any>(query: string, params: any[] = []): Promise<T[]> {
+async function dbQuery<T>(query: string, params: unknown[] = []): Promise<T[]> {
   return new Promise((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const sqlite3 = require('sqlite3').verbose();
@@ -92,7 +95,7 @@ async function dbQuery<T = any>(query: string, params: any[] = []): Promise<T[]>
   });
 }
 
-async function dbRun(query: string, params: any[] = []): Promise<void> {
+async function dbRun(query: string, params: unknown[] = []): Promise<void> {
   return new Promise((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const sqlite3 = require('sqlite3').verbose();
@@ -142,7 +145,7 @@ class ConnectedAccountsService {
         updatedAt: row.updated_at
       }));
     } catch (err) {
-      console.error('[ConnectedAccountsService] Failed to list accounts:', err);
+      logger.error('[ConnectedAccountsService] Failed to list accounts:', err);
       return [];
     }
   }
@@ -165,7 +168,7 @@ class ConnectedAccountsService {
         [accountId]
       );
     } catch (err) {
-      console.error('[ConnectedAccountsService] Failed to get permissions:', err);
+      logger.error('[ConnectedAccountsService] Failed to get permissions:', err);
       return [];
     }
   }
@@ -218,7 +221,7 @@ class ConnectedAccountsService {
       const gogType = types.find(t => t.type === 'google');
       if (gogType) gogType.available = true;
     } catch {
-      console.debug('[ConnectedAccountsService] gog CLI not found');
+      logger.debug('[ConnectedAccountsService] gog CLI not found');
     }
 
     return types;
@@ -266,10 +269,10 @@ class ConnectedAccountsService {
           );
 
           imported++;
-          console.debug(`[ConnectedAccountsService] Imported Google account: ${email}`);
+          logger.debug(`[ConnectedAccountsService] Imported Google account: ${email}`);
         }
-      } catch (err: any) {
-        console.error(`[ConnectedAccountsService] Failed to import ${email}:`, err.message);
+      } catch (err) {
+        logger.error(`[ConnectedAccountsService] Failed to import ${email}:`, (err as Error).message);
         errors.push(`${email}: ${err.message}`);
       }
     }
@@ -313,7 +316,7 @@ class ConnectedAccountsService {
   /**
    * Add Google account via gog CLI
    */
-  private async addGoogleAccount(_options: any): Promise<any> {
+  private async addGoogleAccount(_options: { conversational?: boolean }): Promise<{ success: boolean; accountId?: string; error?: string; steps?: string[] }> {
     try {
       // Use gog CLI to authenticate
       const { stderr } = await execAsync('gog auth login', { timeout: 120000 });
@@ -359,17 +362,17 @@ class ConnectedAccountsService {
           '✅ Account saved to database'
         ]
       };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   }
 
   /**
    * Add iCloud account (macOS system integration)
    */
-  private async addICloudAccount(_options: any): Promise<any> {
-    return { 
-      success: false, 
+  private async addICloudAccount(_options: { conversational?: boolean }): Promise<{ success: boolean; error?: string }> {
+    return {
+      success: false,
       error: 'iCloud integration not yet implemented. Use macOS Calendar app for now.'
     };
   }
@@ -386,13 +389,13 @@ class ConnectedAccountsService {
 
       // Remove from database
       await dbRun('DELETE FROM connected_accounts WHERE id = ?', [accountId]);
-      
+
       // TODO: Revoke OAuth tokens if applicable
-      
-      console.debug(`[ConnectedAccountsService] Removed account: ${account.email}`);
+
+      logger.debug(`[ConnectedAccountsService] Removed account: ${account.email}`);
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
     }
   }
 
@@ -418,7 +421,7 @@ class ConnectedAccountsService {
 
         // Update sync status
         await dbRun(
-          `UPDATE connected_accounts 
+          `UPDATE connected_accounts
           SET auth_status = ?, last_sync_time = ?, last_sync_status = ?
           WHERE id = ?`,
           [status, Date.now(), 'success', accountId]
@@ -428,31 +431,31 @@ class ConnectedAccountsService {
       }
 
       return { success: false, error: 'Account refresh not implemented for this type' };
-    } catch (err: any) {
+    } catch (err) {
       await dbRun(
-        `UPDATE connected_accounts 
+        `UPDATE connected_accounts
         SET auth_status = 'error', last_sync_status = 'error'
         WHERE id = ?`,
         [accountId]
       );
-      return { success: false, error: err.message };
+      return { success: false, error: (err as Error).message };
     }
   }
 
   /**
    * Get sync history for an account
    */
-  async getSyncHistory(accountId: string, limit: number = 10): Promise<any[]> {
+  async getSyncHistory(accountId: string, limit: number = 10): Promise<Record<string, unknown>[]> {
     try {
-      return await dbQuery(
-        `SELECT * FROM account_sync_log 
-        WHERE account_id = ? 
-        ORDER BY sync_time DESC 
+      return await dbQuery<Record<string, unknown>>(
+        `SELECT * FROM account_sync_log
+        WHERE account_id = ?
+        ORDER BY sync_time DESC
         LIMIT ?`,
         [accountId, limit]
       );
     } catch (err) {
-      console.error('[ConnectedAccountsService] Failed to get sync history:', err);
+      logger.error('[ConnectedAccountsService] Failed to get sync history:', err);
       return [];
     }
   }

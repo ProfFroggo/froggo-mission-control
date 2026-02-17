@@ -7,21 +7,13 @@
  * Original main.ts was 9043 lines - this version delegates to handler modules.
  */
 
-import { app, BrowserWindow, ipcMain, systemPreferences, desktopCapturer } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
-import * as os from 'os';
-import * as http from 'http';
 
 // Existing service imports (already modularized)
-import { calendarService } from './calendar-service';
-import { accountsService } from './accounts-service';
-import { accountsServiceV2 } from './accounts-service-v2';
 import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
-import { secureExec, secureWrite, validateCommand, validateWritePath, getAuditLog, logAudit } from './shell-security';
-import * as exportBackupService from './export-backup-service';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { registerWritingProjectHandlers } from './writing-project-service';
 import { registerWritingFeedbackHandlers } from './writing-feedback-service';
@@ -31,12 +23,10 @@ import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
-import * as xApi from './x-api-client';
 import { initXApiTokens } from './x-api-client';
-import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
-import { db, prepare, getScheduleDb, getSecurityDb, getSessionsDb, closeDb } from './database';
-import { validateFsPath } from './fs-validation';
-import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
+import { prepare } from './database';
+import { db, closeDb } from './database';
+import { initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { safeLog } from './logger';
 
 // Path constants
@@ -99,10 +89,7 @@ app.whenReady().then(async () => {
   safeLog.log('[Main] App ready, initializing...');
 
   // Verify paths
-  const pathIssues = verifyPaths();
-  if (pathIssues.length > 0) {
-    safeLog.warn('[Main] Path issues detected:', pathIssues);
-  }
+  verifyPaths();
 
   // Initialize services
   try {
@@ -118,10 +105,10 @@ app.whenReady().then(async () => {
   mainWindow = createMainWindow();
 
   // Setup notification events
-  setupNotificationEvents();
+  setupNotificationEvents(mainWindow);
 
   // Setup notification handlers
-  setupNotificationHandlers();
+  setupNotificationHandlers(mainWindow);
 
   // Register writing service handlers
   registerWritingProjectHandlers();
@@ -260,14 +247,14 @@ ipcMain.handle('app:health', async () => {
   }
 
   try {
-    // Check agents
+    // Check agents - consider healthy if at least one agent is spawned
     const agentStatus = getDashboardAgentsStatus();
-    health.services.agents = agentStatus.running;
+    health.services.agents = agentStatus.some(a => a.spawned);
   } catch {
     health.services.agents = false;
   }
 
-  health.services.notifications = notificationService.isEnabled();
+  health.services.notifications = notificationService.getPreferences().enabled;
 
   return health;
 });

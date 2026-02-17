@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron';
 import { prepare } from './database';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('XAutomations');
 
 // Generate ID
 function generateId(): string {
@@ -12,7 +15,7 @@ export function listAutomations() {
     const automations = prepare('SELECT * FROM x_automations ORDER BY created_at DESC').all();
     return { success: true, automations };
   } catch (e: any) {
-    console.error('[x-automations] List error:', e.message);
+    logger.error('[x-automations] List error:', e.message);
     return { success: true, automations: [] };
   }
 }
@@ -26,7 +29,7 @@ export function getAutomation(id: string) {
     }
     return { success: true, automation };
   } catch (e: any) {
-    console.error('[x-automations] Get error:', e.message);
+    logger.error('[x-automations] Get error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -68,7 +71,7 @@ export function createAutomation(data: {
     );
     return { success: true, id };
   } catch (e: any) {
-    console.error('[x-automations] Create error:', e.message);
+    logger.error('[x-automations] Create error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -130,7 +133,7 @@ export function updateAutomation(id: string, updates: {
     prepare(`UPDATE x_automations SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
   } catch (e: any) {
-    console.error('[x-automations] Update error:', e.message);
+    logger.error('[x-automations] Update error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -141,7 +144,7 @@ export function deleteAutomation(id: string) {
     prepare('DELETE FROM x_automations WHERE id = ?').run(id);
     return { success: true };
   } catch (e: any) {
-    console.error('[x-automations] Delete error:', e.message);
+    logger.error('[x-automations] Delete error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -156,7 +159,7 @@ export function toggleAutomation(id: string, enabled: boolean) {
     );
     return { success: true };
   } catch (e: any) {
-    console.error('[x-automations] Toggle error:', e.message);
+    logger.error('[x-automations] Toggle error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -176,7 +179,7 @@ export function getExecutions(automationId?: string, limit: number = 50) {
     }
     return { success: true, executions };
   } catch (e: any) {
-    console.error('[x-automations] Executions error:', e.message);
+    logger.error('[x-automations] Executions error:', e.message);
     return { success: true, executions: [] };
   }
 }
@@ -206,7 +209,7 @@ export function getRateLimit(automationId: string) {
       currentDay
     };
   } catch (e: any) {
-    console.error('[x-automations] Rate limit error:', e.message);
+    logger.error('[x-automations] Rate limit error:', e.message);
     return { success: true, currentHour: 0, currentDay: 0 };
   }
 }
@@ -245,5 +248,5 @@ export function registerXAutomationsHandlers() {
     return getRateLimit(automationId);
   });
 
-  console.debug('[x-automations] IPC handlers registered');
+  logger.debug('[x-automations] IPC handlers registered');
 }

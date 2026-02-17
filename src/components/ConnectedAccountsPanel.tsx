@@ -8,9 +8,12 @@ import { showToast } from './Toast';
 import { useConfirmDialog } from './ConfirmDialog';
 
 // Lazy load ChannelsTab to avoid import-time errors breaking the whole panel
-const ChannelsTab = lazy(() => import('./ChannelsTab').catch(() => ({
-  default: () => <div className="text-center py-8 text-clawd-text-dim">Failed to load Channels tab</div>
-})));
+const ChannelsTab = lazy(() => import('./ChannelsTab').catch((err) => {
+  console.error('[ConnectedAccountsPanel] Failed to load ChannelsTab:', err);
+  return {
+    default: () => <div className="text-center py-8 text-clawd-text-dim">Failed to load Channels tab</div>
+  };
+}));
 
 interface ConnectedAccount {
   id: string;

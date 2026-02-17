@@ -7,8 +7,8 @@ import {
   X, Minus, Maximize2, Shield, type LucideIcon
 } from 'lucide-react';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
-import { ResponsiveGridLayout } from 'react-grid-layout';
-import type { Layout } from 'react-grid-layout';
+import { Responsive as ResponsiveGridLayout } from 'react-grid-layout/legacy';
+import type { LayoutItem } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
@@ -53,7 +53,7 @@ const WIDGET_CONFIGS: WidgetConfig[] = [
   { id: 'activity', title: 'Activity Stream', icon: Users, removable: true },
 ];
 
-const DEFAULT_LAYOUT: Layout[] = [
+const DEFAULT_LAYOUT: LayoutItem[] = [
   { i: 'hero', x: 0, y: 0, w: 12, h: 5, static: true },
   { i: 'approvals', x: 0, y: 5, w: 2, h: 4 },
   { i: 'inbox', x: 2, y: 5, w: 2, h: 4 },
@@ -83,7 +83,7 @@ interface DashboardWidgetProps {
 }
 
 function DashboardWidget({ 
-  id, 
+  id: _id, 
   title, 
   icon: Icon, 
   children, 
@@ -145,7 +145,7 @@ function DashboardWidget({
   );
 }
 
-export default function DashboardRedesigned({ onNavigate, onShowBrief }: DashboardProps) {
+export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   const { 
     connected, sessions, tasks, agents, activities, approvals, 
     fetchSessions, fetchAgents, clearActivities, gatewaySessions, loadGatewaySessions, loading 
@@ -157,7 +157,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
   
   // Widget customization state
   const [editMode, setEditMode] = useState(false);
-  const [layout, setLayout] = useState<Layout[]>(() => {
+  const [layout, setLayout] = useState<LayoutItem[]>(() => {
     const saved = localStorage.getItem('dashboard-widget-layout');
     return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
   });
@@ -227,8 +227,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     }
   }, [connected, loadGatewaySessions]);
 
-  const handleLayoutChange = (newLayout: Layout[]) => {
-    setLayout(newLayout);
+  const handleLayoutChange = (newLayout: readonly LayoutItem[]) => {
+    setLayout([...newLayout]);
     localStorage.setItem('dashboard-widget-layout', JSON.stringify(newLayout));
   };
 
@@ -300,8 +300,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
     return last || 'Unknown';
   };
 
-  const visibleWidgets = WIDGET_CONFIGS.filter(w => !hiddenWidgets.has(w.id));
-  const availableWidgets = WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable);
+  // TODO: these are used when Add Widget panel is re-enabled
+  // const visibleWidgets = WIDGET_CONFIGS.filter(w => !hiddenWidgets.has(w.id));
+  // const availableWidgets = WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable);
 
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
@@ -902,7 +903,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                                     <span className="text-xl">{getSessionIcon(s)}</span>
                                     <div className="flex-1 min-w-0">
                                       <div className="text-sm font-medium truncate">{getSessionName(s)}</div>
-                                      <div className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt)}</div>
+                                      <div className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt ?? 0)}</div>
                                     </div>
                                     <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
                                   </div>

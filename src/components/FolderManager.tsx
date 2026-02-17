@@ -4,17 +4,6 @@ import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
-interface MessageFolder {
-  id: number;
-  name: string;
-  icon: string;
-  color: string;
-  description: string;
-  sort_order: number;
-  is_smart: number;
-  conversation_count: number;
-}
-
 interface FolderManagerProps {
   onClose?: () => void;
   onSelect?: (folderId: number) => void;
@@ -125,8 +114,8 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
     setEditingId(folder.id);
     setFormData({
       name: folder.name,
-      icon: folder.icon,
-      color: folder.color,
+      icon: folder.icon ?? '',
+      color: folder.color ?? '',
       description: folder.description || '',
     });
   };

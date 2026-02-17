@@ -4,35 +4,6 @@ import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
-interface CalendarEvent {
-  id: string;
-  summary: string;
-  description?: string;
-  start: {
-    dateTime?: string;
-    date?: string;
-    timeZone?: string;
-  };
-  end: {
-    dateTime?: string;
-    date?: string;
-    timeZone?: string;
-  };
-  location?: string;
-  attendees?: Array<{
-    email: string;
-    responseStatus: string;
-    organizer?: boolean;
-  }>;
-  conferenceData?: {
-    entryPoints?: Array<{
-      uri: string;
-      entryPointType: string;
-    }>;
-  };
-  htmlLink?: string;
-  account?: string;
-}
 
 // interface EventsData {
 //   events: CalendarEvent[];
@@ -605,7 +576,7 @@ function isSameDay(d1: Date, d2: Date): boolean {
 function getEventTime(event: CalendarEvent): { start: Date; end: Date; isAllDay: boolean } {
   const isAllDay = !event.start.dateTime;
   const start = new Date(event.start.dateTime || event.start.date!);
-  const end = new Date(event.end.dateTime || event.end.date!);
+  const end = new Date(event.end?.dateTime || event.end?.date || event.start.dateTime || event.start.date!);
   return { start, end, isAllDay };
 }
 

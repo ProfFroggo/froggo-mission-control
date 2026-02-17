@@ -423,7 +423,7 @@ Format as markdown with proper headings.`;
       const taskTitle = `Implement skill: ${skillData.name}`;
       const taskDesc = `${skillData.description || skillData.reason || ''}\n\nSkill location: ${skillPath}/SKILL.md\nReview instructions and implement the skill as described.`;
       
-      const taskResult = await (window as any).clawdbot?.exec?.run(
+      await (window as any).clawdbot?.exec?.run(
         `froggo-db task-add "${taskTitle}" --project "Skills" --status todo --assigned-to ${assignedAgent} --description "${taskDesc.replace(/"/g, '\\"')}"`
       );
 
@@ -770,20 +770,21 @@ ${skillData.instructions}
             <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Skill Name *</label>
+                  <label htmlFor="skill-name" className="block text-sm text-clawd-text-dim mb-1">Skill Name *</label>
                   <input
+                    id="skill-name"
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g., GitHub PR Review"
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
-                    autoFocus
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">Category</label>
+                  <label htmlFor="skill-category" className="block text-sm text-clawd-text-dim mb-1">Category</label>
                   <input
+                    id="skill-category"
                     type="text"
                     value={category}
                     onChange={e => setCategory(e.target.value)}
@@ -794,8 +795,9 @@ ${skillData.instructions}
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Description</label>
+                <label htmlFor="skill-description" className="block text-sm text-clawd-text-dim mb-1">Description</label>
                 <textarea
+                  id="skill-description"
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="What does this skill do? When should it be used?"
@@ -805,8 +807,9 @@ ${skillData.instructions}
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Instructions *</label>
+                <label htmlFor="skill-instructions" className="block text-sm text-clawd-text-dim mb-1">Instructions *</label>
                 <textarea
+                  id="skill-instructions"
                   value={instructions}
                   onChange={e => setInstructions(e.target.value)}
                   placeholder="Step-by-step instructions for executing this skill. Include commands, tools, and workflows."

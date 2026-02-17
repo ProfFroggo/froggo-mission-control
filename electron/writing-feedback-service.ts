@@ -12,6 +12,9 @@ import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('WritingFeedback');
 
 // ── Types ──
 
@@ -51,7 +54,7 @@ async function logFeedback(projectId: string, entry: FeedbackEntry) {
 
     return { success: true };
   } catch (e: any) {
-    console.error('[writing-feedback] logFeedback error:', e.message);
+    logger.error('[writing-feedback] logFeedback error:', e.message);
     return { success: false, error: e.message };
   }
 }
@@ -84,7 +87,7 @@ async function getFeedbackHistory(projectId: string, chapterId: string) {
       throw err;
     }
   } catch (e: any) {
-    console.error('[writing-feedback] getFeedbackHistory error:', e.message);
+    logger.error('[writing-feedback] getFeedbackHistory error:', e.message);
     return { success: false, error: e.message, entries: [] };
   }
 }
@@ -98,5 +101,5 @@ export function registerWritingFeedbackHandlers() {
   ipcMain.handle('writing:feedback:history', async (_, projectId: string, chapterId: string) =>
     getFeedbackHistory(projectId, chapterId));
 
-  console.debug('[writing-feedback] IPC handlers registered');
+  logger.debug('[writing-feedback] IPC handlers registered');
 }

@@ -33,14 +33,14 @@ export const XReplyGuyView: React.FC = () => {
   const loadHotMentions = async () => {
     setLoading(true);
     try {
-      const result = await window.electron.xReplyGuy.listHotMentions({
+      const result = await window.clawdbot?.xReplyGuy?.listHotMentions({
         minLikes,
         minRetweets,
         limit: 50,
       });
       
-      if (result.success) {
-        setMentions(result.mentions);
+      if (result?.success) {
+        setMentions((result?.mentions ?? []) as HotMention[]);
       }
     } catch (error) {
       console.error('Error loading hot mentions:', error);
@@ -62,13 +62,13 @@ export const XReplyGuyView: React.FC = () => {
     }
     
     try {
-      const result = await window.electron.xReplyGuy.createQuickDraft({
+      const result = await window.clawdbot?.xReplyGuy?.createQuickDraft({
         mentionId,
         replyText,
         fastTrack,
       });
       
-      if (result.success) {
+      if (result?.success) {
         showToast('success', 'Draft Created', fastTrack ? 'Fast-tracked and ready to post' : 'Draft saved');
         setReplyText('');
         setSelectedMention(null);
@@ -78,11 +78,11 @@ export const XReplyGuyView: React.FC = () => {
         if (fastTrack) {
           const postNow = window.confirm('Draft is approved. Post immediately?');
           if (postNow) {
-            await handlePostNow(result.id);
+            await handlePostNow(result?.draftId ?? '');
           }
         }
       } else {
-        showToast('error', 'Draft Failed', result.error || 'Could not create draft');
+        showToast('error', 'Draft Failed', result?.error || 'Could not create draft');
       }
     } catch (error) {
       console.error('Error creating draft:', error);
@@ -93,13 +93,13 @@ export const XReplyGuyView: React.FC = () => {
   const handlePostNow = async (draftId: string) => {
     setPosting(true);
     try {
-      const result = await window.electron.xReplyGuy.postNow({ draftId });
+      const result = await window.clawdbot?.xReplyGuy?.postNow({ draftId });
       
-      if (result.success) {
+      if (result?.success) {
         showToast('success', 'Posted!', `Tweet posted: ${result.tweetId}`);
         await loadHotMentions();
       } else {
-        showToast('error', 'Post Failed', result.error || 'Could not post tweet');
+        showToast('error', 'Post Failed', result?.error || 'Could not post tweet');
       }
     } catch (error) {
       console.error('Error posting:', error);

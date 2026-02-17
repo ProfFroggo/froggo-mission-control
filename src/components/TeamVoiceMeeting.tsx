@@ -59,7 +59,6 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
 
   // Helper functions for agent data
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
-  const agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
 
   // Voice state
   const [isActive, setIsActive] = useState(false);

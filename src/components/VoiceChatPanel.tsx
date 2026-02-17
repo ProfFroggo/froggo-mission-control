@@ -5,7 +5,7 @@
  * camera/screen video input, text input, tool calling, and interruption support.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Loader2,
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
@@ -19,8 +19,8 @@ import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
 import { gateway } from '../lib/gateway';
-import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
-import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
+import { geminiLive, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
+import { loadAgentContext, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
 async function loadApiKey(): Promise<string> {
@@ -31,7 +31,9 @@ async function loadApiKey(): Promise<string> {
   try {
     const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[VoiceChatPanel] Failed to load API key from settings:', err);
+  }
   // 3. Check localStorage settings
   try {
     const s = JSON.parse(localStorage.getItem('froggo-settings') || '{}');
@@ -93,7 +95,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   // Screen picker state
   const [showScreenPicker, setShowScreenPicker] = useState(false);
-  const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
+  const [_activeSourceId, setActiveSourceId] = useState<string | null>(null);
   
   // Audio context state
   const [audioState, setAudioState] = useState<'suspended' | 'running' | 'closed' | null>(null);
@@ -185,7 +187,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setConnecting(false);
         addSystemMessage('🔗 Connected — speak naturally');
       }),
-      geminiLive.on('disconnected', ({ code, reason }: { code?: number; reason?: string } = {}) => {
+      geminiLive.on('disconnected', ({ code }: { code?: number; reason?: string } = {}) => {
         const wasActive = callActiveRef.current;
         setConnecting(false);
         setListening(false);
@@ -203,7 +205,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           callActiveRef.current = false;
         }
       }),
-      geminiLive.on('reconnecting', ({ attempt, delayMs }: { attempt: number; delayMs: number }) => {
+      geminiLive.on('reconnecting', ({ attempt }: { attempt: number; delayMs: number }) => {
         setConnecting(true);
         addSystemMessage(`🔄 Reconnecting... (attempt ${attempt})`);
       }),
@@ -248,7 +250,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           return [...prev, { id: nextId(role === 'assistant' ? 'a' : 'u'), role, content: text, timestamp: Date.now() }];
         });
       }),
-      geminiLive.on('model-thinking', ({ text }: { text: string }) => {
+      geminiLive.on('model-thinking', (_evt: { text: string }) => {
         // Voice thinking update
       }),
       geminiLive.on('interrupted', () => {
@@ -391,7 +393,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       try {
         const mode = videoMode !== 'none' ? videoMode : 'camera';
         await geminiLive.startVideo(mode);
-        const stream = geminiLive.getVideoStream();
         setVideoActive(true);
         addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
         if (mode === 'screen') {
@@ -1018,7 +1019,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
           let data;
           try {
             data = JSON.parse(r.stdout);
-          } catch (e) {
+          } catch {
             return { output: 'Search failed - invalid response format' };
           }
           

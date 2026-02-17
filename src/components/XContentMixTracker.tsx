@@ -31,13 +31,13 @@ export const XContentMixTracker: React.FC = () => {
       const startDate = now - (daysBack * 24 * 60 * 60 * 1000);
 
       // Fetch posted drafts with content type metadata
-      const result = await window.electron.xDraft.list({ 
+      const result = await window.clawdbot?.xDraft?.list({ 
         status: 'posted',
       });
 
-      if (result.success) {
-        const drafts = result.drafts.filter((d: any) => {
-          const postedAt = d.metadata ? JSON.parse(d.metadata).postedAt : 0;
+      if (result?.success) {
+        const drafts = (result?.drafts ?? []).filter((d: unknown) => {
+          const postedAt = (d as any).metadata ? JSON.parse((d as any).metadata).postedAt : 0;
           return postedAt >= startDate;
         });
 
@@ -50,8 +50,8 @@ export const XContentMixTracker: React.FC = () => {
         };
 
         for (const draft of drafts) {
-          const metadata = draft.metadata ? JSON.parse(draft.metadata) : {};
-          const contentType = metadata.content_type || 'educational';
+          const metadata = (draft as any).metadata ? JSON.parse((draft as any).metadata) : {};
+          const contentType = (metadata as any).content_type || 'educational';
           counts[contentType] = (counts[contentType] || 0) + 1;
         }
 
