@@ -88,11 +88,13 @@
   3. User message chat bubbles display at 50% opacity green — visually distinct from full-green without being jarring
   4. Every chat dialogue across every page (Chat, X/Twitter, Finance, Writing) uses the same component and matches Chat page styling
   5. Chat input bar sits at the same vertical position across all pages
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 13-01: Fix dark mode inputs and chat bubble opacity
-- [ ] 13-02: Fix Agents page borders and unify chat dialogue component
+- [ ] 13-01-PLAN.md -- Define missing CSS tokens (bg-alt, bg0, card) for dark mode inputs
+- [ ] 13-02-PLAN.md -- Fix Agents page borders to use per-agent theme colors
+- [ ] 13-03-PLAN.md -- Standardize user chat bubbles (ChatPanel, ChatRoom, AgentModal, Writing)
+- [ ] 13-04-PLAN.md -- Standardize user chat bubbles (X/Twitter, Finance, Voice, QuickActions)
 
 #### Phase 14: X/Twitter Identity, Dark Mode & Tab Structure
 **Goal**: The X/Twitter page presents correctly (X branding, dark mode, clean tab order) with approval panels stripped from non-content tabs
