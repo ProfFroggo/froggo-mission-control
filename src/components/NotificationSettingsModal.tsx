@@ -228,8 +228,15 @@ export default function NotificationSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter" onClick={onClose}>
-      <div className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter" 
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close modal"
+    >
+      <div className="glass-modal rounded-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
         {/* Header */}
         <div className="p-6 border-b border-clawd-border flex items-center justify-between">
           <div>
@@ -319,11 +326,12 @@ export default function NotificationSettingsModal({
 
           {/* Notification Level */}
           <div>
-            <label className="block font-medium mb-2 flex items-center gap-2">
+            <label htmlFor="notification-level" className="block font-medium mb-2 flex items-center gap-2">
               <MessageSquare size={16} />
               Notification Level
             </label>
             <select
+              id="notification-level"
               value={notificationLevel}
               onChange={(e) => setNotificationLevel(e.target.value)}
               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
@@ -383,10 +391,10 @@ export default function NotificationSettingsModal({
 
           {/* Quiet Hours */}
           <div>
-            <label className="block font-medium mb-3 flex items-center gap-2">
+            <span className="block font-medium mb-3 flex items-center gap-2">
               <Moon size={16} />
               Quiet Hours
-            </label>
+            </span>
             <div className="space-y-3">
               <label className="flex items-center gap-3">
                 <input
@@ -419,10 +427,10 @@ export default function NotificationSettingsModal({
 
           {/* Keyword Alerts */}
           <div>
-            <label className="block font-medium mb-3 flex items-center gap-2">
+            <span className="block font-medium mb-3 flex items-center gap-2">
               <Hash size={16} />
               Keyword Alerts
-            </label>
+            </span>
             <div className="space-y-2">
               <div className="flex gap-2">
                 <input
@@ -463,11 +471,12 @@ export default function NotificationSettingsModal({
 
           {/* Priority Level */}
           <div>
-            <label className="block font-medium mb-2 flex items-center gap-2">
+            <label htmlFor="priority-level" className="block font-medium mb-2 flex items-center gap-2">
               <AlertCircle size={16} />
               Priority Level
             </label>
             <select
+              id="priority-level"
               value={priorityLevel}
               onChange={(e) => setPriorityLevel(e.target.value)}
               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
@@ -481,11 +490,12 @@ export default function NotificationSettingsModal({
 
           {/* Notification Frequency */}
           <div>
-            <label className="block font-medium mb-2 flex items-center gap-2">
+            <label htmlFor="notification-frequency" className="block font-medium mb-2 flex items-center gap-2">
               <Clock size={16} />
               Notification Frequency
             </label>
             <select
+              id="notification-frequency"
               value={notificationFrequency}
               onChange={(e) => setNotificationFrequency(e.target.value)}
               className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:border-clawd-accent"
@@ -521,8 +531,9 @@ export default function NotificationSettingsModal({
 
           {/* Notes */}
           <div>
-            <label className="block font-medium mb-2">Notes</label>
+            <label htmlFor="notification-notes" className="block font-medium mb-2">Notes</label>
             <textarea
+              id="notification-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes about these settings..."
