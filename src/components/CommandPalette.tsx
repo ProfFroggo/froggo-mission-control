@@ -141,30 +141,39 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     
     // Quick Actions - Power-ups
     { id: 'quick-tweet', icon: <XIcon size={16} />, label: 'Draft a Post', category: 'Quick', action: async () => {
-      const tweet = window.prompt('Draft tweet:');
-      if (tweet && connected) {
-        await gateway.sendChat(`Draft this tweet for approval: "${tweet}"`);
-        showToast('info', 'Tweet drafted', 'Check inbox for approval');
-        onNavigate('chat');
-      }
-      onClose();
+      withPrompt(
+        { title: 'Draft Tweet', message: 'Enter tweet content:', placeholder: 'What\'s happening?' },
+        async (tweet) => {
+          if (connected) {
+            await gateway.sendChat(`Draft this tweet for approval: "${tweet}"`);
+            showToast('info', 'Tweet drafted', 'Check inbox for approval');
+            onNavigate('chat');
+          }
+          onClose();
+        }
+      );
     }},
     { id: 'quick-task', icon: <Plus size={16} />, label: 'Create Task', shortcut: '⌘N', category: 'Quick', action: async () => {
-      const title = window.prompt('Task title:');
-      if (title) {
-        // Add task to kanban
-        await (window as any).clawdbot?.tasks?.sync({ id: `task-${Date.now()}`, title, status: 'todo', project: 'General' });
-        showToast('success', 'Task created', title);
-      }
-      onClose();
+      withPrompt(
+        { title: 'Create Task', message: 'Enter task title:', placeholder: 'Task title...' },
+        async (title) => {
+          await (window as any).clawdbot?.tasks?.sync({ id: `task-${Date.now()}`, title, status: 'todo', project: 'General' });
+          showToast('success', 'Task created', title);
+          onClose();
+        }
+      );
     }},
     { id: 'quick-note', icon: <FileText size={16} />, label: 'Quick Note to Memory', category: 'Quick', action: async () => {
-      const note = window.prompt('Note:');
-      if (note && connected) {
-        await gateway.sendChat(`Add to today's memory log: ${note}`);
-        showToast('success', 'Note saved');
-      }
-      onClose();
+      withPrompt(
+        { title: 'Quick Note', message: 'Enter note:', placeholder: 'Note...', multiline: true },
+        async (note) => {
+          if (connected) {
+            await gateway.sendChat(`Add to today's memory log: ${note}`);
+            showToast('success', 'Note saved');
+          }
+          onClose();
+        }
+      );
     }},
     
     // Focus Modes
@@ -194,22 +203,30 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
       window.location.reload();
     }},
     { id: 'sys-shell', icon: <Terminal size={16} />, label: 'Run Shell Command', category: 'System', action: async () => {
-      const cmd = window.prompt('Shell command:');
-      if (cmd && connected) {
-        await gateway.sendChat(`Run: ${cmd}`);
-        onNavigate('chat');
-      }
-      onClose();
+      withPrompt(
+        { title: 'Run Shell Command', message: 'Enter command:', placeholder: 'ls -la' },
+        async (cmd) => {
+          if (connected) {
+            await gateway.sendChat(`Run: ${cmd}`);
+            onNavigate('chat');
+          }
+          onClose();
+        }
+      );
     }},
     { id: 'sys-spawn', icon: <Play size={16} />, label: 'Spawn Agent Task', category: 'System', action: async () => {
-      const task = window.prompt('Task description:');
-      const agent = window.prompt('Agent (coder/researcher/writer):') || 'coder';
-      if (task && connected) {
-        await gateway.sendChat(`Spawn ${agent} agent to: ${task}`);
-        showToast('info', 'Agent spawning', task.slice(0, 30) + '...');
-        onNavigate('chat');
-      }
-      onClose();
+      withPrompt2(
+        { title: 'Spawn Agent', message: 'Task description:', placeholder: 'What should the agent do?' },
+        { title: 'Agent Type', message: 'Agent name:', placeholder: 'coder' },
+        async (task, agent) => {
+          if (connected) {
+            await gateway.sendChat(`Spawn ${agent} agent to: ${task}`);
+            showToast('info', 'Agent spawning', task.slice(0, 30) + '...');
+            onNavigate('chat');
+          }
+          onClose();
+        }
+      );
     }},
   ];
 
@@ -358,6 +375,20 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
           </div>
         </div>
       </div>
+
+      {/* Prompt Dialog for text input */}
+      <PromptDialog
+        open={promptDialog.open}
+        onClose={promptDialog.closePrompt}
+        onSubmit={promptDialog.onSubmit}
+        title={promptDialog.config.title}
+        message={promptDialog.config.message}
+        placeholder={promptDialog.config.placeholder}
+        multiline={promptDialog.config.multiline}
+        confirmLabel={promptDialog.config.confirmLabel}
+        cancelLabel={promptDialog.config.cancelLabel}
+        defaultValue={promptDialog.config.defaultValue}
+      />
     </div>
   );
 }
