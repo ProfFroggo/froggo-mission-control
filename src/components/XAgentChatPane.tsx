@@ -281,7 +281,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-clawd-border">
+      <div className="p-4 border-t border-clawd-border bg-clawd-surface">
         <div className="flex gap-2">
           <input
             type="text"

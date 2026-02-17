@@ -252,7 +252,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-clawd-border">
+      <div className="p-4 border-t border-clawd-border bg-clawd-surface">
         <div className="flex gap-2">
           <input
             ref={inputRef}
