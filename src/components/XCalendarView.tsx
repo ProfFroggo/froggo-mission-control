@@ -395,9 +395,10 @@ export const XCalendarView: React.FC = () => {
           const isThread = content.tweets && content.tweets.length > 1;
           
           return (
-            <div
+            <button
               key={draft.id}
-              className={`p-3 border rounded cursor-pointer transition-colors ${
+              type="button"
+              className={`w-full p-3 border rounded cursor-pointer transition-colors text-left ${
                 selectedDraft === draft.id
                   ? 'border-info bg-info-subtle'
                   : 'border-clawd-border hover:border-clawd-border/80'
@@ -411,7 +412,7 @@ export const XCalendarView: React.FC = () => {
                 <div className="text-xs text-clawd-text-dim">v{draft.version}</div>
               </div>
               <div className="text-sm text-clawd-text">{preview}</div>
-            </div>
+            </button>
           );
         })}
       </div>

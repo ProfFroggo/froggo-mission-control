@@ -372,6 +372,8 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
   return (
     <div
+      role="toolbar"
+      aria-label="Writing feedback tools"
       className="bg-clawd-surface border border-clawd-border rounded-lg shadow-lg p-3 min-w-[320px] max-w-[480px]"
       onMouseDown={(e) => e.preventDefault()}
     >
@@ -408,7 +410,6 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
           }
           className="flex-1 bg-clawd-bg border border-clawd-border rounded px-2 py-1.5 text-sm text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-clawd-accent"
           disabled={streaming}
-          autoFocus
         />
         <button
           onClick={handleSend}

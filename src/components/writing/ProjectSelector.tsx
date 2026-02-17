@@ -113,9 +113,9 @@ export default function ProjectSelector() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-clawd-text-dim mb-1.5">
+                <span className="block text-xs font-medium text-clawd-text-dim mb-1.5">
                   Type
-                </label>
+                </span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setType('memoir')}

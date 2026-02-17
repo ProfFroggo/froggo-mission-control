@@ -176,10 +176,11 @@ export default function XDraftComposer() {
           <div className="flex-1 overflow-y-auto space-y-6">
             {/* Plan Selector */}
             <div>
-              <label className="block text-sm font-medium text-clawd-text mb-2">
+              <label htmlFor="content-plan" className="block text-sm font-medium text-clawd-text mb-2">
                 Content Plan <span className="text-error">*</span>
               </label>
               <select
+                id="content-plan"
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
                 className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
@@ -207,14 +208,15 @@ export default function XDraftComposer() {
             {/* Version Selector */}
             {selectedPlanId && (
               <div>
-                <label className="block text-sm font-medium text-clawd-text mb-2">
+                <span className="block text-sm font-medium text-clawd-text mb-2">
                   Version <span className="text-error">*</span>
-                </label>
-                <div className="flex gap-2">
+                </span>
+                <div className="flex gap-2" role="radiogroup" aria-label="Version selection">
                   {['A', 'B', 'C'].map((v) => (
                     <button
                       key={v}
                       onClick={() => setVersion(v)}
+                      aria-pressed={version === v}
                       className={`px-6 py-2 rounded-lg border-2 transition-colors ${
                         version === v
                           ? 'border-info bg-info/20 text-clawd-text'
@@ -233,7 +235,7 @@ export default function XDraftComposer() {
             {selectedPlanId && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-clawd-text">
+                  <label htmlFor="tweet-content" className="text-sm font-medium text-clawd-text">
                     Tweets <span className="text-error">*</span>
                   </label>
                   {tweets.length < 10 && (

@@ -275,9 +275,9 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
               {/* Known Accounts Quick Select */}
               <div>
-                <label className="block text-sm font-medium mb-2 text-clawd-text-dim">
+                <span className="block text-sm font-medium mb-2 text-clawd-text-dim">
                   Or select a known account:
-                </label>
+                </span>
                 <div className="space-y-2">
                   {provider === 'google' && useUserSettings.getState().emailAccounts.map(a => a.email).map(acc => (
                     <button

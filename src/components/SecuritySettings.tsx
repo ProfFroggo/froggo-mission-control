@@ -442,8 +442,9 @@ export default function SecuritySettings() {
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Key Name</label>
+                <label htmlFor="api-key-name" className="block text-sm text-clawd-text-dim mb-1">Key Name</label>
                 <input
+                  id="api-key-name"
                   type="text"
                   value={newKey.name}
                   onChange={(e) => setNewKey(k => ({ ...k, name: e.target.value }))}
@@ -452,8 +453,9 @@ export default function SecuritySettings() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Service</label>
+                <label htmlFor="api-key-service" className="block text-sm text-clawd-text-dim mb-1">Service</label>
                 <input
+                  id="api-key-service"
                   type="text"
                   value={newKey.service}
                   onChange={(e) => setNewKey(k => ({ ...k, service: e.target.value }))}
@@ -462,8 +464,9 @@ export default function SecuritySettings() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">API Key</label>
+                <label htmlFor="api-key-value" className="block text-sm text-clawd-text-dim mb-1">API Key</label>
                 <input
+                  id="api-key-value"
                   type="password"
                   value={newKey.key}
                   onChange={(e) => setNewKey(k => ({ ...k, key: e.target.value }))}

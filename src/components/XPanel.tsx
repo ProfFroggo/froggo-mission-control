@@ -906,8 +906,9 @@ export default function XPanel() {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-2">Date</label>
+                      <label htmlFor="schedule-date" className="block text-sm text-clawd-text-dim mb-2">Date</label>
                       <input
+                        id="schedule-date"
                         type="date"
                         value={scheduleDate}
                         onChange={(e) => setScheduleDate(e.target.value)}
@@ -917,8 +918,9 @@ export default function XPanel() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-2">Time</label>
+                      <label htmlFor="schedule-time" className="block text-sm text-clawd-text-dim mb-2">Time</label>
                       <input
+                        id="schedule-time"
                         type="time"
                         value={scheduleTime}
                         onChange={(e) => setScheduleTime(e.target.value)}

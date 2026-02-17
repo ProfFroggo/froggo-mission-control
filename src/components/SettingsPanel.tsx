@@ -490,10 +490,11 @@ export default function SettingsPanel() {
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="voice-speed" className="block text-sm text-clawd-text-dim mb-2">
                     Speech Speed: {settings.voiceSpeed.toFixed(1)}x
                   </label>
                   <input
+                    id="voice-speed"
                     type="range"
                     min="0.5"
                     max="2"
@@ -530,10 +531,11 @@ export default function SettingsPanel() {
                 </div>
                 {settings.autoRefresh && (
                   <div>
-                    <label className="block text-sm text-clawd-text-dim mb-2">
+                    <label htmlFor="refresh-interval" className="block text-sm text-clawd-text-dim mb-2">
                       Refresh Interval: {settings.refreshInterval}s
                     </label>
                     <input
+                      id="refresh-interval"
                       type="range"
                       min="10"
                       max="120"
@@ -647,8 +649,9 @@ export default function SettingsPanel() {
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
+                  <label htmlFor="font-family-select" className="block text-sm text-clawd-text-dim mb-2">Font Family</label>
                   <select
+                    id="font-family-select"
                     value={settings.fontFamily}
                     onChange={(e) => setSettings(s => ({ ...s, fontFamily: e.target.value }))}
                     className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent"
@@ -660,10 +663,11 @@ export default function SettingsPanel() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="font-size" className="block text-sm text-clawd-text-dim mb-2">
                     Font Size: {settings.fontSize}px
                   </label>
                   <input
+                    id="font-size"
                     type="range"
                     min="12"
                     max="18"
@@ -1006,10 +1010,11 @@ export default function SettingsPanel() {
 
                 {/* Rate Limits */}
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="tweet-rate-limit" className="block text-sm text-clawd-text-dim mb-2">
                     Tweet Rate Limit: {settings.rateLimitTweets}/hour
                   </label>
                   <input
+                    id="tweet-rate-limit"
                     type="range"
                     min="1"
                     max="30"
@@ -1020,10 +1025,11 @@ export default function SettingsPanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-2">
+                  <label htmlFor="email-rate-limit" className="block text-sm text-clawd-text-dim mb-2">
                     Email Rate Limit: {settings.rateLimitEmails}/hour
                   </label>
                   <input
+                    id="email-rate-limit"
                     type="range"
                     min="1"
                     max="50"

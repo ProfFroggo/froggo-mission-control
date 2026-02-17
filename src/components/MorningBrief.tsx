@@ -693,7 +693,6 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-4 border-t border-clawd-border bg-clawd-bg">
           <button
             onClick={onDismiss}
-            autoFocus
             className="w-full py-3 bg-clawd-accent text-white rounded-xl font-medium hover:bg-clawd-accent/90 transition-colors"
           >
             {hasItems ? "Let's get to work" : "Start your day"}

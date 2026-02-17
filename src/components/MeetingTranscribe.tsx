@@ -417,8 +417,9 @@ export default function MeetingTranscribe() {
                             : 'bg-clawd-surface border-clawd-border hover:border-clawd-border/80'
                         }`}
                       >
-                        <div
-                          className="p-3 cursor-pointer"
+                        <button
+                          type="button"
+                          className="w-full p-3 cursor-pointer text-left"
                           onClick={() => viewMeeting(meeting)}
                         >
                           <div className="flex items-start justify-between mb-2">
@@ -463,7 +464,7 @@ export default function MeetingTranscribe() {
                               {meeting.status}
                             </div>
                           </div>
-                        </div>
+                        </button>
 
                         {isExpanded && (
                           <div className="px-3 pb-3 space-y-2 border-t border-clawd-border pt-2">

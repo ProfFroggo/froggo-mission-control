@@ -293,8 +293,9 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           {/* Basic Settings */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Rule Name</label>
+              <label htmlFor="rule-name" className="block text-sm font-medium mb-2">Rule Name</label>
               <input
+                id="rule-name"
                 type="text"
                 value={rule.name || ''}
                 onChange={(e) => setRule({ ...rule, name: e.target.value })}
@@ -303,8 +304,9 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Priority</label>
+              <label htmlFor="rule-priority" className="block text-sm font-medium mb-2">Priority</label>
               <input
+                id="rule-priority"
                 type="number"
                 value={rule.priority || 50}
                 onChange={(e) => setRule({ ...rule, priority: parseInt(e.target.value) })}
@@ -318,7 +320,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
           {/* Operator */}
           <div>
-            <label className="block text-sm font-medium mb-2">Match Conditions</label>
+            <span className="block text-sm font-medium mb-2">Match Conditions</span>
             <div className="flex gap-3">
               <button
                 onClick={() => setRule({ ...rule, operator: 'AND' })}

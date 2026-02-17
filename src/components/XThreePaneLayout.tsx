@@ -66,16 +66,12 @@ export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
       </div>
 
       {/* Left Divider */}
-      <div
+      <button
         onMouseDown={(e) => handleMouseDown('left', e)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); /* Keyboard resize not supported */ }}}
-        role="separator"
-        aria-orientation="vertical"
+        onMouseDownCapture={(e) => e.preventDefault()}
+        type="button"
         aria-label="Resize left pane"
-        tabIndex={0}
-        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors ${
-          dragging === 'left' ? 'bg-info' : 'bg-transparent'
-        }`}
+        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors border-0 bg-transparent p-0 ${dragging === 'left' ? 'bg-info' : 'bg-transparent'}`}
       />
 
       {/* Center Pane (Content Editor) */}
@@ -84,16 +80,12 @@ export default function ThreePaneLayout({ children }: ThreePaneLayoutProps) {
       </div>
 
       {/* Right Divider */}
-      <div
+      <button
         onMouseDown={(e) => handleMouseDown('right', e)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); /* Keyboard resize not supported */ }}}
-        role="separator"
-        aria-orientation="vertical"
+        onMouseDownCapture={(e) => e.preventDefault()}
+        type="button"
         aria-label="Resize right pane"
-        tabIndex={0}
-        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors ${
-          dragging === 'right' ? 'bg-info' : 'bg-transparent'
-        }`}
+        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors border-0 bg-transparent p-0 ${dragging === 'right' ? 'bg-info' : 'bg-transparent'}`}
       />
 
       {/* Right Pane (Approval Queue) */}

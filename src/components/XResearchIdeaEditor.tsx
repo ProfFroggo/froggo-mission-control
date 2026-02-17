@@ -88,10 +88,11 @@ export default function XResearchIdeaEditor() {
       <div className="flex-1 overflow-y-auto space-y-6">
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-clawd-text mb-2">
+          <label htmlFor="research-title" className="block text-sm font-medium text-clawd-text mb-2">
             Title <span className="text-error">*</span>
           </label>
           <input
+            id="research-title"
             type="text"
             aria-label="Research idea title"
             value={title}
@@ -104,10 +105,11 @@ export default function XResearchIdeaEditor() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-clawd-text mb-2">
+          <label htmlFor="research-description" className="block text-sm font-medium text-clawd-text mb-2">
             Description <span className="text-error">*</span>
           </label>
           <textarea
+            id="research-description"
             aria-label="Research idea description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -123,13 +125,14 @@ export default function XResearchIdeaEditor() {
 
         {/* Citations */}
         <div>
-          <label className="block text-sm font-medium text-clawd-text mb-2">
+          <label htmlFor="research-citations" className="block text-sm font-medium text-clawd-text mb-2">
             Citations <span className="text-error">*</span>
           </label>
           <div className="space-y-2">
             {citations.map((citation, index) => (
               <div key={`${citation}-${index}`} className="flex gap-2">
                 <input
+                  id={`citation-${index}`}
                   type="url"
                   aria-label={`Citation URL ${index + 1}`}
                   value={citation}

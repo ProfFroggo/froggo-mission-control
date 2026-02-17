@@ -134,6 +134,7 @@ export default function ConfirmDialog({
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={requireInput.placeholder}
               className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent"
+              /* eslint-disable-next-line jsx-a11y/no-autofocus */
               autoFocus
               disabled={isProcessing}
             />

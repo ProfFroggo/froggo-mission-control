@@ -351,7 +351,7 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} role="button" tabIndex={-1} aria-label="Close agent creation" />
+      <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={handleClose} onKeyDown={(e) => e.key === 'Escape' && handleClose()} type="button" aria-label="Close agent creation" />
       <div className={`relative w-full max-w-lg bg-clawd-bg border border-teal-500/30 rounded-2xl shadow-2xl shadow-teal-500/10 flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-clawd-border">

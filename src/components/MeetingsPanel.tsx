@@ -962,7 +962,6 @@ export default function MeetingsPanel() {
                           onKeyDown={(e) => { if (e.key === 'Enter') startMeeting(); if (e.key === 'Escape') setShowTitleInput(false); }}
                           placeholder="Meeting title (optional)"
                           className="w-full px-4 py-3 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20"
-                          autoFocus
                         />
                         <div className="flex gap-3">
                           <button
@@ -1063,7 +1062,6 @@ export default function MeetingsPanel() {
                                     value={editingText}
                                     onChange={(e) => setEditingText(e.target.value)}
                                     className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text focus:outline-none focus:border-success-border"
-                                    autoFocus
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEditedItem();
                                       if (e.key === 'Escape') cancelEditing();

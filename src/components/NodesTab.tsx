@@ -172,7 +172,6 @@ export default function NodesTab() {
                           onChange={e => setRenameValue(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleRename(node.nodeId)}
                           className="bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm focus:outline-none focus:border-clawd-accent"
-                          autoFocus
                         />
                         <button onClick={() => handleRename(node.nodeId)} className="text-success hover:text-success"><Check size={16} /></button>
                         <button onClick={() => setRenamingNode(null)} className="text-error hover:text-error"><X size={16} /></button>

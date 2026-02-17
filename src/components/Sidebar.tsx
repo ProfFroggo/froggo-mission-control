@@ -90,9 +90,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       className={`bg-clawd-surface border-r border-clawd-border flex flex-col transition-all duration-300 ease-in-out z-0 ${
         expanded ? 'w-52' : 'w-16'
       }`}
-      role="navigation"
       aria-label="Main navigation"
-      aria-expanded={expanded}
     >
       {/* Drag region — traffic light safe zone */}
       <div className="drag-region h-12 border-b border-clawd-border">
