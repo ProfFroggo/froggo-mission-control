@@ -43,11 +43,11 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
 
   // Rating badges based on completion rate
   const getRatingBadge = (rate: number) => {
-    if (rate >= 95) return { label: 'Excellent', color: 'text-success bg-green-500/20 border-success-border' };
-    if (rate >= 85) return { label: 'Great', color: 'text-info bg-blue-500/20 border-info-border' };
-    if (rate >= 70) return { label: 'Good', color: 'text-warning bg-yellow-500/20 border-warning-border' };
-    if (rate >= 50) return { label: 'Fair', color: 'text-orange-400 bg-orange-500/20 border-orange-500/30' };
-    return { label: 'Needs Improvement', color: 'text-error bg-red-500/20 border-error-border' };
+    if (rate >= 95) return { label: 'Excellent', color: 'text-success bg-success-subtle border-success-border' };
+    if (rate >= 85) return { label: 'Great', color: 'text-info bg-info-subtle border-info-border' };
+    if (rate >= 70) return { label: 'Good', color: 'text-warning bg-warning-subtle border-warning-border' };
+    if (rate >= 50) return { label: 'Fair', color: 'text-warning bg-warning-subtle border-warning-border' };
+    return { label: 'Needs Improvement', color: 'text-error bg-error-subtle border-error-border' };
   };
 
   const rating = getRatingBadge(m.completionRate);
@@ -87,7 +87,7 @@ export default function AgentMetricsCard({ metrics, compact = false }: AgentMetr
           return (
             <div
               key={i}
-              className="flex-1 bg-blue-500/50 rounded-t transition-all"
+              className="flex-1 bg-info-subtle rounded-t transition-all"
               style={{ height: `${height}%` }}
               title={`${point.completion_date}: ${point.tasks_completed} tasks`}
             />

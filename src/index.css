@@ -346,11 +346,11 @@ body {
   }
   
   .badge-webchat {
-    @apply bg-purple-500/20 text-purple-400 border-purple-500/30;
+    @apply bg-review-subtle text-review border-review-border;
   }
   
   .badge-agents {
-    @apply bg-orange-500/20 text-orange-400 border-orange-500/30;
+    @apply bg-warning-subtle text-warning border-warning-border;
   }
   
   /* Voice orb pulse rings */

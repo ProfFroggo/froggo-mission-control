@@ -211,7 +211,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           </span>
         </div>
         {error && (
-          <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-xs text-red-400">
+          <div className="mt-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2 text-xs text-error">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
           </div>
@@ -240,7 +240,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                     msg.role === 'user'
                       ? 'bg-info-subtle text-info'
                       : msg.error
-                      ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+                      ? 'bg-error-subtle border border-error-border text-error'
                       : 'bg-clawd-bg-alt text-clawd-text'
                   }`}
                 >

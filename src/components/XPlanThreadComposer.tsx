@@ -145,7 +145,7 @@ export default function XPlanThreadComposer() {
                 aria-label="Select research idea"
                 value={selectedResearchId}
                 onChange={(e) => setSelectedResearchId(e.target.value)}
-                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-clawd-bg-alt text-clawd-text border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
                 disabled={submitting}
               >
                 <option value="">Select a research idea...</option>

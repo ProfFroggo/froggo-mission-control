@@ -198,7 +198,7 @@ export default function ChatPane() {
         {messages.length > 0 && (
           <button
             onClick={handleClearChat}
-            className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-red-400/10 transition-colors"
+            className="p-1 rounded text-clawd-text-dim hover:text-error hover:bg-error-subtle transition-colors"
             title="Clear conversation"
           >
             <Trash2 size={12} />

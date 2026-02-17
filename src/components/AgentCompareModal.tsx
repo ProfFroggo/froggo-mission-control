@@ -179,7 +179,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     const isWinner = getWinner('successRate') === agentId;
 
                     return (
-                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-green-500' : ''}`}>
+                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-success' : ''}`}>
                         <div className="text-3xl font-bold text-success mb-1">
                           {Math.round(agentData.successRate * 100)}%
                         </div>
@@ -230,7 +230,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     const isWinner = getWinner('totalTasks') === agentId;
 
                     return (
-                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-purple-500' : ''}`}>
+                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-review' : ''}`}>
                         <div className="text-3xl font-bold text-review mb-1">
                           {agentData.totalTasks}
                         </div>
@@ -290,7 +290,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                     const isWinner = getWinner('recentActivity') === agentId;
 
                     return (
-                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-yellow-500' : ''}`}>
+                      <div key={agentId} className={`bg-clawd-bg rounded-lg p-4 ${isWinner ? 'ring-2 ring-warning' : ''}`}>
                         <div className="text-3xl font-bold text-warning mb-1">
                           {agentData.recentActivity}
                         </div>

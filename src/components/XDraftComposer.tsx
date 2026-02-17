@@ -277,7 +277,7 @@ export default function XDraftComposer() {
                         {tweets.length > 1 && (
                           <button
                             onClick={() => removeTweet(index)}
-                            className="p-2 text-error hover:bg-red-500/20 rounded-lg transition-colors"
+                            className="p-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
                             disabled={submitting}
                           >
                             <Trash2 className="w-4 h-4" />

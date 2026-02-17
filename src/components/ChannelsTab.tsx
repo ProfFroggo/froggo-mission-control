@@ -145,7 +145,7 @@ export default function ChannelsTab() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {hasError && <span className="w-2 h-2 rounded-full bg-red-400" title="Has errors" />}
+                    {hasError && <span className="w-2 h-2 rounded-full bg-error" title="Has errors" />}
                     <span className={`px-2 py-0.5 rounded text-xs ${
                       connectedCount > 0 ? 'bg-success-subtle text-success' : 'bg-clawd-bg0/20 text-clawd-text-dim'
                     }`}>
@@ -187,7 +187,7 @@ export default function ChannelsTab() {
                           </div>
                           <button
                             onClick={e => { e.stopPropagation(); handleLogout(channel.id, account.accountId); }}
-                            className="p-2 hover:bg-red-500/20 text-clawd-text-dim hover:text-error rounded-lg transition-colors"
+                            className="p-2 hover:bg-error-subtle text-clawd-text-dim hover:text-error rounded-lg transition-colors"
                             title="Logout"
                           >
                             <LogOut size={14} />

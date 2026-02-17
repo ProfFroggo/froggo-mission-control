@@ -30,7 +30,7 @@ export function PriorityIndicator({
     },
     high: {
       color: 'bg-orange-500',
-      textColor: 'text-orange-400',
+      textColor: 'text-warning',
       label: 'High',
       icon: AlertCircle,
       pulse: false
@@ -172,7 +172,7 @@ export function PriorityStats({ stats }: { stats: any }) {
         </div>
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">High</div>
-          <div className="text-2xl font-bold text-orange-400">{stats.high || 0}</div>
+          <div className="text-2xl font-bold text-warning">{stats.high || 0}</div>
         </div>
         <div>
           <div className="text-xs text-clawd-text-dim mb-1">Normal</div>

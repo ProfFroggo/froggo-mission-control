@@ -164,7 +164,7 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
           className="flex items-center gap-1.5 px-2 py-1 text-xs rounded hover:bg-clawd-border/50 hover:text-clawd-text transition-all"
           title="Copy code"
         >
-          {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+          {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
       </div>

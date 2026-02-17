@@ -77,5 +77,5 @@ export const BadgePresets = {
   telegram: { color: 'text-[var(--channel-telegram)] bg-[var(--channel-telegram-bg)]' },
   whatsapp: { color: 'text-[var(--channel-whatsapp)] bg-[var(--channel-whatsapp-bg)]' },
   webchat: { color: 'text-review bg-review-subtle' },
-  agents: { color: 'text-orange-400 bg-orange-500/20' },
+  agents: { color: 'text-warning bg-warning-subtle' },
 } as const;

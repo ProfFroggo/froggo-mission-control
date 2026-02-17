@@ -677,11 +677,11 @@ Respond as ${agentName(agentId)}:`;
                 )}
                 {/* Processing dot */}
                 {isProcessing && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-yellow-400 border-2 border-clawd-bg animate-pulse" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-warning border-2 border-clawd-bg animate-pulse" />
                 )}
                 {/* Queued dot */}
                 {isQueued && !isProcessing && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-gray-400 border-2 border-clawd-bg" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-clawd-text-dim border-2 border-clawd-bg" />
                 )}
               </div>
               <span className={`text-[10px] ${isSpeaking ? theme.text + ' font-medium' : 'text-clawd-text-dim'}`}>
@@ -855,7 +855,7 @@ Respond as ${agentName(agentId)}:`;
               <button
                 onClick={interruptAll}
                 disabled={!speakingAgent && !processingAgent && speakQueue.length === 0}
-                className="p-3 rounded-full bg-clawd-border text-clawd-text-dim hover:bg-orange-500/20 hover:text-orange-400 transition-all disabled:opacity-30"
+                className="p-3 rounded-full bg-clawd-border text-clawd-text-dim hover:bg-warning-subtle hover:text-warning transition-all disabled:opacity-30"
                 title="Stop all speaking"
               >
                 <Square size={18} />

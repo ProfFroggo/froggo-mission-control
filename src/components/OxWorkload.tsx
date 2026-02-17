@@ -65,9 +65,9 @@ export default function OxWorkload() {
               >
                 {/* Column Header */}
                 <div className="p-3 flex items-center gap-2">
-                  <Icon size={16} className="text-slate-400" />
-                  <span className="font-medium text-slate-300">{column.label}</span>
-                  <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-slate-700 text-slate-400">
+                  <Icon size={16} className="text-clawd-text-dim" />
+                  <span className="font-medium text-clawd-text-dim">{column.label}</span>
+                  <span className="ml-auto px-2 py-0.5 text-xs rounded-full bg-slate-700 text-clawd-text-dim">
                     {columnTasks.length}
                   </span>
                 </div>
@@ -75,7 +75,7 @@ export default function OxWorkload() {
                 {/* Tasks */}
                 <div className="flex-1 overflow-y-auto p-2 space-y-2">
                   {columnTasks.length === 0 ? (
-                    <div className="p-4 text-center text-slate-600 text-sm">
+                    <div className="p-4 text-center text-clawd-text-dim text-sm">
                       No tasks
                     </div>
                   ) : (
@@ -99,7 +99,7 @@ export default function OxWorkload() {
                           
                           {progress && (
                             <div className="mt-2">
-                              <div className="flex justify-between text-xs text-slate-500 mb-1">
+                              <div className="flex justify-between text-xs text-clawd-text-dim mb-1">
                                 <span>Subtasks</span>
                                 <span>{progress.done}/{progress.total}</span>
                               </div>
@@ -113,10 +113,10 @@ export default function OxWorkload() {
                           )}
 
                           <div className="mt-2 flex items-center justify-between">
-                            <span className="text-xs text-slate-600">
+                            <span className="text-xs text-clawd-text-dim">
                               {task.id.slice(-8)}
                             </span>
-                            <ChevronRight size={14} className="text-slate-600" />
+                            <ChevronRight size={14} className="text-clawd-text-dim" />
                           </div>
                         </div>
                       );
@@ -130,7 +130,7 @@ export default function OxWorkload() {
       </div>
 
       {/* Footer Stats */}
-      <div className="p-4 border-t border-slate-800 flex items-center justify-between text-sm text-slate-500">
+      <div className="p-4 border-t border-slate-800 flex items-center justify-between text-sm text-clawd-text-dim">
         <span>📥 {getTasksByStatus('todo').length} pending</span>
         <span>⚡ {getTasksByStatus('in-progress').length} active</span>
         <span>👁️ {getTasksByStatus('review').length} in review</span>

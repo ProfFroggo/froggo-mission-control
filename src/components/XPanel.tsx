@@ -492,7 +492,7 @@ export default function XPanel() {
               {/* Header */}
               <div className="p-4 border-b border-clawd-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <div className="p-2 bg-info-subtle rounded-lg">
                     <Search size={20} className="text-info" />
                   </div>
                   <div>
@@ -591,7 +591,7 @@ export default function XPanel() {
                 {/* Header */}
                 <div className="p-4 border-b border-clawd-border">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
+                    <div className="p-2 bg-success-subtle rounded-lg">
                       <FileText size={20} className="text-success" />
                     </div>
                     <div>
@@ -994,7 +994,7 @@ export default function XPanel() {
                   <p className="whitespace-pre-wrap mb-4">{draft.text}</p>
                   <div className="flex items-center justify-between">
                     <span className={`text-xs px-2 py-1 rounded-full ${
-                      draft.status === 'pending' ? 'bg-yellow-500/20 text-warning' :
+                      draft.status === 'pending' ? 'bg-warning-subtle text-warning' :
                       'bg-clawd-border text-clawd-text-dim'
                     }`}>
                       {draft.status}

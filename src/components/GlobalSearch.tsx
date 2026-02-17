@@ -47,11 +47,11 @@ const typeIcons = {
 
 const typeColors = {
   task: 'text-info bg-info-subtle',
-  fact: 'text-review bg-purple-500/10',
+  fact: 'text-review bg-review-subtle',
   message: 'text-success bg-success-subtle',
-  email: 'text-warning bg-yellow-500/10',
+  email: 'text-warning bg-warning-subtle',
   session: 'text-cyan-400 bg-cyan-500/10',
-  calendar: 'text-orange-400 bg-orange-500/10',
+  calendar: 'text-warning bg-warning-subtle',
   tweet: 'text-sky-400 bg-sky-500/10',
   agent: 'text-pink-400 bg-pink-500/10',
 };

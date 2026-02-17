@@ -144,7 +144,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                 {/* Connection Status */}
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
                   connected 
-                    ? 'bg-green-500/20 text-success border border-success-border' 
+                    ? 'bg-success-subtle text-success border border-success-border' 
                     : 'bg-error-subtle text-error border border-error-border'
                 }`}>
                   {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
@@ -153,7 +153,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Urgent Items */}
                 {urgentCount > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-orange-500/20 text-warning border border-orange-500/30 backdrop-blur-sm animate-pulse">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-warning-subtle text-warning border border-warning-border backdrop-blur-sm animate-pulse">
                     <AlertTriangle size={12} />
                     {urgentCount} urgent {urgentCount === 1 ? 'item' : 'items'}
                   </div>
@@ -161,7 +161,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Active Agents */}
                 {activeSubagents.length > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-info border border-info-border backdrop-blur-sm">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-info-subtle text-info border border-info-border backdrop-blur-sm">
                     <Bot size={12} />
                     {activeSubagents.length} agent{activeSubagents.length > 1 ? 's' : ''} working
                   </div>
@@ -169,7 +169,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
 
                 {/* Completed Today */}
                 {completedToday > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-green-500/20 text-success border border-success-border backdrop-blur-sm">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-success-subtle text-success border border-success-border backdrop-blur-sm">
                     <CheckCircle size={12} />
                     {completedToday} completed today
                   </div>
@@ -217,7 +217,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('approvals')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${pendingApprovals.length > 0 
-                ? 'bg-gradient-to-br from-orange-500/20 via-orange-500/10 to-transparent border-2 border-orange-500/50 hover:border-orange-400 shadow-xl shadow-orange-500/20' 
+                ? 'bg-gradient-to-br from-orange-500/20 via-orange-500/10 to-transparent border-2 border-warning-border hover:border-warning-border shadow-xl shadow-orange-500/20' 
                 : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -256,7 +256,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('kanban')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${inProgressTasks.length > 0 
-                ? 'bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent border border-blue-500/50 hover:border-blue-400 shadow-lg' 
+                ? 'bg-gradient-to-br from-blue-500/20 via-blue-500/10 to-transparent border border-info-border hover:border-info-border shadow-lg' 
                 : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -264,7 +264,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-clawd-text-dim'}`} />
                 {needsReview.length > 0 && (
-                  <span className="px-2.5 py-0.5 bg-purple-500/80 text-white text-xs font-medium rounded-full">
+                  <span className="px-2.5 py-0.5 bg-review-subtle text-white text-xs font-medium rounded-full">
                     {needsReview.length} review
                   </span>
                 )}
@@ -293,7 +293,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('kanban')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${urgentTasks.length > 0 || unassignedTasks.length > 0
-                ? 'bg-gradient-to-br from-yellow-500/20 via-yellow-500/10 to-transparent border border-yellow-500/50 hover:border-yellow-400 shadow-lg' 
+                ? 'bg-gradient-to-br from-yellow-500/20 via-yellow-500/10 to-transparent border border-warning-border hover:border-warning-border shadow-lg' 
                 : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -326,7 +326,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             onClick={() => onNavigate?.('agents')}
             className={`group relative overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 
               ${activeSubagents.length > 0
-                ? 'bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent border border-green-500/50 hover:border-green-400 shadow-lg' 
+                ? 'bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent border border-success-border hover:border-success-border shadow-lg' 
                 : 'bg-clawd-surface border border-clawd-border hover:border-clawd-accent/50 shadow-lg'
               } hover:scale-105`}
           >
@@ -334,7 +334,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
               <div className="flex items-center justify-between mb-4">
                 <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-clawd-text-dim'}`} />
                 {activeSubagents.length > 0 && (
-                  <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-lg shadow-green-400/50" />
+                  <span className="w-3 h-3 rounded-full bg-success animate-pulse shadow-lg shadow-green-400/50" />
                 )}
               </div>
               
@@ -364,7 +364,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                   <Activity size={20} className="text-info" />
                   Active Work
                   {inProgressTasks.length > 0 && (
-                    <span className="px-2 py-0.5 bg-blue-500/20 text-info text-xs font-medium rounded-full">
+                    <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
                       {inProgressTasks.length}
                     </span>
                   )}
@@ -408,8 +408,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                       >
                         <div className="flex items-start gap-4">
                           <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                            task.status === 'review' ? 'bg-purple-400 shadow-lg shadow-purple-400/50' :
-                            task.status === 'in-progress' ? 'bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50' :
+                            task.status === 'review' ? 'bg-review shadow-lg shadow-purple-400/50' :
+                            task.status === 'in-progress' ? 'bg-info animate-pulse shadow-lg shadow-blue-400/50' :
                             'bg-clawd-bg0'
                           }`} />
                           
@@ -420,8 +420,8 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               </h3>
                               <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0 ${
                                 task.status === 'review' 
-                                  ? 'bg-purple-500/20 text-review border border-purple-500/30' 
-                                  : 'bg-blue-500/20 text-info border border-info-border'
+                                  ? 'bg-review-subtle text-review border border-review-border' 
+                                  : 'bg-info-subtle text-info border border-info-border'
                               }`}>
                                 {task.status === 'in-progress' ? 'working' : task.status}
                               </span>
@@ -488,7 +488,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
             className="w-full p-6 flex items-center justify-between hover:bg-clawd-bg/20 transition-all group"
           >
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-review-border">
                 <Users size={24} className="text-review" />
               </div>
               
@@ -545,7 +545,7 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                               <div className="text-sm font-medium truncate">{getSessionName(s)}</div>
                               <div className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt)}</div>
                             </div>
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
                           </div>
                         );
                       })
@@ -583,9 +583,9 @@ export default function DashboardRedesigned({ onNavigate, onShowBrief }: Dashboa
                         {activeSubagents.slice(0, 3).map((session) => (
                           <div 
                             key={session.key}
-                            className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-green-500/20"
+                            className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-success-border"
                           >
-                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium truncate">{session.displayName}</div>
                               <div className="text-xs text-clawd-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>

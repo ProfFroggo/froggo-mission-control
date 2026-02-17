@@ -105,8 +105,8 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       <button
         onClick={handleQuery}
         disabled={loading}
-        className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 
-                   text-review border border-purple-500/30 rounded-lg transition-all
+        className="flex items-center gap-2 px-4 py-2 bg-review-subtle hover:bg-review-subtle 
+                   text-review border border-review-border rounded-lg transition-all
                    disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
       >
         {loading ? (

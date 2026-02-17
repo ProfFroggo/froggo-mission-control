@@ -210,7 +210,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
               <div className={`mb-4 p-3 rounded-lg border-2 ${
                 isExpired 
                   ? 'bg-error-subtle border-error-border' 
-                  : 'bg-yellow-500/10 border-warning-border'
+                  : 'bg-warning-subtle border-warning-border'
               }`}>
                 <div className="flex items-start gap-2">
                   <AlertCircle size={16} className={isExpired ? 'text-error mt-0.5' : 'text-warning mt-0.5'} />
@@ -231,7 +231,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                     onClick={handleUnsnooze}
                     disabled={submitting}
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-red-500/20 rounded-lg transition-colors text-sm disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-error-subtle rounded-lg transition-colors text-sm disabled:opacity-50"
                   >
                     <Trash2 size={14} />
                     Remove

@@ -21,7 +21,7 @@ interface VipSender {
 const CATEGORY_OPTIONS = [
   { value: 'boss', label: 'Boss', emoji: '👔', color: 'text-review' },
   { value: 'client', label: 'Client', emoji: '💼', color: 'text-info' },
-  { value: 'stakeholder', label: 'Stakeholder', emoji: '🎯', color: 'text-orange-400' },
+  { value: 'stakeholder', label: 'Stakeholder', emoji: '🎯', color: 'text-warning' },
   { value: 'team', label: 'Team', emoji: '👥', color: 'text-success' },
   { value: 'family', label: 'Family', emoji: '❤️', color: 'text-pink-400' },
 ];
@@ -192,7 +192,7 @@ export default function VIPSettingsPanel() {
         </div>
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-info-subtle hover:bg-blue-500/20 
+          className="flex items-center gap-2 px-4 py-2 bg-info-subtle hover:bg-info-subtle 
                    text-info rounded-lg transition-colors"
         >
           <Plus size={16} />
@@ -259,7 +259,7 @@ export default function VIPSettingsPanel() {
                         value={formData.label}
                         onChange={e => setFormData({ ...formData, label: e.target.value })}
                         className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                                 focus:outline-none focus:border-blue-500"
+                                 focus:outline-none focus:border-info-border"
                       />
                     </div>
                     <div>
@@ -269,7 +269,7 @@ export default function VIPSettingsPanel() {
                         value={formData.category}
                         onChange={e => setFormData({ ...formData, category: e.target.value })}
                         className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                                 focus:outline-none focus:border-blue-500"
+                                 focus:outline-none focus:border-info-border"
                       >
                         {CATEGORY_OPTIONS.map(cat => (
                           <option key={cat.value} value={cat.value}>
@@ -300,14 +300,14 @@ export default function VIPSettingsPanel() {
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                         rows={2}
                         className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                                 focus:outline-none focus:border-blue-500"
+                                 focus:outline-none focus:border-info-border"
                         placeholder="Why is this person a VIP?"
                       />
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUpdate(vip.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-success-subtle hover:bg-green-500/20
+                        className="flex items-center gap-2 px-3 py-1.5 bg-success-subtle hover:bg-success-subtle
                                  text-success rounded transition-colors"
                       >
                         <Save size={14} />
@@ -408,7 +408,7 @@ export default function VIPSettingsPanel() {
                   onChange={e => setFormData({ ...formData, identifier: e.target.value })}
                   placeholder="email@example.com, +1234567890, @username, domain.com"
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-blue-500"
+                           focus:outline-none focus:border-info-border"
                 />
               </div>
 
@@ -421,7 +421,7 @@ export default function VIPSettingsPanel() {
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-blue-500"
+                           focus:outline-none focus:border-info-border"
                 >
                   {TYPE_OPTIONS.map(type => (
                     <option key={type.value} value={type.value}>
@@ -442,7 +442,7 @@ export default function VIPSettingsPanel() {
                   onChange={e => setFormData({ ...formData, label: e.target.value })}
                   placeholder="Kevin, CEO, Key Client"
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-blue-500"
+                           focus:outline-none focus:border-info-border"
                 />
               </div>
 
@@ -453,7 +453,7 @@ export default function VIPSettingsPanel() {
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value })}
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-blue-500"
+                           focus:outline-none focus:border-info-border"
                 >
                   {CATEGORY_OPTIONS.map(cat => (
                     <option key={cat.value} value={cat.value}>
@@ -492,7 +492,7 @@ export default function VIPSettingsPanel() {
                   rows={3}
                   placeholder="Why is this person a VIP?"
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
-                           focus:outline-none focus:border-blue-500"
+                           focus:outline-none focus:border-info-border"
                 />
               </div>
 

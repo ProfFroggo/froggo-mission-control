@@ -29,11 +29,11 @@ export default function VersionDiff({ changes, versionLabel, onClose }: VersionD
       </div>
       <div className="flex items-center gap-3 mb-2 text-[10px] text-clawd-text-dim flex-shrink-0">
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-2 bg-red-900/30 rounded-sm" />
+          <span className="inline-block w-3 h-2 bg-error-subtle rounded-sm" />
           Removed
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-2 bg-green-900/30 rounded-sm" />
+          <span className="inline-block w-3 h-2 bg-success-subtle rounded-sm" />
           Added
         </span>
       </div>
@@ -43,9 +43,9 @@ export default function VersionDiff({ changes, versionLabel, onClose }: VersionD
             key={i}
             className={
               part.added
-                ? 'bg-green-900/30 text-green-300'
+                ? 'bg-success-subtle text-success'
                 : part.removed
-                  ? 'bg-red-900/30 text-red-300 line-through'
+                  ? 'bg-error-subtle text-error line-through'
                   : ''
             }
           >

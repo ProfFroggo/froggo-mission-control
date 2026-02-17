@@ -429,7 +429,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                                   task.status === 'done' ? 'bg-success-subtle text-success' :
                                   task.status === 'in-progress' ? 'bg-warning-subtle text-warning' :
                                   task.status === 'failed' ? 'bg-error-subtle text-error' :
-                                  task.status === 'blocked' ? 'bg-orange-500/20 text-orange-400' :
+                                  task.status === 'blocked' ? 'bg-warning-subtle text-warning' :
                                   'bg-clawd-bg0/20 text-clawd-text-dim'
                                 }`}>
                                   {task.status}

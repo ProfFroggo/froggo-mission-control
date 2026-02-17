@@ -110,7 +110,7 @@ export default function NodesTab() {
         <div className="mb-6 space-y-2">
           <div className="text-xs text-clawd-text-dim uppercase tracking-wide mb-2">Pending Pair Requests</div>
           {pairRequests.map(req => (
-            <div key={req.requestId} className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center justify-between">
+            <div key={req.requestId} className="p-4 bg-warning-subtle border border-warning-border rounded-xl flex items-center justify-between">
               <div>
                 <div className="font-medium">{req.displayName || req.nodeId}</div>
                 <div className="text-sm text-clawd-text-dim">Requesting to pair</div>
@@ -118,13 +118,13 @@ export default function NodesTab() {
               <div className="flex gap-2">
                 <button
                   onClick={() => handlePairAction(req.requestId, 'approve')}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-success-subtle text-success rounded-lg text-sm hover:bg-green-500/30"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-success-subtle text-success rounded-lg text-sm hover:bg-success-subtle"
                 >
                   <UserCheck size={14} /> Approve
                 </button>
                 <button
                   onClick={() => handlePairAction(req.requestId, 'reject')}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-error-subtle text-error rounded-lg text-sm hover:bg-red-500/30"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-error-subtle text-error rounded-lg text-sm hover:bg-error-subtle"
                 >
                   <UserX size={14} /> Reject
                 </button>
@@ -156,7 +156,7 @@ export default function NodesTab() {
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-clawd-bg/50 transition-colors"
                   onClick={() => setExpandedNode(isExpanded ? null : node.nodeId)}
                 >
-                  <div className={`p-2 rounded-lg ${node.connected ? 'bg-green-500/20' : 'bg-clawd-bg0/20'}`}>
+                  <div className={`p-2 rounded-lg ${node.connected ? 'bg-success-subtle' : 'bg-clawd-bg0/20'}`}>
                     {node.connected ? <Wifi size={20} className="text-success" /> : <WifiOff size={20} className="text-clawd-text-dim" />}
                   </div>
                   <div className="flex-1">
@@ -170,8 +170,8 @@ export default function NodesTab() {
                           className="bg-clawd-bg border border-clawd-border rounded px-2 py-1 text-sm focus:outline-none focus:border-clawd-accent"
                           autoFocus
                         />
-                        <button onClick={() => handleRename(node.nodeId)} className="text-success hover:text-green-300"><Check size={16} /></button>
-                        <button onClick={() => setRenamingNode(null)} className="text-error hover:text-red-300"><X size={16} /></button>
+                        <button onClick={() => handleRename(node.nodeId)} className="text-success hover:text-success"><Check size={16} /></button>
+                        <button onClick={() => setRenamingNode(null)} className="text-error hover:text-error"><X size={16} /></button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">

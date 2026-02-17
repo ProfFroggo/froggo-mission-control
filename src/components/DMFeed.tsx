@@ -77,9 +77,9 @@ export const DMFeed: React.FC = () => {
             <div className="text-xs text-clawd-text-dim mt-0.5 line-clamp-2">{msg.body}</div>
             <div className="flex items-center gap-2 mt-1 text-xs text-clawd-text-dim">
               <span className={`px-1.5 py-0.5 rounded ${
-                msg.message_type === 'request' ? 'bg-yellow-900/30 text-warning' :
-                msg.message_type === 'response' ? 'bg-green-900/30 text-success' :
-                'bg-blue-900/30 text-info'
+                msg.message_type === 'request' ? 'bg-warning-subtle text-warning' :
+                msg.message_type === 'response' ? 'bg-success-subtle text-success' :
+                'bg-info-subtle text-info'
               }`}>{msg.message_type}</span>
               <span className={msg.status === 'unread' ? 'text-white font-medium' : ''}>{msg.status}</span>
             </div>

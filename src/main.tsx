@@ -13,6 +13,11 @@ initializeGlobalErrorHandlers();
 // Check if we're in floating toolbar mode
 const isFloatingToolbar = window.location.hash === '#/floating-toolbar';
 
+if (isFloatingToolbar) {
+  document.documentElement.style.background = 'transparent';
+  document.body.style.background = 'transparent';
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AccessibilityProvider>

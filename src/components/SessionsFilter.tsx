@@ -600,7 +600,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkMarkRead}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-success-subtle text-success border border-success-border hover:bg-green-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-success-subtle text-success border border-success-border hover:bg-success-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckSquare size={14} />
                   Mark Read ({selectedSessions.size})
@@ -608,7 +608,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkFolderAssign}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-info-subtle text-info border border-info-border hover:bg-blue-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-info-subtle text-info border border-info-border hover:bg-info-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FolderPlus size={14} />
                   Assign to Folders
@@ -616,7 +616,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkArchive}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-yellow-500/10 text-warning border border-warning-border hover:bg-yellow-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-warning-subtle text-warning border border-warning-border hover:bg-warning-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Archive size={14} />
                   Archive ({selectedSessions.size})
@@ -624,7 +624,7 @@ export default function SessionsFilter() {
                 <button
                   onClick={handleBulkDelete}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-error-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={14} />
                   Delete ({selectedSessions.size})
@@ -750,7 +750,7 @@ export default function SessionsFilter() {
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-clawd-accent/10 text-clawd-accent border border-clawd-accent/30 rounded-full text-xs">
@@ -759,7 +759,7 @@ export default function SessionsFilter() {
                           </span>
                         )}
                         {isMuted && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-warning border border-warning-border rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
                             <BellOff size={14} />
                             Muted
                           </span>
@@ -913,10 +913,10 @@ export default function SessionsFilter() {
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 text-warning border border-warning-border rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
                                 <BellOff size={14} />
                                 Muted
                               </span>

@@ -175,7 +175,7 @@ export default function ContextControlBoard() {
       {/* Header */}
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-purple-500/20 rounded-xl">
+          <div className="p-2 bg-review-subtle rounded-xl">
             <Sparkles size={24} className="text-review" />
           </div>
           <div>

@@ -128,7 +128,7 @@ export function IconButton({
   const variantClass = {
     default: '',
     primary: 'bg-clawd-accent text-white hover:bg-clawd-accent/90',
-    danger: 'text-error hover:bg-red-500/20',
+    danger: 'text-error hover:bg-error-subtle',
     ghost: 'hover:bg-transparent hover:text-clawd-accent',
   }[variant];
   
@@ -157,7 +157,7 @@ interface IconBadgeProps {
  * Usage:
  * ```tsx
  * <IconBadge icon={User} className="bg-info-subtle text-info" />
- * <IconBadge icon={AlertTriangle} size="lg" iconSize="md" className="bg-red-500/20" />
+ * <IconBadge icon={AlertTriangle} size="lg" iconSize="md" className="bg-error-subtle" />
  * ```
  */
 export function IconBadge({ 

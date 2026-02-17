@@ -51,7 +51,7 @@ export function ReadStateBadge({
       {(hasUnreplied || showZero) && (
         <div className={`
           inline-flex items-center justify-center rounded-full flex-shrink-0
-          ${hasUnreplied ? 'bg-orange-500/20 text-orange-400 font-semibold' : 'bg-clawd-border text-clawd-text-dim'}
+          ${hasUnreplied ? 'bg-warning-subtle text-warning font-semibold' : 'bg-clawd-border text-clawd-text-dim'}
           ${sizeClasses[size]}
         `}>
           <MessageCircle size={iconSizes[size]} className="flex-shrink-0" />
@@ -102,7 +102,7 @@ export function UnrepliedIndicator({ show, count, compact = false }: UnrepliedIn
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-medium flex-shrink-0 whitespace-nowrap">
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-warning-subtle text-warning text-xs font-medium flex-shrink-0 whitespace-nowrap">
       <MessageCircle size={14} className="flex-shrink-0" />
       {count !== undefined && <span className="flex-shrink-0">Awaiting reply</span>}
     </div>

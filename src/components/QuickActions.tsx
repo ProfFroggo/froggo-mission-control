@@ -61,6 +61,9 @@ interface QuickActionsProps {
 
 export interface QuickActionsRef {
   openQuickMessage: () => void;
+  openCall: () => void;
+  openContextChat: () => void;
+  openAgentChat: () => void;
 }
 
 type SnapEdge = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
@@ -100,7 +103,7 @@ const VIEW_AGENT_SUGGESTIONS: Record<string, string[]> = {
 
 // Task quick-status options
 const TASK_STATUSES = [
-  { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-gray-400' },
+  { label: 'To Do', value: 'todo', icon: ListTodo, color: 'text-clawd-text-dim' },
   { label: 'In Progress', value: 'in-progress', icon: Play, color: 'text-info' },
   { label: 'Review', value: 'review', icon: Search, color: 'text-warning' },
   { label: 'Done', value: 'done', icon: CheckCircle, color: 'text-success' },
@@ -183,7 +186,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall }: {
         <button onClick={onClose} className="p-1 hover:bg-clawd-border rounded"><X size={14} /></button>
       </div>
       {activeCall && (
-        <div className="mb-2 p-2 bg-error-subtle border border-red-500/20 rounded-lg flex items-center gap-2">
+        <div className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2">
           <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
           <span className="text-xs text-error">In call with {activeCall.agentName}</span>
         </div>
@@ -490,6 +493,9 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
   useImperativeHandle(ref, () => ({
     openQuickMessage: () => { closeAllModals(); setQuickMessageOpen(true); },
+    openCall: () => { closeAllModals(); setAgentCallModalOpen(true); },
+    openContextChat: () => { closeAllModals(); setContextChatOpen(true); },
+    openAgentChat: () => { closeAllModals(); setAgentChatModalOpen(true); },
   }));
 
   useEffect(() => {
@@ -1003,7 +1009,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   </div>
                 </div>
                 {callVideoMode !== 'none' && (
-                  <span className="text-[10px] bg-green-500/80 text-white px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-success-subtle text-white px-2 py-0.5 rounded-full">
                     {callVideoMode === 'screen' ? '🖥 Screen' : '📷 Camera'}
                   </span>
                 )}
@@ -1026,7 +1032,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             {callTranscript.map((entry, i) => (
               <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
-                  entry.role === 'user' ? 'bg-blue-600/20 text-blue-200'
+                  entry.role === 'user' ? 'bg-info-subtle text-info'
                   : entry.role === 'system' ? 'bg-clawd-bg text-clawd-text-dim italic text-[10px]'
                   : 'bg-clawd-border/50 text-clawd-text'
                 }`}>

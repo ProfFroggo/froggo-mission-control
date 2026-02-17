@@ -24,7 +24,7 @@ interface LibraryFile {
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
   draft: { icon: FileText, color: 'text-info bg-info-subtle', label: 'Drafts' },
   document: { icon: FileText, color: 'text-success bg-success-subtle', label: 'Documents' },
-  media: { icon: Image, color: 'text-review bg-purple-500/10', label: 'Media' },
+  media: { icon: Image, color: 'text-review bg-review-subtle', label: 'Media' },
   strategy: { icon: FileText, color: 'text-amber-400 bg-warning/10', label: 'Strategy' },
   research: { icon: FileText, color: 'text-cyan-400 bg-cyan-500/10', label: 'Research' },
   other: { icon: File, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
@@ -413,7 +413,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(file); }}
-                        className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                        className="p-2 hover:bg-error-subtle rounded-lg transition-colors"
                         title="Delete"
                       >
                         <Trash2 size={16} className="text-error" />

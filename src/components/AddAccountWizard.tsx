@@ -334,7 +334,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 })}
               </div>
 
-              <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
+              <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
                 <div className="flex items-start gap-2 text-sm">
                   <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
                   <div className="text-info">
@@ -386,7 +386,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     </ul>
                   </div>
 
-                  <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
+                  <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
                     <div className="flex items-start gap-2 text-sm">
                       <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
                       <div className="text-info">
@@ -402,7 +402,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
                     <div className="flex items-start gap-2">
                       <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
                       <div className="text-sm text-warning">
@@ -460,7 +460,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {/* Step 6: Success */}
           {step === 'success' && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
                 <Check size={32} className="text-success" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Account Connected!</h3>
@@ -472,7 +472,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
           {/* Error Display */}
           {error && step !== 'connecting' && step !== 'success' && (
-            <div className="mt-6 p-4 bg-error-subtle border border-red-500/20 rounded-lg">
+            <div className="mt-6 p-4 bg-error-subtle border border-error-border rounded-lg">
               <div className="flex items-start gap-2">
                 <AlertTriangle size={16} className="text-error mt-0.5" />
                 <div className="text-sm text-error">{error}</div>

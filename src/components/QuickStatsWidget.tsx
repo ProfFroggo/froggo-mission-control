@@ -127,7 +127,7 @@ export default function QuickStatsWidget() {
                 </div>
                 {subagentSessions.slice(0, 2).map(session => (
                   <div key={session.key} className="flex items-center gap-2 text-xs overflow-hidden">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                     <span className="text-clawd-text truncate min-w-0 flex-1">{session.displayName}</span>
                   </div>
                 ))}
@@ -168,7 +168,7 @@ export default function QuickStatsWidget() {
         {/* Recent Activity */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Activity size={16} className="text-orange-400" />
+            <Activity size={16} className="text-warning" />
             <span className="text-sm font-medium text-clawd-text-dim">Recent Activity</span>
           </div>
           <div className="ml-6 space-y-2">

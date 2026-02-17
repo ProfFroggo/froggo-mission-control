@@ -31,11 +31,11 @@ export default function AgentAvatar({ agentId, fallbackEmoji, size = 'md', class
   const statusRing = status ? (() => {
     switch (status) {
       case 'active':
-        return `ring-2 ring-green-400 animate-pulse`;
+        return `ring-2 ring-success animate-pulse`;
       case 'paused':
-        return `ring-2 ring-orange-400 animate-pulse`;
+        return `ring-2 ring-warning animate-pulse`;
       case 'blocked':
-        return `ring-2 ring-red-400`;
+        return `ring-2 ring-error`;
       case 'idle':
         return `ring-1 ring-gray-600`;
       default:

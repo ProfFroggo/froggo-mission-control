@@ -47,10 +47,10 @@ export default function ProductivityHeatmap() {
   const getColor = (value: number) => {
     if (value === 0) return 'bg-clawd-border';
     const intensity = (value / maxActivity) * 100;
-    if (intensity < 20) return 'bg-green-900/30';
-    if (intensity < 40) return 'bg-green-700/50';
-    if (intensity < 60) return 'bg-green-500/70';
-    if (intensity < 80) return 'bg-green-400/90';
+    if (intensity < 20) return 'bg-success-subtle';
+    if (intensity < 40) return 'bg-success-subtle';
+    if (intensity < 60) return 'bg-success-subtle';
+    if (intensity < 80) return 'bg-success-subtle';
     return 'bg-green-300';
   };
 
@@ -168,10 +168,10 @@ export default function ProductivityHeatmap() {
             <span className="text-xs text-clawd-text-dim">Less</span>
             <div className="flex gap-1">
               <div className="w-4 h-4 rounded bg-clawd-border" />
-              <div className="w-4 h-4 rounded bg-green-900/30" />
-              <div className="w-4 h-4 rounded bg-green-700/50" />
-              <div className="w-4 h-4 rounded bg-green-500/70" />
-              <div className="w-4 h-4 rounded bg-green-400/90" />
+              <div className="w-4 h-4 rounded bg-success-subtle" />
+              <div className="w-4 h-4 rounded bg-success-subtle" />
+              <div className="w-4 h-4 rounded bg-success-subtle" />
+              <div className="w-4 h-4 rounded bg-success-subtle" />
               <div className="w-4 h-4 rounded bg-green-300" />
             </div>
             <span className="text-xs text-clawd-text-dim">More</span>
@@ -216,7 +216,7 @@ export default function ProductivityHeatmap() {
           </div>
           <div className="p-3 bg-clawd-bg rounded-lg">
             <div className="text-sm text-clawd-text-dim mb-1">Working hours span</div>
-            <div className="font-medium text-orange-400">
+            <div className="font-medium text-warning">
               {HOURS.filter((h) => aggregatedData.flat()[h] > 0).length}h
             </div>
           </div>

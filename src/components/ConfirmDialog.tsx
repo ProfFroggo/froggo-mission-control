@@ -45,19 +45,19 @@ export default function ConfirmDialog({
   const config = {
     danger: {
       icon: Trash2,
-      iconBg: 'bg-red-500/20',
+      iconBg: 'bg-error-subtle',
       iconColor: 'text-error',
       confirmVariant: 'danger' as const,
     },
     warning: {
       icon: AlertTriangle,
-      iconBg: 'bg-yellow-500/20',
+      iconBg: 'bg-warning-subtle',
       iconColor: 'text-warning',
       confirmVariant: 'primary' as const,
     },
     info: {
       icon: Info,
-      iconBg: 'bg-blue-500/20',
+      iconBg: 'bg-info-subtle',
       iconColor: 'text-info',
       confirmVariant: 'primary' as const,
     },

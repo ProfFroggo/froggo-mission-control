@@ -114,24 +114,24 @@ export const SHADOW = {
  */
 export const SEMANTIC_COLORS = {
   success: {
-    text: 'text-green-400',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/30',
+    text: 'text-success',
+    bg: 'bg-success-subtle',
+    border: 'border-success-border',
   },
   error: {
-    text: 'text-red-400',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/30',
+    text: 'text-error',
+    bg: 'bg-error-subtle',
+    border: 'border-error-border',
   },
   warning: {
-    text: 'text-orange-400',
-    bg: 'bg-orange-500/10',
-    border: 'border-orange-500/30',
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
+    border: 'border-warning-border',
   },
   info: {
-    text: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
+    text: 'text-info',
+    bg: 'bg-info-subtle',
+    border: 'border-info-border',
   },
   primary: {
     text: 'text-clawd-accent',
@@ -161,14 +161,14 @@ export const CHANNEL_COLORS = {
     border: 'border-[#25D366]/30',
   },
   webchat: {
-    text: 'text-purple-400',
-    bg: 'bg-purple-500/20',
-    border: 'border-purple-500/30',
+    text: 'text-review',
+    bg: 'bg-review-subtle',
+    border: 'border-review-border',
   },
   agents: {
-    text: 'text-orange-400',
-    bg: 'bg-orange-500/20',
-    border: 'border-orange-500/30',
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
+    border: 'border-warning-border',
   },
 } as const;
 
@@ -178,21 +178,21 @@ export const CHANNEL_COLORS = {
  */
 export const PRIORITY_COLORS = {
   p0: {
-    text: 'text-red-400',
-    bg: 'bg-red-500/20',
-    border: 'border-red-500/30',
+    text: 'text-error',
+    bg: 'bg-error-subtle',
+    border: 'border-error-border',
     label: 'Urgent',
   },
   p1: {
-    text: 'text-orange-400',
-    bg: 'bg-orange-500/20',
-    border: 'border-orange-500/30',
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
+    border: 'border-warning-border',
     label: 'High',
   },
   p2: {
-    text: 'text-yellow-400',
-    bg: 'bg-yellow-500/20',
-    border: 'border-yellow-500/30',
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
+    border: 'border-warning-border',
     label: 'Medium',
   },
   p3: {
@@ -209,38 +209,38 @@ export const PRIORITY_COLORS = {
  */
 export const STATUS_COLORS = {
   todo: {
-    text: 'text-blue-400',
-    bg: 'bg-blue-500/10',
+    text: 'text-info',
+    bg: 'bg-info-subtle',
     border: 'border-l-blue-500',
     emoji: '📝',
   },
   'in-progress': {
-    text: 'text-yellow-400',
-    bg: 'bg-yellow-500/10',
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
     border: 'border-l-yellow-500',
     emoji: '⚡',
   },
   review: {
-    text: 'text-purple-400',
-    bg: 'bg-purple-500/10',
+    text: 'text-review',
+    bg: 'bg-review-subtle',
     border: 'border-l-purple-500',
     emoji: '🤖',
   },
   'human-review': {
-    text: 'text-orange-400',
-    bg: 'bg-orange-500/10',
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
     border: 'border-l-orange-500',
     emoji: '👤',
   },
   done: {
-    text: 'text-green-400',
-    bg: 'bg-green-500/10',
+    text: 'text-success',
+    bg: 'bg-success-subtle',
     border: 'border-l-green-500',
     emoji: '✅',
   },
   failed: {
-    text: 'text-red-400',
-    bg: 'bg-red-500/10',
+    text: 'text-error',
+    bg: 'bg-error-subtle',
     border: 'border-l-red-500',
     emoji: '❌',
   },
