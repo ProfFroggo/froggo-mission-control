@@ -4841,6 +4841,7 @@ setTimeout(initCommsDbTables, 2000);
 
 // ============== BACKGROUND COMMS POLLING ==============
 let commsRefreshInProgress = false;
+let commsPollTimer: NodeJS.Timeout | null = null;
 
 async function refreshCommsBackground() {
   if (commsRefreshInProgress) return;
