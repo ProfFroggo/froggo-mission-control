@@ -40,19 +40,19 @@ function validateRule(value: string, rule: ValidationRule): ValidationResult {
       break;
 
     case 'minLength':
-      if (value.length < rule.value) {
+      if (value.length < (rule.value as number)) {
         return { valid: false, error: rule.message };
       }
       break;
 
     case 'maxLength':
-      if (value.length > rule.value) {
+      if (value.length > (rule.value as number)) {
         return { valid: false, error: rule.message };
       }
       break;
 
     case 'pattern':
-      if (!new RegExp(rule.value).test(value)) {
+      if (!new RegExp(rule.value as string).test(value)) {
         return { valid: false, error: rule.message };
       }
       break;

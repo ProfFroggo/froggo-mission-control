@@ -5,7 +5,7 @@
  * camera/screen video input, text input, tool calling, and interruption support.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX, Loader2,
   Trash2, MessageSquare, Monitor, MonitorOff, Video, VideoOff,
@@ -19,8 +19,8 @@ import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
 import { gateway } from '../lib/gateway';
-import { geminiLive, GeminiVoice, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
-import { loadAgentContext, buildContextualMessage, invalidateAgentContext, AgentContext } from '../lib/agentContext';
+import { geminiLive, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
+import { loadAgentContext, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
 async function loadApiKey(): Promise<string> {
@@ -95,7 +95,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   // Screen picker state
   const [showScreenPicker, setShowScreenPicker] = useState(false);
-  const [activeSourceId, setActiveSourceId] = useState<string | null>(null);
+  const [_activeSourceId, setActiveSourceId] = useState<string | null>(null);
   
   // Audio context state
   const [audioState, setAudioState] = useState<'suspended' | 'running' | 'closed' | null>(null);

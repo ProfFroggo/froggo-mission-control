@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, TrendingUp, TrendingDown, Clock, CheckCircle, Zap, DollarSign, AlertCircle } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
 
 interface PerformanceData {

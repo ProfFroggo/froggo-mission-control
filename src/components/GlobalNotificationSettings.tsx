@@ -37,18 +37,18 @@ export default function GlobalNotificationSettings() {
         const d = result.defaults;
         setDefaults(d);
         
-        setDefaultNotificationLevel(d.default_notification_level || 'all');
+        setDefaultNotificationLevel(String(d.default_notification_level || 'all'));
         setDefaultSoundEnabled(d.default_sound_enabled === 1);
-        setDefaultSoundType(d.default_sound_type || 'default');
+        setDefaultSoundType(String(d.default_sound_type || 'default'));
         setDefaultDesktopNotifications(d.default_desktop_notifications === 1);
         setQuietHoursEnabled(d.quiet_hours_enabled === 1);
-        setQuietStart(d.quiet_start || '22:00');
-        setQuietEnd(d.quiet_end || '08:00');
-        setDefaultPriorityLevel(d.default_priority_level || 'normal');
+        setQuietStart(String(d.quiet_start || '22:00'));
+        setQuietEnd(String(d.quiet_end || '08:00'));
+        setDefaultPriorityLevel(String(d.default_priority_level || 'normal'));
         setDoNotDisturbEnabled(d.do_not_disturb_enabled === 1);
-        setDndUntil(d.dnd_until || '');
+        setDndUntil(String(d.dnd_until || ''));
         setEnableBatching(d.enable_batching === 1);
-        setBatchIntervalMinutes(d.batch_interval_minutes || 15);
+        setBatchIntervalMinutes(Number(d.batch_interval_minutes || 15));
       }
     } catch (error) {
       console.error('[GlobalNotificationSettings] Failed to load:', error);
