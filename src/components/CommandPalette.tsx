@@ -249,7 +249,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
     if (query) {
       announce(`${filteredCommands.length} commands found`);
     }
-  }, [query, announce]);
+  }, [query, announce, filteredCommands.length]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
