@@ -25,7 +25,7 @@ const exportBackupService = {
 };
 import { secureExec, getAuditLog, validateCommand } from './shell-security';
 // crypto imported but unused - removed during bug-hunt cleanup
-import { setupNotificationHandlers } from './notification-service';
+import { notificationService, setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
 import { registerXAutomationsHandlers } from './x-automations-service';
 import { registerWritingProjectHandlers } from './writing-project-service';
@@ -52,7 +52,10 @@ const xApi = {
 };
 import { prepare, closeDb, db, getSessionsDb, getSecurityDb } from './database';
 import {
-  verifyPaths,
+  PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
+  REPORTS_DIR, FROGGO_DB, OPENCLAW_DIR, OPENCLAW_LEGACY, OPENCLAW_CONFIG,
+  OPENCLAW_CONFIG_LEGACY, LOCAL_BIN, FROGGO_DB_CLI, TGCLI, DISCORDCLI,
+  CLAUDE_CLI, SHELL_PATH, agentWorkspace, verifyPaths,
 } from './paths';
 
 // ============== AGENT REGISTRY ==============
@@ -118,7 +121,7 @@ function getAgentsFromDB(): any[] {
       model: '',
       isDefault: r.id === 'froggo',
     }));
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Agents] DB fallback failed:', e.message);
     return [];
   }
@@ -143,7 +146,7 @@ ipcMain.handle('gateway:getToken', async () => {
 
 ipcMain.handle('agents:list', async () => {
   return new Promise((resolve) => {
-    exec('openclaw agents list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout, _stderr) => {
+    exec('openclaw agents list --json', { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.warn('[Agents] CLI failed, falling back to DB:', error.message);
         const agents = getAgentsFromDB();
@@ -164,7 +167,7 @@ ipcMain.handle('agents:list', async () => {
 
         safeLog.log(`[Agents] Loaded ${rawAgents.length} agents from gateway`);
         resolve({ success: true, agents: rawAgents });
-      } catch {
+      } catch (parseError: any) {
         safeLog.warn('[Agents] Parse failed, falling back to DB:', (parseError as any).message);
         const agents = getAgentsFromDB();
         resolve({ success: agents.length > 0, agents });
@@ -187,7 +190,7 @@ ipcMain.handle('sessions:list', async (_, activeMinutes?: number) => {
         timeout: 10000, 
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } 
       },
-      (error, stdout, _stderr) => {
+      (error, stdout, stderr) => {
         if (error) {
           safeLog.warn('[Sessions] CLI failed:', error.message);
           resolve({ success: false, error: error.message, sessions: [] });
@@ -203,7 +206,7 @@ ipcMain.handle('sessions:list', async (_, activeMinutes?: number) => {
             count: data.count || 0,
             path: data.path
           });
-        } catch {
+        } catch (parseError: any) {
           safeLog.warn('[Sessions] Parse failed:', parseError.message);
           resolve({ success: false, error: parseError.message, sessions: [] });
         }
@@ -218,7 +221,7 @@ ipcMain.handle('get-agent-registry', async () => {
     const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all();
     safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
     return agents;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[AgentRegistry] Error:', error.message);
     return [];
   }
@@ -555,7 +558,7 @@ function emitTaskEvent(eventType: string, taskId: string, payload: any = {}) {
     });
 
     safeLog.log('[TaskEvents] Emitted:', eventType, 'for task', taskId, 'via WebSocket broadcast');
-  } catch {
+  } catch (error: any) {
     safeLog.error('[TaskEvents] Failed to get task data:', error.message);
   }
 }
@@ -570,7 +573,7 @@ async function processScheduledItems() {
   let items: any[] = [];
   try {
     items = prepare("SELECT * FROM schedule WHERE status = 'pending'").all() as any[];
-  } catch {
+  } catch (e: any) {
     safeLog.error('[ScheduleProcessor] Query error:', e.message);
     return;
   }
@@ -625,7 +628,7 @@ async function processScheduledItems() {
           updateScheduleStatus(item.id, 'failed', result.error || 'Unknown tweet error');
         }
         continue;
-      } catch {
+      } catch (e: any) {
         safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message);
       }
       execCmd = ''; // fallback cleared
@@ -947,7 +950,7 @@ ipcMain.handle('screen:getSources', async (_, opts?: { types?: string[]; thumbna
       display_id: source.display_id,
       appIcon: source.appIcon ? source.appIcon.toDataURL() : null,
     }));
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ScreenCapture] Failed to get sources:', error);
     return [];
   }
@@ -993,7 +996,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
       const cmd = `${WHISPER_PATH} "${tempFile}" --model tiny --language en --output_format txt --output_dir "${outputDir}" 2>&1`;
       safeLog.log('Whisper: Running', cmd);
       
-      exec(cmd, { timeout: 60000 }, (error, stdout, _stderr) => {
+      exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
         // Read the output file
         const baseName = path.basename(tempFile, '.webm');
         const outputFile = path.join(outputDir, `${baseName}.txt`);
@@ -1016,7 +1019,7 @@ ipcMain.handle('whisper:transcribe', async (_, audioData: ArrayBuffer) => {
         }
       });
     });
-  } catch {
+  } catch (error: any) {
     safeLog.error('Whisper failed:', error);
     try { fs.unlinkSync(tempFile); } catch { /* ignore cleanup errors */ }
     return { error: error.message };
@@ -1065,7 +1068,7 @@ ipcMain.handle('voice:speak', async (_, text: string, voice?: string) => {
     const env = { ...process.env };
     if (elevenlabsApiKey) env.ELEVENLABS_API_KEY = elevenlabsApiKey;
     
-    exec(cmd, { timeout: 30000, env }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 30000, env }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Voice] TTS error:', error.message);
         safeLog.error('[Voice] TTS stderr:', stderr);
@@ -1090,7 +1093,7 @@ ipcMain.handle('agents:getActiveSessions', async () => {
           timeout: 5000,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
-        (error, stdout, _stderr) => {
+        (error, stdout, stderr) => {
           if (error) {
             reject(new Error(stderr || error.message));
           } else {
@@ -1130,7 +1133,7 @@ ipcMain.handle('agents:getActiveSessions', async () => {
       });
 
     return { success: true, sessions: activeSessions };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[agents:getActiveSessions] Error:', error.message);
     return { success: false, sessions: [], error: error.message };
   }
@@ -1197,7 +1200,7 @@ ipcMain.handle('notification-settings:get', async (_, sessionKey: string) => {
   try {
     const row = prepare('SELECT * FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
     return { success: true, settings: row || null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Get error:', error);
     return { success: false, settings: null };
   }
@@ -1288,7 +1291,7 @@ ipcMain.handle('notification-settings:set', async (_, sessionKey: string, settin
     }
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Set error:', error);
     return { success: false, error: error.message };
   }
@@ -1299,7 +1302,7 @@ ipcMain.handle('notification-settings:delete', async (_, sessionKey: string) => 
   try {
     prepare('DELETE FROM conversation_notification_settings WHERE session_key = ?').run(sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -1310,7 +1313,7 @@ ipcMain.handle('notification-settings:global-defaults', async () => {
   try {
     const row = prepare('SELECT * FROM global_notification_defaults WHERE id = 1').get();
     return { success: true, defaults: row || null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Get global defaults error:', error);
     return { success: false, defaults: null };
   }
@@ -1365,7 +1368,7 @@ ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults: 
 
     db.prepare('UPDATE global_notification_defaults SET ' + setParts.join(', ') + ' WHERE id = 1').run(...params);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Set global defaults error:', error);
     return { success: false, error: error.message };
   }
@@ -1376,7 +1379,7 @@ ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: stri
   try {
     const row = prepare('SELECT * FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
     return { success: true, settings: row || null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Get effective error:', error);
     return { success: false, settings: null };
   }
@@ -1406,7 +1409,7 @@ ipcMain.handle('notification-settings:mute', async (_, sessionKey: string, durat
     }
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Mute error:', error);
     return { success: false, error: error.message };
   }
@@ -1417,7 +1420,7 @@ ipcMain.handle('notification-settings:unmute', async (_, sessionKey: string) => 
   try {
     prepare("UPDATE conversation_notification_settings SET mute_until = NULL, notification_level = 'all' WHERE session_key = ?").run(sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[NotificationSettings] Unmute error:', error);
     return { success: false, error: error.message };
   }
@@ -1432,7 +1435,7 @@ ipcMain.handle('rejections:log', async (_, rejection: { type: string; title: str
       rejection.reason || ''
     );
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Rejections] Log error:', error);
     return { success: false, error: error.message };
   }
@@ -1492,7 +1495,7 @@ ipcMain.handle('tasks:update', async (_, taskId: string, updates: { status?: str
     
     // If no updates provided, return success
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Tasks] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1524,7 +1527,7 @@ ipcMain.handle('tasks:list', async (_, status?: string) => {
     const totalArchived = totalDone - tasks.filter((t: any) => t.status === 'done').length;
 
     return { success: true, tasks, totalDone, totalArchived };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[tasks:list] Error:', error.message);
     return { success: false, tasks: [] };
   }
@@ -1537,7 +1540,7 @@ ipcMain.handle('tasks:search', async (_, query: string, includeArchived = true) 
     const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
     const tasks = prepare(`SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, archived, cancelled FROM tasks WHERE (title LIKE ? OR description LIKE ? OR id LIKE ?) ${archiveFilter} ORDER BY updated_at DESC LIMIT 100`).all(pattern, pattern, pattern);
     return { success: true, tasks };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[tasks:search] Error:', error.message);
     return { success: false, tasks: [] };
   }
@@ -1548,7 +1551,7 @@ ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
   try {
     const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
     return { success: true, task: task || null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[tasks:getWithProgress] Error:', error.message);
     return { success: false, task: null };
   }
@@ -1572,7 +1575,7 @@ ipcMain.handle('analytics:getData', async (_, timeRange: string) => {
     const projects = prepare(`SELECT project, COUNT(*) as total, SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed, ROUND(CAST(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100, 1) as completion_rate FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND project IS NOT NULL AND project != '' AND created_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY project ORDER BY total DESC LIMIT 10`).all();
 
     return { success: true, completions, created, agents, projects, days };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[analytics:getData] Error:', error.message);
     return { success: true, completions: [], created: [], agents: [], projects: [], days: 0 };
   }
@@ -1582,7 +1585,7 @@ ipcMain.handle('analytics:subtaskStats', async () => {
   try {
     const data = prepare(`SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`).all();
     return { success: true, data };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[analytics:subtaskStats] Error:', error.message);
     return { success: true, data: [] };
   }
@@ -1592,7 +1595,7 @@ ipcMain.handle('analytics:heatmap', async (_, days: number = 30) => {
   try {
     const data = prepare(`SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`).all();
     return { success: true, data };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[analytics:heatmap] Error:', error.message);
     return { success: true, data: [] };
   }
@@ -1632,7 +1635,7 @@ ipcMain.handle('analytics:timeTracking', async (_, projectFilter?: string) => {
       const data = prepare(query).all();
       return { success: true, data };
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[analytics:timeTracking] Error:', error.message);
     return { success: true, data: [] };
   }
@@ -1674,7 +1677,7 @@ ipcMain.handle('tasks:delete', async (_, taskId: string) => {
       safeLog.warn('[Tasks] Delete: task not found:', taskId);
       return { success: false, error: 'Task not found' };
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Tasks] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1698,7 +1701,7 @@ ipcMain.handle('tasks:archiveDone', async () => {
     const count = archive();
     safeLog.log(`[Tasks] Archived ${count} done tasks`);
     return { success: true, count };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Tasks] Archive done error:', error.message);
     return { success: false, error: error.message, count: 0 };
   }
@@ -1752,7 +1755,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
           maxBuffer: 5 * 1024 * 1024,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } 
         },
-        (error, stdout, _stderr) => {
+        (error, stdout, stderr) => {
           if (error) {
             reject(new Error(stderr || error.message));
             return;
@@ -1797,7 +1800,7 @@ Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
     
     safeLog.log(`[Tasks] Internal poke response from ${taskAgent}: ${response.slice(0, 100)}...`);
     return { success: true, agentId: taskAgent, response };
-  } catch {
+  } catch (e: any) {
     safeLog.error(`[Tasks] Internal poke error: ${e.message}`);
     return { 
       success: true, 
@@ -1826,7 +1829,7 @@ ipcMain.handle('subtasks:list', async (_, taskId: string) => {
       createdAt: st.created_at,
     }));
     return { success: true, subtasks };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Subtasks] List error:', error);
     return { success: false, subtasks: [] };
   }
@@ -1875,7 +1878,7 @@ ipcMain.handle('subtasks:add', async (_, taskId: string, subtask: { id: string; 
     emitTaskEvent('task.updated', taskId);
 
     return { success: true, id: subtask.id };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Add error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1935,7 +1938,7 @@ ipcMain.handle('subtasks:update', async (_, subtaskId: string, updates: { comple
     }
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -1963,7 +1966,7 @@ ipcMain.handle('subtasks:delete', async (_, subtaskId: string) => {
     }
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -1979,7 +1982,7 @@ ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
     });
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Subtasks] Reorder error:', error.message);
     return { success: false };
   }
@@ -2000,7 +2003,7 @@ ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
       timestamp: a.timestamp,
     }));
     return { success: true, activities };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Activity] List error:', error);
     return { success: false, activities: [] };
   }
@@ -2022,7 +2025,7 @@ ipcMain.handle('activity:add', async (_, taskId: string, entry: { action: string
     emitTaskEvent('task.updated', taskId);
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Activity] Add error:', error.message);
     return { success: false };
   }
@@ -2033,7 +2036,7 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
   try {
     const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments WHERE task_id = ? ORDER BY uploaded_at DESC').all(taskId);
     return { success: true, attachments };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Attachments] List error:', error);
     return { success: false, attachments: [] };
   }
@@ -2044,7 +2047,7 @@ ipcMain.handle('attachments:listAll', async () => {
   try {
     const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC').all();
     return { success: true, attachments };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Attachments] ListAll error:', error);
     return { success: false, attachments: [] };
   }
@@ -2113,7 +2116,7 @@ ipcMain.handle('attachments:add', async (_, taskId: string, filePath: string, ca
         uploaded_at: now
       }
     };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Attachments] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -2137,7 +2140,7 @@ ipcMain.handle('attachments:delete', async (_, attachmentId: number) => {
     exec(activityCmd, () => {});
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Attachments] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -2160,7 +2163,7 @@ ipcMain.handle('attachments:auto-detect', async (_, taskId: string) => {
   const cmd = `${path.join(SCRIPTS_DIR, 'attachment-helper.sh')} detect "${taskId}"`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000 }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Attachments] Auto-detect error:', error, stderr);
         resolve({ success: false, error: error.message });
@@ -2180,7 +2183,7 @@ ipcMain.handle('folders:list', async () => {
   try {
     const folders = prepare('SELECT f.id, f.name, f.icon, f.color, f.description, f.sort_order, f.is_smart, (SELECT COUNT(*) FROM conversation_folders WHERE folder_id = f.id) as conversation_count FROM message_folders f ORDER BY f.sort_order, f.name').all();
     return { success: true, folders };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] List error:', error);
     return { success: false, folders: [] };
   }
@@ -2195,7 +2198,7 @@ ipcMain.handle('folders:create', async (_, folder: { name: string; icon?: string
   try {
     const result = prepare('INSERT INTO message_folders (name, icon, color, description) VALUES (?, ?, ?, ?)').run(folder.name, icon, color, description);
     return { success: true, folderId: Number(result.lastInsertRowid) };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Create error:', error);
     return { success: false, error: error.message };
   }
@@ -2221,7 +2224,7 @@ ipcMain.handle('folders:update', async (_, folderId: number, updates: { name?: s
   try {
     db.prepare(`UPDATE message_folders SET ${setParts.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -2232,7 +2235,7 @@ ipcMain.handle('folders:delete', async (_, folderId: number) => {
   try {
     prepare('DELETE FROM message_folders WHERE id = ?').run(folderId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -2243,7 +2246,7 @@ ipcMain.handle('folders:assign', async (_, folderId: number, sessionKey: string,
   try {
     prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, notes) VALUES (?, ?, ?)').run(folderId, sessionKey, notes || null);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Assign error:', error);
     return { success: false, error: error.message };
   }
@@ -2254,7 +2257,7 @@ ipcMain.handle('folders:unassign', async (_, folderId: number, sessionKey: strin
   try {
     prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(folderId, sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Unassign error:', error);
     return { success: false, error: error.message };
   }
@@ -2265,7 +2268,7 @@ ipcMain.handle('folders:for-conversation', async (_, sessionKey: string) => {
   try {
     const folders = prepare('SELECT f.id, f.name, f.icon, f.color, cf.added_at, cf.notes FROM conversation_folders cf JOIN message_folders f ON cf.folder_id = f.id WHERE cf.session_key = ? ORDER BY f.sort_order, f.name').all(sessionKey);
     return { success: true, folders };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Get for conversation error:', error);
     return { success: false, folders: [] };
   }
@@ -2276,7 +2279,7 @@ ipcMain.handle('folders:conversations', async (_, folderId: number) => {
   try {
     const conversations = prepare('SELECT session_key, added_at, added_by, notes FROM conversation_folders WHERE folder_id = ? ORDER BY added_at DESC').all(folderId);
     return { success: true, conversations };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Folders] Get conversations error:', error);
     return { success: false, conversations: [] };
   }
@@ -2298,7 +2301,7 @@ ipcMain.handle('folders:rules:list', async () => {
       }
     }).filter(Boolean);
     return { success: true, rules };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FolderRules] List error:', error);
     return { success: false, rules: [] };
   }
@@ -2313,7 +2316,7 @@ ipcMain.handle('folders:rules:get', async (_, folderId: number) => {
       return { success: true, rule };
     }
     return { success: true, rule: null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Get error:', error);
     return { success: false, rule: null };
   }
@@ -2325,7 +2328,7 @@ ipcMain.handle('folders:rules:save', async (_, folderId: number, rule: any) => {
     const rulesJson = JSON.stringify(rule);
     prepare('UPDATE message_folders SET rules = ?, is_smart = 1 WHERE id = ?').run(rulesJson, folderId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Save error:', error);
     return { success: false, error: error.message };
   }
@@ -2336,7 +2339,7 @@ ipcMain.handle('folders:rules:delete', async (_, folderId: number) => {
   try {
     prepare('UPDATE message_folders SET rules = NULL, is_smart = 0 WHERE id = ?').run(folderId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -2361,7 +2364,7 @@ ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversation
     }
 
     return { success: true, matchedFolderIds };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FolderRules] Auto-assign error:', error);
     return { success: false, matchedFolderIds: [] };
   }
@@ -2419,7 +2422,7 @@ ipcMain.handle('pins:list', async () => {
   try {
     const pins = prepare('SELECT id, session_key, pinned_at, pinned_by, notes, pin_order FROM conversation_pins ORDER BY pin_order ASC, pinned_at DESC').all();
     return { success: true, pins };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] List error:', error);
     return { success: false, pins: [] };
   }
@@ -2430,7 +2433,7 @@ ipcMain.handle('pins:is-pinned', async (_, sessionKey: string) => {
   try {
     const row = prepare('SELECT id FROM conversation_pins WHERE session_key = ? LIMIT 1').get(sessionKey);
     return { success: true, pinned: !!row };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] Is-pinned error:', error);
     return { success: false, pinned: false };
   }
@@ -2456,7 +2459,7 @@ ipcMain.handle('pins:pin', async (_, sessionKey: string, notes?: string) => {
 
     safeLog.log('[Pins] Pinned:', sessionKey, 'at order', nextOrder);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] Pin error:', error);
     return { success: false, error: error.message };
   }
@@ -2468,7 +2471,7 @@ ipcMain.handle('pins:unpin', async (_, sessionKey: string) => {
     prepare('DELETE FROM conversation_pins WHERE session_key = ?').run(sessionKey);
     safeLog.log('[Pins] Unpinned:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] Unpin error:', error);
     return { success: false, error: error.message };
   }
@@ -2501,7 +2504,7 @@ ipcMain.handle('pins:toggle', async (_, sessionKey: string) => {
       safeLog.log('[Pins] Toggled:', sessionKey, '-> pinned at order', nextOrder);
       return { success: true, pinned: true };
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] Toggle error:', error);
     return { success: false, error: error.message };
   }
@@ -2522,7 +2525,7 @@ ipcMain.handle('pins:reorder', async (_, sessionKeys: string[]) => {
     }
     safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] Reorder error:', error);
     return { success: false, error: 'Reorder failed' };
   }
@@ -2533,7 +2536,7 @@ ipcMain.handle('pins:count', async () => {
   try {
     const result = prepare('SELECT COUNT(*) as count FROM conversation_pins').get() as any;
     return { success: true, count: result?.count || 0 };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Pins] Count error:', error);
     return { success: false, count: 0 };
   }
@@ -2547,7 +2550,7 @@ ipcMain.handle('snooze:list', async () => {
   try {
     const snoozes = prepare('SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC').all();
     return { success: true, snoozes };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] List error:', error);
     return { success: false, snoozes: [] };
   }
@@ -2558,7 +2561,7 @@ ipcMain.handle('snooze:get', async (_, sessionKey: string) => {
   try {
     const row = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
     return { success: true, snooze: row || null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] Get error:', error);
     return { success: false, snooze: null };
   }
@@ -2581,7 +2584,7 @@ ipcMain.handle('snooze:set', async (_, sessionKey: string, snoozeUntil: number, 
 
     safeLog.log('[Snooze] Set:', sessionKey, 'until', new Date(snoozeUntil).toISOString());
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] Set error:', error);
     return { success: false, error: error.message };
   }
@@ -2610,7 +2613,7 @@ ipcMain.handle('snooze:unset', async (_, sessionKey: string) => {
 
     safeLog.log('[Snooze] Unsnoozed:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] Unset error:', error);
     return { success: false, error: error.message };
   }
@@ -2622,7 +2625,7 @@ ipcMain.handle('snooze:markReminderSent', async (_, sessionKey: string) => {
     prepare('UPDATE conversation_snoozes SET reminder_sent = 1 WHERE session_id = ?').run(sessionKey);
     safeLog.log('[Snooze] Reminder marked sent:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] Mark reminder error:', error);
     return { success: false, error: error.message };
   }
@@ -2634,7 +2637,7 @@ ipcMain.handle('snooze:expired', async () => {
     const now = Date.now();
     const snoozes = prepare('SELECT * FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
     return { success: true, snoozes };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] Expired list error:', error);
     return { success: false, snoozes: [] };
   }
@@ -2646,7 +2649,7 @@ ipcMain.handle('snooze:history', async (_, sessionKey: string, limit: number = 1
     const safeLimit = Math.max(1, Math.min(Math.floor(limit), 100));
     const history = prepare('SELECT * FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
     return { success: true, history };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Snooze] History error:', error);
     return { success: false, history: [] };
   }
@@ -2795,7 +2798,7 @@ ipcMain.handle('calendar:events:create', async (_, event: {
         metadata: event.metadata
       }
     };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Calendar] Create error:', error);
     return { success: false, error: error.message };
   }
@@ -2868,7 +2871,7 @@ ipcMain.handle('calendar:events:update', async (_, eventId: string, updates: {
     ).get(eventId);
 
     return { success: true, event: updatedEvent || null };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Calendar] Update error:', error);
     return { success: false, error: error.message };
   }
@@ -2912,7 +2915,7 @@ ipcMain.handle('execute:tweet', async (_, content: string, taskId?: string) => {
       }
       return { success: false, error: result.error };
     }
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Execute] Tweet exception:', e.message);
     if (taskId) {
       exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
@@ -2944,7 +2947,7 @@ ipcMain.handle('email:send', async (_, options: { to: string; subject: string; b
     const cmd = `GOG_ACCOUNT="${options.account}" gog gmail send --to "${escapedTo}" --subject "${escapedSubject}" --body "${escapedBody}"`;
     safeLog.log('[Email:send] Command:', cmd.slice(0, 100) + '...');
     
-    exec(cmd, { timeout: 60000 }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Email:send] Error:', error.message, stderr);
         resolve({ success: false, error: error.message });
@@ -2982,7 +2985,7 @@ ipcMain.handle('inbox:addWithMetadata', async (_, item: {
 
     safeLog.log('[Inbox:addWithMetadata] Added successfully');
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Inbox:addWithMetadata] Error:', error);
     return { success: false, error: error.message };
   }
@@ -2999,7 +3002,7 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
 
     safeLog.log('[Inbox:list] SUCCESS - Found', (items as any[]).length, 'items with status:', effectiveStatus);
     return { success: true, items };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Inbox:list] Error:', error);
     return { success: false, items: [], error: error.message };
   }
@@ -3054,7 +3057,7 @@ ipcMain.handle('inbox:add', async (_, item: { type: string; title: string; conte
           success: true,
           injectionWarning: injectionResult?.detected ? injectionResult : null
         });
-      } catch {
+      } catch (error: any) {
         safeLog.error('[Inbox] Add error:', error);
         resolve({ success: false, error: error.message });
       }
@@ -3092,7 +3095,7 @@ ipcMain.handle('inbox:update', async (_, id: number | string, updates: { status?
     params.push(id);
     prepare(`UPDATE inbox SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Inbox:update] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3105,7 +3108,7 @@ ipcMain.handle('inbox:approveAll', async () => {
 
     prepare("UPDATE inbox SET status = 'approved', reviewed_at = datetime('now') WHERE status = 'pending'").run();
     return { success: true, count };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Inbox:approveAll] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3117,7 +3120,7 @@ ipcMain.handle('inbox:listRevisions', async () => {
   try {
     const items = prepare("SELECT * FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
     return { success: true, items };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Inbox] List revisions error:', error);
     return { success: false, items: [] };
   }
@@ -3163,7 +3166,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
     safeSend('inbox-updated', { revision: true, originalId });
 
     return { success: true, message: 'Revision submitted for approval' };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Inbox] Revision error:', error);
     return { success: false, error: error.message };
   }
@@ -3190,7 +3193,7 @@ ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
         sourceChannel: item.source_channel,
       }
     };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -3318,7 +3321,7 @@ ipcMain.handle('inbox:filter', async (_, criteria: any) => {
       );
       const results = result.trim().split('\n').filter(Boolean);
       resolve({ success: true, results });
-    } catch {
+    } catch (error: any) {
       resolve({ success: false, error: error.message || 'Filter failed' });
     }
   });
@@ -3544,7 +3547,7 @@ ipcMain.handle('schedule:list', async () => {
     }));
     safeLog.log('[Schedule:list] Parsed', items.length, 'items');
     return { success: true, items };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Schedule:list] Error:', e);
     return { success: true, items: [] };
   }
@@ -3606,7 +3609,7 @@ ipcMain.handle('schedule:add', async (_, item: { type: string; content: string; 
     }
 
     return { success: true, id };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Schedule:add] Error:', error);
     return { success: false, error: error.message };
   }
@@ -3622,7 +3625,7 @@ ipcMain.handle('schedule:cancel', async (_, id: string) => {
       body: JSON.stringify({ action: 'remove', jobId: id })
     }).catch((err) => safeLog.error('[Cron] Failed to remove job via API:', err));
     return { success: true };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -3654,7 +3657,7 @@ ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; c
     params.push(id);
     prepare(`UPDATE schedule SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -3717,7 +3720,7 @@ ipcMain.handle('schedule:sendNow', async (_, id: string) => {
     }
 
     return { success: false, error: 'Unknown item type' };
-  } catch {
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 });
@@ -3807,7 +3810,7 @@ ipcMain.handle('fs:writeBase64', async (_, filePath: string, base64Data: string)
     const buffer = Buffer.from(base64Data, 'base64');
     fs.writeFileSync(check.resolved, buffer);
     return { success: true, path: check.resolved };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FS] Write error:', error);
     return { success: false, error: error.message };
   }
@@ -3822,7 +3825,7 @@ ipcMain.handle('fs:readFile', async (_, filePath: string, encoding?: string) => 
     }
     const content = fs.readFileSync(check.resolved, encoding as BufferEncoding || 'utf8');
     return { success: true, content };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FS] Read error:', error);
     return { success: false, error: error.message };
   }
@@ -3845,7 +3848,7 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
 
     fs.appendFileSync(check.resolved, content);
     return { success: true, path: check.resolved };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FS] Append error:', error);
     return { success: false, error: error.message };
   }
@@ -3870,7 +3873,7 @@ ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
       const result = stmt.all(...bindParams);
       return { success: true, result };
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[DB] Exec error:', error);
     return { success: false, error: error.message };
   }
@@ -3905,7 +3908,7 @@ ipcMain.handle('media:upload', async (_, fileName: string, base64Data: string) =
       fileName: uniqueFileName,
       size: stats.size 
     };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Media] Upload error:', error);
     return { success: false, error: error.message };
   }
@@ -3925,7 +3928,7 @@ ipcMain.handle('media:delete', async (_, filePath: string) => {
     }
     
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Media] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -3951,7 +3954,7 @@ ipcMain.handle('media:cleanup', async () => {
     
     safeLog.log('[Media] Cleanup complete:', deletedCount, 'files deleted');
     return { success: true, deletedCount };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Media] Cleanup error:', error);
     return { success: false, error: error.message };
   }
@@ -4008,7 +4011,7 @@ ipcMain.handle('library:list', async (_, category?: string) => {
 
     safeLog.log(`[library:list] Returning ${files.length} files`);
     return { success: true, files };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[library:list] Error:', error);
     return { success: true, files: [] };
   }
@@ -4070,7 +4073,7 @@ ipcMain.handle('library:upload', async () => {
     );
 
     return { success: true, file: { id: fileId, name: fileName, path: destPath, category, size: stats.size } };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4089,7 +4092,7 @@ ipcMain.handle('library:delete', async (_, fileId: string) => {
     // Delete from database
     prepare('DELETE FROM library WHERE id = ?').run(fileId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Library] Delete error:', error);
     return { success: false };
   }
@@ -4113,7 +4116,7 @@ ipcMain.handle('library:link', async (_, fileId: string, taskId: string) => {
     );
 
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Library] Link error:', error);
     return { success: false };
   }
@@ -4168,7 +4171,7 @@ ipcMain.handle('library:view', async (_, fileId: string) => {
         viewType: 'binary'
       };
     }
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4201,7 +4204,7 @@ ipcMain.handle('library:download', async (_, fileId: string) => {
     // Copy file to chosen location
     fs.copyFileSync(sourcePath, saveResult.filePath);
     return { success: true, path: saveResult.filePath };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4226,7 +4229,7 @@ ipcMain.handle('shell:openPath', async (_, filePath: string) => {
     } else {
       return { success: false, error: result };
     }
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -4359,7 +4362,7 @@ ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; descrip
       execFile(FROGGO_DB_CLI, args, {
         timeout: 5000,
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
-      }, (error, stdout, _stderr) => {
+      }, (error, stdout, stderr) => {
         if (error) {
           safeLog.error('[AI:Task] Error:', error.message, stderr);
           reject(error);
@@ -4371,7 +4374,7 @@ ipcMain.handle('ai:createDetectedTask', async (_, task: { title: string; descrip
     
     safeLog.log('[AI:Task] Created task:', task.title, result.trim());
     return { success: true, result: result.trim() };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[AI:Task] Error:', e);
     return { success: false, error: e.message };
   }
@@ -4401,7 +4404,7 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
       execFile('/opt/homebrew/bin/gog', args, {
         timeout: 10000,
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH}` }
-      }, (error, stdout, _stderr) => {
+      }, (error, stdout, stderr) => {
         if (error) {
           safeLog.error('[AI:Event] Error:', error.message, stderr);
           reject(error);
@@ -4413,7 +4416,7 @@ ipcMain.handle('ai:createDetectedEvent', async (_, event: { title: string; date:
     
     safeLog.log('[AI:Event] Created event:', event.title, result.trim());
     return { success: true, result: result.trim() };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[AI:Event] Error:', e);
     return { success: false, error: e.message };
   }
@@ -4450,7 +4453,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
           timeout: 60000,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
-        (error, stdout, _stderr) => {
+        (error, stdout, stderr) => {
           if (error) {
             safeLog.error('[AI:Generate] CLI error:', error.message);
             reject(error);
@@ -4477,7 +4480,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
           safeLog.warn('[AI:Generate] Could not find JSON in response, using raw text');
           return { success: true, ideas: [{ idea: response, hook: '' }] };
         }
-      } catch {
+      } catch (parseError: any) {
         safeLog.error('[AI:Generate] JSON parse error:', parseError.message);
         return { success: true, ideas: [{ idea: response, hook: '' }] };
       }
@@ -4485,7 +4488,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
       // For chat type, return raw response
       return { success: true, response };
     }
-  } catch {
+  } catch (e: any) {
     safeLog.error('[AI:Generate] Error:', e);
     return { success: false, error: e.message };
   }
@@ -4596,7 +4599,7 @@ Rules:
     const draft = data.content?.[0]?.text?.trim() || '';
     safeLog.log('[AI] Reply generated, length:', draft.length);
     return { success: true, draft };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[AI] Reply generation error:', e.message);
     return { success: false, error: e.message };
   }
@@ -4630,7 +4633,7 @@ ipcMain.handle('ai:getAnalysis', async (_, id: string, platform: string) => {
         reply_needed: !!row.reply_needed,
       },
     };
-  } catch {
+  } catch (e: any) {
     return { success: false, error: e.message };
   }
 });
@@ -4643,7 +4646,7 @@ ipcMain.handle('twitter:mentions', async () => {
     const mentions = await xApi.getMentions(20);
     safeLog.log('[Twitter] Got', mentions.length, 'mentions');
     return { success: true, mentions };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Twitter] Mentions error:', e.message);
     return { success: false, mentions: [], error: e.message };
   }
@@ -4655,7 +4658,7 @@ ipcMain.handle('twitter:home', async (_, limit?: number) => {
     const tweets = await xApi.getHomeTimeline(limit || 20);
     safeLog.log('[Twitter] Got', tweets.length, 'home tweets');
     return { success: true, tweets };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Twitter] Home error:', e.message);
     return { success: false, tweets: [], error: e.message };
   }
@@ -4688,7 +4691,7 @@ const FROGGO_DB_PATH = FROGGO_DB_CLI;
 const runMsgCmd = (cmd: string, timeout = 10000): Promise<string> => {
   return new Promise((resolve) => {
     const fullPath = `${SHELL_PATH}:${process.env.PATH || ''}`;
-    exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout, env: { ...process.env, PATH: fullPath } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error(`[Messages] Command error: ${cmd.slice(0, 100)}...`, error.message);
         if (stderr) safeLog.error(`[Messages] stderr: ${stderr}`);
@@ -4839,7 +4842,7 @@ const initCommsDbTables = async () => {
 setTimeout(initCommsDbTables, 2000);
 
 // ============== BACKGROUND COMMS POLLING ==============
-// commsPollTimer: NodeJS.Timeout | null = null;
+let commsPollTimer: NodeJS.Timeout | null = null;
 let commsRefreshInProgress = false;
 
 async function refreshCommsBackground() {
@@ -5065,7 +5068,7 @@ ipcMain.handle('inbox:check-history', async () => {
     const status = JSON.parse(result);
     safeLog.log('[Inbox] Historical data check:', status);
     return { success: true, ...status };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Inbox] Historical data check failed:', e);
     return { success: false, error: e.message };
   }
@@ -5084,7 +5087,7 @@ ipcMain.handle('inbox:trigger-backfill', async (_, days = 60) => {
       }
     });
     return { success: true, message: 'Backfill started in background' };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Inbox] Backfill trigger failed:', e);
     return { success: false, error: e.message };
   }
@@ -5230,7 +5233,7 @@ ipcMain.handle('messages:context', async (_, messageId: string, platform: string
     }
     
     return { success: true, messages };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Messages:Context] Error:', e);
     return { success: false, messages: [], error: e.message };
   }
@@ -5270,7 +5273,7 @@ ipcMain.handle('messages:send', async (_, { platform, to, message }: { platform:
     
     safeLog.log(`[Messages:Send] Sent to ${platform}:${to}:`, result);
     return { success: true, result };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Messages:Send] Error:', e);
     return { success: false, error: e.message };
   }
@@ -5304,7 +5307,7 @@ ipcMain.handle('messages:unread', async () => {
       count: result.total_unread || 0,
       byPlatform
     };
-  } catch {
+  } catch (e: any) {
     safeLog.error('[Messages:Unread] Error:', e);
     return { success: false, count: 0, error: e.message };
   }
@@ -5319,7 +5322,7 @@ ipcMain.handle('conversations:archive', async (_, sessionKey: string) => {
     prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(ARCHIVE_FOLDER_ID, sessionKey, 'user');
     safeLog.log('[Conversations] Archived:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Conversations] Archive error:', error);
     return { success: false, error: error.message };
   }
@@ -5333,7 +5336,7 @@ ipcMain.handle('conversations:unarchive', async (_, sessionKey: string) => {
     prepare('DELETE FROM conversation_folders WHERE folder_id = ? AND session_key = ?').run(ARCHIVE_FOLDER_ID, sessionKey);
     safeLog.log('[Conversations] Unarchived:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Conversations] Unarchive error:', error);
     return { success: false, error: error.message };
   }
@@ -5354,7 +5357,7 @@ ipcMain.handle('conversations:archived', async () => {
     ).all(ARCHIVE_FOLDER_ID);
     safeLog.log(`[Conversations] Found ${conversations.length} archived conversations`);
     return { success: true, conversations };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Conversations] Archived list error:', error);
     return { success: false, conversations: [] };
   }
@@ -5378,7 +5381,7 @@ ipcMain.handle('conversations:markRead', async (_, sessionKey: string) => {
     prepare("UPDATE comms_cache SET is_read = 1 WHERE (platform || ':' || sender) = ? AND (is_read IS NULL OR is_read = 0)").run(sessionKey);
     safeLog.log('[Conversations] Marked as read:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Conversations] Mark read error:', error);
     return { success: false, error: error.message };
   }
@@ -5397,7 +5400,7 @@ ipcMain.handle('conversations:delete', async (_, sessionKey: string) => {
     })();
     safeLog.log('[Conversations] Deleted:', sessionKey);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Conversations] Delete error:', error);
     return { success: false, error: error.message };
   }
@@ -5797,7 +5800,7 @@ ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => 
 });
 
 ipcMain.handle('calendar:createEvent', async (_, params: any) => {
-  const { params;
+  const { account, title, start, end, location, description, attendees, isAllDay, recurrence, timeZone } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary'; // Use primary calendar
   
@@ -5833,7 +5836,7 @@ ipcMain.handle('calendar:createEvent', async (_, params: any) => {
   safeLog.log('[Calendar] Create event command:', cmd);
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Calendar] Create event error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
@@ -5846,7 +5849,7 @@ ipcMain.handle('calendar:createEvent', async (_, params: any) => {
 });
 
 ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
-  const { params;
+  const { account, eventId, title, start, end, location, description, attendees, isAllDay, timeZone } = params;
   const acct = account || getDefaultGogEmail();
   const calendarId = 'primary';
   
@@ -5877,7 +5880,7 @@ ipcMain.handle('calendar:updateEvent', async (_, params: any) => {
   safeLog.log('[Calendar] Update event command:', cmd);
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Calendar] Update event error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
@@ -5899,7 +5902,7 @@ ipcMain.handle('calendar:deleteEvent', async (_, params: any) => {
   safeLog.log('[Calendar] Delete event command:', cmd);
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Calendar] Delete event error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
@@ -5916,7 +5919,7 @@ ipcMain.handle('calendar:listCalendars', async (_, account: string) => {
   const cmd = `GOG_ACCOUNT=${account} /opt/homebrew/bin/gog calendar calendars --json`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Calendar] List calendars error:', error, stderr);
         resolve({ success: false, calendars: [], error: error.message || stderr });
@@ -5989,7 +5992,7 @@ ipcMain.handle('calendar:addAccount', async () => {
     // Run in a new terminal window so user can see the auth flow
     const terminalCmd = `osascript -e 'tell application "Terminal" to do script "${cmd}"'`;
     
-    exec(terminalCmd, { timeout: 5000 }, (error, stdout, _stderr) => {
+    exec(terminalCmd, { timeout: 5000 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Calendar] Add account error:', error, stderr);
         resolve({ success: false, error: 'Failed to launch authentication. Please run "gog auth" manually in Terminal.' });
@@ -6028,7 +6031,7 @@ ipcMain.handle('calendar:testConnection', async (_, account: string) => {
   const cmd = `GOG_ACCOUNT=${account} /opt/homebrew/bin/gog calendar calendars --json`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 10000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Calendar] Test connection error:', error, stderr);
         resolve({ success: false, error: error.message || stderr });
@@ -6053,7 +6056,7 @@ ipcMain.handle('accounts:list', async () => {
     // Use V2 service for OAuth status detection
     const result = await accountsServiceV2.listAccounts();
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Accounts] List error:', error);
     return { success: false, accounts: [], error: error.message };
   }
@@ -6071,7 +6074,7 @@ ipcMain.handle('accounts:add', async (_, request: {
     safeLog.log('[Accounts] Adding account:', request.email);
     const result = await accountsService.addAccount(request as any);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Accounts] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -6082,7 +6085,7 @@ ipcMain.handle('accounts:test', async (_, accountId: string) => {
   try {
     const result = await accountsService.testAccount(accountId);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Accounts] Test error:', error);
     return { success: false, error: error.message };
   }
@@ -6094,7 +6097,7 @@ ipcMain.handle('accounts:refresh', async (_, accountId: string) => {
     safeLog.log('[Accounts] Refreshing OAuth for:', accountId);
     const result = await accountsServiceV2.refreshAccount(accountId);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Accounts] Refresh error:', error);
     return { success: false, error: error.message };
   }
@@ -6106,7 +6109,7 @@ ipcMain.handle('accounts:remove', async (_, accountId: string) => {
     safeLog.log('[Accounts] Removing account:', accountId);
     const result = await accountsServiceV2.removeAccount(accountId);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Accounts] Remove error:', error);
     return { success: false, error: error.message };
   }
@@ -6124,7 +6127,7 @@ ipcMain.handle('calendar:aggregate', async (_, options?: {
     const result = await calendarService.aggregateEvents(options || {});
     safeLog.log(`[Calendar:aggregate] Success: ${result.events.length} events from ${Object.keys(result.sources.google).length} sources`);
     return { success: true, ...result };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Calendar:aggregate] Error:', error);
     return { success: false, error: error.message, events: [], sources: { google: {}, missionControl: 0 }, errors: [] };
   }
@@ -6135,7 +6138,7 @@ ipcMain.handle('calendar:clearCache', async (_, source?: 'google' | 'mission-con
     calendarService.clearCache(source);
     safeLog.log(`[Calendar:clearCache] Cleared cache for: ${source || 'all'}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Calendar:clearCache] Error:', error);
     return { success: false, error: error.message };
   }
@@ -6146,7 +6149,7 @@ ipcMain.handle('calendar:cacheStats', async () => {
     const stats = calendarService.getCacheStats();
     safeLog.log('[Calendar:cacheStats] Stats:', stats);
     return { success: true, stats };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Calendar:cacheStats] Error:', error);
     return { success: false, error: error.message };
   }
@@ -6160,7 +6163,7 @@ ipcMain.handle('connectedAccounts:list', async () => {
     // Use V2 service for real gog accounts with OAuth status
     const result = await accountsServiceV2.listAccounts();
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] List error:', error);
     return { success: false, accounts: [], error: error.message };
   }
@@ -6170,7 +6173,7 @@ ipcMain.handle('connectedAccounts:get', async (_, accountId: string) => {
   try {
     const account = await connectedAccountsService.getAccount(accountId);
     return { success: true, account };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get error:', error);
     return { success: false, account: null, error: error.message };
   }
@@ -6180,7 +6183,7 @@ ipcMain.handle('connectedAccounts:getPermissions', async (_, accountId: string) 
   try {
     const permissions = await connectedAccountsService.getAccountPermissions(accountId);
     return { success: true, permissions };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get permissions error:', error);
     return { success: false, permissions: [], error: error.message };
   }
@@ -6190,7 +6193,7 @@ ipcMain.handle('connectedAccounts:getAvailableTypes', async () => {
   try {
     const types = await connectedAccountsService.getAvailableAccountTypes();
     return { success: true, types };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get available types error:', error);
     return { success: false, types: [], error: error.message };
   }
@@ -6200,7 +6203,7 @@ ipcMain.handle('connectedAccounts:add', async (_, accountType: string, options?:
   try {
     const result = await connectedAccountsService.addAccount(accountType, options);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Add error:', error);
     return { success: false, error: error.message };
   }
@@ -6210,7 +6213,7 @@ ipcMain.handle('connectedAccounts:remove', async (_, accountId: string) => {
   try {
     const result = await connectedAccountsService.removeAccount(accountId);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Remove error:', error);
     return { success: false, error: error.message };
   }
@@ -6222,7 +6225,7 @@ ipcMain.handle('connectedAccounts:refresh', async (_, accountId: string) => {
     safeLog.log('[ConnectedAccounts] Refreshing OAuth for:', accountId);
     const result = await accountsServiceV2.refreshAccount(accountId);
     return result;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Refresh error:', error);
     return { success: false, error: error.message };
   }
@@ -6232,7 +6235,7 @@ ipcMain.handle('connectedAccounts:getSyncHistory', async (_, accountId: string, 
   try {
     const history = await connectedAccountsService.getSyncHistory(accountId, limit);
     return { success: true, history };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Get sync history error:', error);
     return { success: false, history: [], error: error.message };
   }
@@ -6242,7 +6245,7 @@ ipcMain.handle('connectedAccounts:importGoogle', async () => {
   try {
     const result = await connectedAccountsService.importGoogleAccounts();
     return { success: true, ...result };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ConnectedAccounts] Import Google error:', error);
     return { success: false, imported: 0, errors: [error.message] };
   }
@@ -6510,7 +6513,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
     const parsed = JSON.parse(taskStatsResult)[0] || { total: 0, completed: 0 };
     taskStats = { total: parsed.total || 0, completed: parsed.completed || 0 };
     safeLog.log(`[agents:getDetails] taskStats for ${agentId}: total=${taskStats.total}, completed=${taskStats.completed}`);
-  } catch {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] taskStats query failed for ${agentId}:`, e.message);
   }
 
@@ -6528,7 +6531,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       }
       return { ...task, outcome, completedAt: task.completed_at };
     });
-  } catch {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] recentTasks query failed for ${agentId}:`, e.message);
   }
 
@@ -6543,7 +6546,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
       successCount: s.success_count,
       failureCount: s.failure_count,
     }));
-  } catch {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] skills query failed for ${agentId}:`, e.message);
   }
 
@@ -6552,7 +6555,7 @@ ipcMain.handle('agents:getDetails', async (_, agentId: string) => {
     const brainNotesCmd = `sqlite3 "${froggoDbPath}" "SELECT description FROM learning_events WHERE outcome IN ('insight', 'pattern') ORDER BY timestamp DESC LIMIT 20" -json`;
     const brainNotesResult = execSync(brainNotesCmd, { encoding: 'utf-8' });
     brainNotes = JSON.parse(brainNotesResult || '[]').map((row: any) => row.description);
-  } catch {
+  } catch (e: any) {
     safeLog.error(`[agents:getDetails] brainNotes query failed for ${agentId}:`, e.message);
   }
 
@@ -6602,7 +6605,7 @@ ipcMain.handle('agents:addSkill', async (_, agentId: string, skill: string) => {
   try {
     prepare("INSERT INTO skill_evolution (skill_name, proficiency, success_count, failure_count) VALUES (?, 0.5, 0, 0) ON CONFLICT(skill_name) DO UPDATE SET updated_at = datetime('now')").run(skill);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -6611,7 +6614,7 @@ ipcMain.handle('agents:updateSkill', async (_, agentId: string, skillName: strin
   try {
     prepare("UPDATE skill_evolution SET proficiency = ?, updated_at = datetime('now') WHERE skill_name = ?").run(proficiency, skillName);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -6689,7 +6692,7 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
           timeout: 30000,
           env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
-        (error, stdout, _stderr) => {
+        (error, stdout, stderr) => {
           if (error) {
             reject(new Error(stderr || error.message));
           } else {
@@ -6700,7 +6703,7 @@ ipcMain.handle('agents:spawnForTask', async (_, taskId: string, agentId: string)
     });
 
     return { success: true, output: result };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[agents:spawnForTask] Error:', error.message);
     return { success: false, error: error.message };
   }
@@ -6772,7 +6775,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
     }
     
     return { success: true, sessionKey };
-  } catch {
+  } catch (error: any) {
     safeLog.error(`Failed to spawn chat for ${agentId}:`, error);
     debugLog(`Failed to spawn chat for ${agentId}:`, error.message, error.stack);
     return { success: false, error: error.message || 'Failed to spawn chat session' };
@@ -6801,7 +6804,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
         exec(
           `openclaw agent --message '${escapedMsg}' --session-id '${sessionKey}' --agent ${agentId}`,
           { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
-          (error, stdout, _stderr) => {
+          (error, stdout, stderr) => {
             if (error) {
               reject(new Error(stderr || error.message));
             } else {
@@ -6823,7 +6826,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
     }
     
     return { success: true, response };
-  } catch {
+  } catch (error: any) {
     safeLog.error('Agent chat error:', error);
     return { success: false, error: error.message || 'Unknown error', response: `❌ Error: ${error.message || 'Unknown error'}` };
   }
@@ -6849,7 +6852,7 @@ ipcMain.handle('agents:create', async (_, config: { id: string; name: string; ro
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` },
         maxBuffer: 10 * 1024 * 1024,
       },
-      (error, stdout, _stderr) => {
+      (error, stdout, stderr) => {
         if (error) {
           safeLog.error(`[agents:create] Failed: ${error.message}`);
           resolve({ success: false, error: error.message, output: stdout || '', stderr: stderr || '' });
@@ -7073,7 +7076,7 @@ ipcMain.handle('get-dm-history', async (_, args?: { limit?: number; agent?: stri
     // Show all messages including expired ones (users want to see agent communication history)
     const rows = prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
     return rows;
-  } catch {
+  } catch (e: any) {
     safeLog.error('get-dm-history error:', e);
     return [];
   }
@@ -7096,7 +7099,7 @@ ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: strin
   try {
     prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, 'dashboard', msg.role, msg.content);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -7152,7 +7155,7 @@ Suggestions:`;
     
     safeLog.log('[SuggestedReplies] Generating suggestions...');
     
-    exec(claudeCmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (error, stdout, _stderr) => {
+    exec(claudeCmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[SuggestedReplies] Error:', error.message);
         safeLog.error('[SuggestedReplies] stderr:', stderr);
@@ -7187,7 +7190,7 @@ Suggestions:`;
             suggestions
           });
         }
-      } catch {
+      } catch (parseError: any) {
         safeLog.error('[SuggestedReplies] Parse error:', parseError.message);
         resolve({
           success: false,
@@ -7208,7 +7211,7 @@ ipcMain.handle('starred:star', async (_, messageId: number, note?: string, categ
   const cmd = `froggo-db star-message ${messageId} ${noteArg} ${catArg}`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Starred] Star error:', stderr || error.message);
         resolve({ success: false, error: stderr || error.message });
@@ -7225,7 +7228,7 @@ ipcMain.handle('starred:unstar', async (_, identifier: number) => {
   const cmd = `froggo-db unstar-message ${identifier}`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 5000 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Starred] Unstar error:', stderr || error.message);
         resolve({ success: false, error: stderr || error.message });
@@ -7245,7 +7248,7 @@ ipcMain.handle('starred:list', async (_, options?: { category?: string; sessionK
   const cmd = `froggo-db starred-list ${catArg} ${sessionArg} ${limitArg} --json`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Starred] List error:', stderr || error.message);
         resolve({ success: false, error: stderr || error.message, starred: [] });
@@ -7253,7 +7256,7 @@ ipcMain.handle('starred:list', async (_, options?: { category?: string; sessionK
         try {
           const starred = JSON.parse(stdout);
           resolve({ success: true, starred });
-        } catch {
+        } catch (e: any) {
           safeLog.error('[Starred] Parse error:', e.message);
           resolve({ success: false, error: e.message, starred: [] });
         }
@@ -7268,7 +7271,7 @@ ipcMain.handle('starred:search', async (_, query: string, limit?: number) => {
   const cmd = `froggo-db starred-search "${query.replace(/"/g, '\\"')}" ${limitArg} --json`;
   
   return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, _stderr) => {
+    exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) {
         safeLog.error('[Starred] Search error:', stderr || error.message);
         resolve({ success: false, error: stderr || error.message, results: [] });
@@ -7276,7 +7279,7 @@ ipcMain.handle('starred:search', async (_, query: string, limit?: number) => {
         try {
           const results = JSON.parse(stdout);
           resolve({ success: true, results });
-        } catch {
+        } catch (e: any) {
           safeLog.error('[Starred] Parse error:', e.message);
           resolve({ success: false, error: e.message, results: [] });
         }
@@ -7360,7 +7363,7 @@ ipcMain.handle('security:listKeys', async () => {
     const secDb = getSecurityDb();
     const keys = secDb.prepare('SELECT * FROM api_keys ORDER BY created_at DESC').all();
     return { success: true, keys };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] List keys error:', error);
     return { success: false, keys: [], error: error.message };
   }
@@ -7376,7 +7379,7 @@ ipcMain.handle('security:addKey', async (_, key: { name: string; service: string
       id, key.name, key.service, key.key, now
     );
     return { success: true, id };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] Add key error:', error);
     return { success: false, error: error.message };
   }
@@ -7388,7 +7391,7 @@ ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
     const secDb = getSecurityDb();
     secDb.prepare('DELETE FROM api_keys WHERE id = ?').run(keyId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] Delete key error:', error);
     return { success: false, error: error.message };
   }
@@ -7400,7 +7403,7 @@ ipcMain.handle('security:listAuditLogs', async () => {
     const secDb = getSecurityDb();
     const logs = secDb.prepare('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all();
     return { success: true, logs };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] List audit logs error:', error);
     return { success: false, logs: [], error: error.message };
   }
@@ -7413,7 +7416,7 @@ ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { st
     const secDb = getSecurityDb();
     secDb.prepare('UPDATE audit_logs SET status = ? WHERE id = ?').run(updates.status, logId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] Update audit log error:', error);
     return { success: false, error: error.message };
   }
@@ -7425,7 +7428,7 @@ ipcMain.handle('security:listAlerts', async () => {
     const secDb = getSecurityDb();
     const alerts = secDb.prepare('SELECT * FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all();
     return { success: true, alerts };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] List alerts error:', error);
     return { success: false, alerts: [], error: error.message };
   }
@@ -7437,7 +7440,7 @@ ipcMain.handle('security:dismissAlert', async (_, alertId: string) => {
     const secDb = getSecurityDb();
     secDb.prepare('UPDATE security_alerts SET dismissed = 1 WHERE id = ?').run(alertId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] Dismiss alert error:', error);
     return { success: false, error: error.message };
   }
@@ -7484,7 +7487,7 @@ ipcMain.handle('security:runAudit', async () => {
       alerts: output.alerts || [],
       summary: output.summary || 'Audit complete'
     };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Security] Run audit error:', error);
     return { 
       success: false, 
@@ -7503,7 +7506,7 @@ ipcMain.handle('export:tasks', async (_, options: { format: 'json' | 'csv'; filt
     safeLog.log('[Export] Exporting tasks with format:', options.format);
     const filepath = await exportBackupService.exportTasks(options);
     return { success: true, filepath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Export] Task export error:', error);
     return { success: false, error: error.message };
   }
@@ -7515,7 +7518,7 @@ ipcMain.handle('export:agentLogs', async (_, options: { format: 'json' | 'csv'; 
     safeLog.log('[Export] Exporting agent logs');
     const filepath = await exportBackupService.exportAgentLogs(options);
     return { success: true, filepath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Export] Agent logs export error:', error);
     return { success: false, error: error.message };
   }
@@ -7527,7 +7530,7 @@ ipcMain.handle('export:chatHistory', async (_, options: { format: 'json' | 'csv'
     safeLog.log('[Export] Exporting chat history');
     const filepath = await exportBackupService.exportChatHistory(options);
     return { success: true, filepath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Export] Chat history export error:', error);
     return { success: false, error: error.message };
   }
@@ -7539,7 +7542,7 @@ ipcMain.handle('backup:create', async (_, options?: { includeAttachments?: boole
     safeLog.log('[Backup] Creating database backup');
     const filepath = await exportBackupService.createBackup(options);
     return { success: true, filepath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Backup] Create backup error:', error);
     return { success: false, error: error.message };
   }
@@ -7551,7 +7554,7 @@ ipcMain.handle('backup:restore', async (_, backupPath: string) => {
     safeLog.log('[Backup] Restoring from:', backupPath);
     await exportBackupService.restoreBackup(backupPath);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Backup] Restore error:', error);
     return { success: false, error: error.message };
   }
@@ -7562,7 +7565,7 @@ ipcMain.handle('backup:list', async () => {
   try {
     const backups = await exportBackupService.listBackups();
     return { success: true, backups };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Backup] List backups error:', error);
     return { success: false, backups: [], error: error.message };
   }
@@ -7574,7 +7577,7 @@ ipcMain.handle('backup:cleanup', async (_, keepCount: number) => {
     safeLog.log('[Backup] Cleaning up old backups, keeping:', keepCount);
     const deletedCount = await exportBackupService.cleanupOldBackups(keepCount);
     return { success: true, deletedCount };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Backup] Cleanup error:', error);
     return { success: false, error: error.message };
   }
@@ -7586,7 +7589,7 @@ ipcMain.handle('import:tasks', async (_, filepath: string) => {
     safeLog.log('[Import] Importing tasks from:', filepath);
     const result = await exportBackupService.importTasks(filepath);
     return { success: true, ...result };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Import] Import error:', error);
     return { success: false, error: error.message };
   }
@@ -7597,7 +7600,7 @@ ipcMain.handle('exportBackup:stats', async () => {
   try {
     const stats = await exportBackupService.getStats();
     return { success: true, stats };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[ExportBackup] Stats error:', error);
     return { success: false, stats: null, error: error.message };
   }
@@ -7608,7 +7611,7 @@ ipcMain.handle('dashboardAgents:status', async () => {
   try {
     const status = getDashboardAgentsStatus();
     return { success: true, agents: status };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[DashboardAgents] Status error:', error);
     return { success: false, agents: [], error: error.message };
   }
@@ -7637,7 +7640,7 @@ ipcMain.handle('hrReports:list', async () => {
       })
       .sort((a, b) => b.createdAt - a.createdAt); // Newest first
     return { success: true, reports };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[HRReports] List error:', error);
     return { success: false, reports: [], error: error.message };
   }
@@ -7652,7 +7655,7 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
     }
     const content = fs.readFileSync(filePath, 'utf-8');
     return { success: true, content };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[HRReports] Read error:', error);
     return { success: false, error: error.message };
   }
@@ -7668,7 +7671,7 @@ ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
     const result = await execPromise(cmd, { timeout: 10000 });
     const transactions = JSON.parse(result.stdout);
     return { success: true, transactions };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Get transactions error:', error.message);
     return { success: false, transactions: [], error: error.message };
   }
@@ -7680,7 +7683,7 @@ ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'cryp
     const result = await execPromise(cmd, { timeout: 10000 });
     const budget = JSON.parse(result.stdout);
     return { success: true, budget };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Get budget status error:', error.message);
     return { success: false, budget: null, error: error.message };
   }
@@ -7715,7 +7718,7 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: stri
       imported: uploadResult.imported || 0,
       skipped: uploadResult.skipped || 0
     };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Upload CSV error:', error.message);
     return { success: false, imported: 0, skipped: 0, error: error.message };
   }
@@ -7727,7 +7730,7 @@ ipcMain.handle('finance:getAlerts', async () => {
     const result = await execPromise(cmd, { timeout: 10000 });
     const alerts = JSON.parse(result.stdout);
     return { success: true, alerts: alerts.alerts || [] };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Get alerts error:', error.message);
     return { success: false, alerts: [], error: error.message };
   }
@@ -7739,7 +7742,7 @@ ipcMain.handle('finance:getInsights', async () => {
     const result = await execPromise(cmd, { timeout: 10000 });
     const insights = JSON.parse(result.stdout);
     return { success: true, insights: insights.insights || [] };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Get insights error:', error.message);
     return { success: false, insights: [], error: error.message };
   }
@@ -7754,7 +7757,7 @@ ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
     `);
     stmt.run(Date.now(), insightId);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Dismiss insight error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7795,7 +7798,7 @@ ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: numbe
     } else {
       throw new Error(response.error || 'Analysis failed');
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Finance] Trigger analysis error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7809,7 +7812,7 @@ ipcMain.handle('financeAgent:sendMessage', async (_, message: string, context?: 
     const bridge = getFinanceAgentBridge();
     const response = await bridge.sendMessage(message, context);
     return response;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Send message error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7820,7 +7823,7 @@ ipcMain.handle('financeAgent:getChatHistory', async () => {
     const bridge = getFinanceAgentBridge();
     const history = bridge.getChatHistory();
     return { success: true, messages: history };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Get chat history error:', error.message);
     return { success: false, messages: [], error: error.message };
   }
@@ -7831,7 +7834,7 @@ ipcMain.handle('financeAgent:clearHistory', async () => {
     const bridge = getFinanceAgentBridge();
     await bridge.clearChatHistory();
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Clear history error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7843,7 +7846,7 @@ ipcMain.handle('financeAgent:triggerAnalysis', async (_, analysisType?: 'csv_upl
     const bridge = getFinanceAgentBridge();
     const response = await bridge.triggerAnalysis(analysisType);
     return response;
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Trigger analysis error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7854,7 +7857,7 @@ ipcMain.handle('financeAgent:getStatus', async () => {
     const bridge = getFinanceAgentBridge();
     const status = bridge.getStatus();
     return { success: true, status };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[FinanceAgent] Get status error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7911,7 +7914,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
     
     safeLog.log(`[X/Research] Created research idea: ${id}`);
     return { success: true, id, filePath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Research] Propose error:', error.message);
     return { success: false, error: error.message };
   }
@@ -7953,7 +7956,7 @@ ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?:
     });
     
     return { success: true, ideas: parsed };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Research] List error:', error.message);
     return { success: false, ideas: [], error: error.message };
   }
@@ -7993,7 +7996,7 @@ ipcMain.handle('x:research:approve', async (_, data: { id: string; approvedBy: s
     
     safeLog.log(`[X/Research] Approved research idea: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Research] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8035,7 +8038,7 @@ ipcMain.handle('x:research:reject', async (_, data: { id: string; reason?: strin
     
     safeLog.log(`[X/Research] Rejected research idea: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Research] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8105,7 +8108,7 @@ ${description}
     
     safeLog.log(`[X/Plan] Created content plan: ${id}`);
     return { success: true, id, filePath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Plan] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8137,7 +8140,7 @@ ipcMain.handle('x:plan:list', async (_, filters?: { status?: string; contentType
     const plans = stmt.all(...params);
     
     return { success: true, plans };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Plan] List error:', error.message);
     return { success: false, plans: [], error: error.message };
   }
@@ -8177,7 +8180,7 @@ ipcMain.handle('x:plan:approve', async (_, data: { id: string; approvedBy: strin
     
     safeLog.log(`[X/Plan] Approved content plan: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Plan] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8219,7 +8222,7 @@ ipcMain.handle('x:plan:reject', async (_, data: { id: string; reason?: string })
     
     safeLog.log(`[X/Plan] Rejected content plan: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Plan] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8294,7 +8297,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
     
     safeLog.log(`[X/Draft] Created draft: ${id}`);
     return { success: true, id, filePath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Draft] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8341,7 +8344,7 @@ ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: s
     });
     
     return { success: true, drafts: parsed };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Draft] List error:', error.message);
     return { success: false, drafts: [], error: error.message };
   }
@@ -8381,7 +8384,7 @@ ipcMain.handle('x:draft:approve', async (_, data: { id: string; approvedBy: stri
     
     safeLog.log(`[X/Draft] Approved draft: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Draft] Approve error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8423,7 +8426,7 @@ ipcMain.handle('x:draft:reject', async (_, data: { id: string; reason?: string }
     
     safeLog.log(`[X/Draft] Rejected draft: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Draft] Reject error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8462,7 +8465,7 @@ ipcMain.handle('x:schedule:create', async (_, data: {
     
     safeLog.log(`[X/Schedule] Created scheduled post: ${id} for ${new Date(scheduledFor).toISOString()}`);
     return { success: true, id };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] Create error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8514,7 +8517,7 @@ ipcMain.handle('x:schedule:list', async (_, filters?: {
     const results = stmt.all(...params);
     
     return { success: true, scheduled: results };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8554,7 +8557,7 @@ ipcMain.handle('x:schedule:update', async (_, data: {
     
     safeLog.log(`[X/Schedule] Updated scheduled post: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8573,7 +8576,7 @@ ipcMain.handle('x:schedule:delete', async (_, data: { id: string }) => {
     
     safeLog.log(`[X/Schedule] Deleted scheduled post: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Schedule] Delete error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8654,7 +8657,7 @@ ipcMain.handle('x:mention:fetch', async () => {
     
     safeLog.log(`[X/Mentions] Fetched mentions: ${newCount} new, ${updatedCount} updated`);
     return { success: true, new: newCount, updated: updatedCount };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] Fetch error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8694,7 +8697,7 @@ ipcMain.handle('x:mention:list', async (_, filters?: {
     const results = stmt.all(...params);
     
     return { success: true, mentions: results };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] List error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8746,7 +8749,7 @@ ipcMain.handle('x:mention:update', async (_, data: {
     
     safeLog.log(`[X/Mentions] Updated mention: ${id}`);
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] Update error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8785,7 +8788,7 @@ ipcMain.handle('x:mention:reply', async (_, data: {
     } else {
       throw new Error('Failed to post reply');
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/Mentions] Reply error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8891,7 +8894,7 @@ ipcMain.handle('toolbar:popOut', async (_, data?: { x?: number; y?: number; widt
     
     safeLog.log('[Toolbar] Floating toolbar window created');
     return { success: true };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Toolbar] Pop-out error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8913,7 +8916,7 @@ ipcMain.handle('toolbar:popIn', async () => {
     }
     
     return { success: false, error: 'No floating toolbar window' };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[Toolbar] Pop-in error:', error.message);
     return { success: false, error: error.message };
   }
@@ -8929,7 +8932,7 @@ ipcMain.handle('toolbar:getState', async () => {
       isFloating,
       bounds,
     };
-  } catch {
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
@@ -8978,7 +8981,7 @@ ipcMain.handle('x:replyGuy:listHotMentions', async (_, filters?: {
     const results = stmt.all(...params);
     
     return { success: true, mentions: results };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/ReplyGuy] List hot mentions error:', error.message);
     return { success: false, error: error.message };
   }
@@ -9064,7 +9067,7 @@ ${replyText}
     
     safeLog.log(`[X/ReplyGuy] Created quick draft: ${id} (fast-track: ${fastTrack})`);
     return { success: true, id, draftPath };
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/ReplyGuy] Create quick draft error:', error.message);
     return { success: false, error: error.message };
   }
@@ -9129,7 +9132,7 @@ ipcMain.handle('x:replyGuy:postNow', async (_, data: {
     } else {
       throw new Error('Failed to post tweet');
     }
-  } catch {
+  } catch (error: any) {
     safeLog.error('[X/ReplyGuy] Post now error:', error.message);
     return { success: false, error: error.message };
   }

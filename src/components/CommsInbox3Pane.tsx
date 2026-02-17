@@ -1834,7 +1834,7 @@ export default function CommsInbox3Pane() {
       } else {
         showToast('error', 'Failed', result?.error || 'Could not create task');
       }
-    } catch {
+    } catch (e: any) {
       showToast('error', 'Error', e.message);
     }
   };
@@ -1847,7 +1847,7 @@ export default function CommsInbox3Pane() {
       } else {
         showToast('error', 'Failed', result?.error || 'Could not create event');
       }
-    } catch {
+    } catch (e: any) {
       showToast('error', 'Error', e.message);
     }
   };
@@ -1891,7 +1891,7 @@ export default function CommsInbox3Pane() {
         setSelectedConversation(null);
       }
       showToast('success', 'Archived', `${conv.name || conv.from || 'Conversation'} archived`);
-    } catch {
+    } catch (e: any) {
       showToast('error', 'Archive failed', e.message);
     }
   };
@@ -1943,7 +1943,7 @@ export default function CommsInbox3Pane() {
       } else {
         showToast('error', 'Send failed', result?.error || 'Unknown error');
       }
-    } catch {
+    } catch (e: any) {
       showToast('error', 'Send failed', e.message);
     }
   };

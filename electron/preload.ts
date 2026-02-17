@@ -685,14 +685,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.on('toolbar:popped-in', callback);
       return () => ipcRenderer.removeListener('toolbar:popped-in', callback);
     },
-    action: (action: string) => ipcRenderer.invoke('toolbar:action', action),
-    resize: (height: number) => ipcRenderer.invoke('toolbar:resize', height),
-    startDragging: () => ipcRenderer.send('toolbar:startDragging'),
-    onAction: (callback: (action: string) => void) => {
-      const handler = (_: unknown, action: string) => callback(action);
-      ipcRenderer.on('toolbar:action', handler);
-      return () => ipcRenderer.removeListener('toolbar:action', handler);
-    },
   },
   xReplyGuy: {
     listHotMentions: (filters?: { minLikes?: number; minRetweets?: number; limit?: number }) =>
