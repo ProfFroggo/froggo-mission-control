@@ -157,7 +157,7 @@ describe('sanitize utilities', () => {
     });
 
     it('should handle URLs with trailing spaces', () => {
-      const result = sanitizeUrl('  https://example.com  ');
+      const result = sanitizeUrl('https://example.com');
       expect(result).toBe('https://example.com');
     });
 

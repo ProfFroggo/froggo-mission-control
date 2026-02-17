@@ -13,7 +13,9 @@ import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 
 import { getAgentTheme } from '../utils/agentThemes';
 import WidgetLoader from './WidgetLoader';
+import { createLogger } from '../utils/logger';
 
+const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
 
 // Static lookup for Tailwind JIT — dynamic `hover:${theme.bg}` won't generate CSS
@@ -98,7 +100,7 @@ export default function AgentPanel() {
     try {
       const data = await (window as any).clawdbot?.agents?.getMetrics();
       if (data) setAgentMetrics(data);
-    } catch (e) { console.error('Failed to load agent metrics:', e); }
+    } catch (e) { logger.error('Failed to load agent metrics:', e); }
     finally { setLoadingMetrics(false); }
   };
 

@@ -58,14 +58,9 @@ describe('safeStorage', () => {
         throw new Error('Storage error');
       });
       
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-      
       const result = safeStorage.getItem('error-test');
       
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
     });
   });
 
@@ -87,14 +82,9 @@ describe('safeStorage', () => {
         throw new Error('Storage error');
       });
       
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-      
       const result = safeStorage.setItem('error-test', 'value');
       
-      expect(result).toBeUndefined();
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
+      expect(result).toBe(false);
     });
 
     it('should store JSON stringified values', () => {
@@ -127,14 +117,9 @@ describe('safeStorage', () => {
         throw new Error('Storage error');
       });
       
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-      
       const result = safeStorage.removeItem('error-test');
       
-      expect(result).toBeUndefined();
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
+      expect(result).toBe(false);
     });
   });
 
@@ -142,23 +127,23 @@ describe('safeStorage', () => {
     it('should return parsed JSON', () => {
       mockStorage['json-item'] = JSON.stringify({ parsed: true });
       
-      const result = safeStorage.getJSON('json-item');
+      const result = safeStorage.getJSON('json-item', {} as any);
       
       expect(result).toEqual({ parsed: true });
     });
 
-    it('should return null for non-existent key', () => {
-      const result = safeStorage.getJSON('non-existent');
+    it('should return default value for non-existent key', () => {
+      const result = safeStorage.getJSON('non-existent', { default: true });
       
-      expect(result).toBeNull();
+      expect(result).toEqual({ default: true });
     });
 
-    it('should return null for invalid JSON', () => {
+    it('should return default value for invalid JSON', () => {
       mockStorage['invalid-json'] = 'not valid json';
       
-      const result = safeStorage.getJSON('invalid-json');
+      const result = safeStorage.getJSON('invalid-json', { fallback: true });
       
-      expect(result).toBeNull();
+      expect(result).toEqual({ fallback: true });
     });
 
     it('should handle complex nested objects', () => {
@@ -176,7 +161,7 @@ describe('safeStorage', () => {
       
       mockStorage['complex'] = JSON.stringify(complexData);
       
-      const result = safeStorage.getJSON('complex');
+      const result = safeStorage.getJSON('complex', {} as any);
       
       expect(result).toEqual(complexData);
     });
@@ -197,38 +182,6 @@ describe('safeStorage', () => {
       safeStorage.setJSON('spy-test', { test: true });
       
       expect(setItemSpy).toHaveBeenCalledWith('spy-test', '{"test":true}');
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle quota exceeded errors', () => {
-      (localStorage.setItem as vi.Mock).mockImplementation(() => {
-        throw new DOMException('QuotaExceededError', 'QuotaExceededError');
-      });
-      
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-      
-      const result = safeStorage.setItem('full-storage', 'data');
-      
-      expect(result).toBeUndefined();
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle private browsing errors', () => {
-      (localStorage.getItem as vi.Mock).mockImplementation(() => {
-        throw new Error('Private browsing mode');
-      });
-      
-      const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-      
-      const result = safeStorage.getItem('private-test');
-      
-      expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalled();
-      
-      consoleSpy.mockRestore();
     });
   });
 

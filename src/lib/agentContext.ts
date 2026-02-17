@@ -4,6 +4,9 @@
  */
 
 import { gateway } from './gateway';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('AgentContext');
 
 export interface AgentContext {
   personality: {
@@ -253,7 +256,7 @@ export async function loadAgentContext(agentId: string): Promise<AgentContext> {
   // Cache it
   contextCache.set(agentId, { context, timestamp: Date.now() });
   
-  console.debug(`[AgentContext] Loaded for ${agentId}:`, {
+  logger.debug(`Loaded for ${agentId}:`, {
     hasPersonality: !!personality,
     taskCount: tasks.length,
     sessionCount: sessions.length,

@@ -5,6 +5,9 @@
  */
 
 import { useEffect, useCallback, useState } from 'react';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('useNotifications');
 
 export interface SystemNotification {
   type: 'task-completed' | 'agent-failure' | 'approval-request' | 'chat-mention' | 'info';
@@ -30,7 +33,7 @@ export interface NotificationPreferences {
 }
 
 export function useNotifications() {
-  const navigate = (path: string) => { console.debug('[useNotifications] Navigate:', path); };
+  const navigate = (path: string) => { logger.debug('Navigate:', path); };
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [recentNotifications, setRecentNotifications] = useState<SystemNotification[]>([]);
 

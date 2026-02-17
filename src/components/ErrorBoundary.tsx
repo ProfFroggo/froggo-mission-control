@@ -53,13 +53,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private reportError(error: Error, errorInfo: ErrorInfo) {
-    // Log to console for development
-    console.group('🚨 Error Boundary Report');
+    // Log error details for debugging
     logger.error('Component:', this.getComponentName());
     logger.error('Error:', error.message);
     logger.error('Stack:', error.stack);
     logger.error('Component Stack:', errorInfo.componentStack);
-    console.groupEnd();
 
     // Could integrate with Sentry, LogRocket, etc. here
     // Example: Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });

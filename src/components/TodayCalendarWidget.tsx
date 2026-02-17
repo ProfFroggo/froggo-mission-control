@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Video, RefreshCw, ChevronRight, Loader2 } from 'lucide-react';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('TodayCalendarWidget');
 
 interface TodayCalendarWidgetProps {
   onNavigate?: (view: 'schedule') => void;
@@ -15,7 +18,7 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
     setError(null);
     try {
       if (!(window as any).clawdbot?.calendar?.today) {
-        console.debug('[TodayCalendar] calendar.today() not available');
+        logger.debug('calendar.today() not available');
         setEvents([]);
         return;
       }
