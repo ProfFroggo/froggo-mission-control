@@ -17,6 +17,14 @@ import { DndContext, PointerSensor, useSensor, useSensors, closestCenter, DragEn
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS as DndCSS } from '@dnd-kit/utilities';
 
+// Handle keyboard events for modal backdrops
+const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    action();
+  }
+};
+
 type ChannelFilter = 'all' | 'whatsapp' | 'telegram' | 'discord' | 'webchat' | 'agents';
 
 // Sortable session component for pinned items
@@ -1030,8 +1038,12 @@ export default function SessionsFilter() {
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setShowFolderSelector(null)}
+          onKeyDown={(e) => handleKeyDown(e, () => setShowFolderSelector(null))}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
             <FolderSelector
               sessionKey={showFolderSelector}
               onClose={() => {
@@ -1048,10 +1060,16 @@ export default function SessionsFilter() {
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setShowFolderManager(false)}
+          onKeyDown={(e) => handleKeyDown(e, () => setShowFolderManager(false))}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
         >
           <div
             className="w-full max-w-3xl h-[80vh] bg-clawd-surface rounded-lg shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
           >
             <FolderManager
               onClose={() => {
@@ -1080,8 +1098,12 @@ export default function SessionsFilter() {
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setShowBulkFolderAssign(false)}
+          onKeyDown={(e) => handleKeyDown(e, () => setShowBulkFolderAssign(false))}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
             <BulkFolderAssign
               sessionKeys={Array.from(selectedSessions)}
               onClose={() => {
@@ -1099,8 +1121,12 @@ export default function SessionsFilter() {
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setShowSnoozeModal(null)}
+          onKeyDown={(e) => handleKeyDown(e, () => setShowSnoozeModal(null))}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
             <SnoozeModal
               sessionKey={showSnoozeModal.key}
               sessionName={showSnoozeModal.name}

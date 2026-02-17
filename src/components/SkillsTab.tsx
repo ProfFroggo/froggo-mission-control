@@ -271,9 +271,10 @@ export default function SkillsTab() {
                 {isExpanded && (
                   <div className="px-4 pb-4 border-t border-clawd-border pt-3 space-y-3">
                     <div>
-                      <label className="block text-xs text-clawd-text-dim mb-1">API Key</label>
+                      <label htmlFor={`api-key-${skill.key}`} className="block text-xs text-clawd-text-dim mb-1">API Key</label>
                       <div className="flex gap-2">
                         <input
+                          id={`api-key-${skill.key}`}
                           type="password"
                           value={apiKeyInputs[skill.key] || ''}
                           onChange={e => setApiKeyInputs(prev => ({ ...prev, [skill.key]: e.target.value }))}

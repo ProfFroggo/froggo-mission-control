@@ -26,16 +26,26 @@ export default function EmailWidget() {
     setError(null);
     
     try {
-      // Fetch unread counts for each account directly via IPC
+      // Fetch counts for each account via IPC
       const results = await Promise.all(
         ACCOUNTS.map(async (acc) => {
-          const result = await (window as any).clawdbot?.email?.unread(acc.email);
-          const unreadCount = result?.emails?.threads?.length || result?.emails?.length || 0;
+          // Fetch unread count
+          const unreadResult = await (window as any).clawdbot?.email?.unread(acc.email);
+          const unreadCount = unreadResult?.emails?.threads?.length || unreadResult?.emails?.length || 0;
+          
+          // Fetch starred count
+          const starredResult = await (window as any).clawdbot?.email?.starred(acc.email);
+          const starredCount = starredResult?.count || 0;
+          
+          // Fetch action count (important emails)
+          const actionResult = await (window as any).clawdbot?.email?.action(acc.email);
+          const actionCount = actionResult?.count || 0;
+          
           return {
             ...acc,
             unread: unreadCount,
-            action: 0, // TODO: Add @action label search
-            starred: 0, // TODO: Add starred search
+            action: actionCount,
+            starred: starredCount,
           };
         })
       );

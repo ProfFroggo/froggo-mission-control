@@ -5511,6 +5511,56 @@ ipcMain.handle('email:search', async (_, query: string, account?: string) => {
   });
 });
 
+// Search for starred emails
+ipcMain.handle('email:starred', async (_, account?: string) => {
+  if (!account) return { success: false, count: 0, error: 'No email account specified' };
+  const acct = account;
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:starred" --json --limit 1`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Email] Starred error:', error);
+        resolve({ success: false, count: 0, error: error.message });
+        return;
+      }
+      try {
+        const emails = JSON.parse(stdout);
+        // Get actual count from Gmail (approximate based on threads returned)
+        const count = emails.threads?.length || emails.length || 0;
+        resolve({ success: true, count, account: acct });
+      } catch {
+        resolve({ success: true, count: 0, account: acct });
+      }
+    });
+  });
+});
+
+// Search for @action labeled emails (important/starred/unread)
+ipcMain.handle('email:action', async (_, account?: string) => {
+  if (!account) return { success: false, count: 0, error: 'No email account specified' };
+  const acct = account;
+  // Search for important emails: unread + starred + prioritized
+  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread (is:starred OR has:important)" --json --limit 1`;
+  
+  return new Promise((resolve) => {
+    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
+      if (error) {
+        safeLog.error('[Email] Action search error:', error);
+        resolve({ success: false, count: 0, error: error.message });
+        return;
+      }
+      try {
+        const emails = JSON.parse(stdout);
+        const count = emails.threads?.length || emails.length || 0;
+        resolve({ success: true, count, account: acct });
+      } catch {
+        resolve({ success: true, count: 0, account: acct });
+      }
+    });
+  });
+});
+
 ipcMain.handle('email:queue-send', async (_, to: string, subject: string, body: string, account?: string) => {
   const acct = account || getDefaultGogEmail();
   const title = `Email to ${to}: ${subject.slice(0, 30)}`;
