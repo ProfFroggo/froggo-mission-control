@@ -36,12 +36,12 @@ export const DMFeed: React.FC = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        if (!(window as any).clawdbot?.getDMHistory) {
+        if (!window.clawdbot?.getDMHistory) {
           setMessages([]);
           setLoading(false);
           return; // IPC not available (web mode)
         }
-        const msgs = await (window as any).clawdbot.getDMHistory({ limit: 50 });
+        const msgs = await window.clawdbot.getDMHistory({ limit: 50 });
         setMessages(msgs || []);
         setLoading(false);
       } catch (err) {

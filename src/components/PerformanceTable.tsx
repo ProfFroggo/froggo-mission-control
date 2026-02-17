@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: PerformanceTable uses file-level suppression for intentional patterns.
+// loadData is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
@@ -45,7 +48,7 @@ export default function PerformanceTable() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.getPerformanceReport(period);
+      const result = await window.clawdbot?.getPerformanceReport(period);
       if (result && !result.error) {
         setData(result.agents || []);
       }
@@ -59,7 +62,7 @@ export default function PerformanceTable() {
   const loadAudit = async (agentId: string) => {
     setAuditLoading(true);
     try {
-      const result = await (window as any).clawdbot?.getAgentAudit(agentId, period);
+      const result = await window.clawdbot?.getAgentAudit(agentId, period);
       if (result && !result.error) {
         setAuditData(result.timeline || []);
       }

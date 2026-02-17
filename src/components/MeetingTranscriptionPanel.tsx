@@ -58,7 +58,7 @@ export default function MeetingTranscriptionPanel() {
         localStorage.setItem('froggo-meeting-transcriptions', JSON.stringify(updated));
         return updated;
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Transcription failed');
     } finally {
       setIsTranscribing(false);
@@ -82,7 +82,7 @@ export default function MeetingTranscriptionPanel() {
         localStorage.setItem('froggo-meeting-transcriptions', JSON.stringify(updated));
         return updated;
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Summarization failed');
     } finally {
       setIsSummarizing(false);

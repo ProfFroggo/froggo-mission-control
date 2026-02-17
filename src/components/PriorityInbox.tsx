@@ -286,7 +286,7 @@ export function usePriorityData() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const result = await (window as any).clawdbot?.priority?.stats();
+      const result = await window.clawdbot?.priority?.stats();
       if (result?.success) {
         setStats(result.stats);
       }
@@ -297,7 +297,7 @@ export function usePriorityData() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const result = await (window as any).clawdbot?.priority?.config();
+      const result = await window.clawdbot?.priority?.config();
       if (result?.success) {
         setConfig(result.config);
       }
@@ -308,7 +308,7 @@ export function usePriorityData() {
 
   const updateConfig = useCallback(async (key: string, value: number) => {
     try {
-      const result = await (window as any).clawdbot?.priority?.updateConfig(key, value);
+      const result = await window.clawdbot?.priority?.updateConfig(key, value);
       if (result?.success) {
         setConfig((prev: any) => ({ ...prev, [key]: value }));
       }
@@ -319,7 +319,7 @@ export function usePriorityData() {
 
   const recalculate = useCallback(async (limit = 100) => {
     try {
-      await (window as any).clawdbot?.priority?.recalculate(limit);
+      await window.clawdbot?.priority?.recalculate(limit);
       await fetchStats();
     } catch (e) {
       // 'Failed to recalculate priorities:', e;

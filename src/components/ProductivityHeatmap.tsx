@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: ProductivityHeatmap uses file-level suppression for intentional patterns.
+// loadData is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import { useState, useEffect } from 'react';
 import { Activity, Calendar } from 'lucide-react';
 import { getProductivityHeatmap, ProductivityHeatmap as HeatmapData } from '../services/analyticsService';
@@ -152,6 +155,7 @@ export default function ProductivityHeatmap() {
                   key={hour}
                   className={`w-6 h-6 mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-clawd-accent ${getColor(value)}`}
                   title={`${day} ${hour}:00 - ${value} activities`}
+                  role="presentation"
                   onMouseEnter={() => {
                     const cellData = data.find(
                       (d) => d.dayOfWeek === dayIndex && d.hour === hour

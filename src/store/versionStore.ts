@@ -32,7 +32,7 @@ interface VersionState {
   reset: () => void;
 }
 
-const bridge = () => (window as any).clawdbot?.writing?.version;
+const bridge = () => window.clawdbot?.writing?.version;
 
 export const useVersionStore = create<VersionState>((set, get) => ({
   versions: [],

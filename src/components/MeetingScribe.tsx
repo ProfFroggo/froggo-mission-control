@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: MeetingScribe uses file-level suppression for intentional stable ref patterns.
+// Complex real-time transcription component - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 /**
  * MeetingScribe - Real-time meeting transcription using Gemini API
  * Records mic audio in chunks, sends to Gemini for transcription,
@@ -22,7 +26,7 @@ async function getGeminiApiKey(): Promise<string> {
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') { _cachedScribeKey = viteKey; return viteKey; }
   try {
-    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
     if (key) { _cachedScribeKey = key; return key; }
   } catch { /* ignore */ }
   try {
@@ -236,7 +240,7 @@ export default function MeetingScribe() {
         // Remove empty placeholder
         setEntries(prev => prev.filter(e => e.id !== entryId));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[Scribe] Transcription error:', err;
       setEntries(prev => prev.map(e => 
         e.id === entryId 
@@ -344,7 +348,7 @@ export default function MeetingScribe() {
       
       addActivity({ type: 'system', message: '🎙️ Meeting scribe started (Gemini)', timestamp: Date.now() });
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[Scribe] Failed to start:', err;
       setError(err.message || 'Failed to access microphone');
       isRecordingRef.current = false;

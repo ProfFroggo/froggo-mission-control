@@ -53,12 +53,12 @@ export default function ContextControlBoard() {
     setSelectedFile(file);
     setLoading(true);
     try {
-      if (!(window as any).clawdbot) {
+      if (!window.clawdbot) {
         showToast('error', 'API not ready', 'Clawdbot APIs not available');
         setLoading(false);
         return;
       }
-      const result = await (window as any).clawdbot?.exec?.run(`cat "${file.path}" 2>/dev/null || echo "File not found"`);
+      const result = await window.clawdbot?.exec?.run(`cat "${file.path}" 2>/dev/null || echo "File not found"`);
       const content = result?.stdout || '';
       setFileContent(content);
       setOriginalContent(content);
@@ -74,7 +74,7 @@ export default function ContextControlBoard() {
     if (!selectedFile) return;
     setSaving(true);
     try {
-      await (window as any).clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
+      await window.clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
       setOriginalContent(fileContent);
       setEditing(false);
       showToast('success', 'Saved', selectedFile.name);
@@ -89,7 +89,7 @@ export default function ContextControlBoard() {
     setLoading(true);
     try {
       // List skills from skill directory
-      const result = await (window as any).clawdbot?.exec?.run(
+      const result = await window.clawdbot?.exec?.run(
         'ls -1 /opt/homebrew/lib/node_modules/openclaw/skills 2>/dev/null || echo ""'
       );
       if (result?.stdout) {
@@ -113,7 +113,7 @@ export default function ContextControlBoard() {
     setLoading(true);
     try {
       // Load from agent workspaces (Pattern A: ~/agent-{id}/)
-      const result = await (window as any).clawdbot?.exec?.run(
+      const result = await window.clawdbot?.exec?.run(
         'ls -d ~/agent-*/ 2>/dev/null | xargs -I{} basename {} | sort || echo ""'
       );
       if (result?.stdout) {

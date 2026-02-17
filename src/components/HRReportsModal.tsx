@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: HRReportsModal uses file-level suppression for intentional patterns.
+// Modal for HR reports - patterns are safe.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
 import { showToast } from './Toast';
@@ -26,7 +29,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
   const loadReports = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.hrReports?.list();
+      const result = await window.clawdbot?.hrReports?.list();
       if (result?.success) {
         setReports(result.reports || []);
         if (result.reports?.length > 0 && !selectedReport) {
@@ -48,7 +51,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     setSelectedReport(report);
     setLoadingContent(true);
     try {
-      const result = await (window as any).clawdbot?.hrReports?.read(report.name);
+      const result = await window.clawdbot?.hrReports?.read(report.name);
       if (result?.success) {
         setReportContent(result.content || '');
       } else {

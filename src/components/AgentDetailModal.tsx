@@ -68,7 +68,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
     // Try IPC first (reads from froggo.db with real data)
     let ipcDetails: any = null;
     try {
-      const ipc = (window as any).clawdbot?.agents;
+      const ipc = window.clawdbot?.agents;
       if (ipc?.getDetails) {
         ipcDetails = await ipc.getDetails(agentId);
       }
@@ -139,7 +139,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
 
     if (!rulesContent) {
       try {
-        const result = await (window as any).clawdbot?.exec?.run(
+        const result = await window.clawdbot?.exec?.run(
           `cat ~/clawd/agents/${agentId}/AGENT.md 2>/dev/null || cat ~/clawd-${agentId}/AGENTS.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
         );
         if (result?.stdout) {
@@ -152,7 +152,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
 
     if (brainNotes.length === 0) {
       try {
-        const memResult = await (window as any).clawdbot?.exec?.run(
+        const memResult = await window.clawdbot?.exec?.run(
           `ls -1 ~/clawd/clawd-${agentId}/memory/ 2>/dev/null | tail -5`
         );
         if (memResult?.stdout?.trim()) {

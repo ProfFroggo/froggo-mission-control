@@ -6,7 +6,7 @@ import ProjectSelector from './ProjectSelector';
 import ProjectEditor from './ProjectEditor';
 import SetupWizard from './SetupWizard';
 
-const bridge = () => (window as any).clawdbot?.writing?.wizard;
+const bridge = () => window.clawdbot?.writing?.wizard;
 
 interface PendingWizard {
   sessionId: string;

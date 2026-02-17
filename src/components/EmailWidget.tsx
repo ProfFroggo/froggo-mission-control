@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Mail, RefreshCw, AlertCircle, Inbox, Star, Tag } from 'lucide-react';
 import { gateway } from '../lib/gateway';
@@ -30,15 +29,15 @@ export default function EmailWidget() {
       const results = await Promise.all(
         ACCOUNTS.map(async (acc) => {
           // Fetch unread count
-          const unreadResult = await (window as any).clawdbot?.email?.unread(acc.email);
+          const unreadResult = await window.clawdbot?.email?.unread(acc.email);
           const unreadCount = unreadResult?.emails?.threads?.length || unreadResult?.emails?.length || 0;
           
           // Fetch starred count
-          const starredResult = await (window as any).clawdbot?.email?.starred(acc.email);
+          const starredResult = await window.clawdbot?.email?.starred(acc.email);
           const starredCount = starredResult?.count || 0;
           
           // Fetch action count (important emails)
-          const actionResult = await (window as any).clawdbot?.email?.action(acc.email);
+          const actionResult = await window.clawdbot?.email?.action(acc.email);
           const actionCount = actionResult?.count || 0;
           
           return {
@@ -52,7 +51,7 @@ export default function EmailWidget() {
       
       setAccounts(results);
       setLastFetch(Date.now());
-    } catch (e: any) {
+    } catch (e: unknown) {
       // 'Failed to fetch email:', e;
       setError('Could not load email');
     } finally {

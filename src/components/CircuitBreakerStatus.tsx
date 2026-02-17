@@ -14,7 +14,7 @@ export const CircuitBreakerStatus: React.FC = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const status = await (window as any).clawdbot?.getCircuitStatus();
+        const status = await window.clawdbot?.getCircuitStatus();
         setBreakers(status || {});
       } catch (err) {
         // 'Failed to fetch circuit status:', err;

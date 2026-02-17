@@ -21,7 +21,7 @@ export default function TokenSummaryWidget() {
 
   const loadTokenSummary = async () => {
     try {
-      const result = await (window as any).clawdbot.tokens.summary({ period: 'day' });
+      const result = await window.clawdbot.tokens.summary({ period: 'day' });
       
       if (result.error) {
         setError(result.error);
@@ -52,7 +52,7 @@ export default function TokenSummaryWidget() {
       
       setLoading(false);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 'Failed to load token summary:', err;
       setError(err.message || 'Failed to load');
       setLoading(false);

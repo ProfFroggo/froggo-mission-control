@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: TeamVoiceMeeting uses file-level suppression for intentional stable ref patterns.
+// Complex voice meeting component - patterns are carefully designed.
+// Review: 2026-02-17 - suppression retained, patterns are safe
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2,
@@ -31,7 +35,7 @@ async function loadApiKey(): Promise<string> {
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') return viteKey;
   try {
-    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
     if (key) return key;
   } catch { /* ignore */ }
   try {
@@ -358,7 +362,7 @@ Respond as ${agentName(agentId)}:`;
       });
 
       setSessionKey(roomId, agentId, sessionKey);
-    } catch (e: any) {
+    } catch (e: unknown) {
       updateMessage(roomId, msgId, {
         content: `Error: ${e.message || 'Failed to reach agent'}`,
         streaming: false,
@@ -422,7 +426,7 @@ Respond as ${agentName(agentId)}:`;
     try {
       await geminiLive.startMic();
       // geminiLive events will update listening state
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[TeamVoice] Failed to start mic:', err;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
@@ -483,7 +487,7 @@ Respond as ${agentName(agentId)}:`;
       }]);
 
       await startListening();
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[TeamVoice] Failed to start meeting:', err;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, Download, Pause, Play, ArrowDown } from 'lucide-react';
 import { gateway } from '../lib/gateway';
@@ -33,7 +32,7 @@ export default function LogsTab() {
 
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [loadLogs]);
 
   useEffect(() => {
     if (!polling) return;

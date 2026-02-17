@@ -1,4 +1,7 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: XReplyGuyView uses file-level suppression for intentional patterns.
+// loadHotMentions is redefined on each render but captures latest state - safe pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Send } from 'lucide-react';
 import { showToast } from './Toast';

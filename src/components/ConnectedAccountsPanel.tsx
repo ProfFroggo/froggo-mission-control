@@ -126,19 +126,19 @@ export default function ConnectedAccountsPanel() {
   const loadAccounts = async () => {
     setLoading(true);
     try {
-      if (!(window as any).clawdbot?.accounts?.list) {
+      if (!window.clawdbot?.accounts?.list) {
         // APIs not available (web mode) - show empty state instead of error
         setAccounts([]);
         return;
       }
-      const result = await (window as any).clawdbot.accounts.list();
+      const result = await window.clawdbot.accounts.list();
       if (result?.success) {
         const normalized = (result.accounts || []).map(normalizeAccount);
         setAccounts(normalized);
       } else if (result?.error) {
         showToast('error', 'Failed to load accounts', result.error);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[ConnectedAccounts] Failed to load accounts:', err;
       showToast('error', 'Failed to load accounts', err.message);
     } finally {
@@ -148,11 +148,11 @@ export default function ConnectedAccountsPanel() {
 
   const loadAvailableTypes = async () => {
     try {
-      const result = await (window as any).clawdbot?.accounts?.getAvailableTypes();
+      const result = await window.clawdbot?.accounts?.getAvailableTypes();
       if (result?.success) {
         setAvailableTypes(result.types || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 'Failed to load available types:', err;
     }
   };
@@ -162,11 +162,11 @@ export default function ConnectedAccountsPanel() {
     
     // Load permissions
     try {
-      const result = await (window as any).clawdbot?.accounts?.getPermissions(account.id);
+      const result = await window.clawdbot?.accounts?.getPermissions(account.id);
       if (result?.success) {
         setSelectedAccountPermissions(result.permissions || []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // 'Failed to load permissions:', err;
     }
     
@@ -175,14 +175,14 @@ export default function ConnectedAccountsPanel() {
 
   const handleRefresh = async (accountId: string) => {
     try {
-      const result = await (window as any).clawdbot?.accounts?.refresh(accountId);
+      const result = await window.clawdbot?.accounts?.refresh(accountId);
       if (result?.success) {
         showToast('success', 'Account refreshed', 'Connection verified successfully');
         loadAccounts();
       } else {
         showToast('error', 'Refresh failed', result?.error || 'Unknown error');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast('error', 'Refresh failed', err.message);
     }
   };
@@ -198,7 +198,7 @@ export default function ConnectedAccountsPanel() {
       type: 'danger',
     }, async () => {
       try {
-        const result = await (window as any).clawdbot?.accounts?.remove(accountId);
+        const result = await window.clawdbot?.accounts?.remove(accountId);
         if (result?.success) {
           showToast('success', 'Account removed', `${account.email} has been removed`);
           loadAccounts();
@@ -208,7 +208,7 @@ export default function ConnectedAccountsPanel() {
         } else {
           showToast('error', 'Failed to remove', result?.error || 'Unknown error');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         showToast('error', 'Failed to remove', err.message);
       }
     });
@@ -217,7 +217,7 @@ export default function ConnectedAccountsPanel() {
   const handleImportGoogle = async () => {
     setImportingGoogle(true);
     try {
-      const result = await (window as any).clawdbot?.accounts?.importGoogle();
+      const result = await window.clawdbot?.accounts?.importGoogle();
       if (result?.success) {
         showToast('success', 'Import complete', `Imported ${result.imported} Google account(s)`);
         if (result.errors && result.errors.length > 0) {
@@ -227,7 +227,7 @@ export default function ConnectedAccountsPanel() {
       } else {
         showToast('error', 'Import failed', result?.error || 'Unknown error');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast('error', 'Import failed', err.message);
     } finally {
       setImportingGoogle(false);
@@ -242,7 +242,7 @@ export default function ConnectedAccountsPanel() {
 
     setAddingAccount(true);
     try {
-      const result = await (window as any).clawdbot?.accounts?.add(selectedType, {
+      const result = await window.clawdbot?.accounts?.add(selectedType, {
         conversational: true
       });
       
@@ -254,7 +254,7 @@ export default function ConnectedAccountsPanel() {
       } else {
         showToast('error', 'Authentication failed', result?.error || 'Could not authenticate account');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast('error', 'Authentication failed', err.message);
     } finally {
       setAddingAccount(false);

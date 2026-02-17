@@ -48,7 +48,7 @@ export default function ExportBackupTab() {
 
   const loadBackups = async () => {
     try {
-      const result = await (window as any).clawdbot?.exportBackup?.listBackups();
+      const result = await window.clawdbot?.exportBackup?.listBackups();
       if (result?.success) {
         setBackups(result.backups);
       }
@@ -59,7 +59,7 @@ export default function ExportBackupTab() {
 
   const loadStats = async () => {
     try {
-      const result = await (window as any).clawdbot?.exportBackup?.getStats();
+      const result = await window.clawdbot?.exportBackup?.getStats();
       if (result?.success) {
         setStats(result.stats);
       }
@@ -91,7 +91,7 @@ export default function ExportBackupTab() {
   const handleExportTasks = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.exportBackup?.exportTasks({
+      const result = await window.clawdbot?.exportBackup?.exportTasks({
         format: exportFormat,
         filters: {} // Could add filters UI later
       });
@@ -113,7 +113,7 @@ export default function ExportBackupTab() {
   const handleExportAgentLogs = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.exportBackup?.exportAgentLogs({
+      const result = await window.clawdbot?.exportBackup?.exportAgentLogs({
         format: exportFormat,
         filters: {}
       });
@@ -135,7 +135,7 @@ export default function ExportBackupTab() {
   const handleExportChatHistory = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.exportBackup?.exportChatHistory({
+      const result = await window.clawdbot?.exportBackup?.exportChatHistory({
         format: exportFormat,
         filters: {}
       });
@@ -157,7 +157,7 @@ export default function ExportBackupTab() {
   const handleCreateBackup = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.exportBackup?.createBackup({
+      const result = await window.clawdbot?.exportBackup?.createBackup({
         includeAttachments
       });
       
@@ -185,7 +185,7 @@ export default function ExportBackupTab() {
     }, async () => {
       setLoading(true);
       try {
-        const result = await (window as any).clawdbot?.exportBackup?.restoreBackup(backupPath);
+        const result = await window.clawdbot?.exportBackup?.restoreBackup(backupPath);
         
         if (result?.success) {
           showToast('success', 'Backup Restored', 'Database restored successfully. Refreshing...');
@@ -211,7 +211,7 @@ export default function ExportBackupTab() {
     }, async () => {
       setLoading(true);
       try {
-        const result = await (window as any).clawdbot?.exportBackup?.cleanupOldBackups(keepBackupsCount);
+        const result = await window.clawdbot?.exportBackup?.cleanupOldBackups(keepBackupsCount);
         
         if (result?.success) {
           showToast('success', 'Cleanup Complete', `Deleted ${result.deletedCount} old backups`);

@@ -42,7 +42,7 @@ export default function XPlanThreadComposer() {
   const loadApprovedResearch = async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot?.xResearch?.list({ 
+      const result = await window.clawdbot?.xResearch?.list({ 
         status: 'approved', 
         limit: 50 
       });
@@ -80,7 +80,7 @@ export default function XPlanThreadComposer() {
     try {
       setSubmitting(true);
       
-      const result = await (window as any).clawdbot?.xPlan?.create({
+      const result = await window.clawdbot?.xPlan?.create({
         researchIdeaId: selectedResearchId,
         title: title.trim(),
         contentType,
@@ -100,7 +100,7 @@ export default function XPlanThreadComposer() {
       } else {
         showToast('error', 'Failed to create content plan. Please try again.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[XPlanComposer] Submit error:', error;
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {

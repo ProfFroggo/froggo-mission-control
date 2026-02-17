@@ -69,7 +69,7 @@ export default function XAutomationsTab() {
   const loadAutomations = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.xAutomations?.list();
+      const result = await window.clawdbot?.xAutomations?.list();
       if (result?.automations) {
         const parsed = result.automations.map((row: any) => ({
           ...row,
@@ -89,7 +89,7 @@ export default function XAutomationsTab() {
 
   const toggleAutomation = async (id: string, currentState: boolean) => {
     try {
-      await (window as any).clawdbot?.xAutomations?.toggle(id, !currentState);
+      await window.clawdbot?.xAutomations?.toggle(id, !currentState);
       await loadAutomations();
     } catch (error) {
       // 'Failed to toggle automation:', error;
@@ -100,7 +100,7 @@ export default function XAutomationsTab() {
     if (!confirm('Are you sure you want to delete this automation?')) return;
     
     try {
-      await (window as any).clawdbot?.xAutomations?.delete(id);
+      await window.clawdbot?.xAutomations?.delete(id);
       await loadAutomations();
     } catch (error) {
       // 'Failed to delete automation:', error;
@@ -110,7 +110,7 @@ export default function XAutomationsTab() {
   const testAutomation = async (id: string) => {
     try {
       // Call the automation engine to test this automation
-      const result = await (window as any).clawdbot?.exec?.run(
+      const result = await window.clawdbot?.exec?.run(
         `~/froggo/scripts/x-automation-engine.sh test ${id}`
       );
       
@@ -171,9 +171,9 @@ export default function XAutomationsTab() {
       };
 
       if (editingAutomation) {
-        await (window as any).clawdbot?.xAutomations?.update(editingAutomation.id, automationData);
+        await window.clawdbot?.xAutomations?.update(editingAutomation.id, automationData);
       } else {
-        await (window as any).clawdbot?.xAutomations?.create(automationData);
+        await window.clawdbot?.xAutomations?.create(automationData);
       }
 
       await loadAutomations();

@@ -119,7 +119,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       
       // Fetch unread messages count
       try {
-        const unreadResult = await (window as any).clawdbot?.messages?.unread?.();
+        const unreadResult = await window.clawdbot?.messages?.unread?.();
         if (unreadResult?.success) {
           unreadMessages = unreadResult.count || 0;
         }
@@ -131,7 +131,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch work calendar events (from user settings)
       try {
         const calAccount = (await import('../store/userSettings')).useUserSettings.getState().emailAccounts[0]?.email || '';
-        const calendarResult = calAccount ? await (window as any).clawdbot?.calendar?.events(calAccount, 1) : null;
+        const calendarResult = calAccount ? await window.clawdbot?.calendar?.events(calAccount, 1) : null;
         if (calendarResult?.events) {
           upcomingEventsData = calendarResult.events;
         }
@@ -167,14 +167,14 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         const overnightStart = yesterday.getTime();
 
         // Get completed tasks from overnight
-        const tasksResult = await (window as any).clawdbot?.tasks?.list('done');
+        const tasksResult = await window.clawdbot?.tasks?.list('done');
         const overnightTasks = tasksResult?.tasks?.filter((t: any) => {
           const updated = t.updated_at ? new Date(t.updated_at).getTime() : 0;
           return updated >= overnightStart;
         }) || [];
 
         // Get agent sessions
-        const sessionsResult = await (window as any).clawdbot?.sessions?.list();
+        const sessionsResult = await window.clawdbot?.sessions?.list();
         const agentSessions = sessionsResult?.sessions?.filter((s: any) => {
           // Filter for agent sessions that were active overnight
           return s.key?.includes('agent:') && !s.key?.includes('discord');
@@ -208,7 +208,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch session stats
       let sessionStatsData: BriefData['sessionStats'] = undefined;
       try {
-        const sessionsResult = await (window as any).clawdbot?.gateway?.sessionsList();
+        const sessionsResult = await window.clawdbot?.gateway?.sessionsList();
         if (sessionsResult?.success && sessionsResult.sessions) {
           const sessions = sessionsResult.sessions;
           const now = Date.now();
@@ -255,8 +255,8 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch agent stats
       let agentStatsData: BriefData['agentStats'] = undefined;
       try {
-        const sessionsResult = await (window as any).clawdbot?.gateway?.sessionsList();
-        const tasksResult = await (window as any).clawdbot?.tasks?.list('in-progress');
+        const sessionsResult = await window.clawdbot?.gateway?.sessionsList();
+        const tasksResult = await window.clawdbot?.tasks?.list('in-progress');
         
         if (sessionsResult?.success && sessionsResult.sessions) {
           const sessions = sessionsResult.sessions;
@@ -324,7 +324,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch Twitter mentions
       let mentionsData: TwitterMention[] | undefined = undefined;
       try {
-        const mentionsResult = await (window as any).clawdbot?.twitter?.mentions();
+        const mentionsResult = await window.clawdbot?.twitter?.mentions();
         if (mentionsResult?.success && Array.isArray(mentionsResult.mentions)) {
           // Get recent mentions (last 24 hours)
           const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;

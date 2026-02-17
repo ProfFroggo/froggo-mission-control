@@ -35,7 +35,6 @@ import { registerWritingResearchHandlers, closeAllResearchDbs } from './writing-
 import { registerWritingVersionHandlers } from './writing-version-service';
 import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
-import { registerToolbarHandlers } from './handlers/toolbar-handlers';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM } from './x-api-client';
@@ -439,9 +438,6 @@ function createWindow() {
 
   // Writing wizard state persistence
   registerWritingWizardHandlers();
-
-  // Register Toolbar handlers
-  registerToolbarHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
@@ -3856,24 +3852,6 @@ ipcMain.handle('fs:append', async (_, filePath: string, content: string) => {
   }
 });
 
-// Query SQL against froggo.db — SELECT only, returns { rows: any[] }
-ipcMain.handle('db:query', async (_, query: string, params?: any[]) => {
-  try {
-    const queryLower = query.trim().toLowerCase();
-    if (!queryLower.startsWith('select')) {
-      return { success: false, error: 'Only SELECT queries are allowed via db:query' };
-    }
-
-    const stmt = prepare(query);
-    const bindParams = params && params.length > 0 ? params : [];
-    const rows = stmt.all(...bindParams);
-    return { success: true, rows };
-  } catch (error: any) {
-    safeLog.error('[DB] Query error:', error);
-    return { success: false, rows: [], error: error.message };
-  }
-});
-
 // Execute SQL against froggo.db (parameterized via better-sqlite3)
 ipcMain.handle('db:exec', async (_, query: string, params?: any[]) => {
   try {
@@ -4863,7 +4841,6 @@ setTimeout(initCommsDbTables, 2000);
 
 // ============== BACKGROUND COMMS POLLING ==============
 let commsRefreshInProgress = false;
-let commsPollTimer: NodeJS.Timeout | null = null;
 
 async function refreshCommsBackground() {
   if (commsRefreshInProgress) return;
@@ -5059,6 +5036,7 @@ async function refreshCommsBackground() {
 }
 
 function startCommsPolling() {
+  let commsPollTimer: NodeJS.Timeout;
   // Initial background refresh after 10s
   setTimeout(() => {
     refreshCommsBackground().then(() => {
@@ -5529,56 +5507,6 @@ ipcMain.handle('email:search', async (_, query: string, account?: string) => {
         resolve({ success: true, emails, account: acct });
       } catch {
         resolve({ success: true, emails: [], raw: stdout, account: acct });
-      }
-    });
-  });
-});
-
-// Search for starred emails
-ipcMain.handle('email:starred', async (_, account?: string) => {
-  if (!account) return { success: false, count: 0, error: 'No email account specified' };
-  const acct = account;
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:starred" --json --limit 1`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Email] Starred error:', error);
-        resolve({ success: false, count: 0, error: error.message });
-        return;
-      }
-      try {
-        const emails = JSON.parse(stdout);
-        // Get actual count from Gmail (approximate based on threads returned)
-        const count = emails.threads?.length || emails.length || 0;
-        resolve({ success: true, count, account: acct });
-      } catch {
-        resolve({ success: true, count: 0, account: acct });
-      }
-    });
-  });
-});
-
-// Search for @action labeled emails (important/starred/unread)
-ipcMain.handle('email:action', async (_, account?: string) => {
-  if (!account) return { success: false, count: 0, error: 'No email account specified' };
-  const acct = account;
-  // Search for important emails: unread + starred + prioritized
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog gmail search "is:unread (is:starred OR has:important)" --json --limit 1`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Email] Action search error:', error);
-        resolve({ success: false, count: 0, error: error.message });
-        return;
-      }
-      try {
-        const emails = JSON.parse(stdout);
-        const count = emails.threads?.length || emails.length || 0;
-        resolve({ success: true, count, account: acct });
-      } catch {
-        resolve({ success: true, count: 0, account: acct });
       }
     });
   });
@@ -7736,13 +7664,8 @@ ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
   try {
     const cmd = `froggo-db finance-transactions --limit ${limit} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    // froggo-db may return plain text when no records found
-    if (!stdout.startsWith('[') && !stdout.startsWith('{')) {
-      return { success: true, transactions: [] };
-    }
-    const transactions = JSON.parse(stdout);
-    return { success: true, transactions: Array.isArray(transactions) ? transactions : [] };
+    const transactions = JSON.parse(result.stdout);
+    return { success: true, transactions };
   } catch (error: any) {
     safeLog.error('[Finance] Get transactions error:', error.message);
     return { success: false, transactions: [], error: error.message };
@@ -7753,12 +7676,7 @@ ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'cryp
   try {
     const cmd = `froggo-db finance-budget-status --type ${budgetType} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    // froggo-db may return plain text when no budgets found
-    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
-      return { success: true, budget: null };
-    }
-    const budget = JSON.parse(stdout);
+    const budget = JSON.parse(result.stdout);
     return { success: true, budget };
   } catch (error: any) {
     safeLog.error('[Finance] Get budget status error:', error.message);
@@ -7805,12 +7723,8 @@ ipcMain.handle('finance:getAlerts', async () => {
   try {
     const cmd = `froggo-db finance-alerts --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
-      return { success: true, alerts: [] };
-    }
-    const parsed = JSON.parse(stdout);
-    return { success: true, alerts: parsed.alerts || (Array.isArray(parsed) ? parsed : []) };
+    const alerts = JSON.parse(result.stdout);
+    return { success: true, alerts: alerts.alerts || [] };
   } catch (error: any) {
     safeLog.error('[Finance] Get alerts error:', error.message);
     return { success: false, alerts: [], error: error.message };
@@ -7821,12 +7735,8 @@ ipcMain.handle('finance:getInsights', async () => {
   try {
     const cmd = `froggo-db finance-insights --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const stdout = result.stdout.trim();
-    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
-      return { success: true, insights: [] };
-    }
-    const parsed = JSON.parse(stdout);
-    return { success: true, insights: parsed.insights || (Array.isArray(parsed) ? parsed : []) };
+    const insights = JSON.parse(result.stdout);
+    return { success: true, insights: insights.insights || [] };
   } catch (error: any) {
     safeLog.error('[Finance] Get insights error:', error.message);
     return { success: false, insights: [], error: error.message };

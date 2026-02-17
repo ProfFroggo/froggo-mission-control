@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
 import { gateway } from '../lib/gateway';
@@ -45,6 +44,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'suggestions' | 'sentiment' | 'summary'>('suggestions');
 
+  // Only regenerate when selectedItem changes - internal helpers are stable for same item
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (selectedItem) {
@@ -63,7 +63,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
         analyzeSentiment(),
         generateSummary()
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[AI Assistance] Error:', error;
       showToast('error', 'AI assistance failed', error.message);
     } finally {

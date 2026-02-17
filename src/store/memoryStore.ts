@@ -57,7 +57,7 @@ interface MemoryState {
   deleteFact: (projectId: string, id: string) => Promise<void>;
 }
 
-const bridge = () => (window as any).clawdbot?.writing?.memory;
+const bridge = () => window.clawdbot?.writing?.memory;
 
 export const useMemoryStore = create<MemoryState>((set, get) => ({
   characters: [],

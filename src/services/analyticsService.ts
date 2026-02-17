@@ -101,7 +101,7 @@ async function fetchAnalyticsData(days: number): Promise<IPCAnalyticsData> {
   const timeRange = days <= 7 ? '7d' : days <= 30 ? '30d' : '90d';
   
   try {
-    const result = await (window as any).clawdbot?.analytics?.getData(timeRange);
+    const result = await window.clawdbot?.analytics?.getData(timeRange);
     if (result?.success) {
       cachedData = result;
       cachedDays = days;
@@ -201,7 +201,7 @@ export async function getTimeTrackingData(
   projectFilter?: string
 ): Promise<TimeTrackingData[]> {
   try {
-    const result = await (window as any).clawdbot?.analytics?.timeTracking(projectFilter);
+    const result = await window.clawdbot?.analytics?.timeTracking(projectFilter);
     if (result?.success && result.data) {
       return result.data.map((row: any) => ({
         taskId: row.taskId,
@@ -227,7 +227,7 @@ export async function getProductivityHeatmap(
   days: number = 30
 ): Promise<ProductivityHeatmap[]> {
   try {
-    const result = await (window as any).clawdbot?.analytics?.heatmap(days);
+    const result = await window.clawdbot?.analytics?.heatmap(days);
     if (result?.success && result.data) {
       return result.data.map((row: any) => ({
         date: row.date,
@@ -369,7 +369,7 @@ export async function getTaskVelocity(days: number = 30): Promise<{
  */
 export async function getSubtaskStats(): Promise<any[]> {
   try {
-    const result = await (window as any).clawdbot?.analytics?.subtaskStats();
+    const result = await window.clawdbot?.analytics?.subtaskStats();
     if (result?.success && result.data) {
       return result.data;
     }

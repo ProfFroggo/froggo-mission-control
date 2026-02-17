@@ -1,4 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: useFirstTimeUser hook uses file-level suppression for mount-only effect.
+// The effect only runs once on mount to check localStorage - intentional pattern.
+// Review: 2026-02-17 - suppression retained, pattern is safe
+
 import { useEffect } from 'react';
 import { useTour } from '../components/TourGuide';
 
