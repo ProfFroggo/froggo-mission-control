@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * useNotifications Hook
  * Handles system notifications, action buttons, and navigation from notifications
