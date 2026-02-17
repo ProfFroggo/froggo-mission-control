@@ -33,7 +33,7 @@ export function Toggle({
     : (colorScheme === 'red' ? 'bg-red-500' : 'bg-gray-400');
   
   return (
-    <label className="relative inline-flex flex-shrink-0 cursor-pointer">
+    <label className="relative inline-flex flex-shrink-0 cursor-pointer" aria-label="Toggle">
       <input
         type="checkbox"
         role="switch"
@@ -41,6 +41,7 @@ export function Toggle({
         onChange={(e) => onChange(e.target.checked)}
         disabled={disabled}
         className="sr-only"
+        aria-label="Toggle switch"
       />
       <div
         className={`relative rounded-full transition-colors duration-200 ${trackColor} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
