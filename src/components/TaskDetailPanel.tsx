@@ -281,10 +281,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     }
     
     // REQUIREMENT C: Reviewer approval required
-    // Task must be in 'review' status
-    if (task.status !== 'review') {
-      reasons.push('Task must be reviewed first (move to review status)');
-    }
+    // Task must be in 'review' status (warning removed per Kevin request)
     
     // Reviewer must be assigned
     if (!task.reviewerId) {
@@ -646,6 +643,45 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           <div className="flex items-center gap-1">
             <Clock size={14} />
             Updated {formatTime(task.updatedAt)}
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
+              <span
+                key={tag}
+                className="px-2 py-1 text-xs bg-clawd-accent/20 text-clawd-accent rounded-full flex items-center gap-1"
+              >
+                {tag}
+                <button
+                  onClick={() => {
+                    const currentTags = JSON.parse(task.tags || '[]');
+                    const newTags = currentTags.filter((t: string) => t !== tag);
+                    updateTask(task.id, { tags: JSON.stringify(newTags) });
+                  }}
+                  className="hover:text-error"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              placeholder="+ Add tag"
+              className="px-2 py-1 text-xs bg-clawd-bg border border-clawd-border rounded-full focus:outline-none focus:border-clawd-accent w-24"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                  const newTag = e.currentTarget.value.trim();
+                  const currentTags = JSON.parse(task.tags || '[]');
+                  if (!currentTags.includes(newTag)) {
+                    updateTask(task.id, { tags: JSON.stringify([...currentTags, newTag]) });
+                  }
+                  e.currentTarget.value = '';
+                }
+              }}
+            />
           </div>
         </div>
       </div>

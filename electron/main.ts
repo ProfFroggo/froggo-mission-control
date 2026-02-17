@@ -7736,8 +7736,13 @@ ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
   try {
     const cmd = `froggo-db finance-transactions --limit ${limit} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const transactions = JSON.parse(result.stdout);
-    return { success: true, transactions };
+    const stdout = result.stdout.trim();
+    // froggo-db may return plain text when no records found
+    if (!stdout.startsWith('[') && !stdout.startsWith('{')) {
+      return { success: true, transactions: [] };
+    }
+    const transactions = JSON.parse(stdout);
+    return { success: true, transactions: Array.isArray(transactions) ? transactions : [] };
   } catch (error: any) {
     safeLog.error('[Finance] Get transactions error:', error.message);
     return { success: false, transactions: [], error: error.message };
@@ -7748,7 +7753,12 @@ ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'cryp
   try {
     const cmd = `froggo-db finance-budget-status --type ${budgetType} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const budget = JSON.parse(result.stdout);
+    const stdout = result.stdout.trim();
+    // froggo-db may return plain text when no budgets found
+    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
+      return { success: true, budget: null };
+    }
+    const budget = JSON.parse(stdout);
     return { success: true, budget };
   } catch (error: any) {
     safeLog.error('[Finance] Get budget status error:', error.message);
@@ -7795,8 +7805,12 @@ ipcMain.handle('finance:getAlerts', async () => {
   try {
     const cmd = `froggo-db finance-alerts --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const alerts = JSON.parse(result.stdout);
-    return { success: true, alerts: alerts.alerts || [] };
+    const stdout = result.stdout.trim();
+    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
+      return { success: true, alerts: [] };
+    }
+    const parsed = JSON.parse(stdout);
+    return { success: true, alerts: parsed.alerts || (Array.isArray(parsed) ? parsed : []) };
   } catch (error: any) {
     safeLog.error('[Finance] Get alerts error:', error.message);
     return { success: false, alerts: [], error: error.message };
@@ -7807,8 +7821,12 @@ ipcMain.handle('finance:getInsights', async () => {
   try {
     const cmd = `froggo-db finance-insights --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const insights = JSON.parse(result.stdout);
-    return { success: true, insights: insights.insights || [] };
+    const stdout = result.stdout.trim();
+    if (!stdout.startsWith('{') && !stdout.startsWith('[')) {
+      return { success: true, insights: [] };
+    }
+    const parsed = JSON.parse(stdout);
+    return { success: true, insights: parsed.insights || (Array.isArray(parsed) ? parsed : []) };
   } catch (error: any) {
     safeLog.error('[Finance] Get insights error:', error.message);
     return { success: false, insights: [], error: error.message };
