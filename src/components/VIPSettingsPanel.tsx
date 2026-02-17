@@ -60,7 +60,7 @@ export default function VIPSettingsPanel() {
     setLoading(true);
     try {
       const data = await window.clawdbot?.vip.list(categoryFilter || undefined);
-      setVips(data);
+      setVips(data || []);
     } catch (error) {
       console.error('[VIP] Load error:', error);
       showToast('error', 'Failed to load VIPs');
@@ -252,8 +252,9 @@ export default function VIPSettingsPanel() {
                   // Edit Form
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-1">Label</label>
+                      <label htmlFor="vip-label" className="block text-sm text-clawd-text-dim mb-1">Label</label>
                       <input
+                        id="vip-label"
                         type="text"
                         value={formData.label}
                         onChange={e => setFormData({ ...formData, label: e.target.value })}
@@ -262,8 +263,9 @@ export default function VIPSettingsPanel() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-1">Category</label>
+                      <label htmlFor="vip-category" className="block text-sm text-clawd-text-dim mb-1">Category</label>
                       <select
+                        id="vip-category"
                         value={formData.category}
                         onChange={e => setFormData({ ...formData, category: e.target.value })}
                         className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
@@ -277,10 +279,11 @@ export default function VIPSettingsPanel() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-1">
+                      <label htmlFor="vip-boost" className="block text-sm text-clawd-text-dim mb-1">
                         Priority Boost ({formData.boost})
                       </label>
                       <input
+                        id="vip-boost"
                         type="range"
                         min="0"
                         max="50"
@@ -290,8 +293,9 @@ export default function VIPSettingsPanel() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-clawd-text-dim mb-1">Notes</label>
+                      <label htmlFor="vip-notes" className="block text-sm text-clawd-text-dim mb-1">Notes</label>
                       <textarea
+                        id="vip-notes"
                         value={formData.notes}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
                         rows={2}
@@ -394,10 +398,11 @@ export default function VIPSettingsPanel() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-identifier" className="block text-sm text-clawd-text-dim mb-1">
                   Identifier <span className="text-error">*</span>
                 </label>
                 <input
+                  id="vip-identifier"
                   type="text"
                   value={formData.identifier}
                   onChange={e => setFormData({ ...formData, identifier: e.target.value })}
@@ -408,10 +413,11 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-type" className="block text-sm text-clawd-text-dim mb-1">
                   Type
                 </label>
                 <select
+                  id="vip-type"
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
@@ -426,10 +432,11 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-label" className="block text-sm text-clawd-text-dim mb-1">
                   Label <span className="text-error">*</span>
                 </label>
                 <input
+                  id="vip-label"
                   type="text"
                   value={formData.label}
                   onChange={e => setFormData({ ...formData, label: e.target.value })}
@@ -440,8 +447,9 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Category</label>
+                <label htmlFor="vip-category" className="block text-sm text-clawd-text-dim mb-1">Category</label>
                 <select
+                  id="vip-category"
                   value={formData.category}
                   onChange={e => setFormData({ ...formData, category: e.target.value })}
                   className="w-full bg-clawd-surface border border-slate-700 rounded px-3 py-2 text-white
@@ -456,10 +464,11 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">
+                <label htmlFor="vip-boost" className="block text-sm text-clawd-text-dim mb-1">
                   Priority Boost: {formData.boost} (0-50)
                 </label>
                 <input
+                  id="vip-boost"
                   type="range"
                   min="0"
                   max="50"
@@ -475,8 +484,9 @@ export default function VIPSettingsPanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Notes</label>
+                <label htmlFor="vip-notes" className="block text-sm text-clawd-text-dim mb-1">Notes</label>
                 <textarea
+                  id="vip-notes"
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
