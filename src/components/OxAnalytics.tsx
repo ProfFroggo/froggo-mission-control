@@ -184,7 +184,6 @@ export default function OxAnalytics() {
                   tickLine={false}
                   axisLine={false}
                 />
-                {/* @ts-expect-error - recharts formatter type mismatch, runtime behavior correct */}
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#1f2937', 
@@ -193,8 +192,7 @@ export default function OxAnalytics() {
                     color: '#fff'
                   }}
                   labelStyle={{ color: '#9CA3AF' }}
-                  // @ts-expect-error - recharts Formatter type mismatch
-                  formatter={(value: number) => [value, 'Completed'] as const}
+                  formatter={(value: number | undefined) => [(value ?? 0), 'Completed'] as const}
                 />
                 <Bar 
                   dataKey="completed" 
