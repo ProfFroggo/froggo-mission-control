@@ -79,7 +79,7 @@ async function listCharacters(projectId: string) {
     const filepath = writingMemoryPath(projectId, 'characters.json');
     const characters = await readJsonArray<CharacterProfile>(filepath);
     return { success: true, characters };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] listCharacters error:', e.message);
     return { success: false, error: e.message, characters: [] };
   }
@@ -104,7 +104,7 @@ async function createCharacter(projectId: string, data: Omit<CharacterProfile, '
     characters.push(character);
     await writeJson(filepath, characters);
     return { success: true, character };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] createCharacter error:', e.message);
     return { success: false, error: e.message };
   }
@@ -122,7 +122,7 @@ async function updateCharacter(projectId: string, id: string, updates: Partial<C
     characters[idx] = { ...characters[idx], ...updates, id, updatedAt: now };
     await writeJson(filepath, characters);
     return { success: true, character: characters[idx] };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] updateCharacter error:', e.message);
     return { success: false, error: e.message };
   }
@@ -140,7 +140,7 @@ async function deleteCharacter(projectId: string, id: string) {
 
     await writeJson(filepath, filtered);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] deleteCharacter error:', e.message);
     return { success: false, error: e.message };
   }
@@ -153,7 +153,7 @@ async function listTimeline(projectId: string) {
     const filepath = writingMemoryPath(projectId, 'timeline.json');
     const timeline = await readJsonArray<TimelineEvent>(filepath);
     return { success: true, timeline };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] listTimeline error:', e.message);
     return { success: false, error: e.message, timeline: [] };
   }
@@ -178,7 +178,7 @@ async function createTimelineEvent(projectId: string, data: Omit<TimelineEvent, 
     timeline.push(event);
     await writeJson(filepath, timeline);
     return { success: true, event };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] createTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
@@ -196,7 +196,7 @@ async function updateTimelineEvent(projectId: string, id: string, updates: Parti
     timeline[idx] = { ...timeline[idx], ...updates, id, updatedAt: now };
     await writeJson(filepath, timeline);
     return { success: true, event: timeline[idx] };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] updateTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
@@ -214,7 +214,7 @@ async function deleteTimelineEvent(projectId: string, id: string) {
 
     await writeJson(filepath, filtered);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] deleteTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
@@ -227,7 +227,7 @@ async function listFacts(projectId: string) {
     const filepath = writingMemoryPath(projectId, 'facts.json');
     const facts = await readJsonArray<VerifiedFact>(filepath);
     return { success: true, facts };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] listFacts error:', e.message);
     return { success: false, error: e.message, facts: [] };
   }
@@ -251,7 +251,7 @@ async function createFact(projectId: string, data: Omit<VerifiedFact, 'id' | 'cr
     facts.push(fact);
     await writeJson(filepath, facts);
     return { success: true, fact };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] createFact error:', e.message);
     return { success: false, error: e.message };
   }
@@ -269,7 +269,7 @@ async function updateFact(projectId: string, id: string, updates: Partial<Verifi
     facts[idx] = { ...facts[idx], ...updates, id, updatedAt: now };
     await writeJson(filepath, facts);
     return { success: true, fact: facts[idx] };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] updateFact error:', e.message);
     return { success: false, error: e.message };
   }
@@ -287,7 +287,7 @@ async function deleteFact(projectId: string, id: string) {
 
     await writeJson(filepath, filtered);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-memory] deleteFact error:', e.message);
     return { success: false, error: e.message };
   }

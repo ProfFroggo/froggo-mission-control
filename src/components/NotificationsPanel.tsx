@@ -38,7 +38,7 @@ export default function NotificationsPanel() {
       const items: UnifiedNotification[] = [];
       
       // 1. Load inbox approvals
-      const inboxResult = await (window as any).clawdbot?.inbox?.list().catch((err: any) => { console.error('[Notifications] Failed to list inbox:', err); return null; });
+      const inboxResult = await window.clawdbot?.inbox?.list().catch((err: any) => { console.error('[Notifications] Failed to list inbox:', err); return null; });
       if (inboxResult?.items) {
         for (const item of inboxResult.items.filter((i: any) => i.status === 'pending')) {
           items.push({
@@ -57,7 +57,7 @@ export default function NotificationsPanel() {
       }
 
       // 2. Load calendar events (today)
-      const calendarResult = await (window as any).clawdbot?.calendar?.today().catch((err: any) => { console.error('[Notifications] Failed to get calendar:', err); return null; });
+      const calendarResult = await window.clawdbot?.calendar?.today().catch((err: any) => { console.error('[Notifications] Failed to get calendar:', err); return null; });
       if (calendarResult?.events) {
         const now = Date.now();
         for (const event of calendarResult.events) {
@@ -102,7 +102,7 @@ export default function NotificationsPanel() {
   const handleApprove = async (notif: UnifiedNotification) => {
     if (notif.source === 'inbox' && notif.data) {
       try {
-        await (window as any).clawdbot?.inbox?.update(notif.data.id, { status: 'approved' });
+        await window.clawdbot?.inbox?.update(notif.data.id, { status: 'approved' });
         setNotifications(prev => prev.filter(n => n.id !== notif.id));
         showToast('success', 'Approved', notif.title);
       } catch (e) {

@@ -26,7 +26,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
   const loadReports = async () => {
     setLoading(true);
     try {
-      const result = await (window as any).clawdbot?.hrReports?.list();
+      const result = await window.clawdbot?.hrReports?.list();
       if (result?.success) {
         setReports(result.reports || []);
         if (result.reports?.length > 0 && !selectedReport) {
@@ -48,7 +48,7 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     setSelectedReport(report);
     setLoadingContent(true);
     try {
-      const result = await (window as any).clawdbot?.hrReports?.read(report.name);
+      const result = await window.clawdbot?.hrReports?.read(report.name);
       if (result?.success) {
         setReportContent(result.content || '');
       } else {

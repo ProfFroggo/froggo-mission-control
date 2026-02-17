@@ -57,7 +57,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const loadResearchIdeas = async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot.xResearch.list({ status: 'proposed', limit: 20 });
+      const result = await window.clawdbot.xResearch.list({ status: 'proposed', limit: 20 });
       
       if (result.success) {
         setItems((result.ideas || []).map((idea: any) => ({ ...idea, itemType: 'research' as const })));
@@ -72,7 +72,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const loadContentPlans = async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot.xPlan.list({ status: 'proposed', limit: 20 });
+      const result = await window.clawdbot.xPlan.list({ status: 'proposed', limit: 20 });
       
       if (result.success) {
         setItems((result.plans || []).map((plan: any) => ({ ...plan, itemType: 'plan' as const })));
@@ -87,7 +87,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const loadDrafts = async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot.xDraft.list({ status: 'draft', limit: 20 });
+      const result = await window.clawdbot.xDraft.list({ status: 'draft', limit: 20 });
       
       if (result.success) {
         setItems((result.drafts || []).map((draft: any) => ({ ...draft, itemType: 'draft' as const })));
@@ -102,10 +102,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const handleApprove = async (id: string, itemType: 'research' | 'plan' | 'draft') => {
     try {
       const api = itemType === 'research' 
-        ? (window as any).clawdbot.xResearch 
+        ? window.clawdbot.xResearch 
         : itemType === 'plan'
-        ? (window as any).clawdbot.xPlan
-        : (window as any).clawdbot.xDraft;
+        ? window.clawdbot.xPlan
+        : window.clawdbot.xDraft;
       
       const result = await api.approve({
         id,
@@ -123,7 +123,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       } else {
         throw new Error(result.error || 'Failed to approve');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[XApprovalQueue] Approve error:', error;
       showToast('error', `Failed to approve: ${error.message}`);
     }
@@ -134,10 +134,10 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
     
     try {
       const api = itemType === 'research' 
-        ? (window as any).clawdbot.xResearch 
+        ? window.clawdbot.xResearch 
         : itemType === 'plan'
-        ? (window as any).clawdbot.xPlan
-        : (window as any).clawdbot.xDraft;
+        ? window.clawdbot.xPlan
+        : window.clawdbot.xDraft;
       
       const result = await api.reject({
         id,
@@ -155,7 +155,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       } else {
         throw new Error(result.error || 'Failed to reject');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[XApprovalQueue] Reject error:', error;
       showToast('error', `Failed to reject: ${error.message}`);
     }

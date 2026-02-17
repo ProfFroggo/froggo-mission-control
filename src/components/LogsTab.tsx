@@ -1,39 +1,6 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, Download, Pause, Play, ArrowDown } from 'lucide-react';
-import { gateway } from '../lib/gateway';
-
-export default function LogsTab() {
-  const [lines, setLines] = useState<string[]>([]);
-  const [cursor, setCursor] = useState<number>(0);
-  const [fileInfo, setFileInfo] = useState<{ file: string; size: number } | null>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [polling, setPolling] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const logRef = useRef<HTMLDivElement>(null);
-
-  const loadLogs = useCallback(async (append = false) => {
-    try {
-      const result = await gateway.tailLogs(append && cursor ? { cursor, limit: 100 } : { limit: 200 });
-      if (result?.lines) {
-        if (append && cursor) {
-          setLines(prev => [...prev, ...result.lines].slice(-2000));
-        } else {
-          setLines(result.lines);
-        }
-        setCursor(result.cursor);
-        setFileInfo({ file: result.file, size: result.size });
-      }
-    } catch (e) {
-      // 'Failed to load logs:', e;
-    } finally {
-      setLoading(false);
-    }
-  }, [cursor]);
-
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [loadLogs]);
 
   useEffect(() => {
     if (!polling) return;

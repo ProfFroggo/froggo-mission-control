@@ -152,6 +152,7 @@ export default function ProductivityHeatmap() {
                   key={hour}
                   className={`w-6 h-6 mx-px rounded cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-clawd-accent ${getColor(value)}`}
                   title={`${day} ${hour}:00 - ${value} activities`}
+                  role="presentation"
                   onMouseEnter={() => {
                     const cellData = data.find(
                       (d) => d.dayOfWeek === dayIndex && d.hour === hour

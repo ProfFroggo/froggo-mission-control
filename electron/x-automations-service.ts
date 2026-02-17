@@ -14,7 +14,7 @@ export function listAutomations() {
   try {
     const automations = prepare('SELECT * FROM x_automations ORDER BY created_at DESC').all();
     return { success: true, automations };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] List error:', e.message);
     return { success: true, automations: [] };
   }
@@ -28,7 +28,7 @@ export function getAutomation(id: string) {
       return { success: false, error: 'Automation not found' };
     }
     return { success: true, automation };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Get error:', e.message);
     return { success: false, error: e.message };
   }
@@ -70,7 +70,7 @@ export function createAutomation(data: {
       now
     );
     return { success: true, id };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Create error:', e.message);
     return { success: false, error: e.message };
   }
@@ -132,7 +132,7 @@ export function updateAutomation(id: string, updates: {
   try {
     prepare(`UPDATE x_automations SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Update error:', e.message);
     return { success: false, error: e.message };
   }
@@ -143,7 +143,7 @@ export function deleteAutomation(id: string) {
   try {
     prepare('DELETE FROM x_automations WHERE id = ?').run(id);
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Delete error:', e.message);
     return { success: false, error: e.message };
   }
@@ -158,7 +158,7 @@ export function toggleAutomation(id: string, enabled: boolean) {
       id
     );
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Toggle error:', e.message);
     return { success: false, error: e.message };
   }
@@ -178,7 +178,7 @@ export function getExecutions(automationId?: string, limit: number = 50) {
       ).all(limit);
     }
     return { success: true, executions };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Executions error:', e.message);
     return { success: true, executions: [] };
   }
@@ -208,7 +208,7 @@ export function getRateLimit(automationId: string) {
       currentHour,
       currentDay
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[x-automations] Rate limit error:', e.message);
     return { success: true, currentHour: 0, currentDay: 0 };
   }

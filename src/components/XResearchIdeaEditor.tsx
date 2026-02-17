@@ -49,7 +49,7 @@ export default function XResearchIdeaEditor() {
     try {
       setSubmitting(true);
       
-      const result = await (window as any).clawdbot.xResearch.propose({
+      const result = await window.clawdbot.xResearch.propose({
         title: title.trim(),
         description: description.trim(),
         citations: validCitations,
@@ -65,7 +65,7 @@ export default function XResearchIdeaEditor() {
       } else {
         throw new Error(result.error || 'Failed to submit research idea');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[XResearchEditor] Submit error:', error;
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {

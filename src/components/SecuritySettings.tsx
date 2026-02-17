@@ -51,7 +51,7 @@ export default function SecuritySettings() {
   // Load API keys from secure storage
   const loadAPIKeys = async () => {
     try {
-      const result = await (window as any).clawdbot?.security?.listKeys();
+      const result = await window.clawdbot?.security?.listKeys();
       if (result?.success) {
         setApiKeys(result.keys);
       }
@@ -63,7 +63,7 @@ export default function SecuritySettings() {
   // Load audit logs
   const loadAuditLogs = async () => {
     try {
-      const result = await (window as any).clawdbot?.security?.listAuditLogs();
+      const result = await window.clawdbot?.security?.listAuditLogs();
       if (result?.success) {
         setAuditLogs(result.logs);
       }
@@ -75,7 +75,7 @@ export default function SecuritySettings() {
   // Load security alerts
   const loadAlerts = async () => {
     try {
-      const result = await (window as any).clawdbot?.security?.listAlerts();
+      const result = await window.clawdbot?.security?.listAlerts();
       if (result?.success) {
         setAlerts(result.alerts);
       }
@@ -106,7 +106,7 @@ export default function SecuritySettings() {
       setAuditProgress('Generating AI recommendations...');
       
       // Call backend to run AI-powered audit
-      const result = await (window as any).clawdbot?.security?.runAudit();
+      const result = await window.clawdbot?.security?.runAudit();
       
       if (result?.success) {
         showToast('success', 'Security Audit Complete', `Found ${result.findings.length} items`);
@@ -117,7 +117,7 @@ export default function SecuritySettings() {
       } else {
         showToast('error', 'Audit Failed', result?.error || 'Could not complete security audit');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Audit Error', e.message || 'Security audit failed');
     } finally {
       setIsAuditing(false);
@@ -133,7 +133,7 @@ export default function SecuritySettings() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.security?.addKey(newKey);
+      const result = await window.clawdbot?.security?.addKey(newKey);
       if (result?.success) {
         showToast('success', 'Key Added', `${newKey.name} has been securely stored`);
         setAddKeyModal(false);
@@ -142,7 +142,7 @@ export default function SecuritySettings() {
       } else {
         showToast('error', 'Failed to Add Key', result?.error || 'Could not store API key');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Error', e.message || 'Failed to add API key');
     }
   };
@@ -154,14 +154,14 @@ export default function SecuritySettings() {
     }
 
     try {
-      const result = await (window as any).clawdbot?.security?.deleteKey(keyId);
+      const result = await window.clawdbot?.security?.deleteKey(keyId);
       if (result?.success) {
         showToast('success', 'Key Deleted', 'API key has been removed');
         loadAPIKeys();
       } else {
         showToast('error', 'Failed to Delete', result?.error || 'Could not delete API key');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       showToast('error', 'Error', e.message || 'Failed to delete API key');
     }
   };
@@ -169,7 +169,7 @@ export default function SecuritySettings() {
   // Update audit log status
   const updateAuditStatus = async (logId: string, status: 'acknowledged' | 'resolved') => {
     try {
-      const result = await (window as any).clawdbot?.security?.updateAuditLog(logId, { status });
+      const result = await window.clawdbot?.security?.updateAuditLog(logId, { status });
       if (result?.success) {
         loadAuditLogs();
       }
@@ -181,7 +181,7 @@ export default function SecuritySettings() {
   // Dismiss alert
   const dismissAlert = async (alertId: string) => {
     try {
-      const result = await (window as any).clawdbot?.security?.dismissAlert(alertId);
+      const result = await window.clawdbot?.security?.dismissAlert(alertId);
       if (result?.success) {
         loadAlerts();
       }

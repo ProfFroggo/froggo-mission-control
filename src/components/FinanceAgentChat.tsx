@@ -45,7 +45,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
   const loadChatHistory = async () => {
     try {
       setInitializing(true);
-      const result = await (window as any).clawdbot?.financeAgent?.getChatHistory();
+      const result = await window.clawdbot?.financeAgent?.getChatHistory();
       
       if (result?.success) {
         setMessages(result.messages || []);
@@ -78,7 +78,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       setInputMessage('');
 
       // Send to agent
-      const result = await (window as any).clawdbot?.financeAgent?.sendMessage(message);
+      const result = await window.clawdbot?.financeAgent?.sendMessage(message);
       
       if (result?.success && result.message) {
         // Add agent response
@@ -92,7 +92,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       } else {
         throw new Error(result?.error || 'Failed to get response from Finance Manager');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[FinanceChat] Send message error:', error;
       setError(error.message || 'Failed to send message');
       showToast('error', 'Failed to send message to Finance Manager');
@@ -113,14 +113,14 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
     if (!confirm('Clear all chat history? This cannot be undone.')) return;
 
     try {
-      const result = await (window as any).clawdbot?.financeAgent?.clearHistory();
+      const result = await window.clawdbot?.financeAgent?.clearHistory();
       if (result?.success) {
         setMessages([]);
         showToast('success', 'Chat history cleared');
       } else {
         throw new Error(result?.error || 'Failed to clear history');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[FinanceChat] Clear history error:', error;
       showToast('error', 'Failed to clear chat history');
     }

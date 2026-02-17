@@ -83,7 +83,7 @@ async function deleteWizardState(sessionId: string) {
       force: true,
     });
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     logger.error('[writing-wizard] deleteWizardState error:', e.message);
     return { success: false, error: e.message };
   }

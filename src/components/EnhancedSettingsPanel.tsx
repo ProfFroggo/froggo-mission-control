@@ -334,7 +334,7 @@ export default function EnhancedSettingsPanel() {
     safeStorage.setItem('froggo-settings', JSON.stringify(settings));
 
     try {
-      await (window as any).clawdbot?.settings?.save({
+      await window.clawdbot?.settings?.save({
         externalActionsEnabled: settings.externalActionsEnabled,
         rateLimitTweets: settings.rateLimitTweets,
         rateLimitEmails: settings.rateLimitEmails,

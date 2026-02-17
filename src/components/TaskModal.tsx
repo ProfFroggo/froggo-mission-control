@@ -190,14 +190,14 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     addTask(newTask);
 
     // Attach files if any were selected (background operation, don't block modal close)
-    if (selectedFiles.length > 0 && (window as any).clawdbot?.exec && (window as any).clawdbot?.fs && (window as any).clawdbot?.tasks?.attachments) {
+    if (selectedFiles.length > 0 && window.clawdbot?.exec && window.clawdbot?.fs && window.clawdbot?.tasks?.attachments) {
       // Do file uploads in background
       (async () => {
         const deliverablePath = `~/froggo/deliverables/${taskId}`;
         
         // Create directory
         try {
-          await (window as any).clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
+          await window.clawdbot.exec.run(`mkdir -p "${deliverablePath}"`);
         } catch (err) {
           // 'Failed to create deliverables directory:', err;
           return;
@@ -221,10 +221,10 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             });
 
             // Write file
-            await (window as any).clawdbot.fs.writeBase64(filePath, base64);
+            await window.clawdbot.fs.writeBase64(filePath, base64);
 
             // Add attachment record
-            await (window as any).clawdbot.tasks.attachments.add(
+            await window.clawdbot.tasks.attachments.add(
               taskId,
               filePath,
               'deliverable',
@@ -364,7 +364,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const triggerOrchestratorReview = async (task: any) => {
     try {
       // Log task creation activity to DB for orchestrator to pick up
-      await (window as any).clawdbot?.tasks?.activity?.add(task.id || `task-${Date.now()}`, {
+      await window.clawdbot?.tasks?.activity?.add(task.id || `task-${Date.now()}`, {
         action: 'created',
         message: `Task created via ${mode} mode`,
         agentId: 'main',

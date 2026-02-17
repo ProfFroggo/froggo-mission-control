@@ -30,14 +30,14 @@ export default function FinanceInsightsPanel() {
       setLoading(true);
       setError(null);
       
-      const result = await (window as any).clawdbot?.finance?.getInsights();
+      const result = await window.clawdbot?.finance?.getInsights();
       
       if (result?.success) {
         setInsights(result.insights || []);
       } else {
         throw new Error(result?.error || 'Failed to load insights');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[FinanceInsights] Load error:', err;
       setError(err.message);
     } finally {
@@ -62,7 +62,7 @@ export default function FinanceInsightsPanel() {
       } else {
         throw new Error(result?.error || 'Analysis failed');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[FinanceInsights] Analysis error:', err;
       showToast('error', 'Analysis failed', err.message);
     } finally {
@@ -81,7 +81,7 @@ export default function FinanceInsightsPanel() {
       } else {
         throw new Error(result?.error || 'Failed to dismiss insight');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // '[FinanceInsights] Dismiss error:', err;
       showToast('error', 'Failed to dismiss insight');
     }

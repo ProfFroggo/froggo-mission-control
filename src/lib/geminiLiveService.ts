@@ -797,8 +797,8 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
     try {
       if (mode === 'camera') {
         // Request camera permission via Electron IPC first
-        if ((window as any).clawdbot?.media?.request) {
-          const granted = await (window as any).clawdbot.media.request('camera');
+        if (window.clawdbot?.media?.request) {
+          const granted = await window.clawdbot.media.request('camera');
           if (!granted) {
             throw new Error('Camera permission denied');
           }

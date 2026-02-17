@@ -28,7 +28,7 @@ export interface AgentInfo {
   lastSeen?: string;
 }
 
-const api = () => (window as any).clawdbot;
+const api = () => window.clawdbot;
 
 /** Threshold in ms — sessions updated within this window are considered active */
 const ACTIVE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes

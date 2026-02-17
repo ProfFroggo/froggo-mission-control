@@ -62,11 +62,11 @@ async function loadPersonalities(): Promise<Record<string, any>> {
   
   
   // In Electron, try exec first (file:// fetch doesn't work)
-  const isElectron = !!(window as any).clawdbot?.exec?.run;
+  const isElectron = !!window.clawdbot?.exec?.run;
   
   if (isElectron) {
     try {
-      const r = await (window as any).clawdbot.exec.run(
+      const r = await window.clawdbot.exec.run(
         'cat ~/froggo-dashboard/dist/agent-profiles/personalities.json'
       );
       if (r.success && r.stdout) {
@@ -100,8 +100,8 @@ function isCleanAgentId(id: string): boolean {
 async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
   if (!isCleanAgentId(agentId)) return [];
   try {
-    if ((window as any).clawdbot?.exec?.run) {
-      const r = await (window as any).clawdbot.exec.run(
+    if (window.clawdbot?.exec?.run) {
+      const r = await window.clawdbot.exec.run(
         `froggo-db query "SELECT id, title, status, priority, assigned_to, created_at FROM tasks WHERE assigned_to='${agentId}' AND status IN ('todo', 'in-progress') ORDER BY priority DESC, created_at DESC LIMIT 20" --json 2>/dev/null`
       );
       if (r.success && r.stdout?.trim()) {
@@ -127,8 +127,8 @@ async function loadAgentTasks(agentId: string): Promise<AgentContext['tasks']> {
   
   // Fallback: try gateway froggo-db
   try {
-    if ((window as any).clawdbot?.db?.query) {
-      const result = await (window as any).clawdbot.db.query(
+    if (window.clawdbot?.db?.query) {
+      const result = await window.clawdbot.db.query(
         `SELECT id, title, status, priority, assigned_to, created_at FROM tasks WHERE assigned_to=? AND status IN ('todo', 'in-progress') ORDER BY created_at DESC LIMIT 20`,
         [agentId]
       );
@@ -172,7 +172,7 @@ async function loadAgentSessions(agentId: string): Promise<AgentContext['session
 }
 
 async function loadWorkspaceFiles(agentId: string): Promise<Record<string, string | null>> {
-  const exec = (window as any).clawdbot?.exec?.run;
+  const exec = window.clawdbot?.exec?.run;
   if (!exec || !isCleanAgentId(agentId)) return {};
 
   // Non-froggo agents live at ~/clawd-<id>, froggo lives at ~/clawd
@@ -206,11 +206,11 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
 async function loadAgentMemory(agentId: string): Promise<string | null> {
   if (!isCleanAgentId(agentId)) return null;
   try {
-    if ((window as any).clawdbot?.exec?.run) {
+    if (window.clawdbot?.exec?.run) {
       // Try reading the agent's daily memory
       const today = new Date().toISOString().split('T')[0];
       const memBase = (agentId === 'froggo' || agentId === 'main') ? '~/clawd' : `~/clawd-${agentId}`;
-      const r = await (window as any).clawdbot.exec.run(
+      const r = await window.clawdbot.exec.run(
         `head -100 ${memBase}/memory/${today}.md 2>/dev/null || echo ""`
       );
       if (r.success && r.stdout?.trim()) {

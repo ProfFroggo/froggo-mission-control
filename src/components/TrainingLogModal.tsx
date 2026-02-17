@@ -27,7 +27,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
 
   const loadEntries = async () => {
     try {
-      const dbExec = (window as any).clawdbot?.db?.exec;
+      const dbExec = window.clawdbot?.db?.exec;
       if (dbExec) {
         const res = await dbExec('SELECT * FROM agent_training_log ORDER BY created_at DESC LIMIT 50');
         setEntries(res?.result || []);

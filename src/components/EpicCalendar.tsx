@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
@@ -81,7 +80,7 @@ export default function EpicCalendar() {
         command += ` --location "${location.replace(/"/g, '\\"')}"`;
       }
 
-      const response = await (window as any).clawdbot?.exec?.run(command);
+      const response = await window.clawdbot?.exec?.run(command);
       
       if (!response?.success) {
         throw new Error(response?.reason || response?.stderr || 'Failed to create event');
@@ -121,7 +120,7 @@ export default function EpicCalendar() {
         command += ` --location "${location.replace(/"/g, '\\"')}"`;
       }
 
-      const response = await (window as any).clawdbot?.exec?.run(command);
+      const response = await window.clawdbot?.exec?.run(command);
       
       if (!response?.success) {
         throw new Error(response?.reason || response?.stderr || 'Failed to update event');
@@ -160,7 +159,7 @@ export default function EpicCalendar() {
   const deleteEvent = async (eventId: string, account: string): Promise<boolean> => {
     try {
       const command = `GOG_ACCOUNT=${account} gog calendar events delete --event-id "${eventId}"`;
-      const response = await (window as any).clawdbot?.exec?.run(command);
+      const response = await window.clawdbot?.exec?.run(command);
       
       if (!response?.success) {
         throw new Error(response?.reason || response?.stderr || 'Failed to delete event');
@@ -254,7 +253,7 @@ export default function EpicCalendar() {
 
       const command = `GOG_ACCOUNT=${event.account} gog calendar events update --event-id "${event.id}" --summary "${event.summary.replace(/"/g, '\\"')}" --start "${startISO}" --end "${endISO}"`;
       
-      const response = await (window as any).clawdbot?.exec?.run(command);
+      const response = await window.clawdbot?.exec?.run(command);
       
       if (!response?.success) {
         throw new Error(response?.reason || response?.stderr || 'Failed to reschedule event');
@@ -322,7 +321,7 @@ export default function EpicCalendar() {
       } else {
         throw new Error(response.error || 'Failed to aggregate events');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMsg = err?.message || 'Failed to fetch calendar events';
       setError(errorMsg);
       // '[EpicCalendar] Error:', err;
@@ -333,7 +332,7 @@ export default function EpicCalendar() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [accounts]); // Re-fetch when email accounts change
 
   const navigateDate = (direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') {
@@ -801,6 +800,15 @@ function MonthView({
                     onDragOver={(e) => onDragOver(e, date)}
                     onDragLeave={onDragLeave}
                     onDrop={(e) => onDrop(e, date)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        // Could open event creation modal
+                      }
+                    }}
+                    aria-label={`Calendar cell for ${date.toLocaleDateString()}`}
                   >
                     <div className={`text-sm font-medium mb-1 ${
                       isToday ? 'bg-clawd-accent text-white w-6 h-6 rounded-full flex items-center justify-center' : ''
@@ -944,6 +952,15 @@ function WeekView({
                     onDragOver={(e) => onDragOver(e, date, hour)}
                     onDragLeave={onDragLeave}
                     onDrop={(e) => onDrop(e, date, hour)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        // Could open event creation modal
+                      }
+                    }}
+                    aria-label={`Calendar cell for ${date.toLocaleDateString()} at ${hour}:00`}
                   >
                     {dayEvents.map(event => (
                       <EventCard 
@@ -1066,6 +1083,15 @@ function DayView({
                   onDragOver={(e) => onDragOver(e, currentDate, hour)}
                   onDragLeave={onDragLeave}
                   onDrop={(e) => onDrop(e, currentDate, hour)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      // Could open event creation modal
+                    }
+                  }}
+                  aria-label={`Time slot at ${hour}:00`}
                 >
                   {hourEvents.map(event => (
                     <EventCard 

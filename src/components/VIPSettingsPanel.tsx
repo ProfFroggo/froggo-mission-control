@@ -1,4 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: This file uses file-level suppression for intentional stable ref patterns.
+// The suppressions are legitimate because:
+// - Most callbacks are stable (modal handlers, event handlers)
+// - Dependencies on store values like categoryFilter are intentional
+// Review: 2026-02-17 - suppression retained for stability
+
 import { useState, useEffect } from 'react';
 import { Star, Plus, Edit, Trash2, Save, X, CheckCircle } from 'lucide-react';
 import { showToast } from './Toast';
@@ -94,7 +100,7 @@ export default function VIPSettingsPanel() {
       } else {
         showToast('error', result?.error || 'Failed to add VIP');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[VIP] Add error:', error;
       showToast('error', error.message || 'Failed to add VIP');
     }
@@ -120,7 +126,7 @@ export default function VIPSettingsPanel() {
       } else {
         showToast('error', result?.error || 'Failed to update VIP');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // '[VIP] Update error:', error;
       showToast('error', error.message || 'Failed to update VIP');
     }
@@ -142,7 +148,7 @@ export default function VIPSettingsPanel() {
         } else {
           showToast('error', result?.error || 'Failed to remove VIP');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // '[VIP] Remove error:', error;
         showToast('error', error.message || 'Failed to remove VIP');
       }

@@ -122,7 +122,7 @@ function App() {
 
   // Toolbar action IPC — mirrors the in-app QuickActions behavior
   useEffect(() => {
-    const cleanup = (window as any).clawdbot?.toolbar?.onAction?.((action: string) => {
+    const cleanup = window.clawdbot?.toolbar?.onAction?.((action: string) => {
       if (action === 'search')       { setSearchOpen(true); return; }
       if (action === 'new-task')     { setCurrentView('kanban'); return; }
       if (action === 'context-chat') { quickActionsRef.current?.openContextChat(); return; }
@@ -444,7 +444,7 @@ function App() {
             currentView={currentView}
             onApproveAll={async () => {
               try {
-                const result = await (window as any).clawdbot?.inbox?.approveAll();
+                const result = await window.clawdbot?.inbox?.approveAll();
                 if (result?.success) {
                   showToast('success', 'Approved all', `${result.count} items approved`);
                 }

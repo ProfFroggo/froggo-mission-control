@@ -41,7 +41,7 @@ export default function WeatherWidget() {
       const data = await response.json();
       setWeather(data);
       setLastFetch(Date.now());
-    } catch (e: any) {
+    } catch (e: unknown) {
       // 'Failed to fetch weather:', e;
       setError('Could not load weather');
     } finally {

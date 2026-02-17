@@ -26,7 +26,7 @@ export default function NewContentWidget() {
     setLoading(true);
     setError(null);
     try {
-      const result = await (window as any).clawdbot?.library?.list();
+      const result = await window.clawdbot?.library?.list();
       if (result?.success && Array.isArray(result.files)) {
         const now = Date.now();
         const oneDayAgo = now - (24 * 60 * 60 * 1000);

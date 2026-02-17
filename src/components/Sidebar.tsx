@@ -67,7 +67,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   // Load unread message count for comms inbox badge
   const loadUnreadMsgCount = async () => {
     try {
-      const result = await (window as any).clawdbot?.messages?.recent(50);
+      const result = await window.clawdbot?.messages?.recent(50);
       if (result?.success && result.chats) {
         const unread = result.chats.filter((c: any) => !c.is_read).length;
         setUnreadMsgCount(unread);

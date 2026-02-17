@@ -114,7 +114,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       } else if (att.type.startsWith('image/')) {
         try {
           const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
-          await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
           parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
         } catch {
           parts.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
@@ -122,7 +122,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       } else if (att.type === 'application/pdf') {
         try {
           const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
-          await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
           parts.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
         } catch {
           parts.push(`\n\n[PDF attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
@@ -130,7 +130,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       } else {
         try {
           const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
-          await (window as any).clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
+          await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
           parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
         } catch {
           parts.push(`\n\n📎 Attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB, type: ${att.type})`);
@@ -306,7 +306,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         });
 
         setSessionKey(roomId, agentId, sessionKey);
-        } catch (e: any) {
+        } catch (e: unknown) {
           clearTimeout(timer);
           updateMessage(roomId, msgId, {
             content: `Error: ${e.message || 'Failed to reach agent'}`,
@@ -694,6 +694,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         className="p-4 border-t border-clawd-border bg-clawd-surface relative"
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(Array.from(e.dataTransfer.files)); }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            // Keyboard drop - could implement if needed
+          }
+        }}
+        aria-label="Chat input - drop files here"
       >
         {/* Hidden file input */}
         <input

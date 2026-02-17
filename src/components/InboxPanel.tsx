@@ -605,7 +605,7 @@ export default function InboxPanel() {
         } else {
           showToast('error', 'Failed to create send task', result?.error);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // '[Inbox] Stage 1 email approval error:', error;
         showToast('error', 'Approval failed', error.message);
       }
@@ -1716,7 +1716,7 @@ export default function InboxPanel() {
                             showToast('error', 'Email failed', result?.error);
                             loadInbox(); // Revert
                           }
-                        } catch (e: any) {
+                        } catch (e: unknown) {
                           showToast('error', 'Send error', e.message);
                           loadInbox();
                         }
@@ -1795,7 +1795,7 @@ export default function InboxPanel() {
                         } else {
                           showToast('error', 'Failed to schedule', (result as any).error || 'Unknown error');
                         }
-                      } catch (e: any) {
+                      } catch (e: unknown) {
                         showToast('error', 'Schedule error', e.message);
                       }
                       
@@ -2009,7 +2009,7 @@ export default function InboxPanel() {
                     } else {
                       showToast('error', 'Failed to abort agent', result?.stderr || 'Unknown error');
                     }
-                  } catch (err: any) {
+                  } catch (err: unknown) {
                     showToast('error', 'Abort failed', err.message);
                   } finally {
                     setAbortingAgent(false);

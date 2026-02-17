@@ -111,7 +111,7 @@ export default function Kanban() {
   useEffect(() => {
     const pollActiveSessions = async () => {
       try {
-        const result = await (window as any).clawdbot?.agents?.getActiveSessions();
+        const result = await window.clawdbot?.agents?.getActiveSessions();
         if (result?.success && result.sessions) {
           const activeMap: Record<string, boolean> = {};
           result.sessions.forEach((s: any) => {
@@ -466,7 +466,7 @@ export default function Kanban() {
     setShowArchiveConfirm(false);
     setIsArchiving(true);
     try {
-      const result = await (window as any).clawdbot?.tasks?.archiveDone();
+      const result = await window.clawdbot?.tasks?.archiveDone();
       if (result?.success) {
         showToast('success', `Archived ${result.count || 0} done tasks`);
         await loadTasksFromDB(); // Refresh to remove archived tasks
@@ -704,6 +704,15 @@ export default function Kanban() {
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, column.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  // Could open column actions
+                }
+              }}
+              aria-label={`Kanban column: ${column.title}`}
             >
               {/* Column Header */}
               <div className={`p-3 border-b border-clawd-border border-l-4 ${column.color} rounded-t-2xl`}>

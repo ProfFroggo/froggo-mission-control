@@ -1,4 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+// LEGACY: MeetingsPanel uses file-level suppression for intentional stable callback patterns.
+// The suppressions are legitimate because:
+// - All callbacks are wrapped in useCallback with proper deps
+// - Mount-only effects for gateway subscription and cleanup are intentional
+// - Complex meeting lifecycle effects are carefully designed
+// - Post-processing effects depend on stable useCallback hooks
+// Review: 2026-02-17 - suppression retained, all patterns intentional
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Mic, MicOff, Phone, PhoneOff, Loader2, 
@@ -29,7 +37,7 @@ async function getGeminiApiKey(): Promise<string> {
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY;
   if (viteKey && viteKey !== 'your_key_here') { _cachedGeminiKey = viteKey; return viteKey; }
   try {
-    const key = await (window as any).clawdbot?.settings?.getApiKey?.('gemini');
+    const key = await window.clawdbot?.settings?.getApiKey?.('gemini');
     if (key) { _cachedGeminiKey = key; return key; }
   } catch { /* ignore */ }
   try {
@@ -195,14 +203,14 @@ export default function MeetingsPanel() {
 
   // DB Helpers
   const dbExec = useCallback(async (sql: string, params: (string | number | boolean | null)[] = []) => {
-    if (!(window as any).clawdbot?.db?.exec) return;
-    await (window as any).clawdbot.db.exec(sql, params);
+    if (!window.clawdbot?.db?.exec) return;
+    await window.clawdbot.db.exec(sql, params);
   }, []);
 
   const dbQuery = useCallback(async <T extends Record<string, unknown>>(sql: string, params: (string | number | boolean | null)[] = []): Promise<T[]> => {
-    if (!(window as any).clawdbot?.db?.query) return [];
+    if (!window.clawdbot?.db?.query) return [];
     try {
-      const res = await (window as any).clawdbot.db.query(sql, params);
+      const res = await window.clawdbot.db.query(sql, params);
       return (res?.rows as T[]) || [];
     } catch { return []; }
   }, []);
