@@ -43,9 +43,19 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 - ✓ Atomic project creation from wizard (chapters, characters, timeline) — v2.1
 - ✓ Genre flexibility beyond memoir/novel — v2.1
 
-### Active
+### Current Milestone: v3.0 — App-Wide Polish & X/Twitter Overhaul
 
-(No active requirements — next milestone not yet defined)
+**Goal:** Every page functions correctly in dark mode, X/Twitter page fully rebuilt, Finance page works end-to-end, Writing panes usable, Library has real data.
+
+**Target features:**
+- Global dark mode consistency (all inputs, chat bubbles, borders)
+- Uniform chat dialogue component across all pages
+- X/Twitter: X logo, fully dark-mode, working calendar (drag-to-reschedule), rebuilt automation builder, analytics tab, correct tab order, approval panels removed from non-content tabs
+- Writing: pane min-widths fixed, double-bar visible
+- Library: skills populated, file tagging, expanded categories
+- Finance: all features functional (insights, upload, chat, budgets)
+
+### Active
 
 ### Out of Scope
 
@@ -104,4 +114,4 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 | ProjectMeta.type as string (not union) | Genre flexibility for wizard, existing values still valid | ✓ Good (v2.1) |
 
 ---
-*Last updated: 2026-02-13 after v2.1 milestone completion*
+*Last updated: 2026-02-17 after v3.0 milestone started*
