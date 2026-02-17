@@ -67,15 +67,18 @@ declare global {
   // ============================================
 
   interface InboxItem {
-    id: number;
+    id: number | string;
     type: string;
     title: string;
     content: string;
     context?: string;
     channel?: string;
+    source_channel?: string;
     status?: string;
     createdAt?: number;
+    created?: string;
     metadata?: string;
+    isTask?: boolean;
   }
 
   interface RevisionItem {

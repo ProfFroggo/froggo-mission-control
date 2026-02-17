@@ -162,8 +162,7 @@ export class GeminiLiveService {
   private playbackCtx: AudioContext | null = null;
   private playbackQueue: ArrayBuffer[] = [];
   private isPlaying = false;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private _playbackSourceNode: AudioBufferSourceNode | null = null;
+  private playbackSourceNode: AudioBufferSourceNode | null = null;
   private playbackGain: GainNode | null = null;
   private scheduledTime = 0;
 
@@ -195,8 +194,7 @@ export class GeminiLiveService {
   private toolCallKeepaliveTimer: ReturnType<typeof setInterval> | null = null;
 
   // Session resumption — allows reconnecting without losing context
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private _sessionHandle: string | null = null;
+  private sessionHandle: string | null = null;
   
   // Context replay buffer - store recent conversation for reconnect
   private conversationHistory: Array<{role: 'user' | 'model', text: string}> = [];
@@ -475,7 +473,7 @@ export class GeminiLiveService {
       if (msg.sessionResumptionUpdate) {
         const update = msg.sessionResumptionUpdate;
         if (update.resumable && update.newHandle) {
-          this._sessionHandle = update.newHandle;
+          this.sessionHandle = update.newHandle;
           logger.debug('[GeminiLive] Session resumption handle updated');
         }
       }
@@ -501,7 +499,7 @@ export class GeminiLiveService {
     this.stopVideo();
     this.clearPlayback();
     this.stopToolCallKeepalive();
-    this._sessionHandle = null; // Clear handle on intentional disconnect
+    this.sessionHandle = null; // Clear handle on intentional disconnect
     if (this.ws) {
       this.ws.close(1000, 'User disconnected');
       this.ws = null;
@@ -764,7 +762,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       source.start(startTime);
       this.scheduledTime = startTime + audioBuffer.duration;
 
-      this._playbackSourceNode = source;
+      this.playbackSourceNode = source;
     }
 
     // Wait for last scheduled audio to finish, then check for more
@@ -789,7 +787,7 @@ registerProcessor('audio-capture-processor', AudioCaptureProcessor);
       this.playbackCtx.close().catch((err) => { console.error('[GeminiLive] Failed to close playback context:', err); });
       this.playbackCtx = null;
     }
-    this._playbackSourceNode = null;
+    this.playbackSourceNode = null;
     this.playbackGain = null;
     this.scheduledTime = 0;
   }

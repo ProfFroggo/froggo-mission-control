@@ -30,10 +30,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [loading, setLoading] = useState(false);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
-  // Helper to get agent name/emoji from store
+  // Helper to get agent name from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _agentEmoji = useCallback((id: string) => agents.find(a => a.id === id)?.avatar || '🤖', [agents]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
@@ -160,21 +158,6 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     setLoading(false);
     setStopped(true);
   }, [roomId, room, updateMessage]);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _clearPending = () => {
-    if (pendingAgentRef.current) {
-      setTypingAgents(prev => {
-        const n = new Set(prev);
-        n.delete(pendingAgentRef.current!);
-        return n;
-      });
-    }
-    pendingAgentRef.current = null;
-    pendingMsgIdRef.current = null;
-    pendingContentRef.current = '';
-    setLoading(false);
-  };
 
   /** Resume agents — re-send the last user message to all room agents */
   const resumeAgents = async () => {

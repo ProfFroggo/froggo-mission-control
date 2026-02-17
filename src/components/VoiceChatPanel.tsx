@@ -393,8 +393,6 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       try {
         const mode = videoMode !== 'none' ? videoMode : 'camera';
         await geminiLive.startVideo(mode);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const _stream = geminiLive.getVideoStream();
         setVideoActive(true);
         addSystemMessage(mode === 'camera' ? '📹 Camera active' : '🖥️ Screen sharing active');
         if (mode === 'screen') {

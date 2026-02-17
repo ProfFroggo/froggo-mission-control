@@ -20,19 +20,7 @@ interface InjectionWarning {
   risk: 'critical' | 'high' | 'medium' | 'low';
 }
 
-interface InboxItem {
-  id: number;
-  created: string;
-  type: ApprovalType;
-  title: string;
-  content: string;
-  context?: string;
-  status: string;
-  metadata?: string;
-  source_channel?: string;
-  source_session?: string;
-  reviewed_at?: string;
-  feedback?: string;
+interface LocalInboxItem extends InboxItem {
   priority_score?: number;
   priority_metadata?: string;
 }
@@ -89,9 +77,9 @@ type TabType = 'all' | 'approvals' | 'reviews';
 export default function InboxPanel() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [processingItems, setProcessingItems] = useState<Set<number>>(new Set());
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [feedbackId, setFeedbackId] = useState<number | null>(null);
+  const [processingItems, setProcessingItems] = useState<Set<number | string>>(new Set());
+  const [expandedId, setExpandedId] = useState<number | string | null>(null);
+  const [feedbackId, setFeedbackId] = useState<number | string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [filter, setFilter] = useState<ApprovalType | 'all'>('all');
@@ -99,7 +87,7 @@ export default function InboxPanel() {
   const [rejectDialogItem, setRejectDialogItem] = useState<InboxItem | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const rejectInputRef = useRef<HTMLInputElement>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<number | string>>(new Set());
   const recentlyRejectedTaskIds = useRef<Set<string>>(new Set());
   const recentlyApprovedIds = useRef<Set<number | string>>(new Set());
   const [focusedIndex, setFocusedIndex] = useState<number>(0);
