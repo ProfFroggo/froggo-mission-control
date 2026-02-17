@@ -42,16 +42,19 @@ export default function XPlanThreadComposer() {
   const loadApprovedResearch = async () => {
     try {
       setLoading(true);
-      const result = await (window as any).clawdbot.xResearch.list({ 
+      const result = await (window as any).clawdbot?.xResearch?.list({ 
         status: 'approved', 
         limit: 50 
       });
       
-      if (result.success) {
+      if (result?.success) {
         setResearchIdeas(result.ideas || []);
+      } else {
+        showToast('error', 'Unable to load research ideas. Please refresh.');
       }
     } catch (error) {
       console.error('[XPlanComposer] Load research error:', error);
+      showToast('error', 'Failed to load research ideas');
     } finally {
       setLoading(false);
     }
@@ -77,7 +80,7 @@ export default function XPlanThreadComposer() {
     try {
       setSubmitting(true);
       
-      const result = await (window as any).clawdbot.xPlan.create({
+      const result = await (window as any).clawdbot?.xPlan?.create({
         researchIdeaId: selectedResearchId,
         title: title.trim(),
         contentType,
@@ -86,7 +89,7 @@ export default function XPlanThreadComposer() {
         proposedBy: getCurrentUserName(),
       });
 
-      if (result.success) {
+      if (result?.success) {
         showToast('success', 'Content plan submitted for approval');
         // Reset form
         setSelectedResearchId('');
@@ -95,7 +98,7 @@ export default function XPlanThreadComposer() {
         setThreadLength(1);
         setDescription('');
       } else {
-        throw new Error(result.error || 'Failed to create content plan');
+        showToast('error', 'Failed to create content plan. Please try again.');
       }
     } catch (error: any) {
       console.error('[XPlanComposer] Submit error:', error);
