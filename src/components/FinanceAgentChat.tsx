@@ -203,7 +203,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
                 <div
                   className={`max-w-[80%] rounded-lg p-3 ${
                     msg.role === 'user'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-clawd-accent/50 text-white'
                       : 'bg-clawd-bg-alt text-clawd-text'
                   }`}
                 >
@@ -267,7 +267,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
-            className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            className="p-2 bg-clawd-accent hover:bg-clawd-accent-dim disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             aria-label={loading ? "Sending message" : "Send message"}
           >
             {loading ? (

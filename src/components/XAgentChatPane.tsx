@@ -238,7 +238,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 <div
                   className={`max-w-[90%] rounded-lg p-3 ${
                     msg.role === 'user'
-                      ? 'bg-info-subtle text-info'
+                      ? 'bg-clawd-accent/50 text-white'
                       : msg.error
                       ? 'bg-error-subtle border border-error-border text-error'
                       : 'bg-clawd-bg-alt text-clawd-text'
