@@ -18,11 +18,11 @@ const getTheme = getAgentTheme;
 
 // Static lookup for Tailwind JIT — dynamic `hover:${theme.bg}` won't generate CSS
 const HOVER_BG_MAP: Record<string, string> = {
-  'bg-green-500/8': 'hover:bg-green-500/8',
-  'bg-blue-500/8': 'hover:bg-blue-500/8',
-  'bg-orange-500/8': 'hover:bg-orange-500/8',
-  'bg-purple-500/8': 'hover:bg-purple-500/8',
-  'bg-red-500/8': 'hover:bg-red-500/8',
+  'bg-success-subtle': 'hover:bg-success-subtle',
+  'bg-info-subtle': 'hover:bg-info-subtle',
+  'bg-warning-subtle': 'hover:bg-warning-subtle',
+  'bg-review-subtle': 'hover:bg-review-subtle',
+  'bg-error-subtle': 'hover:bg-error-subtle',
   'bg-teal-500/8': 'hover:bg-teal-500/8',
   'bg-pink-500/8': 'hover:bg-pink-500/8',
   'bg-sky-500/8': 'hover:bg-sky-500/8',
@@ -31,8 +31,8 @@ const HOVER_BG_MAP: Record<string, string> = {
   'bg-rose-500/8': 'hover:bg-rose-500/8',
   'bg-cyan-500/8': 'hover:bg-cyan-500/8',
   'bg-indigo-500/8': 'hover:bg-indigo-500/8',
-  'bg-blue-700/8': 'hover:bg-blue-700/8',
-  'bg-yellow-600/8': 'hover:bg-yellow-600/8',
+  'bg-info-subtle': 'hover:bg-info-subtle',
+  'bg-warning-subtle': 'hover:bg-warning-subtle',
   'bg-clawd-surface': 'hover:bg-clawd-surface',
 };
 
@@ -162,7 +162,7 @@ export default function AgentPanel() {
           </div>
           <div className="icon-text gap-2">
             {compareAgents.length >= 2 && (
-              <button type="button" onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-review border border-purple-500/30 rounded-lg hover:bg-purple-500/10 transition-colors text-sm">
+              <button type="button" onClick={() => setShowCompare(true)} className="icon-text px-3 py-2 text-review border border-review-border rounded-lg hover:bg-review-subtle transition-colors text-sm">
                 <GitCompare size={15} className="flex-shrink-0" /> Compare ({compareAgents.length})
               </button>
             )}
@@ -220,7 +220,7 @@ export default function AgentPanel() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest">Core Agents</h2>
             {compareAgents.length > 0 && (
-              <span className="text-xs px-2 py-0.5 text-review border border-purple-500/30 rounded-full">
+              <span className="text-xs px-2 py-0.5 text-review border border-review-border rounded-full">
                 {compareAgents.length} selected
               </span>
             )}
@@ -243,7 +243,7 @@ export default function AgentPanel() {
                 <div
                   key={agent.id}
                   className={`group relative rounded-xl border-2 transition-all duration-200 hover:-translate-y-0.5 ${
-                    isCompareSelected ? 'border-purple-500/60' : theme.border
+                    isCompareSelected ? 'border-review-border' : theme.border
                   } ${isExpanded ? '' : 'cursor-pointer'}`}
                   onClick={() => !isExpanded && toggleExpanded(agent.id)}
                 >
@@ -294,7 +294,7 @@ export default function AgentPanel() {
                             </span>
                           )}
                           {agent.status === 'archived' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-500/20 text-gray-400">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-500/20 text-clawd-text-dim">
                               Archived
                             </span>
                           )}
@@ -368,7 +368,7 @@ export default function AgentPanel() {
                         <MessageSquare size={14} />
                       </button>
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleCompare(agent.id); }}
-                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-purple-500/10' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
+                        className={`p-1.5 rounded-lg transition-colors ${isCompareSelected ? 'text-review bg-review-subtle' : 'text-clawd-text-dim opacity-50 hover:opacity-100 hover:bg-clawd-border/30'}`}
                         title="Compare"
                         aria-label={`Compare ${agent.name}`}>
                         <GitCompare size={14} />
@@ -430,18 +430,18 @@ export default function AgentPanel() {
               {realSubagents.map((session) => (
                 <div key={session.key}
                   className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
-                    session.isActive ? 'border-success-border bg-green-500/5' : 'border-clawd-border'
+                    session.isActive ? 'border-success-border bg-success-subtle' : 'border-clawd-border'
                   }`}>
                   <span className="text-xl no-shrink">🤖</span>
                   <div className="flex-fill">
                     <div className="icon-text min-w-0">
                       <span className="font-medium session-name flex-shrink">{session.displayName}</span>
                       {session.label && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-blue-500/20 rounded no-shrink no-wrap">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded no-shrink no-wrap">
                           {session.label}
                         </span>
                       )}
-                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-green-400 animate-pulse' : 'bg-clawd-bg0'}`} />
+                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-success animate-pulse' : 'bg-clawd-bg0'}`} />
                       {session.isActive && <span className="text-[10px] text-success no-shrink no-wrap">Active</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[11px] text-clawd-text-dim overflow-hidden">
@@ -451,7 +451,7 @@ export default function AgentPanel() {
                     </div>
                   </div>
                   <span className={`px-2 py-1 text-[10px] font-medium uppercase tracking-wide rounded ${
-                    session.isActive ? 'text-success border border-green-500/20' : 'text-clawd-text-dim border border-clawd-border'
+                    session.isActive ? 'text-success border border-success-border' : 'text-clawd-text-dim border border-clawd-border'
                   }`}>
                     {session.isActive ? 'Running' : 'Idle'}
                   </span>

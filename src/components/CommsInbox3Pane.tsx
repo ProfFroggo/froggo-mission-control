@@ -619,12 +619,12 @@ function CenterPane({
                         </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
-                        <span className="text-[10px] text-info bg-blue-500/15 rounded px-1 py-0.5 font-medium" title="Unread messages">
+                        <span className="text-[10px] text-info bg-info-subtle rounded px-1 py-0.5 font-medium" title="Unread messages">
                           {conv.unread_count} unread
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-[10px] text-warning bg-orange-500/15 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-[10px] text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
@@ -1154,14 +1154,14 @@ function RightPane({
             <Sparkles size={13} className="text-clawd-accent flex-shrink-0" />
             <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
               aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
-              aiAnalysis.triage === 'action' ? 'bg-orange-500/20 text-warning' :
+              aiAnalysis.triage === 'action' ? 'bg-warning-subtle text-warning' :
               aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
               'bg-clawd-bg/20 text-clawd-text-dim'
             }`}>
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
             {!aiAnalysis.reply_needed && (
-              <span className="text-[10px] text-success bg-green-500/15 px-1.5 py-0.5 rounded font-medium">
+              <span className="text-[10px] text-success bg-success-subtle px-1.5 py-0.5 rounded font-medium">
                 No reply needed
               </span>
             )}
@@ -1192,7 +1192,7 @@ function RightPane({
                 <button
                   key={i}
                   onClick={() => onCreateEvent?.(event)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-purple-500/10 text-review border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition-colors"
+                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-review-subtle text-review border border-review-border rounded-md hover:bg-review-subtle transition-colors"
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
                 >
                   <CalendarPlus size={10} />

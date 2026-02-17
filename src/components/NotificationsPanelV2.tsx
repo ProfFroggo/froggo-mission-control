@@ -21,10 +21,10 @@ import {
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
   task_complete: { icon: CheckCircle, color: 'text-success bg-success-subtle', label: 'Task Complete' },
-  task_deadline: { icon: Clock3, color: 'text-orange-400 bg-orange-500/10', label: 'Deadline' },
-  agent_update: { icon: Bot, color: 'text-review bg-purple-500/10', label: 'Agent Update' },
+  task_deadline: { icon: Clock3, color: 'text-warning bg-warning-subtle', label: 'Deadline' },
+  agent_update: { icon: Bot, color: 'text-review bg-review-subtle', label: 'Agent Update' },
   message_arrival: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Message' },
-  approval_pending: { icon: AlertCircle, color: 'text-warning bg-yellow-500/10', label: 'Approval' },
+  approval_pending: { icon: AlertCircle, color: 'text-warning bg-warning-subtle', label: 'Approval' },
   calendar_event: { icon: Calendar, color: 'text-pink-400 bg-pink-500/10', label: 'Event' },
   system_alert: { icon: AlertTriangle, color: 'text-error bg-error-subtle', label: 'Alert' },
   skill_learned: { icon: Star, color: 'text-cyan-400 bg-cyan-500/10', label: 'Skill' },
@@ -343,7 +343,7 @@ export default function NotificationsPanelV2() {
                   key={notif.id}
                   className={`p-4 rounded-xl border transition-all cursor-pointer ${
                     notif.priority === 'urgent'
-                      ? 'bg-red-500/5 border-error-border shadow-lg'
+                      ? 'bg-error-subtle border-error-border shadow-lg'
                       : notif.read
                       ? 'bg-clawd-bg border-clawd-border opacity-60'
                       : 'bg-clawd-surface border-clawd-border shadow-card hover:shadow-card-hover'
@@ -403,7 +403,7 @@ export default function NotificationsPanelV2() {
                             e.stopPropagation();
                             handleMarkRead(notif.id);
                           }}
-                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-green-500/30 transition-colors"
+                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-success-subtle transition-colors"
                           title="Mark as read"
                         >
                           <Check size={16} />

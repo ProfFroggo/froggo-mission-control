@@ -43,19 +43,19 @@ export default function ErrorDisplay({
       bg: 'bg-error-subtle',
       border: 'border-error-border',
       text: 'text-error',
-      iconBg: 'bg-red-500/20',
+      iconBg: 'bg-error-subtle',
     },
     warning: {
-      bg: 'bg-yellow-500/10',
+      bg: 'bg-warning-subtle',
       border: 'border-warning-border',
       text: 'text-warning',
-      iconBg: 'bg-yellow-500/20',
+      iconBg: 'bg-warning-subtle',
     },
     info: {
       bg: 'bg-info-subtle',
       border: 'border-info-border',
       text: 'text-info',
-      iconBg: 'bg-blue-500/20',
+      iconBg: 'bg-info-subtle',
     },
   };
 

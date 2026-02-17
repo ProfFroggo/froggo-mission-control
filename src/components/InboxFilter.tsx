@@ -280,7 +280,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="px-3 py-2 bg-error-subtle text-error rounded-lg text-sm flex items-center gap-2 hover:bg-red-500/30"
+              className="px-3 py-2 bg-error-subtle text-error rounded-lg text-sm flex items-center gap-2 hover:bg-error-subtle"
             >
               <X size={14} />
               Clear
@@ -347,7 +347,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
               <button
                 onClick={() => toggleFlag('unreplied')}
                 className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.unreplied ? 'bg-orange-500/20 text-orange-500' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
+                  flags.unreplied ? 'bg-warning-subtle text-warning' : 'bg-clawd-bg border border-clawd-border text-clawd-text-dim'
                 }`}
               >
                 <Reply size={14} /> Awaiting Reply
@@ -420,7 +420,7 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                   </button>
                   <button
                     onClick={() => deleteSavedFilter(filter.id)}
-                    className="p-1 text-error hover:bg-red-500/20 rounded"
+                    className="p-1 text-error hover:bg-error-subtle rounded"
                   >
                     <X size={14} />
                   </button>

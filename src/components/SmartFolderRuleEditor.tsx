@@ -209,7 +209,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           <button
             onClick={testRule}
             disabled={testing || !rule.conditions || rule.conditions.length === 0}
-            className="flex items-center gap-2 px-3 py-1.5 bg-info-subtle text-info hover:bg-blue-500/30 rounded-lg transition-colors text-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-1.5 bg-info-subtle text-info hover:bg-info-subtle rounded-lg transition-colors text-sm disabled:opacity-50"
           >
             <TestTube size={14} />
             Test Rule
@@ -504,7 +504,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                 className={`p-3 rounded-lg border ${
                   testResult
                     ? 'bg-success-subtle border-success-border text-success'
-                    : 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                    : 'bg-warning-subtle border-warning-border text-warning'
                 }`}
               >
                 <div className="flex items-center gap-2 text-sm font-medium">
@@ -518,14 +518,14 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
         {/* Danger Zone */}
         {rule.id && (
-          <div className="card p-4 border-red-500/20">
+          <div className="card p-4 border-error-border">
             <h3 className="font-semibold text-error mb-2">Danger Zone</h3>
             <p className="text-sm text-clawd-text-dim mb-3">
               Deleting this rule will make the folder manual-only. Existing assignments will remain.
             </p>
             <button
               onClick={handleDelete}
-              className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-error rounded-lg text-sm transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-error-subtle hover:bg-error-subtle text-error rounded-lg text-sm transition-colors"
             >
               <Trash2 size={14} />
               Delete Rule

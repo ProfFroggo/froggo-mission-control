@@ -1563,7 +1563,7 @@ export default function InboxPanel() {
               </button>
               <button
                 onClick={confirmReject}
-                className="px-4 py-2 bg-error-subtle text-error hover:bg-red-500/30 rounded text-sm transition-colors"
+                className="px-4 py-2 bg-error-subtle text-error hover:bg-error-subtle rounded text-sm transition-colors"
               >
                 Reject
               </button>
@@ -1880,7 +1880,7 @@ export default function InboxPanel() {
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-lg w-full mx-4" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <div className="p-2 bg-warning-subtle rounded-lg">
                 <AlertTriangle size={24} className="text-warning" />
               </div>
               <div>
@@ -1890,8 +1890,8 @@ export default function InboxPanel() {
             </div>
 
             {/* Warning Content */}
-            <div className="bg-yellow-500/10 border border-warning-border rounded-lg p-4 mb-4">
-              <p className="text-sm text-yellow-200 mb-2">
+            <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 mb-4">
+              <p className="text-sm text-warning mb-2">
                 ⚠️ An agent is currently working on this task
               </p>
               <div className="text-xs text-clawd-text-dim space-y-1">

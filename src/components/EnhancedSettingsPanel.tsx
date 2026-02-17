@@ -499,7 +499,7 @@ export default function EnhancedSettingsPanel() {
                 onClick={handleSave}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                   saved 
-                    ? 'bg-green-500/20 text-success' 
+                    ? 'bg-success-subtle text-success' 
                     : 'bg-clawd-accent text-white hover:bg-clawd-accent-dim'
                 }`}
               >
@@ -625,7 +625,7 @@ export default function EnhancedSettingsPanel() {
                     />
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-clawd-bg rounded-lg border border-clawd-border">
-                    <span className={`w-3 h-3 rounded-full ${connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                    <span className={`w-3 h-3 rounded-full ${connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
                     <span className="text-sm font-medium">{connected ? 'Connected' : 'Disconnected'}</span>
                     {connected && <span className="text-xs text-clawd-text-dim ml-auto">Active</span>}
                   </div>
@@ -1113,7 +1113,7 @@ export default function EnhancedSettingsPanel() {
 
                   <button
                     onClick={clearCache}
-                    className="w-full py-2 bg-orange-500/20 text-warning rounded-lg hover:bg-orange-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-warning-subtle text-warning rounded-lg hover:bg-warning-subtle transition-colors flex items-center justify-center gap-2"
                   >
                     <Trash2 size={16} />
                     Clear Cache Now
@@ -1210,7 +1210,7 @@ export default function EnhancedSettingsPanel() {
 
                   <button
                     onClick={cleanupOldData}
-                    className="w-full py-2 bg-orange-500/20 text-warning rounded-lg hover:bg-orange-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2 bg-warning-subtle text-warning rounded-lg hover:bg-warning-subtle transition-colors flex items-center justify-center gap-2"
                   >
                     <Archive size={16} />
                     Cleanup Old Data Now
@@ -1448,7 +1448,7 @@ export default function EnhancedSettingsPanel() {
                 description="Advanced settings for developers"
               >
                 <div className="space-y-4">
-                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-2">
+                  <div className="p-3 bg-warning-subtle border border-warning-border rounded-lg flex items-start gap-2">
                     <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-warning">
                       These settings are for advanced users. Changing them may affect app stability.
@@ -1529,7 +1529,7 @@ export default function EnhancedSettingsPanel() {
                 description="Control automated external actions"
               >
                 <div className="space-y-4">
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-2">
+                  <div className="p-3 bg-error-subtle border border-error-border rounded-lg flex items-start gap-2">
                     <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-error">
                       These settings control real external actions (tweets, emails, etc.). Use with caution.
@@ -1541,9 +1541,9 @@ export default function EnhancedSettingsPanel() {
                       <div className="font-medium flex items-center gap-2">
                         Kill Switch
                         {settings.externalActionsEnabled ? (
-                          <span className="text-xs px-2 py-0.5 bg-green-500/20 text-success rounded font-bold">LIVE</span>
+                          <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded font-bold">LIVE</span>
                         ) : (
-                          <span className="text-xs px-2 py-0.5 bg-red-500/20 text-error rounded font-bold">BLOCKED</span>
+                          <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded font-bold">BLOCKED</span>
                         )}
                       </div>
                       <div className="text-sm text-clawd-text-dim">
@@ -1599,12 +1599,12 @@ export default function EnhancedSettingsPanel() {
                         />
                       </div>
 
-                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
                         <div className="flex items-start gap-2">
                           <span className="text-xl">🤖</span>
                           <div className="flex-1">
                             <div className="font-medium text-info mb-2">Smart Account Selection</div>
-                            <div className="text-sm text-blue-300 space-y-2">
+                            <div className="text-sm text-info space-y-2">
                               <p>Froggo intelligently chooses accounts based on context:</p>
                               <ul className="list-disc list-inside space-y-1 ml-2 text-xs">
                                 <li>Reply-to matching for email threads</li>

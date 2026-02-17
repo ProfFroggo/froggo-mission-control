@@ -514,7 +514,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                 {brief.overnightActivity.agentSessions.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {brief.overnightActivity.agentSessions.map((agent, i) => (
-                      <span key={i} className="px-2 py-1 bg-purple-500/20 text-review rounded text-xs">
+                      <span key={i} className="px-2 py-1 bg-review-subtle text-review rounded text-xs">
                         {agent}
                       </span>
                     ))}
@@ -597,7 +597,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-clawd-text-dim mb-2">Working On Tasks</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.agentStats.busyAgents.map((agent, i) => (
-                        <span key={i} className="px-2 py-1 bg-green-500/20 text-success rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-success-subtle text-success rounded text-xs">
                           {agent}
                         </span>
                       ))}
@@ -648,7 +648,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
               </div>
               <div className="space-y-3">
                 {brief.mentions.map((mention) => (
-                  <div key={mention.id} className="p-3 bg-clawd-bg/30 rounded-lg border border-clawd-border hover:border-blue-400/50 transition-colors">
+                  <div key={mention.id} className="p-3 bg-clawd-bg/30 rounded-lg border border-clawd-border hover:border-info-border transition-colors">
                     <div className="flex items-start gap-2 mb-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">

@@ -106,7 +106,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
     return (
       <button
         onClick={handleUnsnooze}
-        className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500/20 text-yellow-600 rounded hover:bg-yellow-500/30 transition-colors"
+        className="flex items-center gap-1 px-2 py-1 text-xs bg-warning-subtle text-warning rounded hover:bg-warning-subtle transition-colors"
         title="Click to unsnooze"
       >
         <Clock className="w-3 h-3" />
@@ -152,7 +152,7 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Why are you snoozing this?"
-                className="w-full px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-info"
               />
             </div>
 
@@ -185,13 +185,13 @@ export const SnoozeButton: React.FC<SnoozeButtonProps> = ({
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-info"
                 />
                 <input
                   type="time"
                   value={customTime}
                   onChange={(e) => setCustomTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-3 py-2 border border-clawd-border rounded-lg bg-clawd-surface text-clawd-text focus:outline-none focus:ring-2 focus:ring-info"
                 />
               </div>
               <button

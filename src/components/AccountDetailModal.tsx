@@ -251,7 +251,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
 
               {/* Error Message */}
               {account.status === 'error' && account.errorMessage && (
-                <div className="p-4 bg-error-subtle border border-red-500/20 rounded-lg">
+                <div className="p-4 bg-error-subtle border border-error-border rounded-lg">
                   <div className="flex items-start gap-2">
                     <AlertTriangle size={16} className="text-error mt-0.5" />
                     <div>
@@ -284,7 +284,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           {/* Permissions Tab */}
           {activeTab === 'permissions' && (
             <div className="space-y-6">
-              <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
+              <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
                 <div className="flex items-start gap-2">
                   <Shield size={16} className="text-info mt-0.5" />
                   <div className="flex-1">
@@ -443,7 +443,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               {/* Danger Zone */}
-              <section className="p-4 bg-error-subtle border border-red-500/20 rounded-lg">
+              <section className="p-4 bg-error-subtle border border-error-border rounded-lg">
                 <h4 className="font-medium text-error mb-2">Danger Zone</h4>
                 <p className="text-sm text-error mb-3">
                   Removing this account will revoke Froggo&apos;s access and delete all stored credentials.

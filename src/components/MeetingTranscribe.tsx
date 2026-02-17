@@ -294,11 +294,11 @@ export default function MeetingTranscribe() {
     <div className="flex flex-col h-full bg-clawd-bg text-white">
       {/* API Key Warning */}
       {(!import.meta.env.VITE_GEMINI_API_KEY && !localStorage.getItem('gemini_api_key')) && (
-        <div className="bg-yellow-500/20 border-b border-yellow-500/50 px-4 py-2 text-center">
+        <div className="bg-warning-subtle border-b border-warning-border px-4 py-2 text-center">
           <p className="text-warning text-sm font-medium">
             ⚠️ Using fallback API key
           </p>
-          <p className="text-yellow-300 text-xs mt-1">
+          <p className="text-warning text-xs mt-1">
             Set VITE_GEMINI_API_KEY in .env for production use
           </p>
         </div>
@@ -333,7 +333,7 @@ export default function MeetingTranscribe() {
                 value={newMeetingTitle}
                 onChange={(e) => setNewMeetingTitle(e.target.value)}
                 disabled={!!activeMeeting}
-                className="w-full px-3 py-2 bg-clawd-surface rounded border border-clawd-border focus:border-purple-500 outline-none text-sm disabled:opacity-50"
+                className="w-full px-3 py-2 bg-clawd-surface rounded border border-clawd-border focus:border-review-border outline-none text-sm disabled:opacity-50"
               />
               <input
                 type="text"
@@ -341,7 +341,7 @@ export default function MeetingTranscribe() {
                 value={newMeetingParticipants}
                 onChange={(e) => setNewMeetingParticipants(e.target.value)}
                 disabled={!!activeMeeting}
-                className="w-full px-3 py-2 bg-clawd-surface rounded border border-clawd-border focus:border-purple-500 outline-none text-sm disabled:opacity-50"
+                className="w-full px-3 py-2 bg-clawd-surface rounded border border-clawd-border focus:border-review-border outline-none text-sm disabled:opacity-50"
               />
               {!activeMeeting ? (
                 <button
@@ -386,7 +386,7 @@ export default function MeetingTranscribe() {
             </button>
             <p className="text-xs text-clawd-text-dim mt-1 text-center">MP3, WAV, WebM, M4A, OGG, video</p>
             {uploadError && (
-              <div className="mt-2 p-2 bg-red-500/20 text-red-300 rounded text-xs">{uploadError}</div>
+              <div className="mt-2 p-2 bg-error-subtle text-error rounded text-xs">{uploadError}</div>
             )}
           </div>
 
@@ -412,7 +412,7 @@ export default function MeetingTranscribe() {
                         key={meeting.id}
                         className={`rounded-lg border transition-colors ${
                           selectedMeeting?.id === meeting.id
-                            ? 'bg-purple-500/20 border-purple-500'
+                            ? 'bg-review-subtle border-purple-500'
                             : 'bg-clawd-surface border-clawd-border hover:border-clawd-border/80'
                         }`}
                       >
@@ -491,7 +491,7 @@ export default function MeetingTranscribe() {
                                     e.stopPropagation();
                                     deleteMeeting(meeting.id);
                                   }}
-                                  className="flex-1 py-1 bg-red-600/20 hover:bg-red-600/30 text-error rounded text-xs font-medium transition-colors flex items-center justify-center space-x-1"
+                                  className="flex-1 py-1 bg-error-subtle hover:bg-error-subtle text-error rounded text-xs font-medium transition-colors flex items-center justify-center space-x-1"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                   <span>Delete</span>
@@ -567,7 +567,7 @@ export default function MeetingTranscribe() {
                   <div className="space-y-3">
                     {transcripts.map((transcript, idx) => (
                       <div key={transcript.id || idx} className="flex space-x-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-review-subtle flex items-center justify-center">
                           <Users className="w-4 h-4 text-review" />
                         </div>
                         <div className="flex-1">

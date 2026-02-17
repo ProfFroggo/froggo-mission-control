@@ -390,7 +390,7 @@ export default function XAutomationsTab() {
                       </div>
                       <button
                         onClick={() => removeAction(index)}
-                        className="text-error hover:text-red-300"
+                        className="text-error hover:text-error"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -556,7 +556,7 @@ export default function XAutomationsTab() {
                       onClick={() => toggleAutomation(automation.id, automation.enabled)}
                       className={`p-2 rounded-lg transition-colors ${
                         automation.enabled
-                          ? 'bg-success-subtle text-success hover:bg-green-500/30'
+                          ? 'bg-success-subtle text-success hover:bg-success-subtle'
                           : 'bg-clawd-bg0/20 text-clawd-text-dim hover:bg-clawd-bg0/30'
                       }`}
                       title={automation.enabled ? 'Disable' : 'Enable'}

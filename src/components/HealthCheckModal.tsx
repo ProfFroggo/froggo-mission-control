@@ -523,7 +523,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
               
               {/* Critical */}
               {issues.filter(i => i.severity === 'critical').map(issue => (
-                <div key={issue.id} className="bg-error-subtle border border-red-500/20 rounded-lg p-3">
+                <div key={issue.id} className="bg-error-subtle border border-error-border rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <AlertCircle size={16} className="text-error mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -539,7 +539,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
               
               {/* Warnings */}
               {issues.filter(i => i.severity === 'warning').map(issue => (
-                <div key={issue.id} className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                <div key={issue.id} className="bg-warning-subtle border border-warning-border rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -555,7 +555,7 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
 
               {/* Info */}
               {issues.filter(i => i.severity === 'info').map(issue => (
-                <div key={issue.id} className="bg-info-subtle border border-blue-500/20 rounded-lg p-3">
+                <div key={issue.id} className="bg-info-subtle border border-info-border rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <Flag size={16} className="text-info mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">

@@ -29,13 +29,11 @@ function getSettings(): { gatewayUrl: string; gatewayToken: string } {
   return { gatewayUrl: DEFAULT_GATEWAY_WS, gatewayToken: DEFAULT_TOKEN };
 }
 
-// Fetch gateway token from openclaw config via Electron IPC (async, one-time)
+// Fetch gateway token from openclaw config via Electron IPC — always overwrite to stay in sync
 let _configTokenLoaded = false;
 async function ensureGatewayToken() {
   if (_configTokenLoaded) return;
   _configTokenLoaded = true;
-  const settings = getSettings();
-  if (settings.gatewayToken) return; // already have one
   try {
     const w = window as any;
     const token = await w.clawdbot?.gateway?.getToken?.();

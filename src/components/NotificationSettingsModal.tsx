@@ -260,7 +260,7 @@ export default function NotificationSettingsModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Mute Status */}
           {isMuted && (
-            <div className="bg-yellow-500/10 border border-warning-border rounded-lg p-4 flex items-start gap-3">
+            <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 flex items-start gap-3">
               <BellOff size={20} className="text-warning flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium text-warning">Conversation Muted</p>
@@ -538,7 +538,7 @@ export default function NotificationSettingsModal({
               <button
                 onClick={handleResetToDefaults}
                 disabled={saving}
-                className="px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Trash2 size={16} />
                 Reset to Defaults

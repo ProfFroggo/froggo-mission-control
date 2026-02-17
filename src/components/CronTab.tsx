@@ -219,7 +219,7 @@ export default function CronTab() {
                     <button onClick={e => { e.stopPropagation(); runJob(job.id); }} className="p-2 hover:bg-clawd-border rounded-lg text-clawd-text-dim hover:text-clawd-accent" title="Run now">
                       <Play size={14} />
                     </button>
-                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} className="p-2 hover:bg-red-500/20 rounded-lg text-clawd-text-dim hover:text-error" title="Delete">
+                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} className="p-2 hover:bg-error-subtle rounded-lg text-clawd-text-dim hover:text-error" title="Delete">
                       <Trash2 size={14} />
                     </button>
                     {isExpanded ? <ChevronDown size={16} className="text-clawd-text-dim" /> : <ChevronRight size={16} className="text-clawd-text-dim" />}
@@ -241,7 +241,7 @@ export default function CronTab() {
                       </div>
                     )}
                     {job.state.lastError && (
-                      <div className="mb-4 p-3 bg-error-subtle border border-red-500/20 rounded-lg text-sm text-error flex items-start gap-2">
+                      <div className="mb-4 p-3 bg-error-subtle border border-error-border rounded-lg text-sm text-error flex items-start gap-2">
                         <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                         {job.state.lastError}
                       </div>
@@ -254,7 +254,7 @@ export default function CronTab() {
                         {jobRuns.map((run, i) => (
                           <div key={i} className="flex items-center gap-3 text-sm py-1">
                             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                              run.status === 'ok' ? 'bg-green-400' : run.status === 'error' ? 'bg-red-400' : 'bg-gray-400'
+                              run.status === 'ok' ? 'bg-success' : run.status === 'error' ? 'bg-error' : 'bg-clawd-text-dim'
                             }`} />
                             <span className="text-clawd-text-dim w-24 flex-shrink-0">{new Date(run.ts).toLocaleTimeString()}</span>
                             <span className={run.status === 'error' ? 'text-error' : ''}>{run.status}</span>

@@ -60,11 +60,13 @@ export default function TodayCalendarWidget({ onNavigate }: TodayCalendarWidgetP
   };
 
   const isNow = (event: CalendarEvent): boolean => {
-    if (!event.start.dateTime || !event.end.dateTime) return false;
+    const start = event.start.dateTime;
+    const end = event.end?.dateTime;
+    if (!start || !end) return false;
     const now = Date.now();
-    const start = new Date(event.start.dateTime).getTime();
-    const end = new Date(event.end.dateTime).getTime();
-    return now >= start && now <= end;
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    return now >= startTime && now <= endTime;
   };
 
   const isUpcoming = (event: CalendarEvent): boolean => {

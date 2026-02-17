@@ -330,7 +330,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
                 onClick={() => setIsVoiceMode(!isVoiceMode)}
                 className={`p-2 rounded-lg transition-colors ${
                   isVoiceMode
-                    ? 'bg-review-subtle text-review hover:bg-purple-500/30'
+                    ? 'bg-review-subtle text-review hover:bg-review-subtle'
                     : 'hover:bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
                 }`}
                 title={isVoiceMode ? 'Switch to text chat' : 'Switch to voice chat'}

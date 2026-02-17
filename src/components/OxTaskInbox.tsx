@@ -20,11 +20,11 @@ export default function OxTaskInbox() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'todo': return <Clock className="text-slate-400" size={16} />;
+      case 'todo': return <Clock className="text-clawd-text-dim" size={16} />;
       case 'in-progress': return <Play className="text-amber-500" size={16} />;
-      case 'review': return <AlertCircle className="text-purple-500" size={16} />;
-      case 'done': return <CheckCircle className="text-green-500" size={16} />;
-      default: return <Clock className="text-slate-400" size={16} />;
+      case 'review': return <AlertCircle className="text-review" size={16} />;
+      case 'done': return <CheckCircle className="text-success" size={16} />;
+      default: return <Clock className="text-clawd-text-dim" size={16} />;
     }
   };
 
@@ -49,7 +49,7 @@ export default function OxTaskInbox() {
               {filteredTasks.length}
             </span>
           </div>
-          <button className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white">
+          <button className="p-2 rounded-lg hover:bg-slate-800 text-clawd-text-dim hover:text-white">
             <RefreshCw size={18} />
           </button>
         </div>
@@ -63,7 +63,7 @@ export default function OxTaskInbox() {
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 filter === f 
                   ? 'bg-amber-600 text-white' 
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                  : 'bg-slate-800 text-clawd-text-dim hover:text-white'
               }`}
             >
               {f === 'all' ? 'All Active' : f === 'todo' ? 'To Do' : 'In Progress'}
@@ -75,7 +75,7 @@ export default function OxTaskInbox() {
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {filteredTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-slate-500">
+          <div className="flex flex-col items-center justify-center h-64 text-clawd-text-dim">
             <Inbox size={48} className="mb-4 opacity-50" />
             <p>No tasks in inbox</p>
             <p className="text-sm">Tasks from Froggo will appear here</p>
@@ -93,14 +93,14 @@ export default function OxTaskInbox() {
                     <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority ?? '')}`} />
                     <h3 className="font-medium text-white truncate">{task.title}</h3>
                   </div>
-                  <p className="text-sm text-slate-400 line-clamp-2">{task.description}</p>
+                  <p className="text-sm text-clawd-text-dim line-clamp-2">{task.description}</p>
                   {task.subtasks && task.subtasks.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                    <div className="mt-2 flex items-center gap-2 text-xs text-clawd-text-dim">
                       <span>{task.subtasks.filter((s: SubtaskData) => s.completed).length}/{task.subtasks.length} subtasks</span>
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-slate-600">
+                <span className="text-xs text-clawd-text-dim">
                   {new Date(task.createdAt).toLocaleDateString()}
                 </span>
               </div>
@@ -110,7 +110,7 @@ export default function OxTaskInbox() {
       </div>
 
       {/* Footer Stats */}
-      <div className="p-4 border-t border-slate-800 flex items-center justify-between text-sm text-slate-500">
+      <div className="p-4 border-t border-slate-800 flex items-center justify-between text-sm text-clawd-text-dim">
         <span>{myTasks.filter(t => t.status === 'todo').length} pending</span>
         <span>{myTasks.filter(t => t.status === 'in-progress').length} in progress</span>
         <span>{myTasks.filter(t => t.status === 'done').length} completed</span>

@@ -392,8 +392,8 @@ export default function ExportBackupTab() {
             </div>
 
             {autoBackupEnabled && (
-              <div className="bg-info-subtle border border-blue-500/20 rounded-lg p-4">
-                <div className="text-sm text-blue-300">
+              <div className="bg-info-subtle border border-info-border rounded-lg p-4">
+                <div className="text-sm text-info">
                   Auto-backup will run daily at 3:00 AM. Backups are created via Clawdbot cron system.
                 </div>
               </div>
@@ -494,7 +494,7 @@ export default function ExportBackupTab() {
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-error-subtle border border-red-500/20 rounded-xl p-6">
+      <section className="bg-error-subtle border border-error-border rounded-xl p-6">
         <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-error">
           <AlertTriangle size={20} />
           Danger Zone

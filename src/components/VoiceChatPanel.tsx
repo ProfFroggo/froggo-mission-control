@@ -484,9 +484,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     <div className="flex flex-col h-full bg-clawd-bg">
       {/* API Key Warning */}
       {!apiKey.current && (
-        <div className="bg-red-500/20 border-b border-red-500/50 px-4 py-2 text-center">
+        <div className="bg-error-subtle border-b border-error-border px-4 py-2 text-center">
           <p className="text-error text-sm font-medium">⚠️ No Gemini API key found</p>
-          <p className="text-red-300 text-xs mt-1">Set VITE_GEMINI_API_KEY in .env file</p>
+          <p className="text-error text-xs mt-1">Set VITE_GEMINI_API_KEY in .env file</p>
         </div>
       )}
       
@@ -607,7 +607,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               <div className="relative flex-shrink-0 mt-1">
                 <AgentAvatar agentId={selectedAgent.id} size="xs" />
                 {speaking && msg.id === messages.filter(m => m.role === 'assistant').pop()?.id && (
-                  <div className="absolute -inset-1 rounded-full border-2 border-green-400/50 animate-pulse" />
+                  <div className="absolute -inset-1 rounded-full border-2 border-success-border animate-pulse" />
                 )}
               </div>
             )}
@@ -640,9 +640,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* Enable Audio button - shown when AudioContext is suspended */}
       {callActive && audioState === 'suspended' && (
-        <div className="px-4 py-2 border-t border-warning-border bg-yellow-500/10">
+        <div className="px-4 py-2 border-t border-warning-border bg-warning-subtle">
           <button onClick={handleEnableAudio}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-medium transition-colors">
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-black font-medium transition-colors">
             <Volume2 size={18} />
             Enable Audio
           </button>

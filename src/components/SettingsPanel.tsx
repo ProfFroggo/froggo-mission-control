@@ -430,7 +430,7 @@ export default function SettingsPanel() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${connected ? 'bg-success' : 'bg-error'}`} />
                   <span className="text-sm">{connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
               </div>
@@ -1031,12 +1031,12 @@ export default function SettingsPanel() {
                 </div>
 
                 {/* Smart Account Selection Info */}
-                <div className="p-4 bg-info-subtle border border-blue-500/20 rounded-lg">
+                <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
                   <div className="flex items-start gap-2">
                     <span className="text-xl">🤖</span>
                     <div className="flex-1">
                       <div className="font-medium text-info mb-2">Smart Account Selection</div>
-                      <div className="text-sm text-blue-300 space-y-2">
+                      <div className="text-sm text-info space-y-2">
                         <p>No default accounts! Froggo intelligently chooses which account to use based on context:</p>
                         <ul className="list-disc list-inside space-y-1 ml-2">
                           <li>Email to your address → Reply from that same address</li>

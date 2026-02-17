@@ -35,7 +35,7 @@ interface ScheduledItem {
 const typeConfig: Record<ScheduledItemType, { icon: any; color: string; label: string }> = {
   tweet: { icon: XIcon, color: 'text-white bg-white/10', label: 'Post' },
   email: { icon: Mail, color: 'text-success bg-success-subtle', label: 'Email' },
-  message: { icon: Mail, color: 'text-review bg-purple-500/10', label: 'Message' },
+  message: { icon: Mail, color: 'text-review bg-review-subtle', label: 'Message' },
 };
 
 export default function ContentScheduler() {
@@ -512,7 +512,7 @@ export default function ContentScheduler() {
                     <button
                       type="button"
                       onClick={handleRemoveMedia}
-                      className="p-1 hover:bg-red-500/20 rounded transition-colors"
+                      className="p-1 hover:bg-error-subtle rounded transition-colors"
                       title="Remove media"
                     >
                       <X size={16} className="text-error" />
@@ -649,7 +649,7 @@ export default function ContentScheduler() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleSendNow(item.id)}
-                          className="p-2 hover:bg-green-500/20 rounded-lg transition-colors"
+                          className="p-2 hover:bg-success-subtle rounded-lg transition-colors"
                           title="Send now"
                         >
                           <Play size={16} className="text-success" />
@@ -663,7 +663,7 @@ export default function ContentScheduler() {
                         </button>
                         <button
                           onClick={() => handleCancel(item.id)}
-                          className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                          className="p-2 hover:bg-error-subtle rounded-lg transition-colors"
                           title="Cancel"
                         >
                           <Trash2 size={16} className="text-error" />

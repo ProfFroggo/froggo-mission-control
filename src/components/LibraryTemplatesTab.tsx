@@ -318,7 +318,7 @@ export default function LibraryTemplatesTab() {
                           </button>
                           <button
                             onClick={() => handleDelete(template.id)}
-                            className="p-1.5 hover:bg-red-500/20 rounded"
+                            className="p-1.5 hover:bg-error-subtle rounded"
                             title="Delete"
                           >
                             <Trash2 size={14} className="text-error" />

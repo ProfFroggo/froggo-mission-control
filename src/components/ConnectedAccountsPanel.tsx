@@ -69,8 +69,8 @@ const DATA_TYPE_ICONS: Record<string, any> = {
 const DATA_TYPE_COLORS: Record<string, string> = {
   email: 'bg-info-subtle text-info border-info-border',
   calendar: 'bg-success-subtle text-success border-success-border',
-  drive: 'bg-review-subtle text-review border-purple-500/30',
-  contacts: 'bg-orange-500/20 text-warning border-orange-500/30',
+  drive: 'bg-review-subtle text-review border-review-border',
+  contacts: 'bg-warning-subtle text-warning border-warning-border',
   tasks: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
 };
 
@@ -318,7 +318,7 @@ export default function ConnectedAccountsPanel() {
         {panelTab === 'accounts' && <>
 
         {/* Smart Selection Rules */}
-        <div className="mb-6 p-4 bg-info-subtle border border-blue-500/20 rounded-xl">
+        <div className="mb-6 p-4 bg-info-subtle border border-info-border rounded-xl">
           <div className="flex items-start gap-3 mb-3">
             <span className="text-2xl">🤖</span>
             <div className="flex-1">
@@ -664,7 +664,7 @@ export default function ConnectedAccountsPanel() {
                   handleRemove(selectedAccount.id);
                   setShowDetailModal(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-red-500/30 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
               >
                 <Trash2 size={16} />
                 Disconnect

@@ -119,7 +119,7 @@ function DashboardWidget({
           {removable && onRemove && (
             <button
               onClick={onRemove}
-              className="p-1.5 bg-clawd-bg/80 backdrop-blur-sm hover:bg-red-500/20 rounded-lg transition-colors border border-clawd-border/50"
+              className="p-1.5 bg-clawd-bg/80 backdrop-blur-sm hover:bg-error-subtle rounded-lg transition-colors border border-clawd-border/50"
               title="Remove widget"
             >
               <X size={14} className="text-error" />
@@ -518,7 +518,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                   <div className="flex items-center justify-between mb-4">
                     <ListTodo size={28} className={`${inProgressTasks.length > 0 ? 'text-info' : 'text-clawd-text-dim'}`} />
                     {needsReview.length > 0 && (
-                      <span className="px-2.5 py-0.5 bg-purple-500/80 text-white text-xs font-medium rounded-full">
+                      <span className="px-2.5 py-0.5 bg-review-subtle text-white text-xs font-medium rounded-full">
                         {needsReview.length} review
                       </span>
                     )}
@@ -603,7 +603,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                   <div className="flex items-center justify-between mb-4">
                     <Bot size={28} className={`${activeSubagents.length > 0 ? 'text-success' : 'text-clawd-text-dim'}`} />
                     {activeSubagents.length > 0 && (
-                      <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-lg shadow-green-400/50" />
+                      <span className="w-3 h-3 rounded-full bg-success animate-pulse shadow-lg shadow-green-400/50" />
                     )}
                   </div>
                   
@@ -700,9 +700,9 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                           >
                             <div className="flex items-start gap-4">
                               <div className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
-                                task.status === 'review' ? 'bg-purple-400 shadow-lg shadow-purple-400/50' :
-                                task.status === 'in-progress' ? 'bg-blue-400 animate-pulse shadow-lg shadow-blue-400/50' :
-                                'bg-gray-400'
+                                task.status === 'review' ? 'bg-review shadow-lg shadow-purple-400/50' :
+                                task.status === 'in-progress' ? 'bg-info animate-pulse shadow-lg shadow-blue-400/50' :
+                                'bg-clawd-text-dim'
                               }`} />
                               
                               <div className="flex-1 min-w-0">
@@ -712,7 +712,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                                   </h3>
                                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize flex-shrink-0 ${
                                     task.status === 'review' 
-                                      ? 'bg-review-subtle text-review border border-purple-500/30' 
+                                      ? 'bg-review-subtle text-review border border-review-border' 
                                       : 'bg-info-subtle text-info border border-info-border'
                                   }`}>
                                     {task.status === 'in-progress' ? 'working' : task.status}
@@ -905,7 +905,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                                       <div className="text-sm font-medium truncate">{getSessionName(s)}</div>
                                       <div className="text-xs text-clawd-text-dim">{formatTimeAgo(s.updatedAt ?? 0)}</div>
                                     </div>
-                                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-400' : 'bg-clawd-bg0'}`} />
+                                    <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-clawd-bg0'}`} />
                                   </div>
                                 );
                               })
@@ -943,9 +943,9 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                                 {activeSubagents.slice(0, 3).map((session) => (
                                   <div 
                                     key={session.key}
-                                    className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-green-500/20"
+                                    className="flex items-center gap-3 p-2 rounded-lg bg-success-subtle border border-success-border"
                                   >
-                                    <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                    <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
                                     <div className="flex-1 min-w-0">
                                       <div className="text-xs font-medium truncate">{session.displayName}</div>
                                       <div className="text-xs text-clawd-text-dim">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</div>

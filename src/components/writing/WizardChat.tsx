@@ -226,7 +226,7 @@ export default function WizardChat() {
     <div className="flex flex-col h-full bg-clawd-surface">
       {/* Extraction error banner */}
       {extractionError && (
-        <div className="px-4 py-2 bg-red-400/10 border-b border-red-400/20 flex items-center gap-2">
+        <div className="px-4 py-2 bg-error-subtle border-b border-error-border flex items-center gap-2">
           <AlertCircle size={14} className="text-error flex-shrink-0" />
           <span className="text-xs text-error">{extractionError}</span>
           <button

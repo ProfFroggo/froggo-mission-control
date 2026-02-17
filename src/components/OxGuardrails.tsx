@@ -67,7 +67,7 @@ export default function OxGuardrails() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">
+              <label className="block text-sm text-clawd-text-dim mb-2">
                 Maximum Active Sub-Agents
               </label>
               <input
@@ -78,13 +78,13 @@ export default function OxGuardrails() {
                 onChange={e => updateSetting('maxSubAgents', parseInt(e.target.value))}
                 className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-amber-500 focus:outline-none"
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-clawd-text-dim mt-1">
                 Kevin&apos;s limit: 6 concurrent agents
               </p>
             </div>
             
             <div>
-              <label className="block text-sm text-slate-400 mb-2">
+              <label className="block text-sm text-clawd-text-dim mb-2">
                 Allowed Agent Types
               </label>
               <div className="flex flex-wrap gap-2">
@@ -94,7 +94,7 @@ export default function OxGuardrails() {
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
                       settings.allowedAgentTypes.includes(type)
                         ? 'bg-amber-600 text-white'
-                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                        : 'bg-slate-700 text-clawd-text-dim hover:bg-slate-600'
                     }`}
                   >
                     <input
@@ -125,7 +125,7 @@ export default function OxGuardrails() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">
+              <label className="block text-sm text-clawd-text-dim mb-2">
                 Require Approval For
               </label>
               <div className="flex flex-wrap gap-2">
@@ -134,8 +134,8 @@ export default function OxGuardrails() {
                     key={category}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
                       settings.requireApprovalFor.includes(category)
-                        ? 'bg-red-600/50 text-red-300 border border-red-600'
-                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                        ? 'bg-error-subtle text-error border border-red-600'
+                        : 'bg-slate-700 text-clawd-text-dim hover:bg-slate-600'
                     }`}
                   >
                     <input
@@ -157,8 +157,8 @@ export default function OxGuardrails() {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm text-slate-300">Auto-escalate stuck tasks</label>
-                <p className="text-xs text-slate-500">Notify Froggo if task exceeds max duration</p>
+                <label className="text-sm text-clawd-text-dim">Auto-escalate stuck tasks</label>
+                <p className="text-xs text-clawd-text-dim">Notify Froggo if task exceeds max duration</p>
               </div>
               <button
                 onClick={() => updateSetting('autoEscalate', !settings.autoEscalate)}
@@ -174,8 +174,8 @@ export default function OxGuardrails() {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm text-slate-300">Notify Froggo on completion</label>
-                <p className="text-xs text-slate-500">Send TASK_COMPLETE via protocol</p>
+                <label className="text-sm text-clawd-text-dim">Notify Froggo on completion</label>
+                <p className="text-xs text-clawd-text-dim">Send TASK_COMPLETE via protocol</p>
               </div>
               <button
                 onClick={() => updateSetting('notifyFroggo', !settings.notifyFroggo)}
@@ -199,7 +199,7 @@ export default function OxGuardrails() {
           </h2>
           
           <div>
-            <label className="block text-sm text-slate-400 mb-2">
+            <label className="block text-sm text-clawd-text-dim mb-2">
               Max Task Duration (minutes)
             </label>
             <input
@@ -211,7 +211,7 @@ export default function OxGuardrails() {
               onChange={e => updateSetting('maxTaskDuration', parseInt(e.target.value))}
               className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white focus:border-amber-500 focus:outline-none"
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-clawd-text-dim mt-1">
               {Math.floor(settings.maxTaskDuration / 60)}h {settings.maxTaskDuration % 60}m
             </p>
           </div>

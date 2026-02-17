@@ -271,12 +271,12 @@ export const XCalendarView: React.FC = () => {
 
   const renderDraftSelector = () => {
     if (loading) {
-      return <div className="p-4 text-sm text-gray-500">Loading...</div>;
+      return <div className="p-4 text-sm text-clawd-text-dim">Loading...</div>;
     }
     
     if (approvedDrafts.length === 0) {
       return (
-        <div className="p-4 text-sm text-gray-500">
+        <div className="p-4 text-sm text-clawd-text-dim">
           No approved drafts available for scheduling.
         </div>
       );

@@ -229,7 +229,7 @@ export default function RealTimeAnalytics() {
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}
+              className={`w-2 h-2 rounded-full ${isLive ? 'bg-success animate-pulse' : 'bg-clawd-text-dim'}`}
             />
             {isLive ? 'Live' : 'Paused'}
           </button>
@@ -250,7 +250,7 @@ export default function RealTimeAnalytics() {
               <div className="flex items-center justify-between mb-3">
                 <Icon size={16} className={metric.color} />
                 {isLive && (
-                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 )}
               </div>
 

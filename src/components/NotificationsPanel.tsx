@@ -18,12 +18,12 @@ interface UnifiedNotification {
 }
 
 const sourceConfig: Record<string, { icon: any; color: string; label: string }> = {
-  inbox: { icon: Inbox, color: 'text-warning bg-yellow-500/10', label: 'Inbox' },
+  inbox: { icon: Inbox, color: 'text-warning bg-warning-subtle', label: 'Inbox' },
   whatsapp: { icon: MessageSquare, color: 'text-success bg-success-subtle', label: 'WhatsApp' },
   telegram: { icon: MessageSquare, color: 'text-info bg-info-subtle', label: 'Telegram' },
-  discord: { icon: MessageSquare, color: 'text-review bg-purple-500/10', label: 'Discord' },
+  discord: { icon: MessageSquare, color: 'text-review bg-review-subtle', label: 'Discord' },
   email: { icon: Mail, color: 'text-error bg-error-subtle', label: 'Email' },
-  calendar: { icon: Calendar, color: 'text-orange-400 bg-orange-500/10', label: 'Calendar' },
+  calendar: { icon: Calendar, color: 'text-warning bg-warning-subtle', label: 'Calendar' },
   system: { icon: Bell, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'System' },
 };
 
@@ -198,7 +198,7 @@ export default function NotificationsPanel() {
                   key={notif.id}
                   className={`p-4 rounded-xl border transition-all ${
                     notif.urgent
-                      ? 'bg-red-500/5 border-error-border'
+                      ? 'bg-error-subtle border-error-border'
                       : notif.read
                       ? 'bg-clawd-bg border-clawd-border opacity-60'
                       : 'bg-clawd-surface border-clawd-border shadow-card'
@@ -231,7 +231,7 @@ export default function NotificationsPanel() {
                       {notif.actionable && (
                         <button
                           onClick={() => handleApprove(notif)}
-                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-green-500/30 transition-colors"
+                          className="p-2 bg-success-subtle text-success rounded-lg hover:bg-success-subtle transition-colors"
                           title="Approve"
                         >
                           <Check size={16} />

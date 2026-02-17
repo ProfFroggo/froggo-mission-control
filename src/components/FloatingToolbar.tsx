@@ -1,301 +1,241 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-  Phone, PhoneOff, X, GripVertical, Search, Plus, UserPlus, Brain,
-  Sparkles, ListTodo, MessageSquare, ChevronLeft, ChevronRight, ExternalLink
+  Phone, X, GripVertical, Search, Plus,
+  MessageSquare, ChevronRight, Send, Loader2
 } from 'lucide-react';
-import { showToast } from './Toast';
 
-type ToolbarMode = 'collapsed' | 'expanded';
+type Panel = null | 'call' | 'chat';
+
+interface Agent {
+  id: string;
+  name: string;
+  emoji?: string;
+}
+
+const w = window as any;
+const PILL_HEIGHT = 60;
+const PANEL_HEIGHT = 280;
 
 export default function FloatingToolbar() {
-  const [activeCall] = useState<{agentName: string} | null>(null);
-  const [callDialogOpen, setCallDialogOpen] = useState(false);
-  const [agentCallModalOpen, setAgentCallModalOpen] = useState(false);
-  const [mode, setMode] = useState<ToolbarMode>('expanded');
-  const [agentChatOpen, setAgentChatOpen] = useState(false);
-  const [agentChatModalOpen, setAgentChatModalOpen] = useState(false);
-  const [contextChatOpen, setContextChatOpen] = useState(false);
-  const [taskShortcutsOpen, setTaskShortcutsOpen] = useState(false);
-  const [callRinging] = useState(false);
-  
+  const [panel, setPanel] = useState<Panel>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [chatAgent, setChatAgent] = useState('');
+  const [chatMsg, setChatMsg] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatResponse, setChatResponse] = useState('');
+  const chatInputRef = useRef<HTMLInputElement>(null);
+
+  // Load agents on mount
   useEffect(() => {
-    // Listen for toolbar closed event
-    const cleanup = window.clawdbot?.toolbar?.onClosed(() => {
-      // Floating window was closed from outside
+    w.clawdbot?.agents?.list?.().then((data: any) => {
+      if (Array.isArray(data?.agents)) {
+        const excluded = new Set(['main', 'froggo', 'clara', 'voice', 'inbox']);
+        const filtered = data.agents.filter((a: Agent) => !excluded.has(a.id));
+        setAgents(filtered);
+        if (filtered.length > 0) setChatAgent(filtered[0].id);
+      }
     });
-
-    return () => {
-      if (cleanup) cleanup();
-    };
   }, []);
-  
-  const handlePopIn = async () => {
-    try {
-      if (!window.clawdbot?.toolbar) {
-        showToast('error', 'Pop-in Failed', 'Toolbar API not available');
-        return;
-      }
 
-      const result = await window.clawdbot.toolbar.popIn();
+  // Resize window when panel opens/closes
+  useEffect(() => {
+    const height = panel === null ? PILL_HEIGHT : PANEL_HEIGHT;
+    w.clawdbot?.toolbar?.resize?.(height);
+  }, [panel]);
 
-      if (result.success) {
-        // Window will close automatically
-      } else {
-        showToast('error', 'Pop-in Failed', result.error || 'Could not dock toolbar');
-      }
-    } catch (error) {
-      console.error('Pop-in error:', error);
-      showToast('error', 'Pop-in Failed', 'An error occurred');
+  // Focus chat input when panel opens
+  useEffect(() => {
+    if (panel === 'chat') {
+      setTimeout(() => chatInputRef.current?.focus(), 120);
     }
+  }, [panel]);
+
+  const togglePanel = (p: Panel) => setPanel(prev => prev === p ? null : p);
+  const closePanel = () => setPanel(null);
+
+  const handleCallAgent = (agentId: string) => {
+    // Open main app focused on call UI for this agent
+    w.clawdbot?.toolbar?.action?.(`call:${agentId}`);
+    setPanel(null);
   };
-  
-  const handleClose = async () => {
+
+  const handleSendChat = async () => {
+    if (!chatAgent || !chatMsg.trim() || chatLoading) return;
+    const msgToSend = chatMsg.trim();
+    setChatLoading(true);
+    setChatResponse('');
+    setChatMsg('');
     try {
-      // Use popIn to dock back, then close; fallback to window.close()
-      if (window.clawdbot?.toolbar) {
-        await window.clawdbot.toolbar.popIn();
+      const spawnResult = await w.clawdbot?.agents?.spawnChat?.(chatAgent);
+      if (spawnResult?.sessionKey) {
+        const result = await w.clawdbot?.agents?.chat?.(spawnResult.sessionKey, msgToSend);
+        setChatResponse(result?.response || '✓ Message sent');
       } else {
-        window.close();
+        setChatResponse('✓ Message sent');
       }
-    } catch (error) {
-      console.error('Close error:', error);
-      window.close();
+    } catch {
+      setChatResponse('⚠️ Failed to send');
+    } finally {
+      setChatLoading(false);
     }
   };
-  
-  const toggleMode = () => {
-    setMode(prev => prev === 'collapsed' ? 'expanded' : 'collapsed');
-  };
-  
-  const closeAllModals = () => {
-    setCallDialogOpen(false);
-    setAgentCallModalOpen(false);
-    setAgentChatOpen(false);
-    setAgentChatModalOpen(false);
-    setContextChatOpen(false);
-    setTaskShortcutsOpen(false);
-  };
-  
-  const handleCall = () => {
-    closeAllModals();
-    if (activeCall) {
-      setCallDialogOpen(!callDialogOpen);
-    } else {
-      setAgentCallModalOpen(!agentCallModalOpen);
-    }
-  };
-  
-  // Mock handlers for toolbar actions (these would communicate with main window)
-  const handleSearch = () => {
-    showToast('info', 'Search', 'Search would open in main window');
-  };
-  
-  const handleNewTask = () => {
-    showToast('info', 'New Task', 'New task would open in main window');
-  };
-  
-  const handleContextChat = () => {
-    closeAllModals();
-    setContextChatOpen(!contextChatOpen);
-  };
-  
-  const handleTaskShortcuts = () => {
-    closeAllModals();
-    setTaskShortcutsOpen(!taskShortcutsOpen);
-  };
-  
-  const handleAgentChat = () => {
-    closeAllModals();
-    if (agentChatOpen) {
-      setAgentChatOpen(false);
-    } else {
-      setAgentChatModalOpen(!agentChatModalOpen);
-    }
-  };
-  
+
+  const handlePopIn = () => w.clawdbot?.toolbar?.popIn?.();
+  const sendAction = (action: string) => w.clawdbot?.toolbar?.action?.(action);
+
+  // CSS helpers — WebkitAppRegion needs to be inline (Tailwind can't set it)
+  const noDrag = { WebkitAppRegion: 'no-drag' } as React.CSSProperties;
+  const drag   = { WebkitAppRegion: 'drag' }   as React.CSSProperties;
+
+  const btn   = "p-2.5 rounded-full hover:bg-clawd-border transition-colors focus:outline-none";
+  const btnSm = "p-2   rounded-full hover:bg-clawd-border transition-colors focus:outline-none";
+
   return (
-    <div className="h-full w-full flex items-center justify-center bg-transparent p-4">
-      {/* Main Toolbar - matches in-app toolbar styling exactly */}
+    <div className="w-full flex flex-col items-center bg-transparent" style={{ paddingTop: '6px' }}>
+
+      {/* ── Pill toolbar ───────────────────────────────────── */}
       <div
-        className={`flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full shadow-2xl transition-all duration-300 px-1.5 py-1`}
+        className="flex items-center gap-1 bg-clawd-surface border border-clawd-border rounded-full shadow-2xl px-1.5 py-1"
+        style={noDrag}
       >
-        {/* Drag Handle */}
+        {/* Drag handle — uses native CSS drag region */}
         <div
-          className="p-2 cursor-grab active:cursor-grabbing hover:bg-clawd-border rounded-full transition-colors select-none"
+          className="p-2 rounded-full select-none cursor-grab active:cursor-grabbing hover:bg-clawd-border transition-colors"
+          style={drag}
           title="Drag to reposition"
         >
           <GripVertical size={16} className="text-clawd-text-dim pointer-events-none" />
         </div>
 
-        {mode === 'collapsed' ? (
-          <>
-            {/* Primary: Call button (collapsed) */}
-            <button
-              onClick={handleCall}
-              className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white' : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
-              }`}
-              title={activeCall ? activeCall.agentName : 'Call Agent'}
-            >
-              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
-            </button>
-            {activeCall && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                {activeCall.agentName}
-              </span>
-            )}
-            <button 
-              onClick={handlePopIn} 
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Dock toolbar back"
-            >
-              <ExternalLink size={14} className="text-clawd-text-dim" />
-            </button>
-            <button 
-              onClick={toggleMode} 
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Expand toolbar"
-            >
-              <ChevronLeft size={16} className="text-clawd-text-dim" />
-            </button>
-          </>
-        ) : (
-          <>
-            {/* Standard actions */}
-            <button 
-              onClick={handleSearch} 
-              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Search"
-            >
-              <Search size={16} className="text-clawd-text-dim" />
-            </button>
-            <button 
-              onClick={handleNewTask} 
-              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
-              title="New Task"
-            >
-              <Plus size={16} className="text-clawd-text-dim" />
-            </button>
-            <button 
-              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Add Contact"
-            >
-              <UserPlus size={16} className="text-clawd-text-dim" />
-            </button>
-            <button 
-              className="p-2.5 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Add Skill"
-            >
-              <Brain size={16} className="text-clawd-text-dim" />
-            </button>
+        {/* Search → main app */}
+        <button onClick={() => sendAction('search')} className={btn} style={noDrag} title="Search">
+          <Search size={16} className="text-clawd-text-dim" />
+        </button>
 
-            {/* Context Chat */}
-            <button
-              onClick={handleContextChat}
-              className={`p-2.5 rounded-full transition-colors ${contextChatOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
-              title="Context Chat"
-            >
-              <Sparkles size={16} className={contextChatOpen ? '' : 'text-clawd-text-dim'} />
-            </button>
+        {/* New Task → main app */}
+        <button onClick={() => sendAction('new-task')} className={btn} style={noDrag} title="New Task">
+          <Plus size={16} className="text-clawd-text-dim" />
+        </button>
 
-            {/* Task Shortcuts */}
-            <button
-              onClick={handleTaskShortcuts}
-              className={`p-2.5 rounded-full transition-colors ${taskShortcutsOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'}`}
-              title="Task Shortcuts"
-            >
-              <ListTodo size={16} className={taskShortcutsOpen ? '' : 'text-clawd-text-dim'} />
-            </button>
+        {/* Chat → inline panel */}
+        <button
+          onClick={() => togglePanel('chat')}
+          className={`${btn} ${panel === 'chat' ? 'bg-clawd-accent/20' : ''}`}
+          style={noDrag}
+          title="Chat with Agent"
+        >
+          <MessageSquare size={16} className={panel === 'chat' ? 'text-clawd-accent' : 'text-clawd-text-dim'} />
+        </button>
 
-            <div className="w-px h-6 bg-clawd-border mx-0.5" />
+        {/* Call → inline agent picker */}
+        <button
+          onClick={() => togglePanel('call')}
+          className={`${btn} ${panel === 'call' ? 'bg-success-subtle' : ''}`}
+          style={noDrag}
+          title="Call Agent"
+        >
+          <Phone size={16} className={panel === 'call' ? 'text-green-400' : 'text-clawd-text-dim'} />
+        </button>
 
-            {/* Agent Chat button */}
-            <button
-              onClick={handleAgentChat}
-              className={`p-2.5 rounded-full transition-colors ${
-                agentChatOpen || agentChatModalOpen ? 'bg-clawd-accent text-white' : 'hover:bg-clawd-border'
-              }`}
-              title="Chat with Agent"
-            >
-              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-clawd-text-dim'} />
-            </button>
+        <div className="w-px h-6 bg-clawd-border mx-0.5" style={noDrag} />
 
-            {/* Primary: Call button */}
-            <button
-              onClick={handleCall}
-              className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
-                : agentCallModalOpen ? 'bg-clawd-accent text-white'
-                : 'bg-clawd-accent text-white hover:bg-clawd-accent/90'
-              }`}
-              title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
-            >
-              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
-            </button>
-
-            <div className="w-px h-6 bg-clawd-border mx-0.5" />
-            <button 
-              onClick={handlePopIn} 
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Dock toolbar back"
-            >
-              <ExternalLink size={14} className="text-clawd-text-dim" />
-            </button>
-            <button 
-              onClick={toggleMode} 
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Collapse toolbar"
-            >
-              <ChevronRight size={16} className="text-clawd-text-dim" />
-            </button>
-            <button 
-              onClick={handleClose} 
-              className="p-2 rounded-full hover:bg-clawd-border transition-colors" 
-              title="Close toolbar"
-            >
-              <X size={14} className="text-clawd-text-dim" />
-            </button>
-          </>
-        )}
+        {/* Dock / close */}
+        <button onClick={handlePopIn} className={btnSm} style={noDrag} title="Dock toolbar">
+          <ChevronRight size={16} className="text-clawd-text-dim" />
+        </button>
+        <button onClick={handlePopIn} className={btnSm} style={noDrag} title="Close">
+          <X size={14} className="text-clawd-text-dim" />
+        </button>
       </div>
-      
-      {/* Agent call modal placeholder */}
-      {agentCallModalOpen && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-clawd-surface rounded-lg p-4 max-w-sm">
-            <div className="text-sm font-medium text-clawd-text mb-3">Call Agent</div>
-            <div className="text-xs text-clawd-text-dim mb-4">
-              Full agent selection UI will be available here.
-              For now, use the main dashboard to initiate calls.
-            </div>
-            <button
-              onClick={() => setAgentCallModalOpen(false)}
-              className="w-full px-3 py-2 bg-clawd-accent text-white rounded hover:bg-clawd-accent/90"
-            >
-              Close
+
+      {/* ── Call panel ─────────────────────────────────────── */}
+      {panel === 'call' && (
+        <div
+          className="mt-2 w-[580px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl p-3"
+          style={noDrag}
+        >
+          <div className="flex items-center justify-between mb-2 px-0.5">
+            <span className="text-xs font-semibold text-clawd-text">Call an agent</span>
+            <button onClick={closePanel} className="text-clawd-text-dim hover:text-clawd-text">
+              <X size={12} />
             </button>
           </div>
+          {agents.length === 0 ? (
+            <div className="text-xs text-clawd-text-dim text-center py-3">Loading agents…</div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2">
+              {agents.map(agent => (
+                <button
+                  key={agent.id}
+                  onClick={() => handleCallAgent(agent.id)}
+                  className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-clawd-border transition-colors"
+                >
+                  <span className="text-xl">{agent.emoji || '🤖'}</span>
+                  <span className="text-[10px] text-clawd-text-dim truncate w-full text-center leading-tight">
+                    {agent.name || agent.id}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      
-      {/* Call dialog placeholder */}
-      {callDialogOpen && activeCall && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-clawd-surface rounded-lg p-4 max-w-sm">
-            <div className="text-sm font-medium text-clawd-text mb-3">
-              Call with {activeCall.agentName}
+
+      {/* ── Chat panel ─────────────────────────────────────── */}
+      {panel === 'chat' && (
+        <div
+          className="mt-2 w-[580px] bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl p-3"
+          style={noDrag}
+        >
+          <div className="flex items-center justify-between mb-2 px-0.5">
+            <span className="text-xs font-semibold text-clawd-text">Message an agent</span>
+            <button onClick={closePanel} className="text-clawd-text-dim hover:text-clawd-text">
+              <X size={12} />
+            </button>
+          </div>
+
+          {/* Agent selector */}
+          <select
+            value={chatAgent}
+            onChange={e => { setChatAgent(e.target.value); setChatResponse(''); }}
+            className="w-full text-xs bg-clawd-bg border border-clawd-border rounded-lg px-2 py-1.5 text-clawd-text mb-2 outline-none focus:ring-1 focus:ring-clawd-accent"
+          >
+            {agents.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.emoji ? `${a.emoji} ` : ''}{a.name || a.id}
+              </option>
+            ))}
+          </select>
+
+          {/* Response display */}
+          {chatResponse && (
+            <div className="text-xs text-clawd-text bg-clawd-bg rounded-lg p-2 mb-2 max-h-20 overflow-y-auto border border-clawd-border">
+              {chatResponse}
             </div>
-            <div className="text-xs text-clawd-text-dim mb-4">
-              Call controls will be available here.
-            </div>
+          )}
+
+          {/* Message input */}
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={chatInputRef}
+              type="text"
+              value={chatMsg}
+              onChange={e => setChatMsg(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) handleSendChat(); }}
+              placeholder={`Message ${chatAgent || 'agent'}…`}
+              disabled={chatLoading}
+              className="flex-1 text-xs bg-clawd-bg border border-clawd-border rounded-lg px-2.5 py-1.5 text-clawd-text placeholder:text-clawd-text-dim outline-none focus:ring-1 focus:ring-clawd-accent disabled:opacity-50"
+            />
             <button
-              onClick={() => setCallDialogOpen(false)}
-              className="w-full px-3 py-2 bg-clawd-accent text-white rounded hover:bg-clawd-accent/90"
+              onClick={handleSendChat}
+              disabled={chatLoading || !chatMsg.trim()}
+              className="p-1.5 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent/90 disabled:opacity-40 transition-colors flex-shrink-0"
+              title="Send"
             >
-              Close
+              {chatLoading
+                ? <Loader2 size={14} className="animate-spin" />
+                : <Send size={14} />
+              }
             </button>
           </div>
         </div>

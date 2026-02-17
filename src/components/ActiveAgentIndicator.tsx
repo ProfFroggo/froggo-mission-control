@@ -105,7 +105,7 @@ export default function ActiveAgentIndicator({
     <div className={`flex items-center gap-1.5 ${className}`}>
       <div className="relative flex items-center justify-center">
         {/* Pulsing outer ring */}
-        <div className={`absolute ${dotSize} bg-green-500/30 rounded-full animate-ping`} />
+        <div className={`absolute ${dotSize} bg-success-subtle rounded-full animate-ping`} />
         {/* Solid inner dot */}
         <div className={`relative ${dotSize} bg-green-500 rounded-full`} />
       </div>

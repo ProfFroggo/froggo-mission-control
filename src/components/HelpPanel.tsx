@@ -119,7 +119,7 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
         {/* Header */}
         <div className="p-6 border-b border-clawd-border flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-xl">
+            <div className="p-2 bg-info-subtle rounded-xl">
               <HelpCircle size={24} className="text-info" />
             </div>
             <div>
@@ -353,7 +353,7 @@ function BrowseView({
       {contextArticles.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <Star size={16} className="text-yellow-500" />
+            <Star size={16} className="text-warning" />
             <h3 className="text-sm font-medium text-clawd-text-dim uppercase tracking-wide">
               Relevant to Current Panel
             </h3>
@@ -444,7 +444,7 @@ function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => 
             href={article.videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 p-4 bg-info-subtle border border-info-border rounded-xl hover:bg-blue-500/20 transition-colors"
+            className="flex items-center gap-2 p-4 bg-info-subtle border border-info-border rounded-xl hover:bg-info-subtle transition-colors"
           >
             <Video size={20} className="text-info" />
             <span className="font-medium text-info">Watch Video Tutorial</span>

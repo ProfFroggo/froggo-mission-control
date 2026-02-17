@@ -328,7 +328,7 @@ export default function AdvancedAgentComparison({
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <span className="text-orange-400 font-medium">
+                            <span className="text-warning font-medium">
                               {agent.avgCompletionTime.toFixed(1)}h
                             </span>
                           </td>
@@ -346,7 +346,7 @@ export default function AdvancedAgentComparison({
                             <div className="flex items-center justify-end gap-2">
                               <div className="w-24 bg-clawd-bg rounded-full h-2">
                                 <div
-                                  className="bg-purple-400 rounded-full h-2 transition-all"
+                                  className="bg-review rounded-full h-2 transition-all"
                                   style={{ width: `${agent.consistency}%` }}
                                 />
                               </div>

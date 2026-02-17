@@ -111,7 +111,7 @@ export default function FinanceInsightsPanel() {
       case 'critical':
         return 'bg-error-subtle border-error-border text-error';
       case 'warning':
-        return 'bg-yellow-500/10 border-warning-border text-warning';
+        return 'bg-warning-subtle border-warning-border text-warning';
       default:
         return 'bg-info-subtle border-info-border text-info';
     }

@@ -485,9 +485,9 @@ export default function PerformanceBenchmarks() {
                 key={metric.label}
                 className={`p-3 rounded-lg ${
                   isPositive
-                    ? 'bg-success-subtle border border-green-500/20'
+                    ? 'bg-success-subtle border border-success-border'
                     : isNegative
-                    ? 'bg-error-subtle border border-red-500/20'
+                    ? 'bg-error-subtle border border-error-border'
                     : 'bg-clawd-bg border border-clawd-border'
                 }`}
               >

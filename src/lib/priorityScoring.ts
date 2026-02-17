@@ -547,13 +547,13 @@ export function getPriorityLevel(score: number): {
   color: string;
 } {
   if (score >= 70) {
-    return { level: 'critical', label: 'Critical', color: 'text-red-400 bg-red-500/20' };
+    return { level: 'critical', label: 'Critical', color: 'text-error bg-error-subtle' };
   } else if (score >= 50) {
-    return { level: 'high', label: 'High', color: 'text-orange-400 bg-orange-500/20' };
+    return { level: 'high', label: 'High', color: 'text-warning bg-warning-subtle' };
   } else if (score >= 30) {
-    return { level: 'medium', label: 'Medium', color: 'text-yellow-400 bg-yellow-500/20' };
+    return { level: 'medium', label: 'Medium', color: 'text-warning bg-warning-subtle' };
   } else {
-    return { level: 'low', label: 'Low', color: 'text-green-400 bg-green-500/20' };
+    return { level: 'low', label: 'Low', color: 'text-success bg-success-subtle' };
   }
 }
 

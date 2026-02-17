@@ -168,7 +168,7 @@ export default function CodeAgentDashboard() {
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-xl">
+            <div className="p-2 bg-info-subtle rounded-xl">
               <Code size={24} className="text-info" />
             </div>
             <div>

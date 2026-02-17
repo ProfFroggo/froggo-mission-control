@@ -149,7 +149,7 @@ export default function WeatherWidget() {
             {/* Additional Details */}
             <div className="flex items-center gap-4 pt-3 border-t border-clawd-border/50">
               <div className="flex items-center gap-2 text-sm">
-                <Droplets size={14} className="text-blue-300" />
+                <Droplets size={14} className="text-info" />
                 <span className="text-clawd-text-dim">{current.humidity}%</span>
               </div>
               <div className="flex items-center gap-2 text-sm">

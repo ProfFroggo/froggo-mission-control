@@ -129,7 +129,7 @@ export default function XAutomationsPanel() {
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-xl">
+            <div className="p-2 bg-review-subtle rounded-xl">
               <Zap size={24} className="text-review" />
             </div>
             <div>
@@ -186,7 +186,7 @@ export default function XAutomationsPanel() {
                   key={automation.id}
                   className={`bg-clawd-surface rounded-xl border-2 transition-all ${
                     automation.enabled 
-                      ? 'border-success-border hover:border-green-500/50' 
+                      ? 'border-success-border hover:border-success-border' 
                       : 'border-clawd-border hover:border-clawd-border/80'
                   }`}
                 >
@@ -194,7 +194,7 @@ export default function XAutomationsPanel() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-green-500/20' : 'bg-clawd-border'}`}>
+                        <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-success-subtle' : 'bg-clawd-border'}`}>
                           {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-success' : 'text-clawd-text-dim'} />}
                         </div>
                         <div className="flex-1">
@@ -218,8 +218,8 @@ export default function XAutomationsPanel() {
                           onClick={() => toggleAutomation(automation.id, !automation.enabled)}
                           className={`p-2 rounded-lg transition-colors ${
                             automation.enabled 
-                              ? 'bg-warning-subtle text-warning hover:bg-yellow-500/30' 
-                              : 'bg-success-subtle text-success hover:bg-green-500/30'
+                              ? 'bg-warning-subtle text-warning hover:bg-warning-subtle' 
+                              : 'bg-success-subtle text-success hover:bg-success-subtle'
                           }`}
                           title={automation.enabled ? 'Pause' : 'Activate'}
                         >
@@ -237,7 +237,7 @@ export default function XAutomationsPanel() {
                         </button>
                         <button
                           onClick={() => deleteAutomation(automation.id)}
-                          className="p-2 rounded-lg bg-error-subtle text-error hover:bg-red-500/30 transition-colors"
+                          className="p-2 rounded-lg bg-error-subtle text-error hover:bg-error-subtle transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={16} />
@@ -568,7 +568,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
                     
                     <button
                       onClick={() => setActions(actions.filter((_, i) => i !== index))}
-                      className="p-2 text-error hover:bg-red-500/20 rounded-lg transition-colors"
+                      className="p-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>

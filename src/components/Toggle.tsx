@@ -30,7 +30,7 @@ export function Toggle({
   // Colors
   const trackColor = checked 
     ? (colorScheme === 'green' ? 'bg-green-500' : 'bg-clawd-accent')
-    : (colorScheme === 'red' ? 'bg-red-500' : 'bg-gray-400');
+    : (colorScheme === 'red' ? 'bg-red-500' : 'bg-clawd-text-dim');
   
   return (
     <label className="relative inline-flex flex-shrink-0 cursor-pointer" aria-label="Toggle">

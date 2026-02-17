@@ -136,9 +136,9 @@ export default function AccessibilitySettings() {
             <div className="flex items-center gap-3 mb-4">
               <Type size={20} className="text-clawd-text-dim" aria-hidden="true" />
               <div className="flex-1">
-                <label id="font-size-label" className="text-sm font-medium text-clawd-text">
+                <span className="text-sm font-medium text-clawd-text">
                   Font Size
-                </label>
+                </span>
                 <p className="text-xs text-clawd-text-dim">
                   Adjust text size: {settings.fontSize}%
                 </p>

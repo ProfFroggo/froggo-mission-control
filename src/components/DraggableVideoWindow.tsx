@@ -191,7 +191,7 @@ export default function DraggableVideoWindow({
           </button>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-red-500/80 text-white transition-colors"
+            className="p-1 rounded hover:bg-error-subtle text-white transition-colors"
             title="Close"
           >
             <X size={14} />

@@ -847,7 +847,7 @@ export default function MeetingsPanel() {
               <button
                 onClick={toggleMuted}
                 className={`p-2.5 rounded-lg transition-all ${isMuted 
-                  ? 'bg-error-subtle text-error hover:bg-red-500/20' 
+                  ? 'bg-error-subtle text-error hover:bg-error-subtle' 
                   : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-border/80'}`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
@@ -960,7 +960,7 @@ export default function MeetingsPanel() {
                           onChange={(e) => setMeetingTitle(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') startMeeting(); if (e.key === 'Escape') setShowTitleInput(false); }}
                           placeholder="Meeting title (optional)"
-                          className="w-full px-4 py-3 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/20"
+                          className="w-full px-4 py-3 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20"
                           autoFocus
                         />
                         <div className="flex gap-3">
@@ -1053,7 +1053,7 @@ export default function MeetingsPanel() {
                               key={item.id} 
                               className={`p-4 transition-all ${
                                 item.status === 'dismissed' ? 'opacity-40' : ''
-                              } ${item.status === 'approved' ? 'bg-green-500/5' : ''}`}
+                              } ${item.status === 'approved' ? 'bg-success-subtle' : ''}`}
                             >
                               {editingItemId === item.id ? (
                                 <div className="space-y-3">
@@ -1061,7 +1061,7 @@ export default function MeetingsPanel() {
                                     type="text"
                                     value={editingText}
                                     onChange={(e) => setEditingText(e.target.value)}
-                                    className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text focus:outline-none focus:border-green-500"
+                                    className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text focus:outline-none focus:border-success-border"
                                     autoFocus
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEditedItem();
@@ -1189,7 +1189,7 @@ export default function MeetingsPanel() {
                     <div className="flex gap-3">
                       <button
                         onClick={sendMeetingSummary}
-                        className="flex-1 px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:border-green-500 transition-all"
+                        className="flex-1 px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:border-success-border transition-all"
                       >
                         <MessageSquare size={18} />
                         Send to Froggo
@@ -1201,7 +1201,7 @@ export default function MeetingsPanel() {
                           setMeetingEndSummary(null);
                           setAiSummary(null);
                         }}
-                        className="px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:border-red-500 text-clawd-text-dim transition-all"
+                        className="px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:border-error-border text-clawd-text-dim transition-all"
                       >
                         <Trash2 size={18} />
                         Clear
@@ -1346,7 +1346,7 @@ export default function MeetingsPanel() {
                                 askAboutMeeting(selectedMeeting, meetingChatInput); 
                             }}
                             placeholder="What were the main topics discussed?"
-                            className="flex-1 px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-sm focus:outline-none focus:border-green-500"
+                            className="flex-1 px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-sm focus:outline-none focus:border-success-border"
                             disabled={meetingChatProcessing}
                           />
                           <button
@@ -1417,7 +1417,7 @@ export default function MeetingsPanel() {
                             {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0) && (
                               <div className="flex gap-2 mt-3">
                                 {meeting.actionItems.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-orange-500/20 text-warning rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-warning-subtle text-warning rounded-full">
                                     {meeting.actionItems.length} action items
                                   </span>
                                 )}

@@ -155,7 +155,7 @@ export default function MeetingTranscriptionPanel() {
       </div>
 
       {error && (
-        <div className="mx-4 mt-2 p-3 bg-red-500/20 text-red-300 rounded-lg text-sm">{error}</div>
+        <div className="mx-4 mt-2 p-3 bg-error-subtle text-error rounded-lg text-sm">{error}</div>
       )}
 
       {/* Results */}

@@ -101,9 +101,9 @@ export default function HealthStatusWidget() {
         {/* Health indicator */}
         <div className="flex items-center gap-3">
           <div className={`flex items-center justify-center w-12 h-12 rounded-full ${
-            health === 'healthy' ? 'bg-green-500/20' :
-            health === 'warning' ? 'bg-yellow-500/20' :
-            'bg-red-500/20'
+            health === 'healthy' ? 'bg-success-subtle' :
+            health === 'warning' ? 'bg-warning-subtle' :
+            'bg-error-subtle'
           }`}>
             {health === 'healthy' ? (
               <CheckCircle size={24} className="text-success" />

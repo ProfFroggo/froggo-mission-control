@@ -470,7 +470,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {room.agents.map(id => (
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-success border border-white" />
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
@@ -484,7 +484,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
             <button
               onClick={stopAll}
-              className="w-8 h-8 rounded-lg border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
+              className="w-8 h-8 rounded-lg border-2 border-red-500 text-error hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
               title="Stop all agents"
             >
               <Square size={14} fill="currentColor" />
@@ -511,7 +511,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             onClick={() => setVoiceMode(!voiceMode)}
             className={`p-2 rounded-lg transition-colors ${
               voiceMode
-                ? 'bg-success-subtle text-success ring-1 ring-green-500/50'
+                ? 'bg-success-subtle text-success ring-1 ring-success/50'
                 : 'text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border'
             }`}
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
@@ -565,7 +565,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     <div key={id} className="flex items-center gap-1.5 px-2.5 py-1 bg-clawd-surface border border-clawd-border rounded-full text-xs">
                       <AgentAvatar agentId={id} size="xs" />
                       <span>{agentName(id)}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-success" />
                     </div>
                   ))}
                 </div>

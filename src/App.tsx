@@ -139,6 +139,21 @@ function App() {
     return () => window.removeEventListener('navigate-library', handleNavigateLibrary);
   }, []);
 
+  // Toolbar action IPC — mirrors the in-app QuickActions behavior
+  useEffect(() => {
+    const cleanup = (window as any).clawdbot?.toolbar?.onAction?.((action: string) => {
+      if (action === 'search')       { setSearchOpen(true); return; }
+      if (action === 'new-task')     { setCurrentView('kanban'); return; }
+      if (action === 'context-chat') { quickActionsRef.current?.openContextChat(); return; }
+      if (action === 'agent-chat')   { quickActionsRef.current?.openAgentChat(); return; }
+      // call or call:agentId — open the call modal (agent ID passed for future pre-selection)
+      if (action === 'call' || action.startsWith('call:')) {
+        quickActionsRef.current?.openCall();
+      }
+    });
+    return () => cleanup?.();
+  }, []);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

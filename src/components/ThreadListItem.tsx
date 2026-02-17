@@ -163,7 +163,7 @@ export default function ThreadListItem({
               </span>
             )}
             {thread.unreplied_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs bg-orange-500/20 text-warning px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-xs bg-warning-subtle text-warning px-2 py-0.5 rounded-full">
                 {thread.unreplied_count} awaiting reply
               </span>
             )}

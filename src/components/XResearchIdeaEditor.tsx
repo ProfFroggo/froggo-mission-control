@@ -141,7 +141,7 @@ export default function XResearchIdeaEditor() {
                 {citations.length > 1 && (
                   <button
                     onClick={() => handleRemoveCitation(index)}
-                    className="p-2 text-error hover:bg-red-500/20 rounded-lg transition-colors"
+                    className="p-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
                     disabled={submitting}
                   >
                     <X className="w-5 h-5" />

@@ -76,9 +76,9 @@ export function ValidatedInput({
             w-full px-3 py-2 bg-clawd-bg border rounded-lg text-clawd-text placeholder-clawd-text-dim
             focus:outline-none focus:ring-2 transition-all
             ${hasError 
-              ? 'border-red-500 focus:ring-red-500/50' 
+              ? 'border-red-500 focus:ring-error/50' 
               : isValid && showValidation
-                ? 'border-green-500 focus:ring-green-500/50'
+                ? 'border-green-500 focus:ring-success/50'
                 : 'border-clawd-border focus:ring-clawd-accent'
             }
             ${className}
@@ -180,7 +180,7 @@ export function ValidatedTextarea({
           w-full px-3 py-2 bg-clawd-bg border rounded-lg text-clawd-text placeholder-clawd-text-dim
           focus:outline-none focus:ring-2 transition-all resize-vertical
           ${hasError 
-            ? 'border-red-500 focus:ring-red-500/50' 
+            ? 'border-red-500 focus:ring-error/50' 
             : 'border-clawd-border focus:ring-clawd-accent'
           }
           ${className}
@@ -261,7 +261,7 @@ export function ValidatedSelect({
           w-full px-3 py-2 bg-clawd-bg border rounded-lg text-clawd-text
           focus:outline-none focus:ring-2 transition-all cursor-pointer
           ${hasError 
-            ? 'border-red-500 focus:ring-red-500/50' 
+            ? 'border-red-500 focus:ring-error/50' 
             : 'border-clawd-border focus:ring-clawd-accent'
           }
           ${className}

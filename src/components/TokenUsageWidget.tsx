@@ -116,7 +116,7 @@ export default function TokenUsageWidget() {
           <p className="text-sm text-review">Output: {data.outputTokens.toLocaleString()}</p>
           <p className="text-sm text-success">Total: {data.totalTokens.toLocaleString()}</p>
           <p className="text-sm text-warning">Calls: {data.calls}</p>
-          <p className="text-sm text-orange-400">Cost: ${data.cost.toFixed(4)}</p>
+          <p className="text-sm text-warning">Cost: ${data.cost.toFixed(4)}</p>
         </div>
       );
     }

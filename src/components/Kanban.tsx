@@ -936,7 +936,7 @@ export default function Kanban() {
               </button>
               <button
                 onClick={handleArchiveDone}
-                className="px-4 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-success transition-colors"
+                className="px-4 py-2 rounded-lg bg-success-subtle hover:bg-success-subtle text-success transition-colors"
               >
                 Archive
               </button>
@@ -1020,7 +1020,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
     
     // 🟠 Orange: Silent agent - assigned but no activity logged
     if (!lastActivity) {
-      return { color: 'border-orange-500/70', description: 'Silent agent (no activity logged)' };
+      return { color: 'border-warning-border', description: 'Silent agent (no activity logged)' };
     }
     
     const now = Date.now();
@@ -1028,16 +1028,16 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
     
     // 🟢 Green: Active work in last 15 minutes
     if (minutesSinceActivity < 15) {
-      return { color: 'border-green-500/70', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
+      return { color: 'border-success-border', description: `Active (${Math.floor(minutesSinceActivity)}m ago)` };
     }
     
     // 🟡 Yellow: Stale, no activity in 15-30 minutes
     if (minutesSinceActivity < 30) {
-      return { color: 'border-yellow-500/70', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
+      return { color: 'border-warning-border', description: `Stale (${Math.floor(minutesSinceActivity)}m ago)` };
     }
     
     // 🔴 Red: Stuck/abandoned, no activity in 30+ minutes
-    return { color: 'border-red-500/70', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
+    return { color: 'border-error-border', description: `Stuck (${Math.floor(minutesSinceActivity)}m ago)` };
   };
   
   // Subtask progress
@@ -1066,7 +1066,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         isDeleting || isMoving ? 'opacity-60 pointer-events-none' : ''
       } ${
         activityIndicator ? activityIndicator.color :
-        dueInfo?.isOverdue ? 'border-red-500/50 bg-red-500/5' :
+        dueInfo?.isOverdue ? 'border-error-border bg-error-subtle' :
         task.priority === 'p0' ? 'border-error-border' :
         'border-clawd-border hover:border-clawd-accent/50'
       } hover:shadow-md hover:-translate-y-0.5`}
