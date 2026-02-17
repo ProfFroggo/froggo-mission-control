@@ -4,7 +4,7 @@
  */
 
 import { loadAgentContext, invalidateAgentContext, AgentContext } from './agentContext';
-import type { GeminiTool, GeminiToolCall } from './geminiLiveService';
+import type { GeminiTool } from './geminiLiveService';
 
 export type { AgentContext };
 

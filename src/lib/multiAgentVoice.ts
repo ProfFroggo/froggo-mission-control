@@ -179,8 +179,7 @@ Keep responses brief for voice - 2-3 sentences unless the user asks for more.`
 };
 
 export class MultiAgentVoiceSystem {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private _apiKey: string;
+  private apiKey: string;
   private sessions: Map<AgentType, AgentSession>;
   private currentAgent: AgentType | null;
   private sharedContext: SharedContext;
@@ -196,7 +195,7 @@ export class MultiAgentVoiceSystem {
   private onStatusCallback?: (status: string) => void;
 
   constructor(apiKey: string) {
-    this._apiKey = apiKey;
+    this.apiKey = apiKey;
     this.ai = new GoogleGenAI({ apiKey });
     this.sessions = new Map();
     this.currentAgent = null;

@@ -499,20 +499,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     }
   }, [quickMessageOpen]);
 
-  // ─── FEATURE 1: Meeting navigation ───
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleMeetingClick = () => {
-    if (isMeetingActive) {
-      // Already in meeting → navigate to meetings tab
-      onNavigate?.('meetings');
-    } else {
-      // Start meeting + navigate
-      toggleMeeting();
-      onNavigate?.('meetings');
-      showToast('success', 'Meeting Started', 'Navigated to meetings');
-    }
-  };
-
   // Agent context for voice calls
   const agentContextRef = useRef<AgentContext | null>(null);
   const activeCallAgentRef = useRef<{ id: string; name: string; role?: string } | null>(null);
