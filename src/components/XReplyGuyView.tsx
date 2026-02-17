@@ -230,7 +230,7 @@ export const XReplyGuyView: React.FC = () => {
             </div>
             
             {fastTrack && (
-              <div className="text-xs text-warning bg-orange-50 p-2 rounded flex items-center gap-1">
+              <div className="text-xs text-warning bg-warning-subtle p-2 rounded flex items-center gap-1">
                 <Zap size={12} />
                 Fast-track enabled: Draft will be auto-approved and ready to post immediately
               </div>

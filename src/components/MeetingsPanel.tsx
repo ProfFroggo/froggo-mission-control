@@ -538,7 +538,7 @@ export default function MeetingsPanel() {
                 setMeetingTranscript(prev => [...prev, finalText]);
                 setMeetingTranscriptLines(prev => [...prev, { text: finalText, timestamp: Date.now() }]);
                 if (meetingDbIdRef.current) {
-                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch((err) => { console.error('[Meetings] Failed to save transcript:', err); });
+                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch((err) => { logger.error('Failed to save transcript:', err); });
                 }
                 const actions = detectActionItems(finalText);
                 if (actions.length > 0) {
@@ -564,7 +564,7 @@ export default function MeetingsPanel() {
       };
 
       ws.onerror = (err) => {
-        console.error('[Gemini] WebSocket error:', err);
+        logger.error('Gemini WebSocket error:', err);
         reject(new Error('Gemini WebSocket connection failed'));
       };
 
@@ -1291,8 +1291,8 @@ export default function MeetingsPanel() {
                             <div>
                               <p className="text-xs text-clawd-text-dim mb-2">Detected</p>
                               <ul className="space-y-1">
-                                {selectedMeeting.actionItems.map((item, i) => (
-                                  <li key={i} className="text-sm text-clawd-text">• {item}</li>
+                                {selectedMeeting.actionItems.map((item) => (
+                                  <li key={item} className="text-sm text-clawd-text">• {item}</li>
                                 ))}
                               </ul>
                             </div>
@@ -1301,8 +1301,8 @@ export default function MeetingsPanel() {
                             <div>
                               <p className="text-xs text-clawd-text-dim mb-2">Tasks Created</p>
                               <ul className="space-y-1">
-                                {selectedMeeting.tasksCreated.map((task, i) => (
-                                  <li key={i} className="text-sm text-success flex items-center gap-2">
+                                {selectedMeeting.tasksCreated.map((task) => (
+                                  <li key={task} className="text-sm text-success flex items-center gap-2">
                                     <Check size={12} />
                                     {task}
                                   </li>
@@ -1325,8 +1325,8 @@ export default function MeetingsPanel() {
                       <div className="p-4">
                         {meetingChatMessages.length > 0 && (
                           <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
-                            {meetingChatMessages.map((msg, i) => (
-                              <div key={i} className={`text-sm ${msg.role === 'user' ? 'text-right' : ''}`}>
+                            {meetingChatMessages.map((msg) => (
+                              <div key={`${msg.role}-${msg.timestamp}-${msg.content.slice(0, 20)}`} className={`text-sm ${msg.role === 'user' ? 'text-right' : ''}`}>
                                 <span className={`inline-block rounded-lg px-3 py-2 max-w-[90%] ${
                                   msg.role === 'user' 
                                     ? 'bg-green-500 text-white' 
@@ -1389,9 +1389,9 @@ export default function MeetingsPanel() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {pastMeetings.map((meeting, i) => (
+                        {pastMeetings.map((meeting) => (
                           <button
-                            key={i}
+                            key={meeting.id || meeting.filepath}
                             onClick={() => setSelectedMeeting(meeting)}
                             className="w-full text-left bg-clawd-surface border border-clawd-border rounded-xl p-4 hover:border-clawd-accent transition-all group"
                           >

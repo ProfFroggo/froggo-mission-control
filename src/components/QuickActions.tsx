@@ -529,7 +529,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
             sessionKey: gateway.getSessionKey?.() || 'web:dashboard',
             role, message: text,
             // Removed label: 'voice' - was causing gateway to look for non-existent transcript file
-          }).catch((err: Error) => { console.error('[QuickActions] Failed to inject chat message:', err); });
+          }).catch((err: Error) => { logger.error('Failed to inject chat message:', err); });
         }
       } catch { /* ignore */ }
     };
@@ -553,7 +553,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         try {
           logger.debug('[QuickActions] Tool call received:', toolCall);
           if (!toolCall?.functionCalls?.length) {
-            console.warn('[QuickActions] No function calls in tool-call event');
+            logger.warn('No function calls in tool-call event');
             return;
           }
           const agent = activeCallAgentRef.current;
@@ -591,7 +591,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
   const stopRinging = () => {
     ringRef.current?.stop(); ringRef.current = null;
-    if (ringCtxRef.current) { ringCtxRef.current.close().catch((err: Error) => { console.error('[QuickActions] Failed to close ring context:', err); }); ringCtxRef.current = null; }
+    if (ringCtxRef.current) { ringCtxRef.current.close().catch((err: Error) => { logger.error('Failed to close ring context:', err); }); ringCtxRef.current = null; }
     setCallRinging(false);
   };
 
@@ -655,7 +655,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         // Load full agent context (SOUL.md, memory, tasks, etc.) + chat history
         invalidateAgentContext(agent.id);
         const [agentCtx, chatHistory] = await Promise.all([
-          loadAgentContext(agent.id).catch((err: Error) => { console.error('[QuickActions] Failed to load agent context:', err); return null; }),
+          loadAgentContext(agent.id).catch((err: Error) => { logger.error('Failed to load agent context:', err); return null; }),
           loadRecentChatHistory(agent.id, 25),
         ]);
         agentContextRef.current = agentCtx;

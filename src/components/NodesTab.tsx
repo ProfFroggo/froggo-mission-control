@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Monitor, RefreshCw, Wifi, WifiOff, Edit3, Check, X, UserCheck, UserX, ChevronDown, ChevronRight } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('NodesTab');
 
 interface NodeEntry {
   nodeId: string;
@@ -39,8 +42,8 @@ export default function NodesTab() {
     setLoading(true);
     try {
       const [nodesResult, pairResult] = await Promise.all([
-        gateway.getNodes().catch((err) => { console.error('[NodesTab] Failed to get nodes:', err); return null; }),
-        gateway.listNodePairRequests().catch((err) => { console.error('[NodesTab] Failed to list pair requests:', err); return null; }),
+        gateway.getNodes().catch((err) => { logger.error('Failed to get nodes:', err); return null; }),
+        gateway.listNodePairRequests().catch((err) => { logger.error('Failed to list pair requests:', err); return null; }),
       ]);
 
       if (nodesResult?.nodes) setNodes(nodesResult.nodes);

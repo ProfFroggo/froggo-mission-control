@@ -6,10 +6,13 @@ import {
 } from 'lucide-react';
 import { showToast } from './Toast';
 import { useConfirmDialog } from './ConfirmDialog';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('ConnectedAccounts');
 
 // Lazy load ChannelsTab to avoid import-time errors breaking the whole panel
 const ChannelsTab = lazy(() => import('./ChannelsTab').catch((err) => {
-  console.error('[ConnectedAccountsPanel] Failed to load ChannelsTab:', err);
+  logger.error('Failed to load ChannelsTab:', err);
   return {
     default: () => <div className="text-center py-8 text-clawd-text-dim">Failed to load Channels tab</div>
   };

@@ -289,9 +289,9 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <div
-            key={i}
+            key={`${msg.role}-${msg.timestamp}`}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div

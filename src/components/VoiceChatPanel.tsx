@@ -21,6 +21,9 @@ import { useUserSettings } from '../store/userSettings';
 import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext, AgentContext } from '../lib/agentContext';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('VoiceChat');
 
 // API key loading — no hardcoded fallback; uses IPC to fetch from secure store
 async function loadApiKey(): Promise<string> {
@@ -122,7 +125,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   useEffect(() => {
     loadApiKey()
       .then(key => { apiKey.current = key; })
-      .catch(err => console.error('[VoiceChat] Failed to load API key:', err));
+      .catch(err => logger.error('Failed to load API key:', err));
   }, []);
   
   // Agent context
@@ -145,7 +148,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setAgentContext(ctx);
         agentContextRef.current = ctx;
       }
-    }).catch((err) => { console.error('[VoiceChat] Failed to load agent context:', err); });
+    }).catch((err) => { logger.error('Failed to load agent context:', err); });
     return () => { cancelled = true; };
   }, [selectedAgent.id]);
   
@@ -216,7 +219,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       geminiLive.on('audio-level', ({ level }: { level: number }) => setMicLevel(level)),
       geminiLive.on('model-audio-level', ({ level }: { level: number }) => setSpeakLevel(level)),
       geminiLive.on('error', ({ message }: { message: string }) => {
-        console.error('[VoiceChat] Gemini error:', message);
+        logger.error('Gemini error:', message);
         addSystemMessage(`⚠️ ${message}`);
       }),
       geminiLive.on('transcript', (data: { text: string; role: string }) => {
@@ -276,7 +279,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             responses.push({ id: fc.id, name: fc.name, response: result });
             if (['create_task', 'update_task', 'spawn_agent'].includes(fc.name)) {
               invalidateAgentContext();
-              loadAgentContext(selectedAgent.id).then(ctx => { agentContextRef.current = ctx; setAgentContext(ctx); }).catch((err) => { console.error('[VoiceChat] Failed to reload agent context:', err); });
+              loadAgentContext(selectedAgent.id).then(ctx => { agentContextRef.current = ctx; setAgentContext(ctx); }).catch((err) => { logger.error('Failed to reload agent context:', err); });
             }
           }
           try {
@@ -319,14 +322,14 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       message: `[Voice call started with ${selectedAgent.name}]`,
       sessionKey: selectedAgent.sessionKey,
       idempotencyKey: `voice-init-${Date.now()}`,
-    }).catch((err) => { console.error('[VoiceChat] Failed to send voice init message:', err); }); // Session creation is best-effort
+    }).catch((err) => { logger.error('Failed to send voice init message:', err); }); // Session creation is best-effort
 
     // Refresh agent context
     invalidateAgentContext(selectedAgent.id);
     loadAgentContext(selectedAgent.id).then(ctx => {
       agentContextRef.current = ctx;
       setAgentContext(ctx);
-    }).catch((err) => { console.error('[VoiceChat] Failed to refresh agent context:', err); });
+    }).catch((err) => { logger.error('Failed to refresh agent context:', err); });
     
     try {
       const voice = getGeminiVoiceForAgent(selectedAgent.id);
