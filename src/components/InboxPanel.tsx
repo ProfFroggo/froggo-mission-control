@@ -1476,7 +1476,7 @@ export default function InboxPanel() {
                         <LoadingButton
                           onClick={() => setFeedbackId(showFeedback ? null : item.id)}
                           variant="primary"
-                          className="bg-blue-500 hover:bg-blue-600"
+                          className="bg-clawd-accent hover:bg-clawd-accent-dim"
                           icon={ <Edit3 size={16} className="flex-shrink-0" />}
                         >
                           Adjust
