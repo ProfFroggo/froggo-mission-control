@@ -378,7 +378,7 @@ export default function XAutomationsTab() {
                 const Icon = getActionIcon(action.type);
                 
                 return (
-                  <div key={index} className="bg-clawd-bg rounded-lg border border-clawd-border p-4 space-y-3">
+                  <div key={action.id || `action-${index}`} className="bg-clawd-bg rounded-lg border border-clawd-border p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 font-medium">
                         <Icon size={16} />
@@ -591,7 +591,7 @@ export default function XAutomationsTab() {
                     {automation.actions.map((action: any, index: number) => {
                       const ActionIcon = getActionIcon(action.type);
                       return (
-                        <div key={index} className="flex items-center gap-1 px-3 py-1.5 bg-clawd-bg rounded-lg">
+                        <div key={`${automation.id}-${action.type}-${index}`} className="flex items-center gap-1 px-3 py-1.5 bg-clawd-bg rounded-lg">
                           <ActionIcon size={14} />
                           <span>{ACTION_OPTIONS.find(o => o.type === action.type)?.label}</span>
                         </div>
