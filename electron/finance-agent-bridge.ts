@@ -19,7 +19,23 @@ interface ChatMessage {
   role: 'user' | 'agent';
   content: string;
   timestamp: number;
-  context?: any;
+  context?: Record<string, unknown>;
+}
+
+interface AgentResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+interface SessionInfo {
+  key: string;
+  agentId?: string;
+  status?: string;
+}
+
+interface OpenclawSessionList {
+  sessions?: SessionInfo[];
 }
 
 interface AgentResponse {
@@ -62,8 +78,8 @@ export class FinanceAgentBridge extends EventEmitter {
       
       // Spawn new session
       return await this.spawnAgent();
-    } catch (error: any) {
-      logger.error('[FinanceAgentBridge] Initialization error:', error.message);
+    } catch (error) {
+      logger.error('[FinanceAgentBridge] Initialization error:', (error as Error).message);
       return false;
     }
   }
@@ -79,8 +95,8 @@ export class FinanceAgentBridge extends EventEmitter {
         env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
       });
       
-      const sessions = JSON.parse(stdout);
-      return sessions.sessions?.some((s: any) => s.key === this.sessionKey) || false;
+      const sessions: OpenclawSessionList = JSON.parse(stdout);
+      return sessions.sessions?.some((s: SessionInfo) => s.key === this.sessionKey) || false;
     } catch (error) {
       logger.error('[FinanceAgentBridge] Error checking session:', error);
       return false;
@@ -112,8 +128,8 @@ export class FinanceAgentBridge extends EventEmitter {
       this.spawned = true;
       
       return true;
-    } catch (error: any) {
-      logger.error('[FinanceAgentBridge] Failed to spawn agent:', error.message);
+    } catch (error) {
+      logger.error('[FinanceAgentBridge] Failed to spawn agent:', (error as Error).message);
       return false;
     }
   }
@@ -121,7 +137,7 @@ export class FinanceAgentBridge extends EventEmitter {
   /**
    * Send a message to the Finance Manager agent
    */
-  async sendMessage(userMessage: string, context?: any): Promise<AgentResponse> {
+  async sendMessage(userMessage: string, context?: Record<string, unknown>): Promise<AgentResponse> {
     try {
       if (!this.spawned) {
         const initialized = await this.initialize();
@@ -194,11 +210,11 @@ export class FinanceAgentBridge extends EventEmitter {
         success: true,
         message: agentMessage
       };
-    } catch (error: any) {
-      logger.error('[FinanceAgentBridge] Error sending message:', error.message);
+    } catch (error) {
+      logger.error('[FinanceAgentBridge] Error sending message:', (error as Error).message);
       return {
         success: false,
-        error: error.message
+        error: (error as Error).message
       };
     }
   }
@@ -243,8 +259,8 @@ export class FinanceAgentBridge extends EventEmitter {
       }).filter(Boolean) as ChatMessage[];
       
       logger.debug(`[FinanceAgentBridge] Loaded ${this.chatHistory.length} messages from history`);
-    } catch (error: any) {
-      logger.error('[FinanceAgentBridge] Error loading chat history:', error.message);
+    } catch (error) {
+      logger.error('[FinanceAgentBridge] Error loading chat history:', (error as Error).message);
     }
   }
   
@@ -262,8 +278,8 @@ export class FinanceAgentBridge extends EventEmitter {
       // Write as JSONL (one JSON object per line)
       const lines = this.chatHistory.map(msg => JSON.stringify(msg)).join('\n');
       fs.writeFileSync(this.historyPath, lines + '\n', 'utf-8');
-    } catch (error: any) {
-      logger.error('[FinanceAgentBridge] Error saving chat history:', error.message);
+    } catch (error) {
+      logger.error('[FinanceAgentBridge] Error saving chat history:', (error as Error).message);
     }
   }
   
@@ -281,8 +297,8 @@ export class FinanceAgentBridge extends EventEmitter {
     if (response.success && response.message) {
       try {
         await this.storeAnalysisAsInsight(response.message, analysisType);
-      } catch (error: any) {
-        logger.error('[FinanceAgentBridge] Failed to store insight:', error.message);
+      } catch (error) {
+        logger.error('[FinanceAgentBridge] Failed to store insight:', (error as Error).message);
       }
     }
     
