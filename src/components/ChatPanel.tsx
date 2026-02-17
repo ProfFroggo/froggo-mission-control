@@ -242,7 +242,10 @@ export default function ChatPanel() {
   };
 
   const filteredMessages = useMemo(() => {
-    const visible = messages.filter(msg => !isSystemReply(msg.content));
+    const visible = messages.filter(msg =>
+      !isSystemReply(msg.content) &&
+      (msg.streaming || (msg.content && msg.content.trim().length > 0))
+    );
     if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
     return visible.filter(msg => 
@@ -596,7 +599,7 @@ export default function ChatPanel() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if ((!text && attachments.length === 0) || !connected || loading) return;
+    if ((!text && attachments.length === 0) || !connected) return;
     
     // Clear suggestions when sending
     setSuggestedReplies([]);
@@ -1207,7 +1210,7 @@ export default function ChatPanel() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={connected ? `ChatMessage ${selectedAgent.name}...` : "Waiting for connection..."}
-              disabled={!connected || loading}
+              disabled={!connected}
               rows={1}
               className="w-full bg-clawd-surface border border-clawd-border rounded-xl px-4 py-3 text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:border-clawd-accent resize-none transition-colors disabled:opacity-50"
             />
@@ -1215,7 +1218,7 @@ export default function ChatPanel() {
           
           <button
             onClick={sendMessage}
-            disabled={(!input.trim() && attachments.length === 0) || !connected || loading}
+            disabled={(!input.trim() && attachments.length === 0) || !connected}
             className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
