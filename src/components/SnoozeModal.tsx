@@ -267,8 +267,9 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
               <p className="text-sm font-medium text-clawd-text-dim mb-3">Custom Time</p>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
-                  <label className="text-xs text-clawd-text-dim block mb-1">Date</label>
+                  <label htmlFor="snooze-date" className="text-xs text-clawd-text-dim block mb-1">Date</label>
                   <input
+                    id="snooze-date"
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
@@ -277,8 +278,9 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-clawd-text-dim block mb-1">Time</label>
+                  <label htmlFor="snooze-time" className="text-xs text-clawd-text-dim block mb-1">Time</label>
                   <input
+                    id="snooze-time"
                     type="time"
                     value={customTime}
                     onChange={(e) => setCustomTime(e.target.value)}
@@ -298,10 +300,11 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
 
             {/* Optional Reason */}
             <div className="mb-4">
-              <label className="text-sm font-medium text-clawd-text-dim block mb-2">
+              <label htmlFor="snooze-reason" className="text-sm font-medium text-clawd-text-dim block mb-2">
                 Reason (Optional)
               </label>
               <input
+                id="snooze-reason"
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
