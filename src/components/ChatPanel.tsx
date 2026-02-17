@@ -324,6 +324,35 @@ export default function ChatPanel() {
     }
   }, [connected, historyLoaded, loadHistory]);
 
+  // Speak function for text-to-speech (moved outside useEffect for proper scope)
+  const speak = useCallback((text: string) => {
+    if (!text) return;
+    
+    // Skip short filler acks - annoying when spoken
+    const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack|👍|✅|🐸)\s*[.!]?\s*$/i;
+    if (skipPhrases.test(text.trim())) {
+      return;
+    }
+    
+    // Strip markdown for cleaner speech
+    const clean = text
+      .replace(/```[\s\S]*?```/g, 'code block')
+      .replace(/`[^`]+`/g, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/#+\s*/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .slice(0, 500);
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(clean);
+    utterance.rate = 1.05;
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.name.includes('Samantha') || v.lang === 'en-US');
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
   // Setup streaming listeners
   useEffect(() => {
     const handleDelta = (data: any) => {
@@ -480,35 +509,6 @@ export default function ChatPanel() {
         currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
       }
     };
-
-  // Speak function (must be before useEffect that uses it)
-  const speak = useCallback((text: string) => {
-    if (!text) return;
-    
-    // Skip short filler acks - annoying when spoken
-    const skipPhrases = /^(on it|got it|sure|ok|okay|yes|yep|done|noted|ack|👍|✅|🐸)\s*[.!]?\s*$/i;
-    if (skipPhrases.test(text.trim())) {
-      return;
-    }
-    
-    // Strip markdown for cleaner speech
-    const clean = text
-      .replace(/```[\s\S]*?```/g, 'code block')
-      .replace(/`[^`]+`/g, '')
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/#+\s*/g, '')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .slice(0, 500);
-    
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = 1.05;
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.name.includes('Samantha') || v.lang === 'en-US');
-    if (voice) utterance.voice = voice;
-    window.speechSynthesis.speak(utterance);
-  }, []);
 
     const unsub1 = gateway.on('chat.delta', handleDelta);
     const unsub2 = gateway.on('chat.message', handleMessage);
