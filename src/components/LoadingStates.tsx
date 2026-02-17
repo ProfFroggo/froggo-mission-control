@@ -7,6 +7,9 @@
 
 import { Loader2 } from 'lucide-react';
 import { ReactNode } from 'react';
+import EmptyState from './EmptyState';
+
+export { EmptyState };
 
 // ============================================================================
 // Spinner - For inline loading indicators
@@ -204,39 +207,6 @@ export function LoadingOverlay({ message = 'Loading...', fullScreen = false }: L
 }
 
 // ============================================================================
-// Empty State - For when data loads but is empty
-// ============================================================================
-
-interface EmptyStateProps {
-  icon?: ReactNode;
-  title: string;
-  description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-    icon?: ReactNode;
-  };
-}
-
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center p-12 text-center">
-      {icon && <div className="text-clawd-text-dim mb-4">{icon}</div>}
-      <h3 className="text-lg font-semibold text-clawd-text mb-2">{title}</h3>
-      {description && <p className="text-clawd-text-dim text-sm mb-4 max-w-md">{description}</p>}
-      {action && (
-        <LoadingButton
-          onClick={action.onClick}
-          variant="primary"
-          icon={action.icon}
-        >
-          {action.label}
-        </LoadingButton>
-      )}
-    </div>
-  );
-}
-
 // ============================================================================
 // Progress Bar - For long-running operations
 // ============================================================================
