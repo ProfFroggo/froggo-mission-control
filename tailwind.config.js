@@ -19,6 +19,9 @@ export default {
           'accent-dim': 'var(--clawd-accent-dim, #16a34a)',
           text: 'var(--clawd-text, #fafafa)',
           'text-dim': 'var(--clawd-text-dim, #a1a1aa)',
+          'bg-alt': 'var(--clawd-bg-alt, #1a1a1a)',
+          'bg0': 'var(--clawd-bg0, #0a0a0a)',
+          'card': 'var(--clawd-card, #141414)',
         },
         // ── Design Token Bridge ──────────────────────────────────
         // Maps CSS custom property tokens → Tailwind utilities.
