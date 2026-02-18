@@ -37,7 +37,7 @@ import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
-import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM } from './x-api-client';
+import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM, deleteTweet as xDeleteTweet, likeTweet as xLikeTweet, unlikeTweet as xUnlikeTweet, retweet as xRetweet, unretweet as xUnretweet, unfollowUser as xUnfollowUser, getFollowers as xGetFollowers, getFollowing as xGetFollowing } from './x-api-client';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -49,6 +49,14 @@ const xApi = {
   getThread: xGetThread,
   followUser: xFollowUser,
   sendDM: xSendDM,
+  deleteTweet: xDeleteTweet,
+  likeTweet: xLikeTweet,
+  unlikeTweet: xUnlikeTweet,
+  retweet: xRetweet,
+  unretweet: xUnretweet,
+  unfollowUser: xUnfollowUser,
+  getFollowers: xGetFollowers,
+  getFollowing: xGetFollowing,
 };
 import { prepare, closeDb, db, getSessionsDb, getSecurityDb } from './database';
 import {
@@ -4796,6 +4804,197 @@ ipcMain.handle('twitter:queue-post', async (_, text: string, _context?: string) 
       resolve({ success: true, message: 'Tweet queued for approval in Inbox' });
     });
   });
+});
+
+// ============== X API v2 IPC HANDLERS (x: namespace) ==============
+
+// X:Search - Search recent tweets
+ipcMain.handle('x:search', async (_, query: string, count?: number) => {
+  safeLog.log('[X:Search] Query:', query, 'count:', count);
+  try {
+    const tweets = await xApi.searchRecent(query, count || 20);
+    return { success: true, tweets };
+  } catch (e: any) {
+    safeLog.error('[X:Search] Error:', e.message);
+    return { success: false, tweets: [], error: e.message };
+  }
+});
+
+// X:Like - Like a tweet
+ipcMain.handle('x:like', async (_, tweetId: string) => {
+  safeLog.log('[X:Like] Tweet ID:', tweetId);
+  try {
+    const result = await xApi.likeTweet(tweetId);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Like] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Unlike - Unlike a tweet
+ipcMain.handle('x:unlike', async (_, tweetId: string) => {
+  safeLog.log('[X:Unlike] Tweet ID:', tweetId);
+  try {
+    const result = await xApi.unlikeTweet(tweetId);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Unlike] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Retweet - Retweet a tweet
+ipcMain.handle('x:retweet', async (_, tweetId: string) => {
+  safeLog.log('[X:Retweet] Tweet ID:', tweetId);
+  try {
+    const result = await xApi.retweet(tweetId);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Retweet] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Unretweet - Unretweet a tweet
+ipcMain.handle('x:unretweet', async (_, tweetId: string) => {
+  safeLog.log('[X:Unretweet] Tweet ID:', tweetId);
+  try {
+    const result = await xApi.unretweet(tweetId);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Unretweet] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Follow - Follow a user
+ipcMain.handle('x:follow', async (_, username: string) => {
+  safeLog.log('[X:Follow] Username:', username);
+  try {
+    const profile = await xApi.getUserProfile(username);
+    if (!profile?.id) {
+      return { success: false, error: 'User not found' };
+    }
+    const result = await xApi.followUser(profile.id);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Follow] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Unfollow - Unfollow a user
+ipcMain.handle('x:unfollow', async (_, username: string) => {
+  safeLog.log('[X:Unfollow] Username:', username);
+  try {
+    const profile = await xApi.getUserProfile(username);
+    if (!profile?.id) {
+      return { success: false, error: 'User not found' };
+    }
+    const result = await xApi.unfollowUser(profile.id);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Unfollow] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Profile - Get user profile
+ipcMain.handle('x:profile', async (_, username: string) => {
+  safeLog.log('[X:Profile] Username:', username);
+  try {
+    const profile = await xApi.getUserProfile(username);
+    return { success: true, profile };
+  } catch (e: any) {
+    safeLog.error('[X:Profile] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Post - Post a tweet directly
+ipcMain.handle('x:post', async (_, text: string, options?: { replyTo?: string; quote?: string }) => {
+  safeLog.log('[X:Post] Text length:', text.length);
+  try {
+    const result = await xApi.postTweet(text, {
+      reply_to: options?.replyTo,
+      quote: options?.quote,
+    });
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Post] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Delete - Delete a tweet
+ipcMain.handle('x:delete', async (_, tweetId: string) => {
+  safeLog.log('[X:Delete] Tweet ID:', tweetId);
+  try {
+    const result = await xApi.deleteTweet(tweetId);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:Delete] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:DM - Send direct message
+ipcMain.handle('x:dm', async (_, participantId: string, text: string) => {
+  safeLog.log('[X:DM] Participant:', participantId);
+  try {
+    const result = await xApi.sendDM(participantId, text);
+    return result;
+  } catch (e: any) {
+    safeLog.error('[X:DM] Error:', e.message);
+    return { success: false, error: e.message };
+  }
+});
+
+// X:Home - Home timeline (X namespace version)
+ipcMain.handle('x:home', async (_, limit?: number) => {
+  safeLog.log('[X:Home] Limit:', limit);
+  try {
+    const tweets = await xApi.getHomeTimeline(limit || 20);
+    return { success: true, tweets };
+  } catch (e: any) {
+    safeLog.error('[X:Home] Error:', e.message);
+    return { success: false, tweets: [], error: e.message };
+  }
+});
+
+// X:Followers - Get followers
+ipcMain.handle('x:followers', async (_, username?: string, count?: number) => {
+  safeLog.log('[X:Followers] Username:', username, 'count:', count);
+  try {
+    let userId: string | undefined;
+    if (username) {
+      const profile = await xApi.getUserProfile(username);
+      userId = profile?.id;
+    }
+    const followers = await xApi.getFollowers(userId, count || 100);
+    return { success: true, followers };
+  } catch (e: any) {
+    safeLog.error('[X:Followers] Error:', e.message);
+    return { success: false, followers: [], error: e.message };
+  }
+});
+
+// X:Following - Get following list
+ipcMain.handle('x:following', async (_, username?: string, count?: number) => {
+  safeLog.log('[X:Following] Username:', username, 'count:', count);
+  try {
+    let userId: string | undefined;
+    if (username) {
+      const profile = await xApi.getUserProfile(username);
+      userId = profile?.id;
+    }
+    const following = await xApi.getFollowing(userId, count || 100);
+    return { success: true, following };
+  } catch (e: any) {
+    safeLog.error('[X:Following] Error:', e.message);
+    return { success: false, following: [], error: e.message };
+  }
 });
 
 // ============== MESSAGES IPC HANDLERS ==============
