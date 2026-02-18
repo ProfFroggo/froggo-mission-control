@@ -154,7 +154,7 @@ export default function XPublishComposer() {
   const loadRateLimit = async () => {
     try {
       setRateLimitLoading(true);
-      const rl = await window.clawdbot.xPublish.rateLimit();
+      const rl = await window.clawdbot?.xPublish?.rateLimit();
       setRateLimit(rl || null);
     } catch {
       // Rate limit fetch failed — non-blocking
@@ -208,9 +208,9 @@ export default function XPublishComposer() {
     try {
       let res: PostResult;
       if (mode === 'single') {
-        res = await window.clawdbot.xPublish.post(tweets[0]);
+        res = (await window.clawdbot?.xPublish?.post(tweets[0])) ?? { success: false, error: 'xPublish not available' };
       } else {
-        res = await window.clawdbot.xPublish.thread(tweets.filter((t) => t.trim()));
+        res = (await window.clawdbot?.xPublish?.thread(tweets.filter((t) => t.trim()))) ?? { success: false, error: 'xPublish not available' };
       }
 
       if (res.success) {
