@@ -113,7 +113,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         }
       } else if (att.type.startsWith('image/')) {
         try {
-          const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
+          const uploadDir = '/Users/worker/froggo/uploads';
+          const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
           await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
           parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
         } catch {
@@ -121,7 +122,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         }
       } else if (att.type === 'application/pdf') {
         try {
-          const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
+          const uploadDir = '/Users/worker/froggo/uploads';
+          const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
           await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
           parts.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
         } catch {
@@ -129,7 +131,8 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
         }
       } else {
         try {
-          const tempPath = `/tmp/room-upload-${Date.now()}-${att.name}`;
+          const uploadDir = '/Users/worker/froggo/uploads';
+          const tempPath = `${uploadDir}/room-upload-${Date.now()}-${att.name}`;
           await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
           parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
         } catch {
@@ -697,7 +700,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+          // Only prevent default for drop zone shortcuts when not typing in an input
+          const target = e.target as HTMLElement;
+          const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+          if (!isInputField && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             // Keyboard drop - could implement if needed
           }
