@@ -62,6 +62,28 @@ function mapDraftsToEvents(drafts: any[]): CalendarEvent[] {
   });
 }
 
+function mapDirectScheduledToEvents(posts: any[]): CalendarEvent[] {
+  return (posts || [])
+    .filter((p: any) => p.status === 'pending' || p.status === 'posting')
+    .map((p: any) => {
+      const startDate = new Date(p.scheduled_time);
+      let meta: any = {};
+      try { meta = JSON.parse(p.metadata || '{}'); } catch {}
+      const content = meta.type === 'thread' && meta.tweets
+        ? meta.tweets[0]
+        : p.content;
+      return {
+        id: `direct-sched-${p.id}`,
+        summary: content?.slice(0, 60) || 'Scheduled Tweet',
+        description: content || '',
+        start: { dateTime: startDate.toISOString() },
+        end: { dateTime: new Date(startDate.getTime() + 3600000).toISOString() },
+        colorId: 'scheduled',
+        source: 'x-pipeline' as any,
+      } as CalendarEvent;
+    });
+}
+
 function mapScheduledToEvents(scheduled: any[]): CalendarEvent[] {
   return scheduled.map(s => {
     const startDate = new Date(s.scheduled_for);
@@ -94,18 +116,22 @@ export function XCalendarView() {
 
   const loadPipelineAsEvents = useCallback(async () => {
     try {
-      const [researchResult, planResult, draftResult, scheduleResult] = await Promise.all([
+      const [researchResult, planResult, draftResult, scheduleResult, directScheduled] = await Promise.all([
         window.clawdbot?.xResearch?.list({}),
         window.clawdbot?.xPlan?.list({}),
         window.clawdbot?.xDraft?.list({}),
         window.clawdbot?.xSchedule?.list({}),
+        (window as any).clawdbot?.xPublish?.scheduledList?.(),
       ]);
+
+      const directPosts = (directScheduled as any)?.scheduled ?? (Array.isArray(directScheduled) ? directScheduled : []);
 
       const mapped: CalendarEvent[] = [
         ...mapResearchToEvents((researchResult as any)?.ideas || []),
         ...mapPlansToEvents((planResult as any)?.plans || []),
         ...mapDraftsToEvents((draftResult as any)?.drafts || []),
         ...mapScheduledToEvents((scheduleResult as any)?.scheduled || []),
+        ...mapDirectScheduledToEvents(directPosts),
       ];
 
       setEvents(mapped);
