@@ -619,16 +619,29 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // Finance Module
   finance: {
-    getTransactions: (limit?: number) => ipcRenderer.invoke('finance:getTransactions', limit),
-    getBudgetStatus: (budgetType: 'family' | 'crypto') => ipcRenderer.invoke('finance:getBudgetStatus', budgetType),
-    uploadCSV: (csvContent: string, filename: string) => ipcRenderer.invoke('finance:uploadCSV', csvContent, filename),
+    selectFile: () => ipcRenderer.invoke('finance:selectFile'),
+    getTransactions: (opts?: { limit?: number; accountId?: string } | number) => ipcRenderer.invoke('finance:getTransactions', opts),
+    getBudgetStatus: (optsOrType?: { budgetType?: string; accountId?: string } | string) => ipcRenderer.invoke('finance:getBudgetStatus', optsOrType),
+    uploadCSV: (csvContent: string, filename: string, accountId?: string) => ipcRenderer.invoke('finance:uploadCSV', csvContent, filename, accountId),
     getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
     getInsights: () => ipcRenderer.invoke('finance:getInsights'),
     dismissInsight: (insightId: string) => ipcRenderer.invoke('finance:dismissInsight', insightId),
-    createBudget: (data: { name: string; budgetType: string; totalBudget: number; currency?: string }) => ipcRenderer.invoke('finance:createBudget', data),
-    uploadPDF: (pdfBuffer: ArrayBuffer, filename: string) => ipcRenderer.invoke('finance:uploadPDF', pdfBuffer, filename),
+    createBudget: (data: { name: string; budgetType: string; totalBudget: number; currency?: string; accountId?: string }) => ipcRenderer.invoke('finance:createBudget', data),
+    uploadPDF: (pdfBuffer: ArrayBuffer, filename: string, accountId?: string) => ipcRenderer.invoke('finance:uploadPDF', pdfBuffer, filename, accountId),
     triggerAnalysis: (options?: { daysBack?: number; focus?: string }) =>
       ipcRenderer.invoke('finance:triggerAnalysis', options),
+    onAnalysisStatus: (callback: (data: { status: string; type: string; message?: string; error?: string }) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on('finance:analysisStatus', handler);
+      return () => ipcRenderer.removeListener('finance:analysisStatus', handler);
+    },
+    account: {
+      list: () => ipcRenderer.invoke('finance:account:list'),
+      create: (data: { name: string; type: string; currency?: string }) => ipcRenderer.invoke('finance:account:create', data),
+      update: (id: string, updates: { name?: string }) => ipcRenderer.invoke('finance:account:update', id, updates),
+      archive: (id: string) => ipcRenderer.invoke('finance:account:archive', id),
+      balances: () => ipcRenderer.invoke('finance:account:balances'),
+    },
   },
   financeAgent: {
     sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),
@@ -854,6 +867,17 @@ contextBridge.exposeInMainWorld('clawdbot', {
       load: (sessionId: string) => ipcRenderer.invoke('writing:wizard:load', sessionId),
       list: () => ipcRenderer.invoke('writing:wizard:list'),
       delete: (sessionId: string) => ipcRenderer.invoke('writing:wizard:delete', sessionId),
+    },
+  },
+  // Agent Management — SOUL.md editing + model config
+  agentManagement: {
+    soul: {
+      read: (agentId: string) => ipcRenderer.invoke('agentManagement:soul:read', agentId),
+      write: (agentId: string, content: string) => ipcRenderer.invoke('agentManagement:soul:write', agentId, content),
+    },
+    models: {
+      read: (agentId: string) => ipcRenderer.invoke('agentManagement:models:read', agentId),
+      write: (agentId: string, updates: { primary?: string; fallbacks?: string[] }) => ipcRenderer.invoke('agentManagement:models:write', agentId, updates),
     },
   },
 });

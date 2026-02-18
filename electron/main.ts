@@ -5,6 +5,7 @@ import * as http from 'http';
 import * as path from 'path';
 import { exec, execFile, execSync } from 'child_process';
 import { promisify } from 'util';
+const execAsync = promisify(exec);
 import { getSecret, storeSecret, hasSecret, deleteSecret } from './secret-store';
 import { validateFsPath } from './fs-validation';
 import { accountsServiceV2 } from './accounts-service-v2';
@@ -37,9 +38,11 @@ import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
+import { registerFinanceHandlers } from './finance-service';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM, deleteTweet as xDeleteTweet, likeTweet as xLikeTweet, unlikeTweet as xUnlikeTweet, retweet as xRetweet, unretweet as xUnretweet, unfollowUser as xUnfollowUser, getFollowers as xGetFollowers, getFollowing as xGetFollowing } from './x-api-client';
 import { registerXPublishingHandlers } from './x-publishing-service';
 import { registerXAnalyticsHandlers } from './x-analytics-service';
+import { registerAgentManagementHandlers } from './agent-management-service';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -448,6 +451,9 @@ function createWindow() {
 
   // Writing wizard state persistence
   registerWritingWizardHandlers();
+
+  // Register Finance handlers (extracted from main.ts)
+  registerFinanceHandlers();
 
   if (isDev) {
     safeLog.log('Running in dev mode, loading from localhost:5173');
@@ -932,6 +938,9 @@ app.whenReady().then(() => {
   registerXPublishingHandlers();
   // Register X analytics IPC handlers (real profile + tweet metrics from X API)
   registerXAnalyticsHandlers();
+
+  // Register Agent Management IPC handlers (SOUL.md + model config)
+  registerAgentManagementHandlers();
 
   // Start task notification watcher
   startTaskNotifyWatcher();
@@ -4670,7 +4679,7 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
     // Send to agent via openclaw CLI
     const response = await new Promise<string>((resolve, reject) => {
       exec(
-        `openclaw agent --message '${escapedPrompt}' --session-id '${sessionKey}' --agent ${agentId}`,
+        `openclaw agent --agent ${agentId} --message '${escapedPrompt}' --json`,
         {
           encoding: 'utf-8',
           timeout: 60000,
@@ -4683,7 +4692,16 @@ ipcMain.handle('ai:generate-content', async (_, prompt: string, type: string, op
             return;
           }
           
-          const output = stdout.trim();
+          let output = stdout.trim();
+          // Extract text from --json response
+          try {
+            const parsed = JSON.parse(output);
+            const payloads = parsed?.result?.payloads;
+            if (Array.isArray(payloads) && payloads.length > 0) {
+              output = payloads.map((p: any) => p.text || '').join('\n').trim();
+            }
+            if (!output && parsed?.result?.text) output = parsed.result.text;
+          } catch { /* not JSON, use raw */ }
           safeLog.log('[AI:Generate] Got response, length:', output.length);
           resolve(output);
         }
@@ -7155,7 +7173,7 @@ ipcMain.handle('agents:spawnChat', async (_, agentId: string) => {
               const chatRegistry = getAgentRegistry();
               const systemPrompt = chatRegistry[agentId]?.prompt || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
               
-              const spawnCmd = `openclaw agent --agent-id ${agentId} --session-key ${sessionKey} --message "${systemPrompt.replace(/"/g, '\\"')}\n\nYou are now connected to the dashboard chat. Reply with: ready" --no-deliver`;
+              const spawnCmd = `openclaw agent --agent ${agentId} --message "${systemPrompt.replace(/"/g, '\\"')}\n\nYou are now connected to the dashboard chat. Reply with: ready" --json`;
               
               exec(spawnCmd, {
                 timeout: 30000,
@@ -7213,7 +7231,7 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
     try {
       const cliResult = await new Promise<string>((resolve, reject) => {
         exec(
-          `openclaw agent --message '${escapedMsg}' --session-id '${sessionKey}' --agent ${agentId}`,
+          `openclaw agent --agent ${agentId} --message '${escapedMsg}' --json`,
           { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } },
           (error, stdout, stderr) => {
             if (error) {
@@ -7224,7 +7242,19 @@ ipcMain.handle('agents:chat', async (_, sessionKey: string, message: string) => 
           }
         );
       });
-      response = cliResult || 'No response from agent';
+      // Extract text from JSON response
+      let extracted = cliResult || '';
+      try {
+        const parsed = JSON.parse(extracted);
+        const payloads = parsed?.result?.payloads;
+        if (Array.isArray(payloads) && payloads.length > 0) {
+          extracted = payloads.map((p: any) => p.text || '').join('\n').trim();
+        }
+        if (!extracted && parsed?.result?.text) extracted = parsed.result.text;
+      } catch {
+        // Not JSON — use raw output
+      }
+      response = extracted || 'No response from agent';
       safeLog.log(`[agents:chat] CLI success, response length: ${response.length}`);
       debugLog(`[agents:chat] CLI success, response length: ${response.length}, preview: ${response.slice(0, 200)}`);
     } catch (cliErr: any) {
@@ -8072,329 +8102,8 @@ ipcMain.handle('hrReports:read', async (_, filename: string) => {
   }
 });
 // ============== FINANCE MODULE ==============
-const execPromise = (cmd: string, opts?: { timeout?: number }) => {
-  return promisify(exec)(cmd, opts);
-};
-
-ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
-  try {
-    const cmd = `froggo-db finance-transactions --limit ${limit} --format json`;
-    const result = await execPromise(cmd, { timeout: 10000 });
-    const transactions = JSON.parse(result.stdout);
-    return { success: true, transactions };
-  } catch (error: any) {
-    safeLog.error('[Finance] Get transactions error:', error.message);
-    return { success: false, transactions: [], error: error.message };
-  }
-});
-
-ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'crypto') => {
-  try {
-    const cmd = `froggo-db finance-budget-status --budget-type ${budgetType} --format json`;
-    const result = await execPromise(cmd, { timeout: 10000 });
-    const parsed = JSON.parse(result.stdout);
-    return { success: true, status: parsed };
-  } catch (error: any) {
-    safeLog.error('[Finance] Get budget status error:', error.message);
-    return { success: false, status: null, error: error.message };
-  }
-});
-
-ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, _filename: string) => {
-  try {
-    // Write CSV to temp file
-    const tmpPath = path.join(app.getPath('temp'), `upload-${Date.now()}.csv`);
-    fs.writeFileSync(tmpPath, csvContent, 'utf-8');
-    
-    // Ensure default account exists
-    try {
-      const existingAccount = prepare(`SELECT id FROM finance_accounts WHERE id = ?`).get('acc-default');
-      if (!existingAccount) {
-        prepare(`
-          INSERT INTO finance_accounts (id, name, type, currency, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `).run('acc-default', 'Default Account', 'bank', 'EUR', Date.now(), Date.now());
-        safeLog.log('[Finance] Created default account acc-default');
-      }
-    } catch (e: any) {
-      safeLog.error('[Finance] Error creating default account:', e.message);
-    }
-
-    // Upload via CLI
-    const cmd = `froggo-db finance-upload "${tmpPath}" --account acc-default --budget-type family --format json`;
-    const result = await execPromise(cmd, { timeout: 30000 });
-    
-    // Clean up temp file
-    fs.unlinkSync(tmpPath);
-    
-    const uploadResult = JSON.parse(result.stdout);
-    
-    // Trigger AI analysis in background (don't block response)
-    if (uploadResult.imported > 0) {
-      safeLog.log(`[Finance] Triggering AI analysis for ${uploadResult.imported} new transactions`);
-      const bridge = getFinanceAgentBridge();
-      bridge.triggerAnalysis('csv_upload').catch(err => {
-        safeLog.error('[Finance] AI analysis failed:', err.message);
-      });
-    }
-    
-    return { 
-      success: true, 
-      imported: uploadResult.imported || 0,
-      skipped: uploadResult.skipped || 0
-    };
-  } catch (error: any) {
-    safeLog.error('[Finance] Upload CSV error:', error.message);
-    return { success: false, imported: 0, skipped: 0, error: error.message };
-  }
-});
-
-ipcMain.handle('finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string) => {
-  try {
-    safeLog.log('[Finance] Processing PDF upload:', filename);
-    
-    // Write PDF to temp file
-    const tmpDir = app.getPath('temp');
-    const tmpPath = path.join(tmpDir, `upload-${Date.now()}.pdf`);
-    const outputPath = path.join(tmpDir, `transactions-${Date.now()}.json`);
-    fs.writeFileSync(tmpPath, Buffer.from(pdfBuffer));
-
-    // Use the bank statement processor script
-    const scriptPath = path.join(os.homedir(), 'froggo', 'scripts', 'bank-statement-processor.py');
-    
-    // Check if script exists
-    if (!fs.existsSync(scriptPath)) {
-      safeLog.error('[Finance] Bank statement processor script not found:', scriptPath);
-      return { success: false, error: 'PDF processing script not found. Please ensure bank-statement-processor.py exists.' };
-    }
-
-    // Run the processor
-    const venvPython = path.join(os.homedir(), 'froggo', 'venv', 'bin', 'python3');
-    
-    try {
-      const cmd = `${venvPython} "${scriptPath}" "${tmpPath}" --output "${outputPath}"`;
-      safeLog.log('[Finance] Running processor:', cmd);
-      
-      execSync(cmd, { 
-        encoding: 'utf-8',
-        timeout: 120000, // 2 minute timeout
-        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
-      });
-      
-      // Read the output
-      if (!fs.existsSync(outputPath)) {
-        throw new Error('Processor did not create output file');
-      }
-      
-      const result = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to parse PDF');
-      }
-      
-      const transactions = result.transactions || [];
-      safeLog.log(`[Finance] Parsed ${transactions.length} transactions from PDF`);
-      
-      // Import transactions to database
-      if (transactions.length > 0) {
-        // Create temp file with transactions
-        const importPath = path.join(tmpDir, `import-${Date.now()}.json`);
-        fs.writeFileSync(importPath, JSON.stringify({ transactions }));
-        
-        // Use froggo-db to import (or create a simple import command)
-        // For now, we'll create a simple import using sqlite3
-        const dbPath = path.join(os.homedir(), 'froggo', 'data', 'froggo.db');
-        
-        // Ensure default account exists
-        const accountId = 'acc-default';
-        
-        // Insert transactions
-        let imported = 0;
-        let skipped = 0;
-        
-        for (const tx of transactions) {
-          if (!tx.date || tx.amount === undefined) continue;
-          
-          const txId = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          const date = tx.date || new Date().toISOString().split('T')[0];
-          const desc = tx.description || 'Unknown';
-          const amount = tx.amount || 0;
-          const category = tx.category || 'Other';
-          
-          try {
-            const insertCmd = `sqlite3 "${dbPath}" "INSERT INTO finance_transactions (id, date, description, amount, currency, category, account_id, created_at, updated_at) VALUES ('${txId}', '${date}', '${desc.replace(/'/g, "''")}', ${amount}, 'EUR', '${category}', '${accountId}', ${Date.now()}, ${Date.now()})"`;
-            execSync(insertCmd, { encoding: 'utf-8' });
-            imported++;
-          } catch (e) {
-            // Likely duplicate or constraint violation
-            skipped++;
-          }
-        }
-        
-        safeLog.log(`[Finance] Imported ${imported} transactions (${skipped} skipped)`);
-        
-        // Clean up import file
-        try { fs.unlinkSync(importPath); } catch (_) {}
-        
-        // Trigger AI analysis
-        const bridge = getFinanceAgentBridge();
-        bridge.triggerAnalysis('csv_upload').catch((e: any) => 
-          safeLog.error('[Finance] AI analysis failed:', e.message)
-        );
-        
-        // Clean up temp files
-        try { fs.unlinkSync(tmpPath); } catch (_) {}
-        try { fs.unlinkSync(outputPath); } catch (_) {}
-        
-        return {
-          success: true,
-          message: `Successfully processed ${imported} transactions from PDF`,
-          imported,
-          skipped
-        };
-      }
-      
-      // Clean up temp files even if no transactions
-      try { fs.unlinkSync(tmpPath); } catch (_) {}
-      try { fs.unlinkSync(outputPath); } catch (_) {}
-      
-      return {
-        success: false,
-        error: 'No transactions found in PDF'
-      };
-      
-    } catch (execError: any) {
-      safeLog.error('[Finance] PDF processing error:', execError.message);
-      
-      // Fallback: send to agent for manual processing
-      const bridge = getFinanceAgentBridge();
-      bridge.sendMessage(
-        `Please process this bank statement PDF and extract transactions from it. The file is at: ${tmpPath}`,
-        { type: 'pdf_upload', filePath: tmpPath }
-      ).catch((e: any) => safeLog.error('[Finance] PDF agent fallback error:', e.message));
-      
-      return {
-        success: true,
-        message: 'PDF sent to Finance Manager for manual processing',
-        fallback: true
-      };
-    }
-    
-  } catch (error: any) {
-    safeLog.error('[Finance] Upload PDF error:', error.message);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('finance:getAlerts', async () => {
-  try {
-    const cmd = `froggo-db finance-alerts --format json`;
-    const result = await execPromise(cmd, { timeout: 10000 });
-    const alerts = JSON.parse(result.stdout);
-    return { success: true, alerts: alerts.alerts || [] };
-  } catch (error: any) {
-    safeLog.error('[Finance] Get alerts error:', error.message);
-    return { success: false, alerts: [], error: error.message };
-  }
-});
-
-ipcMain.handle('finance:getInsights', async () => {
-  try {
-    const cmd = `froggo-db finance-insights --format json`;
-    const result = await execPromise(cmd, { timeout: 10000 });
-    const insights = JSON.parse(result.stdout);
-    return { success: true, insights: insights.insights || [] };
-  } catch (error: any) {
-    safeLog.error('[Finance] Get insights error:', error.message);
-    return { success: false, insights: [], error: error.message };
-  }
-});
-
-ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
-  try {
-    const stmt = prepare(`
-      UPDATE finance_ai_insights 
-      SET dismissed = 1, dismissed_at = ? 
-      WHERE id = ?
-    `);
-    stmt.run(Date.now(), insightId);
-    return { success: true };
-  } catch (error: any) {
-    safeLog.error('[Finance] Dismiss insight error:', error.message);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('finance:createBudget', async (_, data: {
-  name: string;
-  budgetType: 'family' | 'crypto';
-  totalBudget: number;
-  currency?: string;
-  periodStart?: number;
-  periodEnd?: number;
-}) => {
-  try {
-    const now = Date.now();
-    const id = `budget-${now}`;
-    const currency = data.currency || 'EUR';
-
-    const today = new Date();
-    const periodStart = data.periodStart || new Date(today.getFullYear(), today.getMonth(), 1).getTime();
-    const periodEnd = data.periodEnd || new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-
-    prepare(`
-      INSERT INTO finance_budgets (id, name, budget_type, period_start, period_end, total_budget, spent, remaining, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 0, ?, 'active', ?, ?)
-    `).run(id, data.name, data.budgetType, periodStart, periodEnd, data.totalBudget, data.totalBudget, now, now);
-
-    safeLog.log(`[Finance] Created budget: ${data.name} (${data.budgetType}, ${data.totalBudget} ${currency})`);
-    return { success: true, id };
-  } catch (error: any) {
-    safeLog.error('[Finance] Create budget error:', error.message);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
-  try {
-    const daysBack = options?.daysBack || 7;
-    const focus = options?.focus || 'general';
-    
-    safeLog.log(`[Finance] Triggering AI analysis (${daysBack} days, focus: ${focus})`);
-    
-    // Build analysis prompt
-    let prompt = `Please analyze my financial activity from the last ${daysBack} days.`;
-    
-    if (focus === 'spending') {
-      prompt += ' Focus on spending patterns and identify areas where I could save money.';
-    } else if (focus === 'budget') {
-      prompt += ' Focus on budget health and whether I\'m on track with my goals.';
-    } else if (focus === 'anomalies') {
-      prompt += ' Focus on unusual transactions or concerning patterns.';
-    } else {
-      prompt += ' Provide a comprehensive overview including spending patterns, budget health, and recommendations.';
-    }
-    
-    // Trigger Finance Manager via agent bridge
-    const bridge = getFinanceAgentBridge();
-    const response = await bridge.sendMessage(prompt, {
-      analysisType: 'scheduled',
-      daysBack,
-      focus,
-      triggeredAt: Date.now(),
-    });
-    
-    if (response.success) {
-      safeLog.log('[Finance] Analysis completed successfully');
-      return { success: true, analysis: response.message };
-    } else {
-      throw new Error(response.error || 'Analysis failed');
-    }
-  } catch (error: any) {
-    safeLog.error('[Finance] Trigger analysis error:', error.message);
-    return { success: false, error: error.message };
-  }
-});
+// All finance:* handlers extracted to electron/finance-service.ts
+// Only financeAgent:* handlers remain here (they depend on the agent bridge singleton)
 
 // ── Finance Agent Communication ──
 
