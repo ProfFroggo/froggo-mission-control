@@ -13,6 +13,9 @@ Electron desktop app for managing a multi-agent AI platform. Task tracking, agen
 ### Task Board
 ![Task Board](screenshots/dashboard.png)
 
+### Analytics
+![Analytics](screenshots/analytics.png)
+
 ### Chat
 ![Chat](screenshots/chat.png)
 
