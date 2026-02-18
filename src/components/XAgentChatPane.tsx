@@ -33,6 +33,12 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
+// Set of valid tabs for validation
+const tabsWithoutUndefined = new Set<XTab>([
+  'research', 'plan', 'drafts', 'calendar', 'mentions', 
+  'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit'
+]);
+
 // System prompts for each tab to give context to the agent
 const TAB_CONTEXT: Record<XTab, string> = {
   research: `You are the Researcher agent helping find X/Twitter content inspiration. Current context: X/Twitter Research Tab. Your role: Search for trending topics, find relevant tweets, identify content opportunities, analyze competitors, and gather insights for content planning.`,
@@ -66,9 +72,17 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Defensive: validate tab and provide fallback for unknown tabs
+  const validTab: XTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
+  
   // Defensive: fallback to 'research' agent if tab is not in routing
-  const agentConfig = AGENT_ROUTING[tab] || { agentId: 'researcher', displayName: 'Researcher' };
-  const sessionKey = `agent:${agentConfig.agentId}:xtwitter:${tab}`;
+  const agentConfig = AGENT_ROUTING[validTab] || { agentId: 'researcher', displayName: 'Researcher' };
+  
+  // Defensive: ensure agentId is always defined
+  const safeAgentId = agentConfig?.agentId || 'researcher';
+  const safeDisplayName = agentConfig?.displayName || 'Researcher';
+  
+  const sessionKey = `agent:${safeAgentId}:xtwitter:${validTab}`;
 
   // Initialize gateway connection and session when component mounts or tab changes
   useEffect(() => {
@@ -154,8 +168,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       {
         id: agentMsgId,
         role: 'agent',
-        agentName: agentConfig.displayName,
-        agentId: agentConfig.agentId,
+        agentName: safeDisplayName,
+        agentId: safeAgentId,
         content: '',
         timestamp: Date.now(),
         streaming: true,
@@ -163,8 +177,9 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     ]);
 
     try {
-      // Build prompt with tab context
-      const contextPrompt = `${TAB_CONTEXT[tab]}\n\nUser message: ${text}`;
+      // Build prompt with tab context - use validTab to ensure valid key
+      const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
+      const contextPrompt = `${TAB_CONTEXT[contextTab]}\n\nUser message: ${text}`;
 
       // Send to agent via gateway with streaming callbacks
       await gateway.sendChatWithCallbacks(contextPrompt, sessionKey, {
@@ -222,7 +237,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       setError(errorMsg);
       setLoading(false);
     }
-  }, [input, loading, tab, agentConfig, sessionKey]);
+  }, [input, loading, tab, validTab, safeAgentId, sessionKey]);
 
   // Auto-send when flagged by external injection
   useEffect(() => {
@@ -257,7 +272,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
-            {agentConfig.displayName}
+            {safeDisplayName}
           </span>
           <span className="px-2 py-1 text-xs bg-clawd-bg-alt text-clawd-text-dim rounded-full">
             {tab}
@@ -278,7 +293,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             <Users className="w-12 h-12 text-clawd-text-dim mb-3" />
             <p className="font-medium text-clawd-text">Start a conversation</p>
             <p className="text-sm mt-1 text-clawd-text">
-              Chat with {agentConfig.displayName} about {tab}
+              Chat with {safeDisplayName} about {tab}
             </p>
           </div>
         ) : (
@@ -341,7 +356,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={`Ask ${agentConfig.displayName} about ${tab}...`}
+            placeholder={`Ask ${safeDisplayName} about ${tab}...`}
             className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
             disabled={loading}
           />
