@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 
 ## Current Position
 
-Phase: 21 of 21 (Finance End-to-End Wiring)
+Phase: 21 of 21 (Finance End-to-End Wiring) — COMPLETE
 Plan: 02 of 02
-Status: Phase complete
-Last activity: 2026-02-18 — Completed 21-02-PLAN.md
+Status: v3.0 milestone complete — all phases shipped
+Last activity: 2026-02-18 — Phase 21 verified (11/11 must-haves passed)
 
 Progress: [████████████████████] 100% (v3.0, 10/10 phases: 13-21 done)
 

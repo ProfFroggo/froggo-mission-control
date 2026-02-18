@@ -87,12 +87,12 @@
 
 ### Finance
 
-- [ ] **FIN-01**: Finance insights load without error on page open
-- [ ] **FIN-02**: Document upload (PDF/CSV) functional — file picker opens and processes file
-- [ ] **FIN-03**: Chat successfully initializes and connects to finance-manager agent
-- [ ] **FIN-04**: "Create Budget" button opens budget creation flow
-- [ ] **FIN-05**: "Upload Statement" button functional (file picker + ingest)
-- [ ] **FIN-06**: Finance chat UI matches app-wide chat style
+- [x] **FIN-01**: Finance insights load without error on page open
+- [x] **FIN-02**: Document upload (PDF/CSV) functional — file picker opens and processes file
+- [x] **FIN-03**: Chat successfully initializes and connects to finance-manager agent
+- [x] **FIN-04**: "Create Budget" button opens budget creation flow
+- [x] **FIN-05**: "Upload Statement" button functional (file picker + ingest)
+- [x] **FIN-06**: Finance chat UI matches app-wide chat style
 
 ## v4.0 Requirements (Deferred)
 
@@ -163,12 +163,12 @@
 | LIB-01 | Phase 20 — Library Population | Complete |
 | LIB-02 | Phase 20 — Library Population | Complete |
 | LIB-03 | Phase 20 — Library Population | Complete |
-| FIN-01 | Phase 21 — Finance End-to-End | Pending |
-| FIN-02 | Phase 21 — Finance End-to-End | Pending |
-| FIN-03 | Phase 21 — Finance End-to-End | Pending |
-| FIN-04 | Phase 21 — Finance End-to-End | Pending |
-| FIN-05 | Phase 21 — Finance End-to-End | Pending |
-| FIN-06 | Phase 21 — Finance End-to-End | Pending |
+| FIN-01 | Phase 21 — Finance End-to-End | Complete |
+| FIN-02 | Phase 21 — Finance End-to-End | Complete |
+| FIN-03 | Phase 21 — Finance End-to-End | Complete |
+| FIN-04 | Phase 21 — Finance End-to-End | Complete |
+| FIN-05 | Phase 21 — Finance End-to-End | Complete |
+| FIN-06 | Phase 21 — Finance End-to-End | Complete |
 
 **Coverage:**
 - v3.0 requirements: 50 total (UI: 6, XTW: 31, WRT: 4, LIB: 3, FIN: 6)
