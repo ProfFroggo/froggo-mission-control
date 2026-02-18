@@ -848,6 +848,44 @@ app.whenReady().then(() => {
       }
     }
 
+    // ── X Automations tables ──
+    db.exec(`CREATE TABLE IF NOT EXISTS x_automations (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      enabled INTEGER DEFAULT 1,
+      trigger_type TEXT NOT NULL,
+      trigger_config TEXT DEFAULT '{}',
+      conditions TEXT DEFAULT '[]',
+      actions TEXT DEFAULT '[]',
+      max_executions_per_hour INTEGER DEFAULT 10,
+      max_executions_per_day INTEGER DEFAULT 50,
+      total_executions INTEGER DEFAULT 0,
+      last_executed_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      created_by TEXT DEFAULT 'user'
+    )`);
+
+    db.exec(`CREATE TABLE IF NOT EXISTS x_automation_executions (
+      id TEXT PRIMARY KEY,
+      automation_id TEXT NOT NULL,
+      trigger_data TEXT DEFAULT '{}',
+      actions_executed TEXT DEFAULT '[]',
+      status TEXT DEFAULT 'success',
+      error_message TEXT,
+      executed_at INTEGER NOT NULL
+    )`);
+
+    db.exec(`CREATE TABLE IF NOT EXISTS x_automation_rate_limits (
+      automation_id TEXT NOT NULL,
+      hour_bucket TEXT NOT NULL,
+      execution_count INTEGER DEFAULT 0,
+      PRIMARY KEY (automation_id, hour_bucket)
+    )`);
+
+    safeLog.log('[Migration] X Automations tables ensured');
+
     safeLog.log('[Migration] X/Twitter schema migrations complete');
   } catch (err) {
     safeLog.error('[Migration] X/Twitter schema migration error:', err);
