@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Loader2, Check, X, Send } from 'lucide-react';
+import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Loader2, Check, Send } from 'lucide-react';
 import { Spinner } from './LoadingStates';
 
 interface ResearchResult {
@@ -56,104 +56,42 @@ export function XResearchView() {
     setSelectedIds(new Set());
     
     try {
-      // Use x-api to search
-      const xApi = (window as any).xApi;
-      if (xApi) {
-        const searchResults = await xApi.search(query, { count: 20 });
-        if (searchResults?.data) {
-          const formatted: ResearchResult[] = searchResults.data.map((item: any, idx: number) => ({
-            id: item.id || `search-${idx}`,
-            type: 'tweet',
-            content: item.text,
-            author: item.author?.name,
-            username: item.author?.username,
-            followers: item.author?.public_metrics?.followers_count,
-            likes: item.public_metrics?.like_count,
-            retweets: item.public_metrics?.retweet_count,
-            replies: item.public_metrics?.reply_count,
-            impressions: item.public_metrics?.impression_count,
-            date: item.created_at,
-            url: `https://x.com/${item.author?.username}/status/${item.id}`,
-          }));
+      const clawdbot = (window as any).clawdbot;
+      if (clawdbot?.x?.search) {
+        const searchResult = await clawdbot.x.search(query.trim(), 20);
+        if (searchResult?.success && searchResult.tweets) {
+          // Build author map from includes
+          const authorMap: Record<string, any> = {};
+          if (searchResult.tweets.includes?.users) {
+            for (const u of searchResult.tweets.includes.users) {
+              authorMap[u.id] = u;
+            }
+          }
+          // tweets might be in searchResult.tweets.data or searchResult.tweets directly
+          const rawTweets = Array.isArray(searchResult.tweets) ? searchResult.tweets : (searchResult.tweets.data || []);
+          const formatted: ResearchResult[] = rawTweets.map((item: any) => {
+            const author = authorMap[item.author_id] || {};
+            return {
+              id: item.id || '',
+              type: 'tweet' as const,
+              content: item.text,
+              author: author.name,
+              username: author.username,
+              followers: author.public_metrics?.followers_count,
+              likes: item.public_metrics?.like_count || 0,
+              retweets: item.public_metrics?.retweet_count || 0,
+              replies: item.public_metrics?.reply_count || 0,
+              impressions: item.public_metrics?.impression_count || 0,
+              date: item.created_at,
+              url: author.username ? `https://x.com/${author.username}/status/${item.id}` : undefined,
+            };
+          });
           setResults(formatted);
+        } else {
+          setResults([]);
         }
       } else {
-        // Fallback to mock data for demo
-        await new Promise(r => setTimeout(r, 1500));
-        const mockResults: ResearchResult[] = [
-          {
-            id: '1',
-            type: 'tweet',
-            content: `Discussion about ${query} - interesting insights on current trends and best practices. #${query.replace(/\s+/g, '')}`,
-            author: 'Tech Influencer',
-            username: '@techinfluencer',
-            followers: 125000,
-            likes: 892,
-            retweets: 234,
-            replies: 67,
-            impressions: 45000,
-            date: new Date().toISOString(),
-            url: 'https://x.com/techinfluencer/status/1',
-          },
-          {
-            id: '2',
-            type: 'tweet',
-            content: `Hot take: ${query} is changing the game. Here is what you need to know...`,
-            author: 'Industry Expert',
-            username: '@industryexpert',
-            followers: 89000,
-            likes: 456,
-            retweets: 123,
-            replies: 89,
-            impressions: 28000,
-            date: new Date(Date.now() - 86400000).toISOString(),
-            url: 'https://x.com/industryexpert/status/2',
-          },
-          {
-            id: '3',
-            type: 'user',
-            username: `@${query.replace(/\s+/g, '').toLowerCase()}fan`,
-            author: `${query} Enthusiast`,
-            followers: 5400,
-            engagement: 4.2,
-          },
-          {
-            id: '4',
-            type: 'topic',
-            content: undefined,
-            author: undefined,
-            tweetCount: 1250,
-          },
-          {
-            id: '5',
-            type: 'tweet',
-            content: `Thread on ${query}: Breaking down the fundamentals and advanced strategies. 🧵`,
-            author: 'Content Creator',
-            username: '@contentcreator',
-            followers: 67000,
-            likes: 1203,
-            retweets: 567,
-            replies: 234,
-            impressions: 89000,
-            date: new Date(Date.now() - 172800000).toISOString(),
-            url: 'https://x.com/contentcreator/status/5',
-          },
-          {
-            id: '6',
-            type: 'thread',
-            content: `Complete guide to ${query}: 15 tips that will transform your approach.`,
-            author: 'Thought Leader',
-            username: '@thoughtleader',
-            followers: 234000,
-            likes: 3456,
-            retweets: 1234,
-            replies: 567,
-            impressions: 156000,
-            date: new Date(Date.now() - 259200000).toISOString(),
-            url: 'https://x.com/thoughtleader/status/6',
-          },
-        ];
-        setResults(mockResults);
+        setResults([]);
       }
     } catch (error) {
       console.error('Research search error:', error);
