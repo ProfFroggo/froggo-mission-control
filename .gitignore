@@ -27,3 +27,4 @@ resources/models/
 
 # Memory (internal)
 memory/
+.planning/
