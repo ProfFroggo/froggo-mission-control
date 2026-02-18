@@ -81,6 +81,17 @@ export default function FinancePanel() {
   const [newAccountType, setNewAccountType] = useState<string>('bank');
   const [newAccountCurrency, setNewAccountCurrency] = useState('EUR');
 
+  // ── Recurring State ──
+  const [recurringItems, setRecurringItems] = useState<FinanceRecurring[]>([]);
+
+  // ── Export State ──
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportAccountId, setExportAccountId] = useState<string>('');  // '' = all accounts
+  const [exportDateFrom, setExportDateFrom] = useState<string>('');    // YYYY-MM-DD string
+  const [exportDateTo, setExportDateTo] = useState<string>('');        // YYYY-MM-DD string
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportResult, setExportResult] = useState<string | null>(null);
+
   // ── Upload modal account selector ──
   const [uploadAccountId, setUploadAccountId] = useState<string>('acc-default');
 
@@ -93,6 +104,13 @@ export default function FinancePanel() {
       setAccounts(result.balances as AccountBalance[]);
     }
   }, []);
+
+  const loadRecurring = useCallback(async () => {
+    const result = await window.clawdbot?.finance?.recurring?.list(selectedAccountId || undefined);
+    if (result?.success && result.recurring) {
+      setRecurringItems(result.recurring);
+    }
+  }, [selectedAccountId]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -149,6 +167,7 @@ export default function FinancePanel() {
   useEffect(() => {
     loadFinanceData();
     loadAccounts();
+    loadRecurring();
     loadAlerts();
 
     // Check for new alerts every 30 seconds
@@ -167,6 +186,7 @@ export default function FinancePanel() {
         showToast('success', 'AI Analysis Complete', data.message?.slice(0, 200) || 'Analysis finished -- check insights for details.');
         loadFinanceData();
         loadAccounts();
+        loadRecurring();
       } else if (data.status === 'error') {
         setAiProcessing(false);
         setAiMessage('');
@@ -181,10 +201,11 @@ export default function FinancePanel() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload transactions + budgets when selectedAccountId changes
+  // Reload transactions + budgets + recurring when selectedAccountId changes
   useEffect(() => {
     loadFinanceData();
-  }, [selectedAccountId, loadFinanceData]);
+    loadRecurring();
+  }, [selectedAccountId, loadFinanceData, loadRecurring]);
 
   const loadAlerts = async () => {
     try {
@@ -236,6 +257,7 @@ export default function FinancePanel() {
       }
       await loadFinanceData();
       await loadAccounts();
+      await loadRecurring();
     } catch (error: any) {
       showToast('error', 'Upload Failed', error.message);
     }
@@ -328,6 +350,37 @@ export default function FinancePanel() {
     setChatPrefill(budgetContext);
   };
 
+  const handleConfirmRecurring = async (id: string) => {
+    await window.clawdbot?.finance?.recurring?.confirm(id);
+    setRecurringItems(prev => prev.map(r => r.id === id ? { ...r, status: 'confirmed' } : r));
+  };
+
+  const handleDismissRecurring = async (id: string) => {
+    await window.clawdbot?.finance?.recurring?.dismiss(id);
+    setRecurringItems(prev => prev.filter(r => r.id !== id));
+  };
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    setExportResult(null);
+    try {
+      const opts: { accountId?: string; dateFrom?: number; dateTo?: number } = {};
+      if (exportAccountId) opts.accountId = exportAccountId;
+      if (exportDateFrom) opts.dateFrom = new Date(exportDateFrom).getTime();
+      if (exportDateTo) opts.dateTo = new Date(exportDateTo + 'T23:59:59').getTime();
+      const result = await window.clawdbot?.finance?.export?.xlsx(opts);
+      if (result?.canceled) {
+        setExportResult('Export canceled.');
+      } else if (result?.success) {
+        setExportResult(`Exported to: ${result.path}`);
+      } else {
+        setExportResult(`Export failed: ${result?.error || 'Unknown error'}`);
+      }
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const formatCurrency = (amount: number, currency?: string) => {
     if (!currency) return `${(amount || 0).toFixed(2)}`;
     if (currency === 'SOL' || currency === 'ETH' || currency === 'BTC') {
@@ -409,6 +462,16 @@ export default function FinancePanel() {
           >
             <MessageSquare size={16} />
             AI Chat
+          </button>
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text rounded-lg text-sm transition-colors"
+            aria-label="Export transactions to XLSX"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            Export
           </button>
           <button
             onClick={handleUploadClick}
@@ -698,6 +761,52 @@ export default function FinancePanel() {
           </div>
         </div>
 
+        {/* Recurring Transactions Section */}
+        {recurringItems.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-clawd-text-dim uppercase tracking-wide mb-3">
+              Recurring Detected ({recurringItems.filter(r => r.status === 'pending').length} pending)
+            </h3>
+            <div className="space-y-2">
+              {recurringItems.map(item => (
+                <div key={item.id} className="flex items-center justify-between bg-clawd-surface border border-clawd-border rounded-lg px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-clawd-text font-medium truncate">{item.description}</span>
+                      {item.status === 'confirmed' && (
+                        <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-full px-2 py-0.5">Confirmed</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-clawd-text-dim text-sm font-mono">{item.currency} {Math.abs(item.amount).toFixed(2)}</span>
+                      <span className="text-xs bg-clawd-accent/20 text-clawd-accent border border-clawd-accent/30 rounded-full px-2 py-0.5 capitalize">{item.frequency}</span>
+                      {item.next_expected_date && (
+                        <span className="text-clawd-text-dim text-xs">Next: {new Date(item.next_expected_date).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                  {item.status === 'pending' && (
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handleConfirmRecurring(item.id)}
+                        className="text-xs px-3 py-1.5 bg-clawd-accent text-white rounded-md hover:bg-clawd-accent/80 transition-colors"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => handleDismissRecurring(item.id)}
+                        className="text-xs px-3 py-1.5 bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text rounded-md transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Recent Transactions */}
         <div className="bg-clawd-surface border border-clawd-border rounded-xl">
           <div className="flex items-center justify-between p-4 border-b border-clawd-border">
@@ -969,6 +1078,77 @@ export default function FinancePanel() {
                 aria-label="Create account"
               >
                 Create Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-clawd-bg border border-clawd-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-lg font-semibold text-clawd-text mb-4">Export Transactions</h2>
+
+            <div className="space-y-4">
+              {/* Account filter */}
+              <div>
+                <label className="block text-sm text-clawd-text-dim mb-1">Account</label>
+                <select
+                  value={exportAccountId}
+                  onChange={e => setExportAccountId(e.target.value)}
+                  className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none"
+                >
+                  <option value="">All Accounts</option>
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-clawd-text-dim mb-1">From</label>
+                  <input
+                    type="date"
+                    value={exportDateFrom}
+                    onChange={e => setExportDateFrom(e.target.value)}
+                    className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-clawd-text-dim mb-1">To</label>
+                  <input
+                    type="date"
+                    value={exportDateTo}
+                    onChange={e => setExportDateTo(e.target.value)}
+                    className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Result message */}
+              {exportResult && (
+                <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-red-400' : 'text-green-400'}`}>
+                  {exportResult}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleExport}
+                disabled={exportLoading}
+                className="flex-1 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent/80 transition-colors disabled:opacity-50 font-medium"
+              >
+                {exportLoading ? 'Exporting...' : 'Export XLSX'}
+              </button>
+              <button
+                onClick={() => { setShowExportModal(false); setExportResult(null); }}
+                className="px-4 py-2 bg-clawd-surface border border-clawd-border text-clawd-text-dim hover:text-clawd-text rounded-lg transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
