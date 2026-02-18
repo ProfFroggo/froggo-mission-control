@@ -156,10 +156,10 @@
 | XTW-29 | Phase 18 — X/Twitter Automations + Analytics | Complete |
 | XTW-30 | Phase 18 — X/Twitter Automations + Analytics | Complete |
 | XTW-31 | Phase 18 — X/Twitter Automations + Analytics | Complete |
-| WRT-01 | Phase 19 — Writing Pane Layout | Pending |
-| WRT-02 | Phase 19 — Writing Pane Layout | Pending |
-| WRT-03 | Phase 19 — Writing Pane Layout | Pending |
-| WRT-04 | Phase 19 — Writing Pane Layout | Pending |
+| WRT-01 | Phase 19 — Writing Pane Layout | Complete |
+| WRT-02 | Phase 19 — Writing Pane Layout | Complete |
+| WRT-03 | Phase 19 — Writing Pane Layout | Complete |
+| WRT-04 | Phase 19 — Writing Pane Layout | Complete |
 | LIB-01 | Phase 20 — Library Population | Pending |
 | LIB-02 | Phase 20 — Library Population | Pending |
 | LIB-03 | Phase 20 — Library Population | Pending |
