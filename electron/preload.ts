@@ -332,6 +332,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
     link: (fileId: string, taskId: string) => ipcRenderer.invoke('library:link', fileId, taskId),
     view: (fileId: string) => ipcRenderer.invoke('library:view', fileId),
     download: (fileId: string) => ipcRenderer.invoke('library:download', fileId),
+    update: (fileId: string, updates: any) => ipcRenderer.invoke('library:update', fileId, updates),
+    uploadBuffer: (data: { name: string; type: string; buffer: ArrayBuffer }) => ipcRenderer.invoke('library:uploadBuffer', data),
+  },
+  // Skills
+  skills: {
+    list: () => ipcRenderer.invoke('skills:list'),
   },
   // Shell
   shell: {
@@ -669,6 +675,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.invoke('x:schedule:update', data),
     delete: (data: { id: string }) =>
       ipcRenderer.invoke('x:schedule:delete', data),
+  },
+  // Simple scheduled posts API
+  xScheduled: {
+    schedule: (text: string, scheduledTime: number) =>
+      ipcRenderer.invoke('x:schedule', text, scheduledTime),
+    list: () => ipcRenderer.invoke('x:scheduled'),
+    cancel: (id: string) => ipcRenderer.invoke('x:cancel', id),
   },
   xMention: {
     fetch: () => ipcRenderer.invoke('x:mention:fetch'),
