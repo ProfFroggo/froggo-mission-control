@@ -110,11 +110,11 @@ Plans:
   2. Drafts tab shows final drafts ready for review
   3. Posts in Content Plan and Drafts support attaching an image
   4. Chat on Content Plan tab connects to a real agent (not the "researcher" stub) and first token appears without multi-second delay
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 15-01: Content Plan and Drafts data wiring + image attachment
-- [ ] 15-02: Chat agent wiring and response latency fix
+- [ ] 15-01-PLAN.md -- Replace center pane composers with list/viewer + image attachment UI
+- [ ] 15-02-PLAN.md -- Verify agent chat wiring to writer + fix send button styling
 
 #### Phase 16: X/Twitter Calendar
 **Goal**: The X/Twitter calendar reuses the existing schedule component, shows tweet events colour-coded by status, and supports drag-to-reschedule
