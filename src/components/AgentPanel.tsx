@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3 } from 'lucide-react';
+import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
 import { gateway } from '../lib/gateway';
 import WorkerModal from './WorkerModal';
 import AgentDetailModal from './AgentDetailModal';
 import AgentCompareModal from './AgentCompareModal';
 import AgentChatModal from './AgentChatModal';
+import AgentManagementModal from './AgentManagementModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import { InlineLoader } from './LoadingStates';
@@ -48,6 +49,7 @@ export default function AgentPanel() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetchAgents(); // Load agents from registry
@@ -366,6 +368,13 @@ export default function AgentPanel() {
                         {isExpanded ? 'Less' : 'More'}
                       </button>
                       <div className="flex-1" />
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
+                        className="flex items-center gap-1 px-2 py-1 text-xs text-clawd-muted hover:text-clawd-text hover:bg-clawd-surface rounded transition-colors"
+                        title="Edit agent personality & model"
+                        aria-label={`Manage ${agent.name}`}>
+                        <Settings size={12} />
+                        Manage
+                      </button>
                       <button type="button" onClick={(e) => { e.stopPropagation(); setChatAgent(agent.id); }}
                         className={`p-1.5 rounded-lg transition-colors ${HOVER_BG_MAP[theme.bg] || ''} ${theme.text} opacity-50 hover:opacity-100`}
                         title="Chat"
@@ -518,6 +527,14 @@ export default function AgentPanel() {
           <AgentCompareModal agentIds={compareAgents} onClose={() => { setShowCompare(false); setCompareAgents([]); }} />
         )}
         {chatAgent && <AgentChatModal agentId={chatAgent} onClose={() => setChatAgent(null)} />}
+        {managingAgent && (
+          <AgentManagementModal
+            isOpen={true}
+            onClose={() => setManagingAgent(null)}
+            agentId={managingAgent.id}
+            agentName={managingAgent.name}
+          />
+        )}
       </div>
     </div>
   );
