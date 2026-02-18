@@ -4,7 +4,7 @@
  */
 
 import { getSecret } from './secret-store';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('XAPI');
 const X_API_BASE = 'https://api.x.com/2';

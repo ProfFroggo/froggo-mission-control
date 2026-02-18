@@ -9,7 +9,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { prepare } from './database';
 import { FROGGO_DB, PROJECT_ROOT } from './paths';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('ExportBackup');
 

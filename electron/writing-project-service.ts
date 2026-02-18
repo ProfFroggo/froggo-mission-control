@@ -13,7 +13,7 @@
 import { ipcMain } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('WritingProject');
 import { WRITING_PROJECTS_DIR, writingProjectPath, writingChapterPath, writingMemoryPath } from './paths';

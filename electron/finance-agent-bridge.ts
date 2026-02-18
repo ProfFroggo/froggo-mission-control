@@ -9,7 +9,7 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 import { homedir, tmpdir } from 'os';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const execAsync = promisify(exec);
 const logger = createLogger('FinanceAgentBridge');

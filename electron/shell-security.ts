@@ -10,7 +10,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { BrowserWindow, dialog } from 'electron';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('ShellSecurity');
 

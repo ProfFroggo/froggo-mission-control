@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { prepare } from './database';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('XAutomations');
 

@@ -11,7 +11,7 @@
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('Paths');
 const HOME = os.homedir();

@@ -770,6 +770,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
     post: (text: string) => ipcRenderer.invoke('x:publish:post', text),
     thread: (tweets: string[]) => ipcRenderer.invoke('x:publish:thread', tweets),
     rateLimit: () => ipcRenderer.invoke('x:publish:rateLimit'),
+    mediaUpload: (filePath: string) => ipcRenderer.invoke('x:publish:mediaUpload', filePath),
+    schedule: (text: string, scheduledAt: number, mediaId?: string) => ipcRenderer.invoke('x:publish:schedule', text, scheduledAt, mediaId),
+    scheduleThread: (tweets: string[], scheduledAt: number) => ipcRenderer.invoke('x:publish:scheduleThread', tweets, scheduledAt),
+    scheduledList: () => ipcRenderer.invoke('x:publish:scheduledList'),
+    scheduledCancel: (id: string) => ipcRenderer.invoke('x:publish:scheduledCancel', id),
   },
   // Writing Module
   writing: {

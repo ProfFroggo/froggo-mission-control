@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import * as https from 'https';
 import * as querystring from 'querystring';
 import * as fs from 'fs';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const execAsync = promisify(exec);
 const logger = createLogger('TwitterOAuth');

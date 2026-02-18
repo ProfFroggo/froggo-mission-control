@@ -5,7 +5,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const execAsync = promisify(exec);
 const logger = createLogger('DashboardAgents');
