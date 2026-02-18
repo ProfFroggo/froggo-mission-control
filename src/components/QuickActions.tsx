@@ -706,14 +706,24 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setCallMuted(!callMuted);
   };
 
-  const attachVideoStream = () => {
+  const attachVideoStream = (retryCount = 0) => {
+    const maxRetries = 5;
     if (callVideoRef.current) {
       const stream = geminiLive.getVideoStream();
-      logger.debug('[QuickActions] Attaching video stream, stream exists:', !!stream);
+      logger.debug('[QuickActions] Attaching video stream, stream exists:', !!stream, 'retry:', retryCount);
       if (stream) {
         callVideoRef.current.srcObject = stream;
+        // Verify attachment worked
+        if (!callVideoRef.current.srcObject && retryCount < maxRetries) {
+          logger.warn('[QuickActions] Stream attachment failed, retrying...', retryCount + 1);
+          setTimeout(() => attachVideoStream(retryCount + 1), 200);
+        }
+      } else if (retryCount < maxRetries) {
+        // Stream not ready yet, retry
+        logger.warn('[QuickActions] No video stream yet, retrying...', retryCount + 1);
+        setTimeout(() => attachVideoStream(retryCount + 1), 200);
       } else {
-        logger.warn('[QuickActions] No video stream to attach');
+        logger.error('[QuickActions] Max retries reached, no video stream available');
       }
     } else {
       logger.warn('[QuickActions] Video element ref not available');
@@ -735,9 +745,17 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     try {
       const sourceId = source.id === '__browser_picker__' ? undefined : source.id;
       logger.debug('[QuickActions] Starting screen share, sourceId:', sourceId);
+      
+      // Start screen share
       await geminiLive.startVideo('screen', sourceId);
       setCallVideoMode('screen');
-      setTimeout(attachVideoStream, 100);
+      
+      // Attach stream with retry mechanism
+      attachVideoStream();
+      
+      // Additional attachment attempt after a delay
+      setTimeout(() => attachVideoStream(), 500);
+      
       setCallTranscript(prev => [...prev, { role: 'system', text: `🖥️ Sharing: ${source.name}` }]);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -755,7 +773,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       try {
         await geminiLive.startVideo('camera');
         setCallVideoMode('camera');
-        setTimeout(attachVideoStream, 100);
+        attachVideoStream();
+        setTimeout(() => attachVideoStream(), 500);
       } catch (_err) { setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Camera failed` }]); }
     }
   };
