@@ -495,6 +495,18 @@ declare global {
   }
 
   // ============================================
+  // Finance Account type (used by Window.clawdbot.finance.account.*)
+  interface FinanceAccount {
+    id: string;
+    name: string;
+    type: 'bank' | 'crypto_wallet' | 'credit_card' | 'cash';
+    currency: string;
+    balance?: number;
+    archived?: number;
+    created_at: number;
+    updated_at: number;
+  }
+
   // Window API
   // ============================================
 
@@ -822,20 +834,29 @@ declare global {
       };
       // Finance API
       finance?: {
-        triggerAnalysis: (options: { daysBack?: number; focus?: string }) => Promise<{ success: boolean; error?: string }>;
+        selectFile: () => Promise<{ success: boolean; fileName?: string; isPdf?: boolean; content?: string | number[]; error?: string }>;
+        triggerAnalysis: (options?: { daysBack?: number; focus?: string }) => Promise<{ success: boolean; analysis?: string; error?: string }>;
         dismissInsight: (insightId: string) => Promise<{ success: boolean; error?: string }>;
-        getTransactions: (limit?: number) => Promise<{ success: boolean; transactions?: unknown[]; error?: string }>;
-        getBudgetStatus: (budgetType: 'family' | 'crypto') => Promise<{ success: boolean; status?: unknown; error?: string }>;
-        uploadCSV: (csvContent: string, filename: string) => Promise<{ success: boolean; imported?: number; skipped?: number; error?: string }>;
-        uploadPDF: (pdfBuffer: ArrayBuffer, filename: string) => Promise<{ success: boolean; message?: string; error?: string }>;
-        createBudget: (data: { name: string; budgetType: string; totalBudget: number; currency?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        getTransactions: (opts?: { limit?: number; accountId?: string } | number) => Promise<{ success: boolean; transactions?: unknown[]; error?: string }>;
+        getBudgetStatus: (optsOrType?: { budgetType?: string; accountId?: string } | string) => Promise<{ success: boolean; status?: unknown; error?: string }>;
+        uploadCSV: (csvContent: string, filename: string, accountId?: string) => Promise<{ success: boolean; imported?: number; skipped?: number; analysisStarted?: boolean; error?: string }>;
+        uploadPDF: (pdfBuffer: ArrayBuffer, filename: string, accountId?: string) => Promise<{ success: boolean; message?: string; imported?: number; skipped?: number; error?: string }>;
+        onAnalysisStatus: (callback: (data: { status: string; type: string; message?: string; error?: string }) => void) => () => void;
+        createBudget: (data: { name: string; budgetType: string; totalBudget: number; currency?: string; accountId?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
         getAlerts: () => Promise<{ success: boolean; alerts?: unknown[]; error?: string }>;
         getInsights: () => Promise<{ success: boolean; insights?: unknown[]; error?: string }>;
+        account?: {
+          list: () => Promise<{ success: boolean; accounts?: FinanceAccount[]; error?: string }>;
+          create: (data: { name: string; type: string; currency?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+          update: (id: string, updates: { name?: string }) => Promise<{ success: boolean; error?: string }>;
+          archive: (id: string) => Promise<{ success: boolean; error?: string }>;
+          balances: () => Promise<{ success: boolean; balances?: Array<FinanceAccount & { computed_balance: number; transaction_count: number }>; error?: string }>;
+        };
       };
       // Finance Agent
       financeAgent?: {
-        sendMessage: (message: string, context?: unknown) => Promise<{ success: boolean; response?: string; error?: string }>;
-        getChatHistory: () => Promise<{ success: boolean; history?: unknown[]; error?: string }>;
+        sendMessage: (message: string, context?: unknown) => Promise<{ success: boolean; message?: string; error?: string }>;
+        getChatHistory: () => Promise<{ success: boolean; messages?: unknown[]; error?: string }>;
         clearHistory: () => Promise<{ success: boolean; error?: string }>;
         triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => Promise<{ success: boolean; error?: string }>;
         getStatus: () => Promise<{ success: boolean; status?: unknown; error?: string }>;
@@ -959,6 +980,17 @@ declare global {
         home: (limit?: number) => Promise<{ success: boolean; tweets?: unknown[]; error?: string }>;
         followers: (username?: string, count?: number) => Promise<{ success: boolean; followers?: unknown[]; error?: string }>;
         following: (username?: string, count?: number) => Promise<{ success: boolean; following?: unknown[]; error?: string }>;
+      };
+      // Agent Management — SOUL.md editing + model config
+      agentManagement?: {
+        soul: {
+          read: (agentId: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+          write: (agentId: string, content: string) => Promise<{ success: boolean; error?: string }>;
+        };
+        models: {
+          read: (agentId: string) => Promise<{ success: boolean; primary?: string; fallbacks?: string[]; usingDefaults?: boolean; error?: string }>;
+          write: (agentId: string, updates: { primary?: string; fallbacks?: string[] }) => Promise<{ success: boolean; error?: string }>;
+        };
       };
       // Writing Module
       writing?: {

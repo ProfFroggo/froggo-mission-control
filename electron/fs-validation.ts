@@ -16,6 +16,9 @@ const ALLOWED_ROOTS = [
   path.join(os.homedir(), 'Froggo'),
 ];
 
+// Agent workspaces (~/agent-*) are handled via prefix check, not individual roots
+const AGENT_WORKSPACE_PREFIX = path.join(os.homedir(), 'agent-');
+
 /**
  * Check whether a path falls within one of the allowed root directories.
  */
@@ -23,6 +26,7 @@ export function isAllowedPath(rawPath: string): boolean {
   const resolved = path.resolve(
     rawPath.startsWith('~') ? path.join(os.homedir(), rawPath.slice(1)) : rawPath
   );
+  if (resolved.startsWith(AGENT_WORKSPACE_PREFIX)) return true;
   return ALLOWED_ROOTS.some(
     root => resolved === root || resolved.startsWith(root + path.sep)
   );
