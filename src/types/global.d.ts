@@ -826,7 +826,9 @@ declare global {
         dismissInsight: (insightId: string) => Promise<{ success: boolean; error?: string }>;
         getTransactions: (limit?: number) => Promise<{ success: boolean; transactions?: unknown[]; error?: string }>;
         getBudgetStatus: (budgetType: 'family' | 'crypto') => Promise<{ success: boolean; status?: unknown; error?: string }>;
-        uploadCSV: (csvContent: string, filename: string) => Promise<{ success: boolean; error?: string }>;
+        uploadCSV: (csvContent: string, filename: string) => Promise<{ success: boolean; imported?: number; skipped?: number; error?: string }>;
+        uploadPDF: (pdfBuffer: ArrayBuffer, filename: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+        createBudget: (data: { name: string; budgetType: string; totalBudget: number; currency?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
         getAlerts: () => Promise<{ success: boolean; alerts?: unknown[]; error?: string }>;
         getInsights: () => Promise<{ success: boolean; insights?: unknown[]; error?: string }>;
       };
