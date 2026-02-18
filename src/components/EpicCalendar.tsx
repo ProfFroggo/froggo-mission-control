@@ -20,7 +20,21 @@ interface EventFormData {
   isAllDay: boolean;
 }
 
-export default function EpicCalendar() {
+interface EpicCalendarProps {
+  externalEvents?: CalendarEvent[];
+  createButtonLabel?: string;
+  onCreateClick?: () => void;
+  onExternalDrop?: (event: CalendarEvent, newStart: Date, newEnd: Date) => Promise<boolean>;
+  eventColorResolver?: (event: CalendarEvent) => string | undefined;
+}
+
+export default function EpicCalendar({
+  externalEvents,
+  createButtonLabel,
+  onCreateClick,
+  onExternalDrop,
+  eventColorResolver,
+}: EpicCalendarProps = {}) {
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -243,8 +257,19 @@ export default function EpicCalendar() {
     const { event, newStart, newEnd } = pendingReschedule;
     const { isAllDay } = getEventTime(event);
 
+    if (onExternalDrop) {
+      const success = await onExternalDrop(event, newStart, newEnd);
+      if (!success) {
+        setError('Failed to reschedule');
+        setTimeout(() => setError(null), 5000);
+      }
+      setShowRescheduleConfirm(false);
+      setPendingReschedule(null);
+      return;
+    }
+
     try {
-      const startISO = isAllDay 
+      const startISO = isAllDay
         ? newStart.toISOString().split('T')[0]
         : newStart.toISOString();
       const endISO = isAllDay
@@ -331,8 +356,13 @@ export default function EpicCalendar() {
   };
 
   useEffect(() => {
-    fetchEvents();
-  }, [accounts]); // Re-fetch when email accounts change
+    if (externalEvents !== undefined) {
+      setEvents(externalEvents);
+      setLoading(false);
+    } else {
+      fetchEvents();
+    }
+  }, [externalEvents, accounts]);
 
   const navigateDate = (direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') {
@@ -435,12 +465,12 @@ export default function EpicCalendar() {
             </div>
 
             {/* Create Event Button */}
-            <button 
-              onClick={handleCreateEvent}
+            <button
+              onClick={onCreateClick || handleCreateEvent}
               className="flex items-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
             >
               <Plus size={16} />
-              New Event
+              {createButtonLabel || 'New Event'}
             </button>
           </div>
         </div>
@@ -529,9 +559,9 @@ export default function EpicCalendar() {
         ) : (
           <>
             {view === 'month' && (
-              <MonthView 
-                currentDate={currentDate} 
-                events={events} 
+              <MonthView
+                currentDate={currentDate}
+                events={events}
                 onEventClick={handleEditEvent}
                 draggedEvent={draggedEvent}
                 draggedOverSlot={draggedOverSlot}
@@ -540,12 +570,13 @@ export default function EpicCalendar() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                eventColorResolver={eventColorResolver}
               />
             )}
             {view === 'week' && (
-              <WeekView 
-                currentDate={currentDate} 
-                events={events} 
+              <WeekView
+                currentDate={currentDate}
+                events={events}
                 onEventClick={handleEditEvent}
                 draggedEvent={draggedEvent}
                 draggedOverSlot={draggedOverSlot}
@@ -554,12 +585,13 @@ export default function EpicCalendar() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                eventColorResolver={eventColorResolver}
               />
             )}
             {view === 'day' && (
-              <DayView 
-                currentDate={currentDate} 
-                events={events} 
+              <DayView
+                currentDate={currentDate}
+                events={events}
                 onEventClick={handleEditEvent}
                 draggedEvent={draggedEvent}
                 draggedOverSlot={draggedOverSlot}
@@ -568,9 +600,10 @@ export default function EpicCalendar() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                eventColorResolver={eventColorResolver}
               />
             )}
-            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} />}
+            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} eventColorResolver={eventColorResolver} />}
           </>
         )}
       </div>
@@ -604,25 +637,29 @@ function formatTime(date: Date): string {
 }
 
 // Event Card Component
-function EventCard({ 
-  event, 
-  compact = false, 
+function EventCard({
+  event,
+  compact = false,
   onClick,
   onDragStart,
   onDragEnd,
-  isDragging = false
-}: { 
-  event: CalendarEvent; 
-  compact?: boolean; 
+  isDragging = false,
+  eventColorResolver,
+}: {
+  event: CalendarEvent;
+  compact?: boolean;
   onClick?: (event: CalendarEvent) => void;
   onDragStart?: (e: React.DragEvent, event: CalendarEvent) => void;
   onDragEnd?: () => void;
   isDragging?: boolean;
+  eventColorResolver?: (event: CalendarEvent) => string | undefined;
 }) {
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
   const primaryEmail = useUserSettings.getState().email;
   const accountColor = event.account === primaryEmail ? 'bg-info' : 'bg-review';
+  const resolvedColor = eventColorResolver?.(event);
+  const displayColor = resolvedColor || accountColor;
 
   if (compact) {
     return (
@@ -630,7 +667,7 @@ function EventCard({
         draggable
         onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
         onDragEnd={onDragEnd}
-        className={`text-xs px-2 py-1 ${accountColor} text-white rounded mb-1 truncate cursor-move hover:opacity-80 transition-all ${
+        className={`text-xs px-2 py-1 ${displayColor} text-white rounded mb-1 truncate cursor-move hover:opacity-80 transition-all ${
           isDragging ? 'opacity-50 scale-95' : ''
         }`}
         title={event.summary}
@@ -668,7 +705,7 @@ function EventCard({
     >
       <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold flex-1">{event.summary}</h3>
-        <div className={`w-2 h-2 rounded-full ${accountColor} ml-2 mt-1`} title={event.account} />
+        <div className={`w-2 h-2 rounded-full ${displayColor} ml-2 mt-1`} title={event.account} />
       </div>
 
       <div className="space-y-1.5 text-sm text-clawd-text-dim">
@@ -714,9 +751,9 @@ function EventCard({
 }
 
 // Month View
-function MonthView({ 
-  currentDate, 
-  events, 
+function MonthView({
+  currentDate,
+  events,
   onEventClick,
   draggedEvent,
   draggedOverSlot,
@@ -724,10 +761,11 @@ function MonthView({
   onDragEnd,
   onDragOver,
   onDragLeave,
-  onDrop
-}: { 
-  currentDate: Date; 
-  events: CalendarEvent[]; 
+  onDrop,
+  eventColorResolver,
+}: {
+  currentDate: Date;
+  events: CalendarEvent[];
   onEventClick: (event: CalendarEvent) => void;
   draggedEvent: CalendarEvent | null;
   draggedOverSlot: { date: Date; hour?: number } | null;
@@ -736,6 +774,7 @@ function MonthView({
   onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+  eventColorResolver?: (event: CalendarEvent) => string | undefined;
 }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const startDate = getWeekStart(firstDay);
@@ -817,14 +856,15 @@ function MonthView({
                     </div>
                     <div className="space-y-1">
                       {dayEvents.slice(0, 3).map(event => (
-                        <EventCard 
-                          key={event.id} 
-                          event={event} 
-                          compact 
+                        <EventCard
+                          key={event.id}
+                          event={event}
+                          compact
                           onClick={onEventClick}
                           onDragStart={onDragStart}
                           onDragEnd={onDragEnd}
                           isDragging={draggedEvent?.id === event.id}
+                          eventColorResolver={eventColorResolver}
                         />
                       ))}
                       {dayEvents.length > 3 && (
@@ -845,9 +885,9 @@ function MonthView({
 }
 
 // Week View
-function WeekView({ 
-  currentDate, 
-  events, 
+function WeekView({
+  currentDate,
+  events,
   onEventClick,
   draggedEvent,
   draggedOverSlot,
@@ -855,10 +895,11 @@ function WeekView({
   onDragEnd,
   onDragOver,
   onDragLeave,
-  onDrop
-}: { 
-  currentDate: Date; 
-  events: CalendarEvent[]; 
+  onDrop,
+  eventColorResolver,
+}: {
+  currentDate: Date;
+  events: CalendarEvent[];
   onEventClick: (event: CalendarEvent) => void;
   draggedEvent: CalendarEvent | null;
   draggedOverSlot: { date: Date; hour?: number } | null;
@@ -867,6 +908,7 @@ function WeekView({
   onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+  eventColorResolver?: (event: CalendarEvent) => string | undefined;
 }) {
   const weekStart = getWeekStart(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -963,14 +1005,15 @@ function WeekView({
                     aria-label={`Calendar cell for ${date.toLocaleDateString()} at ${hour}:00`}
                   >
                     {dayEvents.map(event => (
-                      <EventCard 
-                        key={event.id} 
-                        event={event} 
-                        compact 
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        compact
                         onClick={onEventClick}
                         onDragStart={onDragStart}
                         onDragEnd={onDragEnd}
                         isDragging={draggedEvent?.id === event.id}
+                        eventColorResolver={eventColorResolver}
                       />
                     ))}
                   </div>
@@ -985,9 +1028,9 @@ function WeekView({
 }
 
 // Day View
-function DayView({ 
-  currentDate, 
-  events, 
+function DayView({
+  currentDate,
+  events,
   onEventClick,
   draggedEvent,
   draggedOverSlot,
@@ -995,10 +1038,11 @@ function DayView({
   onDragEnd,
   onDragOver,
   onDragLeave,
-  onDrop
-}: { 
-  currentDate: Date; 
-  events: CalendarEvent[]; 
+  onDrop,
+  eventColorResolver,
+}: {
+  currentDate: Date;
+  events: CalendarEvent[];
   onEventClick: (event: CalendarEvent) => void;
   draggedEvent: CalendarEvent | null;
   draggedOverSlot: { date: Date; hour?: number } | null;
@@ -1007,6 +1051,7 @@ function DayView({
   onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+  eventColorResolver?: (event: CalendarEvent) => string | undefined;
 }) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
@@ -1042,14 +1087,15 @@ function DayView({
           <div className="border-b border-clawd-border p-4 space-y-2 flex-shrink-0">
             <div className="text-xs font-semibold text-clawd-text-dim mb-2">ALL DAY</div>
             {allDayEvents.map(event => (
-              <EventCard 
-                key={event.id} 
-                event={event} 
-                compact 
+              <EventCard
+                key={event.id}
+                event={event}
+                compact
                 onClick={onEventClick}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
                 isDragging={draggedEvent?.id === event.id}
+                eventColorResolver={eventColorResolver}
               />
             ))}
           </div>
@@ -1094,13 +1140,14 @@ function DayView({
                   aria-label={`Time slot at ${hour}:00`}
                 >
                   {hourEvents.map(event => (
-                    <EventCard 
-                      key={event.id} 
-                      event={event} 
+                    <EventCard
+                      key={event.id}
+                      event={event}
                       onClick={onEventClick}
                       onDragStart={onDragStart}
                       onDragEnd={onDragEnd}
                       isDragging={draggedEvent?.id === event.id}
+                      eventColorResolver={eventColorResolver}
                     />
                   ))}
                 </div>
@@ -1114,7 +1161,7 @@ function DayView({
 }
 
 // Agenda View
-function AgendaView({ currentDate, events, onEventClick }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void }) {
+function AgendaView({ currentDate, events, onEventClick, eventColorResolver }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void; eventColorResolver?: (event: CalendarEvent) => string | undefined }) {
   // Group events by date, starting from currentDate
   const upcomingEvents = events
     .filter(event => {
@@ -1171,7 +1218,7 @@ function AgendaView({ currentDate, events, onEventClick }: { currentDate: Date; 
 
               <div className="space-y-3">
                 {dateEvents.map(event => (
-                  <EventCard key={event.id} event={event} onClick={onEventClick} />
+                  <EventCard key={event.id} event={event} onClick={onEventClick} eventColorResolver={eventColorResolver} />
                 ))}
               </div>
             </div>
