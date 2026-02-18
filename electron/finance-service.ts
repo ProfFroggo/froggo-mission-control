@@ -16,6 +16,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import ExcelJS from 'exceljs';
 import { prepare } from './database';
 import { safeLog } from './logger';
 import { getFinanceAgentBridge } from './finance-agent-bridge';
@@ -812,6 +813,121 @@ ${pdfText.slice(0, 15000)}`;
       const row = prepare(`SELECT COUNT(*) as total, SUM(CASE WHEN status='confirmed' THEN 1 ELSE 0 END) as confirmed, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending FROM finance_recurring ${whereClause}`).get(...params) as { total: number; confirmed: number; pending: number };
       return { success: true, stats: row };
     } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ============== XLSX EXPORT HANDLER ==============
+
+  ipcMain.handle('finance:export:xlsx', async (_, opts: {
+    accountId?: string;
+    dateFrom?: number;   // epoch ms, optional
+    dateTo?: number;     // epoch ms, optional
+  }) => {
+    try {
+      const savePath = await dialog.showSaveDialog({
+        defaultPath: `finance-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        filters: [{ name: 'Excel Spreadsheet', extensions: ['xlsx'] }],
+      });
+      if (savePath.canceled || !savePath.filePath) return { success: false, canceled: true };
+
+      // Build WHERE clause for transaction filtering
+      const conditions: string[] = [];
+      const params: (string | number)[] = [];
+      if (opts.accountId) { conditions.push('t.account_id = ?'); params.push(opts.accountId); }
+      if (opts.dateFrom) { conditions.push('t.date >= ?'); params.push(opts.dateFrom); }
+      if (opts.dateTo) { conditions.push('t.date <= ?'); params.push(opts.dateTo); }
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      const transactions = prepare(
+        `SELECT t.date, t.description, t.amount, t.currency, t.category, t.budget_type, t.account_id, a.name as account_name FROM finance_transactions t LEFT JOIN finance_accounts a ON t.account_id = a.id ${whereClause} ORDER BY t.account_id, t.date DESC`
+      ).all(...params) as Array<{ date: number; description: string; amount: number; currency: string; category: string; budget_type: string; account_id: string; account_name: string }>;
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Froggo Finance';
+      workbook.created = new Date();
+
+      // --- Summary Sheet ---
+      const summarySheet = workbook.addWorksheet('Summary');
+      summarySheet.columns = [
+        { header: 'Metric', key: 'metric', width: 28 },
+        { header: 'Value', key: 'value', width: 18 },
+      ];
+
+      const totalIncome = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+      const totalExpenses = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0);
+      const net = totalIncome + totalExpenses;
+
+      summarySheet.addRow({ metric: 'Total Income', value: totalIncome.toFixed(2) });
+      summarySheet.addRow({ metric: 'Total Expenses', value: totalExpenses.toFixed(2) });
+      summarySheet.addRow({ metric: 'Net', value: net.toFixed(2) });
+      summarySheet.addRow({ metric: 'Transaction Count', value: transactions.length });
+
+      // Top categories by spend
+      const categoryMap = new Map<string, number>();
+      for (const t of transactions) {
+        if (t.amount < 0) {
+          const cat = t.category || 'Uncategorized';
+          categoryMap.set(cat, (categoryMap.get(cat) || 0) + Math.abs(t.amount));
+        }
+      }
+      const topCategories = [...categoryMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+      summarySheet.addRow({});
+      summarySheet.addRow({ metric: 'Top Categories by Spend', value: '' });
+      for (const [cat, amount] of topCategories) {
+        summarySheet.addRow({ metric: `  ${cat}`, value: amount.toFixed(2) });
+      }
+
+      // Style header row bold
+      summarySheet.getRow(1).font = { bold: true };
+
+      // --- Per-Account Sheets ---
+      // Group transactions by account
+      const accountGroups = new Map<string, typeof transactions>();
+      for (const t of transactions) {
+        const key = t.account_id || 'unknown';
+        if (!accountGroups.has(key)) accountGroups.set(key, []);
+        accountGroups.get(key)!.push(t);
+      }
+
+      for (const [accountId, txs] of accountGroups.entries()) {
+        const accountName = txs[0].account_name || accountId;
+        // Excel sheet name max 31 chars, no special chars
+        const sheetName = accountName.replace(/[:/\\?*[\]]/g, '-').substring(0, 31);
+        const sheet = workbook.addWorksheet(sheetName);
+        sheet.columns = [
+          { header: 'Date', key: 'date', width: 14 },
+          { header: 'Description', key: 'description', width: 40 },
+          { header: 'Amount', key: 'amount', width: 14 },
+          { header: 'Currency', key: 'currency', width: 10 },
+          { header: 'Category', key: 'category', width: 20 },
+          { header: 'Budget Type', key: 'budget_type', width: 16 },
+        ];
+
+        for (const t of txs) {
+          sheet.addRow({
+            date: new Date(t.date).toISOString().slice(0, 10),
+            description: t.description,
+            amount: t.amount,
+            currency: t.currency || 'EUR',
+            category: t.category || '',
+            budget_type: t.budget_type || '',
+          });
+        }
+
+        sheet.getRow(1).font = { bold: true };
+        // Color negative amounts red (column C)
+        sheet.getColumn('amount').eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+          if (rowNumber > 1 && typeof cell.value === 'number' && cell.value < 0) {
+            cell.font = { color: { argb: 'FFCC0000' } };
+          }
+        });
+      }
+
+      await workbook.xlsx.writeFile(savePath.filePath);
+      return { success: true, path: savePath.filePath };
+    } catch (error: any) {
+      safeLog.error('[Finance] Export XLSX error:', error.message);
       return { success: false, error: error.message };
     }
   });

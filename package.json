@@ -48,6 +48,7 @@
     "better-sqlite3": "^12.6.2",
     "diff": "^8.0.3",
     "dompurify": "^3.3.1",
+    "exceljs": "^4.4.0",
     "fuse.js": "^7.1.0",
     "imap": "^0.8.19",
     "lucide-react": "^0.303.0",
