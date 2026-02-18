@@ -19,7 +19,21 @@ interface SidebarProps {
 // Icons are now provided by ViewRegistry — no hardcoded icon map needed
 
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange }: SidebarProps) {
-  const [expanded, setExpanded] = useState(true); // Open by default
+  // Load persisted sidebar state from localStorage
+  const [expanded, setExpanded] = useState(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    return saved !== null ? saved === 'true' : true; // Default: open
+  });
+  
+  // Listen for sidebar state changes from settings
+  useEffect(() => {
+    const handler = () => {
+      const saved = localStorage.getItem('sidebarExpanded');
+      setExpanded(saved !== null ? saved === 'true' : true);
+    };
+    window.addEventListener('sidebarStateChange', handler);
+    return () => window.removeEventListener('sidebarStateChange', handler);
+  }, []);
   const [inboxCount, setInboxCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
   const { tasks, activities } = useStore();
@@ -46,6 +60,11 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     const width = expanded ? 208 : 64; // w-52 = 208px, w-16 = 64px
     onWidthChange?.(width);
   }, [expanded, onWidthChange]);
+  
+  // Persist sidebar expanded state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarExpanded', String(expanded));
+  }, [expanded]);
   
   // Load inbox count from froggo-db
   const loadInboxCount = async () => {

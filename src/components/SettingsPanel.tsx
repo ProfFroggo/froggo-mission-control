@@ -468,6 +468,36 @@ export default function SettingsPanel() {
               </div>
             </section>
 
+            {/* Navigation */}
+            <section>
+              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+                <Monitor size={16} /> Navigation
+              </h2>
+              <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Collapsed Sidebar</div>
+                    <div className="text-sm text-clawd-text-dim">Show sidebar as icon only</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newValue = !localStorage.getItem('sidebarExpanded') || localStorage.getItem('sidebarExpanded') === 'true';
+                      localStorage.setItem('sidebarExpanded', String(!newValue));
+                      // Trigger a custom event so Sidebar can pick up the change
+                      window.dispatchEvent(new Event('sidebarStateChange'));
+                    }}
+                    className={`w-12 h-6 rounded-full transition-colors ${
+                      localStorage.getItem('sidebarExpanded') === 'false' ? 'bg-success' : 'bg-clawd-border'
+                    }`}
+                  >
+                    <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
+                      localStorage.getItem('sidebarExpanded') === 'false' ? 'translate-x-6' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+            </section>
+
             {/* Voice */}
             <section>
               <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
