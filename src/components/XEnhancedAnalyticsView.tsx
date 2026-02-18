@@ -264,7 +264,7 @@ export function XEnhancedAnalyticsView() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-clawd-text">Enhanced Analytics</h1>
-              <p className="text-sm text-clawd-text-dim">Deep insights for your X/Twitter performance</p>
+              <p className="text-sm text-clawd-text-dim">Deep insights for your social media performance</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

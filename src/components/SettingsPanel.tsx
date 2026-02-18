@@ -61,7 +61,7 @@ const defaultKeyboardShortcuts: KeyboardShortcut[] = [
   { id: 'analytics', name: 'Analytics', description: 'Navigate to Analytics', defaultKey: '3', currentKey: '3', modifiers: ['cmd'] },
   { id: 'kanban', name: 'Tasks', description: 'Navigate to Tasks', defaultKey: '4', currentKey: '4', modifiers: ['cmd'] },
   { id: 'agents', name: 'Agents', description: 'Navigate to Agents', defaultKey: '5', currentKey: '5', modifiers: ['cmd'] },
-  { id: 'twitter', name: 'X / Twitter', description: 'Navigate to X / Twitter', defaultKey: '6', currentKey: '6', modifiers: ['cmd'] },
+  { id: 'twitter', name: 'Social Media', description: 'Navigate to Social Media', defaultKey: '6', currentKey: '6', modifiers: ['cmd'] },
   { id: 'meetings', name: 'Meetings', description: 'Navigate to Meetings', defaultKey: '7', currentKey: '7', modifiers: ['cmd'] },
   { id: 'voicechat', name: 'Voice Chat', description: 'Navigate to Voice Chat', defaultKey: '8', currentKey: '8', modifiers: ['cmd'] },
   { id: 'accounts', name: 'Accounts', description: 'Navigate to Accounts', defaultKey: '9', currentKey: '9', modifiers: ['cmd'] },

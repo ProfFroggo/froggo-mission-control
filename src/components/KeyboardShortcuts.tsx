@@ -13,7 +13,7 @@ const shortcuts = [
     { keys: ['⌘', '3'], action: 'Analytics' },
     { keys: ['⌘', '4'], action: 'Tasks (Kanban)' },
     { keys: ['⌘', '5'], action: 'Agents' },
-    { keys: ['⌘', '6'], action: 'X / Twitter' },
+    { keys: ['⌘', '6'], action: 'Social Media' },
     { keys: ['⌘', '7'], action: 'Meetings' },
     { keys: ['⌘', '8'], action: 'Voice Chat' },
     { keys: ['⌘', '9'], action: 'Connected Accounts' },
@@ -91,7 +91,7 @@ const shortcuts = [
     { keys: ['R'], action: 'Reject' },
     { keys: ['X'], action: 'Defer' },
   ]},
-  { category: 'X / Twitter', items: [
+  { category: 'Social Media', items: [
     { keys: ['⌘', 'N'], action: 'New Tweet' },
     { keys: ['⌘', 'Enter'], action: 'Send Tweet' },
     { keys: ['⌘', '⇧', 'R'], action: 'Retweet' },

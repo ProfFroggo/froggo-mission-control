@@ -38,7 +38,7 @@ const PLATFORM_OPTIONS = [
   { id: 'whatsapp', label: 'WhatsApp', icon: '💬' },
   { id: 'telegram', label: 'Telegram', icon: '✈️' },
   { id: 'discord', label: 'Discord', icon: '🎮' },
-  { id: 'twitter', label: 'X/Twitter', icon: '𝕏' },
+  { id: 'twitter', label: 'Social Media', icon: '𝕏' },
 ];
 
 const QUICK_FILTER_EXAMPLES = [

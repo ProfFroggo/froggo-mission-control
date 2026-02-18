@@ -34,7 +34,7 @@ export default function XTwitterPage() {
       <div className="flex items-center justify-between p-4 border-b border-clawd-border">
         <div className="flex items-center gap-2">
           <XLogo size={24} />
-          <h1 className="text-xl font-semibold">X / Twitter</h1>
+          <h1 className="text-xl font-semibold">Social Media</h1>
           <span className="px-2 py-0.5 text-xs bg-info-subtle text-info rounded-full">
             Multi-Agent Pipeline
           </span>

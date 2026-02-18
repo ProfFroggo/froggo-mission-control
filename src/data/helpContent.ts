@@ -297,7 +297,7 @@ Froggo has access to:
   // X/Twitter
   {
     id: 'twitter-panel',
-    title: 'X / Twitter Integration',
+    title: 'Social Media Integration',
     category: 'Social Media',
     content: `The X panel (⌘7) manages your Twitter presence.
 
@@ -346,7 +346,7 @@ All tweets require approval before posting (unless auto-approval enabled in Sett
 - ⌘3: Analytics
 - ⌘4: Tasks (Kanban)
 - ⌘5: Agents
-- ⌘6: X/Twitter
+- ⌘6: Social Media
 - ⌘7: Voice
 - ⌘8: Chat
 - ⌘9: Connected Accounts

@@ -335,7 +335,7 @@ export default function XDraftComposer() {
             {/* Preview */}
             {showPreview && selectedPlanId && (
               <div className="bg-clawd-bg-alt border border-clawd-border rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-clawd-text mb-3">Preview (X/Twitter Style)</h4>
+                <h4 className="text-sm font-semibold text-clawd-text mb-3">Preview (X Style)</h4>
                 <div className="space-y-3">
                   {tweets.filter(t => t.trim()).map((tweet, index) => (
                     <div key={`${tweet.slice(0, 20)}-${index}`} className="bg-clawd-bg-alt rounded-lg p-4 border border-clawd-border">
