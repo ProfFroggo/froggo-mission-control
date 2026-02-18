@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 16 (X/Twitter Calendar)
+**Current focus:** v3.0 milestone — Phase 17 (X/Twitter Mentions & Reply Guy)
 
 ## Current Position
 
-Phase: 16 of 21 (X/Twitter Calendar)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-18 — Phase 15 complete (2 plans, all verified)
+Phase: 17 of 21 (X/Twitter Mentions & Reply Guy)
+Plan: —
+Status: Not started
+Last activity: 2026-02-18 — Completed Phase 16 (X/Twitter Calendar)
 
-Progress: [███░░░░░░░░░░░░░░░░░] 33% (v3.0, 3/9 phases)
+Progress: [█████░░░░░░░░░░░░░░░] 42% (v3.0, 5/9 phases complete: 13,14,15,16)
 
 ## Performance Metrics
 
@@ -33,8 +33,8 @@ Progress: [███░░░░░░░░░░░░░░░░░] 33% (v3
 - Total execution time: ~32min
 
 **Velocity (v2.2 / phase 13+):**
-- Plans completed: 4
-- Average duration: ~1-2min
+- Plans completed: 6
+- Average duration: ~2min
 
 ## Accumulated Context
 
@@ -47,6 +47,12 @@ Carried forward:
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+
+Phase 16 decisions:
+- eventColorResolver callback pattern for custom event colors in EpicCalendar
+- externalEvents prop bypasses fetchEvents entirely — external consumers manage own data
+- isEventDraggable callback on EpicCalendar/EventCard for per-event drag control
+- CustomEvent x-tab-change for cross-component tab switching (decouples calendar from XTwitterPage)
 
 Phase 15 decisions:
 - List views fetch all items (no status filter) so users see proposed, approved, rejected together
@@ -85,5 +91,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 15-01-PLAN.md. Phase 15 fully complete (both plans). XTW-11, XTW-12, XTW-13 verified.
+Stopped at: Completed 16-02-PLAN.md. Phase 16 complete. Drag-restrict + Create Tweet wired.
 Resume file: None

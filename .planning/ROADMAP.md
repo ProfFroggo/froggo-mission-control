@@ -74,11 +74,11 @@
 
 ---
 
-### 🚧 v3.0 App-Wide Polish & X/Twitter Overhaul (In Progress)
+### v3.0 App-Wide Polish & X/Twitter Overhaul (In Progress)
 
 **Milestone Goal:** Every page functions correctly in dark mode, X/Twitter page fully rebuilt with working calendar and automation builder, Finance page wired end-to-end, Writing panes usable, Library populated with real data.
 
-#### ✅ Phase 13: Global UI Consistency — COMPLETE 2026-02-18
+#### Phase 13: Global UI Consistency -- COMPLETE 2026-02-18
 **Goal**: Every page looks and behaves correctly in dark mode with consistent UI components
 **Depends on**: Phase 12
 **Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05, UI-06
@@ -91,7 +91,7 @@ Plans:
 - [x] 13-04-PLAN.md -- Standardize user chat bubbles (X/Twitter, Finance, Voice, QuickActions)
 - [x] 13-05-PLAN.md -- Fix chat input bar flex layout alignment (pinned to bottom)
 
-#### ✅ Phase 14: X/Twitter Identity, Dark Mode & Tab Structure — COMPLETE 2026-02-18
+#### Phase 14: X/Twitter Identity, Dark Mode & Tab Structure -- COMPLETE 2026-02-18
 **Goal**: The X/Twitter page presents correctly (X branding, dark mode, clean tab order) with approval panels stripped from non-content tabs
 **Depends on**: Phase 13
 **Requirements**: XTW-01, XTW-02, XTW-03, XTW-04, XTW-05, XTW-06, XTW-07, XTW-08
@@ -101,7 +101,7 @@ Plans:
 - [x] 14-01-PLAN.md -- X logo, page label, dark mode styling (XDraftComposer token fixes)
 - [x] 14-02-PLAN.md -- Tab order, approval panel removal, automations routing bug fix
 
-#### ✅ Phase 15: X/Twitter Content Flow — COMPLETE 2026-02-18
+#### Phase 15: X/Twitter Content Flow -- COMPLETE 2026-02-18
 **Goal**: Content Plan and Drafts tabs show real draft content with image attachment support, and the agent chat is wired and fast
 **Depends on**: Phase 14
 **Requirements**: XTW-09, XTW-10, XTW-11, XTW-12, XTW-13
@@ -116,31 +116,31 @@ Plans:
 - [x] 15-01-PLAN.md -- Replace center pane composers with list/viewer + image attachment UI
 - [x] 15-02-PLAN.md -- Verify agent chat wiring to writer + fix send button styling
 
-#### Phase 16: X/Twitter Calendar
+#### Phase 16: X/Twitter Calendar -- COMPLETE 2026-02-18
 **Goal**: The X/Twitter calendar reuses the existing schedule component, shows tweet events colour-coded by status, and supports drag-to-reschedule
 **Depends on**: Phase 15
 **Requirements**: XTW-14, XTW-15, XTW-16, XTW-17, XTW-18
 **Success Criteria** (what must be TRUE):
-  1. Calendar uses the same component as schedule.tsx — not a custom re-implementation
+  1. Calendar uses the same component as schedule.tsx -- not a custom re-implementation
   2. Scheduled tweets appear as events on the calendar, colour-coded by status (research / plan / draft / scheduled)
   3. User can drag a tweet event to a different day and the tweet's scheduled date updates
   4. Top-right button on calendar reads "Create Tweet" (not "content mix")
-  5. Calendar view is calendar + chat interface only — no approval panel visible
-**Plans**: TBD
+  5. Calendar view is calendar + chat interface only -- no approval panel visible
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 16-01: Wire schedule.tsx component + tweet events + colour coding
-- [ ] 16-02: Drag-to-reschedule + Create Tweet button + layout cleanup
+- [x] 16-01-PLAN.md -- Extend EpicCalendar with external event props + rewrite XCalendarView as adapter with colour-coded pipeline events
+- [x] 16-02-PLAN.md -- Drag-to-reschedule for scheduled tweets + Create Tweet button + non-draggable research/plan/draft events
 
 #### Phase 17: X/Twitter Mentions & Reply Guy
-**Goal**: Mentions tab shows incoming mentions with inline reply capability, Reply Guy shows suggestions inline with approve/edit/send per item — both with agent chat
+**Goal**: Mentions tab shows incoming mentions with inline reply capability, Reply Guy shows suggestions inline with approve/edit/send per item -- both with agent chat
 **Depends on**: Phase 15
 **Requirements**: XTW-19, XTW-20, XTW-21, XTW-22, XTW-23, XTW-24
 **Success Criteria** (what must be TRUE):
   1. Mentions tab shows incoming mentions and the user can reply directly from the mentions UI without leaving the tab
   2. User can inject a response to a mention from within the mentions UI
   3. Mentions tab has a chat interface connected to an agent
-  4. Reply Guy shows reply suggestions in the main UI — not inside an approval side panel
+  4. Reply Guy shows reply suggestions in the main UI -- not inside an approval side panel
   5. Each Reply Guy suggestion has inline approve / edit / send controls
   6. Reply Guy has a chat interface connected to an agent
 **Plans**: TBD
@@ -164,7 +164,7 @@ Plans:
 
 Plans:
 - [ ] 18-01: Automations visual rule builder + layout cleanup
-- [ ] 18-02: Analytics tab — metrics, competitor insights, downloadable report
+- [ ] 18-02: Analytics tab -- metrics, competitor insights, downloadable report
 
 #### Phase 19: Writing Pane Layout Fixes
 **Goal**: Writing module 3-pane layout is usable on first load with visible drag handles and workable minimum widths
@@ -172,8 +172,8 @@ Plans:
 **Requirements**: WRT-01, WRT-02, WRT-03, WRT-04
 **Success Criteria** (what must be TRUE):
   1. Left double-bar drag handles between panes 1 and 2 are visible and functional on first load without any manual resizing
-  2. Pane 1 (chapters list) opens at ≥180px and renders chapter content immediately
-  3. Pane 2 (AI chat) opens at ≥280px and renders the chat interface immediately
+  2. Pane 1 (chapters list) opens at >=180px and renders chapter content immediately
+  3. Pane 2 (AI chat) opens at >=280px and renders the chat interface immediately
   4. Dragging any pane handle works smoothly across the full usable width range without snapping or collapsing unexpectedly
 **Plans**: TBD
 
@@ -185,7 +185,7 @@ Plans:
 **Depends on**: Phase 13
 **Requirements**: LIB-01, LIB-02, LIB-03
 **Success Criteria** (what must be TRUE):
-  1. Skills section in Library reads and displays actual agent skills from the system — no empty state on first load
+  1. Skills section in Library reads and displays actual agent skills from the system -- no empty state on first load
   2. Every file in Library can be tagged with: project name, category, and content type
   3. File category picker includes: Marketing, UI/Design, Dev, Research, Finance, Test Logs, Content, Social, Other
 **Plans**: TBD
@@ -194,12 +194,12 @@ Plans:
 - [ ] 20-01: Agent skills data wiring + file tagging + expanded categories
 
 #### Phase 21: Finance End-to-End Wiring
-**Goal**: Finance page fully functional — insights load, document upload works, agent chat connects, budget creation works, and UI matches app style
+**Goal**: Finance page fully functional -- insights load, document upload works, agent chat connects, budget creation works, and UI matches app style
 **Depends on**: Phase 13
 **Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06
 **Success Criteria** (what must be TRUE):
   1. Finance insights panel loads data without error when the page opens
-  2. Document upload accepts PDF and CSV files — file picker opens and the file is processed
+  2. Document upload accepts PDF and CSV files -- file picker opens and the file is processed
   3. Chat panel initializes and connects to the finance-manager agent without error
   4. "Create Budget" button opens a budget creation flow (form or modal)
   5. "Upload Statement" button opens the file picker and ingests the selected file
@@ -234,7 +234,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 13. Global UI Consistency | v3.0 | 5/5 | Complete | 2026-02-18 |
 | 14. X/Twitter Identity + Tabs | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 15. X/Twitter Content Flow | v3.0 | 2/2 | Complete | 2026-02-18 |
-| 16. X/Twitter Calendar | v3.0 | 0/2 | Not started | - |
+| 16. X/Twitter Calendar | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 17. X/Twitter Mentions + Reply Guy | v3.0 | 0/2 | Not started | - |
 | 18. X/Twitter Automations + Analytics | v3.0 | 0/2 | Not started | - |
 | 19. Writing Pane Layout | v3.0 | 0/1 | Not started | - |
