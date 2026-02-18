@@ -8209,6 +8209,36 @@ ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
   }
 });
 
+ipcMain.handle('finance:createBudget', async (_, data: {
+  name: string;
+  budgetType: 'family' | 'crypto';
+  totalBudget: number;
+  currency?: string;
+  periodStart?: number;
+  periodEnd?: number;
+}) => {
+  try {
+    const now = Date.now();
+    const id = `budget-${now}`;
+    const currency = data.currency || 'EUR';
+
+    const today = new Date();
+    const periodStart = data.periodStart || new Date(today.getFullYear(), today.getMonth(), 1).getTime();
+    const periodEnd = data.periodEnd || new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+    prepare(`
+      INSERT INTO finance_budgets (id, name, budget_type, period_start, period_end, total_budget, spent, remaining, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 0, ?, 'active', ?, ?)
+    `).run(id, data.name, data.budgetType, periodStart, periodEnd, data.totalBudget, data.totalBudget, now, now);
+
+    safeLog.log(`[Finance] Created budget: ${data.name} (${data.budgetType}, ${data.totalBudget} ${currency})`);
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[Finance] Create budget error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
   try {
     const daysBack = options?.daysBack || 7;

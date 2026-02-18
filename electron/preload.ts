@@ -622,7 +622,9 @@ contextBridge.exposeInMainWorld('clawdbot', {
     getAlerts: () => ipcRenderer.invoke('finance:getAlerts'),
     getInsights: () => ipcRenderer.invoke('finance:getInsights'),
     dismissInsight: (insightId: string) => ipcRenderer.invoke('finance:dismissInsight', insightId),
-    triggerAnalysis: (options?: { daysBack?: number; focus?: string }) => 
+    createBudget: (data: { name: string; budgetType: string; totalBudget: number; currency?: string }) => ipcRenderer.invoke('finance:createBudget', data),
+    uploadPDF: (pdfBuffer: ArrayBuffer, filename: string) => ipcRenderer.invoke('finance:uploadPDF', pdfBuffer, filename),
+    triggerAnalysis: (options?: { daysBack?: number; focus?: string }) =>
       ipcRenderer.invoke('finance:triggerAnalysis', options),
   },
   financeAgent: {
