@@ -97,6 +97,12 @@ export function dismissToast(id: string) {
   toastListeners.forEach(listener => listener(currentToasts));
 }
 
+/** Reset global toast state (for tests) */
+export function _resetToasts() {
+  currentToasts = [];
+  toastListeners.forEach(listener => listener([]));
+}
+
 export default function ToastContainer() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
