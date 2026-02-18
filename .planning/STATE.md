@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** Planning next milestone
+**Current focus:** v4.0 — X API + Finance Depth + Agent Management
 
 ## Current Position
 
-Phase: Not started (next milestone not yet defined)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Ready to plan
-Last activity: 2026-02-18 — v3.0 milestone archived
+Status: Defining requirements
+Last activity: 2026-02-18 — Milestone v4.0 started
 
 Progress: [████████████████████] 100% (v3.0, 10/10 phases: 13-21 done)
 
