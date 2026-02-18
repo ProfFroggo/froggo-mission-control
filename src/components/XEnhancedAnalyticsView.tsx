@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  BarChart2, TrendingUp, Eye, Activity, Download, Users, RefreshCw,
+  BarChart2, TrendingUp, Eye, Activity, Users, RefreshCw,
   MessageCircle, Repeat, Heart, MousePointer, Calendar, Clock, Lightbulb,
   ArrowUp, ArrowDown, Minus, Zap
 } from 'lucide-react';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, HeatmapCell
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Spinner } from './LoadingStates';
 
@@ -18,7 +18,7 @@ interface PostMetrics {
   likes: number;
   retweets: number;
   replies: number;
-  clicks: number;
+  clicks: number;  // Always 0 — X API free tier doesn't expose click data
   type: 'single' | 'thread' | 'reply' | 'quote';
 }
 
@@ -26,15 +26,21 @@ interface AnalyticsSummary {
   totalPosts: number;
   totalImpressions: number;
   engagementRate: number;
-  followerGrowth: number;
-  avgEngagement: number;
+  followerCount: number;  // Real current count
+  avgLikesPerTweet: number;
+  avgRetweetsPerTweet: number;
 }
 
-interface HeatmapCellData {
-  day: number;
-  hour: number;
-  value: number;
+interface AnalyticsData {
+  impressionsOverTime: { date: string; impressions: number; engagement: number }[];
+  followerGrowth: { date: string; followers: number }[];
+  contentTypes: { name: string; value: number; engagement: number }[];
+  heatmapData: { day: string; hour: number; value: number }[];
+  postMetrics: PostMetrics[];
+  summary: AnalyticsSummary;
+  suggestions: Suggestion[];
 }
+
 
 interface Suggestion {
   id: string;
@@ -47,171 +53,133 @@ interface Suggestion {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-// Generate mock data for demonstration
-const generateMockData = () => {
-  const now = Date.now();
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-  
-  // Generate impressions over time
-  const impressionsOverTime = [];
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now - i * 24 * 60 * 60 * 1000);
-    impressionsOverTime.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      impressions: Math.floor(5000 + Math.random() * 15000 + (29 - i) * 200),
-      engagement: Math.floor(200 + Math.random() * 800 + (29 - i) * 10),
-    });
-  }
-
-  // Generate follower growth
-  const followerGrowth = [];
-  let followers = 4200;
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now - i * 24 * 60 * 60 * 1000);
-    followers += Math.floor(Math.random() * 50 - 10);
-    followerGrowth.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      followers,
-    });
-  }
-
-  // Content type performance
-  const contentTypes = [
-    { name: 'Threads', value: 35, engagement: 5.2 },
-    { name: 'Single Tweets', value: 45, engagement: 2.8 },
-    { name: 'Replies', value: 12, engagement: 1.9 },
-    { name: 'Quotes', value: 8, engagement: 3.4 },
-  ];
-
-  // Generate heatmap data (day of week x hour)
-  const heatmapData: { day: string; hour: number; value: number }[] = [];
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  for (let day = 0; day < 7; day++) {
-    for (let hour = 0; hour < 24; hour++) {
-      // Higher engagement during work hours and evenings
-      let baseValue = 10;
-      if (hour >= 9 && hour <= 11) baseValue = 60;
-      if (hour >= 12 && hour <= 14) baseValue = 45;
-      if (hour >= 18 && hour <= 21) baseValue = 70;
-      if (hour >= 21 && hour <= 23) baseValue = 50;
-      if (day >= 1 && day <= 5) baseValue *= 1.3; // Weekdays higher
-      
-      heatmapData.push({
-        day: days[day],
-        hour,
-        value: Math.floor(baseValue + Math.random() * 30),
-      });
-    }
-  }
-
-  // Generate post-level metrics
-  const postMetrics: PostMetrics[] = [];
-  const types: PostMetrics['type'][] = ['single', 'thread', 'reply', 'quote'];
-  for (let i = 0; i < 25; i++) {
-    const type = types[Math.floor(Math.random() * types.length)];
-    const impressions = Math.floor(1000 + Math.random() * 20000);
-    const engagement = Math.floor(impressions * (0.01 + Math.random() * 0.08));
-    
-    postMetrics.push({
-      id: `post-${i}`,
-      content: `Sample tweet content #${i + 1} - ${type === 'thread' ? 'This is a thread with multiple tweets' : 'Interesting thought about industry trends'}`,
-      created_at: now - i * 12 * 60 * 60 * 1000,
-      impressions,
-      likes: Math.floor(engagement * 0.6),
-      retweets: Math.floor(engagement * 0.25),
-      replies: Math.floor(engagement * 0.1),
-      clicks: Math.floor(engagement * 0.05),
-      type,
-    });
-  }
-
-  // Summary
-  const summary: AnalyticsSummary = {
-    totalPosts: 156,
-    totalImpressions: 487000,
-    engagementRate: 3.8,
-    followerGrowth: 12.4,
-    avgEngagement: 3.2,
-  };
-
-  // Suggestions
-  const suggestions: Suggestion[] = [
-    {
-      id: '1',
-      type: 'timing',
-      title: 'Post more on Tuesdays at 2pm',
-      description: 'Your engagement is 3x higher on Tuesday afternoons. Schedule your best content for this slot.',
-      impact: 'high',
-      icon: '🕐',
-    },
-    {
-      id: '2',
-      type: 'content',
-      title: 'Threads outperform single tweets',
-      description: 'Your threads get 5x more engagement than single tweets. Consider converting key ideas into thread format.',
-      impact: 'high',
-      icon: '🧵',
-    },
-    {
-      id: '3',
-      type: 'timing',
-      title: 'Evening hours are golden',
-      description: 'Your audience is most active between 8-10pm. This is when your posts get 2x the average engagement.',
-      impact: 'medium',
-      icon: '🌙',
-    },
-    {
-      id: '4',
-      type: 'engagement',
-      title: 'Reply to more mentions',
-      description: 'Posts that engage with replies get 40% more impressions. Join conversations in your mentions.',
-      impact: 'medium',
-      icon: '💬',
-    },
-    {
-      id: '5',
-      type: 'growth',
-      title: 'Post consistently on weekdays',
-      description: 'Consistency correlates with follower growth. Aim for 3-5 posts per weekday.',
-      impact: 'low',
-      icon: '📈',
-    },
-  ];
-
-  return {
-    impressionsOverTime,
-    followerGrowth,
-    contentTypes,
-    heatmapData,
-    postMetrics,
-    summary,
-    suggestions,
-  };
-};
 
 type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights';
 
 export function XEnhancedAnalyticsView() {
   const [view, setView] = useState<AnalyticsView>('overview');
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<ReturnType<typeof generateMockData> | null>(null);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Try to load from X API first, fallback to mock
-      const xAnalytics = (window as any).clawdbot?.xAnalytics;
-      if (xAnalytics) {
-        // Real implementation would go here
+      const clawdbot = (window as any).clawdbot;
+
+      const [profileResult, tweetsResult] = await Promise.all([
+        clawdbot?.xAnalytics?.profile?.(),
+        clawdbot?.xAnalytics?.tweets?.(100),
+      ]);
+
+      const profile = profileResult?.data?.public_metrics || {};
+      const rawTweets: any[] = tweetsResult?.data || [];
+
+      // Map real tweets to PostMetrics
+      const postMetrics: PostMetrics[] = rawTweets.map((t: any) => ({
+        id: t.id,
+        content: t.text,
+        created_at: new Date(t.created_at).getTime(),
+        impressions: t.public_metrics?.impression_count || 0,
+        likes: t.public_metrics?.like_count || 0,
+        retweets: t.public_metrics?.retweet_count || 0,
+        replies: t.public_metrics?.reply_count || 0,
+        clicks: 0,  // Not available on free tier
+        type: 'single' as const,
+      }));
+
+      // Build impressions over time from real tweet dates
+      const dateMap: Record<string, { impressions: number; engagement: number }> = {};
+      for (const t of postMetrics) {
+        const dateKey = new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        if (!dateMap[dateKey]) dateMap[dateKey] = { impressions: 0, engagement: 0 };
+        dateMap[dateKey].impressions += t.impressions;
+        dateMap[dateKey].engagement += t.likes + t.retweets + t.replies;
       }
-      
-      // Simulate API delay
-      await new Promise(r => setTimeout(r, 800));
-      setData(generateMockData());
+      const impressionsOverTime = Object.entries(dateMap).map(([date, v]) => ({ date, ...v })).slice(-30);
+
+      const totalLikes = postMetrics.reduce((s, t) => s + t.likes, 0);
+      const totalRetweets = postMetrics.reduce((s, t) => s + t.retweets, 0);
+      const totalReplies = postMetrics.reduce((s, t) => s + t.replies, 0);
+      const totalEngagements = totalLikes + totalRetweets + totalReplies;
+      const followers = profile.followers_count || 0;
+      const engagementRate = followers > 0 && postMetrics.length > 0
+        ? ((totalEngagements / postMetrics.length) / followers * 100)
+        : 0;
+
+      const summary: AnalyticsSummary = {
+        totalPosts: postMetrics.length,
+        totalImpressions: postMetrics.reduce((s, t) => s + t.impressions, 0),
+        engagementRate,
+        followerCount: followers,
+        avgLikesPerTweet: postMetrics.length > 0 ? totalLikes / postMetrics.length : 0,
+        avgRetweetsPerTweet: postMetrics.length > 0 ? totalRetweets / postMetrics.length : 0,
+      };
+
+      // Content type breakdown
+      const contentTypes = [
+        { name: 'Single Tweets', value: postMetrics.filter(t => t.type === 'single').length, engagement: 0 },
+      ];
+
+      // Heatmap from real tweet timestamps
+      const heatmapData: { day: string; hour: number; value: number }[] = [];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const heatmapMap: Record<string, number> = {};
+      for (const t of postMetrics) {
+        const d = new Date(t.created_at);
+        const key = `${d.getDay()}-${d.getHours()}`;
+        heatmapMap[key] = (heatmapMap[key] || 0) + t.likes + t.retweets + t.replies + 1;
+      }
+      for (let day = 0; day < 7; day++) {
+        for (let hour = 0; hour < 24; hour++) {
+          heatmapData.push({ day: days[day], hour, value: heatmapMap[`${day}-${hour}`] || 0 });
+        }
+      }
+
+      // Follower growth: just current count (can't get historical without premium)
+      const followerGrowth = [{ date: 'Now', followers }];
+
+      // Suggestions based on real data
+      const suggestions: Suggestion[] = [];
+      if (postMetrics.length > 0) {
+        const best = [...postMetrics].sort((a, b) => (b.likes + b.retweets) - (a.likes + a.retweets))[0];
+        if (best) {
+          const bestDate = new Date(best.created_at);
+          suggestions.push({
+            id: '1',
+            type: 'timing',
+            title: `${days[bestDate.getDay()]}s at ${bestDate.getHours()}:00 perform best`,
+            description: `Your top tweet (${best.likes} likes, ${best.retweets} RTs) was posted at this time. Schedule your best content here.`,
+            impact: 'high',
+            icon: '🕐',
+          });
+        }
+        if (totalRetweets > totalLikes * 0.3) {
+          suggestions.push({
+            id: '2',
+            type: 'content',
+            title: 'High retweet rate — keep creating shareable content',
+            description: `${totalRetweets} retweets across ${postMetrics.length} tweets. Your content resonates.`,
+            impact: 'high',
+            icon: '🔁',
+          });
+        }
+      }
+
+      setData({
+        impressionsOverTime,
+        followerGrowth,
+        contentTypes,
+        heatmapData,
+        postMetrics,
+        summary,
+        suggestions,
+      });
+
     } catch (error) {
       console.error('Failed to load analytics:', error);
-      setData(generateMockData());
+      // On error, show empty state (not mock data)
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -259,10 +227,28 @@ export function XEnhancedAnalyticsView() {
     return <ArrowDown size={14} className="text-review" />;
   };
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
         <Spinner size={40} />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <BarChart2 size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
+          <p className="text-clawd-text font-medium mb-1">Could not load analytics</p>
+          <p className="text-sm text-clawd-text-dim">Check your X API credentials.</p>
+          <button
+            onClick={loadData}
+            className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg text-sm hover:bg-clawd-accent/90 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -356,21 +342,21 @@ export function XEnhancedAnalyticsView() {
                   <TrendingUp size={16} className="text-success" />
                   <span className="text-sm text-clawd-text-dim">Engagement Rate</span>
                 </div>
-                <div className="text-2xl font-bold text-success">{data.summary.engagementRate}%</div>
+                <div className="text-2xl font-bold text-success">{data.summary.engagementRate.toFixed(2)}%</div>
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Users size={16} className="text-purple-500" />
-                  <span className="text-sm text-clawd-text-dim">Follower Growth</span>
+                  <span className="text-sm text-clawd-text-dim">Followers</span>
                 </div>
-                <div className="text-2xl font-bold text-purple-500">+{data.summary.followerGrowth}%</div>
+                <div className="text-2xl font-bold text-purple-500">{formatNumber(data.summary.followerCount)}</div>
               </div>
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-2">
                   <Activity size={16} className="text-warning" />
-                  <span className="text-sm text-clawd-text-dim">Avg Engagement</span>
+                  <span className="text-sm text-clawd-text-dim">Avg Likes/Tweet</span>
                 </div>
-                <div className="text-2xl font-bold text-warning">{data.summary.avgEngagement}%</div>
+                <div className="text-2xl font-bold text-warning">{data.summary.avgLikesPerTweet.toFixed(1)}</div>
               </div>
             </div>
 
