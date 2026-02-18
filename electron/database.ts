@@ -8,7 +8,7 @@
 import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import { FROGGO_DB, SCHEDULE_DB, SECURITY_DB, SESSIONS_DB, SESSIONS_DB_LEGACY } from './paths';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('Database');
 

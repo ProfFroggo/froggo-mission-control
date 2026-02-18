@@ -6,7 +6,7 @@
 import { BrowserWindow } from 'electron';
 import { notificationService } from './notification-service';
 import { prepare } from './database';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('NotificationEvents');
 

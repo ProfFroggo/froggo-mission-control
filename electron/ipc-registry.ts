@@ -5,7 +5,7 @@
  * and avoid duplicate handler errors.
  */
 import { ipcMain, IpcMainInvokeEvent } from 'electron';
-import { createLogger } from '../src/utils/logger';
+import { createLogger } from './utils/logger';
 
 const logger = createLogger('IPC');
 const registeredHandlers = new Set<string>();
