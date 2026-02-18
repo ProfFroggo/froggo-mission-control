@@ -183,7 +183,7 @@ function isAllowedPath(filePath: string): boolean {
 **What goes wrong:** PII is removed from the main locations but remains in obscure places (backup files, .bak files, test fixtures).
 **Why it happens:** Grep for one email misses others; backup files are often ignored.
 **How to avoid:** Grep the entire `src/` and `electron/` trees for every known PII string. Also check `.bak` and `.backup` files. The complete PII inventory is documented in this research under "PII Inventory" below.
-**Warning signs:** Running `git log --all -S 'kevin@carbium'` still shows the strings in committed history.
+**Warning signs:** Running `git log --all -S '<email>'` still shows the strings in committed history.
 
 ### Pitfall 5: The sqlite3 CLI Shell Injection Vector
 
@@ -373,20 +373,20 @@ All locations of hardcoded personal information that must be externalized:
 
 | File | Line(s) | PII Type | Current Value |
 |------|---------|----------|---------------|
-| `src/store/userSettings.ts` | 22-29 | Name, email, phone, employer | Kevin MacArthur, kevin@carbium.io, +35054008841, bitso.com |
-| `src/components/EnhancedSettingsPanel.tsx` | 152 | Calendar account | kevin.macarthur@bitso.com |
-| `src/components/SettingsPanel.tsx` | 103 | Calendar account | kevin.macarthur@bitso.com |
-| `src/components/MorningBrief.tsx` | 134 | Calendar account | kevin.macarthur@bitso.com |
-| `src/components/CalendarWidget.tsx` | 39, 52 | Calendar account | kevin.macarthur@bitso.com |
-| `src/components/QuickModals.tsx` | 28 | Calendar account | kevin.macarthur@bitso.com |
-| `src/components/CommsInbox3Pane.tsx` | 103-104 | Email accounts | kevin.macarthur@bitso.com, kevin@carbium.io |
-| `src/components/VoiceChatPanel.tsx` | 1105 | Name, location, family details | Kevin MacArthur, Gibraltar, wife/daughters |
-| `src/lib/priorityScoring.ts` | 92 | Name identifier | kevin.macarthur |
-| `src/lib/smartAccountSelector.ts` | 119, 240 | Email account | kevin.macarthur@bitso.com |
-| `src/lib/folderRules.ts` | 252 | Domain | *.bitso.com |
-| `src/components/ConnectedAccountsPanel.tsx` | 338 | Email in example text | kevin.macarthur@bitso.com |
-| `src/components/VoicePanel.tsx.bak` | 85 | Name, employer, topics | Kevin MacArthur, Bitso |
-| `src/components/EpicCalendar.tsx.bak` | 70, 632 | Email accounts | kevin@carbium.io, kevin.macarthur@bitso.com |
+| `src/store/userSettings.ts` | 22-29 | Name, email, phone, employer | [REDACTED] |
+| `src/components/EnhancedSettingsPanel.tsx` | 152 | Calendar account | [REDACTED] |
+| `src/components/SettingsPanel.tsx` | 103 | Calendar account | [REDACTED] |
+| `src/components/MorningBrief.tsx` | 134 | Calendar account | [REDACTED] |
+| `src/components/CalendarWidget.tsx` | 39, 52 | Calendar account | [REDACTED] |
+| `src/components/QuickModals.tsx` | 28 | Calendar account | [REDACTED] |
+| `src/components/CommsInbox3Pane.tsx` | 103-104 | Email accounts | [REDACTED] |
+| `src/components/VoiceChatPanel.tsx` | 1105 | Name, location, family details | [REDACTED] |
+| `src/lib/priorityScoring.ts` | 92 | Name identifier | [REDACTED] |
+| `src/lib/smartAccountSelector.ts` | 119, 240 | Email account | [REDACTED] |
+| `src/lib/folderRules.ts` | 252 | Domain | [REDACTED] |
+| `src/components/ConnectedAccountsPanel.tsx` | 338 | Email in example text | [REDACTED] |
+| `src/components/VoicePanel.tsx.bak` | 85 | Name, employer, topics | [REDACTED] |
+| `src/components/EpicCalendar.tsx.bak` | 70, 632 | Email accounts | [REDACTED] |
 
 **Strategy:** Most calendar/email references should read from `useUserSettings.getState()` which already stores these values and persists them to localStorage. The `userSettings.ts` defaults should use placeholder values. Voice chat system prompt should pull from the settings store via IPC.
 
