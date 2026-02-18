@@ -852,6 +852,7 @@ declare global {
         list: (filters?: { status?: string; planId?: string; limit?: number }) => Promise<{ success: boolean; drafts?: unknown[]; error?: string }>;
         approve: (data: { id: string; approvedBy: string }) => Promise<{ success: boolean; error?: string }>;
         reject: (data: { id: string; reason?: string }) => Promise<{ success: boolean; error?: string }>;
+        pickImage: () => Promise<{ success: boolean; filePaths: string[] }>;
       };
       // X Schedule
       xSchedule?: {
