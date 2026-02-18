@@ -60,7 +60,7 @@ export function XAnalyticsView() {
   const handleDownloadReport = () => {
     const date = new Date().toISOString().slice(0, 10);
     const lines = [
-      `X/Twitter Daily Insights Report — ${date}`,
+      `Social Media Daily Insights Report — ${date}`,
       '='.repeat(50),
       '',
       '## Performance Summary',
@@ -149,7 +149,7 @@ export function XAnalyticsView() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-clawd-text">X Analytics</h1>
-              <p className="text-sm text-clawd-text-dim">Performance overview for your X/Twitter account</p>
+              <p className="text-sm text-clawd-text-dim">Performance overview for your social media account</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

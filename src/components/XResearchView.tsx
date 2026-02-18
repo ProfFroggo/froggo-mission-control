@@ -185,7 +185,7 @@ export function XResearchView() {
               Research
             </h1>
             <p className="text-sm text-clawd-text-dim mt-1">
-              Search X/Twitter for content inspiration and competitive insights
+              Search social media for content inspiration and competitive insights
             </p>
           </div>
           <button
@@ -292,13 +292,13 @@ export function XResearchView() {
           /* Loading State */
           <div className="flex flex-col items-center justify-center py-16">
             <Spinner size={40} />
-            <p className="text-clawd-text-dim mt-4">Searching X/Twitter...</p>
+            <p className="text-clawd-text-dim mt-4">Searching...</p>
           </div>
         ) : !searched ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Search size={48} className="text-clawd-text-dim opacity-30 mb-4" />
-            <p className="text-clawd-text font-medium mb-2">Research X/Twitter Content</p>
+            <p className="text-clawd-text font-medium mb-2">Research Social Media Content</p>
             <p className="text-clawd-text-dim text-sm max-w-md">
               Enter a search query to find trending tweets, relevant users, and topics. Save your findings to build a research library for content planning.
             </p>

@@ -70,7 +70,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   { id: 'kanban',      label: 'Tasks',              icon: Kanban,           component: KanbanPanel },
   { id: 'agents',      label: 'Agents',             icon: Bot,              component: AgentPanel },
   { id: 'agentdms',   label: 'Agent DMs',           icon: MessagesSquare,   component: DMFeed },
-  { id: 'twitter',     label: 'X / Twitter',         icon: XIcon,            component: XPanel },
+  { id: 'twitter',     label: 'Social Media',        icon: XIcon,            component: XPanel },
   { id: 'meetings',    label: 'Meetings',           icon: Users,            component: MeetingsPanel },
   { id: 'voicechat',  label: 'Voice Chat',          icon: Mic,              component: VoiceChatPanel },
   { id: 'chat',        label: 'Chat',               icon: MessageSquare,    component: ChatPanel },
