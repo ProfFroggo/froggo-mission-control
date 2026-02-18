@@ -161,16 +161,16 @@ export function registerXTwitterHandlers(): void {
   ipcMain.handle('x:schedule:update', handleXScheduleUpdate);
   ipcMain.handle('x:schedule:delete', handleXScheduleDelete);
 
-  // Mention handlers
-  ipcMain.handle('x:mention:fetch', handleXMentionFetch);
-  ipcMain.handle('x:mention:list', handleXMentionList);
-  ipcMain.handle('x:mention:update', handleXMentionUpdate);
-  ipcMain.handle('x:mention:reply', handleXMentionReply);
+  // DISABLED: full implementations exist in main.ts — these stubs would cause duplicate handler errors
+  // ipcMain.handle('x:mention:fetch', handleXMentionFetch);
+  // ipcMain.handle('x:mention:list', handleXMentionList);
+  // ipcMain.handle('x:mention:update', handleXMentionUpdate);
+  // ipcMain.handle('x:mention:reply', handleXMentionReply);
 
-  // Reply Guy handlers
-  ipcMain.handle('x:replyGuy:listHotMentions', handleXReplyGuyListHotMentions);
-  ipcMain.handle('x:replyGuy:createQuickDraft', handleXReplyGuyCreateQuickDraft);
-  ipcMain.handle('x:replyGuy:postNow', handleXReplyGuyPostNow);
+  // DISABLED: full implementations exist in main.ts
+  // ipcMain.handle('x:replyGuy:listHotMentions', handleXReplyGuyListHotMentions);
+  // ipcMain.handle('x:replyGuy:createQuickDraft', handleXReplyGuyCreateQuickDraft);
+  // ipcMain.handle('x:replyGuy:postNow', handleXReplyGuyPostNow);
 }
 
 // ============== RESEARCH HANDLERS ==============
