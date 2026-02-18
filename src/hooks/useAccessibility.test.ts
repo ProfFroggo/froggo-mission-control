@@ -17,37 +17,19 @@ import {
 describe('useAccessibility hooks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Mock document elements
+
+    // Spy on document.getElementById for useAnnounce tests
     const mockAnnouncer = {
       setAttribute: vi.fn(),
       textContent: '',
     };
-    
-    const mockFocusable = {
-      focus: vi.fn(),
-    };
-    
-    const mockContainer = {
-      querySelectorAll: vi.fn().mockReturnValue([mockFocusable, mockFocusable, mockFocusable]),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    };
-    
-    (global as any).document = {
-      getElementById: vi.fn().mockReturnValue(mockAnnouncer),
-      activeElement: mockFocusable,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    };
-    
-    (global as any).HTMLElement = class {
-      focus() {}
-    };
+    vi.spyOn(document, 'getElementById').mockReturnValue(mockAnnouncer as unknown as HTMLElement);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    // Clean up any activeElement overrides from individual tests
+    delete (document as any).activeElement;
   });
 
   describe('useAnnounce', () => {
@@ -174,17 +156,21 @@ describe('useAccessibility hooks', () => {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       };
-      
-      const { result, unmount } = renderHook(() => useFocusTrap(true));
-      
-      // Set the ref
-      act(() => {
-        result.current.current = mockContainer as unknown as HTMLElement;
-      });
-      
+
+      const { result, rerender, unmount } = renderHook(
+        ({ active }) => useFocusTrap(active),
+        { initialProps: { active: false } }
+      );
+
+      // Set the ref while inactive
+      result.current.current = mockContainer as unknown as HTMLElement;
+
+      // Activate to trigger the effect with the ref set
+      rerender({ active: true });
+
       expect(mockFirst.focus).toHaveBeenCalled();
       expect(mockContainer.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
-      
+
       unmount();
       expect(mockContainer.removeEventListener).toHaveBeenCalled();
     });
@@ -212,30 +198,33 @@ describe('useAccessibility hooks', () => {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       };
-      
-      const { result, unmount } = renderHook(() => useFocusTrap(true));
-      
-      act(() => {
-        result.current.current = mockContainer as unknown as HTMLElement;
-      });
-      
-      // Simulate Tab from last element
+
+      const { result, rerender, unmount } = renderHook(
+        ({ active }) => useFocusTrap(active),
+        { initialProps: { active: false } }
+      );
+
+      result.current.current = mockContainer as unknown as HTMLElement;
+      rerender({ active: true });
+
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
         (call: any[]) => call[0] === 'keydown'
       )?.[1];
-      
-      if (keydownHandler) {
-        Object.defineProperty(document, 'activeElement', {
-          value: mockLast,
-          configurable: true,
-        });
-        
-        const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: false });
-        keydownHandler(event);
-        
-        expect(mockFirst.focus).toHaveBeenCalled();
-      }
-      
+
+      expect(keydownHandler).toBeDefined();
+
+      // Simulate Tab from last element — should wrap to first
+      Object.defineProperty(document, 'activeElement', {
+        value: mockLast,
+        configurable: true,
+      });
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: false });
+      keydownHandler(event);
+
+      // Called once for initial focus, once for Tab wrap
+      expect(mockFirst.focus).toHaveBeenCalledTimes(2);
+
       unmount();
     });
 
@@ -247,29 +236,32 @@ describe('useAccessibility hooks', () => {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       };
-      
-      const { result, unmount } = renderHook(() => useFocusTrap(true));
-      
-      act(() => {
-        result.current.current = mockContainer as unknown as HTMLElement;
-      });
-      
+
+      const { result, rerender, unmount } = renderHook(
+        ({ active }) => useFocusTrap(active),
+        { initialProps: { active: false } }
+      );
+
+      result.current.current = mockContainer as unknown as HTMLElement;
+      rerender({ active: true });
+
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
         (call: any[]) => call[0] === 'keydown'
       )?.[1];
-      
-      if (keydownHandler) {
-        Object.defineProperty(document, 'activeElement', {
-          value: mockFirst,
-          configurable: true,
-        });
-        
-        const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
-        keydownHandler(event);
-        
-        expect(mockLast.focus).toHaveBeenCalled();
-      }
-      
+
+      expect(keydownHandler).toBeDefined();
+
+      // Simulate Shift+Tab from first element — should wrap to last
+      Object.defineProperty(document, 'activeElement', {
+        value: mockFirst,
+        configurable: true,
+      });
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true });
+      keydownHandler(event);
+
+      expect(mockLast.focus).toHaveBeenCalled();
+
       unmount();
     });
   });
@@ -283,13 +275,14 @@ describe('useAccessibility hooks', () => {
 
     it('should focus element on mount', () => {
       const mockElement = { focus: vi.fn() };
-      
-      const { result } = renderHook(() => useAutoFocus<HTMLElement>());
-      
-      act(() => {
-        result.current.current = mockElement;
+
+      renderHook(() => {
+        const ref = useAutoFocus<HTMLElement>();
+        // Set ref during render so it's available when the mount effect runs
+        (ref as any).current = mockElement;
+        return ref;
       });
-      
+
       expect(mockElement.focus).toHaveBeenCalled();
     });
   });
@@ -529,31 +522,40 @@ describe('useAccessibility hooks', () => {
     });
 
     it('should save current focus', () => {
-      const mockElement = { focus: vi.fn() };
+      const mockElement = { focus: vi.fn() } as unknown as HTMLElement;
       Object.defineProperty(document, 'activeElement', {
         value: mockElement,
         configurable: true,
       });
-      
+
       const { result } = renderHook(() => useFocusRestore());
-      
+
       act(() => {
         result.current.saveFocus();
       });
-      
-      expect(result.current.previousActiveElement.current).toBe(mockElement);
+
+      // Verify save worked by restoring and checking focus was called
+      act(() => {
+        result.current.restoreFocus();
+      });
+
+      expect(mockElement.focus).toHaveBeenCalled();
     });
 
     it('should restore saved focus', () => {
-      const mockElement = { focus: vi.fn() };
-      
+      const mockElement = { focus: vi.fn() } as unknown as HTMLElement;
+      Object.defineProperty(document, 'activeElement', {
+        value: mockElement,
+        configurable: true,
+      });
+
       const { result } = renderHook(() => useFocusRestore());
-      
+
       act(() => {
-        result.current.previousActiveElement.current = mockElement;
+        result.current.saveFocus();
         result.current.restoreFocus();
       });
-      
+
       expect(mockElement.focus).toHaveBeenCalled();
     });
 
