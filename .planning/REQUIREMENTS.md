@@ -81,9 +81,9 @@
 
 ### Library
 
-- [ ] **LIB-01**: Skills section reads and displays actual agent skills from the system (not empty state)
-- [ ] **LIB-02**: Files have tagging: project name, category, content type
-- [ ] **LIB-03**: File categories expanded to include: Marketing, UI/Design, Dev, Research, Finance, Test Logs, Content, Social, Other
+- [x] **LIB-01**: Skills section reads and displays actual agent skills from the system (not empty state)
+- [x] **LIB-02**: Files have tagging: project name, category, content type
+- [x] **LIB-03**: File categories expanded to include: Marketing, UI/Design, Dev, Research, Finance, Test Logs, Content, Social, Other
 
 ### Finance
 
@@ -160,9 +160,9 @@
 | WRT-02 | Phase 19 — Writing Pane Layout | Complete |
 | WRT-03 | Phase 19 — Writing Pane Layout | Complete |
 | WRT-04 | Phase 19 — Writing Pane Layout | Complete |
-| LIB-01 | Phase 20 — Library Population | Pending |
-| LIB-02 | Phase 20 — Library Population | Pending |
-| LIB-03 | Phase 20 — Library Population | Pending |
+| LIB-01 | Phase 20 — Library Population | Complete |
+| LIB-02 | Phase 20 — Library Population | Complete |
+| LIB-03 | Phase 20 — Library Population | Complete |
 | FIN-01 | Phase 21 — Finance End-to-End | Pending |
 | FIN-02 | Phase 21 — Finance End-to-End | Pending |
 | FIN-03 | Phase 21 — Finance End-to-End | Pending |

@@ -1,33 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, X, ExternalLink } from 'lucide-react';
+import { FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link, RefreshCw, Plus, Search, Grid, List, Download, X, ExternalLink, TrendingUp, Palette, Code, DollarSign, TestTube, Share2, Tag, Edit2 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
-type FileCategory = 'draft' | 'document' | 'media' | 'strategy' | 'research' | 'other';
+type FileCategory = 'marketing' | 'design' | 'dev' | 'research' | 'finance' | 'test-logs' | 'content' | 'social' | 'other';
 type ViewMode = 'grid' | 'list';
 
-interface LibraryFile {
+interface LibraryFileItem {
   id: string;
   name: string;
   path: string;
-  category: string; // Allow any category from database
+  category: string;
   size: number;
   mimeType?: string;
   createdAt: string;
   updatedAt: string;
   linkedTasks?: string[];
   tags?: string[];
+  project?: string | null;
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  draft: { icon: FileText, color: 'text-info bg-info-subtle', label: 'Drafts' },
-  document: { icon: FileText, color: 'text-success bg-success-subtle', label: 'Documents' },
-  media: { icon: Image, color: 'text-review bg-review-subtle', label: 'Media' },
-  strategy: { icon: FileText, color: 'text-amber-400 bg-warning/10', label: 'Strategy' },
-  research: { icon: FileText, color: 'text-cyan-400 bg-cyan-500/10', label: 'Research' },
-  other: { icon: File, color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
+  marketing:   { icon: TrendingUp,  color: 'text-pink-400 bg-pink-500/10',   label: 'Marketing' },
+  design:      { icon: Palette,     color: 'text-purple-400 bg-purple-500/10', label: 'UI/Design' },
+  dev:         { icon: Code,        color: 'text-green-400 bg-green-500/10',  label: 'Dev' },
+  research:    { icon: Search,      color: 'text-cyan-400 bg-cyan-500/10',    label: 'Research' },
+  finance:     { icon: DollarSign,  color: 'text-amber-400 bg-amber-500/10',  label: 'Finance' },
+  'test-logs': { icon: TestTube,    color: 'text-orange-400 bg-orange-500/10', label: 'Test Logs' },
+  content:     { icon: FileText,    color: 'text-blue-400 bg-blue-500/10',    label: 'Content' },
+  social:      { icon: Share2,      color: 'text-indigo-400 bg-indigo-500/10', label: 'Social' },
+  other:       { icon: File,        color: 'text-clawd-text-dim bg-clawd-bg0/10', label: 'Other' },
 };
 
 const getFileIcon = (mimeType?: string) => {
@@ -50,16 +54,19 @@ interface LibraryFilesTabProps {
 }
 
 export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = {}) {
-  const [files, setFiles] = useState<LibraryFile[]>([]);
+  const [files, setFiles] = useState<LibraryFileItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialPath || '');
   const [selectedCategory, setSelectedCategory] = useState<FileCategory | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedFile, setSelectedFile] = useState<LibraryFile | null>(null);
+  const [selectedFile, setSelectedFile] = useState<LibraryFileItem | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerContent, setViewerContent] = useState<any>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
+  // Inline editing state per file: tagInput
+  const [tagInputs, setTagInputs] = useState<Record<string, string>>({});
+  const [projectInputs, setProjectInputs] = useState<Record<string, string>>({});
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
 
   // Apply initial path filter when provided
@@ -72,16 +79,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch library files
       const libraryResult = await window.clawdbot?.library?.list(selectedCategory === 'all' ? undefined : selectedCategory);
-      const libraryFiles: LibraryFile[] = libraryResult?.success ? (libraryResult.files || []) : [];
-      
-      // Fetch task attachments
+      const libraryFiles: LibraryFileItem[] = libraryResult?.success ? ((libraryResult.files || []) as unknown as LibraryFileItem[]) : [];
+
       const attachmentsResult = await window.clawdbot?.tasks?.attachments?.listAll();
       const taskAttachments = attachmentsResult?.success ? (attachmentsResult.attachments || []) : [];
-      
-      // Convert task attachments to LibraryFile format
-      const convertedAttachments: LibraryFile[] = taskAttachments.map((att: any) => ({
+
+      const convertedAttachments: LibraryFileItem[] = taskAttachments.map((att: any) => ({
         id: `attachment-${att.id}`,
         name: att.filename || 'Unnamed',
         path: att.file_path || '',
@@ -92,18 +96,24 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         updatedAt: att.uploaded_at || '',
         linkedTasks: att.task_id ? [att.task_id] : [],
         tags: [],
+        project: null,
       }));
-      
-      // Merge both sources
+
       const allFiles = [...libraryFiles, ...convertedAttachments];
-      
-      // Apply category filter if needed
+
       if (selectedCategory !== 'all') {
         setFiles(allFiles.filter(f => f.category === selectedCategory));
       } else {
         setFiles(allFiles);
       }
-    } catch (error) {
+
+      // Seed project inputs from loaded files
+      const projectMap: Record<string, string> = {};
+      for (const f of allFiles) {
+        projectMap[f.id] = f.project || '';
+      }
+      setProjectInputs(projectMap);
+    } catch (_error) {
       // '[Library] Load error:', error;
     } finally {
       setLoading(false);
@@ -122,12 +132,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         loadFiles();
       }
     } catch (error) {
-      // '[Library] Upload error:', error;
       showToast('error', 'Upload failed', String(error));
     }
   };
 
-  const handleDelete = async (file: LibraryFile) => {
+  const handleDelete = async (file: LibraryFileItem) => {
     showConfirm({
       title: 'Delete File',
       message: `Are you sure you want to delete "${file.name}"?`,
@@ -146,10 +155,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     });
   };
 
-  const handleLinkToTask = async (file: LibraryFile) => {
+  const handleLinkToTask = async (file: LibraryFileItem) => {
     const taskId = prompt('Enter task ID to link:');
     if (!taskId) return;
-    
     try {
       const result = await window.clawdbot?.library?.link(file.id, taskId);
       if (result?.success) {
@@ -161,11 +169,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
   };
 
-  const handleViewFile = async (file: LibraryFile) => {
+  const handleViewFile = async (file: LibraryFileItem) => {
     setSelectedFile(file);
     setViewerOpen(true);
     setViewerLoading(true);
-    
     try {
       const result = await window.clawdbot?.library?.view(file.id);
       if (result?.success) {
@@ -182,7 +189,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
   };
 
-  const handleDownloadFile = async (file: LibraryFile) => {
+  const handleDownloadFile = async (file: LibraryFileItem) => {
     try {
       const result = await window.clawdbot?.library?.download(file.id);
       if (result?.success) {
@@ -201,42 +208,82 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
   };
 
-  const filteredFiles = files.filter(f => 
+  // Inline editing handlers
+  const handleCategoryChange = async (file: LibraryFileItem, newCategory: string) => {
+    try {
+      await window.clawdbot?.library?.update(file.id, { category: newCategory });
+      loadFiles();
+    } catch (_error) {
+      showToast('error', 'Failed to update category');
+    }
+  };
+
+  const handleTagRemove = async (file: LibraryFileItem, tagToRemove: string) => {
+    const updatedTags = (file.tags || []).filter(t => t !== tagToRemove);
+    try {
+      await window.clawdbot?.library?.update(file.id, { tags: updatedTags });
+      loadFiles();
+    } catch (_error) {
+      showToast('error', 'Failed to remove tag');
+    }
+  };
+
+  const handleTagAdd = async (file: LibraryFileItem, tagValue: string) => {
+    const trimmed = tagValue.trim();
+    if (!trimmed) return;
+    const existing = file.tags || [];
+    if (existing.includes(trimmed)) return;
+    const updatedTags = [...existing, trimmed];
+    setTagInputs(prev => ({ ...prev, [file.id]: '' }));
+    try {
+      await window.clawdbot?.library?.update(file.id, { tags: updatedTags });
+      loadFiles();
+    } catch (_error) {
+      showToast('error', 'Failed to add tag');
+    }
+  };
+
+  const handleProjectSave = async (file: LibraryFileItem) => {
+    const newProject = (projectInputs[file.id] || '').trim() || null;
+    try {
+      await window.clawdbot?.library?.update(file.id, { project: newProject });
+      loadFiles();
+    } catch (_error) {
+      showToast('error', 'Failed to update project');
+    }
+  };
+
+  const filteredFiles = files.filter(f =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const categoryCounts = {
-    all: files.length,
-    draft: files.filter(f => f.category === 'draft').length,
-    document: files.filter(f => f.category === 'document').length,
-    media: files.filter(f => f.category === 'media').length,
-    strategy: files.filter(f => f.category === 'strategy').length,
-    research: files.filter(f => f.category === 'research').length,
-    other: files.filter(f => f.category === 'other').length,
-  };
+  // Dynamic category counts from categoryConfig keys
+  const categoryCounts: Record<string, number> = { all: files.length };
+  for (const key of Object.keys(categoryConfig)) {
+    categoryCounts[key] = files.filter(f => f.category === key).length;
+  }
 
   // Drag-drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   };
-  
+
   const handleDragLeave = () => {
     setIsDragOver(false);
   };
-  
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length === 0) return;
-    
-    for (const file of files) {
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length === 0) return;
+
+    for (const file of droppedFiles) {
       showToast('info', 'Uploading', file.name);
       try {
-        // Convert file to upload format
         const reader = new FileReader();
         reader.onload = async () => {
           const result = await window.clawdbot?.library?.uploadBuffer({
@@ -257,7 +304,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   };
 
   return (
-    <div 
+    <div
       className={`h-full flex flex-col transition-all ${isDragOver ? 'ring-4 ring-clawd-accent ring-inset bg-clawd-accent/5' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -267,7 +314,6 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          // Keyboard drop - could implement if needed
         }
       }}
       aria-label="Library files drop zone"
@@ -281,14 +327,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           </div>
         </div>
       )}
-      
+
       {/* Toolbar */}
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-clawd-text-dim">
-            {files.length} files • Drafts, documents, media
+            {files.length} files • Marketing, Design, Dev and more
           </p>
-          
           <div className="flex gap-2">
             <button
               onClick={loadFiles}
@@ -308,7 +353,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           </div>
         </div>
 
-        {/* Search and filters */}
+        {/* Search and view toggle */}
         <div className="flex items-center gap-4">
           <div className="flex-1 relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-clawd-text-dim" />
@@ -320,7 +365,6 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               className="w-full pl-10 pr-4 py-2 bg-clawd-bg border border-clawd-border rounded-lg focus:outline-none focus:border-clawd-accent"
             />
           </div>
-          
           <div className="flex gap-1">
             <button
               onClick={() => setViewMode('list')}
@@ -337,15 +381,18 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           </div>
         </div>
 
-        {/* Category tabs */}
+        {/* Category tabs - all 9 categories */}
         <div className="flex gap-2 mt-4 flex-wrap">
-          {(['all', 'draft', 'document', 'media', 'other'] as const).map((cat) => {
-            const config = cat === 'all' ? { icon: FolderOpen, color: 'text-clawd-text', label: 'All' } : categoryConfig[cat];
-            const Icon = config.icon;
+          {(['all', ...Object.keys(categoryConfig)] as const).map((cat) => {
+            const catConfig = cat === 'all'
+              ? { icon: FolderOpen, color: 'text-clawd-text', label: 'All' }
+              : categoryConfig[cat];
+            const Icon = catConfig.icon;
+            const count = categoryCounts[cat] ?? 0;
             return (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => setSelectedCategory(cat as FileCategory | 'all')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   selectedCategory === cat
                     ? 'bg-clawd-accent text-white'
@@ -353,7 +400,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 }`}
               >
                 <Icon size={14} />
-                {config.label} ({categoryCounts[cat]})
+                {catConfig.label} ({count})
               </button>
             );
           })}
@@ -365,8 +412,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {loading && files.length === 0 ? (
           <SkeletonList count={5} />
         ) : filteredFiles.length === 0 ? (
-          <EmptyState 
-            type="files" 
+          <EmptyState
+            type="files"
             action={
               <button
                 onClick={handleUpload}
@@ -381,21 +428,27 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="space-y-2">
             {filteredFiles.map((file) => {
               const FileIcon = getFileIcon(file.mimeType);
-              const config = categoryConfig[file.category] || categoryConfig.other;
-              
+              const catConf = categoryConfig[file.category] || categoryConfig.other;
+              const fileTags = file.tags || [];
+              const tagInputVal = tagInputs[file.id] || '';
+              const projectVal = projectInputs[file.id] !== undefined ? projectInputs[file.id] : (file.project || '');
+
               return (
                 <div
                   key={file.id}
-                  onClick={() => handleViewFile(file)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewFile(file); } }}
-                  role="button"
-                  tabIndex={0}
-                  className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 cursor-pointer transition-colors ${
+                  className={`p-4 bg-clawd-surface border border-clawd-border rounded-xl hover:border-clawd-accent/30 transition-colors ${
                     selectedFile?.id === file.id ? 'border-clawd-accent' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${config.color}`}>
+                  {/* Main row - clickable to open viewer */}
+                  <div
+                    onClick={() => handleViewFile(file)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewFile(file); } }}
+                    role="button"
+                    tabIndex={0}
+                    className="flex items-center gap-4 cursor-pointer"
+                  >
+                    <div className={`p-3 rounded-lg flex-shrink-0 ${catConf.color}`}>
                       <FileIcon size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -403,7 +456,13 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       <div className="text-sm text-clawd-text-dim flex items-center gap-2">
                         <span>{formatSize(file.size)}</span>
                         <span>•</span>
-                        <span>{file.updatedAt ? new Date(file.updatedAt).toLocaleDateString() : file.createdAt ? new Date(file.createdAt).toLocaleDateString() : 'No date'}</span>
+                        <span>
+                          {file.updatedAt
+                            ? new Date(file.updatedAt).toLocaleDateString()
+                            : file.createdAt
+                            ? new Date(file.createdAt).toLocaleDateString()
+                            : 'No date'}
+                        </span>
                         {file.linkedTasks && file.linkedTasks.length > 0 && (
                           <>
                             <span>•</span>
@@ -415,7 +474,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleLinkToTask(file); }}
                         className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
@@ -432,6 +491,89 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       </button>
                     </div>
                   </div>
+
+                  {/* Inline editing row */}
+                  <div
+                    className="mt-3 pt-3 border-t border-clawd-border flex flex-wrap items-center gap-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Category dropdown */}
+                    <div className="flex items-center gap-1.5">
+                      <Edit2 size={12} className="text-clawd-text-dim flex-shrink-0" />
+                      <select
+                        value={file.category || 'other'}
+                        onChange={(e) => { e.stopPropagation(); handleCategoryChange(file, e.target.value); }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-clawd-bg border border-clawd-border rounded text-sm px-2 py-1 text-clawd-text focus:outline-none focus:border-clawd-accent cursor-pointer"
+                      >
+                        {Object.entries(categoryConfig).map(([key, val]) => (
+                          <option key={key} value={key}>{val.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Tag size={12} className="text-clawd-text-dim flex-shrink-0" />
+                      {fileTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent text-xs rounded-full flex items-center gap-1"
+                        >
+                          {tag}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTagRemove(file, tag); }}
+                            className="hover:text-white transition-colors ml-0.5"
+                            title={`Remove tag "${tag}"`}
+                          >
+                            <X size={10} />
+                          </button>
+                        </span>
+                      ))}
+                      <input
+                        type="text"
+                        value={tagInputVal}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setTagInputs(prev => ({ ...prev, [file.id]: e.target.value }));
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleTagAdd(file, tagInputVal);
+                          }
+                        }}
+                        placeholder="+ tag"
+                        className="text-xs text-clawd-text-dim bg-clawd-bg border border-clawd-border rounded px-2 py-0.5 w-16 focus:outline-none focus:border-clawd-accent focus:w-24 transition-all"
+                      />
+                    </div>
+
+                    {/* Project */}
+                    <div className="flex items-center gap-1.5">
+                      <FolderOpen size={12} className="text-clawd-text-dim flex-shrink-0" />
+                      <input
+                        type="text"
+                        value={projectVal}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setProjectInputs(prev => ({ ...prev, [file.id]: e.target.value }));
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleProjectSave(file);
+                          }
+                        }}
+                        onBlur={() => handleProjectSave(file)}
+                        placeholder="Project..."
+                        className="text-xs text-clawd-text-dim bg-transparent border-b border-transparent hover:border-clawd-border focus:border-clawd-accent focus:outline-none w-24 transition-colors"
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -440,8 +582,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredFiles.map((file) => {
               const FileIcon = getFileIcon(file.mimeType);
-              const config = categoryConfig[file.category] || categoryConfig.other;
-              
+              const catConf = categoryConfig[file.category] || categoryConfig.other;
+
               return (
                 <div
                   key={file.id}
@@ -453,7 +595,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     selectedFile?.id === file.id ? 'border-clawd-accent' : ''
                   }`}
                 >
-                  <div className={`p-4 rounded-lg ${config.color} mb-3`}>
+                  <div className={`p-4 rounded-lg ${catConf.color} mb-3`}>
                     <FileIcon size={32} className="mx-auto" />
                   </div>
                   <div className="font-medium truncate text-sm">{file.name}</div>
@@ -513,8 +655,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 </pre>
               ) : viewerContent?.viewType === 'image' ? (
                 <div className="flex items-center justify-center">
-                  <img 
-                    src={viewerContent.content} 
+                  <img
+                    src={viewerContent.content}
                     alt={selectedFile.name}
                     className="max-w-full max-h-[60vh] object-contain rounded-lg"
                   />
@@ -547,7 +689,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <p className="text-sm text-clawd-text-dim mb-2">Linked to tasks:</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedFile.linkedTasks.map(taskId => (
-                    <span 
+                    <span
                       key={taskId}
                       className="px-2 py-1 bg-clawd-border rounded text-xs font-mono"
                     >
