@@ -1,6 +1,6 @@
 import type { XTab } from './XTwitterPage';
-import XPlanThreadComposer from './XPlanThreadComposer';
-import XDraftComposer from './XDraftComposer';
+import XPlanListView from './XPlanListView';
+import XDraftListView from './XDraftListView';
 import { XCalendarView } from './XCalendarView';
 import { XMentionsView } from './XMentionsView';
 import { XReplyGuyView } from './XReplyGuyView';
@@ -13,11 +13,11 @@ interface XContentEditorPaneProps {
 
 export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
   if (tab === 'plan') {
-    return <XPlanThreadComposer />;
+    return <XPlanListView />;
   }
 
   if (tab === 'drafts') {
-    return <XDraftComposer />;
+    return <XDraftListView />;
   }
 
   if (tab === 'calendar') {

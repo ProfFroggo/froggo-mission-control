@@ -101,7 +101,7 @@ Plans:
 - [x] 14-01-PLAN.md -- X logo, page label, dark mode styling (XDraftComposer token fixes)
 - [x] 14-02-PLAN.md -- Tab order, approval panel removal, automations routing bug fix
 
-#### Phase 15: X/Twitter Content Flow
+#### ✅ Phase 15: X/Twitter Content Flow — COMPLETE 2026-02-18
 **Goal**: Content Plan and Drafts tabs show real draft content with image attachment support, and the agent chat is wired and fast
 **Depends on**: Phase 14
 **Requirements**: XTW-09, XTW-10, XTW-11, XTW-12, XTW-13
@@ -110,11 +110,11 @@ Plans:
   2. Drafts tab shows final drafts ready for review
   3. Posts in Content Plan and Drafts support attaching an image
   4. Chat on Content Plan tab connects to a real agent (not the "researcher" stub) and first token appears without multi-second delay
-**Plans**: TBD
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 15-01: Content Plan and Drafts data wiring + image attachment
-- [ ] 15-02: Chat agent wiring and response latency fix
+- [x] 15-01-PLAN.md -- Replace center pane composers with list/viewer + image attachment UI
+- [x] 15-02-PLAN.md -- Verify agent chat wiring to writer + fix send button styling
 
 #### Phase 16: X/Twitter Calendar
 **Goal**: The X/Twitter calendar reuses the existing schedule component, shows tweet events colour-coded by status, and supports drag-to-reschedule
@@ -233,7 +233,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 12. Setup Wizard | v2.1 | 4/4 | Complete | 2026-02-13 |
 | 13. Global UI Consistency | v3.0 | 5/5 | Complete | 2026-02-18 |
 | 14. X/Twitter Identity + Tabs | v3.0 | 2/2 | Complete | 2026-02-18 |
-| 15. X/Twitter Content Flow | v3.0 | 0/2 | Not started | - |
+| 15. X/Twitter Content Flow | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 16. X/Twitter Calendar | v3.0 | 0/2 | Not started | - |
 | 17. X/Twitter Mentions + Reply Guy | v3.0 | 0/2 | Not started | - |
 | 18. X/Twitter Automations + Analytics | v3.0 | 0/2 | Not started | - |
