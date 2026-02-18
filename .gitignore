@@ -13,3 +13,15 @@ coverage/
 *.swp
 *.swo
 *~
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Build artifacts
+tsconfig.node.tsbuildinfo
+
+# Planning/memory (internal)
+.planning/
+memory/
