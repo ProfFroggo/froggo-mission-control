@@ -3,7 +3,7 @@
 // Review: 2026-02-17 - suppression retained, pattern is safe
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Zap, Send } from 'lucide-react';
+import { TrendingUp, Zap, Send, MessageCircle, Heart, Repeat2 } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 
@@ -165,9 +165,9 @@ export const XReplyGuyView: React.FC = () => {
 
         {/* Engagement metrics */}
         <div className="flex items-center gap-4 text-xs text-clawd-text-dim mb-3">
-          <div>❤️ {mention.like_count}</div>
-          <div>🔄 {mention.retweet_count}</div>
-          <div>💬 {mention.reply_count}</div>
+          <div className="flex items-center gap-1"><Heart size={12} className="inline" /> {mention.like_count}</div>
+          <div className="flex items-center gap-1"><Repeat2 size={12} className="inline" /> {mention.retweet_count}</div>
+          <div className="flex items-center gap-1"><MessageCircle size={12} className="inline" /> {mention.reply_count}</div>
           <a
             href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`}
             target="_blank"
@@ -240,13 +240,25 @@ export const XReplyGuyView: React.FC = () => {
             )}
           </div>
         ) : (
-          <button
-            onClick={() => setSelectedMention(mention.id)}
-            className="px-4 py-1.5 text-sm bg-info text-white rounded hover:bg-info/80 flex items-center gap-1"
-          >
-            <Zap size={14} />
-            Quick Reply
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedMention(mention.id)}
+              className="px-4 py-1.5 text-sm bg-info text-white rounded hover:bg-info/80 flex items-center gap-1"
+            >
+              <Zap size={14} />
+              Quick Reply
+            </button>
+            <button
+              onClick={() => {
+                const prompt = `Please suggest 2-3 reply options for this mention:\n\n@${mention.author_username}: ${mention.text}\n\nKeep replies concise, engaging, and on-brand. Each reply should be under 280 characters.`;
+                window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: prompt } }));
+              }}
+              className="px-4 py-1.5 text-sm border border-clawd-accent text-clawd-accent rounded hover:bg-clawd-accent/10 flex items-center gap-1"
+            >
+              <MessageCircle size={14} />
+              Suggest Reply
+            </button>
+          </div>
         )}
       </div>
     );

@@ -772,6 +772,87 @@ app.whenReady().then(() => {
     });
   }
   
+  // ── X/Twitter schema migrations (idempotent) ──
+  try {
+    // Ensure x_mentions table exists with all columns
+    db.exec(`CREATE TABLE IF NOT EXISTS x_mentions (
+      id TEXT PRIMARY KEY,
+      tweet_id TEXT,
+      author_id TEXT,
+      author_username TEXT NOT NULL,
+      author_name TEXT,
+      text TEXT,
+      created_at INTEGER,
+      conversation_id TEXT,
+      in_reply_to_user_id TEXT,
+      reply_status TEXT DEFAULT 'pending',
+      replied_at INTEGER,
+      replied_with_id TEXT,
+      fetched_at INTEGER NOT NULL,
+      updated_at INTEGER,
+      metadata TEXT
+    )`);
+
+    // Add missing columns to x_mentions (each wrapped individually for idempotency)
+    const mentionColumns = [
+      ['tweet_id', 'TEXT'],
+      ['author_id', 'TEXT'],
+      ['author_name', 'TEXT'],
+      ['text', 'TEXT'],
+      ['created_at', 'INTEGER'],
+      ['conversation_id', 'TEXT'],
+      ['in_reply_to_user_id', 'TEXT'],
+      ['reply_status', "TEXT DEFAULT 'pending'"],
+      ['replied_at', 'INTEGER'],
+      ['replied_with_id', 'TEXT'],
+      ['updated_at', 'INTEGER'],
+    ];
+    for (const [col, type] of mentionColumns) {
+      try { db.exec(`ALTER TABLE x_mentions ADD COLUMN ${col} ${type}`); } catch (_e) { /* column exists */ }
+    }
+
+    // Fix x_drafts CHECK constraint: add 'posted' to allowed statuses
+    // SQLite cannot ALTER CHECK constraints, so we recreate the table
+    const draftsInfo = db.pragma('table_info(x_drafts)') as { name: string }[];
+    if (draftsInfo.length > 0) {
+      try {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS x_drafts_new (
+            id TEXT PRIMARY KEY,
+            plan_id TEXT,
+            version TEXT NOT NULL,
+            content TEXT NOT NULL,
+            media_paths TEXT,
+            proposed_by TEXT NOT NULL,
+            approved_by TEXT,
+            status TEXT NOT NULL DEFAULT 'draft',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER,
+            file_path TEXT,
+            metadata TEXT,
+            FOREIGN KEY(plan_id) REFERENCES x_content_plans(id),
+            CHECK(status IN ('draft', 'approved', 'rejected', 'scheduled', 'posted'))
+          );
+          INSERT OR IGNORE INTO x_drafts_new SELECT * FROM x_drafts;
+          DROP TABLE x_drafts;
+          ALTER TABLE x_drafts_new RENAME TO x_drafts;
+          CREATE INDEX IF NOT EXISTS idx_drafts_status ON x_drafts(status);
+          CREATE INDEX IF NOT EXISTS idx_drafts_plan ON x_drafts(plan_id);
+          CREATE INDEX IF NOT EXISTS idx_drafts_version ON x_drafts(plan_id, version);
+          CREATE INDEX IF NOT EXISTS idx_drafts_created ON x_drafts(created_at DESC);
+        `);
+        safeLog.log('[Migration] x_drafts CHECK constraint updated to include posted');
+      } catch (e: any) {
+        // Already migrated or table doesn't need it
+        safeLog.log('[Migration] x_drafts migration skipped:', e.message);
+      }
+    }
+
+    safeLog.log('[Migration] X/Twitter schema migrations complete');
+  } catch (err) {
+    safeLog.error('[Migration] X/Twitter schema migration error:', err);
+  }
+
   // Initialize X API tokens from secret store
   try {
     initXApiTokens();
