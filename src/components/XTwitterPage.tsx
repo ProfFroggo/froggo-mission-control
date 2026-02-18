@@ -5,7 +5,7 @@ import XAgentChatPane from './XAgentChatPane';
 import XContentEditorPane from './XContentEditorPane';
 import XApprovalQueuePane from './XApprovalQueuePane';
 
-export type XTab = 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit';
+export type XTab = 'publish' | 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit';
 
 const XLogo = ({ size = 24 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -14,7 +14,7 @@ const XLogo = ({ size = 24 }: { size?: number }) => (
 );
 
 export default function XTwitterPage() {
-  const [activeTab, setActiveTab] = useState<XTab>('plan');
+  const [activeTab, setActiveTab] = useState<XTab>('publish');
 
   useEffect(() => {
     const handler = (e: Event) => {

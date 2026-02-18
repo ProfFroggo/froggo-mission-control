@@ -1,4 +1,5 @@
 import type { XTab } from './XTwitterPage';
+import XPublishComposer from './XPublishComposer';
 import { XAnalyticsView } from './XAnalyticsView';
 import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
 import XResearchView from './XResearchView';
@@ -16,6 +17,10 @@ interface XContentEditorPaneProps {
 }
 
 export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
+  if (tab === 'publish') {
+    return <XPublishComposer />;
+  }
+
   if (tab === 'reddit') {
     return <XRedditView />;
   }

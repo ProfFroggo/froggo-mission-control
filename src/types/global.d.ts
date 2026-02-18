@@ -924,6 +924,12 @@ declare global {
         postReply: (data: { threadId: string; replyText: string }) => Promise<{ success: boolean; commentId?: string; error?: string }>;
         updateThread: (data: { threadId: string; status: string }) => Promise<{ success: boolean; error?: string }>;
       };
+      // X Publishing — OAuth 1.0a write operations via x-api CLI
+      xPublish?: {
+        post: (text: string) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
+        thread: (tweets: string[]) => Promise<{ success: boolean; tweetId?: string; threadIds?: string[]; error?: string }>;
+        rateLimit: () => Promise<{ remaining: number; used: number; limit: number; resetAt: number | null }>;
+      };
       // X API v2 - Direct API access
       x?: {
         search: (query: string, count?: number) => Promise<{ success: boolean; tweets?: unknown[]; error?: string }>;
