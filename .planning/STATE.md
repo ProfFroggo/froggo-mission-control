@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone complete
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 21 of 21 (Finance End-to-End Wiring) — COMPLETE
-Plan: 02 of 02
-Status: v3.0 milestone complete — all phases shipped
-Last activity: 2026-02-18 — Phase 21 verified (11/11 must-haves passed)
+Phase: Not started (next milestone not yet defined)
+Plan: —
+Status: Ready to plan
+Last activity: 2026-02-18 — v3.0 milestone archived
 
 Progress: [████████████████████] 100% (v3.0, 10/10 phases: 13-21 done)
 

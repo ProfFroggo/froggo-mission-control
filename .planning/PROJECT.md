@@ -43,6 +43,17 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 - ✓ Atomic project creation from wizard (chapters, characters, timeline) — v2.1
 - ✓ Genre flexibility beyond memoir/novel — v2.1
 
+- ✓ Global dark mode consistency (CSS tokens, all 40+ components) — v3.0
+- ✓ X/Twitter page rebuilt (X branding, 8-tab nav, agent chat wired) — v3.0
+- ✓ X/Twitter calendar with drag-to-reschedule and pipeline colour coding — v3.0
+- ✓ X/Twitter mentions with inline reply, reply guy with inline approve/edit/send — v3.0
+- ✓ X/Twitter automations rule builder + analytics with competitor insights — v3.0
+- ✓ Writing pane layout (pixel minimums, visible drag handles on first load) — v3.0
+- ✓ Library Skills tab from real agent_skills DB (66 rows, grouped by agent) — v3.0
+- ✓ Library file tagging (9-category taxonomy, inline project/category/tag editing) — v3.0
+- ✓ Finance CLI JSON output (--format json on all 4 commands, alerts crash fixed) — v3.0
+- ✓ Finance IPC wiring (budget creation modal, PDF upload routing, chat styling) — v3.0
+
 ### Active
 
 (No active requirements — next milestone not yet defined)
@@ -102,6 +113,14 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 | Prompt-level JSON extraction for wizard | No tool-calling needed, Zod validates AI output | ✓ Good (v2.1) |
 | Atomic project creation with rollback | rm -rf on partial directory if any write fails | ✓ Good (v2.1) |
 | ProjectMeta.type as string (not union) | Genre flexibility for wizard, existing values still valid | ✓ Good (v2.1) |
+| CSS token pattern (`:root` + tailwind `var()`) | Define once in index.css, consume anywhere via Tailwind | ✓ Good (v3.0) |
+| TABS_WITH_APPROVAL allowlist | Source of truth for approval panel visibility — explicit over implicit | ✓ Good (v3.0) |
+| eventColorResolver + externalEvents callbacks | Decoupled calendar — consumer controls colors and data | ✓ Good (v3.0) |
+| CustomEvent x-agent-chat-inject pattern | Cross-component chat injection without prop drilling | ✓ Good (v3.0) |
+| Idempotent ALTER TABLE per-column | Safe schema migrations for SQLite (try/catch per column) | ✓ Good (v3.0) |
+| `agent_skills` as skills source (not skill_evolution) | Direct skills DB with proficiency 1-10 scale | ✓ Good (v3.0) |
+| finance_alerts `acknowledged` column (not `status`) | Crash-free alerts query (table uses 0/1 integer) | ✓ Good (v3.0) |
+| PDF upload fire-and-forget to agent | No blocking await, agent processes asynchronously | ✓ Good (v3.0) |
 
 ---
-*Last updated: 2026-02-13 after v2.1 milestone completion*
+*Last updated: 2026-02-18 after v3.0 milestone completion*
