@@ -49,15 +49,15 @@
 
 ### X/Twitter — Mentions
 
-- [ ] **XTW-19**: Mentions tab shows incoming mentions with reply capability inline (no approval panel)
-- [ ] **XTW-20**: User can inject a response to a mention directly from the mentions UI
-- [ ] **XTW-21**: Mentions tab has chat interface with agent
+- [x] **XTW-19**: Mentions tab shows incoming mentions with reply capability inline (no approval panel)
+- [x] **XTW-20**: User can inject a response to a mention directly from the mentions UI
+- [x] **XTW-21**: Mentions tab has chat interface with agent
 
 ### X/Twitter — Reply Guy
 
-- [ ] **XTW-22**: Reply Guy shows reply suggestions directly in main UI (not in approval side panel)
-- [ ] **XTW-23**: Reply Guy has inline approve/edit/send per reply
-- [ ] **XTW-24**: Reply Guy has chat interface with agent
+- [x] **XTW-22**: Reply Guy shows reply suggestions directly in main UI (not in approval side panel)
+- [x] **XTW-23**: Reply Guy has inline approve/edit/send per reply
+- [x] **XTW-24**: Reply Guy has chat interface with agent
 
 ### X/Twitter — Automations
 
@@ -143,12 +143,12 @@
 | XTW-16 | Phase 16 — X/Twitter Calendar | Complete |
 | XTW-17 | Phase 16 — X/Twitter Calendar | Complete |
 | XTW-18 | Phase 16 — X/Twitter Calendar | Complete |
-| XTW-19 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
-| XTW-20 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
-| XTW-21 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
-| XTW-22 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
-| XTW-23 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
-| XTW-24 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
+| XTW-19 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
+| XTW-20 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
+| XTW-21 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
+| XTW-22 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
+| XTW-23 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
+| XTW-24 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
 | XTW-25 | Phase 18 — X/Twitter Automations + Analytics | Pending |
 | XTW-26 | Phase 18 — X/Twitter Automations + Analytics | Pending |
 | XTW-27 | Phase 18 — X/Twitter Automations + Analytics | Pending |
