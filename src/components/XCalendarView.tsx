@@ -85,6 +85,10 @@ function mapScheduledToEvents(scheduled: any[]): CalendarEvent[] {
   });
 }
 
+function isEventDraggable(event: CalendarEvent): boolean {
+  return (event as any).colorId === 'scheduled';
+}
+
 export function XCalendarView() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
@@ -114,6 +118,10 @@ export function XCalendarView() {
     loadPipelineAsEvents();
   }, [loadPipelineAsEvents]);
 
+  const handleCreateTweet = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('x-tab-change', { detail: 'drafts' }));
+  }, []);
+
   const handleExternalDrop = useCallback(async (
     event: CalendarEvent,
     newStart: Date,
@@ -140,8 +148,10 @@ export function XCalendarView() {
     <EpicCalendar
       externalEvents={events}
       createButtonLabel="Create Tweet"
+      onCreateClick={handleCreateTweet}
       onExternalDrop={handleExternalDrop}
       eventColorResolver={eventColorResolver}
+      isEventDraggable={isEventDraggable}
     />
   );
 }

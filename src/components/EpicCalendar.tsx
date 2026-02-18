@@ -26,6 +26,7 @@ interface EpicCalendarProps {
   onCreateClick?: () => void;
   onExternalDrop?: (event: CalendarEvent, newStart: Date, newEnd: Date) => Promise<boolean>;
   eventColorResolver?: (event: CalendarEvent) => string | undefined;
+  isEventDraggable?: (event: CalendarEvent) => boolean;
 }
 
 export default function EpicCalendar({
@@ -34,6 +35,7 @@ export default function EpicCalendar({
   onCreateClick,
   onExternalDrop,
   eventColorResolver,
+  isEventDraggable,
 }: EpicCalendarProps = {}) {
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -571,6 +573,7 @@ export default function EpicCalendar({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 eventColorResolver={eventColorResolver}
+                isEventDraggable={isEventDraggable}
               />
             )}
             {view === 'week' && (
@@ -586,6 +589,7 @@ export default function EpicCalendar({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 eventColorResolver={eventColorResolver}
+                isEventDraggable={isEventDraggable}
               />
             )}
             {view === 'day' && (
@@ -601,9 +605,10 @@ export default function EpicCalendar({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 eventColorResolver={eventColorResolver}
+                isEventDraggable={isEventDraggable}
               />
             )}
-            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} eventColorResolver={eventColorResolver} />}
+            {view === 'agenda' && <AgendaView currentDate={currentDate} events={events} onEventClick={handleEditEvent} eventColorResolver={eventColorResolver} isEventDraggable={isEventDraggable} />}
           </>
         )}
       </div>
@@ -645,6 +650,7 @@ function EventCard({
   onDragEnd,
   isDragging = false,
   eventColorResolver,
+  isEventDraggable,
 }: {
   event: CalendarEvent;
   compact?: boolean;
@@ -653,6 +659,7 @@ function EventCard({
   onDragEnd?: () => void;
   isDragging?: boolean;
   eventColorResolver?: (event: CalendarEvent) => string | undefined;
+  isEventDraggable?: (event: CalendarEvent) => boolean;
 }) {
   const { start, end, isAllDay } = getEventTime(event);
   const meetLink = event.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri;
@@ -661,13 +668,15 @@ function EventCard({
   const resolvedColor = eventColorResolver?.(event);
   const displayColor = resolvedColor || accountColor;
 
+  const canDrag = isEventDraggable ? isEventDraggable(event) : true;
+
   if (compact) {
     return (
-      <div 
-        draggable
+      <div
+        draggable={canDrag}
         onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
         onDragEnd={onDragEnd}
-        className={`text-xs px-2 py-1 ${displayColor} text-white rounded mb-1 truncate cursor-move hover:opacity-80 transition-all ${
+        className={`text-xs px-2 py-1 ${displayColor} text-white rounded mb-1 truncate ${canDrag ? 'cursor-move' : 'cursor-default'} hover:opacity-80 transition-all ${
           isDragging ? 'opacity-50 scale-95' : ''
         }`}
         title={event.summary}
@@ -687,11 +696,11 @@ function EventCard({
   }
 
   return (
-    <div 
-      draggable
+    <div
+      draggable={canDrag}
       onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
       onDragEnd={onDragEnd}
-      className={`bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-all cursor-move ${
+      className={`bg-clawd-surface rounded-lg border border-clawd-border p-4 hover:border-clawd-accent transition-all ${canDrag ? 'cursor-move' : 'cursor-default'} ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
       onClick={(e) => {
@@ -763,6 +772,7 @@ function MonthView({
   onDragLeave,
   onDrop,
   eventColorResolver,
+  isEventDraggable,
 }: {
   currentDate: Date;
   events: CalendarEvent[];
@@ -775,6 +785,7 @@ function MonthView({
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
   eventColorResolver?: (event: CalendarEvent) => string | undefined;
+  isEventDraggable?: (event: CalendarEvent) => boolean;
 }) {
   const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const startDate = getWeekStart(firstDay);
@@ -865,6 +876,7 @@ function MonthView({
                           onDragEnd={onDragEnd}
                           isDragging={draggedEvent?.id === event.id}
                           eventColorResolver={eventColorResolver}
+                          isEventDraggable={isEventDraggable}
                         />
                       ))}
                       {dayEvents.length > 3 && (
@@ -897,6 +909,7 @@ function WeekView({
   onDragLeave,
   onDrop,
   eventColorResolver,
+  isEventDraggable,
 }: {
   currentDate: Date;
   events: CalendarEvent[];
@@ -909,6 +922,7 @@ function WeekView({
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
   eventColorResolver?: (event: CalendarEvent) => string | undefined;
+  isEventDraggable?: (event: CalendarEvent) => boolean;
 }) {
   const weekStart = getWeekStart(currentDate);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -1014,6 +1028,7 @@ function WeekView({
                         onDragEnd={onDragEnd}
                         isDragging={draggedEvent?.id === event.id}
                         eventColorResolver={eventColorResolver}
+                        isEventDraggable={isEventDraggable}
                       />
                     ))}
                   </div>
@@ -1040,6 +1055,7 @@ function DayView({
   onDragLeave,
   onDrop,
   eventColorResolver,
+  isEventDraggable,
 }: {
   currentDate: Date;
   events: CalendarEvent[];
@@ -1052,6 +1068,7 @@ function DayView({
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
   eventColorResolver?: (event: CalendarEvent) => string | undefined;
+  isEventDraggable?: (event: CalendarEvent) => boolean;
 }) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
@@ -1096,6 +1113,7 @@ function DayView({
                 onDragEnd={onDragEnd}
                 isDragging={draggedEvent?.id === event.id}
                 eventColorResolver={eventColorResolver}
+                isEventDraggable={isEventDraggable}
               />
             ))}
           </div>
@@ -1148,6 +1166,7 @@ function DayView({
                       onDragEnd={onDragEnd}
                       isDragging={draggedEvent?.id === event.id}
                       eventColorResolver={eventColorResolver}
+                      isEventDraggable={isEventDraggable}
                     />
                   ))}
                 </div>
@@ -1161,7 +1180,7 @@ function DayView({
 }
 
 // Agenda View
-function AgendaView({ currentDate, events, onEventClick, eventColorResolver }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void; eventColorResolver?: (event: CalendarEvent) => string | undefined }) {
+function AgendaView({ currentDate, events, onEventClick, eventColorResolver, isEventDraggable }: { currentDate: Date; events: CalendarEvent[]; onEventClick: (event: CalendarEvent) => void; eventColorResolver?: (event: CalendarEvent) => string | undefined; isEventDraggable?: (event: CalendarEvent) => boolean }) {
   // Group events by date, starting from currentDate
   const upcomingEvents = events
     .filter(event => {
@@ -1218,7 +1237,7 @@ function AgendaView({ currentDate, events, onEventClick, eventColorResolver }: {
 
               <div className="space-y-3">
                 {dateEvents.map(event => (
-                  <EventCard key={event.id} event={event} onClick={onEventClick} eventColorResolver={eventColorResolver} />
+                  <EventCard key={event.id} event={event} onClick={onEventClick} eventColorResolver={eventColorResolver} isEventDraggable={isEventDraggable} />
                 ))}
               </div>
             </div>
