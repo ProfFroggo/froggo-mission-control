@@ -1,4 +1,4 @@
-# Froggo Dashboard
+# Froggo-AI
 
 Electron desktop app for managing a multi-agent AI platform. Task tracking, agent orchestration, communications, and analytics in one place.
 
@@ -33,4 +33,4 @@ npm run build:prod      # Production build
 
 ## License
 
-Private
+AGPL-3.0 — see [LICENSE](LICENSE)
