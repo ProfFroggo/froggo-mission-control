@@ -1,5 +1,7 @@
 import type { XTab } from './XTwitterPage';
 import { XAnalyticsView } from './XAnalyticsView';
+import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
+import XResearchView from './XResearchView';
 import XPlanListView from './XPlanListView';
 import XDraftListView from './XDraftListView';
 import { XCalendarView } from './XCalendarView';
@@ -13,6 +15,10 @@ interface XContentEditorPaneProps {
 }
 
 export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
+  if (tab === 'research') {
+    return <XResearchView />;
+  }
+
   if (tab === 'plan') {
     return <XPlanListView />;
   }
@@ -42,7 +48,7 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
   }
 
   if (tab === 'analytics') {
-    return <XAnalyticsView />;
+    return <XEnhancedAnalyticsView />;
   }
 
   return null;

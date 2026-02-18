@@ -19,9 +19,11 @@ export default function XDraftComposer() {
   const [version, setVersion] = useState('A');
   const [tweets, setTweets] = useState<string[]>(['']);
   const [submitting, setSubmitting] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [mediaPaths, setMediaPaths] = useState<string[]>([]);
+  const [scheduledTime, setScheduledTime] = useState('');
 
   useEffect(() => {
     loadApprovedPlans();
@@ -75,12 +77,7 @@ export default function XDraftComposer() {
   const isOverLimit = (text: string) => getCharCount(text) > TWEET_CHAR_LIMIT;
 
   const handleSubmit = async () => {
-    // Validation
-    if (!selectedPlanId) {
-      showToast('error', 'Please select a content plan');
-      return;
-    }
-    
+    // Validation - plan is optional
     if (!version) {
       showToast('error', 'Version is required');
       return;
@@ -131,6 +128,45 @@ export default function XDraftComposer() {
       showToast('error', `Failed to submit: ${error.message}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSchedule = async () => {
+    if (!scheduledTime) {
+      showToast('error', 'Please select a date and time');
+      return;
+    }
+    
+    const emptyTweets = tweets.filter(t => !t.trim());
+    if (emptyTweets.length > 0) {
+      showToast('error', 'All tweets must have content');
+      return;
+    }
+
+    const overLimit = tweets.filter(isOverLimit);
+    if (overLimit.length > 0) {
+      showToast('error', 'Some tweets exceed character limit');
+      return;
+    }
+
+    try {
+      setScheduling(true);
+      const content = tweets.join('\n\n---\n\n');
+      const timestamp = new Date(scheduledTime).getTime();
+      
+      const result = await window.clawdbot.x.schedule(content, timestamp);
+      
+      if (result?.success) {
+        showToast('success', 'Tweet scheduled!');
+        setTweets(['']);
+        setScheduledTime('');
+      } else {
+        showToast('error', result?.error || 'Failed to schedule');
+      }
+    } catch (error: unknown) {
+      showToast('error', `Failed to schedule: ${error.message}`);
+    } finally {
+      setScheduling(false);
     }
   };
 
@@ -338,11 +374,33 @@ export default function XDraftComposer() {
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Schedule Button */}
           <div className="mt-6 pt-6 border-t border-clawd-border">
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <label className="block text-sm text-clawd-text-dim mb-2">Schedule for later</label>
+                <input
+                  type="datetime-local"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="w-full px-4 py-2 bg-clawd-surface border border-clawd-border rounded-lg text-clawd-text"
+                />
+              </div>
+              <button
+                onClick={handleSchedule}
+                disabled={scheduling || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
+                className="px-6 py-2 bg-clawd-accent hover:bg-clawd-accent/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+              >
+                {scheduling ? 'Scheduling...' : 'Schedule'}
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="mt-4 pt-4 border-t border-clawd-border">
             <button
               onClick={handleSubmit}
-              disabled={submitting || !selectedPlanId || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
+              disabled={submitting || tweets.every(t => !t.trim()) || tweets.some(isOverLimit)}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-clawd-text font-medium rounded-lg transition-colors"
             >
               {submitting ? (
