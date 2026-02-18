@@ -22,5 +22,8 @@ coverage/
 # Build artifacts
 tsconfig.node.tsbuildinfo
 
+# ML models (download separately)
+resources/models/
+
 # Memory (internal)
 memory/
