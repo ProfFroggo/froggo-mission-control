@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 18 (X/Twitter Automations & Analytics)
+**Current focus:** v3.0 milestone — Phase 19 (Writing Pane Layout Fixes)
 
 ## Current Position
 
-Phase: 18 of 21 (X/Twitter Automations & Analytics)
+Phase: 19 of 21 (Writing Pane Layout Fixes)
 Plan: —
 Status: Not started
-Last activity: 2026-02-18 — Completed Phase 17 (X/Twitter Mentions & Reply Guy)
+Last activity: 2026-02-18 — Completed Phase 18 (X/Twitter Automations & Analytics)
 
-Progress: [██████░░░░░░░░░░░░░░] 47% (v3.0, 6/9 phases: 13,14,15,16,17 complete; 18-21 remaining)
+Progress: [████████░░░░░░░░░░░░] 56% (v3.0, 7/9 phases: 13,14,15,16,17,18 complete; 19-21 remaining)
 
 ## Performance Metrics
 
@@ -74,7 +74,7 @@ Phase 14 decisions:
 - Sidebar label: "X / Twitter" with spaces around slash (was "X/Twitter")
 - TABS_WITH_APPROVAL allowlist ['plan', 'drafts'] is source of truth for approval queue visibility
 - hideRightPane on ThreePaneLayout hides right pane + resize handle; center expands via effectiveCenterWidth
-- analytics tab gets inline placeholder (no dedicated component needed yet)
+- analytics tab gets inline placeholder (no dedicated component needed yet) [superseded by 18-02: XAnalyticsView]
 
 Phase 13 decisions:
 - CSS token pattern: define in src/index.css (:root + :root.light), expose in tailwind.config.js clawd object with var() + hex fallback
@@ -98,5 +98,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 17-02-PLAN.md. Phase 17 complete. Suggest Reply + agent chat injection.
+Stopped at: Completed Phase 18. x_automations DB tables added + full analytics dashboard built. Phase 19 next.
 Resume file: None

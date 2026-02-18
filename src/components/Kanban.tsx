@@ -1075,6 +1075,21 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   // Activity indicator (takes precedence for in-progress tasks)
   const activityIndicator = getActivityIndicator();
 
+  // Definition of Ready check for todo/backlog tasks
+  const isTodoTask = task.status === 'todo' || task.status === 'backlog';
+  const hasMinSubtasks = (task.subtasks?.length || 0) >= 2;
+  const hasPriority = task.priority && ['p0', 'p1', 'p2', 'p3'].includes(task.priority);
+  const hasValidAssignment = task.assignedTo && !['main', 'froggo', 'clara'].includes(task.assignedTo);
+  const hasDescription = (task.description?.length || 0) >= 20;
+  const isReady = hasMinSubtasks && hasPriority && hasValidAssignment && hasDescription;
+
+  // Missing criteria for badge display
+  const missingCriteria: string[] = [];
+  if (!hasMinSubtasks) missingCriteria.push('subtasks');
+  if (!hasPriority) missingCriteria.push('priority');
+  if (!hasValidAssignment) missingCriteria.push('assignee');
+  if (!hasDescription) missingCriteria.push('description');
+
   return (
     <div
       draggable
@@ -1162,6 +1177,41 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
         <div className="flex items-start gap-1 flex-1 min-w-0">
           <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
         </div>
+        
+        {/* Definition of Ready Indicators - show for todo/backlog tasks */}
+        {isTodoTask && !isReady && (
+          <div className="flex flex-wrap gap-1 mt-1" title={`Missing: ${missingCriteria.join(', ')}`}>
+            {!hasMinSubtasks && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-warning-subtle text-warning rounded">
+                ⚠️ {task.subtasks?.length || 0}/2 subtasks
+              </span>
+            )}
+            {!hasPriority && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded">
+                ⚠️ No priority
+              </span>
+            )}
+            {!hasValidAssignment && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded">
+                ⚠️ No valid assignee
+              </span>
+            )}
+            {!hasDescription && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-warning-subtle text-warning rounded">
+                ⚠️ Needs description
+              </span>
+            )}
+          </div>
+        )}
+        
+        {/* Ready badge for todo tasks that ARE ready */}
+        {isTodoTask && isReady && (
+          <div className="mt-1" title="Definition of Ready met">
+            <span className="text-[10px] px-1.5 py-0.5 bg-success-subtle text-success rounded">
+              ✅ Ready for Review
+            </span>
+          </div>
+        )}
         
         <div className="relative flex-shrink-0">
           <button 

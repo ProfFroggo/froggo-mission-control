@@ -1,4 +1,5 @@
 import type { XTab } from './XTwitterPage';
+import { XAnalyticsView } from './XAnalyticsView';
 import XPlanListView from './XPlanListView';
 import XDraftListView from './XDraftListView';
 import { XCalendarView } from './XCalendarView';
@@ -41,18 +42,7 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
   }
 
   if (tab === 'analytics') {
-    return (
-      <div className="flex flex-col h-full bg-clawd-surface p-6">
-        <h3 className="text-lg font-semibold text-clawd-text mb-2">X Analytics</h3>
-        <p className="text-sm text-clawd-text-dim mb-6">Track your X/Twitter performance and engagement metrics.</p>
-        <div className="flex-1 flex items-center justify-center text-clawd-text-dim">
-          <div className="text-center">
-            <p className="text-sm">Analytics dashboard coming soon</p>
-            <p className="text-xs mt-2">Posts, engagement, reach, and top content breakdown</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <XAnalyticsView />;
   }
 
   return null;

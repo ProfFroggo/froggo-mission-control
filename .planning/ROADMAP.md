@@ -149,7 +149,7 @@ Plans:
 - [x] 17-01-PLAN.md -- Fix x_mentions DB schema + x_drafts CHECK constraint + disable handler stubs + XMentionsView emoji cleanup
 - [x] 17-02-PLAN.md -- Add "Suggest Reply" button to XReplyGuyView + agent chat injection + emoji cleanup
 
-#### Phase 18: X/Twitter Automations & Analytics
+#### Phase 18: X/Twitter Automations & Analytics -- COMPLETE 2026-02-18
 **Goal**: Automations tab has a working visual rule builder and agent chat; Analytics tab delivers a full metrics breakdown with downloadable report
 **Depends on**: Phase 15
 **Requirements**: XTW-25, XTW-26, XTW-27, XTW-28, XTW-29, XTW-30, XTW-31
@@ -160,11 +160,11 @@ Plans:
   4. Analytics tab exists at the end of the nav and shows posts, engagement, reach, and top content breakdown
   5. Analytics includes a competitor insights section
   6. User can download a daily insights report as a text file from the Analytics tab
-**Plans**: TBD
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 18-01: Automations visual rule builder + layout cleanup
-- [ ] 18-02: Analytics tab -- metrics, competitor insights, downloadable report
+- [x] 18-01-PLAN.md -- Add x_automations DB tables to unblock existing rule builder UI
+- [x] 18-02-PLAN.md -- Analytics tab: stat cards, top content, competitor insights, downloadable report
 
 #### Phase 19: Writing Pane Layout Fixes
 **Goal**: Writing module 3-pane layout is usable on first load with visible drag handles and workable minimum widths
@@ -236,7 +236,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 15. X/Twitter Content Flow | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 16. X/Twitter Calendar | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 17. X/Twitter Mentions + Reply Guy | v3.0 | 2/2 | Complete | 2026-02-18 |
-| 18. X/Twitter Automations + Analytics | v3.0 | 0/2 | Not started | - |
+| 18. X/Twitter Automations + Analytics | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 19. Writing Pane Layout | v3.0 | 0/1 | Not started | - |
 | 20. Library Population | v3.0 | 0/1 | Not started | - |
 | 21. Finance End-to-End | v3.0 | 0/2 | Not started | - |
