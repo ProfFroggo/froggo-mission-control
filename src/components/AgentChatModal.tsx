@@ -419,7 +419,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
               >
                 {/* Avatar */}
                 <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/20 ${
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/10 dark:ring-white/20 ${
                     msg.role === 'user' 
                       ? 'bg-gradient-to-br from-blue-400 to-indigo-500 text-white' 
                       : msg.role === 'assistant' 
@@ -489,7 +489,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
           {streamingContent && (
             <div className="flex gap-3 mt-6">
               <div className="flex-shrink-0 w-10">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/20">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/10 dark:ring-white/20">
                   <Bot size={16} />
                 </div>
               </div>
@@ -508,7 +508,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
           {sending && !streamingContent && (
             <div className="flex gap-3 mt-6">
               <div className="flex-shrink-0 w-10">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/20">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white/10 dark:ring-white/20">
                   <Bot size={16} />
                 </div>
               </div>

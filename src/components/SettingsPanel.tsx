@@ -625,7 +625,7 @@ export default function SettingsPanel() {
                         key={color}
                         onClick={() => setSettings(s => ({ ...s, accentColor: color }))}
                         className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-110 ${
-                          settings.accentColor === color ? 'border-white scale-110' : 'border-transparent'
+                          settings.accentColor === color ? 'border-white dark:border-white/80 scale-110' : 'border-transparent'
                         }`}
                         style={{ backgroundColor: color }}
                         aria-label={`Accent color ${color}`}
