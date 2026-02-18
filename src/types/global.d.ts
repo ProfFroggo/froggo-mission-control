@@ -930,6 +930,14 @@ declare global {
         thread: (tweets: string[]) => Promise<{ success: boolean; tweetId?: string; threadIds?: string[]; error?: string }>;
         rateLimit: () => Promise<{ remaining: number; used: number; limit: number; resetAt: number | null }>;
       };
+      // X Analytics — real follower/tweet metrics from X API
+      xAnalytics?: {
+        summary: () => Promise<unknown>;
+        topContent: () => Promise<unknown>;
+        profile: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
+        tweets: (count?: number) => Promise<{ success: boolean; data?: unknown[]; error?: string }>;
+        summaryReal: () => Promise<{ success: boolean; followers?: number; following?: number; tweetCount?: number; totalLikes?: number; totalRetweets?: number; totalReplies?: number; totalImpressions?: number; engagementRate?: number; recentTweetCount?: number; error?: string }>;
+      };
       // X API v2 - Direct API access
       x?: {
         search: (query: string, count?: number) => Promise<{ success: boolean; tweets?: unknown[]; error?: string }>;

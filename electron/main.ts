@@ -39,6 +39,7 @@ import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsS
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM, deleteTweet as xDeleteTweet, likeTweet as xLikeTweet, unlikeTweet as xUnlikeTweet, retweet as xRetweet, unretweet as xUnretweet, unfollowUser as xUnfollowUser, getFollowers as xGetFollowers, getFollowing as xGetFollowing } from './x-api-client';
 import { registerXPublishingHandlers } from './x-publishing-service';
+import { registerXAnalyticsHandlers } from './x-analytics-service';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -929,6 +930,8 @@ app.whenReady().then(() => {
 
   // Register X publishing IPC handlers (OAuth 1.0a via x-api CLI)
   registerXPublishingHandlers();
+  // Register X analytics IPC handlers (real profile + tweet metrics from X API)
+  registerXAnalyticsHandlers();
 
   // Start task notification watcher
   startTaskNotifyWatcher();
