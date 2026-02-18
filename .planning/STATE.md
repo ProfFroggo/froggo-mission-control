@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 20 (Library Population & Tagging)
+**Current focus:** v3.0 milestone — Phase 21 next (Finance End-to-End Wiring)
 
 ## Current Position
 
-Phase: 20 of 21 (Library Population & Tagging)
+Phase: 21 of 21 (Finance End-to-End Wiring)
 Plan: —
-Status: Not started
-Last activity: 2026-02-18 — Completed Phase 19 (Writing Pane Layout Fixes)
+Status: Planning
+Last activity: 2026-02-18 — Phase 20 complete. Phase 21 (Finance) next.
 
-Progress: [█████████░░░░░░░░░░░] 67% (v3.0, 8/9 phases: 13,14,15,16,17,18,19 complete; 20-21 remaining)
+Progress: [████████████░░░░░░░░] 78% (v3.0, 9/10 phases complete: 13-21 with 21 remaining)
 
 ## Performance Metrics
 
@@ -36,6 +36,10 @@ Progress: [█████████░░░░░░░░░░░] 67% (v3
 - Plans completed: 9
 - Average duration: ~2min
 
+**Velocity (v2.3 / phase 20):**
+- Plans completed: 2
+- Average duration: ~6min
+
 ## Accumulated Context
 
 ### Decisions
@@ -47,6 +51,14 @@ Carried forward:
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+
+Phase 20 decisions:
+- agent_skills table is primary source (66 rows, proficiency 1-10), NOT skill_evolution
+- project column added to library via ALTER TABLE (idempotent)
+- 9 categories: marketing, design, dev, research, finance, test-logs, content, social, other
+- Rename local LibraryFile interface to LibraryFileItem to avoid collision with global type
+- Skills tab uses simple useState<Set<string>> for collapsible agent sections (not group-active: CSS)
+- categoryCounts computed dynamically from Object.keys(categoryConfig)
 
 Phase 19 decisions:
 - String minSize="Npx" for pixel-based panel minimums in react-resizable-panels v4 (180px chapters, 280px chat, 300px editor)
@@ -104,5 +116,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed Phase 19. Writing pane layout fixed: pixel-based min sizes (180/280/300px), visible double-line separator grips with data-[separator=active] active state, CSS selectors updated for v4. Phase 20 next.
+Stopped at: Completed 20-02-PLAN.md. Skills tab shows real agent_skills data grouped by agent. Files tab has 9 categories + inline category/tag/project editing.
 Resume file: None
