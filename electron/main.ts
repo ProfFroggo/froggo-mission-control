@@ -892,7 +892,27 @@ app.whenReady().then(() => {
       PRIMARY KEY (automation_id, hour_bucket)
     )`);
 
+    // Scheduled posts table
+    db.exec(`CREATE TABLE IF NOT EXISTS scheduled_posts (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      scheduled_time INTEGER NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at INTEGER NOT NULL,
+      posted_at INTEGER,
+      error TEXT
+    )`);
+
     safeLog.log('[Migration] X Automations tables ensured');
+
+    // Simple scheduled_posts table for direct tweet scheduling
+    db.exec(`CREATE TABLE IF NOT EXISTS scheduled_posts (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      scheduled_time INTEGER NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at INTEGER NOT NULL
+    )`);
 
     safeLog.log('[Migration] X/Twitter schema migrations complete');
   } catch (err) {
@@ -4088,6 +4108,16 @@ ipcMain.handle('media:cleanup', async () => {
 // ============== LIBRARY IPC HANDLERS ==============
 const libraryDir = LIBRARY_DIR;
 
+// Library schema migration: add project column + migrate old categories
+try {
+  db.exec('ALTER TABLE library ADD COLUMN project TEXT');
+} catch (_e) { /* column already exists */ }
+try {
+  prepare("UPDATE library SET category = 'marketing' WHERE category = 'strategy'").run();
+  prepare("UPDATE library SET category = 'test-logs' WHERE category = 'test'").run();
+  prepare("UPDATE library SET category = 'content' WHERE category IN ('draft', 'document')").run();
+} catch (_e) { /* migration already ran or no rows to update */ }
+
 ipcMain.handle('library:list', async (_, category?: string) => {
   // Ensure library directory exists
   if (!fs.existsSync(libraryDir)) {
@@ -4131,6 +4161,7 @@ ipcMain.handle('library:list', async (_, category?: string) => {
         updatedAt: f.updated_at || new Date().toISOString(),
         linkedTasks,
         tags,
+        project: f.project || null,
       };
     });
 
@@ -4330,6 +4361,66 @@ ipcMain.handle('library:download', async (_, fileId: string) => {
     fs.copyFileSync(sourcePath, saveResult.filePath);
     return { success: true, path: saveResult.filePath };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('skills:list', async () => {
+  try {
+    const dbSkills = prepare(`
+      SELECT as2.agent_id, as2.skill_name, as2.proficiency, as2.success_count,
+             as2.failure_count, as2.last_used, as2.notes,
+             ar.name as agent_name, ar.emoji as agent_emoji
+      FROM agent_skills as2
+      LEFT JOIN agent_registry ar ON as2.agent_id = ar.id
+      ORDER BY as2.agent_id, as2.proficiency DESC
+    `).all();
+    return { success: true, skills: dbSkills };
+  } catch (error: any) {
+    safeLog.error('[skills:list] Error:', error);
+    return { success: false, error: error.message, skills: [] };
+  }
+});
+
+ipcMain.handle('library:update', async (_, fileId: string, updates: { category?: string; tags?: string[]; project?: string }) => {
+  try {
+    if (updates.category) {
+      prepare('UPDATE library SET category = ?, updated_at = datetime("now") WHERE id = ?').run(updates.category, fileId);
+    }
+    if (updates.tags !== undefined) {
+      prepare('UPDATE library SET tags = ?, updated_at = datetime("now") WHERE id = ?').run(JSON.stringify(updates.tags), fileId);
+    }
+    if (updates.project !== undefined) {
+      prepare('UPDATE library SET project = ?, updated_at = datetime("now") WHERE id = ?').run(updates.project, fileId);
+    }
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[library:update] Error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('library:uploadBuffer', async (_, data: { name: string; type: string; buffer: ArrayBuffer }) => {
+  try {
+    if (!fs.existsSync(libraryDir)) {
+      fs.mkdirSync(libraryDir, { recursive: true });
+    }
+    const fileId = `file-${Date.now()}`;
+    const destPath = path.join(libraryDir, fileId + '-' + data.name);
+    fs.writeFileSync(destPath, Buffer.from(data.buffer));
+    const stats = fs.statSync(destPath);
+    const ext = path.extname(data.name).toLowerCase();
+    let category = 'other';
+    if (['.md', '.txt', '.pdf', '.doc', '.docx'].includes(ext)) category = 'content';
+    else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov'].includes(ext)) category = 'design';
+    else if (['.ts', '.tsx', '.js', '.jsx', '.py', '.sh'].includes(ext)) category = 'dev';
+    else if (['.csv', '.xls', '.xlsx'].includes(ext)) category = 'finance';
+    prepare('INSERT INTO library (id, name, path, category, size, mime_type) VALUES (?, ?, ?, ?, ?, ?)').run(
+      fileId, data.name, destPath, category, stats.size, data.type || null
+    );
+    return { success: true, file: { id: fileId, name: data.name, path: destPath, category, size: stats.size } };
+  } catch (error: any) {
+    safeLog.error('[library:uploadBuffer] Error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -8941,6 +9032,100 @@ ipcMain.handle('x:schedule:delete', async (_, data: { id: string }) => {
     return { success: false, error: error.message };
   }
 });
+
+// ============== SIMPLE SCHEDULED POSTS HANDLERS ==============
+
+// x:schedule(text, time) - Schedule a tweet for later
+ipcMain.handle('x:schedule', async (_, text: string, scheduledTime: number) => {
+  try {
+    const id = `sched-${Date.now()}`;
+    const now = Date.now();
+    
+    const stmt = prepare(`
+      INSERT INTO scheduled_posts (id, content, scheduled_time, status, created_at)
+      VALUES (?, ?, ?, 'pending', ?)
+    `);
+    stmt.run(id, text, scheduledTime, now);
+    
+    safeLog.log(`[X/Schedule] Scheduled post: ${id} for ${new Date(scheduledTime).toISOString()}`);
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[X/Schedule] Schedule error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// x:scheduled() - List all scheduled posts
+ipcMain.handle('x:scheduled', async () => {
+  try {
+    const stmt = prepare(`
+      SELECT * FROM scheduled_posts 
+      ORDER BY scheduled_time ASC
+    `);
+    const results = stmt.all();
+    return { success: true, scheduled: results };
+  } catch (error: any) {
+    safeLog.error('[X/Scheduled] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// x:cancel(id) - Cancel a scheduled post
+ipcMain.handle('x:cancel', async (_, id: string) => {
+  try {
+    const stmt = prepare('DELETE FROM scheduled_posts WHERE id = ?');
+    const result = stmt.run(id);
+    
+    if (result.changes === 0) {
+      throw new Error('Scheduled post not found');
+    }
+    
+    safeLog.log(`[X/Cancel] Cancelled scheduled post: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Cancel] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// Auto-poster interval - check every minute for pending posts
+let scheduleInterval: NodeJS.Timeout | null = null;
+
+function startScheduledPoster() {
+  if (scheduleInterval) return;
+  
+  scheduleInterval = setInterval(async () => {
+    try {
+      const now = Date.now();
+      const stmt = prepare(`
+        SELECT * FROM scheduled_posts 
+        WHERE status = 'pending' AND scheduled_time <= ?
+      `);
+      const pending = stmt.all(now) as { id: string; content: string }[];
+      
+      for (const post of pending) {
+        try {
+          // Post the tweet
+          execSync(`x-api post "${post.content.replace(/"/g, '\\"')}"`, { encoding: 'utf-8' });
+          
+          // Mark as posted
+          prepare('UPDATE scheduled_posts SET status = ? WHERE id = ?').run('posted', post.id);
+          safeLog.log(`[X/AutoPost] Posted scheduled tweet: ${post.id}`);
+        } catch (postError: any) {
+          safeLog.error(`[X/AutoPost] Failed to post ${post.id}:`, postError.message);
+          prepare('UPDATE scheduled_posts SET status = ? WHERE id = ?').run('failed', post.id);
+        }
+      }
+    } catch (error: any) {
+      safeLog.error('[X/AutoPost] Interval error:', error.message);
+    }
+  }, 60000); // Check every minute
+  
+  safeLog.log('[X/AutoPost] Started scheduled poster interval');
+}
+
+// Start the auto-poster
+startScheduledPoster();
 
 // ============== X/TWITTER MENTIONS HANDLERS ==============
 
