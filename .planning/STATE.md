@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 18 of 21 (X/Twitter Automations & Analytics)
-Plan: 01 of ? in phase 18
+Plan: 02 of ? in phase 18
 Status: In progress
-Last activity: 2026-02-18 — Completed 18-01-PLAN.md (x_automations DB tables)
+Last activity: 2026-02-18 — Completed 18-02-PLAN.md (X Analytics dashboard)
 
 Progress: [██████░░░░░░░░░░░░░░] 47% (v3.0, 6/9 phases: 13,14,15,16,17 complete; 18-21 remaining)
 
@@ -74,7 +74,7 @@ Phase 14 decisions:
 - Sidebar label: "X / Twitter" with spaces around slash (was "X/Twitter")
 - TABS_WITH_APPROVAL allowlist ['plan', 'drafts'] is source of truth for approval queue visibility
 - hideRightPane on ThreePaneLayout hides right pane + resize handle; center expands via effectiveCenterWidth
-- analytics tab gets inline placeholder (no dedicated component needed yet)
+- analytics tab gets inline placeholder (no dedicated component needed yet) [superseded by 18-02: XAnalyticsView]
 
 Phase 13 decisions:
 - CSS token pattern: define in src/index.css (:root + :root.light), expose in tailwind.config.js clawd object with var() + hex fallback
@@ -98,5 +98,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 18-01-PLAN.md. x_automations tables added to startup migrations.
+Stopped at: Completed 18-02-PLAN.md. XAnalyticsView component built and wired; 2 analytics IPC handlers added.
 Resume file: None
