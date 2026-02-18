@@ -5,7 +5,7 @@
 - ✅ **v1.0 Dashboard Hardening** - Phases 1-4 (shipped 2026-02-12)
 - ✅ **v2.0 Writing System** - Phases 5-10 (shipped 2026-02-13)
 - ✅ **v2.1 Writing UX Redesign** - Phases 11-12 (shipped 2026-02-13)
-- 🚧 **v3.0 App-Wide Polish & X/Twitter Overhaul** - Phases 13-21 (in progress)
+- ✅ **v3.0 App-Wide Polish & X/Twitter Overhaul** - Phases 13-21 (shipped 2026-02-18)
 
 ## Phases
 
@@ -74,149 +74,26 @@
 
 ---
 
-### v3.0 App-Wide Polish & X/Twitter Overhaul (In Progress)
+<details>
+<summary>✅ v3.0 App-Wide Polish & X/Twitter Overhaul (Phases 13-21) - SHIPPED 2026-02-18</summary>
 
-**Milestone Goal:** Every page functions correctly in dark mode, X/Twitter page fully rebuilt with working calendar and automation builder, Finance page wired end-to-end, Writing panes usable, Library populated with real data.
+- [x] Phase 13: Global UI Consistency (5/5 plans) — completed 2026-02-18
+- [x] Phase 14: X/Twitter Identity + Tabs (2/2 plans) — completed 2026-02-18
+- [x] Phase 15: X/Twitter Content Flow (2/2 plans) — completed 2026-02-18
+- [x] Phase 16: X/Twitter Calendar (2/2 plans) — completed 2026-02-18
+- [x] Phase 17: X/Twitter Mentions + Reply Guy (2/2 plans) — completed 2026-02-18
+- [x] Phase 18: X/Twitter Automations + Analytics (2/2 plans) — completed 2026-02-18
+- [x] Phase 19: Writing Pane Layout (1/1 plan) — completed 2026-02-18
+- [x] Phase 20: Library Population (2/2 plans) — completed 2026-02-18
+- [x] Phase 21: Finance End-to-End (2/2 plans) — completed 2026-02-18
 
-#### Phase 13: Global UI Consistency -- COMPLETE 2026-02-18
-**Goal**: Every page looks and behaves correctly in dark mode with consistent UI components
-**Depends on**: Phase 12
-**Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05, UI-06
-**Plans**: 5 plans complete
+Full details: `.planning/milestones/v3.0-ROADMAP.md`
 
-Plans:
-- [x] 13-01-PLAN.md -- Define missing CSS tokens (bg-alt, bg0, card) for dark mode inputs
-- [x] 13-02-PLAN.md -- Fix Agents page borders to use per-agent theme colors
-- [x] 13-03-PLAN.md -- Standardize user chat bubbles (ChatPanel, ChatRoom, AgentModal, Writing)
-- [x] 13-04-PLAN.md -- Standardize user chat bubbles (X/Twitter, Finance, Voice, QuickActions)
-- [x] 13-05-PLAN.md -- Fix chat input bar flex layout alignment (pinned to bottom)
-
-#### Phase 14: X/Twitter Identity, Dark Mode & Tab Structure -- COMPLETE 2026-02-18
-**Goal**: The X/Twitter page presents correctly (X branding, dark mode, clean tab order) with approval panels stripped from non-content tabs
-**Depends on**: Phase 13
-**Requirements**: XTW-01, XTW-02, XTW-03, XTW-04, XTW-05, XTW-06, XTW-07, XTW-08
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 14-01-PLAN.md -- X logo, page label, dark mode styling (XDraftComposer token fixes)
-- [x] 14-02-PLAN.md -- Tab order, approval panel removal, automations routing bug fix
-
-#### Phase 15: X/Twitter Content Flow -- COMPLETE 2026-02-18
-**Goal**: Content Plan and Drafts tabs show real draft content with image attachment support, and the agent chat is wired and fast
-**Depends on**: Phase 14
-**Requirements**: XTW-09, XTW-10, XTW-11, XTW-12, XTW-13
-**Success Criteria** (what must be TRUE):
-  1. Content Plan tab approval queue shows actual final drafts (not placeholders)
-  2. Drafts tab shows final drafts ready for review
-  3. Posts in Content Plan and Drafts support attaching an image
-  4. Chat on Content Plan tab connects to a real agent (not the "researcher" stub) and first token appears without multi-second delay
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 15-01-PLAN.md -- Replace center pane composers with list/viewer + image attachment UI
-- [x] 15-02-PLAN.md -- Verify agent chat wiring to writer + fix send button styling
-
-#### Phase 16: X/Twitter Calendar -- COMPLETE 2026-02-18
-**Goal**: The X/Twitter calendar reuses the existing schedule component, shows tweet events colour-coded by status, and supports drag-to-reschedule
-**Depends on**: Phase 15
-**Requirements**: XTW-14, XTW-15, XTW-16, XTW-17, XTW-18
-**Success Criteria** (what must be TRUE):
-  1. Calendar uses the same component as schedule.tsx -- not a custom re-implementation
-  2. Scheduled tweets appear as events on the calendar, colour-coded by status (research / plan / draft / scheduled)
-  3. User can drag a tweet event to a different day and the tweet's scheduled date updates
-  4. Top-right button on calendar reads "Create Tweet" (not "content mix")
-  5. Calendar view is calendar + chat interface only -- no approval panel visible
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 16-01-PLAN.md -- Extend EpicCalendar with external event props + rewrite XCalendarView as adapter with colour-coded pipeline events
-- [x] 16-02-PLAN.md -- Drag-to-reschedule for scheduled tweets + Create Tweet button + non-draggable research/plan/draft events
-
-#### Phase 17: X/Twitter Mentions & Reply Guy -- COMPLETE 2026-02-18
-**Goal**: Mentions tab shows incoming mentions with inline reply capability, Reply Guy shows suggestions inline with approve/edit/send per item -- both with agent chat
-**Depends on**: Phase 15
-**Requirements**: XTW-19, XTW-20, XTW-21, XTW-22, XTW-23, XTW-24
-**Success Criteria** (what must be TRUE):
-  1. Mentions tab shows incoming mentions and the user can reply directly from the mentions UI without leaving the tab
-  2. User can inject a response to a mention from within the mentions UI
-  3. Mentions tab has a chat interface connected to an agent
-  4. Reply Guy shows reply suggestions in the main UI -- not inside an approval side panel
-  5. Each Reply Guy suggestion has inline approve / edit / send controls
-  6. Reply Guy has a chat interface connected to an agent
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 17-01-PLAN.md -- Fix x_mentions DB schema + x_drafts CHECK constraint + disable handler stubs + XMentionsView emoji cleanup
-- [x] 17-02-PLAN.md -- Add "Suggest Reply" button to XReplyGuyView + agent chat injection + emoji cleanup
-
-#### Phase 18: X/Twitter Automations & Analytics -- COMPLETE 2026-02-18
-**Goal**: Automations tab has a working visual rule builder and agent chat; Analytics tab delivers a full metrics breakdown with downloadable report
-**Depends on**: Phase 15
-**Requirements**: XTW-25, XTW-26, XTW-27, XTW-28, XTW-29, XTW-30, XTW-31
-**Success Criteria** (what must be TRUE):
-  1. Automations tab has a visual rule builder (restored to pre-existing state or rebuilt)
-  2. Automations tab has an agent chat interface (existing functionality preserved)
-  3. Automations tab has no approval panel
-  4. Analytics tab exists at the end of the nav and shows posts, engagement, reach, and top content breakdown
-  5. Analytics includes a competitor insights section
-  6. User can download a daily insights report as a text file from the Analytics tab
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 18-01-PLAN.md -- Add x_automations DB tables to unblock existing rule builder UI
-- [x] 18-02-PLAN.md -- Analytics tab: stat cards, top content, competitor insights, downloadable report
-
-#### Phase 19: Writing Pane Layout Fixes -- COMPLETE 2026-02-18
-**Goal**: Writing module 3-pane layout is usable on first load with visible drag handles and workable minimum widths
-**Depends on**: Phase 12
-**Requirements**: WRT-01, WRT-02, WRT-03, WRT-04
-**Success Criteria** (what must be TRUE):
-  1. Left double-bar drag handles between panes 1 and 2 are visible and functional on first load without any manual resizing
-  2. Pane 1 (chapters list) opens at >=180px and renders chapter content immediately
-  3. Pane 2 (AI chat) opens at >=280px and renders the chat interface immediately
-  4. Dragging any pane handle works smoothly across the full usable width range without snapping or collapsing unexpectedly
-**Plans**: 1 plan complete
-
-Plans:
-- [x] 19-01-PLAN.md -- Fix Panel pixel min/max sizes, visible double-line grip separators, correct CSS selectors
-
-#### Phase 20: Library Population & Tagging -- COMPLETE 2026-02-18
-**Goal**: Library shows real agent skills, all files are taggable with project/category/type, and file categories cover the full taxonomy
-**Depends on**: Phase 13
-**Requirements**: LIB-01, LIB-02, LIB-03
-**Success Criteria** (what must be TRUE):
-  1. Skills section in Library reads and displays actual agent skills from the system -- no empty state on first load
-  2. Every file in Library can be tagged with: project name, category, and content type
-  3. File category picker includes: Marketing, UI/Design, Dev, Research, Finance, Test Logs, Content, Social, Other
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 20-01-PLAN.md -- IPC wiring: skills:list, library:update, library:uploadBuffer handlers + preload bindings + DB migration
-- [x] 20-02-PLAN.md -- Frontend: LibrarySkillsTab agent skills display + LibraryFilesTab 9-category config + inline tagging UI
-
-#### Phase 21: Finance End-to-End Wiring -- COMPLETE 2026-02-18
-**Goal**: Finance page fully functional -- insights load, document upload works, agent chat connects, budget creation works, and UI matches app style
-**Depends on**: Phase 13
-**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06
-**Success Criteria** (what must be TRUE):
-  1. Finance insights panel loads data without error when the page opens
-  2. Document upload accepts PDF and CSV files -- file picker opens and the file is processed
-  3. Chat panel initializes and connects to the finance-manager agent without error
-  4. "Create Budget" button opens a budget creation flow (form or modal)
-  5. "Upload Statement" button opens the file picker and ingests the selected file
-  6. Finance chat UI visually matches the app-wide chat style established in Phase 13
-**Plans**: 2 plans complete
-
-Plans:
-- [x] 21-01-PLAN.md -- Fix CLI JSON output (finance-transactions, budget-status, alerts, upload) + fix IPC handler args (budget-type flag, upload account param, uploadPDF handler)
-- [x] 21-02-PLAN.md -- Wire Create Budget modal + PDF upload accept + align FinanceAgentChat with Phase 13 chat style
+</details>
 
 ---
 
 ## Progress
-
-**Execution Order:**
-Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-18 (independent areas). Phase 21 should follow Phase 13 (UI consistency dependency for chat style).
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|

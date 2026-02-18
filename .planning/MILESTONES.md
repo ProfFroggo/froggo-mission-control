@@ -1,5 +1,33 @@
 # Milestones
 
+## v3.0 — App-Wide Polish & X/Twitter Overhaul (Complete)
+
+**Completed:** 2026-02-18
+**Duration:** 1 day across 21 plans
+**Phases:** 9 (Global UI Consistency → Finance End-to-End Wiring)
+**Requirements:** 50/50 complete
+
+**Summary:** Rebuilt X/Twitter page from scratch (X branding, 8-tab nav, calendar with drag-to-reschedule, mentions with inline reply, reply guy with inline controls, automations rule builder, analytics with competitor insights). Standardized dark mode UI tokens across all 40+ components. Fixed writing pane layout. Populated Library with real agent skills. Wired Finance page end-to-end (CLI JSON output, budget creation modal, PDF upload, agent chat styling).
+
+**Key outcomes:**
+- X/Twitter page: 8 tabs, calendar, drag-reschedule, mentions, reply guy, automations, analytics with downloadable report
+- Global dark mode: CSS token system (`--clawd-bg-alt/bg0/card`), consistent chat bubbles, pinned input bars
+- Finance CLI: `--format json` on all 4 commands, alerts crash fixed, budget creation modal, PDF routing
+- Writing panes: pixel-based minimums (180px/280px/300px), visible drag handles on first load
+- Library: 66 agent skills from DB, 9-category file taxonomy with inline tagging
+
+**Stats:**
+- 67 files modified, +9,081 / -989 lines
+- ~118K lines TypeScript total
+- 9 phases, 21 plans, ~42 tasks
+- 1 day (2026-02-18)
+
+**Git range:** `feat(13-01)` → `feat(21-02)`
+
+**Archive:** `.planning/milestones/v3.0-ROADMAP.md`
+
+---
+
 ## v1.0 — Dashboard Hardening (Complete)
 
 **Completed:** 2026-02-12
