@@ -5,7 +5,7 @@ import XAgentChatPane from './XAgentChatPane';
 import XContentEditorPane from './XContentEditorPane';
 import XApprovalQueuePane from './XApprovalQueuePane';
 
-export type XTab = 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics';
+export type XTab = 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit';
 
 const XLogo = ({ size = 24 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -25,7 +25,7 @@ export default function XTwitterPage() {
     return () => window.removeEventListener('x-tab-change', handler);
   }, []);
 
-  const TABS_WITH_APPROVAL: XTab[] = ['plan', 'drafts', 'research'];
+  const TABS_WITH_APPROVAL: XTab[] = ['plan', 'drafts', 'research', 'reddit'];
   const showApprovalPane = TABS_WITH_APPROVAL.includes(activeTab);
 
   return (

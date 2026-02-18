@@ -66,7 +66,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const agentConfig = AGENT_ROUTING[tab];
+  // Defensive: fallback to 'research' agent if tab is not in routing
+  const agentConfig = AGENT_ROUTING[tab] || { agentId: 'researcher', displayName: 'Researcher' };
   const sessionKey = `agent:${agentConfig.agentId}:xtwitter:${tab}`;
 
   // Initialize gateway connection and session when component mounts or tab changes

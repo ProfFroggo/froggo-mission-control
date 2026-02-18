@@ -11,7 +11,8 @@ export default function XResearchIdeaEditor() {
   
   // Get agent name from store - use researcher agent as default for research tasks
   const { agents } = useStore();
-  const researcherAgent = agents.find(a => a.id === 'researcher');
+  // Defensive: ensure agents is an array before calling find
+  const researcherAgent = Array.isArray(agents) ? agents.find(a => a.id === 'researcher') : undefined;
   const proposedBy = researcherAgent?.name || 'researcher';
 
   const handleAddCitation = () => {
