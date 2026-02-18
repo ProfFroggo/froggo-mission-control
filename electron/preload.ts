@@ -599,6 +599,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.invoke('x-automations:executions', automationId, limit),
     rateLimit: (automationId: string) => ipcRenderer.invoke('x-automations:rate-limit', automationId),
   },
+  // X Analytics
+  xAnalytics: {
+    summary: () => ipcRenderer.invoke('x:analytics:summary'),
+    topContent: () => ipcRenderer.invoke('x:analytics:topContent'),
+  },
   // Widget API - dynamic agent widget loading
   widgetAPI: {
     scanManifest: (agentId: string) => ipcRenderer.invoke('widget:scan-manifest', agentId),
