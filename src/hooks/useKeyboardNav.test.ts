@@ -6,22 +6,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useKeyboardNav, useFocusTrap, useArrowNavigation } from './useKeyboardNav';
 
-// Mock document and window objects
-const mockDocument = {
-  body: {
-    classList: {
-      add: vi.fn(),
-      remove: vi.fn(),
-      contains: vi.fn(),
-    },
-  },
-  activeElement: {
-    tagName: 'BUTTON',
-  },
-  createElement: vi.fn(),
-  body: document.createElement('body'),
-};
-
 const mockFocusableElements = [
   { tagName: 'BUTTON', focus: vi.fn(), dataset: {} },
   { tagName: 'INPUT', focus: vi.fn(), dataset: {} },
@@ -36,51 +20,53 @@ const mockWindow = {
 describe('useKeyboardNav', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(document, 'body', 'get').mockReturnValue(mockDocument.body as unknown as HTMLBodyElement);
+    mockFocusableElements.forEach(el => el.focus.mockClear());
+    vi.spyOn(document.body.classList, 'add');
+    vi.spyOn(document.body.classList, 'remove');
     vi.spyOn(window, 'addEventListener').mockImplementation(mockWindow.addEventListener);
     vi.spyOn(window, 'removeEventListener').mockImplementation(mockWindow.removeEventListener);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete (document as any).activeElement;
   });
 
   describe('keyboard detection', () => {
     it('should add keyboard-nav class on Tab press', () => {
       const { unmount } = renderHook(() => useKeyboardNav());
-      
-      // Trigger keydown with Tab
+
+      // Find the keyboard detection keydown handler (first one registered)
       const keydownHandler = mockWindow.addEventListener.mock.calls.find(
         call => call[0] === 'keydown'
       )?.[1];
-      
+
       if (keydownHandler) {
         act(() => {
           keydownHandler({ key: 'Tab', preventDefault: vi.fn() });
         });
       }
-      
-      expect(mockDocument.body.classList.add).toHaveBeenCalledWith('keyboard-nav');
-      
+
+      expect(document.body.classList.add).toHaveBeenCalledWith('keyboard-nav');
+
       unmount();
     });
 
     it('should remove keyboard-nav class on mouse down', () => {
       const { unmount } = renderHook(() => useKeyboardNav());
-      
-      // Trigger mousedown
+
       const mousedownHandler = mockWindow.addEventListener.mock.calls.find(
         call => call[0] === 'mousedown'
       )?.[1];
-      
+
       if (mousedownHandler) {
         act(() => {
           mousedownHandler({});
         });
       }
-      
-      expect(mockDocument.body.classList.remove).toHaveBeenCalledWith('keyboard-nav');
-      
+
+      expect(document.body.classList.remove).toHaveBeenCalledWith('keyboard-nav');
+
       unmount();
     });
   });
@@ -89,38 +75,37 @@ describe('useKeyboardNav', () => {
     it('should call onEscape when Escape key is pressed', () => {
       const onEscape = vi.fn();
       const { unmount } = renderHook(() => useKeyboardNav({ onEscape }));
-      
-      const keydownHandler = mockWindow.addEventListener.mock.calls.find(
-        call => call[0] === 'keydown'
-      )?.[1];
-      
-      if (keydownHandler) {
+
+      // Find ALL keydown handlers and fire them — the escape handler is separate from keyboard detection
+      const keydownHandlers = mockWindow.addEventListener.mock.calls
+        .filter(call => call[0] === 'keydown')
+        .map(call => call[1]);
+
+      keydownHandlers.forEach(handler => {
         act(() => {
-          keydownHandler({ key: 'Escape', preventDefault: vi.fn() });
+          handler({ key: 'Escape', preventDefault: vi.fn() });
         });
-      }
-      
+      });
+
       expect(onEscape).toHaveBeenCalledTimes(1);
-      
+
       unmount();
     });
 
     it('should not call onEscape when no handler provided', () => {
       const { unmount } = renderHook(() => useKeyboardNav());
-      
+
+      const keydownHandlers = mockWindow.addEventListener.mock.calls
+        .filter(call => call[0] === 'keydown')
+        .map(call => call[1]);
+
       // Should not throw
-      const keydownHandler = mockWindow.addEventListener.mock.calls.find(
-        call => call[0] === 'keydown'
-      )?.[1];
-      
-      if (keydownHandler) {
+      keydownHandlers.forEach(handler => {
         act(() => {
-          keydownHandler({ key: 'Escape', preventDefault: vi.fn() });
+          handler({ key: 'Escape', preventDefault: vi.fn() });
         });
-      }
-      
-      expect(() => {}).not.toThrow();
-      
+      });
+
       unmount();
     });
   });
@@ -133,22 +118,22 @@ describe('useKeyboardNav', () => {
         removeEventListener: vi.fn(),
       };
 
-      const mockElement = {
-        querySelectorAll: vi.fn().mockReturnValue(mockFocusableElements),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-      };
+      // Start with trapFocus disabled, set the ref, then enable it
+      const { result, rerender, unmount } = renderHook(
+        ({ trapFocus }) => useKeyboardNav({ trapFocus }),
+        { initialProps: { trapFocus: false } }
+      );
 
-      const { result, unmount } = renderHook(() => useKeyboardNav({ trapFocus: true }));
-      
-      // Set container ref
+      // Set container ref while inactive
       act(() => {
         result.current.containerRef(mockContainer as unknown as HTMLElement);
       });
-      
-      // Check that keydown handler was added
+
+      // Enable trap — triggers the effect with the ref set
+      rerender({ trapFocus: true });
+
       expect(mockContainer.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function));
-      
+
       unmount();
     });
 
@@ -159,13 +144,13 @@ describe('useKeyboardNav', () => {
       };
 
       const { result, unmount } = renderHook(() => useKeyboardNav({ trapFocus: false }));
-      
+
       act(() => {
         result.current.containerRef(mockContainer as unknown as HTMLElement);
       });
-      
+
       expect(mockContainer.addEventListener).not.toHaveBeenCalled();
-      
+
       unmount();
     });
   });
@@ -176,14 +161,20 @@ describe('useKeyboardNav', () => {
         querySelectorAll: vi.fn().mockReturnValue(mockFocusableElements),
       };
 
-      const { result, unmount } = renderHook(() => useKeyboardNav({ autoFocus: true }));
-      
+      // Start with autoFocus disabled, set the ref, then enable it
+      const { result, rerender, unmount } = renderHook(
+        ({ autoFocus }) => useKeyboardNav({ autoFocus }),
+        { initialProps: { autoFocus: false } }
+      );
+
       act(() => {
         result.current.containerRef(mockContainer as unknown as HTMLElement);
       });
-      
+
+      rerender({ autoFocus: true });
+
       expect(mockFocusableElements[0].focus).toHaveBeenCalledTimes(1);
-      
+
       unmount();
     });
   });
@@ -192,6 +183,11 @@ describe('useKeyboardNav', () => {
 describe('useFocusTrap', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFocusableElements.forEach(el => el.focus.mockClear());
+  });
+
+  afterEach(() => {
+    delete (document as any).activeElement;
   });
 
   it('should focus first element on mount', () => {
@@ -201,17 +197,19 @@ describe('useFocusTrap', () => {
       removeEventListener: vi.fn(),
     };
 
-    const { unmount } = renderHook(() => useFocusTrap(true));
-    
-    // Set container ref
-    const hook = renderHook(() => useFocusTrap(true));
-    act(() => {
-      (hook.result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
-    });
-    
+    const { result, rerender, unmount } = renderHook(
+      ({ active }) => useFocusTrap(active),
+      { initialProps: { active: false } }
+    );
+
+    // Set ref while inactive
+    (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
+
+    // Activate
+    rerender({ active: true });
+
     expect(mockFocusableElements[0].focus).toHaveBeenCalled();
-    
-    hook.unmount();
+
     unmount();
   });
 
@@ -221,37 +219,51 @@ describe('useFocusTrap', () => {
     };
 
     const { result, unmount } = renderHook(() => useFocusTrap(false));
-    
+
     act(() => {
       (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
     });
-    
+
     expect(mockContainer.querySelectorAll).not.toHaveBeenCalled();
-    
+
     unmount();
   });
 
   it('should trap focus on Tab key', () => {
     const mockContainer = {
       querySelectorAll: vi.fn().mockReturnValue(mockFocusableElements),
-      addEventListener: vi.fn((event, handler) => {
-        if (event === 'keydown') {
-          // Simulate pressing Tab at last element
-          act(() => {
-            handler({ key: 'Tab', shiftKey: false, preventDefault: vi.fn(), target: mockFocusableElements[2] });
-          });
-        }
-      }),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     };
 
-    const hook = renderHook(() => useFocusTrap(true));
-    act(() => {
-      (hook.result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
+    const { result, rerender, unmount } = renderHook(
+      ({ active }) => useFocusTrap(active),
+      { initialProps: { active: false } }
+    );
+
+    (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
+    rerender({ active: true });
+
+    // Get the keydown handler
+    const keydownHandler = mockContainer.addEventListener.mock.calls.find(
+      (call: any[]) => call[0] === 'keydown'
+    )?.[1];
+
+    expect(keydownHandler).toBeDefined();
+
+    // Simulate Tab from last element — should wrap to first
+    Object.defineProperty(document, 'activeElement', {
+      value: mockFocusableElements[2],
+      configurable: true,
     });
-    
-    expect(mockFocusableElements[0].focus).toHaveBeenCalled();
-    
-    hook.unmount();
+
+    const event = { key: 'Tab', shiftKey: false, preventDefault: vi.fn() };
+    keydownHandler(event);
+
+    // Called once for initial focus, once for Tab wrap
+    expect(mockFocusableElements[0].focus).toHaveBeenCalledTimes(2);
+
+    unmount();
   });
 });
 
@@ -264,6 +276,7 @@ describe('useArrowNavigation', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete (document as any).activeElement;
   });
 
   it('should not navigate when disabled', () => {
@@ -277,19 +290,21 @@ describe('useArrowNavigation', () => {
     };
 
     const { unmount } = renderHook(() => useArrowNavigation(mockRef as unknown as React.RefObject<HTMLElement[]>, { enabled: false }));
-    
+
+    // No keydown handler should be registered when disabled
     const keydownHandler = mockWindow.addEventListener.mock.calls.find(
       call => call[0] === 'keydown'
     )?.[1];
-    
+
+    // Either no handler registered, or handler doesn't navigate
     if (keydownHandler) {
       act(() => {
         keydownHandler({ key: 'ArrowDown', preventDefault: vi.fn() });
       });
     }
-    
+
     expect(mockItems[1].focus).not.toHaveBeenCalled();
-    
+
     unmount();
   });
 
@@ -303,20 +318,26 @@ describe('useArrowNavigation', () => {
       current: mockItems as unknown as HTMLElement[],
     };
 
+    // Set activeElement to the first item so the handler can find currentIndex
+    Object.defineProperty(document, 'activeElement', {
+      value: mockItems[0],
+      configurable: true,
+    });
+
     const { unmount } = renderHook(() => useArrowNavigation(mockRef as unknown as React.RefObject<HTMLElement[]>));
-    
+
     const keydownHandler = mockWindow.addEventListener.mock.calls.find(
       call => call[0] === 'keydown'
     )?.[1];
-    
+
     if (keydownHandler) {
       act(() => {
         keydownHandler({ key: 'ArrowDown', preventDefault: vi.fn() });
       });
     }
-    
+
     expect(mockItems[1].focus).toHaveBeenCalled();
-    
+
     unmount();
   });
 
@@ -331,27 +352,33 @@ describe('useArrowNavigation', () => {
       current: mockItems as unknown as HTMLElement[],
     };
 
+    // Start with activeElement as the first item
+    Object.defineProperty(document, 'activeElement', {
+      value: mockItems[0],
+      configurable: true,
+    });
+
     const { unmount } = renderHook(() => useArrowNavigation(mockRef as unknown as React.RefObject<HTMLElement[]>));
-    
+
     const keydownHandler = mockWindow.addEventListener.mock.calls.find(
       call => call[0] === 'keydown'
     )?.[1];
-    
+
     if (keydownHandler) {
       // Press End to go to last item
       act(() => {
         keydownHandler({ key: 'End', preventDefault: vi.fn() });
       });
-      
+
       // Press Home to go to first item
       act(() => {
         keydownHandler({ key: 'Home', preventDefault: vi.fn() });
       });
     }
-    
+
     expect(mockItems[2].focus).toHaveBeenCalled();
     expect(mockItems[0].focus).toHaveBeenCalled();
-    
+
     unmount();
   });
 });
