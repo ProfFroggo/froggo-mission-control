@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 17 of 21 (X/Twitter Mentions & Reply Guy)
-Plan: 01 of 02
-Status: In progress
-Last activity: 2026-02-18 — Completed 17-01-PLAN.md
+Plan: 02 of 02
+Status: Phase complete
+Last activity: 2026-02-18 — Completed 17-02-PLAN.md
 
-Progress: [██████░░░░░░░░░░░░░░] 44% (v3.0, 5/9 phases in progress: 13,14,15,16,17)
+Progress: [███████░░░░░░░░░░░░░] 47% (v3.0, 6/9 phases: 13,14,15,16,17 complete; 18-21 remaining)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [██████░░░░░░░░░░░░░░] 44% (v3
 - Total execution time: ~32min
 
 **Velocity (v2.2 / phase 13+):**
-- Plans completed: 7
+- Plans completed: 8
 - Average duration: ~2min
 
 ## Accumulated Context
@@ -52,6 +52,8 @@ Phase 17 decisions:
 - Idempotent ALTER TABLE + try/catch per column for x_mentions migration
 - Table recreation for x_drafts CHECK constraint (SQLite limitation)
 - Comment out duplicate handler stubs rather than delete (preserves reference)
+- CustomEvent x-agent-chat-inject for cross-component message injection (XReplyGuyView -> XAgentChatPane)
+- autoSend state pattern for deferred send after external input injection
 
 Phase 16 decisions:
 - eventColorResolver callback pattern for custom event colors in EpicCalendar
@@ -96,5 +98,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 17-01-PLAN.md. Schema migration + handler dedup + emoji cleanup.
+Stopped at: Completed 17-02-PLAN.md. Phase 17 complete. Suggest Reply + agent chat injection.
 Resume file: None
