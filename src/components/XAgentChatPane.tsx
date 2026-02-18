@@ -21,6 +21,7 @@ interface ChatMessage {
 
 // Agent routing mapping: tab -> primary agent ID
 const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
+  research: { agentId: 'researcher', displayName: 'Researcher' },
   plan: { agentId: 'writer', displayName: 'Writer' },
   drafts: { agentId: 'writer', displayName: 'Writer' },
   calendar: { agentId: 'social-manager', displayName: 'Social Manager' },
@@ -29,10 +30,13 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   'content-mix': { agentId: 'social-manager', displayName: 'Social Manager' },
   automations: { agentId: 'social-manager', displayName: 'Social Manager' },
   analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
+  reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
 // System prompts for each tab to give context to the agent
 const TAB_CONTEXT: Record<XTab, string> = {
+  research: `You are the Researcher agent helping find X/Twitter content inspiration. Current context: X/Twitter Research Tab. Your role: Search for trending topics, find relevant tweets, identify content opportunities, analyze competitors, and gather insights for content planning.`,
+
   plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
 
   drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
@@ -48,6 +52,8 @@ const TAB_CONTEXT: Record<XTab, string> = {
   automations: `You are the Social Manager agent managing X/Twitter automations. Current context: X/Twitter Automations Tab. Your role: Help set up automated workflows, schedule recurring content, manage bot behaviors.`,
 
   analytics: `You are the Social Manager agent reviewing X/Twitter analytics. Current context: X/Twitter Analytics Tab. Your role: Help interpret performance data, identify trends, suggest content optimizations.`,
+
+  reddit: `You are the Social Manager agent monitoring Reddit for product mentions. Current context: Reddit Monitor Tab. Your role: Help monitor subreddits for mentions of a product, analyze threads, and draft authentic Reddit replies. Use natural, conversational Reddit tone.`,
 };
 
 export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
