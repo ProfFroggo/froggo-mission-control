@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 20 complete (Library Population & Tagging)
+**Current focus:** v3.0 milestone — Phase 21 next (Finance End-to-End Wiring)
 
 ## Current Position
 
-Phase: 20 of 21 (Library Population & Tagging)
-Plan: 02 of 2
-Status: Phase complete
-Last activity: 2026-02-18 — Completed 20-02 (Library Skills Display + File Inline Tagging)
+Phase: 21 of 21 (Finance End-to-End Wiring)
+Plan: —
+Status: Planning
+Last activity: 2026-02-18 — Phase 20 complete. Phase 21 (Finance) next.
 
-Progress: [████████████░░░░░░░░] 72% (v3.0, phase 20 of 21 complete)
+Progress: [████████████░░░░░░░░] 78% (v3.0, 9/10 phases complete: 13-21 with 21 remaining)
 
 ## Performance Metrics
 

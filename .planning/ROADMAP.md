@@ -180,7 +180,7 @@ Plans:
 Plans:
 - [x] 19-01-PLAN.md -- Fix Panel pixel min/max sizes, visible double-line grip separators, correct CSS selectors
 
-#### Phase 20: Library Population & Tagging
+#### Phase 20: Library Population & Tagging -- COMPLETE 2026-02-18
 **Goal**: Library shows real agent skills, all files are taggable with project/category/type, and file categories cover the full taxonomy
 **Depends on**: Phase 13
 **Requirements**: LIB-01, LIB-02, LIB-03
@@ -188,11 +188,11 @@ Plans:
   1. Skills section in Library reads and displays actual agent skills from the system -- no empty state on first load
   2. Every file in Library can be tagged with: project name, category, and content type
   3. File category picker includes: Marketing, UI/Design, Dev, Research, Finance, Test Logs, Content, Social, Other
-**Plans**: 2 plans
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 20-01-PLAN.md -- IPC wiring: skills:list, library:update, library:uploadBuffer handlers + preload bindings + DB migration
-- [ ] 20-02-PLAN.md -- Frontend: LibrarySkillsTab agent skills display + LibraryFilesTab 9-category config + inline tagging UI
+- [x] 20-01-PLAN.md -- IPC wiring: skills:list, library:update, library:uploadBuffer handlers + preload bindings + DB migration
+- [x] 20-02-PLAN.md -- Frontend: LibrarySkillsTab agent skills display + LibraryFilesTab 9-category config + inline tagging UI
 
 #### Phase 21: Finance End-to-End Wiring
 **Goal**: Finance page fully functional -- insights load, document upload works, agent chat connects, budget creation works, and UI matches app style
@@ -239,5 +239,5 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 17. X/Twitter Mentions + Reply Guy | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 18. X/Twitter Automations + Analytics | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 19. Writing Pane Layout | v3.0 | 1/1 | Complete | 2026-02-18 |
-| 20. Library Population | v3.0 | 0/2 | Not started | - |
+| 20. Library Population | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 21. Finance End-to-End | v3.0 | 0/2 | Not started | - |
