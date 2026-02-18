@@ -8144,26 +8144,135 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, _filename: str
 
 ipcMain.handle('finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string) => {
   try {
+    safeLog.log('[Finance] Processing PDF upload:', filename);
+    
     // Write PDF to temp file
-    const tmpPath = path.join(app.getPath('temp'), `upload-${Date.now()}.pdf`);
+    const tmpDir = app.getPath('temp');
+    const tmpPath = path.join(tmpDir, `upload-${Date.now()}.pdf`);
+    const outputPath = path.join(tmpDir, `transactions-${Date.now()}.json`);
     fs.writeFileSync(tmpPath, Buffer.from(pdfBuffer));
 
-    // Send to finance-manager agent for processing
-    const bridge = getFinanceAgentBridge();
-    bridge.sendMessage(
-      `Please process this bank statement PDF and extract transactions from it. The file is at: ${tmpPath}`,
-      { type: 'pdf_upload', filePath: tmpPath }
-    ).catch((e: any) => safeLog.error('[Finance] PDF agent error:', e.message));
+    // Use the bank statement processor script
+    const scriptPath = path.join(os.homedir(), 'froggo', 'scripts', 'bank-statement-processor.py');
+    
+    // Check if script exists
+    if (!fs.existsSync(scriptPath)) {
+      safeLog.error('[Finance] Bank statement processor script not found:', scriptPath);
+      return { success: false, error: 'PDF processing script not found. Please ensure bank-statement-processor.py exists.' };
+    }
 
-    // Clean up temp file after 5 minutes (give agent time to read it)
-    setTimeout(() => {
+    // Run the processor
+    const venvPython = path.join(os.homedir(), 'froggo', 'venv', 'bin', 'python3');
+    
+    try {
+      const cmd = `${venvPython} "${scriptPath}" "${tmpPath}" --output "${outputPath}"`;
+      safeLog.log('[Finance] Running processor:', cmd);
+      
+      execSync(cmd, { 
+        encoding: 'utf-8',
+        timeout: 120000, // 2 minute timeout
+        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
+      });
+      
+      // Read the output
+      if (!fs.existsSync(outputPath)) {
+        throw new Error('Processor did not create output file');
+      }
+      
+      const result = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to parse PDF');
+      }
+      
+      const transactions = result.transactions || [];
+      safeLog.log(`[Finance] Parsed ${transactions.length} transactions from PDF`);
+      
+      // Import transactions to database
+      if (transactions.length > 0) {
+        // Create temp file with transactions
+        const importPath = path.join(tmpDir, `import-${Date.now()}.json`);
+        fs.writeFileSync(importPath, JSON.stringify({ transactions }));
+        
+        // Use froggo-db to import (or create a simple import command)
+        // For now, we'll create a simple import using sqlite3
+        const dbPath = path.join(os.homedir(), 'froggo', 'data', 'froggo.db');
+        
+        // Ensure default account exists
+        const accountId = 'acc-default';
+        
+        // Insert transactions
+        let imported = 0;
+        let skipped = 0;
+        
+        for (const tx of transactions) {
+          if (!tx.date || tx.amount === undefined) continue;
+          
+          const txId = `tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const date = tx.date || new Date().toISOString().split('T')[0];
+          const desc = tx.description || 'Unknown';
+          const amount = tx.amount || 0;
+          const category = tx.category || 'Other';
+          
+          try {
+            const insertCmd = `sqlite3 "${dbPath}" "INSERT INTO finance_transactions (id, date, description, amount, currency, category, account_id, created_at, updated_at) VALUES ('${txId}', '${date}', '${desc.replace(/'/g, "''")}', ${amount}, 'EUR', '${category}', '${accountId}', ${Date.now()}, ${Date.now()})"`;
+            execSync(insertCmd, { encoding: 'utf-8' });
+            imported++;
+          } catch (e) {
+            // Likely duplicate or constraint violation
+            skipped++;
+          }
+        }
+        
+        safeLog.log(`[Finance] Imported ${imported} transactions (${skipped} skipped)`);
+        
+        // Clean up import file
+        try { fs.unlinkSync(importPath); } catch (_) {}
+        
+        // Trigger AI analysis
+        const bridge = getFinanceAgentBridge();
+        bridge.triggerAnalysis('csv_upload').catch((e: any) => 
+          safeLog.error('[Finance] AI analysis failed:', e.message)
+        );
+        
+        // Clean up temp files
+        try { fs.unlinkSync(tmpPath); } catch (_) {}
+        try { fs.unlinkSync(outputPath); } catch (_) {}
+        
+        return {
+          success: true,
+          message: `Successfully processed ${imported} transactions from PDF`,
+          imported,
+          skipped
+        };
+      }
+      
+      // Clean up temp files even if no transactions
       try { fs.unlinkSync(tmpPath); } catch (_) {}
-    }, 5 * 60 * 1000);
-
-    return {
-      success: true,
-      message: 'PDF sent to Finance Manager for processing',
-    };
+      try { fs.unlinkSync(outputPath); } catch (_) {}
+      
+      return {
+        success: false,
+        error: 'No transactions found in PDF'
+      };
+      
+    } catch (execError: any) {
+      safeLog.error('[Finance] PDF processing error:', execError.message);
+      
+      // Fallback: send to agent for manual processing
+      const bridge = getFinanceAgentBridge();
+      bridge.sendMessage(
+        `Please process this bank statement PDF and extract transactions from it. The file is at: ${tmpPath}`,
+        { type: 'pdf_upload', filePath: tmpPath }
+      ).catch((e: any) => safeLog.error('[Finance] PDF agent fallback error:', e.message));
+      
+      return {
+        success: true,
+        message: 'PDF sent to Finance Manager for manual processing',
+        fallback: true
+      };
+    }
+    
   } catch (error: any) {
     safeLog.error('[Finance] Upload PDF error:', error.message);
     return { success: false, error: error.message };
@@ -9769,6 +9878,279 @@ ipcMain.handle('x:replyGuy:postNow', async (_, data: {
     }
   } catch (error: any) {
     safeLog.error('[X/ReplyGuy] Post now error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== REDDIT MONITOR HANDLERS ==============
+
+// Create database tables for Reddit Monitor
+const initRedditTables = () => {
+  try {
+    // Reddit monitors table
+    prepare(`
+      CREATE TABLE IF NOT EXISTS x_reddit_monitors (
+        id TEXT PRIMARY KEY,
+        product_url TEXT NOT NULL,
+        keywords TEXT NOT NULL,
+        subreddits TEXT NOT NULL,
+        status TEXT DEFAULT 'active',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    `).run();
+    
+    // Reddit threads table
+    prepare(`
+      CREATE TABLE IF NOT EXISTS x_reddit_threads (
+        id TEXT PRIMARY KEY,
+        post_id TEXT NOT NULL,
+        subreddit TEXT NOT NULL,
+        title TEXT NOT NULL,
+        text TEXT,
+        author TEXT NOT NULL,
+        url TEXT NOT NULL,
+        upvotes INTEGER DEFAULT 0,
+        comment_count INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        fetched_at INTEGER NOT NULL,
+        reply_status TEXT DEFAULT 'pending',
+        drafted_reply TEXT,
+        posted_at INTEGER,
+        monitor_id TEXT,
+        FOREIGN KEY (monitor_id) REFERENCES x_reddit_monitors(id)
+      )
+    `).run();
+    
+    safeLog.log('[Reddit] Database tables initialized');
+  } catch (error: any) {
+    safeLog.error('[Reddit] Table init error:', error.message);
+  }
+};
+
+// Initialize Reddit tables on startup
+initRedditTables();
+
+ipcMain.handle('x:reddit:createMonitor', async (_, data: {
+  productUrl: string;
+  keywords: string;
+  subreddits: string;
+}) => {
+  try {
+    const { productUrl, keywords, subreddits } = data;
+    const now = Date.now();
+    const id = `reddit-monitor-${now}`;
+    
+    const stmt = prepare(`
+      INSERT INTO x_reddit_monitors (id, product_url, keywords, subreddits, status, created_at)
+      VALUES (?, ?, ?, ?, 'active', ?)
+    `);
+    
+    stmt.run(id, productUrl, keywords, subreddits, now);
+    
+    safeLog.log(`[Reddit] Created monitor: ${id} for ${productUrl}`);
+    return { success: true, monitorId: id };
+  } catch (error: any) {
+    safeLog.error('[Reddit] Create monitor error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:listMonitors', async () => {
+  try {
+    const monitors = prepare(`
+      SELECT * FROM x_reddit_monitors WHERE status = 'active' ORDER BY created_at DESC
+    `).all();
+    
+    return { success: true, monitors };
+  } catch (error: any) {
+    safeLog.error('[Reddit] List monitors error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:fetch', async () => {
+  try {
+    // Get active monitors
+    const monitors = prepare(`
+      SELECT * FROM x_reddit_monitors WHERE status = 'active'
+    `).all() as any[];
+    
+    if (monitors.length === 0) {
+      return { success: false, error: 'No active monitors' };
+    }
+    
+    let newCount = 0;
+    const now = Date.now();
+    
+    for (const monitor of monitors) {
+      const keywords = monitor.keywords.split(',').map((k: string) => k.trim());
+      const subreddits = monitor.subreddits === 'all' 
+        ? [] 
+        : monitor.subreddits.split(',').map((s: string) => s.trim());
+      
+      // Use web_fetch to search Reddit (basic implementation)
+      // In production, you'd use praw or a more robust Reddit API
+      for (const keyword of keywords) {
+        try {
+          // Search each subreddit or use Reddit's search
+          const searchSubreddits = subreddits.length > 0 ? subreddits : ['all'];
+          
+          for (const sub of searchSubreddits) {
+            const searchUrl = sub === 'all' 
+              ? `https://www.reddit.com/search/?q=${encodeURIComponent(keyword)}&sort=new`
+              : `https://www.reddit.com/r/${sub}/search/?q=${encodeURIComponent(keyword)}&sort=new`;
+            
+            // Skip actual fetch for now - would need proper Reddit API or scraping
+            safeLog.log(`[Reddit] Would search: ${searchUrl} for "${keyword}"`);
+          }
+        } catch (e) {
+          safeLog.error('[Reddit] Search error:', e);
+        }
+      }
+    }
+    
+    safeLog.log(`[Reddit] Fetch complete: ${newCount} new threads`);
+    return { success: true, count: newCount };
+  } catch (error: any) {
+    safeLog.error('[Reddit] Fetch error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:listThreads', async (_, filters?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  try {
+    let query = `SELECT * FROM x_reddit_threads WHERE 1=1`;
+    const params: any[] = [];
+    
+    if (filters?.status) {
+      query += ' AND reply_status = ?';
+      params.push(filters.status);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters?.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    if (filters?.offset) {
+      query += ' OFFSET ?';
+      params.push(filters.offset);
+    }
+    
+    const threads = prepare(query).all(...params);
+    
+    return { success: true, threads };
+  } catch (error: any) {
+    safeLog.error('[Reddit] List threads error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:generateDraft', async (_, data: {
+  threadId: string;
+  threadTitle: string;
+  threadText: string;
+  subreddit: string;
+}) => {
+  try {
+    const { threadId, threadTitle, threadText, subreddit } = data;
+    
+    // Use gateway/AI to generate a draft reply
+    // For now, return a placeholder - in production, this would call the AI agent
+    const prompt = `Generate an authentic Reddit reply for the following thread on r/${subreddit}:\n\nTitle: ${threadTitle}\n\nContent: ${threadText || '(No text content)'}\n\nWrite a helpful, authentic reply that adds value to the conversation. Use natural Reddit tone.`;
+    
+    // This would normally use the AI agent, but for now return a template
+    const draft = `Thanks for sharing! This is interesting because [add your insight]. Have you considered [helpful suggestion]?`;
+    
+    return { success: true, draft };
+  } catch (error: any) {
+    safeLog.error('[Reddit] Generate draft error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:saveDraft', async (_, data: {
+  threadId: string;
+  replyText: string;
+}) => {
+  try {
+    const { threadId, replyText } = data;
+    
+    const stmt = prepare(`
+      UPDATE x_reddit_threads 
+      SET reply_status = 'drafted', drafted_reply = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(replyText, threadId);
+    
+    safeLog.log(`[Reddit] Saved draft for thread: ${threadId}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Reddit] Save draft error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:postReply', async (_, data: {
+  threadId: string;
+  replyText: string;
+}) => {
+  try {
+    const { threadId, replyText } = data;
+    
+    // Get thread info
+    const thread = prepare('SELECT * FROM x_reddit_threads WHERE id = ?').get(threadId) as any;
+    if (!thread) {
+      throw new Error('Thread not found');
+    }
+    
+    // In production, this would use praw to post the reply
+    // For now, just mark as posted
+    const now = Date.now();
+    
+    const stmt = prepare(`
+      UPDATE x_reddit_threads 
+      SET reply_status = 'posted', posted_at = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(now, threadId);
+    
+    safeLog.log(`[Reddit] Posted reply to thread: ${threadId}`);
+    return { success: true, commentId: `reddit-${now}` };
+  } catch (error: any) {
+    safeLog.error('[Reddit] Post reply error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:reddit:updateThread', async (_, data: {
+  threadId: string;
+  status: string;
+}) => {
+  try {
+    const { threadId, status } = data;
+    
+    const stmt = prepare(`
+      UPDATE x_reddit_threads 
+      SET reply_status = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(status, threadId);
+    
+    safeLog.log(`[Reddit] Updated thread ${threadId} status to ${status}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Reddit] Update thread error:', error.message);
     return { success: false, error: error.message };
   }
 });

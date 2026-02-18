@@ -45,15 +45,25 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
   const loadChatHistory = async () => {
     try {
       setInitializing(true);
-      const result = await window.clawdbot?.financeAgent?.getChatHistory();
+      
+      // Check if finance agent is available
+      if (!window.clawdbot?.financeAgent) {
+        logger.warn('Finance agent not available - running in web mode or IPC not initialized');
+        setInitializing(false);
+        return;
+      }
+      
+      const result = await window.clawdbot.financeAgent.getChatHistory();
       
       if (result?.success) {
         setMessages(result.messages || []);
       } else {
         logger.error('Error loading history:', result?.error);
+        // Don't set error state for history load failures - just show empty chat
       }
     } catch (error) {
-      // '[FinanceChat] Load history error:', error;
+      logger.error('Load history error:', error);
+      // Silently handle - show empty chat instead of error
     } finally {
       setInitializing(false);
     }
@@ -62,6 +72,13 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
   const sendMessage = async () => {
     const message = inputMessage.trim();
     if (!message || loading) return;
+
+    // Check if finance agent is available
+    if (!window.clawdbot?.financeAgent) {
+      setError('Finance Manager is not available. Please ensure the Electron app is running.');
+      showToast('error', 'Finance Manager not available');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -78,7 +95,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       setInputMessage('');
 
       // Send to agent
-      const result = await window.clawdbot?.financeAgent?.sendMessage(message);
+      const result = await window.clawdbot.financeAgent.sendMessage(message);
       
       if (result?.success && result.message) {
         // Add agent response
@@ -93,8 +110,9 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
         throw new Error(result?.error || 'Failed to get response from Finance Manager');
       }
     } catch (error: unknown) {
-      // '[FinanceChat] Send message error:', error;
-      setError(error.message || 'Failed to send message');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      logger.error('Send message error:', errorMessage);
+      setError(errorMessage);
       showToast('error', 'Failed to send message to Finance Manager');
     } finally {
       setLoading(false);
@@ -112,8 +130,14 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
   const clearHistory = async () => {
     if (!confirm('Clear all chat history? This cannot be undone.')) return;
 
+    // Check if finance agent is available
+    if (!window.clawdbot?.financeAgent) {
+      setMessages([]);
+      return;
+    }
+
     try {
-      const result = await window.clawdbot?.financeAgent?.clearHistory();
+      const result = await window.clawdbot.financeAgent.clearHistory();
       if (result?.success) {
         setMessages([]);
         showToast('success', 'Chat history cleared');
@@ -121,7 +145,8 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
         throw new Error(result?.error || 'Failed to clear history');
       }
     } catch (error: unknown) {
-      // '[FinanceChat] Clear history error:', error;
+      const errorMessage = error instanceof Error ? error.message : 'Failed to clear history';
+      logger.error('Clear history error:', errorMessage);
       showToast('error', 'Failed to clear chat history');
     }
   };
