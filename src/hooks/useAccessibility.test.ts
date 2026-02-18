@@ -12,7 +12,7 @@ import {
   useHighContrast,
   useKeyboardNavigation,
   useFocusRestore,
-} from './hooks/useAccessibility';
+} from './useAccessibility';
 
 describe('useAccessibility hooks', () => {
   beforeEach(() => {

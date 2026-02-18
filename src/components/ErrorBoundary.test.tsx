@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import ErrorBoundary, { withErrorBoundary } from './components/ErrorBoundary';
+import ErrorBoundary, { withErrorBoundary } from './ErrorBoundary';
 
 describe('ErrorBoundary', () => {
   const originalConsole = { ...console };
@@ -52,21 +52,21 @@ describe('ErrorBoundary', () => {
       await waitFor(() => {
         expect(screen.getByText('in TestComponent')).toBeInTheDocument();
       });
+    });
 
-      it('should use panelName as alias for componentName', async () => {
-        const ThrowError = () => {
-          throw new Error('Test error');
-        };
-        
-        render(
-          <ErrorBoundary panelName="TestPanel">
-            <ThrowError />
-          </ErrorBoundary>
-        );
-        
-        await waitFor(() => {
-          expect(screen.getByText('in TestPanel')).toBeInTheDocument();
-        });
+    it('should use panelName as alias for componentName', async () => {
+      const ThrowError = () => {
+        throw new Error('Test error');
+      };
+
+      render(
+        <ErrorBoundary panelName="TestPanel">
+          <ThrowError />
+        </ErrorBoundary>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('in TestPanel')).toBeInTheDocument();
       });
     });
 
@@ -346,7 +346,7 @@ describe('withErrorBoundary HOC', () => {
     
     const { container } = render(<WrappedComponent />);
     
-    expect(container.getByText('Wrapped Component')).toBeInTheDocument();
+    expect(screen.getByText('Wrapped Component')).toBeInTheDocument();
   });
 
   it('should catch errors in wrapped component', async () => {
