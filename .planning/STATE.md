@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 20 of 21 (Library Population & Tagging)
-Plan: —
-Status: Not started
-Last activity: 2026-02-18 — Completed Phase 19 (Writing Pane Layout Fixes)
+Plan: 01 of 2
+Status: In progress
+Last activity: 2026-02-18 — Completed 20-01 (Library IPC Wiring)
 
 Progress: [█████████░░░░░░░░░░░] 67% (v3.0, 8/9 phases: 13,14,15,16,17,18,19 complete; 20-21 remaining)
 
@@ -104,5 +104,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed Phase 19. Writing pane layout fixed: pixel-based min sizes (180/280/300px), visible double-line separator grips with data-[separator=active] active state, CSS selectors updated for v4. Phase 20 next.
+Stopped at: Completed 20-01-PLAN.md. Added skills:list, library:update, library:uploadBuffer IPC handlers + library project column migration. 20-02 next.
 Resume file: None
