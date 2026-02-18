@@ -8427,6 +8427,19 @@ ipcMain.handle('x:draft:reject', async (_, data: { id: string; reason?: string }
   }
 });
 
+ipcMain.handle('x:draft:pickImage', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+    ],
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, filePaths: [] };
+  }
+  return { success: true, filePaths: result.filePaths };
+});
+
 // ============== X/TWITTER SCHEDULE HANDLERS ==============
 
 ipcMain.handle('x:schedule:create', async (_, data: {
