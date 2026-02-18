@@ -116,7 +116,7 @@ Plans:
 - [x] 15-01-PLAN.md -- Replace center pane composers with list/viewer + image attachment UI
 - [x] 15-02-PLAN.md -- Verify agent chat wiring to writer + fix send button styling
 
-#### Phase 16: X/Twitter Calendar
+#### Phase 16: X/Twitter Calendar -- COMPLETE 2026-02-18
 **Goal**: The X/Twitter calendar reuses the existing schedule component, shows tweet events colour-coded by status, and supports drag-to-reschedule
 **Depends on**: Phase 15
 **Requirements**: XTW-14, XTW-15, XTW-16, XTW-17, XTW-18
@@ -126,11 +126,11 @@ Plans:
   3. User can drag a tweet event to a different day and the tweet's scheduled date updates
   4. Top-right button on calendar reads "Create Tweet" (not "content mix")
   5. Calendar view is calendar + chat interface only -- no approval panel visible
-**Plans**: 2 plans
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 16-01-PLAN.md -- Extend EpicCalendar with external event props + rewrite XCalendarView as adapter with colour-coded pipeline events
-- [ ] 16-02-PLAN.md -- Drag-to-reschedule for scheduled tweets + Create Tweet button + non-draggable research/plan/draft events
+- [x] 16-01-PLAN.md -- Extend EpicCalendar with external event props + rewrite XCalendarView as adapter with colour-coded pipeline events
+- [x] 16-02-PLAN.md -- Drag-to-reschedule for scheduled tweets + Create Tweet button + non-draggable research/plan/draft events
 
 #### Phase 17: X/Twitter Mentions & Reply Guy
 **Goal**: Mentions tab shows incoming mentions with inline reply capability, Reply Guy shows suggestions inline with approve/edit/send per item -- both with agent chat
@@ -234,7 +234,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 13. Global UI Consistency | v3.0 | 5/5 | Complete | 2026-02-18 |
 | 14. X/Twitter Identity + Tabs | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 15. X/Twitter Content Flow | v3.0 | 2/2 | Complete | 2026-02-18 |
-| 16. X/Twitter Calendar | v3.0 | 0/2 | Not started | - |
+| 16. X/Twitter Calendar | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 17. X/Twitter Mentions + Reply Guy | v3.0 | 0/2 | Not started | - |
 | 18. X/Twitter Automations + Analytics | v3.0 | 0/2 | Not started | - |
 | 19. Writing Pane Layout | v3.0 | 0/1 | Not started | - |

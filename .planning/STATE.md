@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 16 (X/Twitter Calendar)
+**Current focus:** v3.0 milestone — Phase 17 (X/Twitter Mentions & Reply Guy)
 
 ## Current Position
 
-Phase: 16 of 21 (X/Twitter Calendar)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-18 — Completed 16-02-PLAN.md
+Phase: 17 of 21 (X/Twitter Mentions & Reply Guy)
+Plan: —
+Status: Not started
+Last activity: 2026-02-18 — Completed Phase 16 (X/Twitter Calendar)
 
 Progress: [█████░░░░░░░░░░░░░░░] 42% (v3.0, 5/9 phases complete: 13,14,15,16)
 
