@@ -609,6 +609,9 @@ contextBridge.exposeInMainWorld('clawdbot', {
   xAnalytics: {
     summary: () => ipcRenderer.invoke('x:analytics:summary'),
     topContent: () => ipcRenderer.invoke('x:analytics:topContent'),
+    profile: () => ipcRenderer.invoke('x:analytics:profile'),
+    tweets: (count?: number) => ipcRenderer.invoke('x:analytics:tweets', count),
+    summaryReal: () => ipcRenderer.invoke('x:analytics:summary:real'),
   },
   // Widget API - dynamic agent widget loading
   widgetAPI: {
