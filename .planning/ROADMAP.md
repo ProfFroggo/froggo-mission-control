@@ -160,11 +160,11 @@ Plans:
   4. Analytics tab exists at the end of the nav and shows posts, engagement, reach, and top content breakdown
   5. Analytics includes a competitor insights section
   6. User can download a daily insights report as a text file from the Analytics tab
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 18-01: Automations visual rule builder + layout cleanup
-- [ ] 18-02: Analytics tab -- metrics, competitor insights, downloadable report
+- [ ] 18-01-PLAN.md -- Add x_automations DB tables to unblock existing rule builder UI
+- [ ] 18-02-PLAN.md -- Analytics tab: stat cards, top content, competitor insights, downloadable report
 
 #### Phase 19: Writing Pane Layout Fixes
 **Goal**: Writing module 3-pane layout is usable on first load with visible drag handles and workable minimum widths
