@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 16 of 21 (X/Twitter Calendar)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-18 — Phase 15 complete (2 plans, all verified)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-18 — Completed 16-01-PLAN.md
 
-Progress: [███░░░░░░░░░░░░░░░░░] 33% (v3.0, 3/9 phases)
+Progress: [████░░░░░░░░░░░░░░░░] 38% (v3.0, 4/9 phases partial)
 
 ## Performance Metrics
 
@@ -33,8 +33,8 @@ Progress: [███░░░░░░░░░░░░░░░░░] 33% (v3
 - Total execution time: ~32min
 
 **Velocity (v2.2 / phase 13+):**
-- Plans completed: 4
-- Average duration: ~1-2min
+- Plans completed: 5
+- Average duration: ~2min
 
 ## Accumulated Context
 
@@ -47,6 +47,10 @@ Carried forward:
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+
+Phase 16 decisions:
+- eventColorResolver callback pattern for custom event colors in EpicCalendar
+- externalEvents prop bypasses fetchEvents entirely — external consumers manage own data
 
 Phase 15 decisions:
 - List views fetch all items (no status filter) so users see proposed, approved, rejected together
@@ -85,5 +89,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 15-01-PLAN.md. Phase 15 fully complete (both plans). XTW-11, XTW-12, XTW-13 verified.
+Stopped at: Completed 16-01-PLAN.md. EpicCalendar extended, XCalendarView rewritten as adapter.
 Resume file: None
