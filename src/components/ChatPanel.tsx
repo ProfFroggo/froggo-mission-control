@@ -625,9 +625,10 @@ export default function ChatPanel() {
             fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
           }
         } else if (att.type.startsWith('image/')) {
-          // Image: Save to temp file and tell AI to use vision
+          // Image: Save to shared uploads folder and tell AI to use vision
           try {
-            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            const uploadDir = '/Users/worker/froggo/uploads';
+            const tempPath = `${uploadDir}/dashboard-upload-${Date.now()}-${att.name}`;
             await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease use the image tool or Read tool to analyze this image.`);
@@ -636,9 +637,10 @@ export default function ChatPanel() {
             fileContents.push(`\n\n📷 IMAGE: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nBase64 data URL: ${att.dataUrl}`);
           }
         } else if (att.type === 'application/pdf') {
-          // PDF: Save and suggest extraction
+          // PDF: Save to shared uploads folder and suggest extraction
           try {
-            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            const uploadDir = '/Users/worker/froggo/uploads';
+            const tempPath = `${uploadDir}/dashboard-upload-${Date.now()}-${att.name}`;
             await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📄 PDF ATTACHED: ${att.name}\nSaved to: ${tempPath}\nPlease extract text or analyze this PDF.`);
@@ -663,9 +665,10 @@ export default function ChatPanel() {
             fileContents.push(`\n\n🎤 AUDIO: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\n[Could not transcribe: ${e}]`);
           }
         } else {
-          // Other files: save and include path
+          // Other files: save to shared uploads folder and include path
           try {
-            const tempPath = `/tmp/dashboard-upload-${Date.now()}-${att.name}`;
+            const uploadDir = '/Users/worker/froggo/uploads';
+            const tempPath = `${uploadDir}/dashboard-upload-${Date.now()}-${att.name}`;
             await window.clawdbot?.fs?.writeBase64(tempPath, att.dataUrl.split(',')[1]);
             savedFiles.push(tempPath);
             fileContents.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)\nSaved to: ${tempPath}`);
