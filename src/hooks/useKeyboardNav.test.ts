@@ -369,6 +369,13 @@ describe('useArrowNavigation', () => {
       act(() => {
         keydownHandler({ key: 'End', preventDefault: vi.fn() });
       });
+      expect(mockItems[2].focus).toHaveBeenCalled();
+
+      // Update activeElement to reflect End navigation (mocks don't auto-update)
+      Object.defineProperty(document, 'activeElement', {
+        value: mockItems[2],
+        configurable: true,
+      });
 
       // Press Home to go to first item
       act(() => {
@@ -376,7 +383,6 @@ describe('useArrowNavigation', () => {
       });
     }
 
-    expect(mockItems[2].focus).toHaveBeenCalled();
     expect(mockItems[0].focus).toHaveBeenCalled();
 
     unmount();
