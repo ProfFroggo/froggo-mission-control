@@ -345,8 +345,8 @@ export default function XDraftComposer() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-clawd-text">Kevin MacArthur</span>
-                            <span className="text-clawd-text-dim text-sm">@kevin • now</span>
+                            <span className="font-semibold text-clawd-text">Your Name</span>
+                            <span className="text-clawd-text-dim text-sm">@you • now</span>
                           </div>
                           <p className="text-clawd-text whitespace-pre-wrap break-words">{tweet}</p>
                           {index < tweets.filter(t => t.trim()).length - 1 && (
