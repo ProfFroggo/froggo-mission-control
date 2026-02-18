@@ -1153,6 +1153,34 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Review Tab */}
         {activeTab === 'review' && (
           <div className="p-4">
+            {/* Definition of Ready Checklist - show for internal-review status */}
+            {task.status === 'internal-review' && (
+              <div className="mb-4 p-4 bg-clawd-bg rounded-xl border border-clawd-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle size={16} className="text-clawd-accent" />
+                  <span className="font-medium">Definition of Ready</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className={`flex items-center gap-2 ${(task.subtasks?.length || 0) >= 2 ? 'text-success' : 'text-error'}`}>
+                    {(task.subtasks?.length || 0) >= 2 ? '✅' : '❌'} 
+                    Subtasks: {task.subtasks?.length || 0}/2 (minimum 2)
+                  </div>
+                  <div className={`flex items-center gap-2 ${task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-success' : 'text-error'}`}>
+                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? '✅' : '❌'} 
+                    Priority: {task.priority || 'Not set'}
+                  </div>
+                  <div className={`flex items-center gap-2 ${task.assignedTo && !['main','froggo','clara'].includes(task.assignedTo) ? 'text-success' : 'text-error'}`}>
+                    {task.assignedTo && !['main','froggo','clara'].includes(task.assignedTo) ? '✅' : '❌'} 
+                    Assigned: {task.assignedTo || 'Not assigned'}
+                  </div>
+                  <div className={`flex items-center gap-2 ${(task.description?.length || 0) >= 20 ? 'text-success' : 'text-warning'}`}>
+                    {(task.description?.length || 0) >= 20 ? '✅' : '⚠️'} 
+                    Description: {(task.description?.length || 0)} chars (min 20)
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Quick Approve/Reject Actions (when in review status) */}
             {task.status === 'review' && task.reviewStatus !== 'approved' && (
               <div className="mb-4 p-4 bg-warning-subtle border border-warning-border rounded-xl">
