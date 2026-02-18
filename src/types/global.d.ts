@@ -507,6 +507,22 @@ declare global {
     updated_at: number;
   }
 
+  // Finance Recurring type (used by Window.clawdbot.finance.recurring.*)
+  interface FinanceRecurring {
+    id: string;
+    account_id: string | null;
+    description: string;
+    normalized_merchant: string;
+    amount: number;
+    currency: string;
+    frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual';
+    confidence: number;
+    next_expected_date: number | null;
+    status: 'pending' | 'confirmed' | 'dismissed';
+    detected_at: number;
+    updated_at: number;
+  }
+
   // Window API
   // ============================================
 
@@ -851,6 +867,13 @@ declare global {
           update: (id: string, updates: { name?: string }) => Promise<{ success: boolean; error?: string }>;
           archive: (id: string) => Promise<{ success: boolean; error?: string }>;
           balances: () => Promise<{ success: boolean; balances?: Array<FinanceAccount & { computed_balance: number; transaction_count: number }>; error?: string }>;
+        };
+        recurring?: {
+          detect: (accountId?: string) => Promise<{ success: boolean; error?: string }>;
+          list: (accountId?: string) => Promise<{ success: boolean; recurring?: FinanceRecurring[]; error?: string }>;
+          confirm: (id: string) => Promise<{ success: boolean; error?: string }>;
+          dismiss: (id: string) => Promise<{ success: boolean; error?: string }>;
+          status: (accountId?: string) => Promise<{ success: boolean; stats?: { total: number; confirmed: number; pending: number }; error?: string }>;
         };
       };
       // Finance Agent

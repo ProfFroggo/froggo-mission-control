@@ -642,6 +642,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
       archive: (id: string) => ipcRenderer.invoke('finance:account:archive', id),
       balances: () => ipcRenderer.invoke('finance:account:balances'),
     },
+    recurring: {
+      detect: (accountId?: string) => ipcRenderer.invoke('finance:recurring:detect', accountId),
+      list: (accountId?: string) => ipcRenderer.invoke('finance:recurring:list', accountId),
+      confirm: (id: string) => ipcRenderer.invoke('finance:recurring:confirm', id),
+      dismiss: (id: string) => ipcRenderer.invoke('finance:recurring:dismiss', id),
+      status: (accountId?: string) => ipcRenderer.invoke('finance:recurring:status', accountId),
+    },
   },
   financeAgent: {
     sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),
