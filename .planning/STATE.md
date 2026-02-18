@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 16 of 21 (X/Twitter Calendar)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-18 — Completed 16-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-18 — Completed 16-02-PLAN.md
 
-Progress: [████░░░░░░░░░░░░░░░░] 38% (v3.0, 4/9 phases partial)
+Progress: [█████░░░░░░░░░░░░░░░] 42% (v3.0, 5/9 phases complete: 13,14,15,16)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [████░░░░░░░░░░░░░░░░] 38% (v3
 - Total execution time: ~32min
 
 **Velocity (v2.2 / phase 13+):**
-- Plans completed: 5
+- Plans completed: 6
 - Average duration: ~2min
 
 ## Accumulated Context
@@ -51,6 +51,8 @@ Carried forward:
 Phase 16 decisions:
 - eventColorResolver callback pattern for custom event colors in EpicCalendar
 - externalEvents prop bypasses fetchEvents entirely — external consumers manage own data
+- isEventDraggable callback on EpicCalendar/EventCard for per-event drag control
+- CustomEvent x-tab-change for cross-component tab switching (decouples calendar from XTwitterPage)
 
 Phase 15 decisions:
 - List views fetch all items (no status filter) so users see proposed, approved, rejected together
@@ -89,5 +91,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 16-01-PLAN.md. EpicCalendar extended, XCalendarView rewritten as adapter.
+Stopped at: Completed 16-02-PLAN.md. Phase 16 complete. Drag-restrict + Create Tweet wired.
 Resume file: None
