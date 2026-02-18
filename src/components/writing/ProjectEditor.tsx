@@ -134,8 +134,8 @@ export default function ProjectEditor() {
       {/* Left panel: Chapter sidebar */}
       <Panel
         id="chapters"
-        minSize={15}
-        maxSize={25}
+        minSize="180px"
+        maxSize="30%"
         collapsible
         collapsedSize={0}
         panelRef={chaptersPanelRef}
@@ -148,13 +148,18 @@ export default function ProjectEditor() {
         </div>
       </Panel>
 
-      <Separator className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors cursor-col-resize data-[resize-handle-active]:bg-clawd-accent" />
+      <Separator className="w-2 bg-clawd-border hover:bg-clawd-accent data-[separator=active]:bg-clawd-accent transition-colors cursor-col-resize group flex items-center justify-center">
+        <div className="flex items-center gap-px">
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
+        </div>
+      </Separator>
 
       {/* Center panel: AI Chat */}
       <Panel
         id="chat"
-        minSize={25}
-        maxSize={50}
+        minSize="280px"
+        maxSize="50%"
         collapsible
         collapsedSize={0}
         panelRef={chatPanelRef}
@@ -165,12 +170,17 @@ export default function ProjectEditor() {
         <ChatPane />
       </Panel>
 
-      <Separator className="w-1 bg-clawd-border hover:bg-clawd-accent transition-colors cursor-col-resize data-[resize-handle-active]:bg-clawd-accent" />
+      <Separator className="w-2 bg-clawd-border hover:bg-clawd-accent data-[separator=active]:bg-clawd-accent transition-colors cursor-col-resize group flex items-center justify-center">
+        <div className="flex items-center gap-px">
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
+        </div>
+      </Separator>
 
       {/* Right panel: Editor workspace */}
       <Panel
         id="editor"
-        minSize={30}
+        minSize="300px"
         className="h-full"
         style={{ minHeight: 0, height: '100%' }}
       >

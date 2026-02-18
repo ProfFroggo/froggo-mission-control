@@ -164,6 +164,39 @@ export default function MeetingsPanel() {
   const [meetingChatMessages, setMeetingChatMessages] = useState<Message[]>([]);
   const [meetingChatProcessing, setMeetingChatProcessing] = useState(false);
 
+  // Upcoming Calendar Events
+  const [upcomingEvents, setUpcomingEvents] = useState<Array<{
+    id: string;
+    summary: string;
+    start: { dateTime?: string; date?: string };
+    end: { dateTime?: string; date?: string };
+    location?: string;
+    account?: string;
+  }>>([]);
+  const [loadingUpcomingEvents, setLoadingUpcomingEvents] = useState(false);
+
+  // Fetch upcoming calendar events
+  const loadUpcomingEvents = useCallback(async () => {
+    if (!window.clawdbot?.calendar?.events) return;
+    setLoadingUpcomingEvents(true);
+    try {
+      const events = await window.clawdbot.calendar.events(undefined, 7); // Next 7 days
+      if (Array.isArray(events)) {
+        // Filter to future events only
+        const now = new Date();
+        const future = events.filter((e: any) => {
+          const start = new Date(e.start?.dateTime || e.start?.date || 0);
+          return start > now;
+        });
+        setUpcomingEvents(future.slice(0, 10)); // Limit to 10
+      }
+    } catch (err) {
+      logger.error('Failed to load upcoming events:', err);
+    } finally {
+      setLoadingUpcomingEvents(false);
+    }
+  }, []);
+
   // Refs
   const listeningRef = useRef(false);
   const isMutedRef = useRef(isMuted);
@@ -187,6 +220,7 @@ export default function MeetingsPanel() {
   }, []);
 
   useEffect(() => { loadPastMeetings(); }, []);
+  useEffect(() => { loadUpcomingEvents(); }, [loadUpcomingEvents]);
 
   useEffect(() => {
     return () => {
@@ -312,6 +346,117 @@ export default function MeetingsPanel() {
     }
     return null;
   }, []);
+
+  // Proposed tasks from agent review
+  const [proposedTasks, setProposedTasks] = useState<Array<{
+    id: string;
+    title: string;
+    description: string;
+    plan: string;
+    proposedAgent: string;
+    status: 'pending' | 'approved' | 'rejected';
+  }>>([]);
+
+  // Trigger Froggo agent to review transcript and create task proposals
+  const triggerAgentReview = useCallback(async (transcript: string[]): Promise<void> => {
+    if (transcript.length === 0 || !connected) return;
+    
+    setStatusMessage('Agent reviewing transcript...');
+    
+    const fullText = transcript.join('\n');
+    const prompt = `Review this meeting transcript and create task proposals.
+
+Transcript:
+${fullText}
+
+Based on the transcript, create 1-5 task proposals in this JSON format (only respond with valid JSON array):
+[
+  {
+    "title": "Task title",
+    "description": "What needs to be done",
+    "plan": "How to accomplish it",
+    "proposedAgent": "coder" | "writer" | "researcher" | "designer" | "chief" | "hr"
+  }
+]
+
+Only include tasks that are clearly mentioned or implied. Assign appropriate agents based on task type.`;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 4096, temperature: 0.2 }
+          })
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        
+        if (content) {
+          // Extract JSON from response
+          const jsonMatch = content.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            const tasks = JSON.parse(jsonMatch[0]);
+            const formatted = tasks.map((t: any, idx: number) => ({
+              id: `proposed-${Date.now()}-${idx}`,
+              title: t.title || 'Untitled Task',
+              description: t.description || '',
+              plan: t.plan || '',
+              proposedAgent: t.proposedAgent || 'coder',
+              status: 'pending' as const
+            }));
+            setProposedTasks(formatted);
+            setStatusMessage('Agent review complete');
+          }
+        }
+      }
+    } catch (err) {
+      logger.error('Agent review error:', err);
+      setStatusMessage('Agent review failed');
+    }
+  }, [connected]);
+
+  // Approve a proposed task and create it
+  const approveProposedTask = useCallback(async (taskId: string) => {
+    const task = proposedTasks.find(t => t.id === taskId);
+    if (!task || !window.clawdbot?.tasks?.sync) return;
+    
+    try {
+      const result = await window.clawdbot.tasks.sync({
+        id: `meeting-${Date.now()}`,
+        title: task.title,
+        description: `${task.description}\n\n**Plan:** ${task.plan}\n\n*Proposed agent: ${task.proposedAgent}*`,
+        status: 'todo',
+        project: 'Meetings'
+      });
+      
+      if (result.success) {
+        setProposedTasks(prev => prev.map(t => 
+          t.id === taskId ? { ...t, status: 'approved' } : t
+        ));
+        addActivity({ type: 'task', message: `✅ Created task: ${task.title}`, timestamp: Date.now() });
+      }
+    } catch (err) {
+      logger.error('Failed to create task:', err);
+    }
+  }, [proposedTasks, addActivity]);
+
+  // Reject a proposed task
+  const rejectProposedTask = useCallback((taskId: string) => {
+    setProposedTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, status: 'rejected' } : t
+    ));
+  }, []);
+
+  // Edit and re-propose a task
+  const [editingProposedTask, setEditingProposedTask] = useState<string | null>(null);
+  const [editingProposedText, setEditingProposedText] = useState('');
 
   const detectActionItems = useCallback((text: string): ActionItem[] => {
     const items: ActionItem[] = [];
@@ -819,13 +964,19 @@ export default function MeetingsPanel() {
           try { await endMeetingInDb(meetingDbId, elapsedTime, summary || undefined, savedPath || undefined); } catch { /* ignore */ }
         }
         setMeetingEndSummary({ savedPath, tasksCreated: 0, extractedTasks: [] });
+        
+        // Trigger agent review for task proposals
+        if (meetingTranscript.length > 0 && connected) {
+          await triggerAgentReview(meetingTranscript);
+        }
+        
         setStatusMessage('Meeting ended');
         addActivity({ type: 'system', message: '📋 Meeting ended', timestamp: Date.now() });
         loadPastMeetings();
       })();
     }
     prevMeetingActive.current = isMeetingActive;
-  }, [isMeetingActive, meetingTranscript, meetingActionItems, saveMeetingToFile, generateSummary, addActivity, loadPastMeetings, meetingDbId, elapsedTime, endMeetingInDb]);
+  }, [isMeetingActive, meetingTranscript, meetingActionItems, saveMeetingToFile, generateSummary, triggerAgentReview, connected, addActivity, loadPastMeetings, meetingDbId, elapsedTime, endMeetingInDb]);
 
   useEffect(() => {
     if (isMeetingActive && !listeningRef.current && !endMeetingInProgressRef.current) {
@@ -1092,6 +1243,60 @@ export default function MeetingsPanel() {
                   </div>
                 </div>
 
+                {/* Upcoming Calendar Events */}
+                {upcomingEvents.length > 0 && !isMeetingActive && (
+                  <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+                    <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={18} className="text-clawd-accent" />
+                        <h3 className="font-medium text-clawd-text">Upcoming Meetings</h3>
+                      </div>
+                      <button 
+                        onClick={loadUpcomingEvents}
+                        disabled={loadingUpcomingEvents}
+                        className="text-xs text-clawd-text-dim hover:text-clawd-accent"
+                      >
+                        <Loader2 size={12} className={loadingUpcomingEvents ? 'animate-spin inline' : 'hidden'} />
+                        Refresh
+                      </button>
+                    </div>
+                    <div className="divide-y divide-clawd-border">
+                      {upcomingEvents.slice(0, 5).map((event) => {
+                        const startDate = new Date(event.start?.dateTime || event.start?.date || '');
+                        const endDate = new Date(event.end?.dateTime || event.end?.date || '');
+                        const isToday = startDate.toDateString() === new Date().toDateString();
+                        return (
+                          <div key={event.id} className="p-4 hover:bg-clawd-bg/50 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <div className="w-12 h-12 rounded-lg bg-clawd-bg flex flex-col items-center justify-center shrink-0">
+                                <span className="text-xs font-medium text-clawd-accent">
+                                  {isToday ? 'Today' : startDate.toLocaleDateString('en-US', { weekday: 'short' })}
+                                </span>
+                                <span className="text-lg font-semibold text-clawd-text">
+                                  {startDate.getDate()}
+                                </span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-clawd-text truncate">{event.summary || 'Untitled'}</p>
+                                <p className="text-sm text-clawd-text-dim">
+                                  {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                  {endDate.getTime() !== startDate.getTime() && (
+                                    <> - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</>
+                                  )}
+                                  {event.account && <span className="ml-2 text-xs">({event.account})</span>}
+                                </p>
+                                {event.location && (
+                                  <p className="text-xs text-clawd-text-dim mt-1 truncate">{event.location}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Post-Meeting Summary */}
                 {meetingEndSummary && !isMeetingActive && (
                   <>
@@ -1251,6 +1456,105 @@ export default function MeetingsPanel() {
                             </button>
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Agent-Proposed Tasks */}
+                    {proposedTasks.length > 0 && (
+                      <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+                        <div className="p-4 border-b border-clawd-border flex items-center gap-2">
+                          <Brain size={18} className="text-review" />
+                          <h3 className="font-medium text-clawd-text">Agent-Proposed Tasks</h3>
+                          <span className="text-xs px-2 py-0.5 bg-clawd-bg rounded-full text-clawd-text-dim">
+                            {proposedTasks.filter(t => t.status === 'pending').length} pending • {proposedTasks.filter(t => t.status === 'approved').length} approved
+                          </span>
+                        </div>
+                        <div className="divide-y divide-clawd-border">
+                          {proposedTasks.map((task) => (
+                            <div 
+                              key={task.id} 
+                              className={`p-4 transition-all ${
+                                task.status === 'rejected' ? 'opacity-40' : ''
+                              } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                            >
+                              {editingProposedTask === task.id ? (
+                                <div className="space-y-3">
+                                  <input
+                                    type="text"
+                                    value={editingProposedText}
+                                    onChange={(e) => setEditingProposedText(e.target.value)}
+                                    className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
+                                    placeholder="Edit task title..."
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setProposedTasks(prev => prev.map(t => 
+                                          t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
+                                        ));
+                                        setEditingProposedTask(null);
+                                      }}
+                                      className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingProposedTask(null)}
+                                      className="px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-clawd-text">{task.title}</p>
+                                    {task.description && (
+                                      <p className="text-sm text-clawd-text-dim mt-1">{task.description}</p>
+                                    )}
+                                    {task.plan && (
+                                      <p className="text-xs text-clawd-text-dim mt-2 italic">Plan: {task.plan}</p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-xs px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full">
+                                        {task.proposedAgent}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {task.status === 'pending' && (
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        onClick={() => approveProposedTask(task.id)}
+                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                        title="Approve & Create Task"
+                                      >
+                                        <CheckCircle2 size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingProposedTask(task.id);
+                                          setEditingProposedText(task.title);
+                                        }}
+                                        className="p-2 hover:bg-clawd-bg rounded-lg text-clawd-text-dim transition-all"
+                                        title="Edit"
+                                      >
+                                        <Edit3 size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => rejectProposedTask(task.id)}
+                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                        title="Reject"
+                                      >
+                                        <XCircle size={16} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
