@@ -68,6 +68,7 @@ export const FROGGO_DB_CLI = path.join(LOCAL_BIN, 'froggo-db');
 export const TGCLI         = path.join(LOCAL_BIN, 'tgcli');
 export const DISCORDCLI    = path.join(LOCAL_BIN, 'discordcli');
 export const CLAUDE_CLI    = path.join(LOCAL_BIN, 'claude');
+export const X_API_CLI     = path.join(TOOLS_DIR, 'x-api', 'x-api');
 
 // ── Shell PATH for child processes ──
 export const SHELL_PATH = `/opt/homebrew/bin:${LOCAL_BIN}:/usr/local/bin:/usr/bin:/bin`;
@@ -83,6 +84,7 @@ export function verifyPaths(): void {
     { p: OPENCLAW_CONFIG, label: 'OpenClaw config' },
     { p: FROGGO_DB_CLI,  label: 'froggo-db CLI' },
     { p: SCRIPTS_DIR,    label: 'Scripts directory' },
+    { p: X_API_CLI,      label: 'x-api CLI' },
   ];
   for (const { p, label } of critical) {
     if (!fs.existsSync(p)) logger.error(`[STARTUP] MISSING: ${label} at ${p}`);
