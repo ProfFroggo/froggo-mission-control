@@ -98,7 +98,7 @@ All notable changes to Froggo Dashboard will be documented in this file.
 - Tailwind CSS
 - Zustand state management
 - SQLite (froggo.db)
-- Clawdbot Gateway backend
+- OpenClaw Gateway backend
 
 ---
 
