@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 19 of 21 (Writing Pane Layout Fixes)
-Plan: —
-Status: Not started
-Last activity: 2026-02-18 — Completed Phase 18 (X/Twitter Automations & Analytics)
+Plan: 01 of ? in Phase 19
+Status: In progress
+Last activity: 2026-02-18 — Completed 19-01-PLAN.md (Panel min sizes + separator grips)
 
-Progress: [████████░░░░░░░░░░░░] 56% (v3.0, 7/9 phases: 13,14,15,16,17,18 complete; 19-21 remaining)
+Progress: [████████░░░░░░░░░░░░] 59% (v3.0, 8/9+ phases: 13,14,15,16,17,18,19-01 complete; 19-remaining + 20-21 pending)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [████████░░░░░░░░░░░░] 56% (v3
 - Total execution time: ~32min
 
 **Velocity (v2.2 / phase 13+):**
-- Plans completed: 8
+- Plans completed: 9
 - Average duration: ~2min
 
 ## Accumulated Context
@@ -47,6 +47,12 @@ Carried forward:
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+
+Phase 19 decisions:
+- String minSize="Npx" for pixel-based panel minimums in react-resizable-panels v4 (180px chapters, 280px chat, 300px editor)
+- data-[separator=active] for drag state (not :active, not data-[resize-handle-active]) — v4 sets data-separator="active" throughout drag
+- group-data-[separator=active]: on child elements for inner grip indicator styling
+- v4 CSS: data-group on Group, data-separator on Separator (replaces v3 data-panel-group-id / data-resize-handle)
 
 Phase 17 decisions:
 - Idempotent ALTER TABLE + try/catch per column for x_mentions migration
@@ -98,5 +104,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed Phase 18. x_automations DB tables added + full analytics dashboard built. Phase 19 next.
+Stopped at: Completed 19-01-PLAN.md. Writing pane: pixel-based min sizes (180/280/300px) + visible double-line separator grips. CSS selectors updated for v4.
 Resume file: None
