@@ -54,6 +54,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [autoSend, setAutoSend] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -95,6 +96,19 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     // Cancel any ongoing request
     abortControllerRef.current?.abort();
   }, [tab]);
+
+  // Listen for external message injection (e.g. "Suggest Reply" from XReplyGuyView)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const message = (e as CustomEvent).detail?.message as string;
+      if (message && !loading) {
+        setInput(message);
+        setAutoSend(true);
+      }
+    };
+    window.addEventListener('x-agent-chat-inject', handler);
+    return () => window.removeEventListener('x-agent-chat-inject', handler);
+  }, [loading]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -202,6 +216,14 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       setLoading(false);
     }
   }, [input, loading, tab, agentConfig, sessionKey]);
+
+  // Auto-send when flagged by external injection
+  useEffect(() => {
+    if (autoSend && input.trim() && !loading) {
+      setAutoSend(false);
+      handleSend();
+    }
+  }, [autoSend, input, loading, handleSend]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
