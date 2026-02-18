@@ -649,6 +649,10 @@ contextBridge.exposeInMainWorld('clawdbot', {
       dismiss: (id: string) => ipcRenderer.invoke('finance:recurring:dismiss', id),
       status: (accountId?: string) => ipcRenderer.invoke('finance:recurring:status', accountId),
     },
+    export: {
+      xlsx: (opts: { accountId?: string; dateFrom?: number; dateTo?: number }) =>
+        ipcRenderer.invoke('finance:export:xlsx', opts),
+    },
   },
   financeAgent: {
     sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),

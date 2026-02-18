@@ -875,6 +875,9 @@ declare global {
           dismiss: (id: string) => Promise<{ success: boolean; error?: string }>;
           status: (accountId?: string) => Promise<{ success: boolean; stats?: { total: number; confirmed: number; pending: number }; error?: string }>;
         };
+        export?: {
+          xlsx: (opts: { accountId?: string; dateFrom?: number; dateTo?: number }) => Promise<{ success: boolean; path?: string; canceled?: boolean; error?: string }>;
+        };
       };
       // Finance Agent
       financeAgent?: {
