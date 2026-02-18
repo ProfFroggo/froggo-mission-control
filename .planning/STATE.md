@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 19 (Writing Pane Layout Fixes)
+**Current focus:** v3.0 milestone — Phase 20 (Library Population & Tagging)
 
 ## Current Position
 
-Phase: 19 of 21 (Writing Pane Layout Fixes)
-Plan: 01 of ? in Phase 19
-Status: In progress
-Last activity: 2026-02-18 — Completed 19-01-PLAN.md (Panel min sizes + separator grips)
+Phase: 20 of 21 (Library Population & Tagging)
+Plan: —
+Status: Not started
+Last activity: 2026-02-18 — Completed Phase 19 (Writing Pane Layout Fixes)
 
-Progress: [████████░░░░░░░░░░░░] 59% (v3.0, 8/9+ phases: 13,14,15,16,17,18,19-01 complete; 19-remaining + 20-21 pending)
+Progress: [█████████░░░░░░░░░░░] 67% (v3.0, 8/9 phases: 13,14,15,16,17,18,19 complete; 20-21 remaining)
 
 ## Performance Metrics
 
@@ -104,5 +104,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 19-01-PLAN.md. Writing pane: pixel-based min sizes (180/280/300px) + visible double-line separator grips. CSS selectors updated for v4.
+Stopped at: Completed Phase 19. Writing pane layout fixed: pixel-based min sizes (180/280/300px), visible double-line separator grips with data-[separator=active] active state, CSS selectors updated for v4. Phase 20 next.
 Resume file: None
