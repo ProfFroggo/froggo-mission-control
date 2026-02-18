@@ -21,51 +21,33 @@ interface ChatMessage {
 
 // Agent routing mapping: tab -> primary agent ID
 const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
-  research: { agentId: 'researcher', displayName: 'Researcher' },
   plan: { agentId: 'writer', displayName: 'Writer' },
   drafts: { agentId: 'writer', displayName: 'Writer' },
   calendar: { agentId: 'social-manager', displayName: 'Social Manager' },
   mentions: { agentId: 'social-manager', displayName: 'Social Manager' },
   'reply-guy': { agentId: 'writer', displayName: 'Writer' },
+  'content-mix': { agentId: 'social-manager', displayName: 'Social Manager' },
   automations: { agentId: 'social-manager', displayName: 'Social Manager' },
+  analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
 // System prompts for each tab to give context to the agent
 const TAB_CONTEXT: Record<XTab, string> = {
-  research: `You are the Researcher agent helping with X/Twitter content research. 
-Current context: X/Twitter Research Tab
-Your role: Analyze trends, find relevant content, research hashtags, identify influencers, and provide insights for X/Twitter strategy.
-Be concise and actionable in your responses.`,
-  
-  plan: `You are the Writer agent helping plan X/Twitter content.
-Current context: X/Twitter Content Planning Tab
-Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.
-Be creative and strategic in your recommendations.`,
-  
-  drafts: `You are the Writer agent helping create X/Twitter drafts.
-Current context: X/Twitter Drafts Tab
-Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.
-Focus on writing compelling, concise content suitable for X/Twitter.`,
-  
-  calendar: `You are the Social Manager agent managing the X/Twitter content calendar.
-Current context: X/Twitter Calendar Tab
-Your role: Help schedule content, optimize posting times, manage the editorial calendar, and coordinate content releases.
-Be organized and mindful of timing and consistency.`,
-  
-  mentions: `You are the Social Manager agent monitoring X/Twitter mentions.
-Current context: X/Twitter Mentions Tab
-Your role: Help monitor brand mentions, suggest responses, identify engagement opportunities, and track sentiment.
-Be responsive and professional in your guidance.`,
-  
-  'reply-guy': `You are the Writer agent specializing in reply-style content for X/Twitter.
-Current context: X/Twitter Reply Guy Tab
-Your role: Help craft clever replies, quote tweets, and engagement responses that add value to conversations.
-Be witty, authentic, and contextually relevant.`,
-  
-  automations: `You are the Social Manager agent managing X/Twitter automations.
-Current context: X/Twitter Automations Tab
-Your role: Help set up automated workflows, schedule recurring content, manage bot behaviors, and optimize automation rules.
-Be technical but practical in your recommendations.`,
+  plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
+
+  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
+
+  calendar: `You are the Social Manager agent managing the X/Twitter content calendar. Current context: X/Twitter Calendar Tab. Your role: Help schedule content, optimize posting times, manage the editorial calendar.`,
+
+  mentions: `You are the Social Manager agent monitoring X/Twitter mentions. Current context: X/Twitter Mentions Tab. Your role: Help monitor brand mentions, suggest responses, identify engagement opportunities.`,
+
+  'reply-guy': `You are the Writer agent specializing in reply-style content for X/Twitter. Current context: X/Twitter Reply Guy Tab. Your role: Help craft clever replies, quote tweets, and engagement responses.`,
+
+  'content-mix': `You are the Social Manager agent helping manage the X/Twitter content mix. Current context: X/Twitter Content Mix Tracker Tab. Your role: Help balance content types, track content distribution.`,
+
+  automations: `You are the Social Manager agent managing X/Twitter automations. Current context: X/Twitter Automations Tab. Your role: Help set up automated workflows, schedule recurring content, manage bot behaviors.`,
+
+  analytics: `You are the Social Manager agent reviewing X/Twitter analytics. Current context: X/Twitter Analytics Tab. Your role: Help interpret performance data, identify trends, suggest content optimizations.`,
 };
 
 export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
@@ -73,11 +55,33 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const agentConfig = AGENT_ROUTING[tab];
   const sessionKey = `agent:${agentConfig.agentId}:xtwitter:${tab}`;
+
+  // Initialize gateway connection and session when component mounts or tab changes
+  useEffect(() => {
+    // Check and establish gateway connection
+    if (!gateway.connected) {
+      gateway.connect();
+    }
+    
+    // Set the session key globally for this agent context
+    gateway.setSessionKey(sessionKey);
+    setIsConnected(gateway.connected);
+    
+    // Listen for connection state changes
+    const unsubscribe = gateway.on('stateChange', ({ state }: { state: string }) => {
+      setIsConnected(state === 'connected');
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [sessionKey]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -95,6 +99,18 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || loading) return;
+
+    // Ensure gateway is connected before sending
+    if (!gateway.connected) {
+      setError('Not connected to Froggo. Trying to reconnect...');
+      gateway.connect();
+      // Wait briefly for connection
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!gateway.connected) {
+        setError('Failed to connect to Froggo. Please check that the dashboard is running.');
+        return;
+      }
+    }
 
     setError(null);
     const userMessage: ChatMessage = {
@@ -198,9 +214,17 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     <div className="flex flex-col h-full bg-clawd-surface">
       {/* Header */}
       <div className="p-4 border-b border-clawd-border">
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="w-5 h-5 text-info" />
-          <h3 className="text-sm font-semibold text-clawd-text">Agent Chat</h3>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-info" />
+            <h3 className="text-sm font-semibold text-clawd-text">Agent Chat</h3>
+          </div>
+          <div className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
+            isConnected ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'
+          }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-error'}`} />
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <span className="px-2 py-1 text-xs bg-info-subtle text-info rounded-full">
