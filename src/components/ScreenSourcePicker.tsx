@@ -33,17 +33,22 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
       const api = window.clawdbot?.screenCapture;
       if (!api?.getSources) {
         // Fallback: use getDisplayMedia (browser will show its own picker)
+        console.warn('[ScreenSourcePicker] Electron screenCapture API not available, falling back to browser picker');
         setError('no-electron');
         setLoading(false);
         return;
       }
+      console.log('[ScreenSourcePicker] Fetching screen sources via Electron API');
       const result = await api.getSources({
         types: ['screen', 'window'],
         thumbnailSize: { width: 320, height: 180 },
       });
+      console.log('[ScreenSourcePicker] Got sources:', result?.length || 0);
       setSources(result || []);
     } catch (e: unknown) {
-      setError(e.message || 'Failed to get sources');
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.error('[ScreenSourcePicker] Failed to get sources:', errMsg);
+      setError(errMsg || 'Failed to get sources');
     }
     setLoading(false);
   };

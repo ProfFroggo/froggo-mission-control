@@ -7,6 +7,7 @@ interface XTabBarProps {
 }
 
 const tabs: Array<{ id: XTab; label: string; icon: React.ReactNode }> = [
+  { id: 'research', label: 'Research', icon: <Zap size={16} /> },
   { id: 'plan', label: 'Content Plan', icon: <FileText size={16} /> },
   { id: 'drafts', label: 'Drafts', icon: <Edit3 size={16} /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarIcon size={16} /> },

@@ -194,7 +194,7 @@ Plans:
 - [x] 20-01-PLAN.md -- IPC wiring: skills:list, library:update, library:uploadBuffer handlers + preload bindings + DB migration
 - [x] 20-02-PLAN.md -- Frontend: LibrarySkillsTab agent skills display + LibraryFilesTab 9-category config + inline tagging UI
 
-#### Phase 21: Finance End-to-End Wiring
+#### Phase 21: Finance End-to-End Wiring -- COMPLETE 2026-02-18
 **Goal**: Finance page fully functional -- insights load, document upload works, agent chat connects, budget creation works, and UI matches app style
 **Depends on**: Phase 13
 **Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06
@@ -205,11 +205,11 @@ Plans:
   4. "Create Budget" button opens a budget creation flow (form or modal)
   5. "Upload Statement" button opens the file picker and ingests the selected file
   6. Finance chat UI visually matches the app-wide chat style established in Phase 13
-**Plans**: TBD
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 21-01: Finance insights, upload, and IPC wiring
-- [ ] 21-02: Budget creation flow + chat UI consistency
+- [x] 21-01-PLAN.md -- Fix CLI JSON output (finance-transactions, budget-status, alerts, upload) + fix IPC handler args (budget-type flag, upload account param, uploadPDF handler)
+- [x] 21-02-PLAN.md -- Wire Create Budget modal + PDF upload accept + align FinanceAgentChat with Phase 13 chat style
 
 ---
 
@@ -240,4 +240,4 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 18. X/Twitter Automations + Analytics | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 19. Writing Pane Layout | v3.0 | 1/1 | Complete | 2026-02-18 |
 | 20. Library Population | v3.0 | 2/2 | Complete | 2026-02-18 |
-| 21. Finance End-to-End | v3.0 | 0/2 | Not started | - |
+| 21. Finance End-to-End | v3.0 | 2/2 | Complete | 2026-02-18 |

@@ -51,6 +51,12 @@ export default function FinancePanel() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [chatOpen, setChatOpen] = useState(true); // AI chat panel
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+  const [budgetModalType, setBudgetModalType] = useState<'family' | 'crypto'>('family');
+  const [budgetName, setBudgetName] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState('');
+  const [budgetCurrency, setBudgetCurrency] = useState('EUR');
+  const [budgetSubmitting, setBudgetSubmitting] = useState(false);
   const lastAlertCheck = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -78,13 +84,13 @@ export default function FinancePanel() {
       // Load family budget
       const familyResult = await window.clawdbot?.finance?.getBudgetStatus('family');
       if (familyResult?.success) {
-        setFamilyBudget(familyResult.budget);
+        setFamilyBudget(familyResult.status as Budget);
       }
 
       // Load crypto budget
       const cryptoResult = await window.clawdbot?.finance?.getBudgetStatus('crypto');
       if (cryptoResult?.success) {
-        setCryptoBudget(cryptoResult.budget);
+        setCryptoBudget(cryptoResult.status as Budget);
       }
     } catch (error) {
       // '[Finance] Load error:', error;
@@ -123,23 +129,67 @@ export default function FinancePanel() {
 
   const handleFileUpload = async (file: File) => {
     try {
-      // Read file as text
-      const text = await file.text();
-      
-      // Upload via IPC
-      const result = await window.clawdbot?.finance?.uploadCSV(text, file.name);
-      
-      if (result?.success) {
-        showToast('success', 'Import Complete', `Imported ${result.imported} transactions (${result.skipped} duplicates skipped)`);
-        await loadFinanceData(); // Reload data
-        setUploadModalOpen(false);
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        const buffer = await file.arrayBuffer();
+        const result = await window.clawdbot?.finance?.uploadPDF(buffer, file.name);
+        if (result?.success) {
+          showToast('success', 'PDF Sent', result.message || 'PDF sent to Finance Manager for processing');
+          setUploadModalOpen(false);
+        } else {
+          showToast('error', 'Upload Failed', result?.error || 'Unknown error');
+        }
       } else {
-        showToast('error', 'Upload Failed', result?.error || 'Unknown error');
+        const text = await file.text();
+        const result = await window.clawdbot?.finance?.uploadCSV(text, file.name);
+        if (result?.success) {
+          showToast('success', 'Import Complete', `Imported ${result.imported} transactions (${result.skipped} duplicates skipped)`);
+          await loadFinanceData();
+          setUploadModalOpen(false);
+        } else {
+          showToast('error', 'Upload Failed', result?.error || 'Unknown error');
+        }
       }
-    } catch (error: unknown) {
-      // '[Finance] Upload error:', error;
+    } catch (error: any) {
       showToast('error', 'Upload Failed', error.message);
     }
+  };
+
+  const handleCreateBudget = async () => {
+    if (!budgetName.trim() || !budgetAmount || Number(budgetAmount) <= 0) {
+      showToast('error', 'Please enter a valid budget name and amount');
+      return;
+    }
+    try {
+      setBudgetSubmitting(true);
+      const result = await window.clawdbot?.finance?.createBudget({
+        name: budgetName.trim(),
+        budgetType: budgetModalType,
+        totalBudget: Number(budgetAmount),
+        currency: budgetCurrency,
+      });
+      if (result?.success) {
+        showToast('success', 'Budget Created', `${budgetName} budget created successfully`);
+        setBudgetModalOpen(false);
+        setBudgetName('');
+        setBudgetAmount('');
+        await loadFinanceData();
+      } else {
+        showToast('error', 'Failed to Create Budget', result?.error || 'Unknown error');
+      }
+    } catch (error: any) {
+      showToast('error', 'Error', error.message);
+    } finally {
+      setBudgetSubmitting(false);
+    }
+  };
+
+  const openBudgetModal = (type: 'family' | 'crypto') => {
+    setBudgetModalType(type);
+    const monthName = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    setBudgetName(`${monthName} ${type === 'family' ? 'Family' : 'Crypto'} Budget`);
+    setBudgetAmount('');
+    setBudgetCurrency(type === 'crypto' ? 'USD' : 'EUR');
+    setBudgetModalOpen(true);
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -332,7 +382,7 @@ export default function FinancePanel() {
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No family budget set up</p>
-                <button className="text-info hover:text-info text-sm" aria-label="Create family budget">
+                <button onClick={() => openBudgetModal('family')} className="text-info hover:text-info text-sm" aria-label="Create family budget">
                   Create Budget
                 </button>
               </div>
@@ -407,7 +457,7 @@ export default function FinancePanel() {
             ) : (
               <div className="text-center py-8 text-clawd-text/60">
                 <p className="mb-2">No crypto budget set up</p>
-                <button className="text-review hover:text-review text-sm" aria-label="Create crypto budget">
+                <button onClick={() => openBudgetModal('crypto')} className="text-review hover:text-review text-sm" aria-label="Create crypto budget">
                   Create Budget
                 </button>
               </div>
@@ -482,15 +532,15 @@ export default function FinancePanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-md w-full mx-4">
             <h2 className="text-lg font-semibold mb-4">Upload Bank Statement</h2>
-            
+
             <div className="mb-4">
               <p className="text-sm text-clawd-text/60 mb-2">
-                Supported formats: Revolut, N26, Binance, Coinbase, Generic CSV
+                Supported formats: CSV (Revolut, N26, Binance, Coinbase, Generic) and PDF bank statements
               </p>
-              
+
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.pdf"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleFileUpload(file);
@@ -506,6 +556,81 @@ export default function FinancePanel() {
                 aria-label="Cancel upload"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Budget Creation Modal */}
+      {budgetModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-lg font-semibold mb-4">
+              Create {budgetModalType === 'family' ? 'Family' : 'Crypto'} Budget
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-clawd-text-dim mb-1">Budget Name</label>
+                <input
+                  type="text"
+                  value={budgetName}
+                  onChange={(e) => setBudgetName(e.target.value)}
+                  placeholder="e.g., February 2026 Family Budget"
+                  className="w-full px-3 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-clawd-text-dim mb-1">Total Budget</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={budgetAmount}
+                    onChange={(e) => setBudgetAmount(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    className="flex-1 px-3 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  />
+                  <select
+                    value={budgetCurrency}
+                    onChange={(e) => setBudgetCurrency(e.target.value)}
+                    className="px-3 py-2 bg-clawd-bg-alt border border-clawd-border rounded-lg text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
+                  >
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-clawd-text-dim mb-1">Period</label>
+                <p className="text-sm text-clawd-text">
+                  {new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                  {' - '}
+                  {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end mt-6">
+              <button
+                onClick={() => setBudgetModalOpen(false)}
+                className="px-4 py-2 text-sm bg-clawd-bg hover:bg-clawd-border rounded-lg transition-colors"
+                aria-label="Cancel budget creation"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateBudget}
+                disabled={budgetSubmitting || !budgetName.trim() || !budgetAmount}
+                className="px-4 py-2 text-sm bg-clawd-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-colors"
+                aria-label="Create budget"
+              >
+                {budgetSubmitting ? 'Creating...' : 'Create Budget'}
               </button>
             </div>
           </div>

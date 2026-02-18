@@ -49,24 +49,16 @@ export default function XPlanThreadComposer() {
       
       if (result?.success) {
         setResearchIdeas(result.ideas || []);
-      } else {
-        showToast('error', 'Unable to load research ideas. Please refresh.');
       }
     } catch (error) {
-      // '[XPlanComposer] Load research error:', error;
-      showToast('error', 'Failed to load research ideas');
+      // Silently fail - user can still create plan without research
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = async () => {
-    // Validation
-    if (!selectedResearchId) {
-      showToast('error', 'Please select a research idea');
-      return;
-    }
-    
+    // Validation - research idea is optional
     if (!title.trim()) {
       showToast('error', 'Title is required');
       return;
