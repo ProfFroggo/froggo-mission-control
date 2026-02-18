@@ -233,7 +233,7 @@ describe('LoadingStates', () => {
 
       const overlay = container.firstChild as HTMLElement;
       expect(overlay).not.toHaveClass('fixed');
-      expect(overlay).not.toHaveClass('inset-0');
+      expect(overlay).toHaveClass('absolute');
     });
 
     it('should be fullscreen when fullScreen=true', () => {
