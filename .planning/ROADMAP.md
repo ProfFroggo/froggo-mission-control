@@ -101,11 +101,11 @@ Plans:
   3. All inputs, dropdowns, cards, and backgrounds on the X/Twitter page render in dark mode styling
   4. Tab navigation order is: Content Plan → Drafts → Calendar → Mentions → Reply Guy → Content Mix Tracker → Automations → Analytics
   5. Calendar, Mentions, Reply Guy, and Automations tabs have no approval queue side panel
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: X logo, page label, dark mode styling
-- [ ] 14-02: Tab order and approval panel removal
+- [ ] 14-01-PLAN.md -- Replace Twitter icon with X logo, update sidebar label, fix dark mode tokens
+- [ ] 14-02-PLAN.md -- Restructure tabs to 8-tab order, remove approval pane from non-content tabs
 
 #### Phase 15: X/Twitter Content Flow
 **Goal**: Content Plan and Drafts tabs show real draft content with image attachment support, and the agent chat is wired and fast
@@ -238,7 +238,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 11. Chat Pane + 3-Pane Layout | v2.1 | 4/4 | Complete | 2026-02-13 |
 | 12. Setup Wizard | v2.1 | 4/4 | Complete | 2026-02-13 |
 | 13. Global UI Consistency | v3.0 | 5/5 | Complete | 2026-02-18 |
-| 14. X/Twitter Identity + Tabs | v3.0 | 0/2 | Not started | - |
+| 14. X/Twitter Identity + Tabs | v3.0 | 0/2 | Planned | - |
 | 15. X/Twitter Content Flow | v3.0 | 0/2 | Not started | - |
 | 16. X/Twitter Calendar | v3.0 | 0/2 | Not started | - |
 | 17. X/Twitter Mentions + Reply Guy | v3.0 | 0/2 | Not started | - |
