@@ -54,9 +54,25 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 - ✓ Finance CLI JSON output (--format json on all 4 commands, alerts crash fixed) — v3.0
 - ✓ Finance IPC wiring (budget creation modal, PDF upload routing, chat styling) — v3.0
 
+## Current Milestone: v4.0 X API + Finance Depth + Agent Management
+
+**Goal:** Connect Froggo to the real X API (tweet + thread posting + scheduling), deepen the Finance module (multi-account, recurring detection, spreadsheet export), and add agent management (status/start/stop/edit personality + model) to the dashboard.
+
+**Target features:**
+- X API: post single tweets, compose multi-tweet threads, schedule posts (feeds into existing calendar)
+- Finance: multi-account budget tracking, recurring transaction detection, export to spreadsheet
+- Agent management: view all agents with status, start/stop/restart, edit SOUL.md personality, switch model/fallback chain
+
 ### Active
 
-(No active requirements — next milestone not yet defined)
+- X/Twitter: Post tweets and thread chains directly from the app via X API
+- X/Twitter: Schedule posts for future publishing (integrate with existing calendar)
+- Finance: Multi-account budget tracking
+- Finance: Recurring transaction detection
+- Finance: Export transactions/budget to spreadsheet
+- Agents: View all agents with live status, last active, current model
+- Agents: Start/stop/restart agents from dashboard
+- Agents: Edit agent personality (SOUL.md) and model/fallback chain from UI
 
 ### Out of Scope
 
@@ -123,4 +139,4 @@ Kevin can create a new book project by conversing with an AI agent that plans th
 | PDF upload fire-and-forget to agent | No blocking await, agent processes asynchronously | ✓ Good (v3.0) |
 
 ---
-*Last updated: 2026-02-18 after v3.0 milestone completion*
+*Last updated: 2026-02-18 — v4.0 milestone started*
