@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 17 of 21 (X/Twitter Mentions & Reply Guy)
-Plan: —
-Status: Not started
-Last activity: 2026-02-18 — Completed Phase 16 (X/Twitter Calendar)
+Plan: 01 of 02
+Status: In progress
+Last activity: 2026-02-18 — Completed 17-01-PLAN.md
 
-Progress: [█████░░░░░░░░░░░░░░░] 42% (v3.0, 5/9 phases complete: 13,14,15,16)
+Progress: [██████░░░░░░░░░░░░░░] 44% (v3.0, 5/9 phases in progress: 13,14,15,16,17)
 
 ## Performance Metrics
 
@@ -33,7 +33,7 @@ Progress: [█████░░░░░░░░░░░░░░░] 42% (v3
 - Total execution time: ~32min
 
 **Velocity (v2.2 / phase 13+):**
-- Plans completed: 6
+- Plans completed: 7
 - Average duration: ~2min
 
 ## Accumulated Context
@@ -47,6 +47,11 @@ Carried forward:
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+
+Phase 17 decisions:
+- Idempotent ALTER TABLE + try/catch per column for x_mentions migration
+- Table recreation for x_drafts CHECK constraint (SQLite limitation)
+- Comment out duplicate handler stubs rather than delete (preserves reference)
 
 Phase 16 decisions:
 - eventColorResolver callback pattern for custom event colors in EpicCalendar
@@ -91,5 +96,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 16-02-PLAN.md. Phase 16 complete. Drag-restrict + Create Tweet wired.
+Stopped at: Completed 17-01-PLAN.md. Schema migration + handler dedup + emoji cleanup.
 Resume file: None
