@@ -143,11 +143,11 @@ Plans:
   4. Reply Guy shows reply suggestions in the main UI -- not inside an approval side panel
   5. Each Reply Guy suggestion has inline approve / edit / send controls
   6. Reply Guy has a chat interface connected to an agent
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 17-01: Mentions tab inline reply + agent chat
-- [ ] 17-02: Reply Guy inline suggestions + approve/edit/send + agent chat
+- [ ] 17-01-PLAN.md -- Fix x_mentions DB schema + x_drafts CHECK constraint + disable handler stubs + XMentionsView emoji cleanup
+- [ ] 17-02-PLAN.md -- Add "Suggest Reply" button to XReplyGuyView + agent chat injection + emoji cleanup
 
 #### Phase 18: X/Twitter Automations & Analytics
 **Goal**: Automations tab has a working visual rule builder and agent chat; Analytics tab delivers a full metrics breakdown with downloadable report
