@@ -3,6 +3,7 @@
 // Review: 2026-02-17 - suppression retained, pattern is safe
 
 import React, { useState, useEffect } from 'react';
+import { Heart, Repeat2, MessageCircle, Clock, HelpCircle, Ban, CheckCircle, StickyNote, RefreshCw, Inbox } from 'lucide-react';
 
 interface Mention {
   id: string;
@@ -136,13 +137,13 @@ export const XMentionsView: React.FC = () => {
         {/* Metrics */}
         <div className="flex items-center gap-4 text-xs text-clawd-text-dim mb-3">
           {metrics.like_count !== undefined && (
-            <div>❤️ {metrics.like_count}</div>
+            <div><Heart size={12} className="inline" /> {metrics.like_count}</div>
           )}
           {metrics.retweet_count !== undefined && (
-            <div>🔄 {metrics.retweet_count}</div>
+            <div><Repeat2 size={12} className="inline" /> {metrics.retweet_count}</div>
           )}
           {metrics.reply_count !== undefined && (
-            <div>💬 {metrics.reply_count}</div>
+            <div><MessageCircle size={12} className="inline" /> {metrics.reply_count}</div>
           )}
           <a
             href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`}
@@ -164,7 +165,7 @@ export const XMentionsView: React.FC = () => {
                 : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
-            ⏳ Pending
+            <Clock size={12} className="inline" /> Pending
           </button>
           <button
             onClick={() => updateStatus(mention.id, 'considering')}
@@ -174,7 +175,7 @@ export const XMentionsView: React.FC = () => {
                 : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
-            🤔 Considering
+            <HelpCircle size={12} className="inline" /> Considering
           </button>
           <button
             onClick={() => updateStatus(mention.id, 'ignored')}
@@ -184,11 +185,11 @@ export const XMentionsView: React.FC = () => {
                 : 'bg-clawd-surface text-clawd-text-dim hover:bg-clawd-surface/80'
             }`}
           >
-            🚫 Ignored
+            <Ban size={12} className="inline" /> Ignored
           </button>
           {mention.reply_status === 'replied' && (
             <div className="px-2 py-1 text-xs rounded bg-success-subtle text-success border border-success">
-              ✅ Replied
+              <CheckCircle size={12} className="inline" /> Replied
               {mention.replied_at && (
                 <span className="ml-1 text-clawd-text-dim">
                   {new Date(mention.replied_at).toLocaleDateString('en-US', {
@@ -221,7 +222,7 @@ export const XMentionsView: React.FC = () => {
           </div>
           {metadata.notes && (
             <div className="mt-1 text-xs text-clawd-text-dim bg-clawd-surface p-2 rounded">
-              📝 {metadata.notes}
+              <StickyNote size={12} className="inline" /> {metadata.notes}
             </div>
           )}
         </div>
@@ -268,7 +269,7 @@ export const XMentionsView: React.FC = () => {
                 onClick={() => setSelectedMention(mention.id)}
                 className="px-3 py-1 text-sm border border-info text-info rounded hover:bg-info-subtle"
               >
-                💬 Reply
+                <MessageCircle size={14} className="inline" /> Reply
               </button>
             )}
           </div>
@@ -301,7 +302,7 @@ export const XMentionsView: React.FC = () => {
               Fetching...
             </>
           ) : (
-            <>🔄 Fetch New</>
+            <><RefreshCw size={16} className="inline" /> Fetch New</>
           )}
         </button>
       </div>
@@ -334,7 +335,7 @@ export const XMentionsView: React.FC = () => {
         {mentions.length === 0 ? (
           <div className="flex items-center justify-center h-full text-clawd-text-dim">
             <div className="text-center">
-              <div className="text-4xl mb-2">📭</div>
+              <div className="mb-2 flex justify-center"><Inbox size={48} className="text-clawd-text-dim" /></div>
               <div>No mentions found</div>
               <div className="text-sm mt-2">Click &quot;Fetch New&quot; to check for mentions</div>
             </div>
