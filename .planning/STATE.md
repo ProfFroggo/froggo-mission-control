@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 15 (X/Twitter Content Flow), in progress
+**Current focus:** v3.0 milestone — Phase 15 (X/Twitter Content Flow), complete
 
 ## Current Position
 
 Phase: 15 of 21 (X/Twitter Content Flow)
 Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-02-18 — Completed 15-02-PLAN.md (verify agent routing + send button fix)
+Last activity: 2026-02-18 — Completed 15-01-PLAN.md (list views + image attachment)
 
 Progress: [███░░░░░░░░░░░░░░░░░] 33% (v3.0, 3/9 phases)
 
@@ -48,6 +48,12 @@ Carried forward:
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
 
+Phase 15 decisions:
+- List views fetch all items (no status filter) so users see proposed, approved, rejected together
+- Composers accessible via toggle inside list views (not replaced, still exist as sub-views)
+- XImageThumbnails uses file:// protocol for local image rendering in Electron
+- pickImage IPC returns {success, filePaths} matching existing pattern
+
 Phase 14 decisions:
 - Brand logos missing from lucide: define as local inline SVG components before the default export
 - Tweet preview cards: bg-clawd-bg-alt + border-clawd-border (not bg-black + border-gray-800)
@@ -79,5 +85,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 15-02-PLAN.md. Phase 15 complete (2 plans). XTW-09 and XTW-10 verified.
+Stopped at: Completed 15-01-PLAN.md. Phase 15 fully complete (both plans). XTW-11, XTW-12, XTW-13 verified.
 Resume file: None
