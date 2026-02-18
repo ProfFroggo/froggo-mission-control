@@ -231,7 +231,7 @@ export default function DraggableVideoWindow({
           tabIndex={0}
           aria-label="Resize video window"
         >
-          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/40 rounded-br" />
+          <div className="absolute bottom-1 right-1 w-3 h-3 border-r-2 border-b-2 border-white/20 dark:border-white/40 rounded-br" />
         </div>
       )}
     </div>

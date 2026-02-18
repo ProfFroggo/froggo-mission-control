@@ -78,11 +78,11 @@ function ThreadMessage({
       {/* Avatar */}
       <div className="flex-shrink-0 w-8">
         {isMe ? (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-clawd-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             K
           </div>
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm ring-2 ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             <User size={14} className="text-white" />
           </div>
         )}
@@ -142,7 +142,7 @@ function ThreadMessage({
             {/* Subject (for thread root) */}
             {message.is_thread_root && message.subject && (
               <div className={`text-sm font-semibold mb-2 pb-2 ${
-                isMe ? 'border-b border-white/20' : 'border-b border-clawd-border'
+                isMe ? 'border-b border-white/10 dark:border-white/20' : 'border-b border-clawd-border'
               }`}>
                 {message.subject}
               </div>
@@ -180,7 +180,7 @@ function ThreadMessage({
             {/* Attachments indicator */}
             {message.has_attachment && (
               <div className={`flex items-center gap-1.5 mt-2 pt-2 text-xs ${
-                isMe ? 'border-t border-white/20 opacity-90' : 'border-t border-clawd-border text-clawd-text-dim'
+                isMe ? 'border-t border-white/10 dark:border-white/20 opacity-90' : 'border-t border-clawd-border text-clawd-text-dim'
               }`}>
                 <Paperclip size={14} />
                 <span>Has attachment</span>

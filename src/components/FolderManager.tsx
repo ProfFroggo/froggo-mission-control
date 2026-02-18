@@ -230,7 +230,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                       key={color}
                       onClick={() => setFormData({ ...formData, color })}
                       className={`w-6 h-6 rounded transition-all ${
-                        formData.color === color ? 'ring-2 ring-white scale-110' : 'hover:scale-110'
+                        formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
                       }`}
                       style={{ backgroundColor: color }}
                       title={color}
@@ -323,7 +323,7 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                               key={color}
                               onClick={() => setFormData({ ...formData, color })}
                               className={`w-6 h-6 rounded transition-all ${
-                                formData.color === color ? 'ring-2 ring-white scale-110' : 'hover:scale-110'
+                                formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
                               }`}
                               style={{ backgroundColor: color }}
                             />

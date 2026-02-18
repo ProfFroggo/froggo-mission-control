@@ -1280,7 +1280,7 @@ const MessageItem = memo(function MessageItem({
       {/* Avatar column - consistent width */}
       <div className={`flex-shrink-0 w-10 ${!showAvatar ? 'invisible' : ''}`}>
         {isUser ? (
-          <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/20">
+          <div className="w-10 h-10 rounded-full bg-clawd-accent flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white/10 dark:ring-white/20">
             K
           </div>
         ) : (
