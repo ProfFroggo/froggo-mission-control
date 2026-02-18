@@ -761,6 +761,13 @@ contextBridge.exposeInMainWorld('clawdbot', {
     followers: (username?: string, count?: number) => ipcRenderer.invoke('x:followers', username, count),
     following: (username?: string, count?: number) => ipcRenderer.invoke('x:following', username, count),
   },
+  // X Publishing — OAuth 1.0a write operations via x-api CLI
+  // Separate from the existing `x` namespace (Bearer token read operations)
+  xPublish: {
+    post: (text: string) => ipcRenderer.invoke('x:publish:post', text),
+    thread: (tweets: string[]) => ipcRenderer.invoke('x:publish:thread', tweets),
+    rateLimit: () => ipcRenderer.invoke('x:publish:rateLimit'),
+  },
   // Writing Module
   writing: {
     project: {
