@@ -175,7 +175,7 @@ export default function XAutomationsPanel() {
             </button>
           </div>
         ) : (
-          <div className="max-w-8xl mx-auto space-y-4">
+          <div className="max-w-8xl mx-auto flex gap-4 overflow-x-auto pb-4">
             {automations.map((automation) => {
               const trigger = parseJSON(automation.trigger_config);
               const actions = parseJSON(automation.actions);
@@ -184,7 +184,7 @@ export default function XAutomationsPanel() {
               return (
                 <div
                   key={automation.id}
-                  className={`bg-clawd-surface rounded-xl border-2 transition-all ${
+                  className={`flex-shrink-0 w-96 bg-clawd-surface rounded-xl border-2 transition-all ${
                     automation.enabled 
                       ? 'border-success-border hover:border-success-border' 
                       : 'border-clawd-border hover:border-clawd-border/80'

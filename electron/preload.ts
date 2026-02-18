@@ -710,6 +710,23 @@ contextBridge.exposeInMainWorld('clawdbot', {
     postNow: (data: { draftId: string }) =>
       ipcRenderer.invoke('x:replyGuy:postNow', data),
   },
+  // X API v2 - Direct API access
+  x: {
+    search: (query: string, count?: number) => ipcRenderer.invoke('x:search', query, count),
+    like: (tweetId: string) => ipcRenderer.invoke('x:like', tweetId),
+    unlike: (tweetId: string) => ipcRenderer.invoke('x:unlike', tweetId),
+    retweet: (tweetId: string) => ipcRenderer.invoke('x:retweet', tweetId),
+    unretweet: (tweetId: string) => ipcRenderer.invoke('x:unretweet', tweetId),
+    follow: (username: string) => ipcRenderer.invoke('x:follow', username),
+    unfollow: (username: string) => ipcRenderer.invoke('x:unfollow', username),
+    profile: (username: string) => ipcRenderer.invoke('x:profile', username),
+    post: (text: string, options?: { replyTo?: string; quote?: string }) => ipcRenderer.invoke('x:post', text, options),
+    delete: (tweetId: string) => ipcRenderer.invoke('x:delete', tweetId),
+    dm: (participantId: string, text: string) => ipcRenderer.invoke('x:dm', participantId, text),
+    home: (limit?: number) => ipcRenderer.invoke('x:home', limit),
+    followers: (username?: string, count?: number) => ipcRenderer.invoke('x:followers', username, count),
+    following: (username?: string, count?: number) => ipcRenderer.invoke('x:following', username, count),
+  },
   // Writing Module
   writing: {
     project: {

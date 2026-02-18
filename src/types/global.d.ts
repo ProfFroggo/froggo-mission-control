@@ -874,6 +874,23 @@ declare global {
         createQuickDraft: (data: { mentionId: string; replyText: string; fastTrack?: boolean }) => Promise<{ success: boolean; draftId?: string; error?: string }>;
         postNow: (data: { draftId: string }) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
       };
+      // X API v2 - Direct API access
+      x?: {
+        search: (query: string, count?: number) => Promise<{ success: boolean; tweets?: unknown[]; error?: string }>;
+        like: (tweetId: string) => Promise<{ success: boolean; error?: string }>;
+        unlike: (tweetId: string) => Promise<{ success: boolean; error?: string }>;
+        retweet: (tweetId: string) => Promise<{ success: boolean; error?: string }>;
+        unretweet: (tweetId: string) => Promise<{ success: boolean; error?: string }>;
+        follow: (username: string) => Promise<{ success: boolean; error?: string }>;
+        unfollow: (username: string) => Promise<{ success: boolean; error?: string }>;
+        profile: (username: string) => Promise<{ success: boolean; profile?: unknown; error?: string }>;
+        post: (text: string, options?: { replyTo?: string; quote?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        delete: (tweetId: string) => Promise<{ success: boolean; error?: string }>;
+        dm: (participantId: string, text: string) => Promise<{ success: boolean; error?: string }>;
+        home: (limit?: number) => Promise<{ success: boolean; tweets?: unknown[]; error?: string }>;
+        followers: (username?: string, count?: number) => Promise<{ success: boolean; followers?: unknown[]; error?: string }>;
+        following: (username?: string, count?: number) => Promise<{ success: boolean; following?: unknown[]; error?: string }>;
+      };
       // Writing Module
       writing?: {
         project: {
