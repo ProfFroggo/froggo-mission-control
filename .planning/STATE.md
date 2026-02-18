@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 21 (Finance End-to-End Wiring)
+**Current focus:** v3.0 milestone complete
 
 ## Current Position
 
 Phase: 21 of 21 (Finance End-to-End Wiring)
-Plan: 01 of 02
-Status: In progress
-Last activity: 2026-02-18 — Completed 21-01-PLAN.md
+Plan: 02 of 02
+Status: Phase complete
+Last activity: 2026-02-18 — Completed 21-02-PLAN.md
 
-Progress: [█████████████░░░░░░░] 83% (v3.0, 9.5/10 phases: 13-20 done, 21 in progress)
+Progress: [████████████████████] 100% (v3.0, 10/10 phases: 13-21 done)
 
 ## Performance Metrics
 
@@ -57,6 +57,9 @@ Phase 21 decisions:
 - Default upload account: `acc-default` with auto-creation
 - PDF upload delegates to finance-manager agent (fire-and-forget)
 - finance_alerts table uses `acknowledged` column (0/1), NOT `status` column
+- Budget creation uses inline modal with name/amount/currency, defaults to current month period
+- PDF uploads route to finance:uploadPDF, CSV uploads stay as direct import
+- Phase 13 chat style applied to FinanceAgentChat: surface/border/rounded-2xl pattern
 
 Phase 20 decisions:
 - agent_skills table is primary source (66 rows, proficiency 1-10), NOT skill_evolution
@@ -122,5 +125,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 21-01-PLAN.md. CLI finance commands output valid JSON. IPC handlers pass correct args. PDF upload handler added.
+Stopped at: Completed 21-02-PLAN.md. Phase 21 complete. Budget creation modal wired. PDF upload supported. Chat styling aligned with Phase 13. v3.0 milestone 100%.
 Resume file: None
