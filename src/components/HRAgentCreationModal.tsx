@@ -130,13 +130,16 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         `openclaw agent --agent hr --message ${JSON.stringify(prompt)} --json`
       );
 
+      // exec.run returns { success, stdout, stderr } object — extract the actual output
+      const output = raw?.stdout || raw?.message || raw?.content || String(raw);
+
       // Parse response — openclaw --json returns { content: "..." } or similar
       let reply = '';
       try {
-        const parsed = JSON.parse(raw);
-        reply = parsed.content || parsed.message || parsed.response || parsed.text || String(raw);
+        const parsed = JSON.parse(output);
+        reply = parsed.content || parsed.message || parsed.response || parsed.text || String(output);
       } catch {
-        reply = String(raw).trim();
+        reply = String(output).trim();
       }
 
       setIsTyping(false);
@@ -208,8 +211,10 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     updateStep(id, 'running');
     try {
       const result = await window.clawdbot.exec.run(cmd);
-      if (result && typeof result === 'string' && result.toLowerCase().startsWith('error')) {
-        updateStep(id, 'error', result.slice(0, 80));
+      // exec.run returns { success, stdout, stderr } — extract output
+      const output = result?.stdout || result?.message || String(result);
+      if (!result?.success || (typeof output === 'string' && output.toLowerCase().startsWith('error'))) {
+        updateStep(id, 'error', output?.slice(0, 80) || 'Command failed');
         return false;
       }
       updateStep(id, 'done');

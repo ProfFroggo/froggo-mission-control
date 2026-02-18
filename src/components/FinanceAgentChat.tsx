@@ -201,10 +201,10 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                     msg.role === 'user'
-                      ? 'bg-clawd-accent/50 text-white'
-                      : 'bg-clawd-bg-alt text-clawd-text'
+                      ? 'bg-clawd-accent/50 text-white rounded-tr-sm'
+                      : 'bg-clawd-surface text-clawd-text border border-clawd-border rounded-tl-sm'
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap break-words">
@@ -212,7 +212,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
                   </div>
                   <div
                     className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-info' : 'text-clawd-text-dim'
+                      msg.role === 'user' ? 'text-white/60' : 'text-clawd-text-dim'
                     }`}
                   >
                     {formatTimestamp(msg.timestamp)}
@@ -222,7 +222,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-lg p-3 bg-clawd-bg-alt text-clawd-text">
+                <div className="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm bg-clawd-surface text-clawd-text border border-clawd-border rounded-tl-sm">
                   <div className="flex items-center gap-2 text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Finance Manager is thinking...</span>
@@ -261,13 +261,13 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask about your finances..."
-            className="flex-1 bg-clawd-bg-alt text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
+            className="flex-1 bg-clawd-surface text-clawd-text placeholder-clawd-text-dim border border-clawd-border rounded-xl px-4 py-2 focus:outline-none focus:border-clawd-accent transition-colors"
             disabled={loading || initializing}
           />
           <button
             onClick={sendMessage}
             disabled={!inputMessage.trim() || loading || initializing}
-            className="p-2 bg-clawd-accent hover:bg-clawd-accent-dim disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+            className="p-2 bg-clawd-accent hover:opacity-90 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white rounded-xl transition-colors"
             aria-label={loading ? "Sending message" : "Send message"}
           >
             {loading ? (
