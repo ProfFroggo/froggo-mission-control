@@ -319,7 +319,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           <button
             onClick={handleSend}
             disabled={!input.trim() || loading}
-            className="btn-primary p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-clawd-accent hover:bg-clawd-accent-dim text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>

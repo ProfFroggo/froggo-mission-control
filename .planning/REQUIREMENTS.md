@@ -30,14 +30,14 @@
 
 ### X/Twitter — Chat Wiring
 
-- [ ] **XTW-09**: Chat on Content Plan / Multi-agent pipeline tab is wired to a real agent (not "researcher" stub)
-- [ ] **XTW-10**: Chat responses are fast (no multi-second delay before first token)
+- [x] **XTW-09**: Chat on Content Plan / Multi-agent pipeline tab is wired to a real agent (not "researcher" stub)
+- [x] **XTW-10**: Chat responses are fast (no multi-second delay before first token)
 
 ### X/Twitter — Content Plan & Drafts
 
-- [ ] **XTW-11**: Content Plan tab approval queue shows final drafts
-- [ ] **XTW-12**: Drafts tab shows final drafts ready for review
-- [ ] **XTW-13**: Posts in Content Plan and Drafts support image attachment
+- [x] **XTW-11**: Content Plan tab approval queue shows final drafts
+- [x] **XTW-12**: Drafts tab shows final drafts ready for review
+- [x] **XTW-13**: Posts in Content Plan and Drafts support image attachment
 
 ### X/Twitter — Calendar
 
@@ -133,11 +133,11 @@
 | XTW-06 | Phase 14 — X/Twitter Identity + Tabs | Complete |
 | XTW-07 | Phase 14 — X/Twitter Identity + Tabs | Complete |
 | XTW-08 | Phase 14 — X/Twitter Identity + Tabs | Complete |
-| XTW-09 | Phase 15 — X/Twitter Content Flow | Pending |
-| XTW-10 | Phase 15 — X/Twitter Content Flow | Pending |
-| XTW-11 | Phase 15 — X/Twitter Content Flow | Pending |
-| XTW-12 | Phase 15 — X/Twitter Content Flow | Pending |
-| XTW-13 | Phase 15 — X/Twitter Content Flow | Pending |
+| XTW-09 | Phase 15 — X/Twitter Content Flow | Complete |
+| XTW-10 | Phase 15 — X/Twitter Content Flow | Complete |
+| XTW-11 | Phase 15 — X/Twitter Content Flow | Complete |
+| XTW-12 | Phase 15 — X/Twitter Content Flow | Complete |
+| XTW-13 | Phase 15 — X/Twitter Content Flow | Complete |
 | XTW-14 | Phase 16 — X/Twitter Calendar | Pending |
 | XTW-15 | Phase 16 — X/Twitter Calendar | Pending |
 | XTW-16 | Phase 16 — X/Twitter Calendar | Pending |

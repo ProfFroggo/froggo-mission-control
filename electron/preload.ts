@@ -653,6 +653,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
       ipcRenderer.invoke('x:draft:approve', data),
     reject: (data: { id: string; reason?: string }) =>
       ipcRenderer.invoke('x:draft:reject', data),
+    pickImage: () => ipcRenderer.invoke('x:draft:pickImage'),
   },
   xSchedule: {
     create: (data: { draftId: string; scheduledFor: number; timeSlotReason?: string }) =>

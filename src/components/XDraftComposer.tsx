@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Send, Plus, Trash2, AlertCircle, Eye } from 'lucide-react';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
+import { XImageAttachButton } from './XImageAttachment';
 
 interface ContentPlan {
   id: string;
@@ -20,6 +21,7 @@ export default function XDraftComposer() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [mediaPaths, setMediaPaths] = useState<string[]>([]);
 
   useEffect(() => {
     loadApprovedPlans();
@@ -110,6 +112,7 @@ export default function XDraftComposer() {
         planId: selectedPlanId,
         version,
         content,
+        mediaUrls: mediaPaths.length > 0 ? mediaPaths : undefined,
         proposedBy: getCurrentUserName(),
       });
 
@@ -119,6 +122,7 @@ export default function XDraftComposer() {
         setSelectedPlanId('');
         setVersion('A');
         setTweets(['']);
+        setMediaPaths([]);
       } else {
         throw new Error(result.error || 'Failed to create draft');
       }
@@ -322,6 +326,17 @@ export default function XDraftComposer() {
               </div>
             )}
           </div>
+
+          {/* Image Attachment */}
+          {selectedPlanId && (
+            <div className="mt-4">
+              <XImageAttachButton
+                onImagesSelected={(paths) => setMediaPaths(prev => [...prev, ...paths])}
+                existingImages={mediaPaths}
+                disabled={submitting}
+              />
+            </div>
+          )}
 
           {/* Submit Button */}
           <div className="mt-6 pt-6 border-t border-clawd-border">
