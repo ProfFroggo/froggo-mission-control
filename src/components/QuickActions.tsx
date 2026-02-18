@@ -709,7 +709,14 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const attachVideoStream = () => {
     if (callVideoRef.current) {
       const stream = geminiLive.getVideoStream();
-      callVideoRef.current.srcObject = stream;
+      logger.debug('[QuickActions] Attaching video stream, stream exists:', !!stream);
+      if (stream) {
+        callVideoRef.current.srcObject = stream;
+      } else {
+        logger.warn('[QuickActions] No video stream to attach');
+      }
+    } else {
+      logger.warn('[QuickActions] Video element ref not available');
     }
   };
 
@@ -727,12 +734,15 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setCallScreenPickerOpen(false);
     try {
       const sourceId = source.id === '__browser_picker__' ? undefined : source.id;
+      logger.debug('[QuickActions] Starting screen share, sourceId:', sourceId);
       await geminiLive.startVideo('screen', sourceId);
       setCallVideoMode('screen');
       setTimeout(attachVideoStream, 100);
       setCallTranscript(prev => [...prev, { role: 'system', text: `🖥️ Sharing: ${source.name}` }]);
-    } catch (_err) {
-      setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Screen share failed` }]);
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.error('[QuickActions] Screen share failed:', errMsg);
+      setCallTranscript(prev => [...prev, { role: 'system', text: `⚠️ Screen share failed: ${errMsg}` }]);
     }
   };
 
