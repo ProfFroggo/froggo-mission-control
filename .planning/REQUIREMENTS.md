@@ -125,14 +125,14 @@
 | UI-04 | Phase 13 — Global UI Consistency | Complete |
 | UI-05 | Phase 13 — Global UI Consistency | Complete |
 | UI-06 | Phase 13 — Global UI Consistency | Complete |
-| XTW-01 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-02 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-03 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-04 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-05 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-06 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-07 | Phase 14 — X/Twitter Identity + Tabs | Pending |
-| XTW-08 | Phase 14 — X/Twitter Identity + Tabs | Pending |
+| XTW-01 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-02 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-03 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-04 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-05 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-06 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-07 | Phase 14 — X/Twitter Identity + Tabs | Complete |
+| XTW-08 | Phase 14 — X/Twitter Identity + Tabs | Complete |
 | XTW-09 | Phase 15 — X/Twitter Content Flow | Pending |
 | XTW-10 | Phase 15 — X/Twitter Content Flow | Pending |
 | XTW-11 | Phase 15 — X/Twitter Content Flow | Pending |
