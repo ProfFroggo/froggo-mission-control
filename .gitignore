@@ -22,6 +22,5 @@ coverage/
 # Build artifacts
 tsconfig.node.tsbuildinfo
 
-# Planning/memory (internal)
-.planning/
+# Memory (internal)
 memory/
