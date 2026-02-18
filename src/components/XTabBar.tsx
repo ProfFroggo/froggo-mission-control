@@ -1,4 +1,4 @@
-import { Lightbulb, FileText, Edit3, Calendar as CalendarIcon, AtSign, Zap, Settings } from 'lucide-react';
+import { FileText, Edit3, Calendar as CalendarIcon, AtSign, Zap, PieChart, Settings, BarChart2 } from 'lucide-react';
 import type { XTab } from './XTwitterPage';
 
 interface XTabBarProps {
@@ -7,13 +7,14 @@ interface XTabBarProps {
 }
 
 const tabs: Array<{ id: XTab; label: string; icon: React.ReactNode }> = [
-  { id: 'research', label: 'Research', icon: <Lightbulb size={16} /> },
-  { id: 'plan', label: 'Plan', icon: <FileText size={16} /> },
+  { id: 'plan', label: 'Content Plan', icon: <FileText size={16} /> },
   { id: 'drafts', label: 'Drafts', icon: <Edit3 size={16} /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarIcon size={16} /> },
   { id: 'mentions', label: 'Mentions', icon: <AtSign size={16} /> },
   { id: 'reply-guy', label: 'Reply Guy', icon: <Zap size={16} /> },
+  { id: 'content-mix', label: 'Content Mix Tracker', icon: <PieChart size={16} /> },
   { id: 'automations', label: 'Automations', icon: <Settings size={16} /> },
+  { id: 'analytics', label: 'Analytics', icon: <BarChart2 size={16} /> },
 ];
 
 export default function XTabBar({ activeTab, onTabChange }: XTabBarProps) {
