@@ -8083,13 +8083,13 @@ ipcMain.handle('finance:getTransactions', async (_, limit = 50) => {
 
 ipcMain.handle('finance:getBudgetStatus', async (_, budgetType: 'family' | 'crypto') => {
   try {
-    const cmd = `froggo-db finance-budget-status --type ${budgetType} --format json`;
+    const cmd = `froggo-db finance-budget-status --budget-type ${budgetType} --format json`;
     const result = await execPromise(cmd, { timeout: 10000 });
-    const budget = JSON.parse(result.stdout);
-    return { success: true, budget };
+    const parsed = JSON.parse(result.stdout);
+    return { success: true, status: parsed };
   } catch (error: any) {
     safeLog.error('[Finance] Get budget status error:', error.message);
-    return { success: false, budget: null, error: error.message };
+    return { success: false, status: null, error: error.message };
   }
 });
 
@@ -8099,8 +8099,22 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, _filename: str
     const tmpPath = path.join(app.getPath('temp'), `upload-${Date.now()}.csv`);
     fs.writeFileSync(tmpPath, csvContent, 'utf-8');
     
+    // Ensure default account exists
+    try {
+      const existingAccount = prepare(`SELECT id FROM finance_accounts WHERE id = ?`).get('acc-default');
+      if (!existingAccount) {
+        prepare(`
+          INSERT INTO finance_accounts (id, name, type, currency, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run('acc-default', 'Default Account', 'bank', 'EUR', Date.now(), Date.now());
+        safeLog.log('[Finance] Created default account acc-default');
+      }
+    } catch (e: any) {
+      safeLog.error('[Finance] Error creating default account:', e.message);
+    }
+
     // Upload via CLI
-    const cmd = `froggo-db finance-upload "${tmpPath}" --format json`;
+    const cmd = `froggo-db finance-upload "${tmpPath}" --account acc-default --budget-type family --format json`;
     const result = await execPromise(cmd, { timeout: 30000 });
     
     // Clean up temp file
@@ -8125,6 +8139,34 @@ ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, _filename: str
   } catch (error: any) {
     safeLog.error('[Finance] Upload CSV error:', error.message);
     return { success: false, imported: 0, skipped: 0, error: error.message };
+  }
+});
+
+ipcMain.handle('finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string) => {
+  try {
+    // Write PDF to temp file
+    const tmpPath = path.join(app.getPath('temp'), `upload-${Date.now()}.pdf`);
+    fs.writeFileSync(tmpPath, Buffer.from(pdfBuffer));
+
+    // Send to finance-manager agent for processing
+    const bridge = getFinanceAgentBridge();
+    bridge.sendMessage(
+      `Please process this bank statement PDF and extract transactions from it. The file is at: ${tmpPath}`,
+      { type: 'pdf_upload', filePath: tmpPath }
+    ).catch((e: any) => safeLog.error('[Finance] PDF agent error:', e.message));
+
+    // Clean up temp file after 5 minutes (give agent time to read it)
+    setTimeout(() => {
+      try { fs.unlinkSync(tmpPath); } catch (_) {}
+    }, 5 * 60 * 1000);
+
+    return {
+      success: true,
+      message: 'PDF sent to Finance Manager for processing',
+    };
+  } catch (error: any) {
+    safeLog.error('[Finance] Upload PDF error:', error.message);
+    return { success: false, error: error.message };
   }
 });
 
