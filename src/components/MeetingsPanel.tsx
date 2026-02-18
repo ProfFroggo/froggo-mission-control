@@ -12,7 +12,8 @@ import {
   Mic, MicOff, Phone, PhoneOff, Loader2, 
   MessageSquare, Brain, ListTodo, Clock, FileText,
   Download, ChevronRight, Calendar, Send, X,
-  Check, Edit3, Trash2, Plus, CheckCircle2, XCircle
+  Check, Edit3, Trash2, Plus, CheckCircle2, XCircle,
+  Upload
 } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
@@ -151,8 +152,10 @@ export default function MeetingsPanel() {
   const [editingText, setEditingText] = useState('');
 
   // View state
-  const [activeView, setActiveView] = useState<'current' | 'history'>('current');
+  const [activeView, setActiveView] = useState<'current' | 'history' | 'transcribe'>('current');
   const [pastMeetings, setPastMeetings] = useState<PastMeeting[]>([]);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcriptionResult, setTranscriptionResult] = useState<string>('');
   const [loadingPastMeetings, setLoadingPastMeetings] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(null);
 
@@ -496,6 +499,48 @@ export default function MeetingsPanel() {
       throw new Error(`Transcription error: ${err}`);
     }
   }, []);
+
+  // Handle audio file transcription request
+  const handleTranscribeFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setTranscribing(true);
+    setTranscriptionResult('');
+    setStatusMessage('Transcribing audio file...');
+    
+    try {
+      // Copy file to a accessible location first
+      const tempPath = `/tmp/${file.name}`;
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+      });
+      
+      // Write file using exec
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      
+      // Save as base64 then decode
+      const writeCmd = `echo "${base64}" | base64 -d > "${tempPath}"`;
+      await window.clawdbot?.exec.run(writeCmd);
+      
+      // Transcribe
+      const result = await transcribeAudioFile(tempPath);
+      setTranscriptionResult(result);
+      setStatusMessage('Transcription complete!');
+    } catch (err) {
+      setStatusMessage(`Transcription failed: ${err}`);
+    } finally {
+      setTranscribing(false);
+    }
+  }, [transcribeAudioFile]);
 
   const approveAllPending = useCallback(() => {
     setMeetingActionItems(prev => prev.map(item => 
@@ -919,6 +964,16 @@ export default function MeetingsPanel() {
               }`}
             >
               Past Meetings
+            </button>
+            <button
+              onClick={() => setActiveView('transcribe')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
+                activeView === 'transcribe' 
+                  ? 'border-green-500 text-success' 
+                  : 'border-transparent text-clawd-text-dim hover:text-clawd-text'
+              }`}
+            >
+              Upload Audio
             </button>
           </div>
         </div>
@@ -1468,6 +1523,64 @@ export default function MeetingsPanel() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Transcribe Audio File View */}
+            {activeView === 'transcribe' && (
+              <div className="p-6 max-w-2xl mx-auto">
+                <h2 className="text-xl font-semibold text-clawd-text mb-4">Transcribe Audio File</h2>
+                <p className="text-clawd-text-dim mb-6">
+                  Upload an audio file (MP3, WAV, M4A) to transcribe using Gemini AI.
+                </p>
+                
+                <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-8 text-center">
+                  <Upload size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
+                  
+                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/90 text-white rounded-xl cursor-pointer transition-all">
+                    {transcribing ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Transcribing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={18} />
+                        Choose Audio File
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      accept="audio/*,video/*"
+                      onChange={handleTranscribeFile}
+                      disabled={transcribing}
+                      className="hidden"
+                    />
+                  </label>
+                  
+                  <p className="text-sm text-clawd-text-dim mt-4">
+                    Supported: MP3, WAV, M4A, WebM, OGG, FLAC
+                  </p>
+                </div>
+
+                {transcriptionResult && (
+                  <div className="mt-6 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-clawd-text">Transcription Result</h3>
+                      <button 
+                        onClick={() => navigator.clipboard.writeText(transcriptionResult)}
+                        className="text-sm text-clawd-accent hover:underline"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap text-sm text-clawd-text">
+                        {transcriptionResult}
+                      </pre>
+                    </div>
                   </div>
                 )}
               </div>

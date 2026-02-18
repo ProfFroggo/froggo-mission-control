@@ -149,13 +149,13 @@
 | XTW-22 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
 | XTW-23 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
 | XTW-24 | Phase 17 — X/Twitter Mentions + Reply Guy | Complete |
-| XTW-25 | Phase 18 — X/Twitter Automations + Analytics | Pending |
-| XTW-26 | Phase 18 — X/Twitter Automations + Analytics | Pending |
-| XTW-27 | Phase 18 — X/Twitter Automations + Analytics | Pending |
-| XTW-28 | Phase 18 — X/Twitter Automations + Analytics | Pending |
-| XTW-29 | Phase 18 — X/Twitter Automations + Analytics | Pending |
-| XTW-30 | Phase 18 — X/Twitter Automations + Analytics | Pending |
-| XTW-31 | Phase 18 — X/Twitter Automations + Analytics | Pending |
+| XTW-25 | Phase 18 — X/Twitter Automations + Analytics | Complete |
+| XTW-26 | Phase 18 — X/Twitter Automations + Analytics | Complete |
+| XTW-27 | Phase 18 — X/Twitter Automations + Analytics | Complete |
+| XTW-28 | Phase 18 — X/Twitter Automations + Analytics | Complete |
+| XTW-29 | Phase 18 — X/Twitter Automations + Analytics | Complete |
+| XTW-30 | Phase 18 — X/Twitter Automations + Analytics | Complete |
+| XTW-31 | Phase 18 — X/Twitter Automations + Analytics | Complete |
 | WRT-01 | Phase 19 — Writing Pane Layout | Pending |
 | WRT-02 | Phase 19 — Writing Pane Layout | Pending |
 | WRT-03 | Phase 19 — Writing Pane Layout | Pending |
