@@ -913,6 +913,17 @@ declare global {
         createQuickDraft: (data: { mentionId: string; replyText: string; fastTrack?: boolean }) => Promise<{ success: boolean; draftId?: string; error?: string }>;
         postNow: (data: { draftId: string }) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
       };
+      // Reddit Monitor
+      xReddit?: {
+        createMonitor: (data: { productUrl: string; keywords: string; subreddits: string }) => Promise<{ success: boolean; monitorId?: string; error?: string }>;
+        listMonitors: () => Promise<{ success: boolean; monitors?: unknown[]; error?: string }>;
+        fetch: () => Promise<{ success: boolean; count?: number; error?: string }>;
+        listThreads: (filters?: { status?: string; limit?: number; offset?: number }) => Promise<{ success: boolean; threads?: unknown[]; error?: string }>;
+        generateDraft: (data: { threadId: string; threadTitle: string; threadText: string; subreddit: string }) => Promise<{ success: boolean; draft?: string; error?: string }>;
+        saveDraft: (data: { threadId: string; replyText: string }) => Promise<{ success: boolean; error?: string }>;
+        postReply: (data: { threadId: string; replyText: string }) => Promise<{ success: boolean; commentId?: string; error?: string }>;
+        updateThread: (data: { threadId: string; status: string }) => Promise<{ success: boolean; error?: string }>;
+      };
       // X API v2 - Direct API access
       x?: {
         search: (query: string, count?: number) => Promise<{ success: boolean; tweets?: unknown[]; error?: string }>;

@@ -9,12 +9,17 @@ import { XMentionsView } from './XMentionsView';
 import { XReplyGuyView } from './XReplyGuyView';
 import { XContentMixTracker } from './XContentMixTracker';
 import XAutomationsTab from './XAutomationsTab';
+import { XRedditView } from './XRedditView';
 
 interface XContentEditorPaneProps {
   tab: XTab;
 }
 
 export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
+  if (tab === 'reddit') {
+    return <XRedditView />;
+  }
+
   if (tab === 'research') {
     return <XResearchView />;
   }

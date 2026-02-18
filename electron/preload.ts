@@ -725,6 +725,25 @@ contextBridge.exposeInMainWorld('clawdbot', {
     postNow: (data: { draftId: string }) =>
       ipcRenderer.invoke('x:replyGuy:postNow', data),
   },
+  // Reddit Monitor
+  xReddit: {
+    createMonitor: (data: { productUrl: string; keywords: string; subreddits: string }) =>
+      ipcRenderer.invoke('x:reddit:createMonitor', data),
+    listMonitors: () =>
+      ipcRenderer.invoke('x:reddit:listMonitors'),
+    fetch: () =>
+      ipcRenderer.invoke('x:reddit:fetch'),
+    listThreads: (filters?: { status?: string; limit?: number; offset?: number }) =>
+      ipcRenderer.invoke('x:reddit:listThreads', filters),
+    generateDraft: (data: { threadId: string; threadTitle: string; threadText: string; subreddit: string }) =>
+      ipcRenderer.invoke('x:reddit:generateDraft', data),
+    saveDraft: (data: { threadId: string; replyText: string }) =>
+      ipcRenderer.invoke('x:reddit:saveDraft', data),
+    postReply: (data: { threadId: string; replyText: string }) =>
+      ipcRenderer.invoke('x:reddit:postReply', data),
+    updateThread: (data: { threadId: string; status: string }) =>
+      ipcRenderer.invoke('x:reddit:updateThread', data),
+  },
   // X API v2 - Direct API access
   x: {
     search: (query: string, count?: number) => ipcRenderer.invoke('x:search', query, count),
