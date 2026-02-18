@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ThreePaneLayout from './XThreePaneLayout';
 import XTabBar from './XTabBar';
 import XAgentChatPane from './XAgentChatPane';
@@ -15,6 +15,15 @@ const XLogo = ({ size = 24 }: { size?: number }) => (
 
 export default function XTwitterPage() {
   const [activeTab, setActiveTab] = useState<XTab>('plan');
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const tab = (e as CustomEvent).detail as XTab;
+      if (tab) setActiveTab(tab);
+    };
+    window.addEventListener('x-tab-change', handler);
+    return () => window.removeEventListener('x-tab-change', handler);
+  }, []);
 
   const TABS_WITH_APPROVAL: XTab[] = ['plan', 'drafts'];
   const showApprovalPane = TABS_WITH_APPROVAL.includes(activeTab);

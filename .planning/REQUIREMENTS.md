@@ -41,11 +41,11 @@
 
 ### X/Twitter — Calendar
 
-- [ ] **XTW-14**: Calendar uses same calendar component as schedule.tsx (not a custom re-implementation)
-- [ ] **XTW-15**: Calendar shows scheduled tweets as events, colour-coded by status (research/plan/draft/scheduled)
-- [ ] **XTW-16**: Calendar events are draggable to different days to reschedule tweets
-- [ ] **XTW-17**: Calendar top-right "content mix" button replaced with "Create Tweet"
-- [ ] **XTW-18**: Calendar layout is calendar + chat interface only (no approval panel)
+- [x] **XTW-14**: Calendar uses same calendar component as schedule.tsx (not a custom re-implementation)
+- [x] **XTW-15**: Calendar shows scheduled tweets as events, colour-coded by status (research/plan/draft/scheduled)
+- [x] **XTW-16**: Calendar events are draggable to different days to reschedule tweets
+- [x] **XTW-17**: Calendar top-right "content mix" button replaced with "Create Tweet"
+- [x] **XTW-18**: Calendar layout is calendar + chat interface only (no approval panel)
 
 ### X/Twitter — Mentions
 
@@ -138,11 +138,11 @@
 | XTW-11 | Phase 15 — X/Twitter Content Flow | Complete |
 | XTW-12 | Phase 15 — X/Twitter Content Flow | Complete |
 | XTW-13 | Phase 15 — X/Twitter Content Flow | Complete |
-| XTW-14 | Phase 16 — X/Twitter Calendar | Pending |
-| XTW-15 | Phase 16 — X/Twitter Calendar | Pending |
-| XTW-16 | Phase 16 — X/Twitter Calendar | Pending |
-| XTW-17 | Phase 16 — X/Twitter Calendar | Pending |
-| XTW-18 | Phase 16 — X/Twitter Calendar | Pending |
+| XTW-14 | Phase 16 — X/Twitter Calendar | Complete |
+| XTW-15 | Phase 16 — X/Twitter Calendar | Complete |
+| XTW-16 | Phase 16 — X/Twitter Calendar | Complete |
+| XTW-17 | Phase 16 — X/Twitter Calendar | Complete |
+| XTW-18 | Phase 16 — X/Twitter Calendar | Complete |
 | XTW-19 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
 | XTW-20 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
 | XTW-21 | Phase 17 — X/Twitter Mentions + Reply Guy | Pending |
