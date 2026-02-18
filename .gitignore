@@ -13,3 +13,18 @@ coverage/
 *.swp
 *.swo
 *~
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Build artifacts
+tsconfig.node.tsbuildinfo
+
+# ML models (download separately)
+resources/models/
+
+# Memory (internal)
+memory/
+.planning/

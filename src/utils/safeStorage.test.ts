@@ -177,11 +177,9 @@ describe('safeStorage', () => {
     });
 
     it('should call setItem internally', () => {
-      const setItemSpy = vi.spyOn(safeStorage, 'setItem');
-      
       safeStorage.setJSON('spy-test', { test: true });
-      
-      expect(setItemSpy).toHaveBeenCalledWith('spy-test', '{"test":true}');
+
+      expect(localStorage.setItem).toHaveBeenCalledWith('spy-test', '{"test":true}');
     });
   });
 

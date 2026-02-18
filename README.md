@@ -1,77 +1,53 @@
-# 🐂 Ox Lite Dashboard
+# Froggo-AI
 
-**Lightweight sub-agent dashboard for Ox (Bitso Onchain worker)**
+[![Tests](https://github.com/ProfFroggo/Froggo-AI/actions/workflows/tests.yml/badge.svg)](https://github.com/ProfFroggo/Froggo-AI/actions/workflows/tests.yml)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
+Electron desktop app for managing a multi-agent AI platform. Task tracking, agent orchestration, communications, and analytics in one place.
+
+## Screenshots
+
+### Agent Management
+![Agents](screenshots/agents.png)
+
+### Task Board
+![Task Board](screenshots/dashboard.png)
+
+### Analytics
+![Analytics](screenshots/analytics.png)
+
+### Chat
+![Chat](screenshots/chat.png)
 
 ## Features
 
-### ✅ Task Inbox
-- View tasks assigned from Froggo/Kevin
-- Filter by status (all/todo/in-progress)
-- Priority badges, subtask progress
-- Empty state when no tasks
-
-### ✅ Workload Tracker
-- Mini Kanban board (To Do → In Progress → Review → Done)
-- Visual task cards with priority
-- Subtask completion tracking
-- Footer stats
-
-### ✅ Sub-Agent Management
-- Spawn/track sub-agents (coder/writer/researcher)
-- 6-agent capacity limit (Kevin's rule)
-- Status monitoring (idle/working/completed/error)
-- Running time tracking
-
-### ✅ Guardrails & Settings
-- Max sub-agent limits
-- Allowed agent types
-- Approval requirements (external/financial/api-keys)
-- Auto-escalate toggle
-- Time limits
-- Notify Froggo toggle
-
-### ✅ Analytics
-- Tasks completed, success rate
-- Avg completion time
-- Hours worked
-- Time range filter (today/week/month)
-- Recent activity list
+- **Chat** — Real-time conversations with 13+ AI agents via OpenClaw gateway
+- **Kanban Board** — Drag-and-drop task management (Todo > In Progress > Review > Done)
+- **Agent Management** — Spawn, monitor, and manage AI agent sessions
+- **Inbox** — Unified inbox across Discord, Telegram, WhatsApp, and web
+- **Calendar** — Multi-account calendar with content scheduling
+- **Analytics** — Token usage, task completion rates, agent activity
+- **Voice** — Live voice chat via Gemini
+- **X/Twitter** — Content drafting, scheduling, and posting
 
 ## Tech Stack
-- React + TypeScript
-- Electron
+
+- Electron + React + TypeScript
 - Tailwind CSS
 - Zustand (state management)
-- Lucide icons
+- SQLite (froggo-db)
+- Vite
 
-## Quick Start
+## Development
 
 ```bash
-cd ~/froggo/ox-lite-dashboard
 npm install
-npm run electron:dev
+npm run electron:dev    # Dev with hot reload
+npm run test:run        # Run tests
+npm run build:dev       # Dev build
+npm run build:prod      # Production build
 ```
 
-## Build
+## License
 
-```bash
-npm run electron:build
-```
-
-## Design
-
-- **Theme:** Amber/orange (workhouse energy)
-- **Branding:** 🐂 Ox Lite
-- **Focus:** Sub-agent work management
-- **Parent:** Forked from Froggo Dashboard
-
-## Protocol Integration
-
-Receives tasks via Discord #froggo-ox-tasks channel:
-- `TASK_ASSIGN` → Appears in inbox
-- `TASK_UPDATE` → Sent for each subtask
-- `TASK_COMPLETE` → Sent when done
-
----
-
-Built by Ox • Bitso Onchain Worker • v1.0.0
+AGPL-3.0 — see [LICENSE](LICENSE)

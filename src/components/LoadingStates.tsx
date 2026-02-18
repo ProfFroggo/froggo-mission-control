@@ -230,9 +230,13 @@ export function ProgressBar({ progress, label, showPercentage = true, className 
         </div>
       )}
       <div className="w-full h-2 bg-clawd-border rounded-full overflow-hidden">
-        <div 
+        <div
           className="h-full bg-clawd-accent transition-all duration-300 ease-out"
           style={{ width: `${clampedProgress}%` }}
+          role="progressbar"
+          aria-valuenow={clampedProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
         />
       </div>
     </div>

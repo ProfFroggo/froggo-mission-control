@@ -12,7 +12,7 @@ All notable changes to Froggo Dashboard will be documented in this file.
 - **Epic Calendar** with 4 views (Month, Week, Day, Agenda) - 634 lines
 - **Content Scheduler** for Twitter and Email - 439 lines
 - Google Calendar integration via `gog calendar` CLI
-- Multi-account support (kevin@carbium.io, kevin.macarthur@bitso.com)
+- Multi-account support for Google Calendar
 - Calendar CRUD operations (create/edit/delete event modals)
 - Drag-and-drop event rescheduling with confirmation
 - Schedule panel with Calendar + Scheduler tabs
@@ -98,7 +98,7 @@ All notable changes to Froggo Dashboard will be documented in this file.
 - Tailwind CSS
 - Zustand state management
 - SQLite (froggo.db)
-- Clawdbot Gateway backend
+- OpenClaw Gateway backend
 
 ---
 
