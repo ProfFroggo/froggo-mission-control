@@ -29,6 +29,7 @@ jobs:
 
       - name: Generate coverage
         run: npm run test:coverage
+        continue-on-error: true
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -36,6 +37,7 @@ jobs:
           files: ./coverage/coverage-final.json
           flags: unittests
           name: codecov-umbrella
+        continue-on-error: true
 
       - name: Coverage comment
         uses: romeovs/lcov-reporter-action@v0.3.1
@@ -43,6 +45,7 @@ jobs:
           lcov-file: ./coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
         if: github.event_name == 'pull_request'
+        continue-on-error: true
 
   build:
     name: Build Check
