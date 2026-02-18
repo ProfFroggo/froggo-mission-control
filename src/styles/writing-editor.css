@@ -105,7 +105,7 @@
   border-radius: 2px;
 }
 
-/* Resizable panel separator */
-[data-panel-group-id] [data-resize-handle] {
+/* Resizable panel separator (react-resizable-panels v4 attributes) */
+[data-group] [data-separator] {
   transition: background-color 150ms ease;
 }
