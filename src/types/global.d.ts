@@ -929,6 +929,11 @@ declare global {
         post: (text: string) => Promise<{ success: boolean; tweetId?: string; error?: string }>;
         thread: (tweets: string[]) => Promise<{ success: boolean; tweetId?: string; threadIds?: string[]; error?: string }>;
         rateLimit: () => Promise<{ remaining: number; used: number; limit: number; resetAt: number | null }>;
+        mediaUpload: (filePath: string) => Promise<{ success: boolean; mediaId?: string; error?: string }>;
+        schedule: (text: string, scheduledAt: number, mediaId?: string) => Promise<{ success: boolean; id?: string; error?: string }>;
+        scheduleThread: (tweets: string[], scheduledAt: number) => Promise<{ success: boolean; id?: string; error?: string }>;
+        scheduledList: () => Promise<{ success: boolean; scheduled: unknown[]; error?: string }>;
+        scheduledCancel: (id: string) => Promise<{ success: boolean; error?: string }>;
       };
       // X Analytics — real follower/tweet metrics from X API
       xAnalytics?: {
