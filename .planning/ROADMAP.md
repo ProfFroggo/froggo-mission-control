@@ -132,7 +132,7 @@ Plans:
 - [x] 16-01-PLAN.md -- Extend EpicCalendar with external event props + rewrite XCalendarView as adapter with colour-coded pipeline events
 - [x] 16-02-PLAN.md -- Drag-to-reschedule for scheduled tweets + Create Tweet button + non-draggable research/plan/draft events
 
-#### Phase 17: X/Twitter Mentions & Reply Guy
+#### Phase 17: X/Twitter Mentions & Reply Guy -- COMPLETE 2026-02-18
 **Goal**: Mentions tab shows incoming mentions with inline reply capability, Reply Guy shows suggestions inline with approve/edit/send per item -- both with agent chat
 **Depends on**: Phase 15
 **Requirements**: XTW-19, XTW-20, XTW-21, XTW-22, XTW-23, XTW-24
@@ -143,11 +143,11 @@ Plans:
   4. Reply Guy shows reply suggestions in the main UI -- not inside an approval side panel
   5. Each Reply Guy suggestion has inline approve / edit / send controls
   6. Reply Guy has a chat interface connected to an agent
-**Plans**: TBD
+**Plans**: 2 plans complete
 
 Plans:
-- [ ] 17-01: Mentions tab inline reply + agent chat
-- [ ] 17-02: Reply Guy inline suggestions + approve/edit/send + agent chat
+- [x] 17-01-PLAN.md -- Fix x_mentions DB schema + x_drafts CHECK constraint + disable handler stubs + XMentionsView emoji cleanup
+- [x] 17-02-PLAN.md -- Add "Suggest Reply" button to XReplyGuyView + agent chat injection + emoji cleanup
 
 #### Phase 18: X/Twitter Automations & Analytics
 **Goal**: Automations tab has a working visual rule builder and agent chat; Analytics tab delivers a full metrics breakdown with downloadable report
@@ -235,7 +235,7 @@ Phases 13-21 execute roughly in order. Phases 19 and 20 can run parallel to 14-1
 | 14. X/Twitter Identity + Tabs | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 15. X/Twitter Content Flow | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 16. X/Twitter Calendar | v3.0 | 2/2 | Complete | 2026-02-18 |
-| 17. X/Twitter Mentions + Reply Guy | v3.0 | 0/2 | Not started | - |
+| 17. X/Twitter Mentions + Reply Guy | v3.0 | 2/2 | Complete | 2026-02-18 |
 | 18. X/Twitter Automations + Analytics | v3.0 | 0/2 | Not started | - |
 | 19. Writing Pane Layout | v3.0 | 0/1 | Not started | - |
 | 20. Library Population | v3.0 | 0/1 | Not started | - |

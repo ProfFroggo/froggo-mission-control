@@ -472,6 +472,31 @@ export default function MeetingsPanel() {
     setEditingText('');
   }, []);
 
+  // Gemini File API Transcription for audio files
+  const transcribeAudioFile = useCallback(async (audioFilePath: string): Promise<string> => {
+    if (!window.clawdbot?.exec?.run) {
+      throw new Error('Exec not available');
+    }
+    const apiKey = await getGeminiApiKey();
+    if (!apiKey) {
+      throw new Error('Gemini API key not configured');
+    }
+    
+    // Run transcription script
+    const scriptPath = '$HOME/froggo/tools/gemini-transcribe/transcribe.sh';
+    const cmd = `API_KEY=${apiKey} bash ${scriptPath} "${audioFilePath}" 2>&1`;
+    
+    try {
+      const result = await window.clawdbot.exec.run(cmd);
+      if (result.exitCode !== 0) {
+        throw new Error(result.stderr || 'Transcription failed');
+      }
+      return result.stdout;
+    } catch (err) {
+      throw new Error(`Transcription error: ${err}`);
+    }
+  }, []);
+
   const approveAllPending = useCallback(() => {
     setMeetingActionItems(prev => prev.map(item => 
       item.status === 'pending' ? { ...item, status: 'approved' as const } : item
