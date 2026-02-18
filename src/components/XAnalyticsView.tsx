@@ -2,12 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { BarChart2, TrendingUp, Eye, Activity, Download, Users, RefreshCw } from 'lucide-react';
 
 interface AnalyticsSummary {
-  totalPosts: number;
-  totalApproved: number;
-  totalDrafts: number;
+  followers: number;
+  following: number;
+  tweetCount: number;
+  totalLikes: number;
+  totalRetweets: number;
+  totalReplies: number;
+  totalImpressions: number;
   engagementRate: number;
-  reach: number;
-  impressions: number;
+  recentTweetCount: number;
 }
 
 interface ContentPost {
@@ -31,18 +34,20 @@ export function XAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryResult, topContentResult] = await Promise.all([
-        (window as any).clawdbot?.xAnalytics?.summary(),
-        (window as any).clawdbot?.xAnalytics?.topContent(),
-      ]);
-      if (summaryResult?.success !== false) {
-        setSummary(summaryResult || { totalPosts: 0, totalApproved: 0, totalDrafts: 0, engagementRate: 0, reach: 0, impressions: 0 });
+      // Try real summary first, fall back to db summary
+      const realSummary = await (window as any).clawdbot?.xAnalytics?.summaryReal?.();
+      if (realSummary?.success) {
+        setSummary(realSummary);
+      } else {
+        const dbSummary = await (window as any).clawdbot?.xAnalytics?.summary?.();
+        setSummary(dbSummary || null);
       }
+      const topContentResult = await (window as any).clawdbot?.xAnalytics?.topContent?.();
       if (topContentResult?.success !== false) {
         setTopContent(topContentResult?.posts || []);
       }
     } catch {
-      setSummary({ totalPosts: 0, totalApproved: 0, totalDrafts: 0, engagementRate: 0, reach: 0, impressions: 0 });
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -59,10 +64,12 @@ export function XAnalyticsView() {
       '='.repeat(50),
       '',
       '## Performance Summary',
-      `Total Posts: ${summary?.totalPosts ?? 0}`,
-      `Engagement Rate: ${summary?.engagementRate ?? 0}%`,
-      `Reach: ${(summary?.reach ?? 0).toLocaleString()}`,
-      `Impressions: ${(summary?.impressions ?? 0).toLocaleString()}`,
+      `Followers: ${(summary?.followers ?? 0).toLocaleString()}`,
+      `Total Tweets: ${summary?.tweetCount ?? 0}`,
+      `Engagement Rate: ${(summary?.engagementRate ?? 0).toFixed(2)}%`,
+      `Total Impressions: ${(summary?.totalImpressions ?? 0).toLocaleString()}`,
+      `Total Likes: ${(summary?.totalLikes ?? 0).toLocaleString()}`,
+      `Total Retweets: ${(summary?.totalRetweets ?? 0).toLocaleString()}`,
       '',
       '## Top Content',
     ];
@@ -95,12 +102,13 @@ export function XAnalyticsView() {
     URL.revokeObjectURL(url);
   };
 
+  const totalEngagements = (summary?.totalLikes ?? 0) + (summary?.totalRetweets ?? 0) + (summary?.totalReplies ?? 0);
   const statCards = [
     {
-      label: 'Total Posts',
-      value: summary?.totalPosts ?? 0,
-      icon: BarChart2,
-      format: (v: number) => v.toString(),
+      label: 'Followers',
+      value: summary?.followers ?? 0,
+      icon: Users,
+      format: (v: number) => v.toLocaleString(),
       color: 'text-clawd-accent',
       bg: 'bg-clawd-accent/10',
     },
@@ -108,21 +116,21 @@ export function XAnalyticsView() {
       label: 'Engagement Rate',
       value: summary?.engagementRate ?? 0,
       icon: TrendingUp,
-      format: (v: number) => `${v.toFixed(1)}%`,
+      format: (v: number) => `${v.toFixed(2)}%`,
       color: 'text-success',
       bg: 'bg-success-subtle',
     },
     {
-      label: 'Reach',
-      value: summary?.reach ?? 0,
+      label: 'Total Impressions',
+      value: summary?.totalImpressions ?? 0,
       icon: Eye,
       format: (v: number) => v.toLocaleString(),
       color: 'text-info',
       bg: 'bg-info-subtle',
     },
     {
-      label: 'Impressions',
-      value: summary?.impressions ?? 0,
+      label: 'Total Engagements',
+      value: totalEngagements,
       icon: Activity,
       format: (v: number) => v.toLocaleString(),
       color: 'text-review',
@@ -231,7 +239,7 @@ export function XAnalyticsView() {
               <div className="p-5 border-b border-clawd-border flex items-center gap-2">
                 <Users size={18} className="text-clawd-text-dim" />
                 <div>
-                  <h2 className="font-semibold text-clawd-text">Competitor Insights</h2>
+                  <h2 className="font-semibold text-clawd-text">Competitor Insights <span className="text-xs font-normal text-clawd-text-dim">(Sample data)</span></h2>
                   <p className="text-sm text-clawd-text-dim mt-0.5">Benchmarking against similar accounts</p>
                 </div>
               </div>
