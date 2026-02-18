@@ -550,6 +550,15 @@ declare global {
           list: (taskId: string, limit?: number) => Promise<{ success: boolean; activities: ActivityData[] }>;
           add: (taskId: string, entry: { action: string; message: string; agentId?: string; details?: string }) => Promise<{ success: boolean }>;
         };
+        // Task attachments
+        attachments?: {
+          list: (taskId: string) => Promise<{ success: boolean; attachments: unknown[] }>;
+          listAll: () => Promise<{ success: boolean; attachments: unknown[] }>;
+          add: (taskId: string, filePath: string, category?: string, uploadedBy?: string) => Promise<{ success: boolean }>;
+          delete: (attachmentId: number) => Promise<{ success: boolean }>;
+          open: (filePath: string) => Promise<{ success: boolean }>;
+          autoDetect: (taskId: string) => Promise<{ success: boolean }>;
+        };
       };
       // Rejection logging
       rejections: {
@@ -591,12 +600,34 @@ declare global {
         exec: (query: string, params?: unknown[]) => Promise<{ success: boolean; result?: unknown[]; error?: string }>;
         query: (query: string, params?: unknown[]) => Promise<{ success: boolean; rows?: unknown[]; error?: string }>;
       };
+      // Skills (agent_skills table)
+      skills?: {
+        list: () => Promise<{ success: boolean; skills: Array<{
+          agent_id: string;
+          skill_name: string;
+          proficiency: number;
+          success_count: number;
+          failure_count: number;
+          last_used: string | null;
+          notes: string | null;
+          agent_name: string | null;
+          agent_emoji: string | null;
+        }> }>;
+      };
       // Library
       library: {
         list: (category?: string) => Promise<{ success: boolean; files: LibraryFile[] }>;
         upload: () => Promise<{ success: boolean; file?: LibraryFile; error?: string }>;
         delete: (fileId: string) => Promise<{ success: boolean }>;
         link: (fileId: string, taskId: string) => Promise<{ success: boolean }>;
+        view: (fileId: string) => Promise<{ success: boolean; viewType?: string; content?: string; path?: string; error?: string }>;
+        download: (fileId: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+        update: (fileId: string, updates: { category?: string; tags?: string[]; project?: string | null }) => Promise<{ success: boolean; error?: string }>;
+        uploadBuffer: (file: { name: string; type: string; buffer: ArrayBuffer | string | null }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Shell helpers
+      shell?: {
+        openPath: (path: string) => void;
       };
       // Screenshot
       screenshot: {
@@ -860,6 +891,12 @@ declare global {
         list: (filters?: { status?: string; dateFrom?: number; dateTo?: number; limit?: number }) => Promise<{ success: boolean; scheduled?: unknown[]; error?: string }>;
         update: (data: { id: string; scheduledFor?: number; status?: string }) => Promise<{ success: boolean; error?: string }>;
         delete: (data: { id: string }) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Simple scheduled posts
+      xScheduled?: {
+        schedule: (text: string, scheduledTime: number) => Promise<{ success: boolean; id?: string; error?: string }>;
+        list: () => Promise<{ success: boolean; scheduled?: unknown[]; error?: string }>;
+        cancel: (id: string) => Promise<{ success: boolean; error?: string }>;
       };
       // X Mention
       xMention?: {
