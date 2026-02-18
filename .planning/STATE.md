@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Every page works correctly in dark mode with consistent UI, X/Twitter is fully functional, Finance works, Writing panes are usable, Library has real data.
-**Current focus:** v3.0 milestone — Phase 21 next (Finance End-to-End Wiring)
+**Current focus:** v3.0 milestone — Phase 21 (Finance End-to-End Wiring)
 
 ## Current Position
 
 Phase: 21 of 21 (Finance End-to-End Wiring)
-Plan: —
-Status: Planning
-Last activity: 2026-02-18 — Phase 20 complete. Phase 21 (Finance) next.
+Plan: 01 of 02
+Status: In progress
+Last activity: 2026-02-18 — Completed 21-01-PLAN.md
 
-Progress: [████████████░░░░░░░░] 78% (v3.0, 9/10 phases complete: 13-21 with 21 remaining)
+Progress: [█████████████░░░░░░░] 83% (v3.0, 9.5/10 phases: 13-20 done, 21 in progress)
 
 ## Performance Metrics
 
@@ -51,6 +51,12 @@ Carried forward:
 - Keep electron/main.ts as monolith (breakup deferred)
 - New IPC handlers go in dedicated service files under electron/
 - All paths through electron/paths.ts
+
+Phase 21 decisions:
+- getBudgetStatus IPC returns `{ status }` (not `{ budget }`) to match global.d.ts type
+- Default upload account: `acc-default` with auto-creation
+- PDF upload delegates to finance-manager agent (fire-and-forget)
+- finance_alerts table uses `acknowledged` column (0/1), NOT `status` column
 
 Phase 20 decisions:
 - agent_skills table is primary source (66 rows, proficiency 1-10), NOT skill_evolution
@@ -116,5 +122,5 @@ Phase 13 decisions:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 20-02-PLAN.md. Skills tab shows real agent_skills data grouped by agent. Files tab has 9 categories + inline category/tag/project editing.
+Stopped at: Completed 21-01-PLAN.md. CLI finance commands output valid JSON. IPC handlers pass correct args. PDF upload handler added.
 Resume file: None
