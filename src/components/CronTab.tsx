@@ -39,7 +39,7 @@ export default function CronTab() {
     setLoading(true);
     try {
       const result = await gateway.getCronJobs();
-      if (result?.jobs) setJobs(result.jobs);
+      if (result?.jobs) setJobs(result.jobs as unknown as CronJob[]);
     } catch (e) {
       // 'Failed to load cron jobs:', e;
     } finally {
@@ -56,7 +56,7 @@ export default function CronTab() {
   const loadRuns = async (jobId: string) => {
     try {
       const result = await gateway.getCronRuns(jobId, 20);
-      if (result?.entries) setRuns(prev => ({ ...prev, [jobId]: result.entries }));
+      if (result?.entries) setRuns(prev => ({ ...prev, [jobId]: result.entries as unknown as CronRun[] }));
     } catch (e) {
       // 'Failed to load runs:', e;
     }

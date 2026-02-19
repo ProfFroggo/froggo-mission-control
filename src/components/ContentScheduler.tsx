@@ -65,7 +65,7 @@ export default function ContentScheduler() {
     try {
       const result = await window.clawdbot?.schedule?.list();
       if (result?.success) {
-        setItems(result.items || []);
+        setItems((result.items || []) as ScheduledItem[]);
       }
     } catch (error) {
       // '[Schedule] Load error:', error;
@@ -85,7 +85,7 @@ export default function ContentScheduler() {
   useEffect(() => {
     const cleanup = async () => {
       const result = await window.clawdbot?.media?.cleanup();
-      if (result?.success && result.deletedCount > 0) {
+      if (result?.success && (result.deletedCount ?? 0) > 0) {
         // Media cleanup completed
       }
     };
@@ -133,9 +133,9 @@ export default function ContentScheduler() {
         
         if (result?.success) {
           setMediaFile({
-            path: result.path,
-            fileName: result.fileName,
-            size: result.size,
+            path: result.path || '',
+            fileName: result.fileName || '',
+            size: result.size || 0,
             type: isImage ? 'image' : 'video',
           });
           
