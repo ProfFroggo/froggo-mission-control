@@ -48,7 +48,7 @@ export default function XPlanThreadComposer() {
       });
       
       if (result?.success) {
-        setResearchIdeas(result.ideas || []);
+        setResearchIdeas((result.ideas || []) as ResearchIdea[]);
       }
     } catch (error) {
       // Silently fail - user can still create plan without research
