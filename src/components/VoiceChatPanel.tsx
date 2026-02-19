@@ -59,19 +59,32 @@ interface VoiceChatPanelProps {
   embedded?: boolean;
 }
 
-const storageKey = (agentId: string) => `voice-chat-history:${agentId}`;
-
-function loadHistory(agentId: string): VoiceChatMessage[] {
+async function loadVoiceHistory(agentId: string): Promise<VoiceChatMessage[]> {
   try {
-    const saved = localStorage.getItem(storageKey(agentId));
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
+    const result = await window.clawdbot?.chat?.loadMessages(100, `voice:${agentId}`, 'voice');
+    if (!result?.success || !result.messages) return [];
+    return result.messages
+      .filter((m: { role: string; content: string; timestamp: number }) => m.role !== 'system')
+      .map((m: { role: string; content: string; timestamp: number; id?: string }) => ({
+        id: m.id || `db-${m.timestamp}`,
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        timestamp: m.timestamp,
+      }));
+  } catch {
+    return [];
+  }
 }
 
-function saveHistory(agentId: string, msgs: VoiceChatMessage[]) {
-  try {
-    localStorage.setItem(storageKey(agentId), JSON.stringify(msgs.slice(-100)));
-  } catch { /* ignore */ }
+function saveVoiceMessage(agentId: string, msg: VoiceChatMessage) {
+  if (msg.role === 'system') return;
+  window.clawdbot?.chat?.saveMessage({
+    role: msg.role,
+    content: msg.content,
+    timestamp: msg.timestamp || Date.now(),
+    sessionKey: `voice:${agentId}`,
+    channel: 'voice',
+  });
 }
 
 export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKey, onSwitchToText, embedded }: VoiceChatPanelProps) {
@@ -111,6 +124,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   const msgCounter = useRef(0);
   const nextId = (suffix: string) => `vc-${Date.now()}-${++msgCounter.current}-${suffix}`;
   const [messages, setMessages] = useState<VoiceChatMessage[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [textInput, setTextInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -152,9 +166,17 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     return () => { cancelled = true; };
   }, [selectedAgent.id]);
   
-  // Load/save history
-  useEffect(() => { setMessages(loadHistory(selectedAgent.id)); }, [selectedAgent.id]);
-  useEffect(() => { if (messages.length > 0) saveHistory(selectedAgent.id, messages); }, [messages, selectedAgent.id]);
+  // Load history from SQLite on agent switch
+  useEffect(() => {
+    setHistoryLoaded(false);
+    loadVoiceHistory(selectedAgent.id).then(msgs => {
+      setMessages(msgs);
+      setHistoryLoaded(true);
+    }).catch(() => {
+      setMessages([]);
+      setHistoryLoaded(true);
+    });
+  }, [selectedAgent.id]);
   
   // Auto-scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -242,6 +264,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               sessionKey,
               message: role === 'user' ? `[user] ${batch}` : batch,
             }).catch(() => { /* session may not exist — voice transcripts are optional */ });
+          }
+          // Persist the final debounced transcript batch to SQLite
+          if (batch) {
+            saveVoiceMessage(selectedAgent.id, {
+              id: `vc-${Date.now()}-debounced`,
+              role: role as 'user' | 'assistant',
+              content: batch,
+              timestamp: Date.now(),
+            });
           }
         }, 2000); // Wait 2s of silence before flushing
         
@@ -448,7 +479,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     if (!textInput.trim() || !callActive) return;
     const text = textInput.trim();
     setTextInput('');
-    setMessages(prev => [...prev, { id: nextId('u'), role: 'user', content: text, timestamp: Date.now() }]);
+    const userMsg: VoiceChatMessage = { id: nextId('u'), role: 'user', content: text, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
+    // Persist text message to SQLite
+    saveVoiceMessage(selectedAgent.id, userMsg);
     try {
       await geminiLive.sendText(text);
     } catch (e: unknown) {
@@ -458,7 +492,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   const clearHistory = () => {
     setMessages([]);
-    localStorage.removeItem(storageKey(selectedAgent.id));
+    window.clawdbot?.chat?.clearMessages(`voice:${selectedAgent.id}`, 'voice');
   };
   
   const handleAgentSwitch = async (agent: ChatAgent) => {
@@ -585,7 +619,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 && (
+        {!historyLoaded && (
+          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+            <p className="text-sm">Loading history...</p>
+          </div>
+        )}
+        {historyLoaded && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
             <div className="relative mb-4">
               <AgentAvatar agentId={selectedAgent.id} size="2xl" />
@@ -604,7 +644,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </div>
         )}
         
-        {messages.map(msg => (
+        {historyLoaded && messages.map(msg => (
           <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {msg.role === 'assistant' && (
               <div className="relative flex-shrink-0 mt-1">
