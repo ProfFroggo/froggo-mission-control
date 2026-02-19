@@ -459,7 +459,7 @@ export default function SettingsPanel() {
                     <option value="analytics">Analytics</option>
                     <option value="kanban">Tasks (Kanban)</option>
                     <option value="agents">Agents</option>
-                    <option value="twitter">Twitter</option>
+                    <option value="twitter">Social Media</option>
                     <option value="voice">Voice</option>
                     <option value="chat">Chat</option>
                   </select>
