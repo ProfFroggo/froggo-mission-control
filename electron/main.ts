@@ -45,6 +45,7 @@ import { registerXAnalyticsHandlers } from './x-analytics-service';
 import { registerAgentManagementHandlers } from './agent-management-service';
 import { registerMemoryLifecycleHandlers } from './memory-lifecycle-service';
 import { registerSearchHandlers } from './search-service';
+import { registerKnowledgeHandlers } from './knowledge-service';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -961,6 +962,9 @@ app.whenReady().then(() => {
 
   // Register unified search IPC handlers (fan-out across messages, tasks, agent context)
   registerSearchHandlers();
+
+  // Register Knowledge feed IPC handlers (shared_knowledge table)
+  registerKnowledgeHandlers();
 
   // Start task notification watcher
   startTaskNotifyWatcher();

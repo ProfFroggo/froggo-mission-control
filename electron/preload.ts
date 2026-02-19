@@ -502,6 +502,8 @@ contextBridge.exposeInMainWorld('clawdbot', {
   getPerformanceReport: (days: number) => ipcRenderer.invoke('get-performance-report', { days }),
   getAgentAudit: (agentId: string, days: number) => ipcRenderer.invoke('get-agent-audit', { agentId, days }),
   getDMHistory: (args?: { limit?: number; agent?: string }) => ipcRenderer.invoke('get-dm-history', args),
+  getKnowledgeFeed: (args?: { limit?: number; type?: string; agent?: string }) => ipcRenderer.invoke('get-knowledge-feed', args),
+  getKnowledgeStats: () => ipcRenderer.invoke('get-knowledge-stats'),
   getCircuitStatus: () => ipcRenderer.invoke('get-circuit-status'),
   chat: {
     saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string; channel?: string }) =>
