@@ -72,6 +72,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const [autoSend, setAutoSend] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   // Per-tab message cache to preserve messages across tab switches
@@ -129,19 +130,35 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Store/restore messages when tab changes (preserve per-tab history)
+  // Store/restore messages when tab changes (preserve per-tab history via DB + ref cache)
   useEffect(() => {
     const prevTab = prevTabRef.current;
     if (prevTab !== tab) {
-      // Save current tab's messages before switching
+      // Save current tab's messages to ref before switching
       tabMessagesRef.current[prevTab] = messages;
-      // Restore target tab's messages (or empty if none)
-      setMessages(tabMessagesRef.current[tab] || []);
       prevTabRef.current = tab;
     }
     setError(null);
     // Cancel any ongoing request
     abortControllerRef.current?.abort();
+
+    // Load from DB for the new tab (ref cache used as fast fallback)
+    const loadFromDb = async () => {
+      setHistoryLoaded(false);
+      try {
+        const result = await window.clawdbot?.chat?.loadMessages(30, sessionKey, 'xtwitter');
+        if (result?.success && result.messages?.length > 0) {
+          setMessages(result.messages as ChatMessage[]);
+          tabMessagesRef.current[validTab] = result.messages as ChatMessage[];
+        } else {
+          setMessages(tabMessagesRef.current[validTab] || []);
+        }
+      } catch {
+        setMessages(tabMessagesRef.current[validTab] || []);
+      }
+      setHistoryLoaded(true);
+    };
+    loadFromDb();
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for external message injection (e.g. "Suggest Reply" from XReplyGuyView)
@@ -184,6 +201,15 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setLoading(true);
+
+    // Persist user message to SQLite
+    window.clawdbot?.chat?.saveMessage({
+      role: 'user',
+      content: userMessage.content,
+      timestamp: userMessage.timestamp,
+      sessionKey,
+      channel: 'xtwitter',
+    });
 
     const agentMsgId = `msg-${Date.now()}-agent`;
     let agentContent = '';
@@ -237,6 +263,16 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
                 : msg
             )
           );
+          // Persist final assistant message to SQLite
+          if (agentContent) {
+            window.clawdbot?.chat?.saveMessage({
+              role: 'assistant',
+              content: agentContent,
+              timestamp: Date.now(),
+              sessionKey,
+              channel: 'xtwitter',
+            });
+          }
           setLoading(false);
         },
         onError: (errorMsg: string) => {
@@ -314,7 +350,12 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
+        {!historyLoaded ? (
+          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+            <p className="text-sm">Loading history...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-clawd-text-dim">
             <Users className="w-12 h-12 text-clawd-text-dim mb-3" />
             <p className="font-medium text-clawd-text">Start a conversation</p>
