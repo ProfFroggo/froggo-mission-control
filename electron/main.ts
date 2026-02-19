@@ -7569,6 +7569,9 @@ ipcMain.handle('get-circuit-status', async () => {
   }
 });
 
+// Index for faster message queries
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_messages_session_channel ON messages(session_key, channel)'); } catch (_e) { /* table may not exist yet */ }
+
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
 ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => {
   const session = msg.sessionKey || 'dashboard';
