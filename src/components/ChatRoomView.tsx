@@ -771,7 +771,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
-        <div className="flex items-end gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors"
