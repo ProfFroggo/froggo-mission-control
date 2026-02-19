@@ -90,24 +90,39 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   
   const sessionKey = `agent:${safeAgentId}:xtwitter:${validTab}`;
 
-  // Ensure gateway connection when component mounts or tab changes
+  // Ensure gateway connection and pre-warm agent session on mount/tab change
   useEffect(() => {
     if (!gateway.connected) {
       gateway.connect();
     }
-    // Do NOT call gateway.setSessionKey() here — sendChatWithCallbacks passes
-    // sessionKey per-request. Setting it globally would clobber ChatPanel's session.
     setIsConnected(gateway.connected);
-    
-    // Listen for connection state changes
+
+    // Pre-warm: create the agent session on the gateway so first real message
+    // doesn't hit cold-start latency. Uses same pattern as VoiceChatPanel.
+    if (gateway.connected) {
+      gateway.request('chat.send', {
+        message: `[Session initialized for ${safeDisplayName} — ${validTab} context]`,
+        sessionKey,
+        idempotencyKey: `warmup-${safeAgentId}-${validTab}-${Date.now()}`,
+      }).catch(() => { /* best-effort */ });
+    }
+
+    // Listen for connection state changes — also pre-warm on reconnect
     const unsubscribe = gateway.on('stateChange', ({ state }: { state: string }) => {
       setIsConnected(state === 'connected');
+      if (state === 'connected') {
+        gateway.request('chat.send', {
+          message: `[Session initialized for ${safeDisplayName} — ${validTab} context]`,
+          sessionKey,
+          idempotencyKey: `warmup-${safeAgentId}-${validTab}-${Date.now()}`,
+        }).catch(() => { /* best-effort */ });
+      }
     });
-    
+
     return () => {
       unsubscribe();
     };
-  }, [sessionKey]);
+  }, [sessionKey, safeAgentId, safeDisplayName, validTab]);
 
   // Auto-scroll to bottom
   useEffect(() => {
