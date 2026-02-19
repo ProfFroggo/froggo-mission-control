@@ -37,6 +37,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   const [sending, setSending] = useState(false);
   const [sessionKey, setSessionKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +48,35 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
 
   useEffect(() => {
-    initPoke();
+    setHistoryLoaded(false);
+    const loadPokeHistory = async () => {
+      if (!taskId) {
+        setHistoryLoaded(true);
+        initPoke();
+        return;
+      }
+      try {
+        const result = await window.clawdbot?.chat?.loadMessages(20, `poke:${taskId}`, 'poke');
+        if (result?.success && result.messages?.length > 0) {
+          setMessages(result.messages.map((m: { role: string; content: string; timestamp?: number }) => ({
+            role: m.role as 'user' | 'assistant' | 'system',
+            content: m.content,
+            timestamp: m.timestamp ?? Date.now(),
+          })));
+          setHistoryLoaded(true);
+          setLoading(false);
+          // Restore session key from stored data if available so follow-up chat works
+          // We won't re-poke since history exists
+        } else {
+          setHistoryLoaded(true);
+          initPoke();
+        }
+      } catch (_e) {
+        setHistoryLoaded(true);
+        initPoke();
+      }
+    };
+    loadPokeHistory();
     return () => {
       streamCleanupRef.current?.();
       if (timeoutRef.current) {
@@ -76,26 +105,39 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
     try {
       const ipc = window.clawdbot;
-      
+
       // Use the new internal poke handler
       if (ipc?.tasks?.pokeInternal) {
         const result = await ipc.tasks.pokeInternal(taskId, taskTitle);
-        
+
         if (result.success) {
           setSessionKey(result.sessionKey || null);
-          
+
           // Show the initial poke response
-          const responseMessages: PokeMessage[] = [{
+          const userMsg: PokeMessage = {
             role: 'user',
             content: `🫵 What's the status of "${taskTitle}"?`,
             timestamp: Date.now() - 1000,
-          }];
+          };
+          const responseMessages: PokeMessage[] = [userMsg];
+
+          // Persist user message
+          window.clawdbot?.chat?.saveMessage({
+            role: 'user', content: userMsg.content, timestamp: userMsg.timestamp,
+            sessionKey: `poke:${taskId}`, channel: 'poke',
+          });
 
           if (result.response) {
-            responseMessages.push({
+            const assistantMsg: PokeMessage = {
               role: 'assistant',
               content: result.response,
               timestamp: Date.now(),
+            };
+            responseMessages.push(assistantMsg);
+            // Persist assistant response
+            window.clawdbot?.chat?.saveMessage({
+              role: 'assistant', content: assistantMsg.content, timestamp: assistantMsg.timestamp,
+              sessionKey: `poke:${taskId}`, channel: 'poke',
             });
           }
 
@@ -107,22 +149,33 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       } else {
         // Fallback: use old poke but show in modal
         const result = await ipc?.tasks?.poke(taskId, taskTitle);
-        setMessages([{
+        const userMsg: PokeMessage = {
           role: 'user',
           content: `🫵 What's the status of "${taskTitle}"?`,
           timestamp: Date.now() - 1000,
-        }, {
+        };
+        const assistantMsg: PokeMessage = {
           role: 'assistant',
-          content: result?.success 
-            ? "Yo, poke sent! Waiting on a response... might take a sec 🐸" 
+          content: result?.success
+            ? "Yo, poke sent! Waiting on a response... might take a sec 🐸"
             : `😬 Couldn't reach the agent: ${result?.error || 'Unknown error'}`,
           timestamp: Date.now(),
-        }]);
+        };
+        setMessages([userMsg, assistantMsg]);
+        // Persist fallback messages
+        window.clawdbot?.chat?.saveMessage({
+          role: 'user', content: userMsg.content, timestamp: userMsg.timestamp,
+          sessionKey: `poke:${taskId}`, channel: 'poke',
+        });
+        window.clawdbot?.chat?.saveMessage({
+          role: 'assistant', content: assistantMsg.content, timestamp: assistantMsg.timestamp,
+          sessionKey: `poke:${taskId}`, channel: 'poke',
+        });
       }
     } catch (e: unknown) {
       setMessages([{
         role: 'system',
-        content: `❌ ${e.message || 'Failed to poke'}`,
+        content: `❌ ${(e as Error).message || 'Failed to poke'}`,
         timestamp: Date.now(),
       }]);
     }
@@ -133,18 +186,25 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     if (!input.trim() || sending) return;
 
     const userText = input.trim();
+    const userTimestamp = Date.now();
     setMessages(prev => [...prev, {
       role: 'user',
       content: userText,
-      timestamp: Date.now(),
+      timestamp: userTimestamp,
     }]);
     setInput('');
     setSending(true);
     setStreamingContent('');
 
+    // Persist user message
+    window.clawdbot?.chat?.saveMessage({
+      role: 'user', content: userText, timestamp: userTimestamp,
+      sessionKey: `poke:${taskId}`, channel: 'poke',
+    });
+
     try {
       const ipc = window.clawdbot?.agents;
-      
+
       if (sessionKey && ipc?.chat) {
         // Stream listener
         let fullResponse = '';
@@ -161,11 +221,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           if (data.state === 'done' || data.state === 'complete') {
             const finalContent = data.content || data.response || fullResponse;
             if (finalContent) {
+              const ts = Date.now();
               setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: finalContent,
-                timestamp: Date.now(),
+                timestamp: ts,
               }]);
+              // Persist assistant reply
+              window.clawdbot?.chat?.saveMessage({
+                role: 'assistant', content: finalContent, timestamp: ts,
+                sessionKey: `poke:${taskId}`, channel: 'poke',
+              });
             }
             setStreamingContent('');
             setSending(false);
@@ -187,20 +253,26 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         streamCleanupRef.current = unsub;
 
         const result = await ipc.chat(sessionKey, userText);
-        
+
         // If no streaming happened, use direct result
         if (!fullResponse && result?.response) {
+          const ts = Date.now();
           setMessages(prev => [...prev, {
             role: 'assistant',
             content: result.response,
-            timestamp: Date.now(),
+            timestamp: ts,
           }]);
+          // Persist direct reply
+          window.clawdbot?.chat?.saveMessage({
+            role: 'assistant', content: result.response, timestamp: ts,
+            sessionKey: `poke:${taskId}`, channel: 'poke',
+          });
           setStreamingContent('');
           setSending(false);
           unsub();
           streamCleanupRef.current = null;
         }
-        
+
         // Timeout fallback
         timeoutRef.current = setTimeout(() => {
           if (sending) {
@@ -213,11 +285,18 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
         const ipcTasks = window.clawdbot?.tasks;
         if (ipcTasks?.pokeInternal) {
           const result = await ipcTasks.pokeInternal(taskId, `${taskTitle}\n\nUser follow-up: ${userText}`);
+          const reply = result.response || "Hmm, didn't get a response back. Try again? 🤷";
+          const ts = Date.now();
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: result.response || "Hmm, didn't get a response back. Try again? 🤷",
-            timestamp: Date.now(),
+            content: reply,
+            timestamp: ts,
           }]);
+          // Persist assistant reply
+          window.clawdbot?.chat?.saveMessage({
+            role: 'assistant', content: reply, timestamp: ts,
+            sessionKey: `poke:${taskId}`, channel: 'poke',
+          });
           if (result.sessionKey) setSessionKey(result.sessionKey);
         }
         setSending(false);
@@ -225,7 +304,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     } catch (e: unknown) {
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `⚠️ ${e.message || 'Failed to send'}`,
+        content: `⚠️ ${(e as Error).message || 'Failed to send'}`,
         timestamp: Date.now(),
       }]);
       setSending(false);
@@ -293,7 +372,14 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
-        {messages.map((msg) => (
+        {/* History loading state */}
+        {!historyLoaded && (
+          <div className="flex items-center justify-center h-full text-clawd-text-muted text-sm">
+            <Loader2 size={16} className="animate-spin mr-2" />
+            Loading...
+          </div>
+        )}
+        {historyLoaded && messages.map((msg) => (
           <div
             key={`${msg.role}-${msg.timestamp}`}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
