@@ -90,15 +90,13 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   
   const sessionKey = `agent:${safeAgentId}:xtwitter:${validTab}`;
 
-  // Initialize gateway connection and session when component mounts or tab changes
+  // Ensure gateway connection when component mounts or tab changes
   useEffect(() => {
-    // Check and establish gateway connection
     if (!gateway.connected) {
       gateway.connect();
     }
-    
-    // Set the session key globally for this agent context
-    gateway.setSessionKey(sessionKey);
+    // Do NOT call gateway.setSessionKey() here — sendChatWithCallbacks passes
+    // sessionKey per-request. Setting it globally would clobber ChatPanel's session.
     setIsConnected(gateway.connected);
     
     // Listen for connection state changes
