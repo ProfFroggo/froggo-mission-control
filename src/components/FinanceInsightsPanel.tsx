@@ -38,8 +38,7 @@ export default function FinanceInsightsPanel() {
         throw new Error(result?.error || 'Failed to load insights');
       }
     } catch (err: unknown) {
-      // '[FinanceInsights] Load error:', err;
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to load insights');
     } finally {
       setLoading(false);
     }
@@ -63,8 +62,7 @@ export default function FinanceInsightsPanel() {
         throw new Error(result?.error || 'Analysis failed');
       }
     } catch (err: unknown) {
-      // '[FinanceInsights] Analysis error:', err;
-      showToast('error', 'Analysis failed', err.message);
+      showToast('error', 'Analysis failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setAnalyzing(false);
     }

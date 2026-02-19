@@ -7,9 +7,9 @@
 
 export { registerAgentHandlers } from './agent-handlers';
 export { registerXTwitterHandlers } from './x-twitter-handlers';
+export { registerFinanceHandlers } from '../finance-service';
 // Future handlers to be added:
 // export { registerTaskHandlers } from './task-handlers';
-// export { registerFinanceHandlers } from './finance-handlers';
 // export { registerSecurityHandlers } from './security-handlers';
 // export { registerChatHandlers } from './chat-handlers';
 // export { registerExportHandlers } from './export-handlers';

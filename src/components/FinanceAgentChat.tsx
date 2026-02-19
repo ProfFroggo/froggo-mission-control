@@ -16,9 +16,11 @@ interface ChatMessage {
 interface FinanceAgentChatProps {
   isOpen?: boolean;
   onClose?: () => void;
+  prefillMessage?: string;
+  onPrefillConsumed?: () => void;
 }
 
-export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgentChatProps) {
+export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessage, onPrefillConsumed }: FinanceAgentChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,6 +35,18 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Handle prefilled messages (e.g. budget creation)
+  useEffect(() => {
+    if (prefillMessage && isOpen && !loading) {
+      setInputMessage(prefillMessage);
+      onPrefillConsumed?.();
+      // Auto-send after a brief delay so user sees it
+      setTimeout(() => {
+        sendMessageDirect(prefillMessage);
+      }, 300);
+    }
+  }, [prefillMessage, isOpen]);
 
   useEffect(() => {
     scrollToBottom();
@@ -56,7 +70,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       const result = await window.clawdbot.financeAgent.getChatHistory();
       
       if (result?.success) {
-        setMessages(result.messages || []);
+        setMessages((result.messages || []) as ChatMessage[]);
       } else {
         logger.error('Error loading history:', result?.error);
         // Don't set error state for history load failures - just show empty chat
@@ -69,11 +83,10 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
     }
   };
 
-  const sendMessage = async () => {
-    const message = inputMessage.trim();
+  const sendMessageDirect = async (directMessage: string) => {
+    const message = directMessage.trim();
     if (!message || loading) return;
 
-    // Check if finance agent is available
     if (!window.clawdbot?.financeAgent) {
       setError('Finance Manager is not available. Please ensure the Electron app is running.');
       showToast('error', 'Finance Manager not available');
@@ -83,8 +96,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
     try {
       setLoading(true);
       setError(null);
-      
-      // Add user message immediately for UX
+
       const userMessage: ChatMessage = {
         id: `msg-${Date.now()}-user`,
         role: 'user',
@@ -94,11 +106,9 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       setMessages(prev => [...prev, userMessage]);
       setInputMessage('');
 
-      // Send to agent
       const result = await window.clawdbot.financeAgent.sendMessage(message);
-      
+
       if (result?.success && result.message) {
-        // Add agent response
         const agentMessage: ChatMessage = {
           id: `msg-${Date.now()}-agent`,
           role: 'agent',
@@ -118,6 +128,12 @@ export default function FinanceAgentChat({ isOpen = true, onClose }: FinanceAgen
       setLoading(false);
       inputRef.current?.focus();
     }
+  };
+
+  const sendMessage = async () => {
+    const message = inputMessage.trim();
+    if (!message) return;
+    await sendMessageDirect(message);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

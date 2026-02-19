@@ -20,6 +20,7 @@ interface ChatMessage {
   content: string;
   timestamp: number;
   context?: Record<string, unknown>;
+  hidden?: boolean;
 }
 
 interface AgentResponse {
@@ -36,12 +37,6 @@ interface SessionInfo {
 
 interface OpenclawSessionList {
   sessions?: SessionInfo[];
-}
-
-interface AgentResponse {
-  success: boolean;
-  message?: string;
-  error?: string;
 }
 
 export class FinanceAgentBridge extends EventEmitter {
@@ -88,45 +83,30 @@ export class FinanceAgentBridge extends EventEmitter {
    * Check if the agent session exists
    */
   private async checkSessionExists(): Promise<boolean> {
-    try {
-      const cmd = 'openclaw sessions list --json';
-      const { stdout } = await execAsync(cmd, {
-        timeout: 10000,
-        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
-      });
-      
-      const sessions: OpenclawSessionList = JSON.parse(stdout);
-      return sessions.sessions?.some((s: SessionInfo) => s.key === this.sessionKey) || false;
-    } catch (error) {
-      logger.error('[FinanceAgentBridge] Error checking session:', error);
-      return false;
-    }
+    // Skip session check — just try to send; openclaw agent handles sessions internally
+    return this.spawned;
   }
-  
+
   /**
    * Spawn the Finance Manager agent session
    */
   private async spawnAgent(): Promise<boolean> {
     try {
       logger.debug('[FinanceAgentBridge] Spawning Finance Manager agent...');
-      
+
       const initMessage = 'You are now connected to the Finance dashboard. You have access to financial transaction data via froggo-db finance-* commands. Be ready to analyze finances, answer questions, and provide insights. Reply with: ready';
-      
-      const cmd = `openclaw agent --agent-id ${this.agentId} --session-key ${this.sessionKey} --message "${initMessage}" --no-deliver`;
-      
-      const { stderr } = await execAsync(cmd, {
-        timeout: 30000,
-        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` }
+
+      const cmd = `openclaw agent --agent ${this.agentId} --message '${initMessage.replace(/'/g, "'\\''")}' --json`;
+
+      const { stdout, stderr } = await execAsync(cmd, {
+        timeout: 60000,
+        env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
       });
-      
-      if (stderr && !stderr.includes('success')) {
-        logger.error('[FinanceAgentBridge] Error spawning agent:', stderr);
-        return false;
-      }
-      
-      logger.debug('[FinanceAgentBridge] ✅ Finance Manager spawned successfully');
+
+      logger.debug('[FinanceAgentBridge] Spawn output:', stdout?.slice(0, 200));
+      if (stderr) logger.debug('[FinanceAgentBridge] Spawn stderr:', stderr?.slice(0, 200));
+
       this.spawned = true;
-      
       return true;
     } catch (error) {
       logger.error('[FinanceAgentBridge] Failed to spawn agent:', (error as Error).message);
@@ -147,18 +127,33 @@ export class FinanceAgentBridge extends EventEmitter {
       }
       
       // Add user message to history
+      // Mark system-generated messages (uploads, analysis triggers) as hidden
+      const isSystemMessage = context?.type === 'csv_upload' || context?.type === 'pdf_upload' || context?.analysisType != null;
       const userChatMessage: ChatMessage = {
         id: `msg-${Date.now()}-user`,
         role: 'user',
-        content: userMessage,
+        content: isSystemMessage ? `[Uploaded ${(context?.filename as string) || 'file'} for AI review]` : userMessage,
         timestamp: Date.now(),
-        context
+        context,
+        hidden: isSystemMessage
       };
       this.chatHistory.push(userChatMessage);
       this.saveChatHistory();
       
-      // Build message with context if provided
-      let fullMessage = userMessage;
+      // Build message with conversation history + context for continuity
+      let fullMessage = '';
+
+      // Inject recent conversation history so agent has memory
+      const recentHistory = this.chatHistory.slice(-10); // last 10 messages (5 exchanges)
+      if (recentHistory.length > 1) {
+        fullMessage += '<conversation_history>\n';
+        for (const msg of recentHistory.slice(0, -1)) { // exclude the message we just added
+          fullMessage += `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content.slice(0, 500)}\n`;
+        }
+        fullMessage += '</conversation_history>\n\n';
+      }
+
+      fullMessage += userMessage;
       if (context) {
         fullMessage += `\n\nContext: ${JSON.stringify(context)}`;
       }
@@ -168,35 +163,43 @@ export class FinanceAgentBridge extends EventEmitter {
       
       // Send to agent
       logger.debug('[FinanceAgentBridge] Sending message to Finance Manager...');
-      const cmd = `openclaw agent --message '${escapedMessage}' --session-key '${this.sessionKey}' --agent-id ${this.agentId}`;
+      const cmd = `openclaw agent --agent ${this.agentId} --message '${escapedMessage}' --json`;
       
       const { stdout } = await execAsync(cmd, {
         encoding: 'utf-8',
-        timeout: 60000,
+        timeout: 180000, // 3 min — large uploads need time for AI to parse + insert
         env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
       });
 
-      // Extract agent response
-      // Note: openclaw agent output includes metadata, need to parse actual response
-      let agentMessage = stdout.trim();
+      // Extract agent response from JSON output
+      let agentMessage = '';
+      const raw = stdout.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        // openclaw agent --json returns { result: { payloads: [{ text: "..." }] } }
+        const payloads = parsed?.result?.payloads;
+        if (Array.isArray(payloads) && payloads.length > 0) {
+          agentMessage = payloads.map((p: any) => p.text || '').join('\n').trim();
+        }
+        if (!agentMessage && parsed?.result?.text) {
+          agentMessage = parsed.result.text;
+        }
+      } catch {
+        // Fallback: not JSON, use raw output with line filtering
+        const lines = raw.split('\n');
+        agentMessage = lines.filter((line: string) =>
+          !line.startsWith('[') && !line.startsWith('{') && line.trim().length > 0
+        ).join('\n').trim();
+      }
+      if (!agentMessage) agentMessage = raw;
       
-      // Remove any leading/trailing metadata
-      // The actual agent response is typically after the last newline or in the main output
-      const lines = agentMessage.split('\n');
-      const responseLines = lines.filter(line => 
-        !line.startsWith('[') && 
-        !line.includes('session-key') && 
-        !line.includes('agent-id') &&
-        line.trim().length > 0
-      );
-      agentMessage = responseLines.join('\n').trim();
-      
-      // Add agent response to history
+      // Add agent response to history (hide if responding to a system message)
       const agentChatMessage: ChatMessage = {
         id: `msg-${Date.now()}-agent`,
         role: 'agent',
         content: agentMessage,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        hidden: isSystemMessage
       };
       this.chatHistory.push(agentChatMessage);
       this.saveChatHistory();
@@ -223,7 +226,7 @@ export class FinanceAgentBridge extends EventEmitter {
    * Get chat history
    */
   getChatHistory(): ChatMessage[] {
-    return this.chatHistory;
+    return this.chatHistory.filter(msg => !msg.hidden);
   }
   
   /**
@@ -309,19 +312,16 @@ export class FinanceAgentBridge extends EventEmitter {
    * Store an analysis result as an insight in the database
    */
   private async storeAnalysisAsInsight(content: string, analysisType: string): Promise<void> {
-    // Generate a unique ID
     const id = `insight-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    
-    // Determine insight type and title based on analysis type
+
     let type = 'recommendation';
     let title = 'Financial Analysis';
     let severity = 'info';
-    
+
     if (analysisType === 'csv_upload') {
       type = 'spending_pattern';
       title = 'New Transactions Analysis';
-      
-      // Check for warning keywords
+
       if (content.toLowerCase().includes('over budget') || content.toLowerCase().includes('overspent')) {
         severity = 'warning';
       }
@@ -329,29 +329,32 @@ export class FinanceAgentBridge extends EventEmitter {
         severity = 'critical';
       }
     }
-    
-    // Escape content for SQL (use parameterized query via Python script)
-    const tmpFile = path.join(tmpdir(), `insight-${Date.now()}.json`);
-    
-    fs.writeFileSync(tmpFile, JSON.stringify({
-      id,
-      type,
-      title,
-      content,
-      severity,
-      generated_at: Date.now()
-    }));
-    
-    // Use sqlite3 to insert (safer than string interpolation)
+
+    // Use froggo-db CLI for safe parameterized insert
     const dbPath = path.join(homedir(), 'froggo', 'data', 'froggo.db');
-    const cmd = `sqlite3 "${dbPath}" "INSERT INTO finance_ai_insights (id, type, title, content, severity, generated_at) SELECT json_extract(value, '$.id'), json_extract(value, '$.type'), json_extract(value, '$.title'), json_extract(value, '$.content'), json_extract(value, '$.severity'), json_extract(value, '$.generated_at') FROM json_each(readfile('${tmpFile}'))"`;
-    
+    const now = Date.now();
+
+    // Escape content for SQL single quotes
+    const escaped = (s: string) => s.replace(/'/g, "''");
+
+    const sql = `INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, generated_at, created_at, updated_at) VALUES ('${escaped(id)}', '${escaped(type)}', '${escaped(title)}', '${escaped(content)}', '${escaped(severity)}', ${now}, ${now}, ${now})`;
+
+    const cmd = `sqlite3 "${dbPath}" '${sql.replace(/'/g, "'\\''")}'`;
+
     try {
-      await execAsync(cmd);
+      await execAsync(cmd, { timeout: 5000 });
       logger.debug(`[FinanceAgentBridge] ✅ Stored insight: ${title}`);
-    } finally {
-      // Clean up temp file
-      fs.unlinkSync(tmpFile);
+    } catch (error) {
+      // Fallback: write directly via better-sqlite3 if available
+      logger.error('[FinanceAgentBridge] sqlite3 CLI insert failed, trying prepare():', (error as Error).message);
+      try {
+        // Dynamic import to avoid circular deps — prepare() from database.ts
+        const { prepare } = await import('./database');
+        prepare(`INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, generated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(id, type, title, content, severity, now, now, now);
+        logger.debug(`[FinanceAgentBridge] ✅ Stored insight via prepare(): ${title}`);
+      } catch (innerError) {
+        logger.error('[FinanceAgentBridge] Failed to store insight:', (innerError as Error).message);
+      }
     }
   }
   
