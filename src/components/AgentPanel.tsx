@@ -51,12 +51,51 @@ export default function AgentPanel() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
   const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
+  const [memoryHealth, setMemoryHealth] = useState<Record<string, { sizeKB: number; archiveChunks: number; health: 'green' | 'yellow' | 'red'; lastRotation: string | null }>>({});
+  const [rotatingAgent, setRotatingAgent] = useState<string | null>(null);
 
   useEffect(() => {
     window.clawdbot?.agentManagement?.ctx?.check().then((res) => {
       if (res?.success && res.health) setCtxHealth(res.health);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    (window as any).clawdbot?.memoryLifecycle?.status().then((res: any) => {
+      if (res?.success && res.agents) {
+        const health: Record<string, any> = {};
+        for (const a of res.agents) {
+          health[a.agentId] = {
+            sizeKB: a.memorySizeKB,
+            archiveChunks: a.archiveChunks,
+            health: a.health,
+            lastRotation: a.lastRotation,
+          };
+        }
+        setMemoryHealth(health);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleMemoryRotate = async (agentId: string) => {
+    if (!confirm(`Rotate memory for agent "${agentId}"? Old content will be archived and searchable via froggo-db memory-search.`)) return;
+    setRotatingAgent(agentId);
+    try {
+      const res = await (window as any).clawdbot?.memoryLifecycle?.rotate(agentId);
+      if (res?.success) {
+        const statusRes = await (window as any).clawdbot?.memoryLifecycle?.status();
+        if (statusRes?.success && statusRes.agents) {
+          const health: Record<string, any> = {};
+          for (const a of statusRes.agents) {
+            health[a.agentId] = { sizeKB: a.memorySizeKB, archiveChunks: a.archiveChunks, health: a.health, lastRotation: a.lastRotation };
+          }
+          setMemoryHealth(health);
+        }
+      }
+    } finally {
+      setRotatingAgent(null);
+    }
+  };
 
   useEffect(() => {
     fetchAgents(); // Load agents from registry
@@ -419,6 +458,32 @@ export default function AgentPanel() {
                                 : <><AlertCircle size={11} className="text-error" /><span className="text-error">Missing context links</span></>
                               }
                             </div>
+                          );
+                        })()}
+
+                        {/* Memory Health */}
+                        {(() => {
+                          const mem = memoryHealth[agent.id];
+                          if (!mem) return null;
+                          const colorMap = {
+                            green: { text: 'text-success', bg: 'bg-success-subtle', border: 'border-success-border' },
+                            yellow: { text: 'text-warning', bg: 'bg-warning-subtle', border: 'border-warning-border' },
+                            red: { text: 'text-error', bg: 'bg-error-subtle', border: 'border-error-border' },
+                          };
+                          const c = colorMap[mem.health];
+                          const isRotating = rotatingAgent === agent.id;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleMemoryRotate(agent.id)}
+                              disabled={isRotating}
+                              className={`flex items-center gap-1.5 text-xs mt-2 px-2 py-1 rounded-md border ${c.border} ${c.bg} ${c.text} hover:brightness-125 transition-all disabled:opacity-50`}
+                              title={`MEMORY.md: ${mem.sizeKB}KB | Archived chunks: ${mem.archiveChunks}${mem.lastRotation ? ` | Last rotation: ${mem.lastRotation.split('T')[0]}` : ''}\nClick to rotate`}
+                            >
+                              {isRotating ? <RefreshCw size={11} className="animate-spin" /> : <FileText size={11} />}
+                              <span>{mem.sizeKB}KB</span>
+                              {mem.archiveChunks > 0 && <span className="opacity-60">({mem.archiveChunks} archived)</span>}
+                            </button>
                           );
                         })()}
 
