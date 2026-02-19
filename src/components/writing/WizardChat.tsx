@@ -1,5 +1,5 @@
-import { useRef, useEffect, useCallback } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { useRef, useEffect, useCallback, useState } from 'react';
+import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
 import { gateway } from '../../lib/gateway';
 import {
   buildConversationPrompt,
@@ -12,6 +12,52 @@ import ChatMessage from './ChatMessage';
 
 const bridge = () => window.clawdbot?.writing?.wizard;
 
+const EXTRACTION_STEPS = [
+  'Analyzing conversation',
+  'Extracting plot structure',
+  'Building character profiles',
+  'Creating chapter outline',
+  'Finalizing plan',
+];
+
+function ExtractionProgress() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    // Advance steps on a schedule to show progress
+    const timers = EXTRACTION_STEPS.map((_, i) =>
+      i === 0 ? null : setTimeout(() => setActiveStep(i), i * 3000),
+    );
+    return () => timers.forEach((t) => t && clearTimeout(t));
+  }, []);
+
+  return (
+    <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6 w-80 shadow-2xl">
+      <h3 className="font-semibold text-clawd-text mb-4">Generating Book Plan</h3>
+      <div className="space-y-3">
+        {EXTRACTION_STEPS.map((label, i) => {
+          const done = i < activeStep;
+          const active = i === activeStep;
+          return (
+            <div key={label} className="flex items-center gap-3">
+              {done ? (
+                <CheckCircle size={16} className="text-success flex-shrink-0" />
+              ) : active ? (
+                <Loader2 size={16} className="text-clawd-accent animate-spin flex-shrink-0" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border border-clawd-border flex-shrink-0" />
+              )}
+              <span className={`text-sm ${done ? 'text-success' : active ? 'text-clawd-text' : 'text-clawd-text-dim'}`}>
+                {label}{active ? '...' : ''}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function WizardChat() {
   const {
     step,
@@ -21,6 +67,7 @@ export default function WizardChat() {
     streamContent,
     selectedAgent,
     brainDump,
+    error,
     extractionError,
     setStreaming,
     setStreamContent,
@@ -224,13 +271,13 @@ export default function WizardChat() {
 
   return (
     <div className="flex flex-col h-full bg-clawd-surface">
-      {/* Extraction error banner */}
-      {extractionError && (
+      {/* Error banners */}
+      {(extractionError || error) && (
         <div className="px-4 py-2 bg-error-subtle border-b border-error-border flex items-center gap-2">
           <AlertCircle size={14} className="text-error flex-shrink-0" />
-          <span className="text-xs text-error">{extractionError}</span>
+          <span className="text-xs text-error">{extractionError || error}</span>
           <button
-            onClick={() => setExtractionError(null)}
+            onClick={() => { setExtractionError(null); setError(null); }}
             className="ml-auto text-xs text-error/60 hover:text-error"
           >
             Dismiss
@@ -238,14 +285,10 @@ export default function WizardChat() {
         </div>
       )}
 
-      {/* Extraction overlay */}
+      {/* Extraction overlay with progress checklist */}
       {step === 'extracting' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-clawd-bg/80 backdrop-blur-sm">
-          <div className="text-center p-6">
-            <Loader2 size={28} className="mx-auto text-clawd-accent animate-spin mb-3" />
-            <p className="text-sm text-clawd-text font-medium">Generating your book plan...</p>
-            <p className="text-xs text-clawd-text-dim mt-1">Extracting structure from the conversation</p>
-          </div>
+          <ExtractionProgress />
         </div>
       )}
 

@@ -16,9 +16,9 @@ export const wizardChapterSchema = z.object({
 
 export const wizardCharacterSchema = z.object({
   name: z.string().min(1),
-  role: z.string(),
-  description: z.string(),
-  traits: z.array(z.string()),
+  role: z.string().default('supporting'),
+  description: z.string().default(''),
+  traits: z.array(z.string()).default([]),
 });
 
 export const wizardTimelineSchema = z.object({
@@ -29,13 +29,13 @@ export const wizardTimelineSchema = z.object({
 export const wizardPlanSchema = z.object({
   title: z.string().min(1),
   type: z.string().min(1),
-  genre: z.string(),
-  premise: z.string(),
-  themes: z.array(z.string()),
-  storyArc: z.string(),
+  genre: z.string().default(''),
+  premise: z.string().default(''),
+  themes: z.array(z.string()).default([]),
+  storyArc: z.string().default(''),
   chapters: z.array(wizardChapterSchema).min(1),
-  characters: z.array(wizardCharacterSchema),
-  timeline: z.array(wizardTimelineSchema),
+  characters: z.array(wizardCharacterSchema).default([]),
+  timeline: z.array(wizardTimelineSchema).default([]),
 });
 
 export type WizardPlan = z.infer<typeof wizardPlanSchema>;
