@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, ReactElement } from 'react';
+import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 interface ThreePaneLayoutProps {
   children: [ReactElement, ReactElement, ReactElement];
@@ -8,6 +9,8 @@ interface ThreePaneLayoutProps {
 export default function ThreePaneLayout({ children, hideRightPane = false }: ThreePaneLayoutProps) {
   const [leftWidth, setLeftWidth] = useState(30); // % of viewport
   const [centerWidth, setCenterWidth] = useState(40);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<'left' | 'right' | null>(null);
   const [startX, setStartX] = useState(0);
@@ -57,31 +60,64 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
     };
   }, [dragging, startX, startWidths]);
 
-  const effectiveCenterWidth = hideRightPane ? (100 - leftWidth) : centerWidth;
+  // Calculate effective widths based on collapsed state
+  const showRight = !hideRightPane && !rightCollapsed;
+  const effectiveLeftWidth = leftCollapsed ? 0 : leftWidth;
+  const effectiveCenterWidth = leftCollapsed && !showRight
+    ? 100
+    : leftCollapsed && showRight
+    ? (100 - (100 - leftWidth - centerWidth))
+    : !showRight
+    ? (100 - effectiveLeftWidth)
+    : centerWidth;
 
   return (
-    <div ref={containerRef} className="flex h-full">
+    <div ref={containerRef} className="flex h-full relative">
       {/* Left Pane (Agent Chat) */}
-      <div style={{ width: `${leftWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden">
-        {children[0]}
-      </div>
+      {!leftCollapsed && (
+        <>
+          <div style={{ width: `${leftWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden relative">
+            {children[0]}
+            <button
+              onClick={() => setLeftCollapsed(true)}
+              className="absolute top-2 right-2 p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors z-10"
+              title="Collapse agent chat"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          </div>
 
-      {/* Left Divider */}
-      <button
-        onMouseDown={(e) => handleMouseDown('left', e)}
-        onMouseDownCapture={(e) => e.preventDefault()}
-        type="button"
-        aria-label="Resize left pane"
-        className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors border-0 bg-transparent p-0 ${dragging === 'left' ? 'bg-info' : 'bg-transparent'}`}
-      />
+          {/* Left Divider */}
+          <button
+            onMouseDown={(e) => handleMouseDown('left', e)}
+            onMouseDownCapture={(e) => e.preventDefault()}
+            type="button"
+            aria-label="Resize left pane"
+            className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors border-0 bg-transparent p-0 ${dragging === 'left' ? 'bg-info' : 'bg-transparent'}`}
+          />
+        </>
+      )}
+
+      {/* Left Collapsed Indicator */}
+      {leftCollapsed && (
+        <div className="flex-shrink-0 border-r border-clawd-border flex items-start pt-2 px-1">
+          <button
+            onClick={() => setLeftCollapsed(false)}
+            className="p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors"
+            title="Expand agent chat"
+          >
+            <PanelLeftOpen size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Center Pane (Content Editor) */}
-      <div style={{ width: `${effectiveCenterWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden">
+      <div style={{ width: `${effectiveCenterWidth}%` }} className="flex-shrink-0 border-r border-clawd-border overflow-hidden flex-1">
         {children[1]}
       </div>
 
-      {/* Right Divider + Right Pane (Approval Queue) — hidden when hideRightPane */}
-      {!hideRightPane && (
+      {/* Right Divider + Right Pane (Approval Queue) */}
+      {!hideRightPane && !rightCollapsed && (
         <>
           <button
             onMouseDown={(e) => handleMouseDown('right', e)}
@@ -90,10 +126,30 @@ export default function ThreePaneLayout({ children, hideRightPane = false }: Thr
             aria-label="Resize right pane"
             className={`w-1 flex-shrink-0 cursor-col-resize hover:bg-info/50 transition-colors border-0 bg-transparent p-0 ${dragging === 'right' ? 'bg-info' : 'bg-transparent'}`}
           />
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden relative">
             {children[2]}
+            <button
+              onClick={() => setRightCollapsed(true)}
+              className="absolute top-2 left-2 p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors z-10"
+              title="Collapse approval queue"
+            >
+              <PanelRightClose size={14} />
+            </button>
           </div>
         </>
+      )}
+
+      {/* Right Collapsed Indicator */}
+      {!hideRightPane && rightCollapsed && (
+        <div className="flex-shrink-0 border-l border-clawd-border flex items-start pt-2 px-1">
+          <button
+            onClick={() => setRightCollapsed(false)}
+            className="p-1 bg-clawd-bg-alt hover:bg-clawd-border rounded-md text-clawd-text-dim hover:text-clawd-text transition-colors"
+            title="Expand approval queue"
+          >
+            <PanelRightOpen size={14} />
+          </button>
+        </div>
       )}
     </div>
   );

@@ -911,7 +911,19 @@ app.whenReady().then(() => {
       error TEXT
     )`);
 
-    safeLog.log('[Migration] X Automations tables ensured');
+    // Campaigns table
+    db.exec(`CREATE TABLE IF NOT EXISTS x_campaigns (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      subject TEXT DEFAULT '',
+      stages TEXT DEFAULT '[]',
+      status TEXT DEFAULT 'draft',
+      start_date TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )`);
+
+    safeLog.log('[Migration] X Automations + Campaigns tables ensured');
 
     // Simple scheduled_posts table for direct tweet scheduling
     db.exec(`CREATE TABLE IF NOT EXISTS scheduled_posts (
@@ -9066,6 +9078,52 @@ function startScheduledPoster() {
 
 // Start the auto-poster
 startScheduledPoster();
+
+// ============== X/TWITTER CAMPAIGN HANDLERS ==============
+
+ipcMain.handle('x:campaign:list', async () => {
+  try {
+    const rows = prepare('SELECT * FROM x_campaigns ORDER BY updated_at DESC').all();
+    const campaigns = (rows as any[]).map(r => ({
+      ...r,
+      stages: JSON.parse(r.stages || '[]'),
+    }));
+    return { success: true, campaigns };
+  } catch (error: any) {
+    safeLog.error('[X:Campaign:List] Error:', error.message);
+    return { success: false, campaigns: [], error: error.message };
+  }
+});
+
+ipcMain.handle('x:campaign:save', async (_, campaign: any) => {
+  try {
+    const now = Date.now();
+    const id = campaign.id || `campaign-${now}`;
+    const stages = JSON.stringify(campaign.stages || []);
+    prepare(`INSERT OR REPLACE INTO x_campaigns (id, title, subject, stages, status, start_date, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM x_campaigns WHERE id = ?), ?), ?)`)
+      .run(id, campaign.title || '', campaign.subject || '', stages, campaign.status || 'draft', campaign.start_date || null, id, now, now);
+    safeLog.log(`[X:Campaign:Save] Saved campaign: ${id}`);
+    return { success: true, id };
+  } catch (error: any) {
+    safeLog.error('[X:Campaign:Save] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:campaign:delete', async (_, id: string) => {
+  try {
+    const info = prepare('DELETE FROM x_campaigns WHERE id = ?').run(id);
+    if (info.changes === 0) {
+      return { success: false, error: 'Campaign not found' };
+    }
+    safeLog.log(`[X:Campaign:Delete] Deleted campaign: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X:Campaign:Delete] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
 
 // ============== X/TWITTER MENTIONS HANDLERS ==============
 

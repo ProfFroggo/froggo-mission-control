@@ -49,13 +49,19 @@ export function XResearchView() {
 
   const performSearch = useCallback(async () => {
     if (!query.trim()) return;
-    
+
     setLoading(true);
     setSearched(true);
     setResults([]);
     setSelectedIds(new Set());
-    
+
+    // Send to researcher agent via agent chat for AI-powered research
+    window.dispatchEvent(new CustomEvent('x-agent-chat-inject', {
+      detail: { message: `Research X/Twitter for: "${query.trim()}"\n\nSearch for relevant tweets, users, and topics. Analyze engagement patterns and content opportunities. Provide actionable insights for our content strategy.` }
+    }));
+
     try {
+      // Also try direct API search for structured results
       const clawdbot = (window as any).clawdbot;
       if (clawdbot?.x?.search) {
         const searchResult = await clawdbot.x.search(query.trim(), 20);
@@ -304,11 +310,12 @@ export function XResearchView() {
             </p>
           </div>
         ) : results.length === 0 ? (
-          /* No Results */
+          /* No Results from API — agent is researching */
           <div className="text-center py-16 text-clawd-text-dim">
             <Search size={32} className="mx-auto mb-3 opacity-30" />
-            <p>No results found for "{query}"</p>
-            <p className="text-sm mt-1">Try different keywords</p>
+            <p className="text-clawd-text font-medium">Researcher is working on it</p>
+            <p className="text-sm mt-2">Check the agent chat on the left for research results.</p>
+            <p className="text-xs mt-1">Direct API returned no results for &quot;{query}&quot;</p>
           </div>
         ) : (
           /* Results */
@@ -335,12 +342,15 @@ export function XResearchView() {
               {results.map((result) => (
                 <div
                   key={result.id}
+                  role="button"
+                  tabIndex={0}
                   className={`bg-clawd-surface border rounded-xl p-4 cursor-pointer transition-all hover:border-clawd-accent/50 ${
                     selectedIds.has(result.id)
                       ? 'border-clawd-accent bg-clawd-accent/5'
                       : 'border-clawd-border'
                   }`}
                   onClick={() => toggleSelection(result.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSelection(result.id); }}
                 >
                   <div className="flex items-start gap-3">
                     {/* Selection Checkbox */}

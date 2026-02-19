@@ -32,12 +32,13 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   automations: { agentId: 'social-manager', displayName: 'Social Manager' },
   analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
   reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
+  campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
 // Set of valid tabs for validation
 const tabsWithoutUndefined = new Set<XTab>([
   'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
-  'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit'
+  'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit', 'campaigns'
 ]);
 
 // System prompts for each tab to give context to the agent
@@ -48,7 +49,17 @@ const TAB_CONTEXT: Record<XTab, string> = {
 
   plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
 
-  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
+  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.
+
+When the user asks you to draft tweet content, output the tweets in a JSON block wrapped in \`\`\`draft fences:
+\`\`\`draft
+{
+  "planTitle": "Optional title",
+  "tweets": ["Tweet 1 text here", "Tweet 2 text here"]
+}
+\`\`\`
+
+The user can then review and edit the content in the middle pane. Ask clarifying questions first if the request is vague.`,
 
   calendar: `You are the Social Manager agent managing the X/Twitter content calendar. Current context: X/Twitter Calendar Tab. Your role: Help schedule content, optimize posting times, manage the editorial calendar.`,
 
@@ -63,6 +74,25 @@ const TAB_CONTEXT: Record<XTab, string> = {
   analytics: `You are the Social Manager agent reviewing X/Twitter analytics. Current context: X/Twitter Analytics Tab. Your role: Help interpret performance data, identify trends, suggest content optimizations.`,
 
   reddit: `You are the Social Manager agent monitoring Reddit for product mentions. Current context: Reddit Monitor Tab. Your role: Help monitor subreddits for mentions of a product, analyze threads, and draft authentic Reddit replies. Use natural, conversational Reddit tone.`,
+
+  campaigns: `You are the Social Manager agent helping plan multi-stage social media campaigns. Current context: Campaigns Tab.
+
+Your role: Help design campaign arcs, suggest tweet content for each stage, optimize timing and sequencing, and ensure narrative coherence across a multi-day campaign.
+
+When you have enough information to propose a campaign, output it as a JSON block wrapped in \`\`\`campaign fences. The format:
+\`\`\`campaign
+{
+  "title": "Campaign Title",
+  "subject": "Brief description of theme/goal",
+  "stages": [
+    { "dayOffset": 0, "time": "10:00", "type": "tweet", "content": "Tweet text here", "notes": "Hook tweet" },
+    { "dayOffset": 1, "time": "12:00", "type": "tweet", "content": "Follow-up tweet", "notes": "Build interest" },
+    { "dayOffset": 3, "time": "10:00", "type": "thread", "content": "Thread content", "notes": "Deep dive" }
+  ]
+}
+\`\`\`
+
+Always explain the campaign strategy in plain text BEFORE the JSON block. The user can edit stages in the middle pane after you propose them. Ask clarifying questions first if needed (topic, audience, duration, tone). Build iteratively — propose, get feedback, refine.`,
 };
 
 export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
@@ -272,6 +302,25 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               sessionKey,
               channel: 'xtwitter',
             });
+            // Extract structured proposals from agent response and dispatch to middle pane
+            if (validTab === 'campaigns') {
+              const campaignMatch = agentContent.match(/```campaign\s*\n([\s\S]*?)```/);
+              if (campaignMatch) {
+                try {
+                  const campaignData = JSON.parse(campaignMatch[1].trim());
+                  window.dispatchEvent(new CustomEvent('x-campaign-proposal', { detail: campaignData }));
+                } catch { /* invalid JSON, ignore */ }
+              }
+            }
+            if (validTab === 'drafts') {
+              const draftMatch = agentContent.match(/```draft\s*\n([\s\S]*?)```/);
+              if (draftMatch) {
+                try {
+                  const draftData = JSON.parse(draftMatch[1].trim());
+                  window.dispatchEvent(new CustomEvent('x-draft-proposal', { detail: draftData }));
+                } catch { /* invalid JSON, ignore */ }
+              }
+            }
           }
           setLoading(false);
         },

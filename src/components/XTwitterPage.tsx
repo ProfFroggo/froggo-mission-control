@@ -6,7 +6,7 @@ import XAgentChatPane from './XAgentChatPane';
 import XContentEditorPane from './XContentEditorPane';
 import XApprovalQueuePane from './XApprovalQueuePane';
 
-export type XTab = 'publish' | 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit';
+export type XTab = 'publish' | 'research' | 'plan' | 'drafts' | 'calendar' | 'mentions' | 'reply-guy' | 'content-mix' | 'automations' | 'analytics' | 'reddit' | 'campaigns';
 
 export default function XTwitterPage() {
   const [activeTab, setActiveTab] = useState<XTab>('publish');
@@ -20,7 +20,7 @@ export default function XTwitterPage() {
     return () => window.removeEventListener('x-tab-change', handler);
   }, []);
 
-  const TABS_WITH_APPROVAL: XTab[] = ['plan', 'drafts', 'research', 'reddit'];
+  const TABS_WITH_APPROVAL: XTab[] = ['plan', 'drafts', 'research', 'reddit', 'campaigns'];
   const showApprovalPane = TABS_WITH_APPROVAL.includes(activeTab);
 
   return (
