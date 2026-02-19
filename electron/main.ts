@@ -6282,25 +6282,66 @@ app.on('ready', () => {
 
 // ============== CALENDAR IPC HANDLERS ==============
 ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => {
-  const acct = account || getDefaultGogEmail();
-  const daysArg = days ? `--days ${days}` : '--days 7';
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar events ${daysArg} --json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Calendar] Events error:', error);
-        resolve({ success: false, events: [], error: error.message });
-        return;
+  const daysArg = days === 1 ? '--today' : days ? `--days ${days}` : '--days 7';
+  const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
+
+  // If a specific account is requested, query only that account
+  // Otherwise, aggregate events from ALL authenticated Google accounts
+  const accounts: string[] = [];
+  if (account) {
+    accounts.push(account);
+  } else {
+    try {
+      const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: execEnv }).toString();
+      const gogData = JSON.parse(gogList);
+      for (const a of gogData.accounts || []) {
+        if (a.email && a.services?.includes('calendar')) accounts.push(a.email);
       }
-      try {
-        const events = JSON.parse(stdout);
-        resolve({ success: true, events, account: acct });
-      } catch {
-        resolve({ success: true, events: [], raw: stdout, account: acct });
-      }
+    } catch {
+      const fallback = getDefaultGogEmail();
+      if (fallback) accounts.push(fallback);
+    }
+  }
+
+  if (accounts.length === 0) {
+    return { success: true, events: [] };
+  }
+
+  const allEvents: any[] = [];
+  const errors: string[] = [];
+
+  await Promise.all(accounts.map((acct) => {
+    const cmd = `/opt/homebrew/bin/gog calendar events ${daysArg} --account ${acct} --json`;
+    return new Promise<void>((resolve) => {
+      exec(cmd, { timeout: 30000, env: execEnv }, (error, stdout) => {
+        if (error) {
+          safeLog.error(`[Calendar] Events error for ${acct}:`, error.message);
+          errors.push(`${acct}: ${error.message}`);
+          resolve();
+          return;
+        }
+        try {
+          const data = JSON.parse(stdout);
+          const events = Array.isArray(data) ? data : (data.events || []);
+          for (const ev of events) {
+            ev.account = acct;
+            ev.source = 'google';
+          }
+          allEvents.push(...events);
+        } catch { /* ignore parse errors */ }
+        resolve();
+      });
     });
+  }));
+
+  // Sort by start time
+  allEvents.sort((a, b) => {
+    const aTime = a.start?.dateTime || a.start?.date || '';
+    const bTime = b.start?.dateTime || b.start?.date || '';
+    return aTime.localeCompare(bTime);
   });
+
+  return { success: true, events: allEvents, accounts, errors };
 });
 
 ipcMain.handle('calendar:createEvent', async (_, params: any) => {
