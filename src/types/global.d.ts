@@ -102,6 +102,7 @@ declare global {
     content: string;
     timestamp: number;
     sessionKey?: string;
+    channel?: string;     // 'dashboard' | 'xtwitter' | 'voice' | 'toolbar' | 'poke'
     streaming?: boolean;
   }
 
@@ -613,8 +614,8 @@ declare global {
       // Chat message persistence
       chat: {
         saveMessage: (msg: ChatMessage) => Promise<{ success: boolean }>;
-        loadMessages: (limit?: number, sessionKey?: string) => Promise<{ success: boolean; messages: ChatMessage[] }>;
-        clearMessages: (sessionKey?: string) => Promise<{ success: boolean }>;
+        loadMessages: (limit?: number, sessionKey?: string, channel?: string) => Promise<{ success: boolean; messages: ChatMessage[] }>;
+        clearMessages: (sessionKey?: string, channel?: string) => Promise<{ success: boolean }>;
         suggestReplies: (context: { role: string; content: string }[]) => Promise<{ success: boolean; suggestions: string[]; error?: string }>;
       };
       // Filesystem
