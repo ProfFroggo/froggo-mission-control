@@ -741,35 +741,48 @@ class Gateway {
 
       // Track the actual runId from the gateway response
       let ourRunId = '';
-      
-      // Listen for streaming events (gateway sends 'chat' with state field)
-      const unsub1 = this.on('chat', (event: string, data: ChatEventData) => {
-        // Only process events for OUR request (filter out other sessions like Discord)
-        if (ourRunId && data.runId && data.runId !== ourRunId) {
-          // Different runId, ignore - this is from another session
-          return;
-        }
-        
-        // Extract text content
-        const text = data.message?.content?.[0]?.text || data.content || data.delta || '';
-        if (text) {
-          responseContent = text; // Full content, not delta
-        }
-        
-        // Check for final state
-        if (data.state === 'final') {
-          logger.debug('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
-          finish(responseContent);
-        }
-      });
 
-      // Also listen for legacy event names
+      // Helper: capture runId from first event that carries one
+      const captureRunId = (data: ChatEventData) => {
+        if (!ourRunId && data.runId) {
+          ourRunId = data.runId;
+          logger.debug('[Gateway] Captured runId from event:', ourRunId);
+        }
+      };
+
+      // Helper: reject events from other sessions
+      const isOurEvent = (data: ChatEventData): boolean => {
+        if (ourRunId && data.runId && data.runId !== ourRunId) return false;
+        return true;
+      };
+
+      // Delta accumulator — append-only streaming content
       const unsub2 = this.on('chat.delta', (_event: string, data: ChatEventData) => {
+        captureRunId(data);
+        if (!isOurEvent(data)) return;
         if (data.delta) responseContent += data.delta;
       });
 
+      // Final message — authoritative full content replaces accumulated deltas
       const unsub3 = this.on('chat.message', (_event: string, data: ChatEventData) => {
+        captureRunId(data);
+        if (!isOurEvent(data)) return;
         if (data.content) responseContent = data.content;
+        finish(responseContent);
+      });
+
+      // Unified chat event — only used for final-state detection (no content mutation)
+      const unsub1 = this.on('chat', (event: string, data: ChatEventData) => {
+        captureRunId(data);
+        if (!isOurEvent(data)) return;
+
+        if (data.state === 'final' || data.final) {
+          // If chat.message already set authoritative content, use it; otherwise use what we accumulated
+          const text = data.message?.content?.[0]?.text || data.content || '';
+          if (text && !responseContent) responseContent = text;
+          logger.debug('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
+          finish(responseContent);
+        }
       });
 
       const unsub4 = this.on('chat.end', () => {

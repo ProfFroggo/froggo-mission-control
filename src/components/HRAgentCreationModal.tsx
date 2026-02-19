@@ -131,7 +131,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
       );
 
       // exec.run returns { success, stdout, stderr } object — extract the actual output
-      const output = raw?.stdout || raw?.message || raw?.content || String(raw);
+      let output = raw?.stdout || raw?.message || raw?.content;
+      if (!output || typeof output !== 'string') {
+        // Don't fall back to String(raw) which produces "[object Object]"
+        output = raw?.success === false ? raw?.error || raw?.stderr || 'Command failed' : '';
+      }
 
       // Parse response — openclaw --json returns { content: "..." } or similar
       let reply = '';
@@ -212,7 +216,11 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
     try {
       const result = await window.clawdbot.exec.run(cmd);
       // exec.run returns { success, stdout, stderr } — extract output
-      const output = result?.stdout || result?.message || String(result);
+      let output = result?.stdout || result?.message || result?.content;
+      if (!output || typeof output !== 'string') {
+        // Don't fall back to String(result) which produces "[object Object]"
+        output = result?.success === false ? result?.error || result?.stderr || 'Command failed' : '';
+      }
       if (!result?.success || (typeof output === 'string' && output.toLowerCase().startsWith('error'))) {
         updateStep(id, 'error', output?.slice(0, 80) || 'Command failed');
         return false;
