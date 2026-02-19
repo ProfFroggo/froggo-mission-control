@@ -369,6 +369,28 @@ declare global {
   }
 
   // ============================================
+  // Knowledge Types
+  // ============================================
+
+  interface KnowledgeItem {
+    id: number;
+    publisher_agent: string;
+    knowledge_type: 'finding' | 'lesson' | 'warning' | 'pattern';
+    topic: string;
+    body: string;
+    task_id: string | null;
+    tags: string | null;  // JSON array string
+    confidence: number;
+    created_at: number;
+  }
+
+  interface KnowledgeStats {
+    total: number;
+    byType: Array<{ knowledge_type: string; count: number }>;
+    byAgent: Array<{ publisher_agent: string; count: number }>;
+  }
+
+  // ============================================
   // Circuit Breaker Types
   // ============================================
 
@@ -838,6 +860,8 @@ declare global {
       getAgentRegistry: () => Promise<AgentRegistryEntry[]>;
       // DM Feed & Circuit Breakers
       getDMHistory: (args?: { limit?: number; agent?: string }) => Promise<DMMessage[]>;
+      getKnowledgeFeed: (args?: { limit?: number; type?: string; agent?: string }) => Promise<KnowledgeItem[]>;
+      getKnowledgeStats: () => Promise<KnowledgeStats>;
       getCircuitStatus: () => Promise<Record<string, CircuitBreakerStatus>>;
       // Agent performance & governance
       getPerformanceReport: (days: number) => Promise<PerformanceReport>;
