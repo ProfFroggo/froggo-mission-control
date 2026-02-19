@@ -86,7 +86,7 @@ function getGoogleAccounts(): string[] {
 const GOOGLE_ACCOUNTS: string[] = getGoogleAccounts();
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const CACHE_FILE_PATH = path.join(os.homedir(), 'clawd', 'data', 'calendar-cache.json');
+const CACHE_FILE_PATH = path.join(os.homedir(), 'froggo', 'data', 'calendar-cache.json');
 
 class CalendarService {
   private cache: CalendarCache = {};
@@ -181,9 +181,9 @@ class CalendarService {
       try {
         logger.info(`[CalendarService] Fetching from ${account} (${days} days)`);
         
-        const command = `GOG_ACCOUNT=${account} gog calendar events --days ${days} --json`;
+        const command = `/opt/homebrew/bin/gog calendar events --days ${days} --account ${account} --json`;
         const { stdout, stderr } = await execAsync(command, {
-          env: { ...process.env, GOG_ACCOUNT: account },
+          env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` },
           timeout: 30000 // 30s timeout
         });
 
