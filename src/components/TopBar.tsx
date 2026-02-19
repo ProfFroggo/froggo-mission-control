@@ -76,7 +76,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
       try {
         const result = await window.clawdbot?.system?.status();
         if (result?.success) {
-          setStatus(result.status);
+          setStatus(result.status as SystemStatus);
         }
       } catch (e) {
         // '[TopBar] Status check failed:', e;

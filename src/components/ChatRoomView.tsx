@@ -312,7 +312,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         } catch (e: unknown) {
           clearTimeout(timer);
           updateMessage(roomId, msgId, {
-            content: `Error: ${e.message || 'Failed to reach agent'}`,
+            content: `Error: ${e instanceof Error ? e.message : 'Failed to reach agent'}`,
             streaming: false,
           });
           settle();

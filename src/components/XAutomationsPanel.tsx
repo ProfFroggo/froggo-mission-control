@@ -379,7 +379,7 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
         showToast(`Failed to save: ${result?.error || 'Unknown error'}`, 'error');
       }
     } catch (e: unknown) {
-      showToast(`Failed to save: ${e.message}`, 'error');
+      showToast(`Failed to save: ${e instanceof Error ? e.message : String(e)}`, 'error');
     } finally {
       setSaving(false);
     }

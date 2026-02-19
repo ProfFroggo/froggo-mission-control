@@ -4,6 +4,7 @@ import EmptyState from './EmptyState';
 import { showToast } from './Toast';
 import { SkeletonList } from './Skeleton';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import PromptDialog, { usePromptDialog } from './PromptDialog';
 
 type FileCategory = 'marketing' | 'design' | 'dev' | 'research' | 'finance' | 'test-logs' | 'content' | 'social' | 'other';
 type ViewMode = 'grid' | 'list';
@@ -68,6 +69,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const [tagInputs, setTagInputs] = useState<Record<string, string>>({});
   const [projectInputs, setProjectInputs] = useState<Record<string, string>>({});
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
+  const { open: promptOpen, config: promptConfig, onSubmit: promptOnSubmit, showPrompt, closePrompt } = usePromptDialog();
 
   // Apply initial path filter when provided
   useEffect(() => {
@@ -159,18 +161,21 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     });
   };
 
-  const handleLinkToTask = async (file: LibraryFileItem) => {
-    const taskId = prompt('Enter task ID to link:');
-    if (!taskId) return;
-    try {
+  const handleLinkToTask = (file: LibraryFileItem) => {
+    showPrompt({
+      title: 'Link to Task',
+      message: `Enter the task ID to link "${file.name}" to:`,
+      placeholder: 'task-1234567890',
+      confirmLabel: 'Link',
+    }, async (taskId: string) => {
       const result = await window.clawdbot?.library?.link(file.id, taskId);
       if (result?.success) {
         showToast('success', 'Linked to task');
         loadFiles();
+      } else {
+        throw new Error(result?.error || 'Link failed');
       }
-    } catch (error) {
-      showToast('error', 'Link failed', String(error));
-    }
+    });
   };
 
   const handleViewFile = async (file: LibraryFileItem) => {
@@ -178,7 +183,27 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setViewerOpen(true);
     setViewerLoading(true);
     try {
-      const result = await window.clawdbot?.library?.view(file.id);
+      let result;
+      if (file.id.startsWith('attachment-')) {
+        // Task attachments aren't in the library table — read file directly via path
+        if (file.path) {
+          result = await window.clawdbot?.exec?.run(`cat "${file.path}" 2>/dev/null`);
+          const mimeType = file.mimeType || '';
+          if (mimeType.startsWith('image/')) {
+            // For images, use file:// protocol
+            const expandedPath = file.path.replace('~', await window.clawdbot?.exec?.run('echo $HOME').then((r: any) => r?.stdout?.trim()) || '');
+            result = { success: true, content: `file://${expandedPath}`, mimeType, name: file.name, path: file.path, viewType: 'image' };
+          } else if (result?.stdout) {
+            result = { success: true, content: result.stdout, mimeType, name: file.name, path: file.path, viewType: 'text' };
+          } else {
+            result = { success: true, mimeType, name: file.name, path: file.path, viewType: 'binary' };
+          }
+        } else {
+          result = { success: false, error: 'No file path for attachment' };
+        }
+      } else {
+        result = await window.clawdbot?.library?.view(file.id);
+      }
       if (result?.success) {
         setViewerContent(result);
       } else {
@@ -717,6 +742,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         confirmLabel={config.confirmLabel}
         cancelLabel={config.cancelLabel}
         type={config.type}
+      />
+      <PromptDialog
+        open={promptOpen}
+        onClose={closePrompt}
+        onSubmit={promptOnSubmit}
+        title={promptConfig.title}
+        message={promptConfig.message}
+        placeholder={promptConfig.placeholder}
+        confirmLabel={promptConfig.confirmLabel}
       />
     </div>
   );

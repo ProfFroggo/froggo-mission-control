@@ -105,10 +105,32 @@ export function buildExtractionPrompt(conversationSummary: string): string {
 // ── JSON extraction + validation ──
 
 export function parseWizardPlan(response: string): WizardPlan | null {
-  const jsonMatch = response.match(/```json\s*([\s\S]*?)```/);
-  if (!jsonMatch) return null;
+  // Try multiple extraction strategies
+  let jsonStr: string | null = null;
+
+  // 1. ```json ... ```
+  const fencedMatch = response.match(/```json\s*([\s\S]*?)```/);
+  if (fencedMatch) jsonStr = fencedMatch[1].trim();
+
+  // 2. ``` ... ``` (no language tag)
+  if (!jsonStr) {
+    const plainFence = response.match(/```\s*([\s\S]*?)```/);
+    if (plainFence) jsonStr = plainFence[1].trim();
+  }
+
+  // 3. Raw JSON object (first { to last })
+  if (!jsonStr) {
+    const firstBrace = response.indexOf('{');
+    const lastBrace = response.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      jsonStr = response.slice(firstBrace, lastBrace + 1);
+    }
+  }
+
+  if (!jsonStr) return null;
+
   try {
-    const parsed = JSON.parse(jsonMatch[1].trim());
+    const parsed = JSON.parse(jsonStr);
     return wizardPlanSchema.parse(parsed);
   } catch {
     return null;

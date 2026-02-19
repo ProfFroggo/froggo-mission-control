@@ -33,7 +33,7 @@ export default function FinanceInsightsPanel() {
       const result = await window.clawdbot?.finance?.getInsights();
       
       if (result?.success) {
-        setInsights(result.insights || []);
+        setInsights((result.insights || []) as Insight[]);
       } else {
         throw new Error(result?.error || 'Failed to load insights');
       }

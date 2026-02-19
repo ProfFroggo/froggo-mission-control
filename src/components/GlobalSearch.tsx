@@ -252,8 +252,8 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
 
       // Search agents from database
       const agentResult = await window.clawdbot?.agents?.search(q);
-      if (agentResult?.success && agentResult.agents?.length > 0) {
-        allResults.push(...agentResult.agents.map((a: any) => ({
+      if (agentResult?.success && (agentResult.agents?.length ?? 0) > 0) {
+        allResults.push(...(agentResult.agents ?? []).map((a: any) => ({
           id: `agent-${a.id}`,
           type: 'agent' as const,
           title: `${a.name} — ${a.role}`,

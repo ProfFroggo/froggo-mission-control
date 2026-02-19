@@ -50,7 +50,7 @@ export default function AgentTokenDetailModal({
         agent,
         limit: 50,
       });
-      setSessionLog(log || []);
+      setSessionLog((log?.entries || []) as TokenLogEntry[]);
     } catch (error) {
       // 'Failed to load session log:', error;
       setSessionLog([]);

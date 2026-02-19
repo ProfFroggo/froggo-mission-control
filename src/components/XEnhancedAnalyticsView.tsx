@@ -459,7 +459,7 @@ export function XEnhancedAnalyticsView() {
                       <YAxis type="category" dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} width={80} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                        formatter={(value: number) => [`${value}%`, 'Engagement']}
+                        formatter={(value: number) => [`${value}%`, 'Engagement'] as [string, string]}
                       />
                       <Bar dataKey="engagement" fill="#10b981" radius={[0, 4, 4, 0]} />
                     </BarChart>
@@ -634,7 +634,7 @@ export function XEnhancedAnalyticsView() {
                   </div>
                   
                   {/* Heatmap grid */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dayIndex) => (
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, _dayIndex) => (
                     <div key={day} className="flex items-center mb-1">
                       <div className="w-10 text-xs text-clawd-text-dim text-right pr-2">{day}</div>
                       <div className="flex-1 flex gap-0.5">

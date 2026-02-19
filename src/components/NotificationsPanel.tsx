@@ -47,7 +47,7 @@ export default function NotificationsPanel() {
             source: 'inbox',
             title: item.title,
             description: item.content?.slice(0, 100) || '',
-            timestamp: new Date(item.created).getTime(),
+            timestamp: new Date(item.created || '').getTime(),
             read: false,
             urgent: false,
             actionable: true,
@@ -61,7 +61,7 @@ export default function NotificationsPanel() {
       if (calendarResult?.events) {
         const now = Date.now();
         for (const event of calendarResult.events) {
-          const eventTime = new Date(event.start?.dateTime || event.start?.date).getTime();
+          const eventTime = new Date(event.start?.dateTime || event.start?.date || '').getTime();
           // Only show events within 2 hours
           if (eventTime - now < 2 * 60 * 60 * 1000 && eventTime > now) {
             items.push({

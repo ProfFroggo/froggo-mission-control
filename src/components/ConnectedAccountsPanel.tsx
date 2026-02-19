@@ -140,7 +140,7 @@ export default function ConnectedAccountsPanel() {
       }
     } catch (err: unknown) {
       // '[ConnectedAccounts] Failed to load accounts:', err;
-      showToast('error', 'Failed to load accounts', err.message);
+      showToast('error', 'Failed to load accounts', err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,7 @@ export default function ConnectedAccountsPanel() {
     try {
       const result = await window.clawdbot?.accounts?.getAvailableTypes();
       if (result?.success) {
-        setAvailableTypes(result.types || []);
+        setAvailableTypes((result.types || []) as AccountTypeInfo[]);
       }
     } catch (err: unknown) {
       // 'Failed to load available types:', err;
@@ -164,7 +164,7 @@ export default function ConnectedAccountsPanel() {
     try {
       const result = await window.clawdbot?.accounts?.getPermissions(account.id);
       if (result?.success) {
-        setSelectedAccountPermissions(result.permissions || []);
+        setSelectedAccountPermissions((result.permissions || []) as AccountPermission[]);
       }
     } catch (err: unknown) {
       // 'Failed to load permissions:', err;
@@ -183,7 +183,7 @@ export default function ConnectedAccountsPanel() {
         showToast('error', 'Refresh failed', result?.error || 'Unknown error');
       }
     } catch (err: unknown) {
-      showToast('error', 'Refresh failed', err.message);
+      showToast('error', 'Refresh failed', err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -209,7 +209,7 @@ export default function ConnectedAccountsPanel() {
           showToast('error', 'Failed to remove', result?.error || 'Unknown error');
         }
       } catch (err: unknown) {
-        showToast('error', 'Failed to remove', err.message);
+        showToast('error', 'Failed to remove', err instanceof Error ? err.message : String(err));
       }
     });
   };
@@ -228,7 +228,7 @@ export default function ConnectedAccountsPanel() {
         showToast('error', 'Import failed', result?.error || 'Unknown error');
       }
     } catch (err: unknown) {
-      showToast('error', 'Import failed', err.message);
+      showToast('error', 'Import failed', err instanceof Error ? err.message : String(err));
     } finally {
       setImportingGoogle(false);
     }
@@ -255,7 +255,7 @@ export default function ConnectedAccountsPanel() {
         showToast('error', 'Authentication failed', result?.error || 'Could not authenticate account');
       }
     } catch (err: unknown) {
-      showToast('error', 'Authentication failed', err.message);
+      showToast('error', 'Authentication failed', err instanceof Error ? err.message : String(err));
     } finally {
       setAddingAccount(false);
     }

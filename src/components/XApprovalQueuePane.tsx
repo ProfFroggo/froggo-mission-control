@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react';
 import { showToast } from './Toast';
 import { getCurrentUserName } from '../utils/auth';
+import PromptDialog, { usePromptDialog } from './PromptDialog';
 import type { XTab } from './XTwitterPage';
 
 interface XApprovalQueuePaneProps {
@@ -41,6 +42,7 @@ type QueueItem = (ResearchIdea | ContentPlan | Draft) & { itemType: 'research' |
 export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
   const [items, setItems] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const { open: promptOpen, config: promptConfig, onSubmit: promptOnSubmit, showPrompt, closePrompt } = usePromptDialog();
 
   useEffect(() => {
     if (tab === 'research') {
@@ -125,29 +127,33 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       }
     } catch (error: unknown) {
       // '[XApprovalQueue] Approve error:', error;
-      showToast('error', `Failed to approve: ${error.message}`);
+      showToast('error', `Failed to approve: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
-  const handleReject = async (id: string, itemType: 'research' | 'plan' | 'draft') => {
-    const reason = prompt('Rejection reason (optional):');
-    
-    try {
-      const api = itemType === 'research' 
-        ? window.clawdbot.xResearch 
+  const handleReject = (id: string, itemType: 'research' | 'plan' | 'draft') => {
+    const itemLabel = itemType === 'research' ? 'research idea' : itemType === 'plan' ? 'content plan' : 'draft';
+    showPrompt({
+      title: 'Reject Item',
+      message: `Rejection reason for this ${itemLabel} (optional):`,
+      placeholder: 'Reason...',
+      confirmLabel: 'Reject',
+    }, async (reason: string) => {
+      const api = itemType === 'research'
+        ? window.clawdbot.xResearch
         : itemType === 'plan'
         ? window.clawdbot.xPlan
         : window.clawdbot.xDraft;
-      
+
       const result = await api.reject({
         id,
         reason: reason || undefined,
       });
 
       if (result.success) {
-        const itemLabel = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
-        showToast('success', `${itemLabel} rejected`);
-        
+        const label = itemType === 'research' ? 'Research idea' : itemType === 'plan' ? 'Content plan' : 'Draft';
+        showToast('success', `${label} rejected`);
+
         // Refresh appropriate list
         if (tab === 'research') loadResearchIdeas();
         else if (tab === 'plan') loadContentPlans();
@@ -155,14 +161,17 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       } else {
         throw new Error(result.error || 'Failed to reject');
       }
-    } catch (error: unknown) {
-      // '[XApprovalQueue] Reject error:', error;
-      showToast('error', `Failed to reject: ${error.message}`);
-    }
+    });
   };
 
   return (
     <div className="flex flex-col h-full bg-clawd-surface">
+      <PromptDialog
+        open={promptOpen}
+        onClose={closePrompt}
+        onSubmit={promptOnSubmit}
+        {...promptConfig}
+      />
       {/* Header */}
       <div className="p-4 border-b border-clawd-border">
         <div className="flex items-center justify-between">

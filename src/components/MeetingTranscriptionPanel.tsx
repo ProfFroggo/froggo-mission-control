@@ -59,7 +59,7 @@ export default function MeetingTranscriptionPanel() {
         return updated;
       });
     } catch (err: unknown) {
-      setError(err.message || 'Transcription failed');
+      setError(err instanceof Error ? err.message : 'Transcription failed');
     } finally {
       setIsTranscribing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -83,7 +83,7 @@ export default function MeetingTranscriptionPanel() {
         return updated;
       });
     } catch (err: unknown) {
-      setError(err.message || 'Summarization failed');
+      setError(err instanceof Error ? err.message : 'Summarization failed');
     } finally {
       setIsSummarizing(false);
     }

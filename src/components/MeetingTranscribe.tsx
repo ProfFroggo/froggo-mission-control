@@ -78,7 +78,7 @@ export default function MeetingTranscribe() {
       });
       setTranscriber(t);
     } catch (err: unknown) {
-      setInitError(err.message);
+      setInitError(err instanceof Error ? err.message : String(err));
     }
     })();
   }, []);
@@ -271,7 +271,7 @@ export default function MeetingTranscribe() {
         await loadTranscripts(active.id);
       }
     } catch (err: unknown) {
-      setUploadError(err.message || 'Transcription failed');
+      setUploadError(err instanceof Error ? err.message : 'Transcription failed');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

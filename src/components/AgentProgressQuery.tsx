@@ -38,7 +38,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
           if (activeSession) {
             setHasActiveAgent(true);
             // Gateway returns sessionKey, map to key for component compatibility
-            setSessionKey(activeSession.sessionKey || activeSession.key);
+            setSessionKey((activeSession.sessionKey || activeSession.key) as string | null);
           } else {
             setHasActiveAgent(false);
             setSessionKey(null);
@@ -74,7 +74,7 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Fetch recent chat messages to get agent's response
-      const chatResult = await window.clawdbot?.chat?.recent?.(sessionKey, 1);
+      const chatResult = await window.clawdbot?.chat?.recent?.(1);
 
       if (chatResult?.success && chatResult.messages && chatResult.messages.length > 0) {
         const lastMessage = chatResult.messages[0];
@@ -89,8 +89,9 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       }
     } catch (err: unknown) {
       // 'Failed to query agent:', err;
-      setError(err.message || 'Failed to query agent');
-      showToast('error', 'Query failed', err.message || 'Network error');
+      const errMsg = err instanceof Error ? err.message : 'Failed to query agent';
+      setError(errMsg);
+      showToast('error', 'Query failed', errMsg);
     } finally {
       setLoading(false);
     }

@@ -124,9 +124,9 @@ export default function UsageStatsPanel() {
         totalMessages: msgResult?.result?.[0]?.count || 0,
         totalSessions: sessionsResult?.result?.[0]?.count || 0,
         activeChannels: activeChannelsResult?.result?.[0]?.count || 0,
-        messagesPerDay: dailyResult?.result || [],
-        channelBreakdown: channelResult?.result || [],
-        peakHours: hoursResult?.result || [],
+        messagesPerDay: (dailyResult?.result || []) as { date: string; count: number }[],
+        channelBreakdown: (channelResult?.result || []) as { channel: string; count: number }[],
+        peakHours: (hoursResult?.result || []) as { hour: number; count: number }[],
         avgResponseTime: responseTimeResult?.result?.[0]?.avg || 0,
         totalConversations: sessionsResult?.result?.[0]?.count || 0,
       });

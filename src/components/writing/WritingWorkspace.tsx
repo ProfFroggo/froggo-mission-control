@@ -42,8 +42,8 @@ export default function WritingWorkspace() {
       try {
         const result = await bridge()?.list();
         if (cancelled) return;
-        if (result?.success && result.wizards?.length > 0) {
-          setPendingWizard(result.wizards[0]);
+        if (result?.success && (result.wizards?.length ?? 0) > 0) {
+          setPendingWizard(result.wizards![0]);
           setShowResumePrompt(true);
         }
       } catch {

@@ -51,6 +51,7 @@ export interface Task {
   reviewerId?: string; // Review agent assigned to check work
   subtasks?: Subtask[];
   planningNotes?: string; // Planning/brainstorming notes
+  tags?: string; // JSON string of tags array
   reviewStatus?: 'pending' | 'in-review' | 'approved' | 'needs-changes';
   reviewNotes?: string;
   dueDate?: number; // Unix timestamp
@@ -406,11 +407,11 @@ export const useStore = create<Store>()(
               }
               
               return {
-                key: s.key,
-                kind: s.kind,
-                updatedAt: s.updatedAt,
-                ageMs: s.ageMs,
-                sessionId: s.sessionId,
+                key: s.key || '',
+                kind: (s.kind || 'direct') as 'direct' | 'group',
+                updatedAt: s.updatedAt || 0,
+                ageMs: s.ageMs || 0,
+                sessionId: s.sessionId || '',
                 model: s.model,
                 totalTokens: s.totalTokens,
                 contextTokens: s.contextTokens,
@@ -539,17 +540,17 @@ export const useStore = create<Store>()(
             for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
               const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
               const batchResults = await Promise.all(
-                batch.map(async (task: Task) => {
+                batch.map(async (task) => {
                   try {
                     const subtaskResult = await window.clawdbot?.tasks?.subtasks?.list(task.id);
                     if (subtaskResult?.success) {
-                      return { ...task, subtasks: subtaskResult.subtasks || [] };
+                      return { ...task, subtasks: (subtaskResult.subtasks || []) as Subtask[] };
                     }
                   } catch { /* ignore error */ }
                   return task;
                 })
               );
-              tasksWithSubtasks.push(...batchResults);
+              tasksWithSubtasks.push(...batchResults as Task[]);
             }
             
             // Update tasks and counts
