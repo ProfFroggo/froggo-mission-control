@@ -1018,6 +1018,13 @@ declare global {
           read: (agentId: string) => Promise<{ success: boolean; primary?: string; fallbacks?: string[]; usingDefaults?: boolean; error?: string }>;
           write: (agentId: string, updates: { primary?: string; fallbacks?: string[] }) => Promise<{ success: boolean; error?: string }>;
         };
+        ctx?: {
+          check: () => Promise<{
+            success: boolean;
+            health?: Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>;
+            error?: string;
+          }>;
+        };
       };
       // Writing Module
       writing?: {
