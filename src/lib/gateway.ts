@@ -786,7 +786,7 @@ class Gateway {
       });
 
       // Unified chat event — only used for final-state detection (no content mutation)
-      const unsub1 = this.on('chat', (event: string, data: ChatEventData) => {
+      const unsub1 = this.on('chat', (_event: string, data: ChatEventData) => {
         captureRunId(data);
         if (!isOurEvent(data)) return;
 

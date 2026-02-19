@@ -48,7 +48,7 @@ export default function XDraftComposer() {
       });
       
       if (result.success) {
-        setContentPlans(result.plans || []);
+        setContentPlans((result.plans || []) as ContentPlan[]);
       }
     } catch (error) {
       // '[XDraftComposer] Load plans error:', error;

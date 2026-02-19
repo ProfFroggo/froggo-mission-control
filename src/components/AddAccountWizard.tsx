@@ -10,7 +10,7 @@ interface Props {
 
 type Step = 'provider' | 'email' | 'dataTypes' | 'auth' | 'connecting' | 'success';
 
-const PROVIDER_INFO = {
+const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string; description: string; supportedTypes: DataType[]; authMethods: readonly string[]; comingSoon?: boolean }> = {
   google: {
     name: 'Google',
     logo: '🔵',
@@ -141,7 +141,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         appPassword: authMethod === 'app-password' ? appPassword : undefined,
       };
 
-      const result = await window.clawdbot?.accounts?.add(request);
+      const result = await window.clawdbot?.accounts?.add(request as unknown as string);
 
       if (result?.success) {
         setStep('success');
