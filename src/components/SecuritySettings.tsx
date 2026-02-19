@@ -53,7 +53,7 @@ export default function SecuritySettings() {
     try {
       const result = await window.clawdbot?.security?.listKeys();
       if (result?.success) {
-        setApiKeys(result.keys);
+        setApiKeys((result.keys || []) as APIKey[]);
       }
     } catch (e) {
       // '[Security] Failed to load API keys:', e;
@@ -65,7 +65,7 @@ export default function SecuritySettings() {
     try {
       const result = await window.clawdbot?.security?.listAuditLogs();
       if (result?.success) {
-        setAuditLogs(result.logs);
+        setAuditLogs((result.logs || []) as AuditLog[]);
       }
     } catch (e) {
       // '[Security] Failed to load audit logs:', e;
@@ -77,7 +77,7 @@ export default function SecuritySettings() {
     try {
       const result = await window.clawdbot?.security?.listAlerts();
       if (result?.success) {
-        setAlerts(result.alerts);
+        setAlerts((result.alerts || []) as SecurityAlert[]);
       }
     } catch (e) {
       // '[Security] Failed to load alerts:', e;
@@ -109,7 +109,7 @@ export default function SecuritySettings() {
       const result = await window.clawdbot?.security?.runAudit();
       
       if (result?.success) {
-        showToast('success', 'Security Audit Complete', `Found ${result.findings.length} items`);
+        showToast('success', 'Security Audit Complete', `Found ${(result.findings ?? []).length} items`);
         loadAuditLogs(); // Refresh logs
         if (result.alerts && result.alerts.length > 0) {
           loadAlerts(); // Refresh alerts

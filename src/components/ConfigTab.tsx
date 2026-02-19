@@ -124,9 +124,10 @@ export default function ConfigTab() {
       const result = await gateway.applyConfig(raw, hash, restart ? 2000 : 0);
       showToast('success', restart ? 'Config saved & restarting...' : 'Config saved');
       setDirty(false);
-      if (result?.config) {
-        setConfig(result.config);
-        buildSections(result.config);
+      const resultTyped = result as { config?: Record<string, unknown> };
+      if (resultTyped?.config) {
+        setConfig(resultTyped.config);
+        buildSections(resultTyped.config);
       }
     } catch (e) {
       showToast('error', 'Failed to save config', String(e));

@@ -1468,8 +1468,8 @@ export default function CommsInbox3Pane() {
 
         if (cancelled) return;
 
-        const emailAccounts = emailResult?.success && emailResult.accounts?.length > 0
-          ? emailResult.accounts
+        const emailAccounts = emailResult?.success && (emailResult.accounts?.length ?? 0) > 0
+          ? (emailResult.accounts ?? []).map(a => typeof a === 'string' ? { email: a, label: a } : a as { email: string; label: string })
           : DEFAULT_EMAIL_ACCOUNTS.map(a => ({ email: a.address!, label: a.label }));
 
         const channelAccounts = channelsResult?.channelAccounts || {};
@@ -1637,7 +1637,7 @@ export default function CommsInbox3Pane() {
     try {
       const result = await window.clawdbot?.messages?.recent(messageLimit, showArchived);
       if (result?.success && result.chats && isMounted.current) {
-        const msgs = (result.chats as ConversationItem[]).map(m => {
+        const msgs = (result.chats as unknown as ConversationItem[]).map(m => {
           if (!m.timestamp) return m;
           const diffMs = Date.now() - new Date(m.timestamp).getTime();
           const diffMins = Math.floor(diffMs / 60000);
@@ -1753,7 +1753,7 @@ export default function CommsInbox3Pane() {
           );
           if (result?.success && result.messages) {
             // Backend returns oldest-first (chat-style) — use as-is
-            setThread(result.messages);
+            setThread(result.messages as ThreadMessage[]);
           } else {
             setThread([]);
           }
@@ -1801,10 +1801,10 @@ export default function CommsInbox3Pane() {
       const ids = Array.from(analysisBatchRef.current).slice(0, 10);
       analysisBatchRef.current.clear();
       const result = await window.clawdbot?.ai?.analyzeMessages?.(ids);
-      if (result?.success && result.analyses) {
+      if (result?.success && result.analysis) {
         setAiAnalyses(prev => {
           const next = new Map(prev);
-          for (const [id, analysis] of Object.entries(result.analyses)) {
+          for (const [id, analysis] of Object.entries(result.analysis as Record<string, unknown>)) {
             next.set(id, analysis as AIAnalysis);
           }
           return next;

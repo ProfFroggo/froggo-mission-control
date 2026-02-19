@@ -1076,7 +1076,7 @@ const TaskCard = memo(function TaskCard({ task, agents, activeSessions: _activeS
   const activityIndicator = getActivityIndicator();
 
   // Definition of Ready check for todo/backlog tasks
-  const isTodoTask = task.status === 'todo' || task.status === 'backlog';
+  const isTodoTask = task.status === 'todo' || (task.status as string) === 'backlog';
   const hasMinSubtasks = (task.subtasks?.length || 0) >= 2;
   const hasPriority = task.priority && ['p0', 'p1', 'p2', 'p3'].includes(task.priority);
   const hasValidAssignment = task.assignedTo && !['main', 'froggo', 'clara'].includes(task.assignedTo);
