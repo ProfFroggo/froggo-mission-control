@@ -131,41 +131,25 @@ class AccountsServiceV2 {
 
   /**
    * Refresh/renew OAuth for an account
+   * Launches gog auth in Terminal since it's an interactive browser OAuth flow
    */
   async refreshAccount(accountId: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      // Extract email from accountId (format: google-email@example.com)
       const email = accountId.replace('google-', '');
-      
       logger.info(`[AccountsV2] Refreshing OAuth for ${email}...`);
-      
-      // Run gog auth add to renew OAuth (will open browser)
-      await execAsync(`gog auth add "${email}"`, {
-        timeout: 120000, // 2 minute timeout for user to complete OAuth in browser
-        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` },
-      });
 
-      logger.info(`[AccountsV2] OAuth renewal complete for ${email}`);
-      
-      // Test if renewal was successful
-      const authStatus = await this.testAccountOAuth(email);
-      
-      if (authStatus === 'connected') {
-        return {
-          success: true,
-          message: `OAuth renewed successfully for ${email}`,
-        };
-      } else {
-        return {
-          success: false,
-          error: `OAuth renewal completed but account still shows as ${authStatus}`,
-        };
-      }
+      const cmd = `/opt/homebrew/bin/gog auth add "${email}"`;
+      await execAsync(`osascript -e 'tell application "Terminal" to do script "${cmd}"'`, { timeout: 5000 });
+
+      return {
+        success: true,
+        message: `OAuth flow started in Terminal for ${email}. Complete the browser auth, then refresh.`,
+      };
     } catch (error) {
       logger.error('[AccountsV2] Error refreshing account:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to refresh account',
+        error: error instanceof Error ? error.message : 'Failed to launch OAuth flow',
       };
     }
   }
@@ -199,35 +183,24 @@ class AccountsServiceV2 {
 
   /**
    * Add a new account (trigger OAuth flow)
+   * Launches gog auth in Terminal since it's an interactive browser OAuth flow
    */
   async addAccount(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       logger.info(`[AccountsV2] Adding account ${email}...`);
-      
-      await execAsync(`gog auth add "${email}"`, {
-        timeout: 120000, // 2 minutes for OAuth flow
-        env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` },
-      });
 
-      // Test if account was added successfully
-      const authStatus = await this.testAccountOAuth(email);
-      
-      if (authStatus === 'connected') {
-        return {
-          success: true,
-          message: `Account ${email} added successfully`,
-        };
-      } else {
-        return {
-          success: false,
-          error: `Account added but showing status: ${authStatus}`,
-        };
-      }
+      const cmd = `/opt/homebrew/bin/gog auth add "${email}"`;
+      await execAsync(`osascript -e 'tell application "Terminal" to do script "${cmd}"'`, { timeout: 5000 });
+
+      return {
+        success: true,
+        message: `OAuth flow started in Terminal for ${email}. Complete the browser auth, then refresh.`,
+      };
     } catch (error) {
       logger.error('[AccountsV2] Error adding account:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to add account',
+        error: error instanceof Error ? error.message : 'Failed to launch OAuth flow',
       };
     }
   }
