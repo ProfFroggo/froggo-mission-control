@@ -159,7 +159,7 @@ function saveActiveCall(call: { agentId: string; agentName: string } | null) {
 function getViewLabel(view: string): string {
   const labels: Record<string, string> = {
     dashboard: 'Dashboard', kanban: 'Tasks', agents: 'Agents', analytics: 'Analytics',
-    twitter: 'Twitter', inbox: 'Inbox', meetings: 'Meetings', voicechat: 'Voice Chat',
+    twitter: 'Social Media', inbox: 'Inbox', meetings: 'Meetings', voicechat: 'Voice Chat',
     accounts: 'Accounts', approvals: 'Approvals', library: 'Library', context: 'Context',
     settings: 'Settings', contacts: 'Contacts', calendar: 'Calendar',
   };
