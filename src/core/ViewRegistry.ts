@@ -17,7 +17,14 @@ export interface ViewRegistration {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: ComponentType<any>;
   /** The panel component to render (already wrapped with error boundary + lazy) */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   component: ComponentType<any>;
+  /** Module that owns this view (undefined = core) */
+  moduleId?: string;
+  /** Category for marketplace/filtering */
+  category?: string;
+  /** Description for marketplace listing */
+  description?: string;
 }
 
 class ViewRegistryClass {
@@ -47,8 +54,40 @@ class ViewRegistryClass {
     return this.views.get(id)?.icon;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getComponent(id: string): ComponentType<any> | undefined {
     return this.views.get(id)?.component;
+  }
+
+  /** Get all views belonging to a specific module */
+  getByModule(moduleId: string): ViewRegistration[] {
+    return this.getAll().filter(v => v.moduleId === moduleId);
+  }
+
+  /** Get all core views (no module owner) */
+  getCoreViews(): ViewRegistration[] {
+    return this.getAll().filter(v => !v.moduleId);
+  }
+
+  /** Get all module views */
+  getModuleViews(): ViewRegistration[] {
+    return this.getAll().filter(v => !!v.moduleId);
+  }
+
+  /** Unregister a view (for module unloading) */
+  unregister(id: string): boolean {
+    return this.views.delete(id);
+  }
+
+  /** Unregister all views belonging to a module */
+  unregisterModule(moduleId: string): number {
+    let count = 0;
+    const toDelete: string[] = [];
+    this.views.forEach((view, id) => {
+      if (view.moduleId === moduleId) toDelete.push(id);
+    });
+    toDelete.forEach(id => { this.views.delete(id); count++; });
+    return count;
   }
 }
 

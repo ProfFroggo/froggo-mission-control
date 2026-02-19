@@ -1,0 +1,40 @@
+{
+  "id": "froggo-finance",
+  "name": "Finance",
+  "version": "1.0.0",
+  "description": "Financial management, budgets, Solana wallet integration, and agent fund allocation.",
+  "author": "Froggo Team",
+  "icon": "DollarSign",
+  "category": "finance",
+
+  "views": [
+    {
+      "id": "finance",
+      "label": "Finance",
+      "icon": "DollarSign",
+      "entrypoint": "./views/FinancePanel.tsx"
+    }
+  ],
+
+  "ipcChannels": {
+    "handle": [
+      "financeAgent:chat",
+      "financeAgent:getContext",
+      "financeAgent:getConversation",
+      "financeAgent:updateStrategy",
+      "financeAgent:executeAction"
+    ]
+  },
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": ["financeAgent:*", "finance:*"],
+    "filesystem": ["$DATA_DIR/finance/"],
+    "network": false,
+    "shell": false
+  }
+}
