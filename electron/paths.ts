@@ -28,6 +28,7 @@ export const LIBRARY_DIR  = path.join(PROJECT_ROOT, 'library');
 export const UPLOADS_DIR  = path.join(PROJECT_ROOT, 'uploads');
 export const LOGS_DIR     = path.join(PROJECT_ROOT, 'logs');
 export const REPORTS_DIR  = path.join(PROJECT_ROOT, 'reports');
+export const SHARED_CONTEXT_DIR = path.join(PROJECT_ROOT, 'shared-context');
 
 // ── Writing projects ──
 export const WRITING_PROJECTS_DIR = path.join(PROJECT_ROOT, 'writing-projects');
