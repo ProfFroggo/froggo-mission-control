@@ -266,7 +266,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
         },
       });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to send');
+      setError(e.message || 'Failed to send');
       setStreaming(false);
     }
   };
@@ -323,7 +323,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
         },
       });
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to send');
+      setError(e.message || 'Failed to send');
       setStreaming(false);
     }
   };

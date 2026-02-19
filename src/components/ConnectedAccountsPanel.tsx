@@ -150,7 +150,7 @@ export default function ConnectedAccountsPanel() {
     try {
       const result = await window.clawdbot?.accounts?.getAvailableTypes();
       if (result?.success) {
-        setAvailableTypes(result.types || []);
+        setAvailableTypes((result.types || []) as AccountTypeInfo[]);
       }
     } catch (err: unknown) {
       // 'Failed to load available types:', err;
@@ -164,7 +164,7 @@ export default function ConnectedAccountsPanel() {
     try {
       const result = await window.clawdbot?.accounts?.getPermissions(account.id);
       if (result?.success) {
-        setSelectedAccountPermissions(result.permissions || []);
+        setSelectedAccountPermissions((result.permissions || []) as AccountPermission[]);
       }
     } catch (err: unknown) {
       // 'Failed to load permissions:', err;

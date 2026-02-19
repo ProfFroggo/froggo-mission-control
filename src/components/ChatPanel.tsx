@@ -306,7 +306,7 @@ export default function ChatPanel() {
               id: `hist-${i}-${Date.now()}`,
               role: m.role as 'user' | 'assistant',
               content: content || '',
-              timestamp: m.timestamp || Date.now() - (res.messages.length - i) * 1000,
+              timestamp: m.timestamp || Date.now() - ((res.messages?.length ?? 0) - i) * 1000,
             };
           })
           .reverse(); // Most recent last

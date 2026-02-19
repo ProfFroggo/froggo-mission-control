@@ -50,7 +50,7 @@ export default function ExportBackupTab() {
     try {
       const result = await window.clawdbot?.exportBackup?.listBackups();
       if (result?.success) {
-        setBackups(result.backups);
+        setBackups((result.backups || []) as BackupInfo[]);
       }
     } catch (error) {
       // '[ExportBackup] Failed to load backups:', error;
