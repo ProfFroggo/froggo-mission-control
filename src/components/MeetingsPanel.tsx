@@ -133,6 +133,10 @@ export default function MeetingsPanel() {
   const [meetingStartTime, setMeetingStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showTitleInput, setShowTitleInput] = useState(false);
+  const [meetingAgenda, setMeetingAgenda] = useState('');
+  const [meetingParticipants, setMeetingParticipants] = useState('');
+  const [meetingNotes, setMeetingNotes] = useState('');
+  const [startError, setStartError] = useState<string | null>(null);
   const [meetingDbId, setMeetingDbId] = useState<string | null>(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [aiSummary, setAiSummary] = useState<string | null>(null);
@@ -156,6 +160,10 @@ export default function MeetingsPanel() {
   const [pastMeetings, setPastMeetings] = useState<PastMeeting[]>([]);
   const [transcribing, setTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<string>('');
+  const [transcriptionProgress, setTranscriptionProgress] = useState(0);
+  const [transcriptionFileName, setTranscriptionFileName] = useState('');
+  const [transcriptionSaving, setTranscriptionSaving] = useState(false);
+  const [transcriptionSaved, setTranscriptionSaved] = useState(false);
   const [loadingPastMeetings, setLoadingPastMeetings] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<PastMeeting | null>(null);
 
@@ -256,8 +264,12 @@ export default function MeetingsPanel() {
     await dbExec(`CREATE TABLE IF NOT EXISTS meetings (
       id TEXT PRIMARY KEY, title TEXT NOT NULL, started_at INTEGER NOT NULL,
       ended_at INTEGER, duration INTEGER, participants TEXT DEFAULT '[]',
-      status TEXT DEFAULT 'active', summary TEXT, file_path TEXT
+      status TEXT DEFAULT 'active', summary TEXT, file_path TEXT,
+      agenda TEXT DEFAULT '', notes TEXT DEFAULT ''
     )`);
+    // Add columns to existing tables that lack them
+    await dbExec(`ALTER TABLE meetings ADD COLUMN agenda TEXT DEFAULT ''`).catch(() => {});
+    await dbExec(`ALTER TABLE meetings ADD COLUMN notes TEXT DEFAULT ''`).catch(() => {});
     await dbExec(`CREATE TABLE IF NOT EXISTS meeting_transcripts (
       id INTEGER PRIMARY KEY AUTOINCREMENT, meeting_id TEXT NOT NULL,
       speaker TEXT NOT NULL, text TEXT NOT NULL, cleaned_text TEXT,
@@ -266,12 +278,18 @@ export default function MeetingsPanel() {
     )`);
   }, [dbExec]);
 
-  const saveMeetingToDb = useCallback(async (title: string): Promise<string> => {
+  const saveMeetingToDb = useCallback(async (
+    title: string,
+    opts?: { agenda?: string; participants?: string; notes?: string }
+  ): Promise<string> => {
     await ensureMeetingTables();
     const id = `meeting-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const participantsJson = opts?.participants
+      ? JSON.stringify(opts.participants.split(',').map(p => p.trim()).filter(Boolean))
+      : '[]';
     await dbExec(
-      `INSERT INTO meetings (id, title, started_at, status) VALUES (?, ?, ?, 'active')`,
-      [id, title, Date.now()]
+      `INSERT INTO meetings (id, title, started_at, status, agenda, participants, notes) VALUES (?, ?, ?, 'active', ?, ?, ?)`,
+      [id, title, Date.now(), opts?.agenda || '', participantsJson, opts?.notes || '']
     );
     return id;
   }, [dbExec, ensureMeetingTables]);
@@ -630,16 +648,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       throw new Error('Gemini API key not configured');
     }
     
-    // Run transcription script
+    // Run transcription script — stderr has progress, stdout has transcript
     const scriptPath = '$HOME/froggo/tools/gemini-transcribe/transcribe.sh';
-    const cmd = `API_KEY=${apiKey} bash ${scriptPath} "${audioFilePath}" 2>&1`;
-    
+    const cmd = `API_KEY=${apiKey} bash ${scriptPath} "${audioFilePath}"`;
+
     try {
       const result = await window.clawdbot.exec.run(cmd);
-      if (result.exitCode !== 0) {
+      if (!result.success) {
         throw new Error(result.stderr || 'Transcription failed');
       }
-      return result.stdout;
+      return result.stdout.trim();
     } catch (err) {
       throw new Error(`Transcription error: ${err}`);
     }
@@ -649,11 +667,22 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   const handleTranscribeFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     setTranscribing(true);
     setTranscriptionResult('');
+    setTranscriptionProgress(0);
+    setTranscriptionSaved(false);
+    setTranscriptionFileName(file.name.replace(/\.[^/.]+$/, ''));
     setStatusMessage('Transcribing audio file...');
-    
+
+    // Simulate progress during transcription
+    const progressInterval = setInterval(() => {
+      setTranscriptionProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 8 + 2;
+      });
+    }, 500);
+
     try {
       // Copy file to a accessible location first
       const tempPath = `/tmp/${file.name}`;
@@ -665,27 +694,95 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           resolve(base64Data);
         };
         reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
-      
-      // Write file using exec
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      
+
       // Save as base64 then decode
       const writeCmd = `echo "${base64}" | base64 -d > "${tempPath}"`;
       await window.clawdbot?.exec.run(writeCmd);
-      
+
       // Transcribe
       const result = await transcribeAudioFile(tempPath);
+      setTranscriptionProgress(100);
       setTranscriptionResult(result);
       setStatusMessage('Transcription complete!');
     } catch (err) {
       setStatusMessage(`Transcription failed: ${err}`);
+      setTranscriptionProgress(0);
     } finally {
+      clearInterval(progressInterval);
       setTranscribing(false);
     }
   }, [transcribeAudioFile]);
+
+  // Save transcription as a past meeting, then send to Froggo for task card generation
+  const saveTranscriptionAsMeeting = useCallback(async () => {
+    if (!transcriptionResult || transcriptionSaving) return;
+    setTranscriptionSaving(true);
+    setProposedTasks([]);
+    const title = transcriptionFileName.trim() || `Transcription ${new Date().toLocaleDateString()}`;
+    try {
+      const dbId = await saveMeetingToDb(title);
+      const lines = transcriptionResult.split('\n').filter(l => l.trim());
+      for (const line of lines) {
+        await saveTranscriptToDb(dbId, line);
+      }
+      // Generate summary
+      const summary = await generateSummary(lines);
+      await endMeetingInDb(dbId, 0, summary || undefined);
+      if (summary) setAiSummary(summary);
+      setTranscriptionSaved(true);
+      addActivity({ type: 'system', message: `Transcription saved: ${title}`, timestamp: Date.now() });
+      loadPastMeetings();
+
+      // Send to Froggo via gateway for task card processing
+      setStatusMessage('Froggo reviewing transcript for tasks...');
+      if (connected) {
+        try {
+          const truncated = transcriptionResult.length > 6000
+            ? transcriptionResult.slice(0, 6000) + '\n[truncated]'
+            : transcriptionResult;
+          const reviewPrompt = [
+            `Review this meeting transcription titled "${title}" and extract actionable tasks.`,
+            `Return ONLY a JSON array (no markdown, no explanation) of task objects:`,
+            `[{"title":"...","description":"...","plan":"...","proposedAgent":"coder|writer|researcher|designer|chief|hr|social-manager|growth-director"}]`,
+            `Only include clearly actionable items. Assign the right agent for each task type.`,
+            `\nTranscript:\n${truncated}`,
+          ].join('\n');
+          const result = await gateway.sendChat(reviewPrompt);
+          if (result?.content && result.content !== 'NO_REPLY') {
+            const jsonMatch = result.content.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              const tasks = JSON.parse(jsonMatch[0]);
+              const formatted = tasks.map((t: any, idx: number) => ({
+                id: `proposed-${Date.now()}-${idx}`,
+                title: t.title || 'Untitled Task',
+                description: t.description || '',
+                plan: t.plan || '',
+                proposedAgent: t.proposedAgent || 'coder',
+                status: 'pending' as const,
+              }));
+              setProposedTasks(formatted);
+              setStatusMessage(`Froggo found ${formatted.length} task${formatted.length !== 1 ? 's' : ''}`);
+            } else {
+              setStatusMessage('Saved! No tasks extracted.');
+            }
+          } else {
+            setStatusMessage('Saved to Past Meetings!');
+          }
+        } catch (err) {
+          logger.error('Froggo review error:', err);
+          setStatusMessage('Saved! (Froggo review failed)');
+        }
+      } else {
+        setStatusMessage('Saved to Past Meetings!');
+      }
+    } catch (err) {
+      setStatusMessage(`Failed to save: ${err}`);
+    } finally {
+      setTranscriptionSaving(false);
+    }
+  }, [transcriptionResult, transcriptionFileName, transcriptionSaving, connected, saveMeetingToDb, saveTranscriptToDb, generateSummary, endMeetingInDb, addActivity, loadPastMeetings]);
 
   const approveAllPending = useCallback(() => {
     setMeetingActionItems(prev => prev.map(item => 
@@ -871,7 +968,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
   const startMeeting = useCallback(async () => {
     if (listeningRef.current) return;
+    setStartError(null);
     setStatusMessage('Starting meeting...');
+
+    // Check Gemini API key before anything else
+    const apiKey = await getGeminiApiKey();
+    if (!apiKey) {
+      setStartError('Gemini API key not configured. Add it in Settings or set VITE_GEMINI_API_KEY.');
+      setStatusMessage('');
+      return;
+    }
+
     setMeetingTranscript([]);
     setMeetingTranscriptLines([]);
     setMeetingActionItems([]);
@@ -882,14 +989,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     setMeetingStartTime(startTime);
     const title = meetingTitle.trim() || `Meeting ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
     try {
-      const dbId = await saveMeetingToDb(title);
+      const dbId = await saveMeetingToDb(title, {
+        agenda: meetingAgenda,
+        participants: meetingParticipants,
+        notes: meetingNotes,
+      });
       setMeetingDbId(dbId);
     } catch (_err) {
       // DB save failure is non-blocking — meeting continues
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
       });
       listeningRef.current = true;
       setListening(true);
@@ -897,15 +1008,23 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       startAudioStreaming(stream, ws);
       setMeetingActive(true);
       setShowTitleInput(false);
+      setMeetingAgenda('');
+      setMeetingParticipants('');
+      setMeetingNotes('');
       setStatusMessage('Recording...');
     } catch (e) {
-      // '[Meeting] Failed to start:', e;
-      setStatusMessage('Failed: ' + (e instanceof Error ? e.message : String(e)));
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('Permission denied') || msg.includes('NotAllowedError')) {
+        setStartError('Microphone permission denied. Allow mic access in System Settings → Privacy → Microphone.');
+      } else {
+        setStartError(`Failed to start recording: ${msg}`);
+      }
+      setStatusMessage('');
       setMeetingStartTime(null);
       listeningRef.current = false;
       setListening(false);
     }
-  }, [setMeetingActive, connectGeminiTranscription, startAudioStreaming, meetingTitle, saveMeetingToDb]);
+  }, [setMeetingActive, connectGeminiTranscription, startAudioStreaming, meetingTitle, meetingAgenda, meetingParticipants, meetingNotes, saveMeetingToDb]);
 
   const endMeeting = useCallback(async () => {
     if (endMeetingInProgressRef.current) return;
@@ -1198,25 +1317,67 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       </div>
                     ) : showTitleInput ? (
                       <div className="space-y-4">
-                        <input
-                          type="text"
-                          value={meetingTitle}
-                          onChange={(e) => setMeetingTitle(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') startMeeting(); if (e.key === 'Escape') setShowTitleInput(false); }}
-                          placeholder="Meeting title (optional)"
-                          className="w-full px-4 py-3 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20"
-                        />
+                        <div>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Title</label>
+                          <input
+                            type="text"
+                            value={meetingTitle}
+                            onChange={(e) => { setMeetingTitle(e.target.value); setStartError(null); }}
+                            onKeyDown={(e) => { if (e.key === 'Escape') { setShowTitleInput(false); setStartError(null); } }}
+                            placeholder="Meeting title (optional)"
+                            className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20"
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Agenda</label>
+                          <textarea
+                            value={meetingAgenda}
+                            onChange={(e) => setMeetingAgenda(e.target.value)}
+                            placeholder="Topics to discuss..."
+                            rows={2}
+                            className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20 resize-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Participants</label>
+                          <input
+                            type="text"
+                            value={meetingParticipants}
+                            onChange={(e) => setMeetingParticipants(e.target.value)}
+                            placeholder="Names, comma-separated"
+                            className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Notes</label>
+                          <textarea
+                            value={meetingNotes}
+                            onChange={(e) => setMeetingNotes(e.target.value)}
+                            placeholder="Pre-meeting notes..."
+                            rows={2}
+                            className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border focus:ring-1 focus:ring-success/20 resize-none"
+                          />
+                        </div>
+
+                        {startError && (
+                          <div className="flex items-start gap-3 p-4 bg-error-subtle border border-error-border rounded-xl">
+                            <XCircle size={18} className="text-error shrink-0 mt-0.5" />
+                            <p className="text-sm text-error">{startError}</p>
+                          </div>
+                        )}
+
                         <div className="flex gap-3">
                           <button
                             onClick={startMeeting}
-                            className="flex-1 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl text-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/20"
+                            className="flex-1 py-3.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-green-500/20"
                           >
                             <Mic size={24} />
                             Start Recording
                           </button>
                           <button
-                            onClick={() => setShowTitleInput(false)}
-                            className="px-5 py-4 bg-clawd-bg border border-clawd-border rounded-xl hover:bg-clawd-border transition-all"
+                            onClick={() => { setShowTitleInput(false); setStartError(null); }}
+                            className="px-5 py-3.5 bg-clawd-bg border border-clawd-border rounded-xl hover:bg-clawd-border transition-all"
                           >
                             <X size={20} className="text-clawd-text-dim" />
                           </button>
@@ -1839,52 +2000,227 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 <p className="text-clawd-text-dim mb-6">
                   Upload an audio file (MP3, WAV, M4A) to transcribe using Gemini AI.
                 </p>
-                
-                <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-8 text-center">
-                  <Upload size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
-                  
-                  <label className="inline-flex items-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/90 text-white rounded-xl cursor-pointer transition-all">
-                    {transcribing ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Transcribing...
-                      </>
-                    ) : (
-                      <>
-                        <Upload size={18} />
-                        Choose Audio File
-                      </>
-                    )}
-                    <input 
-                      type="file" 
-                      accept="audio/*,video/*"
-                      onChange={handleTranscribeFile}
-                      disabled={transcribing}
-                      className="hidden"
-                    />
-                  </label>
-                  
-                  <p className="text-sm text-clawd-text-dim mt-4">
-                    Supported: MP3, WAV, M4A, WebM, OGG, FLAC
-                  </p>
-                </div>
 
-                {transcriptionResult && (
-                  <div className="mt-6 bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-clawd-text">Transcription Result</h3>
-                      <button 
-                        onClick={() => navigator.clipboard.writeText(transcriptionResult)}
-                        className="text-sm text-clawd-accent hover:underline"
-                      >
-                        Copy
-                      </button>
+                {!transcribing && !transcriptionResult && (
+                  <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-8 text-center">
+                    <Upload size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
+                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/90 text-white rounded-xl cursor-pointer transition-all">
+                      <Upload size={18} />
+                      Choose Audio File
+                      <input
+                        type="file"
+                        accept="audio/*,video/*"
+                        onChange={handleTranscribeFile}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-sm text-clawd-text-dim mt-4">
+                      Supported: MP3, WAV, M4A, WebM, OGG, FLAC
+                    </p>
+                  </div>
+                )}
+
+                {/* Progress bar during transcription */}
+                {transcribing && (
+                  <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Loader2 size={20} className="animate-spin text-clawd-accent" />
+                      <span className="font-medium text-clawd-text">Transcribing audio...</span>
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      <pre className="whitespace-pre-wrap text-sm text-clawd-text">
-                        {transcriptionResult}
-                      </pre>
+                    <div className="w-full h-3 bg-clawd-bg rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-clawd-accent to-green-400 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, transcriptionProgress)}%` }}
+                      />
                     </div>
+                    <p className="text-sm text-clawd-text-dim mt-2 text-right">
+                      {Math.round(transcriptionProgress)}%
+                    </p>
+                  </div>
+                )}
+
+                {/* Transcription complete — name and save */}
+                {transcriptionResult && !transcribing && (
+                  <div className="space-y-4">
+                    {!transcriptionSaved ? (
+                      <div className="bg-success-subtle border border-success-border rounded-2xl p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <CheckCircle2 size={20} className="text-success" />
+                          <span className="font-medium text-success">Transcription Complete</span>
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium text-clawd-text mb-1.5">Meeting Name</label>
+                            <input
+                              type="text"
+                              value={transcriptionFileName}
+                              onChange={(e) => setTranscriptionFileName(e.target.value)}
+                              placeholder="Name this meeting..."
+                              className="w-full px-4 py-2.5 bg-clawd-bg border border-clawd-border rounded-xl text-clawd-text placeholder:text-clawd-text-dim focus:outline-none focus:border-success-border"
+                            />
+                          </div>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={saveTranscriptionAsMeeting}
+                              disabled={transcriptionSaving}
+                              className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            >
+                              {transcriptionSaving ? (
+                                <><Loader2 size={18} className="animate-spin" /> Processing...</>
+                              ) : (
+                                <><Check size={18} /> Save to Past Meetings</>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => navigator.clipboard.writeText(transcriptionResult)}
+                              className="px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
+                            >
+                              Copy Text
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-success-subtle border border-success-border rounded-2xl p-6 text-center">
+                        <CheckCircle2 size={32} className="text-success mx-auto mb-3" />
+                        <p className="font-medium text-success mb-1">Saved to Past Meetings</p>
+                        <p className="text-sm text-clawd-text-dim mb-4">
+                          Summary and tasks have been generated. View in the Past Meetings tab.
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <button
+                            onClick={() => { setActiveView('history'); setTranscriptionResult(''); setTranscriptionSaved(false); }}
+                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all"
+                          >
+                            View Past Meetings
+                          </button>
+                          <button
+                            onClick={() => { setTranscriptionResult(''); setTranscriptionSaved(false); setTranscriptionProgress(0); }}
+                            className="px-4 py-2 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
+                          >
+                            Transcribe Another
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Proposed Task Cards from Froggo */}
+                    {proposedTasks.length > 0 && (
+                      <div className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+                        <div className="p-4 border-b border-clawd-border flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Brain size={18} className="text-review" />
+                            <h3 className="font-medium text-clawd-text">Task Cards from Froggo</h3>
+                            <span className="text-xs px-2 py-0.5 bg-clawd-bg rounded-full text-clawd-text-dim">
+                              {proposedTasks.filter(t => t.status === 'pending').length} pending
+                            </span>
+                          </div>
+                          <p className="text-xs text-clawd-text-dim">Approve to add to Kanban</p>
+                        </div>
+                        <div className="divide-y divide-clawd-border">
+                          {proposedTasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className={`p-4 transition-all ${
+                                task.status === 'rejected' ? 'opacity-40' : ''
+                              } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                            >
+                              {editingProposedTask === task.id ? (
+                                <div className="space-y-3">
+                                  <input
+                                    type="text"
+                                    value={editingProposedText}
+                                    onChange={(e) => setEditingProposedText(e.target.value)}
+                                    className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
+                                    placeholder="Edit task title..."
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        setProposedTasks(prev => prev.map(t =>
+                                          t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
+                                        ));
+                                        approveProposedTask(task.id);
+                                        setEditingProposedTask(null);
+                                      }}
+                                      className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm"
+                                    >
+                                      Save & Approve
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingProposedTask(null)}
+                                      className="px-3 py-1.5 bg-clawd-bg border border-clawd-border rounded-lg text-sm text-clawd-text"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium text-clawd-text">{task.title}</p>
+                                    {task.description && (
+                                      <p className="text-sm text-clawd-text-dim mt-1">{task.description}</p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-xs px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full">
+                                        {task.proposedAgent}
+                                      </span>
+                                      {task.status === 'approved' && (
+                                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
+                                          <Check size={10} /> Added to Kanban
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {task.status === 'pending' && (
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        onClick={() => approveProposedTask(task.id)}
+                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
+                                        title="Approve — add to Kanban"
+                                      >
+                                        <CheckCircle2 size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingProposedTask(task.id);
+                                          setEditingProposedText(task.title);
+                                        }}
+                                        className="p-2 hover:bg-clawd-bg rounded-lg text-clawd-text-dim transition-all"
+                                        title="Edit & Approve"
+                                      >
+                                        <Edit3 size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => rejectProposedTask(task.id)}
+                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
+                                        title="Reject"
+                                      >
+                                        <XCircle size={16} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Transcript preview */}
+                    <details className="bg-clawd-surface border border-clawd-border rounded-2xl overflow-hidden">
+                      <summary className="p-4 cursor-pointer hover:bg-clawd-bg/50 flex items-center gap-2">
+                        <FileText size={18} className="text-clawd-text-dim" />
+                        <span className="font-medium text-clawd-text">Transcript Preview</span>
+                      </summary>
+                      <div className="p-4 border-t border-clawd-border max-h-96 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap text-sm text-clawd-text">
+                          {transcriptionResult}
+                        </pre>
+                      </div>
+                    </details>
                   </div>
                 )}
               </div>

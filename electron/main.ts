@@ -2204,10 +2204,19 @@ ipcMain.handle('attachments:list', async (_, taskId: string) => {
   }
 });
 
-// List ALL task attachments (for Files view)
+// List ALL task attachments (for Files view) — JOIN task context for smart categorization
 ipcMain.handle('attachments:listAll', async () => {
   try {
-    const attachments = prepare('SELECT id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at FROM task_attachments ORDER BY uploaded_at DESC').all();
+    const attachments = prepare(`
+      SELECT ta.id, ta.task_id, ta.file_path, ta.filename, ta.file_size, ta.mime_type, ta.category, ta.uploaded_by, ta.uploaded_at,
+             t.title as task_title, t.assigned_to as task_assignee, t.project as task_project
+      FROM task_attachments ta
+      LEFT JOIN tasks t ON ta.task_id = t.id
+      ORDER BY ta.uploaded_at DESC
+    `).all().map((row: any) => ({
+      ...row,
+      category: inferFileCategory(row.filename || '', row.mime_type, row.task_title, row.task_assignee),
+    }));
     return { success: true, attachments };
   } catch (error: any) {
     safeLog.error('[Attachments] ListAll error:', error);
@@ -4124,6 +4133,39 @@ ipcMain.handle('media:cleanup', async () => {
 // ============== LIBRARY IPC HANDLERS ==============
 const libraryDir = LIBRARY_DIR;
 
+const VALID_FILE_CATEGORIES = ['marketing', 'design', 'dev', 'research', 'finance', 'test-logs', 'content', 'social', 'other'] as const;
+type FileCategory = typeof VALID_FILE_CATEGORIES[number];
+
+function inferFileCategory(filename: string, _mimeType?: string, taskTitle?: string, assignee?: string): FileCategory {
+  const ext = path.extname(filename).toLowerCase();
+  const name = filename.toLowerCase();
+
+  // Unambiguous by extension
+  if (['.ts', '.tsx', '.js', '.jsx', '.py', '.sh', '.sql', '.json', '.css', '.html', '.diff', '.patch'].includes(ext)) return 'dev';
+  if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.mp4', '.mov'].includes(ext)) return 'design';
+  if (['.csv', '.xls', '.xlsx'].includes(ext)) return 'finance';
+  if (['.zip', '.rar', '.7z'].includes(ext) || name.endsWith('.tar.gz')) return 'other';
+
+  // Text-like files — use filename + task context keywords
+  if (['.md', '.txt', '.pdf', '.doc', '.docx', '.draft'].includes(ext)) {
+    // Normalize separators to spaces for clean word matching
+    const ctx = ` ${name.replace(/[_\-./]/g, ' ')} ${(taskTitle || '').replace(/[_\-./]/g, ' ').toLowerCase()} `;
+    const agent = (assignee || '').toLowerCase();
+
+    if (/\b(finance|budget|revenue|cost|invoice|expense)\b/.test(ctx)) return 'finance';
+    if (/\b(marketing|growth|tweet|campaign|engagement|follower)\b/.test(ctx) || ctx.includes('content plan')) return 'marketing';
+    if (/\b(design|wireframe|mockup|figma|layout|theme|modal)\b/.test(ctx) || /\bui\b|\bux\b|\bstyle\b/.test(ctx) || agent === 'designer') return 'design';
+    if (/\b(test|qa|checklist|verification|e2e|playwright|benchmark|coverage)\b/.test(ctx)) return 'test-logs';
+    if (/\b(research|analysis|investigation|audit|review|study)\b/.test(ctx)) return 'research';
+    if (/\b(discord|telegram|twitter|instagram|social)\b/.test(ctx) || ctx.includes('x api') || ['social-manager', 'growth-director'].includes(agent)) return 'social';
+    if (/\b(implementation|refactor|migration|schema|api|fix|bug|deploy|build|lint|react|electron)\b/.test(ctx) || ['coder', 'senior-coder', 'lead-engineer'].includes(agent)) return 'dev';
+
+    return 'content';
+  }
+
+  return 'other';
+}
+
 // Library schema migration: add project column + migrate old categories
 try {
   db.exec('ALTER TABLE library ADD COLUMN project TEXT');
@@ -4166,11 +4208,14 @@ ipcMain.handle('library:list', async (_, category?: string) => {
         safeLog.warn('[library:list] Failed to parse tags for', f.id, ':', e);
       }
 
+      const rawCat = f.category || 'other';
+      const category = (VALID_FILE_CATEGORIES as readonly string[]).includes(rawCat) ? rawCat : inferFileCategory(f.name || '');
+
       return {
         id: f.id || '',
         name: f.name || 'Unnamed',
         path: f.path || '',
-        category: f.category || 'other',
+        category,
         size: f.size || 0,
         mimeType: f.mime_type || null,
         createdAt: f.created_at || new Date().toISOString(),
@@ -4218,12 +4263,8 @@ ipcMain.handle('library:upload', async () => {
   const stats = fs.statSync(destPath);
   
   // Determine category
-  const ext = path.extname(fileName).toLowerCase();
-  let category = 'other';
-  if (['.md', '.txt', '.draft'].includes(ext)) category = 'draft';
-  else if (['.pdf', '.doc', '.docx'].includes(ext)) category = 'document';
-  else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov'].includes(ext)) category = 'media';
-  
+  const category = inferFileCategory(fileName);
+
   // Ensure library table exists (DDL, no user params)
   try {
     db.exec(`CREATE TABLE IF NOT EXISTS library (
@@ -4425,12 +4466,7 @@ ipcMain.handle('library:uploadBuffer', async (_, data: { name: string; type: str
     const destPath = path.join(libraryDir, fileId + '-' + data.name);
     fs.writeFileSync(destPath, Buffer.from(data.buffer));
     const stats = fs.statSync(destPath);
-    const ext = path.extname(data.name).toLowerCase();
-    let category = 'other';
-    if (['.md', '.txt', '.pdf', '.doc', '.docx'].includes(ext)) category = 'content';
-    else if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov'].includes(ext)) category = 'design';
-    else if (['.ts', '.tsx', '.js', '.jsx', '.py', '.sh'].includes(ext)) category = 'dev';
-    else if (['.csv', '.xls', '.xlsx'].includes(ext)) category = 'finance';
+    const category = inferFileCategory(data.name, data.type);
     prepare('INSERT INTO library (id, name, path, category, size, mime_type) VALUES (?, ?, ?, ?, ?, ?)').run(
       fileId, data.name, destPath, category, stats.size, data.type || null
     );
