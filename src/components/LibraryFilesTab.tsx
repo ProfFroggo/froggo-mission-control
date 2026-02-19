@@ -79,7 +79,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const libraryResult = await window.clawdbot?.library?.list(selectedCategory === 'all' ? undefined : selectedCategory);
+      // Always fetch all files — category filtering happens in render
+      const libraryResult = await window.clawdbot?.library?.list();
       const libraryFiles: LibraryFileItem[] = libraryResult?.success ? ((libraryResult.files || []) as unknown as LibraryFileItem[]) : [];
 
       const attachmentsResult = await window.clawdbot?.tasks?.attachments?.listAll();
@@ -96,16 +97,11 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         updatedAt: att.uploaded_at || '',
         linkedTasks: att.task_id ? [att.task_id] : [],
         tags: [],
-        project: null,
+        project: att.task_project || null,
       }));
 
       const allFiles = [...libraryFiles, ...convertedAttachments];
-
-      if (selectedCategory !== 'all') {
-        setFiles(allFiles.filter(f => f.category === selectedCategory));
-      } else {
-        setFiles(allFiles);
-      }
+      setFiles(allFiles);
 
       // Seed project inputs from loaded files
       const projectMap: Record<string, string> = {};
@@ -118,7 +114,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory]);
+  }, []);
 
   useEffect(() => {
     loadFiles();
@@ -253,16 +249,18 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
   };
 
-  const filteredFiles = files.filter(f =>
-    f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  // Dynamic category counts from categoryConfig keys
+  // Category counts always reflect the full dataset
   const categoryCounts: Record<string, number> = { all: files.length };
   for (const key of Object.keys(categoryConfig)) {
     categoryCounts[key] = files.filter(f => f.category === key).length;
   }
+
+  // Apply category filter then search filter
+  const categoryFiltered = selectedCategory === 'all' ? files : files.filter(f => f.category === selectedCategory);
+  const filteredFiles = categoryFiltered.filter(f =>
+    f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    f.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   // Drag-drop handlers
   const handleDragOver = (e: React.DragEvent) => {
