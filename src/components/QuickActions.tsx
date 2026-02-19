@@ -791,6 +791,17 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setAgentChatOpen(true);
     setChatMessages([]);
     setChatLoading(true);
+
+    // Load persisted chat history for this agent
+    try {
+      const result = await window.clawdbot?.chat?.loadMessages(30, `toolbar:chat:${agent.id}`, 'toolbar');
+      if (result?.success && result.messages?.length > 0) {
+        setChatMessages(result.messages.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })));
+      }
+    } catch (_e) {
+      // ignore load errors — start fresh
+    }
+
     // Spawn session via IPC (ensures agent session exists)
     try {
       const ipc = window.clawdbot?.agents;
@@ -808,6 +819,13 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     const msg = chatInput.trim();
     setChatInput('');
     setChatMessages(prev => [...prev, { role: 'user', content: msg }]);
+
+    // Persist user message
+    window.clawdbot?.chat?.saveMessage({
+      role: 'user', content: msg, timestamp: Date.now(),
+      sessionKey: `toolbar:chat:${chatAgent.id}`, channel: 'toolbar',
+    });
+
     setChatLoading(true);
     try {
       const ipc = window.clawdbot?.agents;
@@ -815,8 +833,16 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         const sessionKey = `agent:${chatAgent.id}:main`;
         const result = await ipc.chat(sessionKey, msg);
         const reply = typeof result === 'string' ? result : (result?.response || result?.message || '');
-        if (reply) setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-        else setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No response from agent' }]);
+        if (reply) {
+          setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+          // Persist assistant reply
+          window.clawdbot?.chat?.saveMessage({
+            role: 'assistant', content: reply, timestamp: Date.now(),
+            sessionKey: `toolbar:chat:${chatAgent.id}`, channel: 'toolbar',
+          });
+        } else {
+          setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ No response from agent' }]);
+        }
       } else {
         setChatMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Chat IPC not available' }]);
       }
