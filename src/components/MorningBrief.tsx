@@ -208,7 +208,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch session stats
       let sessionStatsData: BriefData['sessionStats'] = undefined;
       try {
-        const sessionsResult = await window.clawdbot?.gateway?.sessionsList();
+        const sessionsResult = await window.clawdbot?.gateway?.sessionsList?.();
         if (sessionsResult?.success && sessionsResult.sessions) {
           const sessions = sessionsResult.sessions;
           const now = Date.now();
@@ -255,7 +255,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
       // Fetch agent stats
       let agentStatsData: BriefData['agentStats'] = undefined;
       try {
-        const sessionsResult = await window.clawdbot?.gateway?.sessionsList();
+        const sessionsResult = await window.clawdbot?.gateway?.sessionsList?.();
         const tasksResult = await window.clawdbot?.tasks?.list('in-progress');
         
         if (sessionsResult?.success && sessionsResult.sessions) {
