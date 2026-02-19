@@ -65,7 +65,7 @@ export default function AIAssistancePanel({ selectedItem, onClose, onApplySugges
       ]);
     } catch (error: unknown) {
       // '[AI Assistance] Error:', error;
-      showToast('error', 'AI assistance failed', error.message);
+      showToast('error', 'AI assistance failed', error instanceof Error ? error.message : String(error));
     } finally {
       setLoading(false);
     }

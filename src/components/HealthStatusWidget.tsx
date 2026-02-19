@@ -35,7 +35,7 @@ export default function HealthStatusWidget() {
       setLoading(false);
     } catch (err: unknown) {
       // 'Failed to load system status:', err;
-      setError(err.message || 'Failed to load');
+      setError(err instanceof Error ? err.message : 'Failed to load');
       setLoading(false);
     }
   };

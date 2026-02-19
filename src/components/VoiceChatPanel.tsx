@@ -199,7 +199,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
         setAudioState('running');
         addSystemMessage('🔊 Audio enabled');
       } catch (e: unknown) {
-        addSystemMessage(`⚠️ Audio resume failed: ${e.message}`);
+        addSystemMessage(`⚠️ Audio resume failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   };
@@ -391,7 +391,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       }
     } catch (err: unknown) {
       // '[VoiceChat] Connect failed:', err;
-      addSystemMessage(`⚠️ Connection failed: ${err.message}`);
+      addSystemMessage(`⚠️ Connection failed: ${err instanceof Error ? err.message : String(err)}`);
       setConnecting(false);
       callActiveRef.current = false;
     }
@@ -435,7 +435,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           geminiLive.sendText('[SYSTEM: Camera is now active. You can see the user\'s face.]');
         }
       } catch (e: unknown) {
-        addSystemMessage(`⚠️ Video failed: ${e.message}`);
+        addSystemMessage(`⚠️ Video failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   };
@@ -465,7 +465,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       addSystemMessage(`🖥️ Sharing: ${source.name}`);
       geminiLive.sendText(`[SYSTEM: Screen sharing is now active. Sharing: ${source.name}. You can see the user's screen.]`);
     } catch (e: unknown) {
-      addSystemMessage(`⚠️ Screen share failed: ${e.message}`);
+      addSystemMessage(`⚠️ Screen share failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
   
@@ -486,7 +486,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     try {
       await geminiLive.sendText(text);
     } catch (e: unknown) {
-      addSystemMessage(`⚠️ Send failed: ${e.message}`);
+      addSystemMessage(`⚠️ Send failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
   
@@ -1144,7 +1144,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         return { error: `Unknown tool: ${fnName}` };
     }
   } catch (err: unknown) {
-    return { error: err.message };
+    return { error: err instanceof Error ? err.message : String(err) };
   }
 }
 

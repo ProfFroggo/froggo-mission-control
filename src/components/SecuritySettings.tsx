@@ -118,7 +118,7 @@ export default function SecuritySettings() {
         showToast('error', 'Audit Failed', result?.error || 'Could not complete security audit');
       }
     } catch (e: unknown) {
-      showToast('error', 'Audit Error', e.message || 'Security audit failed');
+      showToast('error', 'Audit Error', e instanceof Error ? e.message : 'Security audit failed');
     } finally {
       setIsAuditing(false);
       setAuditProgress('');
@@ -143,7 +143,7 @@ export default function SecuritySettings() {
         showToast('error', 'Failed to Add Key', result?.error || 'Could not store API key');
       }
     } catch (e: unknown) {
-      showToast('error', 'Error', e.message || 'Failed to add API key');
+      showToast('error', 'Error', e instanceof Error ? e.message : 'Failed to add API key');
     }
   };
 
@@ -162,7 +162,7 @@ export default function SecuritySettings() {
         showToast('error', 'Failed to Delete', result?.error || 'Could not delete API key');
       }
     } catch (e: unknown) {
-      showToast('error', 'Error', e.message || 'Failed to delete API key');
+      showToast('error', 'Error', e instanceof Error ? e.message : 'Failed to delete API key');
     }
   };
 

@@ -4342,7 +4342,10 @@ ipcMain.handle('library:delete', async (_, fileId: string) => {
     }
 
     // Delete from database
-    prepare('DELETE FROM library WHERE id = ?').run(fileId);
+    const info = prepare('DELETE FROM library WHERE id = ?').run(fileId);
+    if (info.changes === 0) {
+      return { success: false, error: 'File not found' };
+    }
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Library] Delete error:', error);
@@ -9104,6 +9107,67 @@ ipcMain.handle('x:cancel', async (_, id: string) => {
     return { success: true };
   } catch (error: any) {
     safeLog.error('[X/Cancel] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== CAMPAIGN HANDLERS ==============
+
+// Ensure campaigns table exists
+try {
+  prepare(`CREATE TABLE IF NOT EXISTS x_campaigns (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    subject TEXT,
+    stages TEXT,
+    status TEXT DEFAULT 'draft',
+    start_date TEXT,
+    created_at INTEGER,
+    updated_at INTEGER
+  )`).run();
+} catch { /* table may already exist */ }
+
+ipcMain.handle('x:campaign:list', async () => {
+  try {
+    const rows = prepare('SELECT * FROM x_campaigns ORDER BY created_at DESC').all() as any[];
+    const campaigns = rows.map(r => ({
+      ...r,
+      stages: r.stages ? JSON.parse(r.stages) : [],
+    }));
+    return { success: true, campaigns };
+  } catch (error: any) {
+    safeLog.error('[X/Campaign] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:campaign:save', async (_, campaign: any) => {
+  try {
+    const now = Date.now();
+    const stagesJson = JSON.stringify(campaign.stages || []);
+    const existing = prepare('SELECT id FROM x_campaigns WHERE id = ?').get(campaign.id);
+    if (existing) {
+      prepare(`UPDATE x_campaigns SET title = ?, subject = ?, stages = ?, status = ?, start_date = ?, updated_at = ? WHERE id = ?`)
+        .run(campaign.title, campaign.subject, stagesJson, campaign.status || 'draft', campaign.start_date || null, now, campaign.id);
+    } else {
+      prepare(`INSERT INTO x_campaigns (id, title, subject, stages, status, start_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(campaign.id, campaign.title, campaign.subject, stagesJson, campaign.status || 'draft', campaign.start_date || null, campaign.created_at || now, now);
+    }
+    safeLog.log(`[X/Campaign] Saved: ${campaign.id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Campaign] Save error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:campaign:delete', async (_, id: string) => {
+  try {
+    prepare('DELETE FROM x_campaigns WHERE id = ?').run(id);
+    safeLog.log(`[X/Campaign] Deleted: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Campaign] Delete error:', error.message);
     return { success: false, error: error.message };
   }
 });

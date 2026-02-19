@@ -127,7 +127,7 @@ export default function XApprovalQueuePane({ tab }: XApprovalQueuePaneProps) {
       }
     } catch (error: unknown) {
       // '[XApprovalQueue] Approve error:', error;
-      showToast('error', `Failed to approve: ${error.message}`);
+      showToast('error', `Failed to approve: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 

@@ -587,7 +587,7 @@ export default function ChatPanel() {
       }
     } catch (error: unknown) {
       // '[Chat] Suggestion error:', error;
-      showToast('error', 'Failed to generate', error.message || 'Unknown error');
+      showToast('error', 'Failed to generate', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setLoadingSuggestions(false);
     }

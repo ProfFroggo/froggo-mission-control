@@ -101,7 +101,7 @@ export default function VIPSettingsPanel() {
       }
     } catch (error: unknown) {
       // '[VIP] Add error:', error;
-      showToast('error', error.message || 'Failed to add VIP');
+      showToast('error', error instanceof Error ? error.message : 'Failed to add VIP');
     }
   };
 
@@ -127,7 +127,7 @@ export default function VIPSettingsPanel() {
       }
     } catch (error: unknown) {
       // '[VIP] Update error:', error;
-      showToast('error', error.message || 'Failed to update VIP');
+      showToast('error', error instanceof Error ? error.message : 'Failed to update VIP');
     }
   };
 
@@ -149,7 +149,7 @@ export default function VIPSettingsPanel() {
         }
       } catch (error: unknown) {
         // '[VIP] Remove error:', error;
-        showToast('error', error.message || 'Failed to remove VIP');
+        showToast('error', error instanceof Error ? error.message : 'Failed to remove VIP');
       }
     });
   };

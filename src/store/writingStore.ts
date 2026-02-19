@@ -134,7 +134,7 @@ export const useWritingStore = create<WritingState>((set, get) => ({
 
   openProject: async (projectId) => {
     try {
-      const result = await bridge()?.project?.get(projectId);
+      const result = await bridge()?.project?.get(projectId) as any;
       if (result?.success) {
         set({
           activeProjectId: projectId,
