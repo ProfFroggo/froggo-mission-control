@@ -141,6 +141,10 @@ declare global {
     title: string;
     snippet?: string;
     type?: string;
+    source?: string;
+    status?: string;
+    timestamp?: string;
+    relevance_score?: number;
   }
 
   // ============================================
@@ -674,6 +678,7 @@ declare global {
       // Search
       search: {
         local: (query: string) => Promise<{ success: boolean; results: SearchResult[] }>;
+        unified: (query: string) => Promise<{ success: boolean; results: SearchResult[] }>;
         discord: (query: string) => Promise<{ success: boolean; messages: unknown[] }>;
         telegram: (query: string) => Promise<{ success: boolean; messages: unknown[] }>;
         whatsapp: (query: string) => Promise<{ success: boolean; messages: unknown[] }>;

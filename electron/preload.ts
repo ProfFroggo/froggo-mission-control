@@ -361,6 +361,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Search
   search: {
     local: (query: string) => ipcRenderer.invoke('search:local', query),
+    unified: (query: string) => ipcRenderer.invoke('search:unified', query),
     discord: (query: string) => ipcRenderer.invoke('search:discord', query),
     telegram: (query: string) => ipcRenderer.invoke('search:telegram', query),
     whatsapp: (query: string) => ipcRenderer.invoke('search:whatsapp', query),
