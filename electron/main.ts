@@ -38,7 +38,6 @@ import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
-import { getSocialAgentBridge, initializeSocialAgentBridge } from './social-agent-bridge';
 import { registerFinanceHandlers } from './finance-service';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM, deleteTweet as xDeleteTweet, likeTweet as xLikeTweet, unlikeTweet as xUnlikeTweet, retweet as xRetweet, unretweet as xUnretweet, unfollowUser as xUnfollowUser, getFollowers as xGetFollowers, getFollowing as xGetFollowing } from './x-api-client';
 import { registerXPublishingHandlers } from './x-publishing-service';
@@ -965,11 +964,6 @@ app.whenReady().then(() => {
   // Initialize Finance Agent Bridge
   initializeFinanceAgentBridge().catch((err) => {
     safeLog.error('[Main] Failed to initialize Finance Agent Bridge:', err);
-  });
-
-  // Initialize Social Agent Bridge
-  initializeSocialAgentBridge().catch((err) => {
-    safeLog.error('[Main] Failed to initialize Social Agent Bridge:', err);
   });
 
   // Check for updates (prod only, non-blocking)
@@ -8170,42 +8164,6 @@ ipcMain.handle('financeAgent:getStatus', async () => {
   }
 });
 
-// ── Social Agent Communication ──
-
-ipcMain.handle('socialAgent:sendMessage', async (_, message: string, context?: any) => {
-  try {
-    safeLog.log('[SocialAgent] Sending message to Social Manager:', message.substring(0, 100));
-    const bridge = getSocialAgentBridge();
-    const response = await bridge.sendMessage(message, context);
-    return response;
-  } catch (error: any) {
-    safeLog.error('[SocialAgent] Send message error:', error.message);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('socialAgent:getChatHistory', async () => {
-  try {
-    const bridge = getSocialAgentBridge();
-    const history = bridge.getChatHistory();
-    return { success: true, messages: history };
-  } catch (error: any) {
-    safeLog.error('[SocialAgent] Get chat history error:', error.message);
-    return { success: false, messages: [], error: error.message };
-  }
-});
-
-ipcMain.handle('socialAgent:clearHistory', async () => {
-  try {
-    const bridge = getSocialAgentBridge();
-    await bridge.clearChatHistory();
-    return { success: true };
-  } catch (error: any) {
-    safeLog.error('[SocialAgent] Clear history error:', error.message);
-    return { success: false, error: error.message };
-  }
-});
-
 // ── X/Twitter Research Tab ──
 
 ipcMain.handle('x:research:propose', async (_, data: { title: string; description: string; citations: string[]; proposedBy: string }) => {
@@ -9820,14 +9778,35 @@ ipcMain.handle('x:reddit:generateDraft', async (_, data: {
 }) => {
   try {
     const { threadId, threadTitle, threadText, subreddit } = data;
-    
-    // Use gateway/AI to generate a draft reply
-    // For now, return a placeholder - in production, this would call the AI agent
-    const prompt = `Generate an authentic Reddit reply for the following thread on r/${subreddit}:\n\nTitle: ${threadTitle}\n\nContent: ${threadText || '(No text content)'}\n\nWrite a helpful, authentic reply that adds value to the conversation. Use natural Reddit tone.`;
-    
-    // This would normally use the AI agent, but for now return a template
-    const draft = `Thanks for sharing! This is interesting because [add your insight]. Have you considered [helpful suggestion]?`;
-    
+
+    const prompt = `Generate an authentic Reddit reply for the following thread on r/${subreddit}:\n\nTitle: ${threadTitle}\n\nContent: ${threadText || '(No text content)'}\n\nWrite a helpful, natural reply that adds value to the conversation. Use conversational Reddit tone — no marketing speak, no emojis. Keep it concise (2-4 sentences). Just output the reply text, nothing else.`;
+
+    const escaped = prompt.replace(/'/g, "'\\''");
+    const { exec: execCb } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(execCb);
+
+    const { stdout } = await execAsync(
+      `openclaw agent --agent social-manager --message '${escaped}' --json`,
+      { encoding: 'utf-8', timeout: 120000 }
+    );
+
+    let draft = '';
+    try {
+      const parsed = JSON.parse(stdout.trim());
+      const payloads = parsed?.result?.payloads;
+      if (Array.isArray(payloads) && payloads.length > 0) {
+        draft = payloads.map((p: any) => p.text || '').join('\n').trim();
+      }
+    } catch {
+      // If JSON parse fails, use raw stdout as the draft
+      draft = stdout.trim();
+    }
+
+    if (!draft) {
+      draft = 'Could not generate a draft. Please try again.';
+    }
+
     return { success: true, draft };
   } catch (error: any) {
     safeLog.error('[Reddit] Generate draft error:', error.message);

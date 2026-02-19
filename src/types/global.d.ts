@@ -887,12 +887,6 @@ declare global {
         triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => Promise<{ success: boolean; error?: string }>;
         getStatus: () => Promise<{ success: boolean; status?: unknown; error?: string }>;
       };
-      // Social Agent
-      socialAgent?: {
-        sendMessage: (message: string, context?: Record<string, unknown>) => Promise<{ success: boolean; message?: string; error?: string }>;
-        getChatHistory: () => Promise<{ success: boolean; messages?: Array<{ id: string; role: string; content: string; timestamp: number }>; error?: string }>;
-        clearHistory: () => Promise<{ success: boolean }>;
-      };
       // HR Reports
       hrReports?: {
         list: () => Promise<{ success: boolean; files?: string[]; error?: string }>;
