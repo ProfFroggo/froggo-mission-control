@@ -7573,21 +7573,23 @@ ipcMain.handle('get-circuit-status', async () => {
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_messages_session_channel ON messages(session_key, channel)'); } catch (_e) { /* table may not exist yet */ }
 
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
-ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string }) => {
+ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string; channel?: string }) => {
   const session = msg.sessionKey || 'dashboard';
+  const channel = msg.channel || 'dashboard';
   const ts = new Date(msg.timestamp).toISOString();
   try {
-    prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, 'dashboard', msg.role, msg.content);
+    prepare('INSERT INTO messages (timestamp, session_key, channel, role, content) VALUES (?, ?, ?, ?, ?)').run(ts, session, channel, msg.role, msg.content);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: string) => {
+ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: string, channel?: string) => {
   const session = sessionKey || 'dashboard';
+  const ch = channel || 'dashboard';
   try {
-    const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, 'dashboard', limit) as any[];
+    const rows = prepare('SELECT id, timestamp, role, content FROM messages WHERE session_key = ? AND channel = ? ORDER BY timestamp DESC LIMIT ?').all(session, ch, limit) as any[];
     const messages = rows.reverse().map((r: any) => ({
       id: `db-${r.id}`,
       role: r.role,
@@ -7600,15 +7602,16 @@ ipcMain.handle('chat:loadMessages', async (_, limit: number = 50, sessionKey?: s
   }
 });
 
-ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string) => {
+ipcMain.handle('chat:clearMessages', async (_, sessionKey?: string, channel?: string) => {
   const session = sessionKey || 'dashboard';
-  const cmd = `sqlite3 "${FROGGO_DB}" "DELETE FROM messages WHERE session_key='${session}' AND channel='dashboard'"`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 5000 }, (error) => {
-      resolve({ success: !error });
-    });
-  });
+  const ch = channel || 'dashboard';
+  try {
+    prepare('DELETE FROM messages WHERE session_key = ? AND channel = ?').run(session, ch);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[Chat] clearMessages error:', error.message);
+    return { success: false, error: error.message };
+  }
 });
 
 // Generate AI-powered suggested replies based on conversation context
