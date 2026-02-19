@@ -6,10 +6,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Mic, MicOff, PhoneOff, Volume2, VolumeX, Loader2,
-  Download, Square, Users, MessageSquare
+  Download, Square, Users, MessageSquare, Monitor, MonitorOff
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
+import ScreenSourcePicker, { type ScreenSource } from './ScreenSourcePicker';
 import { getAgentTheme } from '../utils/agentThemes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
@@ -75,6 +76,8 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
   const [volume, setVolume] = useState(1);
   const [turnMode, setTurnMode] = useState<TurnMode>('sequential');
   const [partialTranscript, setPartialTranscript] = useState('');
+  const [showScreenPicker, setShowScreenPicker] = useState(false);
+  const [screenSharing, setScreenSharing] = useState(false);
 
   // Speaker state
   const [speakingAgent, setSpeakingAgent] = useState<string | null>(null);
@@ -169,6 +172,31 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     pendingMsgIdRef.current = null;
     pendingContentRef.current = '';
     setProcessingAgent(null);
+  };
+
+  // ── Screen share ──
+  const toggleScreenShare = () => {
+    if (!isActive) return;
+    if (screenSharing) {
+      geminiLive.stopVideo();
+      setScreenSharing(false);
+    } else {
+      setShowScreenPicker(true);
+    }
+  };
+
+  const handleScreenSourceSelected = async (source: ScreenSource) => {
+    setShowScreenPicker(false);
+    try {
+      if (screenSharing) geminiLive.stopVideo();
+      const sourceId = source.id === '__browser_picker__' ? undefined : source.id;
+      await geminiLive.startVideo('screen', sourceId);
+      setScreenSharing(true);
+      logger.debug('[TeamVoice] Screen sharing started:', source.name);
+    } catch (e: any) {
+      logger.error('[TeamVoice] Screen share failed:', e);
+      setScreenSharing(false);
+    }
   };
 
   // ── Build context for an agent ──
@@ -505,11 +533,16 @@ Respond as ${agentName(agentId)}:`;
     stopListeningFn();
     stopSpeaking();
     window.speechSynthesis.cancel();
-    
+
+    if (screenSharing) {
+      geminiLive.stopVideo();
+      setScreenSharing(false);
+    }
+
     if (geminiLive.connected) {
       await geminiLive.disconnect();
     }
-    
+
     setIsActive(false);
     isActiveRef.current = false;
     setSpeakingAgent(null);
@@ -868,6 +901,19 @@ Respond as ${agentName(agentId)}:`;
               >
                 <Square size={18} />
               </button>
+
+              {/* Screen share */}
+              <button
+                onClick={toggleScreenShare}
+                className={`p-3 rounded-full transition-all ${
+                  screenSharing
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'bg-clawd-border text-clawd-text-dim hover:bg-clawd-card hover:text-clawd-text'
+                }`}
+                title={screenSharing ? 'Stop screen share' : 'Share screen'}
+              >
+                {screenSharing ? <MonitorOff size={18} /> : <Monitor size={18} />}
+              </button>
             </>
           )}
 
@@ -890,6 +936,13 @@ Respond as ${agentName(agentId)}:`;
           </p>
         )}
       </div>
+
+      {showScreenPicker && (
+        <ScreenSourcePicker
+          onSelect={handleScreenSourceSelected}
+          onCancel={() => setShowScreenPicker(false)}
+        />
+      )}
     </div>
   );
 }

@@ -500,6 +500,21 @@ function createWindow() {
     return false;
   });
 
+  // Handle getDisplayMedia requests (required for screen sharing in Electron 28+)
+  mainWindow.webContents.session.setDisplayMediaRequestHandler(async (_request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+      if (sources.length > 0) {
+        callback({ video: sources[0] });
+      } else {
+        callback({});
+      }
+    } catch (err) {
+      safeLog.error('[DisplayMedia] Failed to get sources:', err);
+      callback({});
+    }
+  });
+
   // Catch renderer crashes to diagnose issues
   mainWindow.webContents.on('render-process-gone', (event, details) => {
     safeLog.log('[Main] RENDERER CRASHED:', details.reason, details.exitCode);
