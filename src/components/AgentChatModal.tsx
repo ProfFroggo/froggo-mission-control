@@ -108,10 +108,11 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
         throw new Error(result?.error || 'No session key returned');
       }
     } catch (e: unknown) {
-      // '[AgentChat] Failed to spawn chat session:', e?.message;
+      // '[AgentChat] Failed to spawn chat session:', e;
+      const errMsg = e instanceof Error ? e.message : 'Unknown error';
       setMessages([{
         role: 'system',
-        content: `❌ Failed to connect: ${e.message || 'Unknown error'}. The gateway may not support agent spawning, or the session limit was reached.`,
+        content: `❌ Failed to connect: ${errMsg}. The gateway may not support agent spawning, or the session limit was reached.`,
         timestamp: Date.now(),
       }]);
     }
@@ -247,7 +248,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       setStreamingContent('');
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `❌ Failed to send: ${e.message || 'Unknown error'}`,
+        content: `❌ Failed to send: ${e instanceof Error ? e.message : 'Unknown error'}`,
         timestamp: Date.now(),
       }]);
       setSending(false);

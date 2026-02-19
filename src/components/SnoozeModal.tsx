@@ -128,7 +128,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       }
     } catch (err: unknown) {
       // '[SnoozeModal] Failed to set snooze:', err;
-      setError(err.message || 'Failed to set snooze');
+      setError(err instanceof Error ? err.message : 'Failed to set snooze');
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +149,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
       }
     } catch (err: unknown) {
       // '[SnoozeModal] Failed to unsnooze:', err;
-      setError(err.message || 'Failed to unsnooze');
+      setError(err instanceof Error ? err.message : 'Failed to unsnooze');
     } finally {
       setSubmitting(false);
     }

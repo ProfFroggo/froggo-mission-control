@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle } from 'lucide-react';
 import { useUserSettings } from '../store/userSettings';
 
@@ -57,7 +57,7 @@ export default function EpicCalendar({
   const [pendingReschedule, setPendingReschedule] = useState<{ event: CalendarEvent; newStart: Date; newEnd: Date } | null>(null);
 
   const { emailAccounts } = useUserSettings();
-  const accounts = emailAccounts.map(a => a.email);
+  const accounts = useMemo(() => emailAccounts.map(a => a.email), [emailAccounts]);
 
   // Open create event modal
   const handleCreateEvent = () => {
@@ -335,7 +335,9 @@ export default function EpicCalendar({
         days: 30,
         includeGoogle: true,
         includeMissionControl: true,
-        accounts
+        // Only pass accounts if user has configured them; otherwise let backend
+        // use its own discovered accounts from gog auth list
+        ...(accounts.length > 0 ? { accounts } : {})
       });
 
       if (response.success) {

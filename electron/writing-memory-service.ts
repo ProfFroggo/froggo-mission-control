@@ -1,51 +1,17 @@
 /**
- * Writing Memory Service — file-based CRUD for characters, timeline, and facts.
+ * Writing Memory Service — DB-backed CRUD for characters, timeline, and facts.
  *
- * Storage per project:
- *   ~/froggo/writing-projects/{projectId}/memory/
- *     characters.json   — CharacterProfile[]
- *     timeline.json     — TimelineEvent[]
- *     facts.json        — VerifiedFact[]
+ * Data stored in per-book SQLite: {projectId}/book.db
+ * Auto-migrates from legacy JSON files on first access.
  */
 
 import { ipcMain } from 'electron';
 import * as fs from 'fs';
-import * as path from 'path';
-import { writingMemoryPath } from './paths';
+import { writingBookDbPath, writingProjectPath } from './paths';
+import { getBookDb, migrateJsonToDb } from './writing-db';
 import { createLogger } from './utils/logger';
 
 const logger = createLogger('WritingMemory');
-
-// ── Types ──
-
-interface CharacterProfile {
-  id: string;
-  name: string;
-  relationship: string;
-  description: string;
-  traits: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface TimelineEvent {
-  id: string;
-  date: string;
-  description: string;
-  chapterRefs: string[];
-  position: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface VerifiedFact {
-  id: string;
-  claim: string;
-  source: string;
-  status: 'unverified' | 'verified' | 'disputed' | 'needs-source';
-  createdAt: string;
-  updatedAt: string;
-}
 
 // ── Helpers ──
 
@@ -53,31 +19,30 @@ function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 }
 
-async function ensureDir(dir: string): Promise<void> {
-  await fs.promises.mkdir(dir, { recursive: true });
-}
-
-async function readJsonArray<T>(filepath: string): Promise<T[]> {
-  try {
-    const raw = await fs.promises.readFile(filepath, 'utf-8');
-    return JSON.parse(raw) as T[];
-  } catch (err: any) {
-    if (err.code === 'ENOENT') return [];
-    throw err;
+function ensureBookDb(projectId: string) {
+  const dbPath = writingBookDbPath(projectId);
+  if (!fs.existsSync(dbPath)) {
+    const hasJson = fs.existsSync(`${writingProjectPath(projectId)}/project.json`);
+    if (hasJson) migrateJsonToDb(projectId);
   }
-}
-
-async function writeJson(filepath: string, data: unknown): Promise<void> {
-  await ensureDir(path.dirname(filepath));
-  await fs.promises.writeFile(filepath, JSON.stringify(data, null, 2), 'utf-8');
+  return getBookDb(projectId);
 }
 
 // ── Characters CRUD ──
 
 async function listCharacters(projectId: string) {
   try {
-    const filepath = writingMemoryPath(projectId, 'characters.json');
-    const characters = await readJsonArray<CharacterProfile>(filepath);
+    const db = ensureBookDb(projectId);
+    const rows = db.prepare('SELECT * FROM characters ORDER BY name').all() as any[];
+    const characters = rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      relationship: r.role,
+      description: r.description,
+      traits: JSON.parse(r.traits || '[]'),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
     return { success: true, characters };
   } catch (e: any) {
     logger.error('[writing-memory] listCharacters error:', e.message);
@@ -85,43 +50,46 @@ async function listCharacters(projectId: string) {
   }
 }
 
-async function createCharacter(projectId: string, data: Omit<CharacterProfile, 'id' | 'createdAt' | 'updatedAt'>) {
+async function createCharacter(projectId: string, data: { name?: string; relationship?: string; description?: string; traits?: string[] }) {
   try {
-    const filepath = writingMemoryPath(projectId, 'characters.json');
-    const characters = await readJsonArray<CharacterProfile>(filepath);
+    const db = ensureBookDb(projectId);
     const now = new Date().toISOString();
+    const id = generateId('char');
 
-    const character: CharacterProfile = {
-      id: generateId('char'),
-      name: data.name || '',
-      relationship: data.relationship || '',
-      description: data.description || '',
-      traits: data.traits || [],
-      createdAt: now,
-      updatedAt: now,
+    db.prepare(`
+      INSERT INTO characters (id, name, role, description, traits, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.name || '', data.relationship || 'supporting', data.description || '', JSON.stringify(data.traits || []), now, now);
+
+    return {
+      success: true,
+      character: { id, name: data.name || '', relationship: data.relationship || 'supporting', description: data.description || '', traits: data.traits || [], createdAt: now, updatedAt: now },
     };
-
-    characters.push(character);
-    await writeJson(filepath, characters);
-    return { success: true, character };
   } catch (e: any) {
     logger.error('[writing-memory] createCharacter error:', e.message);
     return { success: false, error: e.message };
   }
 }
 
-async function updateCharacter(projectId: string, id: string, updates: Partial<CharacterProfile>) {
+async function updateCharacter(projectId: string, id: string, updates: Record<string, any>) {
   try {
-    const filepath = writingMemoryPath(projectId, 'characters.json');
-    const characters = await readJsonArray<CharacterProfile>(filepath);
-    const idx = characters.findIndex(c => c.id === id);
-
-    if (idx === -1) return { success: false, error: 'Character not found' };
+    const db = ensureBookDb(projectId);
+    const existing = db.prepare('SELECT * FROM characters WHERE id = ?').get(id) as any;
+    if (!existing) return { success: false, error: 'Character not found' };
 
     const now = new Date().toISOString();
-    characters[idx] = { ...characters[idx], ...updates, id, updatedAt: now };
-    await writeJson(filepath, characters);
-    return { success: true, character: characters[idx] };
+    const name = updates.name ?? existing.name;
+    const role = updates.relationship ?? existing.role;
+    const description = updates.description ?? existing.description;
+    const traits = updates.traits ? JSON.stringify(updates.traits) : existing.traits;
+
+    db.prepare('UPDATE characters SET name = ?, role = ?, description = ?, traits = ?, updated_at = ? WHERE id = ?')
+      .run(name, role, description, traits, now, id);
+
+    return {
+      success: true,
+      character: { id, name, relationship: role, description, traits: JSON.parse(traits), createdAt: existing.created_at, updatedAt: now },
+    };
   } catch (e: any) {
     logger.error('[writing-memory] updateCharacter error:', e.message);
     return { success: false, error: e.message };
@@ -130,15 +98,9 @@ async function updateCharacter(projectId: string, id: string, updates: Partial<C
 
 async function deleteCharacter(projectId: string, id: string) {
   try {
-    const filepath = writingMemoryPath(projectId, 'characters.json');
-    const characters = await readJsonArray<CharacterProfile>(filepath);
-    const filtered = characters.filter(c => c.id !== id);
-
-    if (filtered.length === characters.length) {
-      return { success: false, error: 'Character not found' };
-    }
-
-    await writeJson(filepath, filtered);
+    const db = ensureBookDb(projectId);
+    const result = db.prepare('DELETE FROM characters WHERE id = ?').run(id);
+    if (result.changes === 0) return { success: false, error: 'Character not found' };
     return { success: true };
   } catch (e: any) {
     logger.error('[writing-memory] deleteCharacter error:', e.message);
@@ -150,8 +112,17 @@ async function deleteCharacter(projectId: string, id: string) {
 
 async function listTimeline(projectId: string) {
   try {
-    const filepath = writingMemoryPath(projectId, 'timeline.json');
-    const timeline = await readJsonArray<TimelineEvent>(filepath);
+    const db = ensureBookDb(projectId);
+    const rows = db.prepare('SELECT * FROM timeline ORDER BY position').all() as any[];
+    const timeline = rows.map(r => ({
+      id: r.id,
+      date: r.date,
+      description: r.description,
+      chapterRefs: JSON.parse(r.chapter_refs || '[]'),
+      position: r.position,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
     return { success: true, timeline };
   } catch (e: any) {
     logger.error('[writing-memory] listTimeline error:', e.message);
@@ -159,43 +130,49 @@ async function listTimeline(projectId: string) {
   }
 }
 
-async function createTimelineEvent(projectId: string, data: Omit<TimelineEvent, 'id' | 'createdAt' | 'updatedAt'>) {
+async function createTimelineEvent(projectId: string, data: { date?: string; description?: string; chapterRefs?: string[]; position?: number }) {
   try {
-    const filepath = writingMemoryPath(projectId, 'timeline.json');
-    const timeline = await readJsonArray<TimelineEvent>(filepath);
+    const db = ensureBookDb(projectId);
     const now = new Date().toISOString();
+    const id = generateId('evt');
 
-    const event: TimelineEvent = {
-      id: generateId('evt'),
-      date: data.date || '',
-      description: data.description || '',
-      chapterRefs: data.chapterRefs || [],
-      position: data.position ?? timeline.length,
-      createdAt: now,
-      updatedAt: now,
+    const maxRow = db.prepare('SELECT MAX(position) as max_pos FROM timeline').get() as any;
+    const position = data.position ?? ((maxRow?.max_pos || 0) + 1);
+
+    db.prepare(`
+      INSERT INTO timeline (id, date, description, chapter_refs, position, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.date || '', data.description || '', JSON.stringify(data.chapterRefs || []), position, now, now);
+
+    return {
+      success: true,
+      event: { id, date: data.date || '', description: data.description || '', chapterRefs: data.chapterRefs || [], position, createdAt: now, updatedAt: now },
     };
-
-    timeline.push(event);
-    await writeJson(filepath, timeline);
-    return { success: true, event };
   } catch (e: any) {
     logger.error('[writing-memory] createTimelineEvent error:', e.message);
     return { success: false, error: e.message };
   }
 }
 
-async function updateTimelineEvent(projectId: string, id: string, updates: Partial<TimelineEvent>) {
+async function updateTimelineEvent(projectId: string, id: string, updates: Record<string, any>) {
   try {
-    const filepath = writingMemoryPath(projectId, 'timeline.json');
-    const timeline = await readJsonArray<TimelineEvent>(filepath);
-    const idx = timeline.findIndex(e => e.id === id);
-
-    if (idx === -1) return { success: false, error: 'Timeline event not found' };
+    const db = ensureBookDb(projectId);
+    const existing = db.prepare('SELECT * FROM timeline WHERE id = ?').get(id) as any;
+    if (!existing) return { success: false, error: 'Timeline event not found' };
 
     const now = new Date().toISOString();
-    timeline[idx] = { ...timeline[idx], ...updates, id, updatedAt: now };
-    await writeJson(filepath, timeline);
-    return { success: true, event: timeline[idx] };
+    const date = updates.date ?? existing.date;
+    const description = updates.description ?? existing.description;
+    const chapterRefs = updates.chapterRefs ? JSON.stringify(updates.chapterRefs) : existing.chapter_refs;
+    const position = updates.position ?? existing.position;
+
+    db.prepare('UPDATE timeline SET date = ?, description = ?, chapter_refs = ?, position = ?, updated_at = ? WHERE id = ?')
+      .run(date, description, chapterRefs, position, now, id);
+
+    return {
+      success: true,
+      event: { id, date, description, chapterRefs: JSON.parse(chapterRefs), position, createdAt: existing.created_at, updatedAt: now },
+    };
   } catch (e: any) {
     logger.error('[writing-memory] updateTimelineEvent error:', e.message);
     return { success: false, error: e.message };
@@ -204,15 +181,9 @@ async function updateTimelineEvent(projectId: string, id: string, updates: Parti
 
 async function deleteTimelineEvent(projectId: string, id: string) {
   try {
-    const filepath = writingMemoryPath(projectId, 'timeline.json');
-    const timeline = await readJsonArray<TimelineEvent>(filepath);
-    const filtered = timeline.filter(e => e.id !== id);
-
-    if (filtered.length === timeline.length) {
-      return { success: false, error: 'Timeline event not found' };
-    }
-
-    await writeJson(filepath, filtered);
+    const db = ensureBookDb(projectId);
+    const result = db.prepare('DELETE FROM timeline WHERE id = ?').run(id);
+    if (result.changes === 0) return { success: false, error: 'Timeline event not found' };
     return { success: true };
   } catch (e: any) {
     logger.error('[writing-memory] deleteTimelineEvent error:', e.message);
@@ -224,8 +195,16 @@ async function deleteTimelineEvent(projectId: string, id: string) {
 
 async function listFacts(projectId: string) {
   try {
-    const filepath = writingMemoryPath(projectId, 'facts.json');
-    const facts = await readJsonArray<VerifiedFact>(filepath);
+    const db = ensureBookDb(projectId);
+    const rows = db.prepare('SELECT * FROM facts ORDER BY created_at').all() as any[];
+    const facts = rows.map(r => ({
+      id: r.id,
+      claim: r.claim,
+      source: r.source,
+      status: r.status,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+    }));
     return { success: true, facts };
   } catch (e: any) {
     logger.error('[writing-memory] listFacts error:', e.message);
@@ -233,42 +212,45 @@ async function listFacts(projectId: string) {
   }
 }
 
-async function createFact(projectId: string, data: Omit<VerifiedFact, 'id' | 'createdAt' | 'updatedAt'>) {
+async function createFact(projectId: string, data: { claim?: string; source?: string; status?: string }) {
   try {
-    const filepath = writingMemoryPath(projectId, 'facts.json');
-    const facts = await readJsonArray<VerifiedFact>(filepath);
+    const db = ensureBookDb(projectId);
     const now = new Date().toISOString();
+    const id = generateId('fact');
 
-    const fact: VerifiedFact = {
-      id: generateId('fact'),
-      claim: data.claim || '',
-      source: data.source || '',
-      status: data.status || 'unverified',
-      createdAt: now,
-      updatedAt: now,
+    db.prepare(`
+      INSERT INTO facts (id, claim, source, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(id, data.claim || '', data.source || '', data.status || 'unverified', now, now);
+
+    return {
+      success: true,
+      fact: { id, claim: data.claim || '', source: data.source || '', status: data.status || 'unverified', createdAt: now, updatedAt: now },
     };
-
-    facts.push(fact);
-    await writeJson(filepath, facts);
-    return { success: true, fact };
   } catch (e: any) {
     logger.error('[writing-memory] createFact error:', e.message);
     return { success: false, error: e.message };
   }
 }
 
-async function updateFact(projectId: string, id: string, updates: Partial<VerifiedFact>) {
+async function updateFact(projectId: string, id: string, updates: Record<string, any>) {
   try {
-    const filepath = writingMemoryPath(projectId, 'facts.json');
-    const facts = await readJsonArray<VerifiedFact>(filepath);
-    const idx = facts.findIndex(f => f.id === id);
-
-    if (idx === -1) return { success: false, error: 'Fact not found' };
+    const db = ensureBookDb(projectId);
+    const existing = db.prepare('SELECT * FROM facts WHERE id = ?').get(id) as any;
+    if (!existing) return { success: false, error: 'Fact not found' };
 
     const now = new Date().toISOString();
-    facts[idx] = { ...facts[idx], ...updates, id, updatedAt: now };
-    await writeJson(filepath, facts);
-    return { success: true, fact: facts[idx] };
+    const claim = updates.claim ?? existing.claim;
+    const source = updates.source ?? existing.source;
+    const status = updates.status ?? existing.status;
+
+    db.prepare('UPDATE facts SET claim = ?, source = ?, status = ?, updated_at = ? WHERE id = ?')
+      .run(claim, source, status, now, id);
+
+    return {
+      success: true,
+      fact: { id, claim, source, status, createdAt: existing.created_at, updatedAt: now },
+    };
   } catch (e: any) {
     logger.error('[writing-memory] updateFact error:', e.message);
     return { success: false, error: e.message };
@@ -277,15 +259,9 @@ async function updateFact(projectId: string, id: string, updates: Partial<Verifi
 
 async function deleteFact(projectId: string, id: string) {
   try {
-    const filepath = writingMemoryPath(projectId, 'facts.json');
-    const facts = await readJsonArray<VerifiedFact>(filepath);
-    const filtered = facts.filter(f => f.id !== id);
-
-    if (filtered.length === facts.length) {
-      return { success: false, error: 'Fact not found' };
-    }
-
-    await writeJson(filepath, filtered);
+    const db = ensureBookDb(projectId);
+    const result = db.prepare('DELETE FROM facts WHERE id = ?').run(id);
+    if (result.changes === 0) return { success: false, error: 'Fact not found' };
     return { success: true };
   } catch (e: any) {
     logger.error('[writing-memory] deleteFact error:', e.message);

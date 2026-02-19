@@ -68,7 +68,7 @@ export default function XResearchIdeaEditor() {
       }
     } catch (error: unknown) {
       // '[XResearchEditor] Submit error:', error;
-      showToast('error', `Failed to submit: ${error.message}`);
+      showToast('error', `Failed to submit: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setSubmitting(false);
     }

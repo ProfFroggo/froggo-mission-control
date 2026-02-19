@@ -1945,16 +1945,16 @@ Task: "${title}" (ID: ${taskId})
 The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
 Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 
-    // Use openclaw agent with --local --json for reliable response capture
+    // Use --local to create fresh embedded session (avoids context overflow in long-running gateway sessions)
     const escapedPrompt = pokePrompt.replace(/"/g, '\\"');
     const response = await new Promise<string>((resolve, reject) => {
       exec(
-        `openclaw agent --message "${escapedPrompt}" --agent ${taskAgent} --local --json --timeout 20`,
-        { 
-          encoding: 'utf-8', 
-          timeout: 25000, 
+        `openclaw agent --local --message "${escapedPrompt}" --agent ${taskAgent} --json --timeout 30`,
+        {
+          encoding: 'utf-8',
+          timeout: 35000,
           maxBuffer: 5 * 1024 * 1024,
-          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } 
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
         (error, stdout, stderr) => {
           if (error) {
@@ -4342,7 +4342,10 @@ ipcMain.handle('library:delete', async (_, fileId: string) => {
     }
 
     // Delete from database
-    prepare('DELETE FROM library WHERE id = ?').run(fileId);
+    const info = prepare('DELETE FROM library WHERE id = ?').run(fileId);
+    if (info.changes === 0) {
+      return { success: false, error: 'File not found' };
+    }
     return { success: true };
   } catch (error: any) {
     safeLog.error('[Library] Delete error:', error);
@@ -6282,25 +6285,66 @@ app.on('ready', () => {
 
 // ============== CALENDAR IPC HANDLERS ==============
 ipcMain.handle('calendar:events', async (_, account?: string, days?: number) => {
-  const acct = account || getDefaultGogEmail();
-  const daysArg = days ? `--days ${days}` : '--days 7';
-  const cmd = `GOG_ACCOUNT=${acct} /opt/homebrew/bin/gog calendar events ${daysArg} --json`;
-  
-  return new Promise((resolve) => {
-    exec(cmd, { timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` } }, (error, stdout) => {
-      if (error) {
-        safeLog.error('[Calendar] Events error:', error);
-        resolve({ success: false, events: [], error: error.message });
-        return;
+  const daysArg = days === 1 ? '--today' : days ? `--days ${days}` : '--days 7';
+  const execEnv = { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH || '/usr/bin:/bin'}` };
+
+  // If a specific account is requested, query only that account
+  // Otherwise, aggregate events from ALL authenticated Google accounts
+  const accounts: string[] = [];
+  if (account) {
+    accounts.push(account);
+  } else {
+    try {
+      const gogList = execSync('/opt/homebrew/bin/gog auth list --json', { timeout: 5000, env: execEnv }).toString();
+      const gogData = JSON.parse(gogList);
+      for (const a of gogData.accounts || []) {
+        if (a.email && a.services?.includes('calendar')) accounts.push(a.email);
       }
-      try {
-        const events = JSON.parse(stdout);
-        resolve({ success: true, events, account: acct });
-      } catch {
-        resolve({ success: true, events: [], raw: stdout, account: acct });
-      }
+    } catch {
+      const fallback = getDefaultGogEmail();
+      if (fallback) accounts.push(fallback);
+    }
+  }
+
+  if (accounts.length === 0) {
+    return { success: true, events: [] };
+  }
+
+  const allEvents: any[] = [];
+  const errors: string[] = [];
+
+  await Promise.all(accounts.map((acct) => {
+    const cmd = `/opt/homebrew/bin/gog calendar events ${daysArg} --account ${acct} --json`;
+    return new Promise<void>((resolve) => {
+      exec(cmd, { timeout: 30000, env: execEnv }, (error, stdout) => {
+        if (error) {
+          safeLog.error(`[Calendar] Events error for ${acct}:`, error.message);
+          errors.push(`${acct}: ${error.message}`);
+          resolve();
+          return;
+        }
+        try {
+          const data = JSON.parse(stdout);
+          const events = Array.isArray(data) ? data : (data.events || []);
+          for (const ev of events) {
+            ev.account = acct;
+            ev.source = 'google';
+          }
+          allEvents.push(...events);
+        } catch { /* ignore parse errors */ }
+        resolve();
+      });
     });
+  }));
+
+  // Sort by start time
+  allEvents.sort((a, b) => {
+    const aTime = a.start?.dateTime || a.start?.date || '';
+    const bTime = b.start?.dateTime || b.start?.date || '';
+    return aTime.localeCompare(bTime);
   });
+
+  return { success: true, events: allEvents, accounts, errors };
 });
 
 ipcMain.handle('calendar:createEvent', async (_, params: any) => {
@@ -9063,6 +9107,67 @@ ipcMain.handle('x:cancel', async (_, id: string) => {
     return { success: true };
   } catch (error: any) {
     safeLog.error('[X/Cancel] Error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+// ============== CAMPAIGN HANDLERS ==============
+
+// Ensure campaigns table exists
+try {
+  prepare(`CREATE TABLE IF NOT EXISTS x_campaigns (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    subject TEXT,
+    stages TEXT,
+    status TEXT DEFAULT 'draft',
+    start_date TEXT,
+    created_at INTEGER,
+    updated_at INTEGER
+  )`).run();
+} catch { /* table may already exist */ }
+
+ipcMain.handle('x:campaign:list', async () => {
+  try {
+    const rows = prepare('SELECT * FROM x_campaigns ORDER BY created_at DESC').all() as any[];
+    const campaigns = rows.map(r => ({
+      ...r,
+      stages: r.stages ? JSON.parse(r.stages) : [],
+    }));
+    return { success: true, campaigns };
+  } catch (error: any) {
+    safeLog.error('[X/Campaign] List error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:campaign:save', async (_, campaign: any) => {
+  try {
+    const now = Date.now();
+    const stagesJson = JSON.stringify(campaign.stages || []);
+    const existing = prepare('SELECT id FROM x_campaigns WHERE id = ?').get(campaign.id);
+    if (existing) {
+      prepare(`UPDATE x_campaigns SET title = ?, subject = ?, stages = ?, status = ?, start_date = ?, updated_at = ? WHERE id = ?`)
+        .run(campaign.title, campaign.subject, stagesJson, campaign.status || 'draft', campaign.start_date || null, now, campaign.id);
+    } else {
+      prepare(`INSERT INTO x_campaigns (id, title, subject, stages, status, start_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(campaign.id, campaign.title, campaign.subject, stagesJson, campaign.status || 'draft', campaign.start_date || null, campaign.created_at || now, now);
+    }
+    safeLog.log(`[X/Campaign] Saved: ${campaign.id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Campaign] Save error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('x:campaign:delete', async (_, id: string) => {
+  try {
+    prepare('DELETE FROM x_campaigns WHERE id = ?').run(id);
+    safeLog.log(`[X/Campaign] Deleted: ${id}`);
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[X/Campaign] Delete error:', error.message);
     return { success: false, error: error.message };
   }
 });

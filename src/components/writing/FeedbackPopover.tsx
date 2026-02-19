@@ -247,7 +247,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
           // Log the feedback interaction
           try {
-            window.clawdbot?.writing?.feedback?.log(activeProjectId, {
+            window.clawdbot?.writing?.feedback?.log(activeProjectId || '', {
               chapterId: activeChapterId,
               agentId: selectedAgent,
               selectedText,
@@ -303,7 +303,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
           // Log as fact-check interaction
           try {
-            window.clawdbot?.writing?.feedback?.log(activeProjectId, {
+            window.clawdbot?.writing?.feedback?.log(activeProjectId || '', {
               type: 'fact-check',
               chapterId: activeChapterId,
               agentId: 'researcher',
@@ -348,7 +348,7 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
 
     // Log the accept
     try {
-      window.clawdbot?.writing?.feedback?.log(activeProjectId, {
+      window.clawdbot?.writing?.feedback?.log(activeProjectId || '', {
         chapterId: activeChapterId,
         agentId: selectedAgent,
         selectedText: getSelectedText(editor),

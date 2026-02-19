@@ -417,7 +417,7 @@ Format as markdown with proper headings.`;
 
       // 2. Create SKILL.md
       const skillMd = generateSkillMd(skillData);
-      await window.clawdbot?.exec?.run(`cat > ${skillPath}/SKILL.md`, { stdin: skillMd });
+      await window.clawdbot?.exec?.run(`echo ${JSON.stringify(skillMd)} | cat > ${skillPath}/SKILL.md`);
 
       // 3. Track in skill_evolution table
       await window.clawdbot?.exec?.run(

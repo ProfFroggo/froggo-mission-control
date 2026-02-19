@@ -46,7 +46,7 @@ export default function NodesTab() {
         gateway.listNodePairRequests().catch((err) => { logger.error('Failed to list pair requests:', err); return null; }),
       ]);
 
-      if (nodesResult?.nodes) setNodes(nodesResult.nodes);
+      if (nodesResult?.nodes) setNodes(nodesResult.nodes as unknown as NodeEntry[]);
       if (Array.isArray(pairResult)) {
         setPairRequests(pairResult.filter((r: any) => r.status === 'pending'));
       }

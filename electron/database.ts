@@ -8,6 +8,7 @@
 import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import { FROGGO_DB, SCHEDULE_DB, SECURITY_DB, SESSIONS_DB, SESSIONS_DB_LEGACY } from './paths';
+import { closeAllBookDbs } from './writing-db';
 import { createLogger } from './utils/logger';
 
 const logger = createLogger('Database');
@@ -134,6 +135,9 @@ export function closeDb(): void {
     }
     sessionsDb = null;
   }
+
+  // Close all per-book writing databases
+  closeAllBookDbs();
 
   // Close main DB
   try {

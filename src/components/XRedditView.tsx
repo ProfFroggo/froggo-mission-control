@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Search, ExternalLink, RefreshCw, Send, Save, Sparkles, X, CheckCircle, Clock, AlertCircle, ThumbsUp, MessageSquare, Calendar } from 'lucide-react';
+import { MessageCircle, Search, ExternalLink, RefreshCw, Send, Save, Sparkles, CheckCircle, Clock, AlertCircle, ThumbsUp, MessageSquare } from 'lucide-react';
 
 interface RedditThread {
   id: string;

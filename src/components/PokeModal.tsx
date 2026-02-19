@@ -259,9 +259,9 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           const ts = Date.now();
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: result.response,
+            content: result.response || '',
             timestamp: ts,
-          }]);
+          }] as PokeMessage[]);
           // Persist direct reply
           window.clawdbot?.chat?.saveMessage({
             role: 'assistant', content: result.response, timestamp: ts,

@@ -392,7 +392,7 @@ Respond as ${agentName(agentId)}:`;
       setSessionKey(roomId, agentId, sessionKey);
     } catch (e: unknown) {
       updateMessage(roomId, msgId, {
-        content: `Error: ${e.message || 'Failed to reach agent'}`,
+        content: `Error: ${e instanceof Error ? e.message : 'Failed to reach agent'}`,
         streaming: false,
       });
       clearPending();
@@ -459,7 +459,7 @@ Respond as ${agentName(agentId)}:`;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',
-        content: `⚠️ Microphone error: ${err.message}`,
+        content: `⚠️ Microphone error: ${err instanceof Error ? err.message : String(err)}`,
         timestamp: Date.now(),
         type: 'text',
       }]);
@@ -520,7 +520,7 @@ Respond as ${agentName(agentId)}:`;
       setTranscript(prev => [...prev, {
         id: `sys-${Date.now()}`,
         speaker: 'system',
-        content: `⚠️ Failed to start: ${err.message}`,
+        content: `⚠️ Failed to start: ${err instanceof Error ? err.message : String(err)}`,
         timestamp: Date.now(),
         type: 'text',
       }]);

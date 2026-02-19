@@ -533,7 +533,7 @@ export async function calculatePriorityScoreAsync(item: InboxItemForScoring): Pr
  * Preload VIP cache (call on app init)
  */
 export function preloadVipCache(): Promise<void> {
-  return loadVips().then(() => undefined).catch(err => {
+  return loadVips().then(() => undefined).catch(_err => {
   });
 }
 

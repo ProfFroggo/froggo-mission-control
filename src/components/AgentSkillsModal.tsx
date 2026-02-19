@@ -44,7 +44,7 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
       const dbExec = window.clawdbot?.db?.exec;
       if (dbExec) {
         const res = await dbExec('SELECT * FROM agent_skills ORDER BY agent_id, proficiency DESC');
-        setSkills(res?.result || []);
+        setSkills((res?.result || []) as AgentSkill[]);
       }
     } catch (e) {
       // 'Failed to load skills:', e;

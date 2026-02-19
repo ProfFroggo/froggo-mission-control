@@ -61,6 +61,7 @@ interface ChatEventData {
   delta?: string;
   state?: 'delta' | 'final' | 'error';
   error?: boolean;
+  final?: boolean;
 }
 
 interface ChatErrorData {
@@ -77,7 +78,7 @@ export interface RunCallback {
 }
 
 /** Generic listener type for gateway events - using any for backward compatibility with existing consumers */
-export type GatewayListener = (payload: any) => void;
+export type GatewayListener = (...args: any[]) => void;
 
 // Load settings from localStorage
 function getSettings(): { gatewayUrl: string; gatewayToken: string } {
@@ -120,14 +121,14 @@ export type ConnectionState = 'disconnected' | 'connecting' | 'authenticating' |
 interface QueuedAction {
   method: string;
   params: unknown;
-  resolve: (value: unknown) => void;
+  resolve: (value: any) => void;
   reject: (reason: Error) => void;
 }
 
 class Gateway {
   private ws: WebSocket | null = null;
   private seq = 0;
-  private pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: number }>();
+  private pending = new Map<string, { resolve: (v: any) => void; reject: (e: Error) => void; timer: number }>();
   private listeners = new Map<string, Set<Listener>>();
   private state: ConnectionState = 'disconnected';
   private reconnectTimer: number | null = null;
@@ -430,6 +431,13 @@ class Gateway {
     }
     this.pending.clear();
 
+    // Fire onError for any in-flight runCallbacks so components can reset streaming state
+    for (const [runId, cb] of this.runCallbacks) {
+      try { cb.onError?.('Connection closed', {}); } catch { /* ignore */ }
+      this.activeRunIds.delete(runId);
+    }
+    this.runCallbacks.clear();
+
     if (this.ws) {
       try {
         this.ws.onclose = null;
@@ -584,7 +592,7 @@ class Gateway {
     }
     
     return new Promise((resolve, reject) => {
-      this.offlineQueue.push({ method, params, resolve: resolve as (value: unknown) => void, reject });
+      this.offlineQueue.push({ method, params, resolve: resolve as (value: any) => void, reject });
       this.emit('actionQueued', { method, queueSize: this.offlineQueue.length });
     });
   }
@@ -600,7 +608,7 @@ class Gateway {
     
     for (const action of queue) {
       try {
-        const result = await this.request(action.method, action.params);
+        const result = await this.request(action.method, action.params as Record<string, unknown>);
         action.resolve(result);
       } catch (err) {
         action.reject(err instanceof Error ? err : new Error(String(err)));
@@ -653,6 +661,12 @@ class Gateway {
   
   setSessionKey(key: string) {
     this.sessionKey = key;
+    // Fire onError for any in-flight callbacks from the old session
+    for (const [runId, cb] of this.runCallbacks) {
+      try { cb.onError?.('Session changed', {}); } catch { /* ignore */ }
+      this.activeRunIds.delete(runId);
+    }
+    this.runCallbacks.clear();
     this.activeRunIds.clear();
     logger.debug('[Gateway] Session key changed to:', key);
   }
@@ -690,7 +704,7 @@ class Gateway {
 
     const idempotencyKey = `dashboard-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     
-    const result = await this.request('send', {
+    const result = await this.request<{ status?: string; error?: string }>('send', {
       to: 'channel:1465351776759975977',  // Discord #get_shit_done channel
       message: message,
       channel: 'discord',
@@ -772,7 +786,7 @@ class Gateway {
       });
 
       // Unified chat event — only used for final-state detection (no content mutation)
-      const unsub1 = this.on('chat', (event: string, data: ChatEventData) => {
+      const unsub1 = this.on('chat', (_event: string, data: ChatEventData) => {
         captureRunId(data);
         if (!isOurEvent(data)) return;
 
@@ -806,19 +820,19 @@ class Gateway {
       void (async () => {
         try {
           logger.debug('[Gateway] sendChat calling request...');
-          const result = await this.request('chat.send', { 
-            message, 
-            sessionKey: this.sessionKey, 
+          const result = await this.request<{ runId?: string; content?: string }>('chat.send', {
+            message,
+            sessionKey: this.sessionKey,
             idempotencyKey,
           });
           logger.debug('[Gateway] sendChat request returned:', JSON.stringify(result));
-          
+
           // Capture runId to filter streaming events
           if (result?.runId) {
             ourRunId = result.runId;
             logger.debug('[Gateway] Tracking runId:', ourRunId);
           }
-          
+
           // If we got a direct response (non-streaming), use it
           if (result?.content) {
             clearTimeout(timeout);
@@ -838,9 +852,9 @@ class Gateway {
   // Fire-and-forget send for streaming UI — returns runId for event filtering
   async sendChatStreaming(message: string): Promise<string | undefined> {
     const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const result = await this.request('chat.send', { 
-      message, 
-      sessionKey: this.sessionKey, 
+    const result = await this.request<{ runId?: string }>('chat.send', {
+      message,
+      sessionKey: this.sessionKey,
       idempotencyKey,
     });
     const runId = result?.runId;
@@ -867,7 +881,7 @@ class Gateway {
     callbacks: RunCallback,
   ): Promise<string | undefined> {
     const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const result = await this.request('chat.send', {
+    const result = await this.request<{ runId?: string }>('chat.send', {
       message,
       sessionKey,
       idempotencyKey,

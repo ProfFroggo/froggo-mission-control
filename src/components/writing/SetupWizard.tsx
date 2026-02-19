@@ -16,6 +16,7 @@ export default function SetupWizard() {
     setSelectedAgent,
     cancelWizard,
     messages,
+    streaming,
     plan,
     reset,
   } = useWizardStore();
@@ -167,7 +168,7 @@ export default function SetupWizard() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setStep('extracting')}
-              disabled={step === 'extracting' || messages.length < 2}
+              disabled={step === 'extracting' || streaming || messages.length < 4}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-clawd-accent text-white text-xs font-medium hover:bg-clawd-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 size={12} />

@@ -30,7 +30,7 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
       const dbExec = window.clawdbot?.db?.exec;
       if (dbExec) {
         const res = await dbExec('SELECT * FROM agent_training_log ORDER BY created_at DESC LIMIT 50');
-        setEntries(res?.result || []);
+        setEntries((res?.result || []) as TrainingEntry[]);
       }
     } catch (e) {
       // 'Failed to load training log:', e;

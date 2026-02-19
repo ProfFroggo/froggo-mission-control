@@ -306,7 +306,7 @@ export default function ChatPanel() {
               id: `hist-${i}-${Date.now()}`,
               role: m.role as 'user' | 'assistant',
               content: content || '',
-              timestamp: m.timestamp || Date.now() - (res.messages.length - i) * 1000,
+              timestamp: m.timestamp || Date.now() - ((res.messages?.length ?? 0) - i) * 1000,
             };
           })
           .reverse(); // Most recent last
@@ -587,7 +587,7 @@ export default function ChatPanel() {
       }
     } catch (error: unknown) {
       // '[Chat] Suggestion error:', error;
-      showToast('error', 'Failed to generate', error.message || 'Unknown error');
+      showToast('error', 'Failed to generate', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setLoadingSuggestions(false);
     }
