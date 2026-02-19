@@ -75,7 +75,7 @@ export default function TokenUsageWidget() {
       // Map UI period names to froggo-db period names
       const periodMap: Record<string, string> = { 'today': 'day', '7d': 'week', '30d': 'month' };
       const summary = await window.clawdbot.tokens.summary({ period: periodMap[period] || period });
-      setSummaryData(summary);
+      setSummaryData(summary as unknown as TokenSummaryResponse);
 
       if (!summary.error && summary.by_agent) {
         // Transform data for chart

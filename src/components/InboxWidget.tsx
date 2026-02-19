@@ -21,7 +21,7 @@ export default function InboxWidget() {
       if (result?.success && Array.isArray(result.items)) {
         // Count pending/unread items
         const pending = result.items.filter(
-          (item: InboxItem) => item.status === 'pending'
+          (item) => item.status === 'pending'
         );
         setUnreadCount(pending.length);
       } else {

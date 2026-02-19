@@ -1343,8 +1343,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   
                   if (activeAgent) {
                     setActiveAgentInfo({
-                      sessionKey: activeAgent.key,
-                      displayName: activeAgent.label || activeAgent.key
+                      sessionKey: activeAgent.key as string,
+                      displayName: (activeAgent.label || activeAgent.key) as string
                     });
                     setShowAgentActiveModal(true);
                   } else {
