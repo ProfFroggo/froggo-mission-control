@@ -96,7 +96,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       }
       const result = await clawdbot.tasks.attachments.list(task.id);
       if (result.success) {
-        setAttachments(result.attachments);
+        setAttachments(result.attachments as TaskAttachment[]);
       }
     } catch (err: unknown) {
       // 'Failed to load attachments:', err;
@@ -333,7 +333,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       const result = await gateway.getSessions();
       if (result.sessions) {
         // Find session with label matching task ID
-        const activeSession = result.sessions.find((s: { updatedAt: number; label?: string }) => {
+        const activeSession = result.sessions.find((s: any) => {
           // Session is active if updated within last 5 minutes
           const isActive = (Date.now() - s.updatedAt) < 5 * 60 * 1000;
           // Label contains task ID (e.g., "coder-task-123")
@@ -467,17 +467,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         await clawdbot.fs.writeBase64(filePath, base64);
 
         // Add attachment record
-        const result = await clawdbot.tasks.attachments.add(
+        const result = await clawdbot.tasks.attachments?.add(
           task.id,
           filePath,
           'deliverable',
           'user'
         );
         
-        if (result.success) {
-          setAttachments([result.attachment, ...attachments]);
+        if (result?.success) {
+          if (result.attachment) setAttachments([result.attachment, ...attachments]);
           showToast('success', 'File attached', file.name);
-        } else {
+        } else if (result) {
           showToast('error', 'Failed to attach file', result.error);
         }
         setUploadingFile(false);

@@ -286,7 +286,7 @@ export default function ChatPanel() {
     }
     
     try {
-      const res = await gateway.getChatHistory(30);
+      const res = await gateway.getChatHistory(30) as { messages?: any[] } | null;
       if (res?.messages && Array.isArray(res.messages)) {
         const history: ChatMessage[] = res.messages
           .filter((m: any) => m.role === 'user' || m.role === 'assistant')
@@ -301,7 +301,7 @@ export default function ChatPanel() {
                 .map((c: any) => c.text)
                 .join('');
             }
-            
+
             return {
               id: `hist-${i}-${Date.now()}`,
               role: m.role as 'user' | 'assistant',

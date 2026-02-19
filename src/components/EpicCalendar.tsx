@@ -351,7 +351,7 @@ export default function EpicCalendar({
         throw new Error(response.error || 'Failed to aggregate events');
       }
     } catch (err: unknown) {
-      const errorMsg = err?.message || 'Failed to fetch calendar events';
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch calendar events';
       setError(errorMsg);
       // '[EpicCalendar] Error:', err;
     } finally {

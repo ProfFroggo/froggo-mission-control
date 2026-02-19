@@ -43,8 +43,9 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         types: ['screen', 'window'],
         thumbnailSize: { width: 320, height: 180 },
       });
-      console.log('[ScreenSourcePicker] Got sources:', result?.length || 0);
-      setSources(result || []);
+      const sources = result?.sources || [];
+      console.log('[ScreenSourcePicker] Got sources:', sources.length);
+      setSources(sources as ScreenSource[]);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       console.error('[ScreenSourcePicker] Failed to get sources:', errMsg);
