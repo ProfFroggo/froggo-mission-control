@@ -182,18 +182,18 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
     const allResults: SearchResult[] = [];
 
     try {
-      // Search froggo-db (tasks, facts, messages) - now with BM25 relevance scoring
-      const dbResult = await window.clawdbot?.search?.local(q);
-      if (dbResult?.success && dbResult.results) {
-        allResults.push(...dbResult.results.map((r: any) => ({
-          id: r.id || `db-${Date.now()}`,
+      // Search unified (messages, facts, tasks, agent context) via single IPC call
+      const unifiedResult = await window.clawdbot?.search?.unified(q);
+      if (unifiedResult?.success && unifiedResult.results) {
+        allResults.push(...unifiedResult.results.map((r: any) => ({
+          id: r.id || `unified-${Date.now()}-${Math.random()}`,
           type: r.type || 'message',
-          title: r.title || r.content?.slice(0, 80) || r.text?.slice(0, 80) || 'Untitled',
-          snippet: r.snippet || r.content || r.text || r.description || '',
+          title: r.title || r.content?.slice(0, 80) || 'Untitled',
+          snippet: r.snippet || r.content || r.description || '',
           timestamp: r.timestamp || r.created_at,
-          source: r.type === 'fact' ? 'Facts' : 'Messages',
+          source: r.source,  // Already set by search-service.ts: 'Messages', 'Facts', 'Tasks', 'Agent Context'
           status: r.status,
-          score: r.relevance_score, // BM25 score from backend
+          score: r.relevance_score,
           metadata: r,
         })));
       }
@@ -442,7 +442,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
               <Hash size={14} className="text-clawd-text-dim" />
               <span className="text-sm text-clawd-text-dim font-medium">Type:</span>
               <div className="flex gap-1 flex-wrap">
-                {(['all', 'task', 'message', 'email', 'session', 'agent', 'calendar'] as FilterType[]).map(type => (
+                {(['all', 'task', 'fact', 'message', 'email', 'session', 'agent', 'calendar'] as FilterType[]).map(type => (
                   <button
                     key={type}
                     onClick={() => setTypeFilter(type)}
