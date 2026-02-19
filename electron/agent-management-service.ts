@@ -14,6 +14,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { registerHandler } from './ipc-registry';
 import { createLogger } from './utils/logger';
+import { SHARED_CONTEXT_DIR } from './paths';
 
 const logger = createLogger('AgentMgmt');
 
@@ -275,6 +276,55 @@ async function handleModelsWrite(
   }
 }
 
+// ── Handler 5: agentManagement:ctx:check ────────────────────────────────────
+
+interface CtxCheckResult {
+  success: boolean;
+  health?: Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>;
+  error?: string;
+}
+
+/**
+ * Checks if a path is a symlink pointing to the expected target.
+ * Uses lstatSync (not statSync) so it checks the link itself, not the target.
+ */
+function isCorrectSymlink(linkPath: string, expectedTarget: string): boolean {
+  try {
+    const stat = fs.lstatSync(linkPath);
+    if (!stat.isSymbolicLink()) return false;
+    const actual = fs.readlinkSync(linkPath);
+    const resolvedActual = path.resolve(path.dirname(linkPath), actual);
+    return resolvedActual === path.resolve(expectedTarget);
+  } catch {
+    return false;
+  }
+}
+
+async function handleCtxCheck(): Promise<CtxCheckResult> {
+  try {
+    const entries = fs.readdirSync(HOME);
+    const health: Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }> = {};
+
+    for (const dir of entries) {
+      if (!dir.startsWith('agent-')) continue;
+      const agentId = dir.slice('agent-'.length);
+      if (!AGENT_ID_REGEX.test(agentId)) continue;
+
+      const agentDir = path.join(HOME, dir);
+      health[agentId] = {
+        AGENTS: isCorrectSymlink(path.join(agentDir, 'AGENTS.md'), path.join(SHARED_CONTEXT_DIR, 'AGENTS.md')),
+        USER:   isCorrectSymlink(path.join(agentDir, 'USER.md'),   path.join(SHARED_CONTEXT_DIR, 'USER.md')),
+        TOOLS:  isCorrectSymlink(path.join(agentDir, 'TOOLS.md'),  path.join(SHARED_CONTEXT_DIR, 'TOOLS.md')),
+      };
+    }
+
+    return { success: true, health };
+  } catch (err: any) {
+    logger.error('[ctx:check] Error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ── IPC Registration ────────────────────────────────────────────────────────
 
 export function registerAgentManagementHandlers(): void {
@@ -282,5 +332,6 @@ export function registerAgentManagementHandlers(): void {
   registerHandler('agentManagement:soul:write', handleSoulWrite);
   registerHandler('agentManagement:models:read', handleModelsRead);
   registerHandler('agentManagement:models:write', handleModelsWrite);
+  registerHandler('agentManagement:ctx:check', handleCtxCheck);
   logger.info('[AgentMgmt] Handlers registered');
 }
