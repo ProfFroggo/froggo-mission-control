@@ -865,12 +865,14 @@ class Gateway {
     message: string,
     sessionKey: string,
     callbacks: RunCallback,
+    agentId?: string,
   ): Promise<string | undefined> {
     const idempotencyKey = `chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const result = await this.request('chat.send', {
       message,
       sessionKey,
       idempotencyKey,
+      ...(agentId ? { agentId } : {}),
     });
     const runId = result?.runId;
     if (runId) {

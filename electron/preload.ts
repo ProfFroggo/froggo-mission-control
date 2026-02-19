@@ -661,11 +661,6 @@ contextBridge.exposeInMainWorld('clawdbot', {
     triggerAnalysis: (analysisType?: 'csv_upload' | 'manual') => ipcRenderer.invoke('financeAgent:triggerAnalysis', analysisType),
     getStatus: () => ipcRenderer.invoke('financeAgent:getStatus'),
   },
-  socialAgent: {
-    sendMessage: (message: string, context?: Record<string, unknown>) => ipcRenderer.invoke('socialAgent:sendMessage', message, context),
-    getChatHistory: () => ipcRenderer.invoke('socialAgent:getChatHistory'),
-    clearHistory: () => ipcRenderer.invoke('socialAgent:clearHistory'),
-  },
   // X/Twitter Research
   xResearch: {
     propose: (data: { title: string; description: string; citations: string[]; proposedBy: string }) => 

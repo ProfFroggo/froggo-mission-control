@@ -194,7 +194,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
       const contextTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
       const contextPrompt = `${TAB_CONTEXT[contextTab]}\n\nUser message: ${text}`;
 
-      // Send to agent via gateway with streaming callbacks
+      // Send to agent via gateway with streaming callbacks (explicit agentId for routing)
       await gateway.sendChatWithCallbacks(contextPrompt, sessionKey, {
         onDelta: (delta: string) => {
           agentContent += delta;
@@ -237,7 +237,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           setError(errorMsg);
           setLoading(false);
         },
-      });
+      }, safeAgentId);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to send message';
       setMessages((prev) =>
