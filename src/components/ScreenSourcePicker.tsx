@@ -85,7 +85,8 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
       aria-label="Cancel screen share"
       type="button"
     >
-      <div role="dialog" aria-modal="true" aria-label="Screen source picker" className="bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl w-[640px] max-w-[90vw] max-h-[80vh] flex flex-col">
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      <div role="dialog" aria-modal="true" aria-label="Screen source picker" className="bg-clawd-surface border border-clawd-border rounded-2xl shadow-2xl w-[640px] max-w-[90vw] max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-clawd-border">
           <h2 className="text-lg font-semibold text-clawd-text">Share Your Screen</h2>
