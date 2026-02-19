@@ -22,6 +22,8 @@ interface ChatRoomViewProps {
   onBack: () => void;
 }
 
+const MAX_AGENT_RESPONSES_PER_TURN = 15;
+
 export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const { rooms, addMessage, updateMessage, setSessionKey, updateRoomAgents, deleteRoom } = useChatRoomStore();
   const agents = useStore(s => s.agents);
@@ -47,6 +49,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const abortRef = useRef(false);
   const [stopped, setStopped] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const turnResponseCountRef = useRef(0);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -174,13 +177,14 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
     await routeToAgents(targets, lastUserMsg.content);
   };
 
-  /** Extract @AgentName mentions from text */
+  /** Extract @AgentName or @agent-id mentions from text */
   const extractMentions = (text: string, agentIds: string[]): string[] => {
     const mentioned: string[] = [];
     for (const id of agentIds) {
       const name = agentName(id);
-      const pattern = new RegExp(`@${name}\\b`, 'i');
-      if (pattern.test(text)) {
+      const namePattern = new RegExp(`@${name}\\b`, 'i');
+      const idPattern = new RegExp(`@${id}\\b`, 'i');
+      if (namePattern.test(text) || idPattern.test(text)) {
         mentioned.push(id);
       }
     }
@@ -201,12 +205,18 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
 
     const otherAgents = room.agents.filter(a => a !== forAgent).map(a => agentName(a));
 
-    // Allow orchestrators (Froggo, Chief) to use tools in group chats
-    const allowTools = ['froggo', 'chief'].includes(forAgent);
+    // All agents can use tools in group chats
+    const allowTools = true;
 
     const toolRule = allowTools
       ? "1. You can use tools when needed, but keep explanations brief (1-3 sentences)."
       : "1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.";
+
+    const coordinatorRule = forAgent === 'froggo'
+      ? `\n6. You are the COORDINATOR. You can @tag any agent to pull them into conversation or assign work.
+7. To END a conversation thread, respond WITHOUT any @tags — this signals the discussion is done.
+8. If agents are going back and forth unproductively, rein them in with a final statement (no @tags).`
+      : '';
 
     return `You are ${agentName(forAgent)} in a multi-agent chat room called "${room.name}".
 Other participants: Kevin (human), ${otherAgents.join(', ')}.
@@ -216,7 +226,7 @@ ${toolRule}
 2. Do NOT repeat, echo, or paraphrase what other agents said. Add YOUR OWN unique perspective only.
 3. If you have nothing new to add, just say so briefly.
 4. Do NOT copy another agent's message structure or content.
-5. You can address others with @Name. Be concise and original.
+5. Only @tag another agent if you have a QUESTION for them. Do NOT @tag when making statements or acknowledgments — untagged responses end the thread.${coordinatorRule}
 
 ## Conversation so far:
 ${lines.join('\n')}
@@ -226,8 +236,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
   /** Send a message to a specific agent using per-runId callbacks.
    *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout). */
-  const sendToAgent = (agentId: string, prompt: string): Promise<void> => {
-    return new Promise<void>((resolve) => {
+  const sendToAgent = (agentId: string, prompt: string): Promise<string> => {
+    return new Promise<string>((resolve) => {
       const msgId = `rm-${Date.now()}-${agentId}`;
       let content = '';
       let settled = false;
@@ -242,7 +252,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           pendingMsgIdRef.current = null;
           pendingContentRef.current = '';
         }
-        resolve();
+        resolve(content);
       };
 
       pendingAgentRef.current = agentId;
@@ -293,9 +303,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             } else {
               updateMessage(roomId, msgId, { streaming: false, content });
             }
-            // NOTE: Do NOT auto-route @mentions from agent responses.
-            // This causes echo/parrot cascades where agents copy each other.
-            // Only the user's messages trigger agent responses.
             settle();
           },
           onError: (error) => {
@@ -321,15 +328,41 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     });
   };
 
-  /** Route message to specified agents */
-  const routeToAgents = async (agentIds: string[], content: string, fromAgent?: string) => {
-    abortRef.current = false;
-    for (const agentId of agentIds) {
+  /** Route message to specified agents, then forward @mentions between agents */
+  const routeToAgents = async (initialTargets: string[], content: string, fromAgent?: string) => {
+    if (!room) return;
+    const queue: Array<{ agentId: string; content: string; fromAgent?: string }> =
+      initialTargets.map(id => ({ agentId: id, content, fromAgent }));
+
+    setLoading(true);
+
+    while (queue.length > 0 && turnResponseCountRef.current < MAX_AGENT_RESPONSES_PER_TURN) {
       if (abortRef.current) break;
-      const prompt = buildContext(agentId, content, fromAgent);
-      setLoading(true);
-      await sendToAgent(agentId, prompt);
+      const next = queue.shift()!;
+      const prompt = buildContext(next.agentId, next.content, next.fromAgent);
+      turnResponseCountRef.current++;
+
+      const responseContent = await sendToAgent(next.agentId, prompt);
+
+      // Forward @mentions from agent responses to mentioned agents
+      if (responseContent?.trim()) {
+        const mentioned = extractMentions(responseContent, room.agents);
+        const targets = mentioned.filter(id => id !== next.agentId);
+        for (const target of targets) {
+          queue.push({ agentId: target, content: responseContent, fromAgent: next.agentId });
+        }
+      }
     }
+
+    if (queue.length > 0 && !abortRef.current) {
+      addMessage(roomId, {
+        id: `rm-${Date.now()}-limit`,
+        role: 'agent',
+        content: '\u23f8 Response limit reached \u2014 send a message to continue.',
+        timestamp: Date.now(),
+      });
+    }
+
     setLoading(false);
   };
 
@@ -364,6 +397,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
     setStopped(false);
     setLoading(true);
+    turnResponseCountRef.current = 0;
     await routeToAgents(targets, fullContent);
   };
 
