@@ -237,7 +237,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
           setError(errorMsg);
           setLoading(false);
         },
-      }, safeAgentId);
+      });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to send message';
       setMessages((prev) =>
