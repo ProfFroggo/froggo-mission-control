@@ -44,6 +44,7 @@ import { registerXPublishingHandlers } from './x-publishing-service';
 import { registerXAnalyticsHandlers } from './x-analytics-service';
 import { registerAgentManagementHandlers } from './agent-management-service';
 import { registerMemoryLifecycleHandlers } from './memory-lifecycle-service';
+import { registerSearchHandlers } from './search-service';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -957,6 +958,9 @@ app.whenReady().then(() => {
 
   // Register Memory Lifecycle IPC handlers (health metrics + rotation)
   registerMemoryLifecycleHandlers();
+
+  // Register unified search IPC handlers (fan-out across messages, tasks, agent context)
+  registerSearchHandlers();
 
   // Start task notification watcher
   startTaskNotifyWatcher();
