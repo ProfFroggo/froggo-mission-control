@@ -712,6 +712,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
     list: () => ipcRenderer.invoke('x:scheduled'),
     cancel: (id: string) => ipcRenderer.invoke('x:cancel', id),
   },
+  xCampaign: {
+    list: () => ipcRenderer.invoke('x:campaign:list'),
+    save: (campaign: any) => ipcRenderer.invoke('x:campaign:save', campaign),
+    delete: (id: string) => ipcRenderer.invoke('x:campaign:delete', id),
+  },
   xMention: {
     fetch: () => ipcRenderer.invoke('x:mention:fetch'),
     list: (filters?: { replyStatus?: string; limit?: number; offset?: number }) =>
@@ -889,6 +894,9 @@ contextBridge.exposeInMainWorld('clawdbot', {
     models: {
       read: (agentId: string) => ipcRenderer.invoke('agentManagement:models:read', agentId),
       write: (agentId: string, updates: { primary?: string; fallbacks?: string[] }) => ipcRenderer.invoke('agentManagement:models:write', agentId, updates),
+    },
+    ctx: {
+      check: () => ipcRenderer.invoke('agentManagement:ctx:check'),
     },
   },
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
+import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
 import { gateway } from '../lib/gateway';
 import WorkerModal from './WorkerModal';
@@ -50,6 +50,13 @@ export default function AgentPanel() {
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
+  const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
+
+  useEffect(() => {
+    window.clawdbot?.agentManagement?.ctx?.check().then((res) => {
+      if (res?.success && res.health) setCtxHealth(res.health);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchAgents(); // Load agents from registry
@@ -392,7 +399,7 @@ export default function AgentPanel() {
                     {/* Expanded details */}
                     {isExpanded && (
                       // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-                      <div 
+                      <div
                         className={`mt-4 pt-4 border-t ${theme.border} space-y-4`}
                         onClick={e => e.stopPropagation()}
                         onKeyDown={e => e.stopPropagation()}
@@ -400,6 +407,20 @@ export default function AgentPanel() {
                         aria-label={`${agent.name} expanded details`}
                       >
                         <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={metrics} />
+
+                        {/* Shared Context Health */}
+                        {(() => {
+                          const ctx = ctxHealth[agent.id];
+                          const ctxOk = ctx && ctx.AGENTS && ctx.USER && ctx.TOOLS;
+                          return (
+                            <div className="flex items-center gap-1.5 text-xs mt-2">
+                              {ctxOk
+                                ? <><CheckCircle size={11} className="text-success" /><span className="text-clawd-text-dim">Shared context OK</span></>
+                                : <><AlertCircle size={11} className="text-error" /><span className="text-error">Missing context links</span></>
+                              }
+                            </div>
+                          );
+                        })()}
 
                         <div>
                           <h4 className="text-[10px] font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
