@@ -43,6 +43,7 @@ import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, g
 import { registerXPublishingHandlers } from './x-publishing-service';
 import { registerXAnalyticsHandlers } from './x-analytics-service';
 import { registerAgentManagementHandlers } from './agent-management-service';
+import { registerMemoryLifecycleHandlers } from './memory-lifecycle-service';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -953,6 +954,9 @@ app.whenReady().then(() => {
 
   // Register Agent Management IPC handlers (SOUL.md + model config)
   registerAgentManagementHandlers();
+
+  // Register Memory Lifecycle IPC handlers (health metrics + rotation)
+  registerMemoryLifecycleHandlers();
 
   // Start task notification watcher
   startTaskNotifyWatcher();

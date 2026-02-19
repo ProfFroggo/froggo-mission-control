@@ -899,6 +899,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
       check: () => ipcRenderer.invoke('agentManagement:ctx:check'),
     },
   },
+  // Memory Lifecycle — health metrics + manual rotation
+  memoryLifecycle: {
+    status: () => ipcRenderer.invoke('memoryLifecycle:status'),
+    rotate: (agentId: string) => ipcRenderer.invoke('memoryLifecycle:rotate', agentId),
+  },
 });
 
 // Add to clawdbot object - chat message persistence
