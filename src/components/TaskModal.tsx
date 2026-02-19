@@ -228,7 +228,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
             await window.clawdbot.fs.writeBase64(filePath, base64);
 
             // Add attachment record
-            await window.clawdbot.tasks.attachments.add(
+            await window.clawdbot.tasks.attachments?.add(
               taskId,
               filePath,
               'deliverable',

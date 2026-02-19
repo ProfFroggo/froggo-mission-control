@@ -31,10 +31,10 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     try {
       const result = await window.clawdbot?.hrReports?.list();
       if (result?.success) {
-        setReports(result.reports || []);
-        if (result.reports?.length > 0 && !selectedReport) {
+        setReports((result.reports || []) as Report[]);
+        if ((result.reports?.length ?? 0) > 0 && !selectedReport) {
           // Auto-select most recent
-          loadReport(result.reports[0]);
+          loadReport(result.reports![0] as Report);
         }
       } else {
         showToast('error', 'Failed to load reports', result?.error);

@@ -254,7 +254,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
         if (data.length === 0 && result.raw) {
           // Parse raw text output if JSON failed
           const lines = (result.raw || '').split('\n').filter((l: string) => l && l.trim());
-          data = lines.map((line: string, i: number) => ({ id: i, text: line }));
+          data = lines.map((line: string, i: number) => ({ id: String(i), text: line }));
         }
         
         setMentions(data);
@@ -263,7 +263,7 @@ export function MentionsModal({ isOpen, onClose }: ModalProps) {
       }
     } catch (e: unknown) {
       // '[Mentions] Error:', e;
-      setError(e?.message || 'Failed to load mentions');
+      setError(e instanceof Error ? e.message : 'Failed to load mentions');
     } finally {
       setLoading(false);
     }
