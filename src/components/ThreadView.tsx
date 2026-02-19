@@ -212,8 +212,8 @@ export default function ThreadView({
       setLoading(true);
       try {
         const result = await window.clawdbot?.inbox?.getThread?.(threadId);
-        if (result?.success && result.messages) {
-          setMessages(result.messages);
+        if (result?.success && result.items) {
+          setMessages(result.items as any[]);
         }
       } catch (e) {
         // '[ThreadView] Failed to load thread:', e;
