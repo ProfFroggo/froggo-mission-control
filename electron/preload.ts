@@ -503,12 +503,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
   getDMHistory: (args?: { limit?: number; agent?: string }) => ipcRenderer.invoke('get-dm-history', args),
   getCircuitStatus: () => ipcRenderer.invoke('get-circuit-status'),
   chat: {
-    saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string }) =>
+    saveMessage: (msg: { role: string; content: string; timestamp: number; sessionKey?: string; channel?: string }) =>
       ipcRenderer.invoke('chat:saveMessage', msg),
-    loadMessages: (limit?: number, sessionKey?: string) =>
-      ipcRenderer.invoke('chat:loadMessages', limit || 50, sessionKey),
-    clearMessages: (sessionKey?: string) =>
-      ipcRenderer.invoke('chat:clearMessages', sessionKey),
+    loadMessages: (limit?: number, sessionKey?: string, channel?: string) =>
+      ipcRenderer.invoke('chat:loadMessages', limit || 50, sessionKey, channel),
+    clearMessages: (sessionKey?: string, channel?: string) =>
+      ipcRenderer.invoke('chat:clearMessages', sessionKey, channel),
     suggestReplies: (context: { role: string; content: string }[]) =>
       ipcRenderer.invoke('chat:suggestReplies', context),
   },
