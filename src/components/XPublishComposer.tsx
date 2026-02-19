@@ -14,6 +14,7 @@ interface PostResult {
   success: boolean;
   tweetId?: string;
   threadIds?: string[];
+  tweets?: Array<{ id: string; text: string }>;
   error?: string;
 }
 
@@ -326,7 +327,7 @@ export default function XPublishComposer() {
       }
 
       if (res.success) {
-        setResult({ success: true, tweetId: res.tweetId, threadIds: res.threadIds });
+        setResult({ success: true, tweetId: res.tweetId, threadIds: res.threadIds || res.tweets?.map((t: { id: string }) => t.id) });
         setTimeout(() => {
           setTweets(['']);
           setResult(null);

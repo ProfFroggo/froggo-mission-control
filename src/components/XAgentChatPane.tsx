@@ -21,6 +21,7 @@ interface ChatMessage {
 
 // Agent routing mapping: tab -> primary agent ID
 const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
+  publish: { agentId: 'writer', displayName: 'Writer' },
   research: { agentId: 'researcher', displayName: 'Researcher' },
   plan: { agentId: 'writer', displayName: 'Writer' },
   drafts: { agentId: 'writer', displayName: 'Writer' },
@@ -35,12 +36,14 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
 
 // Set of valid tabs for validation
 const tabsWithoutUndefined = new Set<XTab>([
-  'research', 'plan', 'drafts', 'calendar', 'mentions', 
+  'publish', 'research', 'plan', 'drafts', 'calendar', 'mentions',
   'reply-guy', 'content-mix', 'automations', 'analytics', 'reddit'
 ]);
 
 // System prompts for each tab to give context to the agent
 const TAB_CONTEXT: Record<XTab, string> = {
+  publish: `You are the Writer agent helping compose and publish X/Twitter posts. Current context: X/Twitter Publish Tab. Your role: Help craft engaging tweets, suggest improvements to copy, recommend hashtags, and assist with thread composition.`,
+
   research: `You are the Researcher agent helping find X/Twitter content inspiration. Current context: X/Twitter Research Tab. Your role: Search for trending topics, find relevant tweets, identify content opportunities, analyze competitors, and gather insights for content planning.`,
 
   plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
@@ -71,6 +74,9 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Per-tab message cache to preserve messages across tab switches
+  const tabMessagesRef = useRef<Record<string, ChatMessage[]>>({});
+  const prevTabRef = useRef<XTab>(tab);
 
   // Defensive: validate tab and provide fallback for unknown tabs
   const validTab: XTab = tabsWithoutUndefined.has(tab) ? tab : 'research';
@@ -110,13 +116,20 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Reset messages when tab changes
+  // Store/restore messages when tab changes (preserve per-tab history)
   useEffect(() => {
-    setMessages([]);
+    const prevTab = prevTabRef.current;
+    if (prevTab !== tab) {
+      // Save current tab's messages before switching
+      tabMessagesRef.current[prevTab] = messages;
+      // Restore target tab's messages (or empty if none)
+      setMessages(tabMessagesRef.current[tab] || []);
+      prevTabRef.current = tab;
+    }
     setError(null);
     // Cancel any ongoing request
     abortControllerRef.current?.abort();
-  }, [tab]);
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for external message injection (e.g. "Suggest Reply" from XReplyGuyView)
   useEffect(() => {

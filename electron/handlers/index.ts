@@ -6,7 +6,7 @@
  */
 
 export { registerAgentHandlers } from './agent-handlers';
-export { registerXTwitterHandlers } from './x-twitter-handlers';
+// x-twitter-handlers.ts removed (dead code — all handlers are in main.ts)
 export { registerFinanceHandlers } from '../finance-service';
 // Future handlers to be added:
 // export { registerTaskHandlers } from './task-handlers';

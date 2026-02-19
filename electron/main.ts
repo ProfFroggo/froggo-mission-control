@@ -38,6 +38,7 @@ import { registerWritingChatHandlers } from './writing-chat-service';
 import { registerWritingWizardHandlers } from './writing-wizard-service';
 import { initializeDashboardAgents, shutdownDashboardAgents, getDashboardAgentsStatus } from './dashboard-agents';
 import { getFinanceAgentBridge, initializeFinanceAgentBridge } from './finance-agent-bridge';
+import { getSocialAgentBridge, initializeSocialAgentBridge } from './social-agent-bridge';
 import { registerFinanceHandlers } from './finance-service';
 import { initXApiTokens, postTweet as xPostTweet, getMentions as xGetMentions, getHomeTimeline as xGetHomeTimeline, searchRecent as xSearchRecent, getUserProfile as xGetUserProfile, getThread as xGetThread, followUser as xFollowUser, sendDM as xSendDM, deleteTweet as xDeleteTweet, likeTweet as xLikeTweet, unlikeTweet as xUnlikeTweet, retweet as xRetweet, unretweet as xUnretweet, unfollowUser as xUnfollowUser, getFollowers as xGetFollowers, getFollowing as xGetFollowing } from './x-api-client';
 import { registerXPublishingHandlers } from './x-publishing-service';
@@ -964,6 +965,11 @@ app.whenReady().then(() => {
   // Initialize Finance Agent Bridge
   initializeFinanceAgentBridge().catch((err) => {
     safeLog.error('[Main] Failed to initialize Finance Agent Bridge:', err);
+  });
+
+  // Initialize Social Agent Bridge
+  initializeSocialAgentBridge().catch((err) => {
+    safeLog.error('[Main] Failed to initialize Social Agent Bridge:', err);
   });
 
   // Check for updates (prod only, non-blocking)
@@ -8164,6 +8170,42 @@ ipcMain.handle('financeAgent:getStatus', async () => {
   }
 });
 
+// ── Social Agent Communication ──
+
+ipcMain.handle('socialAgent:sendMessage', async (_, message: string, context?: any) => {
+  try {
+    safeLog.log('[SocialAgent] Sending message to Social Manager:', message.substring(0, 100));
+    const bridge = getSocialAgentBridge();
+    const response = await bridge.sendMessage(message, context);
+    return response;
+  } catch (error: any) {
+    safeLog.error('[SocialAgent] Send message error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('socialAgent:getChatHistory', async () => {
+  try {
+    const bridge = getSocialAgentBridge();
+    const history = bridge.getChatHistory();
+    return { success: true, messages: history };
+  } catch (error: any) {
+    safeLog.error('[SocialAgent] Get chat history error:', error.message);
+    return { success: false, messages: [], error: error.message };
+  }
+});
+
+ipcMain.handle('socialAgent:clearHistory', async () => {
+  try {
+    const bridge = getSocialAgentBridge();
+    await bridge.clearChatHistory();
+    return { success: true };
+  } catch (error: any) {
+    safeLog.error('[SocialAgent] Clear history error:', error.message);
+    return { success: false, error: error.message };
+  }
+});
+
 // ── X/Twitter Research Tab ──
 
 ipcMain.handle('x:research:propose', async (_, data: { title: string; description: string; citations: string[]; proposedBy: string }) => {
@@ -8761,6 +8803,7 @@ ipcMain.handle('x:analytics:summary', async () => {
       engagementRate: totalPosts > 0 ? 3.2 : 0,
       reach: totalPosts * 847,
       impressions: totalPosts * 2341,
+      estimated: true,
     };
   } catch (e: any) {
     safeLog.error('[Analytics] Summary error:', e.message);

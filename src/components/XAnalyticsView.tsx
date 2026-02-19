@@ -11,6 +11,7 @@ interface AnalyticsSummary {
   totalImpressions: number;
   engagementRate: number;
   recentTweetCount: number;
+  estimated?: boolean;
 }
 
 interface ContentPost {
@@ -37,7 +38,7 @@ export function XAnalyticsView() {
       // Try real summary first, fall back to db summary
       const realSummary = await (window as any).clawdbot?.xAnalytics?.summaryReal?.();
       if (realSummary?.success) {
-        setSummary(realSummary);
+        setSummary({ ...realSummary, estimated: false });
       } else {
         const dbSummary = await (window as any).clawdbot?.xAnalytics?.summary?.();
         setSummary(dbSummary || null);
@@ -176,6 +177,14 @@ export function XAnalyticsView() {
           </div>
         ) : (
           <>
+            {/* Estimated data banner */}
+            {summary?.estimated && (
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
+                <Activity size={16} />
+                <span>Showing estimated metrics. Connect X API for real-time data.</span>
+              </div>
+            )}
+
             {/* Stat Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {statCards.map((card) => {
