@@ -30,7 +30,7 @@ export default function NewContentWidget() {
       if (result?.success && Array.isArray(result.files)) {
         const now = Date.now();
         const oneDayAgo = now - (24 * 60 * 60 * 1000);
-        const files = result.files as LibraryFile[];
+        const files = result.files as unknown as LibraryFile[];
 
         // Filter files created in last 24 hours
         const recentFiles = files.filter((file) => {

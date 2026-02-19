@@ -459,7 +459,7 @@ export function XEnhancedAnalyticsView() {
                       <YAxis type="category" dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} width={80} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                        formatter={(value: number) => [`${value}%`, 'Engagement'] as [string, string]}
+                        formatter={((value: number) => [`${value}%`, 'Engagement']) as any}
                       />
                       <Bar dataKey="engagement" fill="#10b981" radius={[0, 4, 4, 0]} />
                     </BarChart>

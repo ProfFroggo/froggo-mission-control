@@ -472,11 +472,11 @@ export async function executeToolCall(fnName: string, args: ToolCallArgs, curren
         return { success: true, output: `Message sent to ${agentId}`, agent_spawned: agentId };
       }
       case 'get_agent_status': {
-        const ctx = await loadAgentContext(args.agent_id);
+        const ctx = await loadAgentContext(args.agent_id || '');
         return {
           agent: args.agent_id,
           personality: ctx.personality ? `${ctx.personality.emoji} ${ctx.personality.name} - ${ctx.personality.role}` : 'Unknown',
-          tasks: ctx.tasks.map((t: { id: string; title: string; status: string; priority: string }) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority })),
+          tasks: ctx.tasks.map((t: { id: string; title: string; status: string; priority?: string }) => ({ id: t.id, title: t.title, status: t.status, priority: t.priority || '' })),
           active_sessions: ctx.sessions.filter((s: GatewaySession) => s.state === 'running' || s.state === 'active').length,
         };
       }
@@ -487,20 +487,20 @@ export async function executeToolCall(fnName: string, args: ToolCallArgs, curren
       }
       case 'run_command': {
         const allowed = ['cat', 'head', 'tail', 'ls', 'find', 'grep', 'froggo-db', 'git', 'openclaw', 'date', 'echo', 'wc', 'which', 'node', 'npx', 'python3', 'curl', 'df', 'uptime', 'ps', 'who'];
-        const cmd = args.command.trim().split(/\s+/)[0];
+        const cmd = (args.command || '').trim().split(/\s+/)[0];
         if (!allowed.includes(cmd)) {
           return { error: `Command not allowed. Allowlist: ${allowed.join(', ')}` };
         }
-        const r = await exec(args.command + ' 2>&1');
+        const r = await exec((args.command || '') + ' 2>&1');
         return { stdout: r.stdout, stderr: r.stderr };
       }
       case 'send_message': {
-        const escapedMsg = args.message.replace(/"/g, '\\"');
+        const escapedMsg = (args.message || '').replace(/"/g, '\\"');
         const r = await exec(`clawdbot gateway sessions-send --label discord --message "${escapedMsg}" 2>&1`);
         return { success: r.success, output: r.stdout?.trim() };
       }
       case 'search_workspace': {
-        const escapedQuery = args.query.replace(/"/g, '\\"');
+        const escapedQuery = (args.query || '').replace(/"/g, '\\"');
         const r = await exec(`grep -rl "${escapedQuery}" ~/froggo/ --include="*.md" --include="*.ts" --include="*.json" 2>/dev/null | head -20`);
         return { files: r.stdout?.trim().split('\n').filter(Boolean) || [] };
       }
@@ -523,7 +523,7 @@ export async function executeToolCall(fnName: string, args: ToolCallArgs, curren
         const memBase = agentBasePath(agent);
         const q = (args.query || '').replace(/"/g, '\\"');
         const r = await exec(`grep -rli "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${q}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
-        return { results: r.stdout?.trim() || 'No matches found' };
+        return { results: (r.stdout?.trim() || 'No matches found').split('\n').filter(Boolean) };
       }
       case 'write_memory': {
         const agent = args.agent_id || 'voice';

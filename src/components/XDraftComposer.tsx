@@ -42,12 +42,12 @@ export default function XDraftComposer() {
   const loadApprovedPlans = async () => {
     try {
       setLoading(true);
-      const result = await window.clawdbot.xPlan.list({ 
-        status: 'approved', 
-        limit: 50 
+      const result = await window.clawdbot?.xPlan?.list({
+        status: 'approved',
+        limit: 50
       });
       
-      if (result.success) {
+      if (result?.success) {
         setContentPlans((result.plans || []) as ContentPlan[]);
       }
     } catch (error) {
@@ -105,7 +105,7 @@ export default function XDraftComposer() {
         tweets: tweets.filter(t => t.trim())
       });
       
-      const result = await window.clawdbot.xDraft.create({
+      const result = await window.clawdbot?.xDraft?.create({
         planId: selectedPlanId,
         version,
         content,
@@ -113,7 +113,7 @@ export default function XDraftComposer() {
         proposedBy: getCurrentUserName(),
       });
 
-      if (result.success) {
+      if (result?.success) {
         showToast('success', `Draft ${version} submitted for approval`);
         // Reset form
         setSelectedPlanId('');
@@ -121,7 +121,7 @@ export default function XDraftComposer() {
         setTweets(['']);
         setMediaPaths([]);
       } else {
-        throw new Error(result.error || 'Failed to create draft');
+        throw new Error(result?.error || 'Failed to create draft');
       }
     } catch (error: unknown) {
       // '[XDraftComposer] Submit error:', error;
@@ -154,7 +154,7 @@ export default function XDraftComposer() {
       const content = tweets.join('\n\n---\n\n');
       const timestamp = new Date(scheduledTime).getTime();
       
-      const result = await window.clawdbot.x.schedule(content, timestamp);
+      const result = await window.clawdbot?.x?.schedule(content, timestamp);
       
       if (result?.success) {
         showToast('success', 'Tweet scheduled!');
