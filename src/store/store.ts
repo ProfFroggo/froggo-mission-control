@@ -370,7 +370,7 @@ export const useStore = create<Store>()(
             const processed: GatewaySession[] = result.sessions.map((s: { key?: string; kind?: 'direct' | 'group'; updatedAt?: number; ageMs?: number; sessionId?: string; model?: string; totalTokens?: number; contextTokens?: number; inputTokens?: number; outputTokens?: number; channel?: string; label?: string | null }) => {
               // Determine session type from key
               const key = s.key || '';
-              const label = s.label || null;
+              const label = s.label || undefined;
               let type: GatewaySession['type'] = 'other';
               let displayName = key;
               

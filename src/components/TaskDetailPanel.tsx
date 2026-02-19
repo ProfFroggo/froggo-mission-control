@@ -96,7 +96,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       }
       const result = await clawdbot.tasks.attachments.list(task.id);
       if (result.success) {
-        setAttachments(result.attachments as TaskAttachment[]);
+        setAttachments(result.attachments as unknown as TaskAttachment[]);
       }
     } catch (err: unknown) {
       // 'Failed to load attachments:', err;
@@ -475,7 +475,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         );
         
         if (result?.success) {
-          if (result.attachment) setAttachments([result.attachment, ...attachments]);
+          if (result.attachment) setAttachments([result.attachment as unknown as TaskAttachment, ...attachments]);
           showToast('success', 'File attached', file.name);
         } else if (result) {
           showToast('error', 'Failed to attach file', result.error);

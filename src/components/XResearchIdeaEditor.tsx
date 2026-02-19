@@ -50,21 +50,21 @@ export default function XResearchIdeaEditor() {
     try {
       setSubmitting(true);
       
-      const result = await window.clawdbot.xResearch.propose({
+      const result = await window.clawdbot?.xResearch?.propose({
         title: title.trim(),
         description: description.trim(),
         citations: validCitations,
         proposedBy,
       });
 
-      if (result.success) {
+      if (result?.success) {
         showToast('success', 'Research idea submitted for approval');
         // Reset form
         setTitle('');
         setDescription('');
         setCitations(['']);
       } else {
-        throw new Error(result.error || 'Failed to submit research idea');
+        throw new Error(result?.error || 'Failed to submit research idea');
       }
     } catch (error: unknown) {
       // '[XResearchEditor] Submit error:', error;

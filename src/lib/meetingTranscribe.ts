@@ -65,7 +65,7 @@ export class MeetingTranscriber {
     }
     try {
       const result = await window.clawdbot.db.query(sql, params);
-      return result || [];
+      return (result?.rows || []) as any[];
     } catch (error) {
       // '[MeetingTranscriber] Query failed:', error;
       return [];

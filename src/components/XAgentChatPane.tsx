@@ -32,6 +32,7 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   automations: { agentId: 'social-manager', displayName: 'Social Manager' },
   analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
   reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
+  campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
 // Set of valid tabs for validation

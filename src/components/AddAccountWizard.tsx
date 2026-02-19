@@ -222,7 +222,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     onClick={() => {
                       if (info.comingSoon) return;
                       setProvider(p);
-                      setAuthMethod(info.authMethods[0]);
+                      setAuthMethod(info.authMethods[0] as 'oauth' | 'app-password');
                     }}
                     disabled={info.comingSoon}
                     className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
