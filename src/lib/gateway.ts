@@ -430,6 +430,13 @@ class Gateway {
     }
     this.pending.clear();
 
+    // Fire onError for any in-flight runCallbacks so components can reset streaming state
+    for (const [runId, cb] of this.runCallbacks) {
+      try { cb.onError?.('Connection closed', {}); } catch { /* ignore */ }
+      this.activeRunIds.delete(runId);
+    }
+    this.runCallbacks.clear();
+
     if (this.ws) {
       try {
         this.ws.onclose = null;
@@ -653,6 +660,12 @@ class Gateway {
   
   setSessionKey(key: string) {
     this.sessionKey = key;
+    // Fire onError for any in-flight callbacks from the old session
+    for (const [runId, cb] of this.runCallbacks) {
+      try { cb.onError?.('Session changed', {}); } catch { /* ignore */ }
+      this.activeRunIds.delete(runId);
+    }
+    this.runCallbacks.clear();
     this.activeRunIds.clear();
     logger.debug('[Gateway] Session key changed to:', key);
   }

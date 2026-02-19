@@ -1945,16 +1945,16 @@ Task: "${title}" (ID: ${taskId})
 The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
 Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 
-    // Use openclaw agent with --local --json for reliable response capture
+    // Use --local to create fresh embedded session (avoids context overflow in long-running gateway sessions)
     const escapedPrompt = pokePrompt.replace(/"/g, '\\"');
     const response = await new Promise<string>((resolve, reject) => {
       exec(
-        `openclaw agent --message "${escapedPrompt}" --agent ${taskAgent} --local --json --timeout 20`,
-        { 
-          encoding: 'utf-8', 
-          timeout: 25000, 
+        `openclaw agent --local --message "${escapedPrompt}" --agent ${taskAgent} --json --timeout 30`,
+        {
+          encoding: 'utf-8',
+          timeout: 35000,
           maxBuffer: 5 * 1024 * 1024,
-          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } 
+          env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }
         },
         (error, stdout, stderr) => {
           if (error) {
