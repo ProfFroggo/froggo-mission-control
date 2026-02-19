@@ -145,7 +145,7 @@ export default function WizardReview() {
       useWizardStore.getState().reset();
     } catch (e: unknown) {
       // '[WizardReview] create failed:', e;
-      setError(e.message || 'Unknown error');
+      setError(e instanceof Error ? e.message : 'Unknown error');
       setStep('review');
       setCreating(false);
     }

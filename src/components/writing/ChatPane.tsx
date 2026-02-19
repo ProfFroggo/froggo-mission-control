@@ -168,7 +168,7 @@ export default function ChatPane() {
         },
       });
     } catch (e: unknown) {
-      setError(e.message || 'Failed to send');
+      setError(e instanceof Error ? e.message : 'Failed to send');
       setStreaming(false);
       setStreamContent('');
     }

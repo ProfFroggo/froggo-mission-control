@@ -32,7 +32,6 @@ const AGENT_ROUTING: Record<XTab, { agentId: string; displayName: string }> = {
   automations: { agentId: 'social-manager', displayName: 'Social Manager' },
   analytics: { agentId: 'social-manager', displayName: 'Social Manager' },
   reddit: { agentId: 'social-manager', displayName: 'Social Manager' },
-  campaigns: { agentId: 'social-manager', displayName: 'Social Manager' },
 };
 
 // Set of valid tabs for validation
@@ -49,17 +48,7 @@ const TAB_CONTEXT: Record<XTab, string> = {
 
   plan: `You are the Writer agent helping plan X/Twitter content. Current context: X/Twitter Content Planning Tab. Your role: Help plan content calendars, brainstorm tweet ideas, outline threads, and create content strategies.`,
 
-  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.
-
-When the user asks you to draft tweet content, output the tweets in a JSON block wrapped in \`\`\`draft fences:
-\`\`\`draft
-{
-  "planTitle": "Optional title",
-  "tweets": ["Tweet 1 text here", "Tweet 2 text here"]
-}
-\`\`\`
-
-The user can then review and edit the content in the middle pane. Ask clarifying questions first if the request is vague.`,
+  drafts: `You are the Writer agent helping create X/Twitter drafts. Current context: X/Twitter Drafts Tab. Your role: Write engaging tweets, craft thread hooks, polish copy, and improve messaging.`,
 
   calendar: `You are the Social Manager agent managing the X/Twitter content calendar. Current context: X/Twitter Calendar Tab. Your role: Help schedule content, optimize posting times, manage the editorial calendar.`,
 
@@ -302,22 +291,13 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
               sessionKey,
               channel: 'xtwitter',
             });
-            // Extract structured proposals from agent response and dispatch to middle pane
+            // Extract campaign JSON from agent response and dispatch to middle pane
             if (validTab === 'campaigns') {
               const campaignMatch = agentContent.match(/```campaign\s*\n([\s\S]*?)```/);
               if (campaignMatch) {
                 try {
                   const campaignData = JSON.parse(campaignMatch[1].trim());
                   window.dispatchEvent(new CustomEvent('x-campaign-proposal', { detail: campaignData }));
-                } catch { /* invalid JSON, ignore */ }
-              }
-            }
-            if (validTab === 'drafts') {
-              const draftMatch = agentContent.match(/```draft\s*\n([\s\S]*?)```/);
-              if (draftMatch) {
-                try {
-                  const draftData = JSON.parse(draftMatch[1].trim());
-                  window.dispatchEvent(new CustomEvent('x-draft-proposal', { detail: draftData }));
                 } catch { /* invalid JSON, ignore */ }
               }
             }

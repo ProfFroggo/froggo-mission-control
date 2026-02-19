@@ -89,8 +89,9 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
       }
     } catch (err: unknown) {
       // 'Failed to query agent:', err;
-      setError(err.message || 'Failed to query agent');
-      showToast('error', 'Query failed', err.message || 'Network error');
+      const errMsg = err instanceof Error ? err.message : 'Failed to query agent';
+      setError(errMsg);
+      showToast('error', 'Query failed', errMsg);
     } finally {
       setLoading(false);
     }

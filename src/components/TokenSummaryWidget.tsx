@@ -54,7 +54,7 @@ export default function TokenSummaryWidget() {
       setError(null);
     } catch (err: unknown) {
       // 'Failed to load token summary:', err;
-      setError(err.message || 'Failed to load');
+      setError(err instanceof Error ? err.message : 'Failed to load');
       setLoading(false);
     }
   };

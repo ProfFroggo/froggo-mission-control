@@ -242,9 +242,9 @@ export default function MeetingScribe() {
       }
     } catch (err: unknown) {
       // '[Scribe] Transcription error:', err;
-      setEntries(prev => prev.map(e => 
-        e.id === entryId 
-          ? { ...e, text: `[Transcription failed: ${err.message}]`, isProcessing: false }
+      setEntries(prev => prev.map(e =>
+        e.id === entryId
+          ? { ...e, text: `[Transcription failed: ${err instanceof Error ? err.message : String(err)}]`, isProcessing: false }
           : e
       ));
     } finally {
@@ -350,7 +350,7 @@ export default function MeetingScribe() {
       
     } catch (err: unknown) {
       // '[Scribe] Failed to start:', err;
-      setError(err.message || 'Failed to access microphone');
+      setError(err instanceof Error ? err.message : 'Failed to access microphone');
       isRecordingRef.current = false;
       setIsRecording(false);
     }

@@ -40,7 +40,7 @@ export async function spawnAgent(
   );
 
   return {
-    sessionKey: result.sessionKey || `spawned:${label}`,
+    sessionKey: (result as any).sessionKey || `spawned:${label}`,
     label,
   };
 }
@@ -87,7 +87,7 @@ Get it done, report back.`;
   });
 
   return {
-    sessionKey: result.sessionKey || `spawned:${workerId}`,
+    sessionKey: (result as any).sessionKey || `spawned:${workerId}`,
     label: workerId,
   };
 }
@@ -101,8 +101,8 @@ export async function getAgentStatus(sessionKey: string): Promise<{
     const history = await gateway.request('sessions.history', {
       sessionKey,
       limit: 1,
-    });
-    
+    }) as any;
+
     return {
       status: 'running', // Would check actual status
       lastMessage: history.messages?.[0]?.content,

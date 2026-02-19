@@ -610,7 +610,7 @@ export default function InboxPanel() {
         }
       } catch (error: unknown) {
         // '[Inbox] Stage 1 email approval error:', error;
-        showToast('error', 'Approval failed', error.message);
+        showToast('error', 'Approval failed', error instanceof Error ? error.message : String(error));
       }
       clearProcessing();
       return;
@@ -1720,12 +1720,12 @@ export default function InboxPanel() {
                             loadInbox(); // Revert
                           }
                         } catch (e: unknown) {
-                          showToast('error', 'Send error', e.message);
+                          showToast('error', 'Send error', e instanceof Error ? e.message : String(e));
                           loadInbox();
                         }
                         return;
                       }
-                      
+
                       // For tweets, use existing executeApproval
                       executeApproval(item);
                     }}
@@ -1799,7 +1799,7 @@ export default function InboxPanel() {
                           showToast('error', 'Failed to schedule', (result as any).error || 'Unknown error');
                         }
                       } catch (e: unknown) {
-                        showToast('error', 'Schedule error', e.message);
+                        showToast('error', 'Schedule error', e instanceof Error ? e.message : String(e));
                       }
                       
                       setScheduleModal(null);
@@ -2013,7 +2013,7 @@ export default function InboxPanel() {
                       showToast('error', 'Failed to abort agent', result?.stderr || 'Unknown error');
                     }
                   } catch (err: unknown) {
-                    showToast('error', 'Abort failed', err.message);
+                    showToast('error', 'Abort failed', err instanceof Error ? err.message : String(err));
                   } finally {
                     setAbortingAgent(false);
                   }

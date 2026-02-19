@@ -153,7 +153,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
         setStep('auth');
       }
     } catch (err: unknown) {
-      setError(err.message || 'Failed to connect account');
+      setError(err instanceof Error ? err.message : 'Failed to connect account');
       setStep('auth');
     }
   };

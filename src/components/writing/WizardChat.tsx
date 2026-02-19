@@ -165,7 +165,7 @@ export default function WizardChat() {
           },
         });
       } catch (e: unknown) {
-        setError(e.message || 'Failed to send');
+        setError(e instanceof Error ? e.message : 'Failed to send');
         setStreaming(false);
         setStreamContent('');
       }
@@ -225,7 +225,7 @@ export default function WizardChat() {
         },
       );
     } catch (e: unknown) {
-      setExtractionError(e.message || 'Extraction request failed');
+      setExtractionError(e instanceof Error ? e.message : 'Extraction request failed');
       setStep('conversation');
       extractingRef.current = false;
     }
