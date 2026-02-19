@@ -774,14 +774,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         <div className="flex items-center gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors"
+            className="p-3 rounded-xl bg-clawd-border text-clawd-text-dim hover:text-clawd-text transition-colors self-stretch flex items-center"
             title="Attach file"
           >
             <Paperclip size={20} />
           </button>
           <button
             onClick={() => setShowMentions(!showMentions)}
-            className={`p-3 rounded-xl transition-all ${
+            className={`p-3 rounded-xl transition-all self-stretch flex items-center ${
               showMentions ? 'bg-clawd-accent text-white' : 'bg-clawd-border text-clawd-text-dim hover:text-clawd-text'
             }`}
             title="Mention an agent"
@@ -804,7 +804,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           <button
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0}
-            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+            className="p-3 bg-clawd-accent text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
           >
             <Send size={20} />
           </button>
