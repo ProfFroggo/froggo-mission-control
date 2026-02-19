@@ -30,9 +30,10 @@ export default function NewContentWidget() {
       if (result?.success && Array.isArray(result.files)) {
         const now = Date.now();
         const oneDayAgo = now - (24 * 60 * 60 * 1000);
-        
+        const files = result.files as LibraryFile[];
+
         // Filter files created in last 24 hours
-        const recentFiles = result.files.filter((file) => {
+        const recentFiles = files.filter((file) => {
           const createdAt = new Date(file.createdAt).getTime();
           return createdAt > oneDayAgo;
         });
@@ -42,7 +43,7 @@ export default function NewContentWidget() {
         let imageCount = 0;
         let reportCount = 0;
 
-        recentFiles.forEach((file) => {
+        (recentFiles as LibraryFile[]).forEach((file) => {
           // Images
           if (file.mimeType?.startsWith('image/')) {
             imageCount++;

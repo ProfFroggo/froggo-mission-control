@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 import { Inbox, AlertCircle } from 'lucide-react';
 import WidgetLoading from './WidgetLoading';
 
-interface InboxItem {
-  id: string;
-  status: string;
-  createdAt: number;
-}
 
 export default function InboxWidget() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
