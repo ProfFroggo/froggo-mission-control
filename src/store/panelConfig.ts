@@ -29,6 +29,7 @@ const DEFAULT_PANELS: PanelConfig[] = [
   { id: 'notifications', label: 'Notifications', visible: true, order: 16 },
   { id: 'writing', label: 'Writing', visible: true, order: 17 },
   { id: 'finance', label: 'Finance', visible: true, order: 18 },
+  { id: 'toolbar', label: 'Floating Toolbar', visible: true, order: 19 },
 ];
 
 function loadFromStorage(): PanelConfig[] {

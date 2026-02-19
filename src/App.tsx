@@ -20,6 +20,7 @@ import ContactModal from './components/ContactModal';
 import SkillModal from './components/SkillModal';
 import HelpPanel from './components/HelpPanel';
 import EditPanelsModal from './components/EditPanelsModal';
+import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
 import NetworkStatus from './components/NetworkStatus';
 
@@ -53,6 +54,7 @@ function App() {
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
   const { toggleMuted, loadApprovals } = useStore();
+  const toolbarVisible = usePanelConfigStore(s => s.panels.find(p => p.id === 'toolbar')?.visible ?? true);
 
   // Load approvals from inbox database
   useEffect(() => {
@@ -432,28 +434,30 @@ function App() {
           </ErrorBoundary>
         )}
 
-        {/* Quick Actions */}
-        <ErrorBoundary panelName="Quick Actions">
-          <QuickActions
-            ref={quickActionsRef} 
-            onSearch={() => setSearchOpen(true)}
-            onNewTask={() => setCurrentView('kanban')}
-            onAddContact={() => setContactModalOpen(true)}
-            onAddSkill={() => setSkillModalOpen(true)}
-            onNavigate={(view) => setCurrentView(view as any)}
-            currentView={currentView}
-            onApproveAll={async () => {
-              try {
-                const result = await window.clawdbot?.inbox?.approveAll();
-                if (result?.success) {
-                  showToast('success', 'Approved all', `${result.count} items approved`);
+        {/* Quick Actions (Floating Toolbar) */}
+        {toolbarVisible && (
+          <ErrorBoundary panelName="Quick Actions">
+            <QuickActions
+              ref={quickActionsRef}
+              onSearch={() => setSearchOpen(true)}
+              onNewTask={() => setCurrentView('kanban')}
+              onAddContact={() => setContactModalOpen(true)}
+              onAddSkill={() => setSkillModalOpen(true)}
+              onNavigate={(view) => setCurrentView(view as any)}
+              currentView={currentView}
+              onApproveAll={async () => {
+                try {
+                  const result = await window.clawdbot?.inbox?.approveAll();
+                  if (result?.success) {
+                    showToast('success', 'Approved all', `${result.count} items approved`);
+                  }
+                } catch {
+                  // Silent fail - error handled by UI state
                 }
-              } catch {
-                // Silent fail - error handled by UI state
-              }
-            }}
-          />
-        </ErrorBoundary>
+              }}
+            />
+          </ErrorBoundary>
+        )}
 
         {/* Contact Modal */}
         <ErrorBoundary panelName="Contact Modal">
