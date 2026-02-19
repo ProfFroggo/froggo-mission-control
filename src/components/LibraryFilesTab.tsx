@@ -140,10 +140,18 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       type: 'danger',
     }, async () => {
       try {
-        const result = await window.clawdbot?.library?.delete(file.id);
+        let result;
+        if (file.id.startsWith('attachment-')) {
+          const numId = parseInt(file.id.replace('attachment-', ''), 10);
+          result = await window.clawdbot?.tasks?.attachments?.delete(numId);
+        } else {
+          result = await window.clawdbot?.library?.delete(file.id);
+        }
         if (result?.success) {
           showToast('success', 'File deleted');
           loadFiles();
+        } else {
+          showToast('error', 'Delete failed');
         }
       } catch (error) {
         showToast('error', 'Delete failed', String(error));
@@ -493,7 +501,6 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   {/* Inline editing row */}
                   <div
                     className="mt-3 pt-3 border-t border-clawd-border flex flex-wrap items-center gap-3"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     {/* Category dropdown */}
                     <div className="flex items-center gap-1.5">

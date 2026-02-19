@@ -1,6 +1,5 @@
 import type { XTab } from './XTwitterPage';
 import XPublishComposer from './XPublishComposer';
-import { XAnalyticsView } from './XAnalyticsView';
 import { XEnhancedAnalyticsView } from './XEnhancedAnalyticsView';
 import XResearchView from './XResearchView';
 import XPlanListView from './XPlanListView';
@@ -11,6 +10,7 @@ import { XReplyGuyView } from './XReplyGuyView';
 import { XContentMixTracker } from './XContentMixTracker';
 import XAutomationsTab from './XAutomationsTab';
 import { XRedditView } from './XRedditView';
+import XCampaignView from './XCampaignView';
 
 interface XContentEditorPaneProps {
   tab: XTab;
@@ -59,6 +59,10 @@ export default function XContentEditorPane({ tab }: XContentEditorPaneProps) {
 
   if (tab === 'analytics') {
     return <XEnhancedAnalyticsView />;
+  }
+
+  if (tab === 'campaigns') {
+    return <XCampaignView />;
   }
 
   return null;

@@ -46,7 +46,7 @@ function loadFromStorage(): PanelConfig[] {
         for (const p of parsed) {
           const def = DEFAULT_PANELS.find(d => d.id === p.id);
           if (def) {
-            merged.push({ ...def, ...p });
+            merged.push({ ...def, ...p, label: def.label });
           }
         }
         
