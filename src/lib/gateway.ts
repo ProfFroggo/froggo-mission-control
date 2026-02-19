@@ -570,8 +570,8 @@ class Gateway {
           this.pending.delete(id);
           reject(new Error('Request timeout'));
         }
-      }, 120000);
-      
+      }, 30000);
+
       this.pending.set(id, { resolve, reject, timer });
       this.ws!.send(JSON.stringify({ type: 'req', id, method, params }));
     });
@@ -793,14 +793,14 @@ class Gateway {
         fail(new Error(data.message || data.error || 'Chat error'));
       });
 
-      // Timeout after 2 minutes
+      // Timeout after 60 seconds (if deltas are streaming, content will be non-empty)
       const timeout = setTimeout(() => {
         if (responseContent) {
           finish(responseContent);
         } else {
           fail(new Error('Response timeout'));
         }
-      }, 120000);
+      }, 60000);
 
       // Kick off the async request without making the executor itself async
       void (async () => {

@@ -361,14 +361,22 @@ export default function ChatPanel() {
 
   // Setup streaming listeners
   useEffect(() => {
+    let deltaRafScheduled = false;
     const handleDelta = (data: any) => {
       if (data.delta && currentMsgIdRef.current) {
         currentResponseRef.current += data.delta;
-        setMessages(prev => prev.map(m => 
-          m.id === currentMsgIdRef.current 
-            ? { ...m, content: currentResponseRef.current } 
-            : m
-        ));
+        // Rate-limit re-renders to once per animation frame
+        if (!deltaRafScheduled) {
+          deltaRafScheduled = true;
+          requestAnimationFrame(() => {
+            deltaRafScheduled = false;
+            setMessages(prev => prev.map(m =>
+              m.id === currentMsgIdRef.current
+                ? { ...m, content: currentResponseRef.current }
+                : m
+            ));
+          });
+        }
         // Re-enable input on first delta (streaming has started)
         if (loading) {
           setLoading(false);
@@ -390,44 +398,38 @@ export default function ChatPanel() {
     const handleEnd = () => {
       if (currentMsgIdRef.current) {
         const finalContent = currentResponseRef.current;
-        setMessages(prev => prev.map(m => 
-          m.id === currentMsgIdRef.current 
-            ? { ...m, streaming: false } 
+
+        // Update UI immediately — no blocking
+        setMessages(prev => prev.map(m =>
+          m.id === currentMsgIdRef.current
+            ? { ...m, streaming: false }
             : m
         ));
-        
-        // Save assistant message to database
+        setLoading(false);
+        const runId = currentRunIdRef.current;
+        currentMsgIdRef.current = '';
+        currentResponseRef.current = '';
+        if (runId) { gateway.clearRunId(runId); currentRunIdRef.current = ''; }
+
+        // Fire-and-forget: DB save, speech, routing — all parallel, non-blocking
         if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
-          window.clawdbot?.chat.saveMessage({
+          window.clawdbot.chat.saveMessage({
             role: 'assistant',
             content: finalContent,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
-          }).then((result: any) => {
-            if (result?.success) {
-              // ChatMessage saved successfully
-            }
-          }).catch((err: any) => {
-            logger.error('Error saving assistant message (handleEnd):', err);
-          });
+          }).catch((err: any) => logger.error('Error saving assistant message:', err));
         }
-        
+
         if (speakResponses && finalContent) {
-          speak(finalContent);
+          requestIdleCallback(() => speak(finalContent), { timeout: 5000 });
         }
-        
-        // Check for @Brain: routing - forward to main session
+
         const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
-          const brainMessage = brainMatch[1].trim();
-          // Send to main session via gateway WebSocket
-          gateway.sendToMain(`[From Chat Agent]\n${brainMessage}`)
+          gateway.sendToMain(`[From Chat Agent]\n${brainMatch[1].trim()}`)
             .catch((err: any) => logger.error('Brain routing error:', err));
         }
-        
-        setLoading(false);
-        currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
-        currentResponseRef.current = '';
       }
     };
 
