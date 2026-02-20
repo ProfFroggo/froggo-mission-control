@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { ConversationMessage, SectionId, ModuleSpec, InterviewQuestion } from './types';
+import type { ConversationMessage, SectionId, InterviewQuestion } from './types';
 import { SECTION_ORDER } from './types';
 import { getApplicableQuestions } from './questionBank';
 import type { UseModuleSpecReturn } from './useModuleSpec';

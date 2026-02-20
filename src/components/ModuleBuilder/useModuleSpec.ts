@@ -3,7 +3,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { ModuleSpec, SectionId, SectionProgress } from './types';
+import type { ModuleSpec, SectionProgress } from './types';
 import { createEmptySpec, SECTION_ORDER, SECTION_LABELS } from './types';
 import { getApplicableQuestions } from './questionBank';
 
