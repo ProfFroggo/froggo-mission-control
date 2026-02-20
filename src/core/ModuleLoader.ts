@@ -7,6 +7,7 @@
  */
 
 import { ServiceRegistry } from './ServiceRegistry';
+import { validateManifestSafe } from './manifestSchema';
 
 // ─── Manifest types ─────────────────────────────────────────────
 
@@ -94,9 +95,10 @@ class ModuleLoaderClass {
       return;
     }
 
-    // Validate manifest basics
-    if (!manifest.id || !manifest.name || !manifest.version) {
-      console.error(`[ModuleLoader] Invalid manifest — missing id, name, or version`);
+    // Validate manifest with Zod schema
+    const validation = validateManifestSafe(manifest);
+    if (!validation.success) {
+      console.error(`[ModuleLoader] Invalid manifest for "${manifest.id || 'unknown'}": ${validation.error}`);
       return;
     }
 
@@ -175,6 +177,12 @@ class ModuleLoaderClass {
   /** Dispose all modules (app shutdown) */
   async disposeAll(): Promise<void> {
     Array.from(this.modules.keys()).forEach(id => this.dispose(id));
+  }
+
+  /** Reset loader state (testing only) */
+  _reset(): void {
+    this.modules.clear();
+    this.initialized = false;
   }
 
   /** Get a module registration by ID */
