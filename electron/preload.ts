@@ -79,6 +79,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
     archiveDone: () => ipcRenderer.invoke('tasks:archiveDone'),
     poke: (taskId: string, title: string) => ipcRenderer.invoke('tasks:poke', taskId, title),
     pokeInternal: (taskId: string, title: string) => ipcRenderer.invoke('tasks:pokeInternal', taskId, title),
+    // Multi-stage / Fork operations
+    fork: (parentTaskId: string, data: { title: string; description?: string; assignedTo?: string; priority?: string }) =>
+      ipcRenderer.invoke('tasks:fork', parentTaskId, data),
+    children: (taskId: string) => ipcRenderer.invoke('tasks:children', taskId),
+    parent: (taskId: string) => ipcRenderer.invoke('tasks:parent', taskId),
     // Real-time task notification listener
     onNotification: (callback: (notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => void) => {
       const handler = (_: any, notification: any) => callback(notification);

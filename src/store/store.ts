@@ -63,6 +63,12 @@ export interface Task {
   completedAt?: number | null;
   createdAt: number;
   updatedAt: number;
+  // Multi-stage project fields
+  projectName?: string;
+  stageNumber?: number;
+  stageName?: string;
+  nextStage?: string;
+  parentTaskId?: string;
 }
 
 export interface Agent {
