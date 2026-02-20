@@ -1,13 +1,18 @@
 # MODULE_ARCHITECTURE.md — Froggo Dashboard Modular System
 
-> Canonical specification for the modular dashboard architecture and marketplace integration.
-> **Author:** Chief · **Date:** 2026-02-20 · **Status:** Draft v1
+> **Canonical specification** for the modular dashboard architecture and marketplace integration.
+> This document merges and supersedes:
+> - `archives/.../modular-dashboard-architecture-report.md` (Senior Coder, 2026-02-16)
+> - `agent-chief/module-system-design.md` (Chief, 2026-02-10)
+> - `agent-froggo/data/marketplace-research/INDEX.md` (Researcher, 2026-01-30)
+>
+> **Author:** Chief · **Date:** 2026-02-20 · **Status:** CANONICAL v2
 
 ---
 
 ## 1. Problem Statement
 
-The Froggo Dashboard has grown organically to 180+ components, a 10K-line `electron/main.ts`, and tightly coupled feature domains. This makes it:
+The Froggo Dashboard has grown organically to 180+ components, a 10K-line `electron/main.ts` with 308 IPC handlers, and tightly coupled feature domains. This makes it:
 
 - **Hard to maintain** — changes to one feature risk breaking others
 - **Hard to extend** — adding a new "module" means touching 5+ files
@@ -23,7 +28,53 @@ The Froggo Dashboard has grown organically to 180+ components, a 10K-line `elect
 5. **IPC safety** — modules declare their IPC channels, sandboxed by default
 6. **Incremental adoption** — migrate one feature at a time, no big bang
 
-## 3. Architecture Overview
+## 3. Industry Research Summary
+
+| System | Manifest | Discovery | Isolation | Marketplace | Key Lesson |
+|--------|----------|-----------|-----------|-------------|------------|
+| **VS Code** | package.json | extensions/ dir | Separate process | ✅ | Architecture gold standard |
+| **Obsidian** | manifest.json | .obsidian/plugins/ | Same process | ✅ | Simplicity & community |
+| **Chrome** | manifest.json | chrome://extensions | Separate process | ✅ | Security evolution |
+| **WordPress** | Plugin headers | /wp-content/plugins/ | Same process | ✅ | Mass market reach |
+| **Shopify** | App config | App API | Sandboxed iframe | ✅ | Commercial marketplace |
+| **Raycast** | manifest.json | ~/.raycast/ | Sandboxed | ✅ | Store UX |
+
+**Best fit for Froggo:** Obsidian-style (single-process, manifest.json, user-installed) with VS Code–style contribution points for navigation, commands, and settings.
+
+**Market verdict:** ✅ HIGHLY FEASIBLE (9/10 score from feasibility study). No technical blockers. All critical components have proven patterns.
+
+## 4. Core vs Module Separation
+
+### 4.1 Core Infrastructure (Must Remain Stable)
+
+| Component | Responsibility | Why It's Core |
+|-----------|---------------|---------------|
+| Gateway (WebSocket) | Real-time comms with backend | All modules need it |
+| Auth/Token Management | Secure credential storage | Security critical |
+| Base UI Components | Button, Toast, Modal, etc. | Design system consistency |
+| Theme System | Dark/light mode, accent colors | Global UX |
+| Error Boundaries | Crash isolation | App stability |
+| Panel Config Store | Panel visibility/order | Navigation framework |
+| IPC Database Bridge | Secure DB access | Data integrity |
+| ViewRegistry | Dynamic view registration | Core routing |
+| ModuleLoader | Module lifecycle management | Module system itself |
+| ServiceRegistry | Dependency injection | Cross-module services |
+
+### 4.2 Module Candidates
+
+| Module | Components | Electron Services | IPC Handlers | Priority |
+|--------|-----------|-------------------|-------------|----------|
+| **Finance** | FinancePanel, FinanceInsightsPanel | finance-service, finance-agent-bridge | 5 | ✅ Extracted |
+| **Settings** | SettingsPanel, SecuritySettings | settings-handlers | 4 | ✅ Extracted |
+| **Analytics** | AnalyticsDashboard | — | 4 | ✅ Extracted |
+| **Library** | LibraryPanel | — (uses fs IPC) | 8 | ✅ Extracted |
+| **X/Twitter** | XPanel, XAutomationsTab, 15+ components | x-automations-service, x-api-client | 60 | Next |
+| **Writing** | WritingWorkspace, Editor | 6 writing services | ~30 | Next |
+| **Comms** | InboxPanel, CommsInbox3Pane | notification-service | 64 | Next |
+| **Calendar** | SchedulePanel | calendar-service | 17 | Future |
+| **Meetings** | MeetingsPanel, VoiceChatPanel | — | ~5 | Future |
+
+## 5. Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -54,9 +105,9 @@ The Froggo Dashboard has grown organically to 180+ components, a 10K-line `elect
               └─────────────────────┘
 ```
 
-## 4. Module Manifest (`module.json`)
+## 6. Module Manifest (`module.json`)
 
-Every module has a manifest file that describes its capabilities:
+The canonical manifest schema, combining all three design inputs:
 
 ```json
 {
@@ -65,9 +116,10 @@ Every module has a manifest file that describes its capabilities:
   "version": "1.0.0",
   "description": "Financial management, budgets, and Solana wallet integration",
   "author": "Froggo Team",
+  "license": "MIT",
   "icon": "DollarSign",
   "category": "productivity",
-  
+
   "views": [
     {
       "id": "finance",
@@ -76,18 +128,17 @@ Every module has a manifest file that describes its capabilities:
       "entrypoint": "./views/FinancePanel.tsx"
     }
   ],
-  
-  "ipcChannels": {
-    "handle": [
-      "finance:getTransactions",
-      "finance:getBudget",
-      "finance:transfer"
-    ],
-    "on": [
-      "finance:statusUpdate"
-    ]
+
+  "navigation": {
+    "position": 18,
+    "shortcut": "⌘⇧F"
   },
-  
+
+  "ipcChannels": {
+    "handle": ["finance:getTransactions", "finance:getBudget"],
+    "on": ["finance:statusUpdate"]
+  },
+
   "services": [
     {
       "id": "finance-service",
@@ -95,29 +146,74 @@ Every module has a manifest file that describes its capabilities:
       "electron": true
     }
   ],
-  
+
   "store": {
     "id": "finance",
     "entrypoint": "./store/financeStore.ts"
   },
-  
+
+  "permissions": [
+    "database:read",
+    "database:write",
+    "gateway:send"
+  ],
+
+  "requiredApiKeys": [
+    {
+      "id": "solana_rpc_url",
+      "name": "Solana RPC URL",
+      "optional": true,
+      "docs": "https://docs.solana.com/"
+    }
+  ],
+
+  "settings": [
+    {
+      "id": "default_currency",
+      "type": "select",
+      "label": "Default Currency",
+      "default": "USD",
+      "options": ["USD", "EUR", "GBP"]
+    }
+  ],
+
   "dependencies": {
     "core": ">=1.0.0",
     "modules": []
   },
-  
-  "permissions": {
-    "ipc": ["finance:*"],
-    "filesystem": ["$DATA_DIR/finance/"],
-    "network": false,
-    "shell": false
+
+  "metadata": {
+    "homepage": "https://froggo.app/modules/finance",
+    "repository": "https://github.com/ProfFroggo/froggo-finance",
+    "category": "finance",
+    "tags": ["finance", "wallet", "solana", "budget"]
   }
 }
 ```
 
-## 5. Directory Structure
+### 6.1 Permission Types
 
-### 5.1 Core Dashboard (unchanged, just reorganized)
+Granular permission system (inspired by Chrome + Obsidian):
+
+| Permission | Risk | Description |
+|-----------|------|-------------|
+| `database:read` | Low | Read from dashboard database |
+| `database:write` | Medium | Write to dashboard database |
+| `gateway:send` | Low | Send messages via WebSocket |
+| `gateway:receive` | Low | Receive WebSocket events |
+| `filesystem:read` | Medium | Read files in allowed paths |
+| `filesystem:write` | Medium | Write files in allowed paths |
+| `ipc:register` | Medium | Register new IPC handlers |
+| `network:external` | High | Make external HTTP requests |
+| `shell:execute` | **Critical** | Execute shell commands |
+| `notifications` | Low | Show system notifications |
+| `storage` | Low | Use module-scoped localStorage |
+
+Users approve permissions at install time. Core enforces at runtime.
+
+## 7. Directory Structure
+
+### 7.1 Dashboard Module Layout
 
 ```
 src/
@@ -128,36 +224,26 @@ src/
 │   ├── ModuleContext.tsx         # NEW — React context for module APIs
 │   └── CoreViews.tsx            # EXISTING — registers built-in views
 │
-├── modules/                     # NEW — each module is self-contained
+├── modules/                     # Each module is self-contained
+│   ├── index.ts                 # Imports all modules (side-effect registration)
 │   ├── finance/
-│   │   ├── module.json          # Manifest
-│   │   ├── index.ts             # Module entry (registers views, services)
-│   │   ├── views/
-│   │   │   └── FinancePanel.tsx
-│   │   ├── services/
-│   │   │   └── finance-service.ts
-│   │   └── store/
-│   │       └── financeStore.ts
-│   │
-│   ├── writing/
 │   │   ├── module.json
-│   │   ├── index.ts
-│   │   ├── views/
-│   │   ├── services/
-│   │   └── store/
-│   │
-│   └── twitter/
+│   │   └── index.ts
+│   ├── settings/
+│   │   ├── module.json
+│   │   └── index.ts
+│   ├── analytics/
+│   │   ├── module.json
+│   │   └── index.ts
+│   └── library/
 │       ├── module.json
-│       ├── index.ts
-│       ├── views/
-│       ├── services/
-│       └── store/
+│       └── index.ts
 │
 ├── components/                  # Shared components (not module-specific)
 └── App.tsx                      # Uses ModuleLoader to init all modules
 ```
 
-### 5.2 Electron Side
+### 7.2 Electron Side
 
 ```
 electron/
@@ -166,268 +252,112 @@ electron/
 ├── ipc-registry.ts              # EXISTING — extended with permission checks
 ├── handlers/                    # Extracted IPC handler modules
 │   ├── index.ts
-│   ├── agent-handlers.ts       # EXISTING
+│   ├── agent-handlers.ts       # EXISTING ✅
+│   ├── toolbar-handlers.ts     # EXISTING ✅
 │   └── ...                     # Phase 2/3 extractions
 └── services/                    # Shared electron services
 ```
 
-## 6. Core Systems
+## 8. Core Systems (Implemented)
 
-### 6.1 ModuleLoader
+### 8.1 ModuleLoader
 
-The ModuleLoader is the orchestrator. It:
+**File:** `src/core/ModuleLoader.ts` — ✅ Implemented
 
-1. **Discovers** modules by scanning `src/modules/*/module.json`
-2. **Validates** manifests against schema
-3. **Resolves** dependency order
-4. **Loads** modules by calling their `index.ts` register function
-5. **Provides** lifecycle hooks (init, activate, deactivate, dispose)
+Key capabilities:
+- Register modules with manifest + lifecycle object
+- Validate manifest basics (id, name, version)
+- Topological sort by dependencies (with cycle detection)
+- Per-module error handling (one broken module doesn't kill the app)
+- Lifecycle: `init → activate → deactivate → dispose`
 
-```typescript
-// src/core/ModuleLoader.ts
+### 8.2 ServiceRegistry
 
-export interface ModuleLifecycle {
-  /** Called once during app startup */
-  init(): Promise<void>;
-  /** Called when module view is first activated */
-  activate?(): Promise<void>;
-  /** Called when module view is deactivated (navigated away) */
-  deactivate?(): void;
-  /** Called during app shutdown */
-  dispose?(): void;
-}
+**File:** `src/core/ServiceRegistry.ts` — ✅ Implemented
 
-export interface ModuleRegistration {
-  manifest: ModuleManifest;
-  lifecycle: ModuleLifecycle;
-}
+Key capabilities:
+- Lazy instantiation (factory called on first `get()`)
+- Singleton by default, opt-in transient
+- Module-scoped disposal
+- Async factory support
 
-class ModuleLoaderClass {
-  private modules = new Map<string, ModuleRegistration>();
-  private initialized = false;
+### 8.3 ViewRegistry Extensions
 
-  /** Register a module (called by module's index.ts) */
-  register(manifest: ModuleManifest, lifecycle: ModuleLifecycle): void {
-    if (this.modules.has(manifest.id)) {
-      console.warn(`[ModuleLoader] Module "${manifest.id}" already registered`);
-      return;
-    }
-    this.modules.set(manifest.id, { manifest, lifecycle });
-  }
+**File:** `src/core/ViewRegistry.ts` — ✅ Extended
 
-  /** Initialize all registered modules in dependency order */
-  async initAll(): Promise<void> {
-    if (this.initialized) return;
-    
-    const sorted = this.topologicalSort();
-    for (const mod of sorted) {
-      try {
-        await mod.lifecycle.init();
-        // Register views from manifest
-        for (const view of mod.manifest.views) {
-          // ViewRegistry.register() called by module's init
-        }
-      } catch (err) {
-        console.error(`[ModuleLoader] Failed to init "${mod.manifest.id}":`, err);
-      }
-    }
-    this.initialized = true;
-  }
+Added fields: `moduleId`, `category`, `description`
+Added methods: `getByModule()`, `getCoreViews()`, `getModuleViews()`, `unregister()`, `unregisterModule()`
 
-  /** Get module by ID */
-  get(id: string): ModuleRegistration | undefined {
-    return this.modules.get(id);
-  }
+### 8.4 ModuleContext
 
-  /** List all modules */
-  getAll(): ModuleRegistration[] {
-    return Array.from(this.modules.values());
-  }
+**File:** `src/core/ModuleContext.tsx` — ✅ Implemented
 
-  /** Topological sort by dependencies */
-  private topologicalSort(): ModuleRegistration[] {
-    // Simple sort — modules with no deps first
-    const all = Array.from(this.modules.values());
-    const sorted: ModuleRegistration[] = [];
-    const visited = new Set<string>();
+React hooks: `useModules()`, `useModule(id)`, `useService(id)`
 
-    const visit = (mod: ModuleRegistration) => {
-      if (visited.has(mod.manifest.id)) return;
-      visited.add(mod.manifest.id);
-      
-      for (const dep of mod.manifest.dependencies?.modules || []) {
-        const depMod = this.modules.get(dep);
-        if (depMod) visit(depMod);
-      }
-      sorted.push(mod);
-    };
+### 8.5 Auto-Sidebar Sync
 
-    all.forEach(visit);
-    return sorted;
-  }
-}
+**File:** `src/store/panelConfig.ts` — ✅ Extended
 
-export const ModuleLoader = new ModuleLoaderClass();
-```
+`syncWithViewRegistry()` auto-discovers module views not yet in panelConfig and adds them to the sidebar.
 
-### 6.2 ServiceRegistry
+## 9. IPC Refactoring Strategy
 
-Services provide shared functionality across modules. Unlike views (UI), services are headless.
+The 10K-line `electron/main.ts` with 308 IPC handlers is the biggest risk.
 
-```typescript
-// src/core/ServiceRegistry.ts
+### 9.1 Handler Distribution
 
-export interface ServiceDefinition<T = unknown> {
-  id: string;
-  factory: () => T | Promise<T>;
-  singleton?: boolean; // default true
-}
+| Namespace | Count | Module Target | Priority |
+|-----------|-------|--------------|----------|
+| x (Twitter/X) | 57 | twitter module | P1 |
+| inbox + folders + email + etc | 64 | comms module | P1 |
+| calendar | 17 | calendar module | P2 |
+| agents | 12 | core | P1 |
+| tasks + subtasks | 16 | core | P1 |
+| security | 8 | core | P2 |
+| financeAgent | 5 | finance module | ✅ |
+| library | 8 | library module | ✅ |
+| analytics | 4 | analytics module | ✅ |
+| settings | 4 | settings module | ✅ |
 
-class ServiceRegistryClass {
-  private services = new Map<string, ServiceDefinition>();
-  private instances = new Map<string, unknown>();
+### 9.2 Extraction Strategy
 
-  register<T>(def: ServiceDefinition<T>): void {
-    this.services.set(def.id, def as ServiceDefinition);
-  }
+**Phase 1:** Extract to `electron/handlers/<namespace>-handlers.ts` files
+**Phase 2:** Module-aware IPC — each module declares channels in manifest
+**Phase 3:** main.ts becomes thin orchestrator (<500 lines)
 
-  async get<T>(id: string): Promise<T> {
-    // Return cached singleton
-    if (this.instances.has(id)) {
-      return this.instances.get(id) as T;
-    }
+### 9.3 IPC Namespace Convention
 
-    const def = this.services.get(id);
-    if (!def) throw new Error(`Service "${id}" not registered`);
-
-    const instance = await def.factory();
-    if (def.singleton !== false) {
-      this.instances.set(id, instance);
-    }
-    return instance as T;
-  }
-
-  has(id: string): boolean {
-    return this.services.has(id);
-  }
-}
-
-export const ServiceRegistry = new ServiceRegistryClass();
-```
-
-### 6.3 ViewRegistry Extensions
-
-The existing ViewRegistry gets minimal additions:
-
-```typescript
-// Extended ViewRegistration
-export interface ViewRegistration {
-  id: string;
-  label: string;
-  icon: ComponentType<any>;
-  component: ComponentType<any>;
-  // NEW fields:
-  moduleId?: string;        // Which module owns this view
-  category?: string;        // For marketplace categorization
-  description?: string;     // For marketplace listing
-  permissions?: string[];   // Required permissions
-}
-```
-
-## 7. Module Example: Extracting Finance
-
-The Finance module is a good proof-of-concept because it's relatively self-contained.
-
-### Current state (scattered):
-- `src/components/FinancePanel.tsx` — UI
-- `src/components/FinanceInsightsPanel.tsx` — UI
-- `src/components/FinanceAgentChat.tsx` — UI  
-- `electron/finance-service.ts` — IPC handlers
-- `electron/finance-agent-bridge.ts` — Agent bridge
-- `src/store/store.ts` — Finance state mixed into global store
-
-### Target state (modular):
-```
-src/modules/finance/
-├── module.json
-├── index.ts
-├── views/
-│   ├── FinancePanel.tsx
-│   ├── FinanceInsightsPanel.tsx
-│   └── FinanceAgentChat.tsx
-├── services/
-│   └── finance-ipc.ts          # Wraps IPC calls
-└── store/
-    └── financeStore.ts          # Extracted from global store
-```
-
-### Migration steps:
-1. Create `src/modules/finance/` directory
-2. Move component files (update imports)
-3. Extract finance state from global store → `financeStore.ts`
-4. Create `module.json` manifest
-5. Create `index.ts` that registers views + services
-6. Update `CoreViews.tsx` to skip finance (module handles it)
-7. Verify no regressions
-
-## 8. IPC Refactoring Strategy
-
-The 10K-line `electron/main.ts` is the biggest risk. Strategy:
-
-### Phase 1: Extract to handler files (already started)
-- `handlers/agent-handlers.ts` ✅ Done
-- `handlers/toolbar-handlers.ts` ✅ Done  
-- Continue extracting per REFACTORING-PLAN.md
-
-### Phase 2: Module-aware IPC
-- Each module declares IPC channels in `module.json`
-- `module-host.ts` loads electron-side handlers per module
-- IPC registry validates channels against manifest permissions
-
-### Phase 3: main.ts becomes thin orchestrator
-- Window management + lifecycle only
-- All IPC through registered handlers
-- Target: <500 lines
-
-### IPC Namespace Convention:
 ```
 <module-id>:<domain>:<action>
 
 Examples:
   finance:transactions:list
-  finance:budget:get
   writing:project:create
   twitter:draft:publish
 ```
 
-## 9. Marketplace Integration
+## 10. Marketplace
 
-### 9.1 Marketplace Site (Next.js)
+### 10.1 Architecture
 
-Standalone site at `marketplace.froggo.app` (or similar):
+Standalone Next.js static site at `~/froggo-marketplace/`:
 
 ```
 froggo-marketplace/
-├── src/
-│   ├── app/
-│   │   ├── page.tsx              # Browse modules
-│   │   ├── module/[id]/page.tsx  # Module detail
-│   │   └── publish/page.tsx      # Submit module
-│   ├── components/
-│   │   ├── ModuleCard.tsx
-│   │   ├── ModuleGrid.tsx
-│   │   └── InstallButton.tsx
-│   └── lib/
-│       ├── manifest-schema.ts    # Shared validation
-│       └── api.ts
-├── public/
-│   └── modules/                  # Static module registry
-│       └── registry.json         # All published manifests
-├── package.json
-└── next.config.js
+├── src/app/
+│   ├── page.tsx                  # Browse modules
+│   └── module/[id]/page.tsx      # Module detail
+├── src/components/
+│   └── ModuleCard.tsx            # Module listing card
+├── src/lib/
+│   └── manifest-schema.ts       # Shared validation
+└── public/modules/
+    ├── registry.json             # All published manifests
+    └── froggo-finance/
+        └── module.json           # Individual manifest
 ```
 
-### 9.2 Module Registry Format
+### 10.2 Registry Format
 
 ```json
 {
@@ -438,104 +368,131 @@ froggo-marketplace/
       "name": "Finance",
       "version": "1.0.0",
       "author": "Froggo Team",
-      "description": "Financial management and wallet integration",
-      "category": "productivity",
+      "description": "...",
+      "category": "finance",
       "downloads": 0,
       "verified": true,
-      "manifestUrl": "https://marketplace.froggo.app/modules/froggo-finance/module.json",
-      "packageUrl": "https://marketplace.froggo.app/modules/froggo-finance/froggo-finance-1.0.0.tar.gz"
+      "manifestUrl": "/modules/froggo-finance/module.json",
+      "packageUrl": "/modules/froggo-finance/froggo-finance-1.0.0.tar.gz"
     }
   ]
 }
 ```
 
-### 9.3 Install Flow
+### 10.3 Install Flow
 
 1. User browses marketplace → clicks "Install"
 2. Dashboard downloads module package
 3. ModuleLoader validates manifest + permissions
-4. Module extracted to `~/.froggo/modules/<id>/`
-5. Dashboard restarts or hot-reloads module
-6. Module appears in sidebar
+4. User approves permissions
+5. Module extracted to `~/.froggo/modules/<id>/`
+6. Dashboard restarts or hot-reloads module
+7. Module appears in sidebar automatically (via `syncWithViewRegistry`)
 
-### 9.4 Security Model
+### 10.4 Security Model
 
 - **Manifest validation** — schema-checked before load
 - **IPC sandboxing** — modules can only use declared channels
 - **Filesystem sandboxing** — limited to declared paths
-- **No arbitrary shell** — shell access requires explicit permission + user approval
+- **Permission approval** — user must approve at install time
+- **No arbitrary shell** — `shell:execute` requires explicit permission + user approval
+- **Database access** — through parameterized APIs only
 - **Code signing** — future: verified modules signed by publisher
 
-## 10. Hourly Sync Protocol
+### 10.5 Update Flow
 
-For development coordination:
-
-1. **Module authors** push module packages to marketplace registry
-2. **Dashboard** checks registry hourly for updates
-3. **Auto-update** for verified modules (user can disable)
-4. **Manual update** for community modules (notification only)
-
-Config in dashboard settings:
-```json
-{
-  "marketplace": {
-    "registryUrl": "https://marketplace.froggo.app/modules/registry.json",
-    "autoUpdate": true,
-    "checkIntervalMs": 3600000,
-    "allowCommunityModules": false
-  }
-}
 ```
+1. Check for updates (hourly or on-demand)
+2. Download in background
+3. Patch versions: auto-update (if enabled)
+4. Minor/major versions: notify user
+5. Breaking changes: require explicit approval
+6. Apply on next restart (hot-reload future goal)
+```
+
+### 10.6 Revenue Model (from feasibility study)
+
+| Year | Users | Conversion | GMV | Platform Revenue (30%) |
+|------|-------|-----------|-----|----------------------|
+| 1 | 5,000 | 20% | $240K | $72K |
+| 3 | 50,000 | 20% | $3M | $900K |
+| 5 | 200,000 | 20% | $14.4M | $4.3M |
+
+Revenue sources: Platform commission (30%), premium features, developer tools.
 
 ## 11. Migration Path
 
-### Week 1: Foundation
+### Phase 1: Foundation (✅ Complete)
 - [x] ViewRegistry exists and works
 - [x] IPC Registry exists
-- [ ] Create ModuleLoader
-- [ ] Create ServiceRegistry  
-- [ ] Create module.json schema
+- [x] ModuleLoader implemented
+- [x] ServiceRegistry implemented
+- [x] ModuleContext (React hooks) implemented
+- [x] Auto-sidebar sync implemented
+- [x] 4 modules extracted (Finance, Settings, Analytics, Library)
+- [x] Test suite (54 tests passing)
 
-### Week 2: Proof of Concept
-- [ ] Extract Finance module as PoC
-- [ ] Verify no regressions
-- [ ] Document extraction pattern
+### Phase 2: Major Extractions (Next)
+- [ ] Extract Twitter/X module (60 IPC handlers)
+- [ ] Extract Communications module (64 IPC handlers)
+- [ ] Extract Writing module (~30 IPC handlers)
+- [ ] Continue IPC handler extraction in electron/
 
-### Week 3: Marketplace
-- [ ] Scaffold Next.js marketplace site
-- [ ] Create registry.json schema
-- [ ] Build module card + detail views
-- [ ] Wire up manifest validation
+### Phase 3: Marketplace (Future)
+- [ ] Marketplace site deployed
+- [ ] Module packaging system (tar.gz + code signing)
+- [ ] Install/uninstall flow in dashboard settings
+- [ ] Update checking + auto-update
+- [ ] Developer documentation for module authors
 
-### Week 4: Polish
-- [ ] Extract 1-2 more modules (Writing, Twitter/X)
-- [ ] Dashboard settings for marketplace config
-- [ ] Install/uninstall flow in dashboard
-- [ ] Documentation
+### Phase 4: Ecosystem (Future)
+- [ ] Community module submissions
+- [ ] Review process (automated + manual)
+- [ ] Payment integration (Stripe Connect)
+- [ ] Developer portal
 
 ## 12. Open Questions
 
-1. **Hot reload vs restart?** — Hot reload is nicer UX but complex. Start with restart.
-2. **Module store isolation?** — Zustand allows independent stores. Prefer separate stores per module.
-3. **Shared component library?** — Modules need access to design system. Export as `@froggo/ui`.
-4. **Electron handler loading?** — Dynamic require vs static import? Start static, go dynamic later.
+1. **Hot reload vs restart?** — Start with restart. Hot reload is complex.
+2. **Module store isolation?** — Zustand allows independent stores. Prefer separate per module.
+3. **Shared component library?** — Export as `@froggo/ui`. Modules import shared components.
+4. **Electron handler loading?** — Static import now, dynamic import later.
 5. **Versioning strategy?** — SemVer for modules, core version compatibility in manifest.
+6. **npm dependencies in modules?** — Bundle at build time. No runtime npm in modules.
 
-## 13. Non-Goals (for now)
+## 13. Test Coverage
 
-- Runtime plugin loading (too complex, start with build-time)
-- Cross-module communication (modules talk through ServiceRegistry, not directly)
-- Module-level permissions UI (use manifest declarations, add UI later)
-- Paid modules / marketplace commerce (future)
+**54 tests across 5 files:**
+- `ModuleLoader.test.ts` — 8 tests (register, init, deps, errors, cycles, dispose)
+- `ServiceRegistry.test.ts` — 7 tests (register, resolve, singleton, transient, dispose)
+- `ViewRegistry.test.ts` — 7 tests (register, filter, module ops, unregister)
+- `manifest-validation.test.ts` — 32 tests (validates all 4 extracted module manifests)
 
 ---
 
-## Appendix: Existing Infrastructure
+## Appendix A: Existing Infrastructure
 
 | System | Status | File | Notes |
 |--------|--------|------|-------|
-| ViewRegistry | ✅ Working | `src/core/ViewRegistry.ts` | Core of view system |
+| ViewRegistry | ✅ Extended | `src/core/ViewRegistry.ts` | Core of view system |
 | CoreViews | ✅ Working | `src/core/CoreViews.tsx` | 20 views registered |
 | IPC Registry | ✅ Working | `electron/ipc-registry.ts` | Dedup + type safety |
+| ModuleLoader | ✅ Implemented | `src/core/ModuleLoader.ts` | Lifecycle management |
+| ServiceRegistry | ✅ Implemented | `src/core/ServiceRegistry.ts` | Lazy DI |
+| ModuleContext | ✅ Implemented | `src/core/ModuleContext.tsx` | React hooks |
 | Handler extraction | 🔄 Partial | `electron/handlers/` | 2 of ~12 done |
 | REFACTORING-PLAN | 📋 Exists | `electron/REFACTORING-PLAN.md` | Phase 1 complete |
+| Marketplace scaffold | ✅ Created | `~/froggo-marketplace/` | Next.js static site |
+
+## Appendix B: Source Document Mapping
+
+| Section in this doc | Primary source |
+|---|---|
+| §3 Industry Research | Chief's module-system-design.md (Jan 10) |
+| §4 Core vs Module | Senior Coder's architecture report (Feb 16) |
+| §6 Manifest schema | Chief's design + Senior Coder's report (merged) |
+| §6.1 Permissions | Senior Coder's architecture report |
+| §9 IPC Refactoring | Chief's IPC_REFACTOR_SPIKE.md (Feb 20) |
+| §10 Marketplace | Researcher's feasibility study (Jan 30) |
+| §10.6 Revenue | Researcher's executive summary |
+| All implementation | Chief (Feb 20) |
