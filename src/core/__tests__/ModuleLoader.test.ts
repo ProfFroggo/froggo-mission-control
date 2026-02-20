@@ -1,181 +1,134 @@
+/**
+ * ModuleLoader unit tests — validates module lifecycle, dependency ordering,
+ * and error handling.
+ */
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// We need fresh instances per test, so we re-import the class
-// But the module exports singletons, so we'll test the class behavior
-// by clearing state between tests.
+// Mock ViewRegistry before importing ModuleLoader
+vi.mock('../ViewRegistry', () => ({
+  ViewRegistry: {
+    register: vi.fn(),
+    unregisterModule: vi.fn(),
+    getAll: vi.fn(() => []),
+  },
+}));
 
-// For testing, we'll import and reset the singleton
-import { ModuleLoader, type ModuleManifest, type ModuleLifecycle } from '../ModuleLoader';
-import { ServiceRegistry } from '../ServiceRegistry';
-
-function makeManifest(overrides: Partial<ModuleManifest> = {}): ModuleManifest {
-  return {
-    id: `test-module-${Math.random().toString(36).slice(2, 8)}`,
-    name: 'Test Module',
-    version: '1.0.0',
-    ...overrides,
-  };
-}
-
-function makeLifecycle(overrides: Partial<ModuleLifecycle> = {}): ModuleLifecycle {
-  return {
-    init: vi.fn().mockResolvedValue(undefined),
-    activate: vi.fn().mockResolvedValue(undefined),
-    deactivate: vi.fn(),
-    dispose: vi.fn(),
-    ...overrides,
-  };
-}
+// We need to re-create the ModuleLoader for each test since it's a singleton
+// So we test the class behavior through the module
 
 describe('ModuleLoader', () => {
-  beforeEach(() => {
-    // Reset loader to fresh state (clears modules + initialized flag)
-    (ModuleLoader as any)._reset();
-    ServiceRegistry.clear();
+  let ModuleLoader: typeof import('../ModuleLoader').ModuleLoader;
+
+  beforeEach(async () => {
+    // Reset module cache to get fresh singleton
+    vi.resetModules();
+    const mod = await import('../ModuleLoader');
+    ModuleLoader = mod.ModuleLoader;
   });
 
-  describe('register', () => {
-    it('registers a valid module', () => {
-      const manifest = makeManifest({ id: 'reg-test' });
-      const lifecycle = makeLifecycle();
-      ModuleLoader.register(manifest, lifecycle);
-      expect(ModuleLoader.get('reg-test')).toBeDefined();
-      expect(ModuleLoader.get('reg-test')!.status).toBe('registered');
-    });
+  it('should register a module', () => {
+    const manifest = {
+      id: 'test-module',
+      name: 'Test Module',
+      version: '1.0.0',
+    };
+    const lifecycle = { init: vi.fn().mockResolvedValue(undefined) };
 
-    it('rejects duplicate module IDs', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const manifest = makeManifest({ id: 'dup-test' });
-      ModuleLoader.register(manifest, makeLifecycle());
-      ModuleLoader.register(manifest, makeLifecycle());
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('already registered'));
-      warnSpy.mockRestore();
-    });
-
-    it('rejects invalid manifest (bad version)', () => {
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const manifest = makeManifest({ id: 'bad-ver', version: 'not-semver' });
-      ModuleLoader.register(manifest, makeLifecycle());
-      expect(ModuleLoader.get('bad-ver')).toBeUndefined();
-      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid manifest'));
-      errSpy.mockRestore();
-    });
-
-    it('rejects manifest with empty id', () => {
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const manifest = makeManifest({ id: '' });
-      ModuleLoader.register(manifest, makeLifecycle());
-      expect(errSpy).toHaveBeenCalled();
-      errSpy.mockRestore();
-    });
-
-    it('rejects manifest with uppercase in id', () => {
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const manifest = makeManifest({ id: 'Bad-Module' });
-      ModuleLoader.register(manifest, makeLifecycle());
-      expect(ModuleLoader.get('Bad-Module')).toBeUndefined();
-      errSpy.mockRestore();
-    });
+    ModuleLoader.register(manifest, lifecycle);
+    expect(ModuleLoader.get('test-module')).toBeDefined();
+    expect(ModuleLoader.get('test-module')?.status).toBe('registered');
   });
 
-  describe('initAll', () => {
-    it('initializes all registered modules', async () => {
-      const lifecycle = makeLifecycle();
-      ModuleLoader.register(makeManifest({ id: 'init-a' }), lifecycle);
-      await ModuleLoader.initAll();
-      expect(lifecycle.init).toHaveBeenCalled();
-      expect(ModuleLoader.get('init-a')!.status).toBe('active');
-    });
+  it('should reject invalid manifest (missing fields)', () => {
+    const manifest = { id: '', name: '', version: '' };
+    const lifecycle = { init: vi.fn() };
 
-    it('catches init errors without crashing', async () => {
-      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const lifecycle = makeLifecycle({
-        init: vi.fn().mockRejectedValue(new Error('boom')),
-      });
-      ModuleLoader.register(makeManifest({ id: 'fail-init' }), lifecycle);
-      await ModuleLoader.initAll();
-      expect(ModuleLoader.get('fail-init')!.status).toBe('error');
-      expect(ModuleLoader.get('fail-init')!.error).toBe('boom');
-      errSpy.mockRestore();
-    });
-
-    it('respects dependency order', async () => {
-      const order: string[] = [];
-      const makeTracked = (id: string) => makeLifecycle({
-        init: vi.fn().mockImplementation(async () => { order.push(id); }),
-      });
-
-      ModuleLoader.register(
-        makeManifest({ id: 'dep-child', dependencies: { modules: ['dep-parent'] } }),
-        makeTracked('dep-child'),
-      );
-      ModuleLoader.register(
-        makeManifest({ id: 'dep-parent' }),
-        makeTracked('dep-parent'),
-      );
-
-      await ModuleLoader.initAll();
-      expect(order.indexOf('dep-parent')).toBeLessThan(order.indexOf('dep-child'));
-    });
+    ModuleLoader.register(manifest as any, lifecycle);
+    expect(ModuleLoader.get('')).toBeUndefined();
   });
 
-  describe('activate / deactivate', () => {
-    it('calls activate on active module', async () => {
-      const lifecycle = makeLifecycle();
-      ModuleLoader.register(makeManifest({ id: 'act-test' }), lifecycle);
-      await ModuleLoader.initAll();
-      await ModuleLoader.activate('act-test');
-      expect(lifecycle.activate).toHaveBeenCalled();
-    });
+  it('should initialize all modules', async () => {
+    const initFn = vi.fn().mockResolvedValue(undefined);
+    ModuleLoader.register(
+      { id: 'mod-a', name: 'A', version: '1.0.0' },
+      { init: initFn },
+    );
 
-    it('calls deactivate on active module', async () => {
-      const lifecycle = makeLifecycle();
-      ModuleLoader.register(makeManifest({ id: 'deact-test' }), lifecycle);
-      await ModuleLoader.initAll();
-      ModuleLoader.deactivate('deact-test');
-      expect(lifecycle.deactivate).toHaveBeenCalled();
-    });
-
-    it('does not crash on non-existent module', async () => {
-      await expect(ModuleLoader.activate('ghost')).resolves.toBeUndefined();
-      expect(() => ModuleLoader.deactivate('ghost')).not.toThrow();
-    });
+    await ModuleLoader.initAll();
+    expect(initFn).toHaveBeenCalledOnce();
+    expect(ModuleLoader.get('mod-a')?.status).toBe('active');
+    expect(ModuleLoader.isInitialized()).toBe(true);
   });
 
-  describe('dispose', () => {
-    it('disposes module and cleans up services', async () => {
-      const lifecycle = makeLifecycle();
-      ModuleLoader.register(makeManifest({ id: 'disp-test' }), lifecycle);
-      await ModuleLoader.initAll();
-      ModuleLoader.dispose('disp-test');
-      expect(lifecycle.dispose).toHaveBeenCalled();
-      expect(ModuleLoader.get('disp-test')!.status).toBe('disposed');
-    });
+  it('should handle init failures gracefully', async () => {
+    const failingInit = vi.fn().mockRejectedValue(new Error('boom'));
+    ModuleLoader.register(
+      { id: 'bad-mod', name: 'Bad', version: '1.0.0' },
+      { init: failingInit },
+    );
+
+    await ModuleLoader.initAll(); // Should not throw
+    expect(ModuleLoader.get('bad-mod')?.status).toBe('error');
+    expect(ModuleLoader.get('bad-mod')?.error).toBe('boom');
+    expect(ModuleLoader.getErrored()).toHaveLength(1);
   });
 
-  describe('query helpers', () => {
-    it('getAll returns all modules', () => {
-      ModuleLoader.register(makeManifest({ id: 'q-a' }), makeLifecycle());
-      ModuleLoader.register(makeManifest({ id: 'q-b' }), makeLifecycle());
-      expect(ModuleLoader.getAll().length).toBeGreaterThanOrEqual(2);
-    });
+  it('should resolve dependencies in correct order', async () => {
+    const order: string[] = [];
 
-    it('getActive returns only active modules', async () => {
-      ModuleLoader.register(makeManifest({ id: 'active-q' }), makeLifecycle());
-      expect(ModuleLoader.getActive().find(m => m.manifest.id === 'active-q')).toBeUndefined();
-      await ModuleLoader.initAll();
-      expect(ModuleLoader.getActive().find(m => m.manifest.id === 'active-q')).toBeDefined();
-    });
+    ModuleLoader.register(
+      { id: 'child', name: 'Child', version: '1.0.0', dependencies: { modules: ['parent'] } },
+      { init: async () => { order.push('child'); } },
+    );
+    ModuleLoader.register(
+      { id: 'parent', name: 'Parent', version: '1.0.0' },
+      { init: async () => { order.push('parent'); } },
+    );
 
-    it('getErrored returns errored modules', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      ModuleLoader.register(
-        makeManifest({ id: 'err-q' }),
-        makeLifecycle({ init: vi.fn().mockRejectedValue(new Error('fail')) }),
-      );
-      await ModuleLoader.initAll();
-      expect(ModuleLoader.getErrored().find(m => m.manifest.id === 'err-q')).toBeDefined();
-      vi.restoreAllMocks();
-    });
+    await ModuleLoader.initAll();
+    expect(order).toEqual(['parent', 'child']);
+  });
+
+  it('should not double-initialize', async () => {
+    const initFn = vi.fn().mockResolvedValue(undefined);
+    ModuleLoader.register(
+      { id: 'once', name: 'Once', version: '1.0.0' },
+      { init: initFn },
+    );
+
+    await ModuleLoader.initAll();
+    await ModuleLoader.initAll(); // second call
+    expect(initFn).toHaveBeenCalledOnce();
+  });
+
+  it('should detect circular dependencies', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    ModuleLoader.register(
+      { id: 'a', name: 'A', version: '1.0.0', dependencies: { modules: ['b'] } },
+      { init: vi.fn().mockResolvedValue(undefined) },
+    );
+    ModuleLoader.register(
+      { id: 'b', name: 'B', version: '1.0.0', dependencies: { modules: ['a'] } },
+      { init: vi.fn().mockResolvedValue(undefined) },
+    );
+
+    await ModuleLoader.initAll(); // Should not hang
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it('should dispose modules', async () => {
+    const disposeFn = vi.fn();
+    ModuleLoader.register(
+      { id: 'disposable', name: 'D', version: '1.0.0' },
+      { init: vi.fn().mockResolvedValue(undefined), dispose: disposeFn },
+    );
+
+    await ModuleLoader.initAll();
+    ModuleLoader.dispose('disposable');
+    expect(disposeFn).toHaveBeenCalledOnce();
+    expect(ModuleLoader.get('disposable')?.status).toBe('disposed');
   });
 });

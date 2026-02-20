@@ -10,8 +10,11 @@
  * 3. Add import below
  */
 
-// Finance module (proof-of-concept)
+// Extracted modules (proof-of-concept)
 import './finance';
+import './settings';
+import './analytics';
+import './library';
 
 // Future modules:
 // import './writing';

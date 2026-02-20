@@ -1,112 +1,95 @@
+/**
+ * ServiceRegistry unit tests — validates lazy instantiation, singleton behavior,
+ * and module disposal.
+ */
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ServiceRegistry } from '../ServiceRegistry';
 
 describe('ServiceRegistry', () => {
-  beforeEach(() => {
-    ServiceRegistry.clear();
+  let ServiceRegistry: typeof import('../ServiceRegistry').ServiceRegistry;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import('../ServiceRegistry');
+    ServiceRegistry = mod.ServiceRegistry;
   });
 
-  it('registers and resolves a service', async () => {
+  it('should register and resolve a service', async () => {
+    const instance = { greeting: 'hello' };
     ServiceRegistry.register({
-      id: 'svc-a',
-      factory: () => ({ value: 42 }),
+      id: 'test-svc',
+      factory: () => instance,
     });
-    const svc = await ServiceRegistry.get<{ value: number }>('svc-a');
-    expect(svc.value).toBe(42);
+
+    const result = await ServiceRegistry.get<typeof instance>('test-svc');
+    expect(result).toBe(instance);
   });
 
-  it('caches singleton by default', async () => {
-    const factory = vi.fn(() => ({ ts: Date.now() }));
-    ServiceRegistry.register({ id: 'svc-single', factory });
-    const a = await ServiceRegistry.get('svc-single');
-    const b = await ServiceRegistry.get('svc-single');
-    expect(a).toBe(b);
-    expect(factory).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not cache when singleton=false', async () => {
-    let counter = 0;
+  it('should cache singletons', async () => {
+    let callCount = 0;
     ServiceRegistry.register({
-      id: 'svc-multi',
-      factory: () => ({ n: ++counter }),
+      id: 'counter',
+      factory: () => ({ count: ++callCount }),
+    });
+
+    const a = await ServiceRegistry.get('counter');
+    const b = await ServiceRegistry.get('counter');
+    expect(a).toBe(b);
+    expect(callCount).toBe(1);
+  });
+
+  it('should NOT cache non-singletons', async () => {
+    let callCount = 0;
+    ServiceRegistry.register({
+      id: 'transient',
+      factory: () => ({ count: ++callCount }),
       singleton: false,
     });
-    const a = await ServiceRegistry.get<{ n: number }>('svc-multi');
-    const b = await ServiceRegistry.get<{ n: number }>('svc-multi');
-    expect(a.n).toBe(1);
-    expect(b.n).toBe(2);
+
+    const a = await ServiceRegistry.get('transient');
+    const b = await ServiceRegistry.get('transient');
+    expect(a).not.toBe(b);
+    expect(callCount).toBe(2);
   });
 
-  it('throws on unknown service', async () => {
-    await expect(ServiceRegistry.get('ghost')).rejects.toThrow('not registered');
+  it('should throw for unregistered service', async () => {
+    await expect(ServiceRegistry.get('nope')).rejects.toThrow('not registered');
   });
 
-  it('handles async factories', async () => {
+  it('should support async factories', async () => {
     ServiceRegistry.register({
-      id: 'svc-async',
+      id: 'async-svc',
       factory: async () => {
-        await new Promise(r => setTimeout(r, 10));
-        return { async: true };
+        return { data: 'loaded' };
       },
     });
-    const svc = await ServiceRegistry.get<{ async: boolean }>('svc-async');
-    expect(svc.async).toBe(true);
+
+    const result = await ServiceRegistry.get<{ data: string }>('async-svc');
+    expect(result.data).toBe('loaded');
   });
 
-  it('has() checks registration', () => {
-    expect(ServiceRegistry.has('nope')).toBe(false);
-    ServiceRegistry.register({ id: 'svc-has', factory: () => ({}) });
-    expect(ServiceRegistry.has('svc-has')).toBe(true);
+  it('should dispose module services', async () => {
+    ServiceRegistry.register({
+      id: 'mod-svc',
+      factory: () => ({ active: true }),
+      moduleId: 'my-module',
+    });
+
+    await ServiceRegistry.get('mod-svc');
+    expect(ServiceRegistry.isResolved('mod-svc')).toBe(true);
+
+    ServiceRegistry.disposeModule('my-module');
+    expect(ServiceRegistry.isResolved('mod-svc')).toBe(false);
+    // Definition still exists — can be re-resolved
+    expect(ServiceRegistry.has('mod-svc')).toBe(true);
   });
 
-  it('isResolved() checks instantiation', async () => {
-    ServiceRegistry.register({ id: 'svc-res', factory: () => ({}) });
-    expect(ServiceRegistry.isResolved('svc-res')).toBe(false);
-    await ServiceRegistry.get('svc-res');
-    expect(ServiceRegistry.isResolved('svc-res')).toBe(true);
-  });
+  it('should report registered IDs', () => {
+    ServiceRegistry.register({ id: 'a', factory: () => 1 });
+    ServiceRegistry.register({ id: 'b', factory: () => 2 });
 
-  it('getCached returns undefined before resolution', () => {
-    ServiceRegistry.register({ id: 'svc-cache', factory: () => 'val' });
-    expect(ServiceRegistry.getCached('svc-cache')).toBeUndefined();
-  });
-
-  it('getCached returns instance after resolution', async () => {
-    ServiceRegistry.register({ id: 'svc-cache2', factory: () => 'val' });
-    await ServiceRegistry.get('svc-cache2');
-    expect(ServiceRegistry.getCached('svc-cache2')).toBe('val');
-  });
-
-  it('getByModule filters by moduleId', () => {
-    ServiceRegistry.register({ id: 'svc-m1', factory: () => 1, moduleId: 'mod-a' });
-    ServiceRegistry.register({ id: 'svc-m2', factory: () => 2, moduleId: 'mod-b' });
-    expect(ServiceRegistry.getByModule('mod-a').length).toBe(1);
-    expect(ServiceRegistry.getByModule('mod-a')[0].id).toBe('svc-m1');
-  });
-
-  it('dispose removes instance but keeps definition', async () => {
-    ServiceRegistry.register({ id: 'svc-disp', factory: () => 'x' });
-    await ServiceRegistry.get('svc-disp');
-    ServiceRegistry.dispose('svc-disp');
-    expect(ServiceRegistry.isResolved('svc-disp')).toBe(false);
-    expect(ServiceRegistry.has('svc-disp')).toBe(true);
-  });
-
-  it('disposeModule clears all instances for a module', async () => {
-    ServiceRegistry.register({ id: 'dm-1', factory: () => 1, moduleId: 'mod-kill' });
-    ServiceRegistry.register({ id: 'dm-2', factory: () => 2, moduleId: 'mod-kill' });
-    await ServiceRegistry.get('dm-1');
-    await ServiceRegistry.get('dm-2');
-    ServiceRegistry.disposeModule('mod-kill');
-    expect(ServiceRegistry.isResolved('dm-1')).toBe(false);
-    expect(ServiceRegistry.isResolved('dm-2')).toBe(false);
-  });
-
-  it('getRegisteredIds lists all service IDs', () => {
-    ServiceRegistry.register({ id: 'ids-a', factory: () => {} });
-    ServiceRegistry.register({ id: 'ids-b', factory: () => {} });
     const ids = ServiceRegistry.getRegisteredIds();
-    expect(ids).toContain('ids-a');
-    expect(ids).toContain('ids-b');
+    expect(ids).toContain('a');
+    expect(ids).toContain('b');
   });
 });

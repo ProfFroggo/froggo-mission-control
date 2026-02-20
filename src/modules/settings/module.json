@@ -1,0 +1,39 @@
+{
+  "id": "froggo-settings",
+  "name": "Settings",
+  "version": "1.0.0",
+  "description": "Dashboard settings, preferences, security, connected accounts, and configuration.",
+  "author": "Froggo Team",
+  "icon": "Settings",
+  "category": "system",
+
+  "views": [
+    {
+      "id": "settings",
+      "label": "Settings",
+      "icon": "Settings",
+      "entrypoint": "./views/SettingsPanel.tsx"
+    }
+  ],
+
+  "ipcChannels": {
+    "handle": [
+      "settings:get",
+      "settings:set",
+      "settings:getApiKeys",
+      "settings:saveApiKey"
+    ]
+  },
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": ["settings:*", "security:*", "backup:*", "export:*"],
+    "filesystem": ["$DATA_DIR/settings/"],
+    "network": false,
+    "shell": false
+  }
+}

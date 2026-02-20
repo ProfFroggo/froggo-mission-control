@@ -1,83 +1,79 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { ViewRegistry, type ViewRegistration } from '../ViewRegistry';
+/**
+ * ViewRegistry unit tests — validates registration, module filtering,
+ * and unregistration.
+ */
 
-function makeView(overrides: Partial<ViewRegistration> = {}): ViewRegistration {
-  const id = overrides.id ?? `view-${Math.random().toString(36).slice(2, 8)}`;
-  return {
-    id,
-    label: 'Test View',
-    icon: () => null,
-    component: () => null,
-    ...overrides,
-  } as ViewRegistration;
-}
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('ViewRegistry', () => {
-  beforeEach(() => {
-    // Unregister everything for a clean slate
-    ViewRegistry.getAll().forEach(v => ViewRegistry.unregister(v.id));
+  let ViewRegistry: typeof import('../ViewRegistry').ViewRegistry;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const mod = await import('../ViewRegistry');
+    ViewRegistry = mod.ViewRegistry;
   });
 
-  it('registers and retrieves a view', () => {
-    const view = makeView({ id: 'vr-get' });
-    ViewRegistry.register(view);
-    expect(ViewRegistry.get('vr-get')).toBe(view);
+  const DummyIcon = () => null;
+  const DummyComponent = () => null;
+
+  it('should register and retrieve a view', () => {
+    ViewRegistry.register({
+      id: 'test-view',
+      label: 'Test',
+      icon: DummyIcon,
+      component: DummyComponent,
+    });
+
+    expect(ViewRegistry.has('test-view')).toBe(true);
+    expect(ViewRegistry.get('test-view')?.label).toBe('Test');
   });
 
-  it('has() returns true for registered views', () => {
-    ViewRegistry.register(makeView({ id: 'vr-has' }));
-    expect(ViewRegistry.has('vr-has')).toBe(true);
-    expect(ViewRegistry.has('nope')).toBe(false);
+  it('should return all views', () => {
+    ViewRegistry.register({ id: 'v1', label: 'V1', icon: DummyIcon, component: DummyComponent });
+    ViewRegistry.register({ id: 'v2', label: 'V2', icon: DummyIcon, component: DummyComponent });
+
+    expect(ViewRegistry.getAll()).toHaveLength(2);
   });
 
-  it('overwrites on duplicate register', () => {
-    ViewRegistry.register(makeView({ id: 'vr-dup', label: 'First' }));
-    ViewRegistry.register(makeView({ id: 'vr-dup', label: 'Second' }));
-    expect(ViewRegistry.get('vr-dup')!.label).toBe('Second');
+  it('should overwrite on duplicate ID', () => {
+    ViewRegistry.register({ id: 'dup', label: 'First', icon: DummyIcon, component: DummyComponent });
+    ViewRegistry.register({ id: 'dup', label: 'Second', icon: DummyIcon, component: DummyComponent });
+
+    expect(ViewRegistry.get('dup')?.label).toBe('Second');
+    expect(ViewRegistry.getAll()).toHaveLength(1);
   });
 
-  it('getIcon and getComponent return correct values', () => {
-    const icon = () => null;
-    const component = () => null;
-    ViewRegistry.register(makeView({ id: 'vr-ic', icon, component } as any));
-    expect(ViewRegistry.getIcon('vr-ic')).toBe(icon);
-    expect(ViewRegistry.getComponent('vr-ic')).toBe(component);
+  it('should filter by module', () => {
+    ViewRegistry.register({ id: 'core', label: 'Core', icon: DummyIcon, component: DummyComponent });
+    ViewRegistry.register({ id: 'mod1', label: 'Mod1', icon: DummyIcon, component: DummyComponent, moduleId: 'my-mod' });
+    ViewRegistry.register({ id: 'mod2', label: 'Mod2', icon: DummyIcon, component: DummyComponent, moduleId: 'my-mod' });
+
+    expect(ViewRegistry.getCoreViews()).toHaveLength(1);
+    expect(ViewRegistry.getModuleViews()).toHaveLength(2);
+    expect(ViewRegistry.getByModule('my-mod')).toHaveLength(2);
   });
 
-  it('getByModule filters correctly', () => {
-    ViewRegistry.register(makeView({ id: 'vr-mod-a', moduleId: 'mod-x' }));
-    ViewRegistry.register(makeView({ id: 'vr-mod-b', moduleId: 'mod-y' }));
-    ViewRegistry.register(makeView({ id: 'vr-core' }));
-    expect(ViewRegistry.getByModule('mod-x').length).toBe(1);
-    expect(ViewRegistry.getByModule('mod-x')[0].id).toBe('vr-mod-a');
+  it('should unregister a single view', () => {
+    ViewRegistry.register({ id: 'bye', label: 'Bye', icon: DummyIcon, component: DummyComponent });
+    expect(ViewRegistry.unregister('bye')).toBe(true);
+    expect(ViewRegistry.has('bye')).toBe(false);
   });
 
-  it('getCoreViews returns views without moduleId', () => {
-    ViewRegistry.register(makeView({ id: 'vr-core2' }));
-    ViewRegistry.register(makeView({ id: 'vr-mod2', moduleId: 'some-mod' }));
-    const core = ViewRegistry.getCoreViews();
-    expect(core.every(v => !v.moduleId)).toBe(true);
-  });
+  it('should unregister all views for a module', () => {
+    ViewRegistry.register({ id: 'a', label: 'A', icon: DummyIcon, component: DummyComponent, moduleId: 'mod-x' });
+    ViewRegistry.register({ id: 'b', label: 'B', icon: DummyIcon, component: DummyComponent, moduleId: 'mod-x' });
+    ViewRegistry.register({ id: 'c', label: 'C', icon: DummyIcon, component: DummyComponent, moduleId: 'mod-y' });
 
-  it('getModuleViews returns views with moduleId', () => {
-    ViewRegistry.register(makeView({ id: 'vr-mv', moduleId: 'mod-z' }));
-    const mod = ViewRegistry.getModuleViews();
-    expect(mod.every(v => !!v.moduleId)).toBe(true);
-  });
-
-  it('unregister removes a view', () => {
-    ViewRegistry.register(makeView({ id: 'vr-unreg' }));
-    expect(ViewRegistry.unregister('vr-unreg')).toBe(true);
-    expect(ViewRegistry.has('vr-unreg')).toBe(false);
-  });
-
-  it('unregisterModule removes all views for a module', () => {
-    ViewRegistry.register(makeView({ id: 'vr-um-a', moduleId: 'kill-mod' }));
-    ViewRegistry.register(makeView({ id: 'vr-um-b', moduleId: 'kill-mod' }));
-    ViewRegistry.register(makeView({ id: 'vr-um-c', moduleId: 'keep-mod' }));
-    const removed = ViewRegistry.unregisterModule('kill-mod');
+    const removed = ViewRegistry.unregisterModule('mod-x');
     expect(removed).toBe(2);
-    expect(ViewRegistry.has('vr-um-a')).toBe(false);
-    expect(ViewRegistry.has('vr-um-c')).toBe(true);
+    expect(ViewRegistry.getAll()).toHaveLength(1);
+    expect(ViewRegistry.get('c')?.moduleId).toBe('mod-y');
+  });
+
+  it('should provide icon and component accessors', () => {
+    ViewRegistry.register({ id: 'acc', label: 'Acc', icon: DummyIcon, component: DummyComponent });
+    expect(ViewRegistry.getIcon('acc')).toBe(DummyIcon);
+    expect(ViewRegistry.getComponent('acc')).toBe(DummyComponent);
   });
 });

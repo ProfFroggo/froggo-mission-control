@@ -1,0 +1,43 @@
+{
+  "id": "froggo-library",
+  "name": "Library",
+  "version": "1.0.0",
+  "description": "File library, skills management, templates, and asset organization.",
+  "author": "Froggo Team",
+  "icon": "FolderOpen",
+  "category": "productivity",
+
+  "views": [
+    {
+      "id": "library",
+      "label": "Library",
+      "icon": "FolderOpen",
+      "entrypoint": "./views/LibraryPanel.tsx"
+    }
+  ],
+
+  "ipcChannels": {
+    "handle": [
+      "library:list",
+      "library:add",
+      "library:remove",
+      "library:open",
+      "library:search",
+      "library:getStats",
+      "library:tag",
+      "library:getTags"
+    ]
+  },
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": ["library:*", "skills:*"],
+    "filesystem": ["$LIBRARY_DIR/"],
+    "network": false,
+    "shell": false
+  }
+}

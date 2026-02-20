@@ -78,6 +78,8 @@ interface PanelConfigStore {
   closeEditModal: () => void;
   savePanels: (panels: PanelConfig[]) => void;
   resetPanels: () => void;
+  /** Sync with ViewRegistry — auto-discover module views not yet in panelConfig */
+  syncWithViewRegistry: () => void;
 }
 
 export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
@@ -93,6 +95,36 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
     const defaults = DEFAULT_PANELS.map(p => ({ ...p }));
     saveToStorage(defaults);
     set({ panels: defaults });
+  },
+  syncWithViewRegistry: () => {
+    // Auto-discover views from ViewRegistry not yet in panel config
+    // This picks up newly installed modules automatically
+    const { ViewRegistry } = require('../core/ViewRegistry');
+    const allViews = ViewRegistry.getAll();
+    
+    set((state) => {
+      const existing = new Set(state.panels.map((p: PanelConfig) => p.id));
+      let maxOrder = Math.max(...state.panels.map((p: PanelConfig) => p.order), 0);
+      const newPanels: PanelConfig[] = [];
+
+      for (const view of allViews) {
+        if (!existing.has(view.id) && view.id !== 'comms') { // skip aliases
+          newPanels.push({
+            id: view.id,
+            label: view.label,
+            visible: true,
+            order: ++maxOrder,
+          });
+        }
+      }
+
+      if (newPanels.length > 0) {
+        const merged = [...state.panels, ...newPanels];
+        saveToStorage(merged);
+        return { panels: merged };
+      }
+      return state;
+    });
   },
 }));
 
