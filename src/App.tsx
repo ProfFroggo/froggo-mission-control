@@ -9,7 +9,10 @@ import { safeStorage } from './utils/safeStorage';
 import { ErrorBoundary } from './components/ProtectedPanels';
 // Register all core views (side-effect import — must come before first render)
 import './core/CoreViews.tsx';
+// Register all modules (side-effect import — modules self-register with ModuleLoader)
+import './modules';
 import { ViewRegistry } from './core/ViewRegistry';
+import { ModuleLoader } from './core/ModuleLoader';
 import CommandPalette from './components/CommandPalette';
 import ToastContainer from './components/Toast';
 import GlobalSearch from './components/GlobalSearch';
@@ -60,6 +63,17 @@ function App() {
   useEffect(() => {
     loadApprovals();
   }, [loadApprovals]);
+
+  // Initialize all registered modules, then sync sidebar with new views
+  const syncPanels = usePanelConfigStore(s => s.syncWithViewRegistry);
+  useEffect(() => {
+    ModuleLoader.initAll()
+      .then(() => syncPanels())
+      .catch(err => {
+        console.error('[App] Module initialization failed:', err);
+      });
+    return () => { ModuleLoader.disposeAll(); };
+  }, [syncPanels]);
 
   // Apply saved theme and accent color on startup
   useEffect(() => {
