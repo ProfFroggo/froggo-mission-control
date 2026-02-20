@@ -3,16 +3,25 @@ import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
 import { useConversationFlow } from './useConversationFlow';
-import { generateTasks, exportSpecJson } from './TaskGenerator';
+import { generateTasks, exportSpecAsJson } from './TaskGenerator';
+import type { ModuleSpec } from './types';
 
 export default function ModuleBuilderPage() {
-  const { spec, updateSpec, resetSpec, completedSections, complexity } = useModuleSpec();
-  const flow = useConversationFlow(updateSpec);
+  const moduleSpec = useModuleSpec();
+  const { spec, resetSpec, sectionProgress, overallProgress, isComplete } = moduleSpec;
+  const flow = useConversationFlow({ moduleSpec });
 
-  const handleGenerateTasks = () => generateTasks(spec);
+  const handleGenerateTasks = async () => {
+    try {
+      const result = await generateTasks(spec as ModuleSpec);
+      alert(`Created task ${result.taskId} with ${result.subtaskIds.length} subtasks!`);
+    } catch (err: any) {
+      alert(`Task generation failed: ${err.message}`);
+    }
+  };
 
   const handleExportJson = () => {
-    const json = exportSpecJson(spec);
+    const json = exportSpecAsJson(spec as ModuleSpec);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -25,7 +34,7 @@ export default function ModuleBuilderPage() {
   const handleReset = () => {
     if (confirm('Reset the module builder? All progress will be lost.')) {
       resetSpec();
-      window.location.reload(); // simplest way to reset conversation state
+      window.location.reload();
     }
   };
 
@@ -42,6 +51,7 @@ export default function ModuleBuilderPage() {
             <RotateCcw size={14} /> Reset
           </button>
           <button
+            onClick={handleReset}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
           >
             <Plus size={14} /> New
@@ -54,25 +64,23 @@ export default function ModuleBuilderPage() {
         <div className="w-1/2 min-w-0">
           <ConversationPanel
             messages={flow.messages}
-            sections={flow.sections}
+            sectionProgress={sectionProgress}
             currentSection={flow.currentSection}
-            totalSections={flow.totalSections}
-            completedCount={flow.completedCount}
-            progress={flow.progress}
-            isComplete={flow.isComplete}
-            isProcessing={flow.isProcessing}
-            onSend={flow.sendMessage}
-            onAdvanceSection={flow.advanceSection}
+            overallProgress={overallProgress}
+            isStarted={flow.isStarted}
+            isFinished={flow.isFinished}
+            onSend={flow.submitAnswer}
+            onStart={flow.startInterview}
+            onJumpToSection={flow.jumpToSection}
           />
         </div>
         <div className="w-1/2 min-w-0">
           <SpecPreviewPanel
             spec={spec}
-            sections={flow.sections}
-            complexity={complexity}
+            sectionProgress={sectionProgress}
+            isComplete={isComplete}
             onGenerateTasks={handleGenerateTasks}
             onExportJson={handleExportJson}
-            isComplete={flow.isComplete}
           />
         </div>
       </div>

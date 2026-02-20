@@ -28,6 +28,7 @@ import {
   DollarSign,
   PenLine,
   Settings,
+  Boxes,
 } from 'lucide-react';
 
 import {
@@ -51,6 +52,7 @@ import {
   DMFeed,
   FinancePanel,
   WritingWorkspace,
+  ModuleBuilderPage,
 } from '../components/ProtectedPanels';
 
 import { ViewRegistry } from './ViewRegistry';
@@ -83,6 +85,7 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   { id: 'notifications', label: 'Notifications',   icon: Bell,             component: NotificationsPanel },
   { id: 'writing',     label: 'Writing',            icon: PenLine,          component: WritingWorkspace },
   { id: 'finance',     label: 'Finance',            icon: DollarSign,       component: FinancePanel },
+  { id: 'modulebuilder', label: 'Module Builder',   icon: Boxes,            component: ModuleBuilderPage },
   { id: 'settings',    label: 'Settings',           icon: Settings,         component: SettingsPanel },
   // Aliases (same component, different route IDs)
   { id: 'comms',       label: 'Communications',     icon: Mail,             component: CommsInbox3Pane },

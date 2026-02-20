@@ -1,22 +1,32 @@
 import { CheckCircle2, Circle, Package, Layers, Database, Settings, Shield, Code2 } from 'lucide-react';
-import { ModuleSpec, ConversationSection } from './types';
+import type { ModuleSpec, SectionProgress } from './types';
+import { generateTaskPlan } from './TaskGenerator';
 
 interface Props {
-  spec: ModuleSpec;
-  sections: ConversationSection[];
-  complexity: 'simple' | 'medium' | 'complex';
+  spec: Partial<ModuleSpec>;
+  sectionProgress: SectionProgress[];
+  isComplete: boolean;
   onGenerateTasks: () => void;
   onExportJson: () => void;
-  isComplete: boolean;
 }
 
-const complexityColors = {
+const complexityColors: Record<string, string> = {
   simple: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   complex: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
-export default function SpecPreviewPanel({ spec, sections, complexity, onGenerateTasks, onExportJson, isComplete }: Props) {
+export default function SpecPreviewPanel({ spec, sectionProgress, isComplete, onGenerateTasks, onExportJson }: Props) {
+  // Estimate complexity safely (TaskGenerator expects full ModuleSpec but we handle partial)
+  let complexity = 'simple';
+  try {
+    const plan = generateTaskPlan(spec as ModuleSpec);
+    // Derive from priority
+    complexity = plan.priority === 'p0' ? 'complex' : plan.priority === 'p1' ? 'medium' : 'simple';
+  } catch {
+    // spec incomplete, that's fine
+  }
+
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950 overflow-y-auto">
       {/* Header */}
@@ -52,15 +62,18 @@ export default function SpecPreviewPanel({ spec, sections, complexity, onGenerat
             Sections
           </h3>
           <div className="space-y-1.5">
-            {sections.map(s => (
+            {sectionProgress.map(s => (
               <div key={s.id} className="flex items-center gap-2 text-sm">
-                {s.completed ? (
+                {s.complete ? (
                   <CheckCircle2 size={16} className="text-green-500" />
                 ) : (
                   <Circle size={16} className="text-gray-300 dark:text-gray-600" />
                 )}
-                <span className={s.completed ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}>
-                  {s.name}
+                <span className={s.complete ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}>
+                  {s.label}
+                </span>
+                <span className="text-[10px] text-gray-400 ml-auto">
+                  {s.answeredCount}/{s.questionCount}
                 </span>
               </div>
             ))}
@@ -88,19 +101,19 @@ export default function SpecPreviewPanel({ spec, sections, complexity, onGenerat
         )}
 
         {/* Component wireframes */}
-        {(spec.views.length > 0 || spec.components.length > 0) && (
+        {((spec.views?.length ?? 0) > 0 || (spec.components?.length ?? 0) > 0) && (
           <div>
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Layers size={13} /> Components
+              <Layers size={13} /> Components & Views
             </h3>
             <div className="grid grid-cols-2 gap-2">
-              {spec.views.map(v => (
+              {spec.views?.map(v => (
                 <div key={v.id} className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 text-center">
                   <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{v.name}</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">{v.layout}</div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">{v.components.join(', ') || 'view'}</div>
                 </div>
               ))}
-              {spec.components.map(c => (
+              {spec.components?.map(c => (
                 <div key={c.id} className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg p-3 text-center">
                   <div className="text-xs font-medium text-blue-700 dark:text-blue-400">{c.name}</div>
                   <div className="text-[10px] text-blue-400 dark:text-blue-500 mt-0.5">{c.type}</div>
@@ -111,19 +124,19 @@ export default function SpecPreviewPanel({ spec, sections, complexity, onGenerat
         )}
 
         {/* Dependencies / Services */}
-        {(spec.services.length > 0 || spec.externalApis.length > 0) && (
+        {((spec.services?.length ?? 0) > 0 || (spec.externalApis?.length ?? 0) > 0) && (
           <div>
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Database size={13} /> Dependencies
             </h3>
             <ul className="space-y-1">
-              {spec.services.map(s => (
+              {spec.services?.map(s => (
                 <li key={s.id} className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  {s.name}
+                  {s.name} <span className="text-gray-400 text-xs">({s.type})</span>
                 </li>
               ))}
-              {spec.externalApis.map(api => (
+              {spec.externalApis?.map(api => (
                 <li key={api} className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
                   {api}
@@ -134,18 +147,18 @@ export default function SpecPreviewPanel({ spec, sections, complexity, onGenerat
         )}
 
         {/* IPC channels */}
-        {(spec.ipcChannels.handle.length > 0 || spec.ipcChannels.on.length > 0) && (
+        {((spec.ipcChannels?.handle?.length ?? 0) + (spec.ipcChannels?.on?.length ?? 0) > 0) && (
           <div>
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-              IPC Channels (~{spec.ipcChannels.handle.length + spec.ipcChannels.on.length})
+              IPC Channels (~{(spec.ipcChannels?.handle?.length ?? 0) + (spec.ipcChannels?.on?.length ?? 0)})
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {spec.ipcChannels.handle.map(ch => (
+              {spec.ipcChannels?.handle?.map(ch => (
                 <span key={ch} className="text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono">
                   {ch}
                 </span>
               ))}
-              {spec.ipcChannels.on.map(ch => (
+              {spec.ipcChannels?.on?.map(ch => (
                 <span key={ch} className="text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono">
                   {ch}
                 </span>
@@ -155,13 +168,13 @@ export default function SpecPreviewPanel({ spec, sections, complexity, onGenerat
         )}
 
         {/* Settings */}
-        {spec.settings.length > 0 && (
+        {(spec.settings?.length ?? 0) > 0 && (
           <div>
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Settings size={13} /> Settings
             </h3>
             <ul className="space-y-1">
-              {spec.settings.map(s => (
+              {spec.settings?.map(s => (
                 <li key={s.key} className="text-sm text-gray-700 dark:text-gray-300">
                   {s.label} <span className="text-gray-400">({s.type})</span>
                 </li>
@@ -171,13 +184,13 @@ export default function SpecPreviewPanel({ spec, sections, complexity, onGenerat
         )}
 
         {/* Permissions */}
-        {spec.permissions.length > 0 && (
+        {(spec.permissions?.length ?? 0) > 0 && (
           <div>
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Shield size={13} /> Permissions
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {spec.permissions.map(p => (
+              {spec.permissions?.map(p => (
                 <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-medium">
                   {p}
                 </span>
