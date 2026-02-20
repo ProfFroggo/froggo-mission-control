@@ -66,6 +66,13 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
   const [reviewerId, setReviewerId] = useState<string>('froggo'); // Default to Froggo as reviewer
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]); // Files to attach after task creation
 
+  // Multi-stage project state
+  const [showMultiStage, setShowMultiStage] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [stageNumber, setStageNumber] = useState(1);
+  const [stageName, setStageName] = useState('');
+  const [nextStage, setNextStage] = useState('');
+
   // Chat mode state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -189,6 +196,11 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
       assignedTo: assignedTo || undefined,
       reviewerId: reviewerId || 'froggo', // Always set reviewer (default: froggo)
       reviewStatus: 'pending' as any, // Initialize review status
+      // Multi-stage fields
+      ...(showMultiStage && projectName ? { projectName } : {}),
+      ...(showMultiStage && stageNumber ? { stageNumber } : {}),
+      ...(showMultiStage && stageName ? { stageName } : {}),
+      ...(showMultiStage && nextStage ? { nextStage } : {}),
     };
 
     addTask(newTask);
@@ -421,6 +433,12 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
     setChatInput('');
     setExtractedData({});
     setConversationComplete(false);
+    // Reset multi-stage fields
+    setShowMultiStage(false);
+    setProjectName('');
+    setStageNumber(1);
+    setStageName('');
+    setNextStage('');
   };
 
   const setQuickDue = (hours: number) => {
@@ -863,6 +881,75 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 <p className="text-xs text-clawd-text-dim mt-1">
                   Files will be attached after task creation
                 </p>
+              </div>
+
+              {/* Multi-Stage Project Setup */}
+              <div className="border border-clawd-border rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowMultiStage(!showMultiStage)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-clawd-surface hover:bg-clawd-bg transition-colors text-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>🔄</span>
+                    <span>Multi-Stage Project</span>
+                    {showMultiStage && projectName && (
+                      <span className="text-xs text-clawd-accent bg-clawd-accent/10 px-2 py-0.5 rounded-full">{projectName}</span>
+                    )}
+                  </span>
+                  <span className="text-clawd-text-dim">{showMultiStage ? '▲' : '▼'}</span>
+                </button>
+                {showMultiStage && (
+                  <div className="p-3 space-y-3 border-t border-clawd-border">
+                    <div>
+                      <label className="block text-xs text-clawd-text-dim mb-1">Project Name</label>
+                      <input
+                        type="text"
+                        value={projectName}
+                        onChange={e => setProjectName(e.target.value)}
+                        placeholder="e.g., Authentication System"
+                        className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-clawd-text-dim mb-1">Stage Number</label>
+                        <select
+                          value={stageNumber}
+                          onChange={e => setStageNumber(Number(e.target.value))}
+                          className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                        >
+                          {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-clawd-text-dim mb-1">Stage Name</label>
+                        <input
+                          type="text"
+                          value={stageName}
+                          onChange={e => setStageName(e.target.value)}
+                          placeholder="e.g., Design Phase"
+                          className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-clawd-text-dim mb-1">Next Stage (auto-creates on completion)</label>
+                      <input
+                        type="text"
+                        value={nextStage}
+                        onChange={e => setNextStage(e.target.value)}
+                        placeholder="e.g., Stage 2: Implementation"
+                        className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
+                      />
+                      <p className="text-xs text-clawd-text-dim mt-1">
+                        💡 If set, a new task with this title will be automatically created when this task is marked done
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit */}

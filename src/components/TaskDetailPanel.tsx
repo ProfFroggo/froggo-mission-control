@@ -48,6 +48,11 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [poking, _setPoking] = useState(false);
   const [showPokeModal, setShowPokeModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  // Multi-stage / Fork state
+  const [childTasks, setChildTasks] = useState<Array<{ id: string; title: string; status: string; stageNumber?: number }>>([]);
+  const [showForkModal, setShowForkModal] = useState(false);
+  const [forkDescription, setForkDescription] = useState('');
+  const [forkAssignSameAgent, setForkAssignSameAgent] = useState(true);
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
   const [showAgentActiveModal, setShowAgentActiveModal] = useState(false);
@@ -104,6 +109,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       setLoadingAttachments(false);
     }
   }, [task]);
+
+  // Load child tasks for multi-stage
+  useEffect(() => {
+    if (!task) { setChildTasks([]); return; }
+    if (window.clawdbot?.tasks?.children) {
+      window.clawdbot.tasks.children(task.id).then((result: any) => {
+        if (result?.success && result.children) {
+          setChildTasks(result.children.map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            status: c.status,
+            stageNumber: c.stage_number,
+          })));
+        }
+      }).catch(() => {});
+    }
+  }, [task?.id]);
 
   useEffect(() => {
     if (!task) {
@@ -609,6 +631,44 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <span className="text-xs text-clawd-text-dim">{task.project}</span>
             </div>
             <h2 className="text-xl font-semibold mb-2">{task.title}</h2>
+            {/* Multi-Stage Breadcrumb */}
+            {task.projectName && (
+              <div className="mb-2 p-2 bg-clawd-surface border border-clawd-border rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <span>📊</span>
+                  <span className="font-medium text-clawd-accent">{task.projectName}</span>
+                  {task.stageNumber && (
+                    <span className="text-clawd-text-dim">
+                      — Stage {task.stageNumber}{task.stageName ? `: ${task.stageName}` : ''}
+                    </span>
+                  )}
+                </div>
+                {task.nextStage && (
+                  <div className="text-xs text-clawd-text-dim mt-1">
+                    ➡️ Next: {task.nextStage}
+                  </div>
+                )}
+                {task.parentTaskId && (
+                  <div className="text-xs text-clawd-text-dim mt-1 flex items-center gap-1">
+                    ← Parent: {task.parentTaskId.slice(-8)}
+                  </div>
+                )}
+                {childTasks.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <span className="text-xs text-clawd-text-dim font-medium">Child Tasks:</span>
+                    {childTasks.map(child => (
+                      <div key={child.id} className="text-xs text-clawd-text-dim ml-2">
+                        {child.stageNumber ? `Stage ${child.stageNumber}: ` : ''}
+                        {child.title}
+                        <span className={`ml-1 ${child.status === 'done' ? 'text-success' : child.status === 'in-progress' ? 'text-warning' : ''}`}>
+                          ({child.status})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {task.description && (
               <div className="max-h-96 overflow-y-auto text-sm text-clawd-text-dim">{task.description}</div>
             )}
@@ -1383,12 +1443,29 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
           )}
           {task.status === 'done' && (
+            <>
+              <button
+                onClick={() => setShowReopenModal(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+              >
+                <XCircle size={16} />
+                Reopen
+              </button>
+              <button
+                onClick={() => { setShowForkModal(true); setForkDescription(''); }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-accent text-white rounded-xl hover:bg-clawd-accent-dim transition-colors"
+              >
+                🔀 Fork From This
+              </button>
+            </>
+          )}
+          {/* Fork button also available for non-done tasks with parent context */}
+          {task.status !== 'done' && task.parentTaskId && (
             <button
-              onClick={() => setShowReopenModal(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-clawd-border text-clawd-text rounded-xl hover:bg-clawd-border/70 transition-colors"
+              onClick={() => { setShowForkModal(true); setForkDescription(''); }}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-clawd-surface border border-clawd-border text-clawd-text rounded-xl hover:border-clawd-accent transition-colors text-sm"
             >
-              <XCircle size={16} />
-              Reopen
+              🔀 Fork
             </button>
           )}
         </div>
@@ -1580,6 +1657,84 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             loadActivity();
           }}
         />
+      )}
+
+      {/* Fork Task Modal */}
+      {showForkModal && task && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-clawd-surface rounded-2xl border border-clawd-border shadow-2xl w-[500px] max-w-[90vw]">
+            <div className="flex items-center justify-between p-6 border-b border-clawd-border">
+              <h3 className="text-lg font-semibold">🔀 Build on this task</h3>
+              <button
+                onClick={() => setShowForkModal(false)}
+                className="p-2 hover:bg-clawd-border rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-clawd-text-dim">What do you want to build next?</p>
+              <textarea
+                value={forkDescription}
+                onChange={e => setForkDescription(e.target.value)}
+                placeholder="Describe the next task..."
+                rows={4}
+                autoFocus
+                className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-2 focus:outline-none focus:border-clawd-accent resize-none"
+              />
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={forkAssignSameAgent}
+                  onChange={e => setForkAssignSameAgent(e.target.checked)}
+                  className="rounded"
+                />
+                Assign to same agent{task.assignedTo ? ` (${task.assignedTo})` : ''}
+              </label>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-clawd-border">
+              <button
+                onClick={() => setShowForkModal(false)}
+                className="px-4 py-2 rounded-lg border border-clawd-border hover:bg-clawd-border transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!forkDescription.trim()) return;
+                  try {
+                    if (window.clawdbot?.tasks?.fork) {
+                      const result = await window.clawdbot.tasks.fork(task.id, {
+                        title: forkDescription.trim().slice(0, 100),
+                        description: forkDescription.trim(),
+                        assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
+                        priority: task.priority,
+                      });
+                      if (result?.success) {
+                        showToast('success', 'Task forked', `Created new task from "${task.title}"`);
+                        setShowForkModal(false);
+                        // Reload child tasks
+                        window.clawdbot.tasks.children(task.id).then((r: any) => {
+                          if (r?.success) setChildTasks(r.children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
+                        });
+                      } else {
+                        showToast('error', 'Fork failed', result?.error || 'Unknown error');
+                      }
+                    } else {
+                      showToast('error', 'Fork not available', 'tasks.fork IPC not found');
+                    }
+                  } catch (err) {
+                    showToast('error', 'Fork failed', (err as Error).message);
+                  }
+                }}
+                disabled={!forkDescription.trim()}
+                className="px-4 py-2 rounded-lg bg-clawd-accent text-white hover:bg-clawd-accent-dim transition-colors disabled:opacity-50"
+              >
+                Create Task
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <ConfirmDialog

@@ -791,6 +791,10 @@ declare global {
         // Poke Brain for status update
         poke: (taskId: string, title: string) => Promise<{ success: boolean; message?: string; error?: string }>;
         pokeInternal: (taskId: string, title: string) => Promise<{ success: boolean; sessionKey?: string; response?: string; error?: string }>;
+        // Multi-stage / Fork operations
+        fork: (parentTaskId: string, data: { title: string; description?: string; assignedTo?: string; priority?: string }) => Promise<{ success: boolean; id?: string; error?: string }>;
+        children: (taskId: string) => Promise<{ success: boolean; children: Array<{ id: string; title: string; status: string; stage_number?: number; stage_name?: string }> }>;
+        parent: (taskId: string) => Promise<{ success: boolean; parent?: { id: string; title: string; status: string } }>;
         // Real-time task notification listener
         onNotification: (callback: (notification: { event: string; task_id: string; title: string; project: string; timestamp: number }) => void) => () => void;
         // Subtask operations

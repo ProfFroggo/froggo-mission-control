@@ -98,6 +98,11 @@ export function registerTaskHandlers(): void {
   // Attachment Operations
   ipcMain.handle('attachments:list', handleAttachmentsList);
   ipcMain.handle('attachments:listAll', handleAttachmentsListAll);
+
+  // Multi-stage / Fork Operations
+  ipcMain.handle('tasks:fork', handleTaskFork);
+  ipcMain.handle('tasks:children', handleTaskChildren);
+  ipcMain.handle('tasks:parent', handleTaskParent);
 }
 
 // ============ TASK HANDLERS ============
@@ -110,6 +115,11 @@ async function handleTaskSync(_: Electron.IpcMainInvokeEvent, task: {
   assignedTo?: string;
   project?: string;
   priority?: string;
+  projectName?: string;
+  stageNumber?: number;
+  stageName?: string;
+  nextStage?: string;
+  parentTaskId?: string;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const now = Date.now();
@@ -123,12 +133,17 @@ async function handleTaskSync(_: Electron.IpcMainInvokeEvent, task: {
       priority: task.priority || 'p2',
       created_at: now,
       updated_at: now,
+      project_name: task.projectName || null,
+      stage_number: task.stageNumber || null,
+      stage_name: task.stageName || null,
+      next_stage: task.nextStage || null,
+      parent_task_id: task.parentTaskId || null,
     };
 
     const stmt = prepare(`
       INSERT OR REPLACE INTO tasks 
-      (id, title, description, status, assigned_to, project, priority, created_at, updated_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, title, description, status, assigned_to, project, priority, created_at, updated_at, project_name, stage_number, stage_name, next_stage, parent_task_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     stmt.run(
@@ -140,7 +155,12 @@ async function handleTaskSync(_: Electron.IpcMainInvokeEvent, task: {
       taskData.project,
       taskData.priority,
       taskData.created_at,
-      taskData.updated_at
+      taskData.updated_at,
+      taskData.project_name,
+      taskData.stage_number,
+      taskData.stage_name,
+      taskData.next_stage,
+      taskData.parent_task_id
     );
 
     safeLog.log('[Tasks] Synced:', taskData.id);
@@ -161,6 +181,11 @@ async function handleTaskUpdate(
     planningNotes?: string;
     reviewStatus?: string;
     reviewerId?: string;
+    projectName?: string;
+    stageNumber?: number;
+    stageName?: string;
+    nextStage?: string;
+    parentTaskId?: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -190,6 +215,27 @@ async function handleTaskUpdate(
     if (updates.assignedTo !== undefined) {
       sqlFields.push('assigned_to = ?');
       params.push(updates.assignedTo);
+    }
+
+    if (updates.projectName !== undefined) {
+      sqlFields.push('project_name = ?');
+      params.push(updates.projectName);
+    }
+    if (updates.stageNumber !== undefined) {
+      sqlFields.push('stage_number = ?');
+      params.push(updates.stageNumber);
+    }
+    if (updates.stageName !== undefined) {
+      sqlFields.push('stage_name = ?');
+      params.push(updates.stageName);
+    }
+    if (updates.nextStage !== undefined) {
+      sqlFields.push('next_stage = ?');
+      params.push(updates.nextStage);
+    }
+    if (updates.parentTaskId !== undefined) {
+      sqlFields.push('parent_task_id = ?');
+      params.push(updates.parentTaskId);
     }
     
     if (sqlFields.length > 0) {
@@ -224,7 +270,7 @@ async function handleTaskList(
   status?: string
 ): Promise<{ success: boolean; tasks: TaskRow[]; totalDone?: number; totalArchived?: number; error?: string }> {
   try {
-    const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived';
+    const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived, project_name, stage_number, stage_name, next_stage, parent_task_id';
     let whereClause = '(cancelled IS NULL OR cancelled = 0) AND (archived IS NULL OR archived = 0)';
     const params: unknown[] = [];
     
@@ -602,5 +648,89 @@ async function handleAttachmentsListAll(): Promise<{ success: boolean; attachmen
   } catch (error) {
     safeLog.error('[Attachments] ListAll error:', (error as Error).message);
     return { success: false, attachments: [] };
+  }
+}
+
+// ============ MULTI-STAGE / FORK HANDLERS ============
+
+async function handleTaskFork(
+  _: Electron.IpcMainInvokeEvent,
+  parentTaskId: string,
+  data: { title: string; description?: string; assignedTo?: string; priority?: string }
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const parent = prepare('SELECT * FROM tasks WHERE id = ?').get(parentTaskId) as TaskRow & { project_name?: string; parent_task_id?: string } | undefined;
+    if (!parent) return { success: false, error: 'Parent task not found' };
+
+    const now = Date.now();
+    const newId = `task-${now}`;
+
+    // Build description with parent context
+    const desc = `[Forked from: ${parent.title} (${parent.id})]\n\n${data.description || ''}`;
+
+    prepare(`
+      INSERT INTO tasks (id, title, description, status, assigned_to, priority, project_name, parent_task_id, reviewerId, independent_review_required, independent_review_status, created_at, updated_at)
+      VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, 'clara', 1, 'pending', ?, ?)
+    `).run(
+      newId,
+      data.title,
+      desc,
+      data.assignedTo || parent.assigned_to || null,
+      data.priority || parent.priority || 'p2',
+      (parent as any).project_name || null,
+      parentTaskId,
+      now,
+      now
+    );
+
+    // Copy attachments from parent
+    try {
+      const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ?').all(parentTaskId) as AttachmentRow[];
+      for (const att of attachments) {
+        const attId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        prepare(`
+          INSERT INTO task_attachments (id, task_id, filename, file_path, file_size, mime_type, description, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(attId, newId, att.filename, att.file_path, att.file_size, att.mime_type, `[From parent] ${att.description || ''}`, Date.now());
+      }
+    } catch { /* non-critical */ }
+
+    safeLog.log('[Tasks] Forked:', newId, 'from', parentTaskId);
+    emitTaskEvent('task.created', newId);
+    return { success: true, id: newId };
+  } catch (error) {
+    safeLog.error('[Tasks] Fork error:', (error as Error).message);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+async function handleTaskChildren(
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string
+): Promise<{ success: boolean; children: TaskRow[]; error?: string }> {
+  try {
+    const children = prepare(
+      'SELECT id, title, status, priority, assigned_to, created_at, project_name, stage_number, stage_name FROM tasks WHERE parent_task_id = ? ORDER BY stage_number, created_at'
+    ).all(taskId) as TaskRow[];
+    return { success: true, children };
+  } catch (error) {
+    safeLog.error('[Tasks] Children error:', (error as Error).message);
+    return { success: false, children: [] };
+  }
+}
+
+async function handleTaskParent(
+  _: Electron.IpcMainInvokeEvent,
+  taskId: string
+): Promise<{ success: boolean; parent?: TaskRow; error?: string }> {
+  try {
+    const task = prepare('SELECT parent_task_id FROM tasks WHERE id = ?').get(taskId) as { parent_task_id?: string } | undefined;
+    if (!task?.parent_task_id) return { success: true };
+
+    const parent = prepare('SELECT id, title, status, priority, assigned_to, project_name, stage_number, stage_name FROM tasks WHERE id = ?').get(task.parent_task_id) as TaskRow | undefined;
+    return { success: true, parent };
+  } catch (error) {
+    safeLog.error('[Tasks] Parent error:', (error as Error).message);
+    return { success: false };
   }
 }
