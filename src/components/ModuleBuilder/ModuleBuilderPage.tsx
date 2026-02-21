@@ -80,6 +80,8 @@ export default function ModuleBuilderPage() {
             spec={spec}
             sectionProgress={sectionProgress}
             isComplete={isComplete}
+            wireframe={flow.wireframe}
+            liveTasks={flow.liveTasks}
             onGenerateTasks={handleGenerateTasks}
             onExportJson={handleExportJson}
           />
