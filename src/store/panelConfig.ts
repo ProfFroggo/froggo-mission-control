@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { ViewRegistry } from '../core/ViewRegistry';
 
 export interface PanelConfig {
   id: string;
@@ -99,8 +100,6 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
   },
   syncWithViewRegistry: () => {
     // Auto-discover views from ViewRegistry not yet in panel config
-    // This picks up newly installed modules automatically
-    const { ViewRegistry } = require('../core/ViewRegistry');
     const allViews = ViewRegistry.getAll();
     
     set((state) => {
