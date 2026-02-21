@@ -111,15 +111,22 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
   
   const sessionKey = `agent:${safeAgentId}:xtwitter:${validTab}`;
 
-  // Ensure gateway connection and pre-warm agent session on mount/tab change
+  // Track gateway connection state (without triggering warmup on every change)
   useEffect(() => {
-    if (!gateway.connected) {
-      gateway.connect();
-    }
     setIsConnected(gateway.connected);
 
-    // Pre-warm: create the agent session on the gateway so first real message
-    // doesn't hit cold-start latency. Uses same pattern as VoiceChatPanel.
+    const unsubscribe = gateway.on('stateChange', ({ state }: { state: string }) => {
+      setIsConnected(state === 'connected');
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Pre-warm agent session ONLY when sessionKey changes (actual session change)
+  // Don't warmup on every displayName/tab re-render — only on real session switches
+  useEffect(() => {
     if (gateway.connected) {
       gateway.request('chat.send', {
         message: `[Session initialized for ${safeDisplayName} — ${validTab} context]`,
@@ -127,23 +134,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         idempotencyKey: `warmup-${safeAgentId}-${validTab}-${Date.now()}`,
       }).catch(() => { /* best-effort */ });
     }
-
-    // Listen for connection state changes — also pre-warm on reconnect
-    const unsubscribe = gateway.on('stateChange', ({ state }: { state: string }) => {
-      setIsConnected(state === 'connected');
-      if (state === 'connected') {
-        gateway.request('chat.send', {
-          message: `[Session initialized for ${safeDisplayName} — ${validTab} context]`,
-          sessionKey,
-          idempotencyKey: `warmup-${safeAgentId}-${validTab}-${Date.now()}`,
-        }).catch(() => { /* best-effort */ });
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [sessionKey, safeAgentId, safeDisplayName, validTab]);
+  }, [sessionKey]); // Only warmup when sessionKey changes, not on every displayName/tab render
 
   // Auto-scroll to bottom
   useEffect(() => {
