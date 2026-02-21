@@ -224,11 +224,11 @@ export function registerXAutomationsHandlers() {
     return getAutomation(id);
   });
 
-  registerHandler('x-automations:create', async (_, data) => {
+  registerHandler('x-automations:create', async (_, data: any) => {
     return createAutomation(data);
   });
 
-  registerHandler('x-automations:update', async (_, id: string, updates) => {
+  registerHandler('x-automations:update', async (_, id: string, updates: any) => {
     return updateAutomation(id, updates);
   });
 
