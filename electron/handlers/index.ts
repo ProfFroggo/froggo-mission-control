@@ -18,3 +18,4 @@ export { registerFinanceHandlers } from '../finance-service';
 // export { registerMediaHandlers } from './media-handlers';
 export { registerToolbarHandlers } from './toolbar-handlers';
 export { registerPinsHandlers } from './pins-handlers';
+export { registerCommsHandlers, startCommsPolling, startEmailAutoCheck } from './comms-handlers';
