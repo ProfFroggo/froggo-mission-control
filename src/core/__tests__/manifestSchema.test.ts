@@ -61,6 +61,42 @@ describe('manifestSchema', () => {
         views: [{ id: 'v', label: 'V', icon: 'X' }], // missing entrypoint
       })).toThrow();
     });
+
+    it('accepts manifest with credentials array', () => {
+      expect(() => validateManifest({
+        ...validManifest,
+        credentials: [{ id: 'api_key', label: 'API Key', type: 'api_key', required: true }],
+      })).not.toThrow();
+    });
+
+    it('accepts manifest with empty credentials array', () => {
+      expect(() => validateManifest({
+        ...validManifest,
+        credentials: [],
+      })).not.toThrow();
+    });
+
+    it('rejects credential with missing type', () => {
+      expect(() => validateManifest({
+        ...validManifest,
+        credentials: [{ id: 'key', label: 'Key' }], // missing type
+      })).toThrow();
+    });
+
+    it('rejects credential with invalid type', () => {
+      expect(() => validateManifest({
+        ...validManifest,
+        credentials: [{ id: 'key', label: 'Key', type: 'invalid' }],
+      })).toThrow();
+    });
+
+    it('defaults credential required to false', () => {
+      const result = validateManifest({
+        ...validManifest,
+        credentials: [{ id: 'key', label: 'Key', type: 'api_key' }],
+      });
+      expect(result.credentials?.[0].required).toBe(false);
+    });
   });
 
   describe('validateManifestSafe', () => {

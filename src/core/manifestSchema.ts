@@ -22,6 +22,14 @@ export const ModuleServiceDeclarationSchema = z.object({
   electron: z.boolean().optional(),
 });
 
+export const CredentialDeclarationSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string().optional(),
+  required: z.boolean().default(false),
+  type: z.enum(['api_key', 'oauth_token', 'password', 'url', 'custom']),
+});
+
 export const ModuleManifestSchema = z.object({
   id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Module ID must be lowercase alphanumeric with hyphens'),
   name: z.string().min(1),
@@ -56,9 +64,12 @@ export const ModuleManifestSchema = z.object({
     network: z.boolean().optional(),
     shell: z.boolean().optional(),
   }).optional(),
+
+  credentials: z.array(CredentialDeclarationSchema).optional(),
 });
 
 export type ValidatedManifest = z.infer<typeof ModuleManifestSchema>;
+export type ValidatedCredential = z.infer<typeof CredentialDeclarationSchema>;
 
 /**
  * Validate a manifest object. Returns the parsed manifest or throws a descriptive error.

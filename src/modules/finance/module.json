@@ -7,6 +7,16 @@
   "icon": "DollarSign",
   "category": "finance",
 
+  "credentials": [
+    {
+      "id": "solana_rpc_url",
+      "label": "Solana RPC URL",
+      "description": "WebSocket endpoint for Solana network access",
+      "required": false,
+      "type": "url"
+    }
+  ],
+
   "views": [
     {
       "id": "finance",
