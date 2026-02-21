@@ -5,7 +5,7 @@
  * Auto-migrates from legacy JSON files on first access.
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as fs from 'fs';
 import { writingBookDbPath, writingProjectPath } from './paths';
 import { getBookDb, migrateJsonToDb } from './writing-db';
@@ -273,33 +273,33 @@ async function deleteFact(projectId: string, id: string) {
 
 export function registerWritingMemoryHandlers() {
   // Characters
-  ipcMain.handle('writing:memory:characters:list', async (_, projectId: string) =>
+  registerHandler('writing:memory:characters:list', async (_, projectId: string) =>
     listCharacters(projectId));
-  ipcMain.handle('writing:memory:characters:create', async (_, projectId: string, data: any) =>
+  registerHandler('writing:memory:characters:create', async (_, projectId: string, data: any) =>
     createCharacter(projectId, data));
-  ipcMain.handle('writing:memory:characters:update', async (_, projectId: string, id: string, updates: any) =>
+  registerHandler('writing:memory:characters:update', async (_, projectId: string, id: string, updates: any) =>
     updateCharacter(projectId, id, updates));
-  ipcMain.handle('writing:memory:characters:delete', async (_, projectId: string, id: string) =>
+  registerHandler('writing:memory:characters:delete', async (_, projectId: string, id: string) =>
     deleteCharacter(projectId, id));
 
   // Timeline
-  ipcMain.handle('writing:memory:timeline:list', async (_, projectId: string) =>
+  registerHandler('writing:memory:timeline:list', async (_, projectId: string) =>
     listTimeline(projectId));
-  ipcMain.handle('writing:memory:timeline:create', async (_, projectId: string, data: any) =>
+  registerHandler('writing:memory:timeline:create', async (_, projectId: string, data: any) =>
     createTimelineEvent(projectId, data));
-  ipcMain.handle('writing:memory:timeline:update', async (_, projectId: string, id: string, updates: any) =>
+  registerHandler('writing:memory:timeline:update', async (_, projectId: string, id: string, updates: any) =>
     updateTimelineEvent(projectId, id, updates));
-  ipcMain.handle('writing:memory:timeline:delete', async (_, projectId: string, id: string) =>
+  registerHandler('writing:memory:timeline:delete', async (_, projectId: string, id: string) =>
     deleteTimelineEvent(projectId, id));
 
   // Facts
-  ipcMain.handle('writing:memory:facts:list', async (_, projectId: string) =>
+  registerHandler('writing:memory:facts:list', async (_, projectId: string) =>
     listFacts(projectId));
-  ipcMain.handle('writing:memory:facts:create', async (_, projectId: string, data: any) =>
+  registerHandler('writing:memory:facts:create', async (_, projectId: string, data: any) =>
     createFact(projectId, data));
-  ipcMain.handle('writing:memory:facts:update', async (_, projectId: string, id: string, updates: any) =>
+  registerHandler('writing:memory:facts:update', async (_, projectId: string, id: string, updates: any) =>
     updateFact(projectId, id, updates));
-  ipcMain.handle('writing:memory:facts:delete', async (_, projectId: string, id: string) =>
+  registerHandler('writing:memory:facts:delete', async (_, projectId: string, id: string) =>
     deleteFact(projectId, id));
 
   logger.debug('[writing-memory] IPC handlers registered');

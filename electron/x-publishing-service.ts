@@ -11,7 +11,7 @@
 
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import { X_API_CLI, SHELL_PATH } from './paths';
 import { prepare, db } from './database';
 import { createLogger } from './utils/logger';
@@ -318,37 +318,37 @@ export function registerXPublishingHandlers(): void {
   ensureScheduledPostsMetadata();
 
   // Post a single tweet
-  ipcMain.handle('x:publish:post', async (_event, text: string) => {
+  registerHandler('x:publish:post', async (_event, text: string) => {
     return postTweet(text);
   });
 
   // Post a thread (array of tweet texts)
-  ipcMain.handle('x:publish:thread', async (_event, tweets: string[]) => {
+  registerHandler('x:publish:thread', async (_event, tweets: string[]) => {
     return postThread(tweets);
   });
 
   // Get current rate limit status
-  ipcMain.handle('x:publish:rateLimit', () => {
+  registerHandler('x:publish:rateLimit', () => {
     return getRateLimitInfo();
   });
 
   // Media upload — uploads a file to X and returns media_id
-  ipcMain.handle('x:publish:mediaUpload', async (_event, filePath: string) => {
+  registerHandler('x:publish:mediaUpload', async (_event, filePath: string) => {
     return uploadMedia(filePath);
   });
 
   // Schedule single tweet (with optional media)
-  ipcMain.handle('x:publish:schedule', async (_event, text: string, scheduledAt: number, mediaId?: string) => {
+  registerHandler('x:publish:schedule', async (_event, text: string, scheduledAt: number, mediaId?: string) => {
     return scheduleTweet(text, scheduledAt, mediaId);
   });
 
   // Schedule thread
-  ipcMain.handle('x:publish:scheduleThread', async (_event, tweets: string[], scheduledAt: number) => {
+  registerHandler('x:publish:scheduleThread', async (_event, tweets: string[], scheduledAt: number) => {
     return scheduleThread(tweets, scheduledAt);
   });
 
   // List pending/posting scheduled posts
-  ipcMain.handle('x:publish:scheduledList', async () => {
+  registerHandler('x:publish:scheduledList', async () => {
     try {
       const rows = prepare(`
         SELECT id, content, scheduled_time, status, created_at, metadata
@@ -363,7 +363,7 @@ export function registerXPublishingHandlers(): void {
   });
 
   // Cancel a pending scheduled post
-  ipcMain.handle('x:publish:scheduledCancel', async (_event, id: string) => {
+  registerHandler('x:publish:scheduledCancel', async (_event, id: string) => {
     try {
       const result = prepare(
         `UPDATE scheduled_posts SET status = 'cancelled' WHERE id = ? AND status = 'pending'`

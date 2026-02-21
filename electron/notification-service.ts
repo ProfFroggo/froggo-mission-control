@@ -1,4 +1,5 @@
-import { Notification, BrowserWindow, ipcMain } from 'electron';
+import { Notification, BrowserWindow } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -318,18 +319,18 @@ export function setupNotificationHandlers(mainWindow: BrowserWindow) {
   notificationService.setMainWindow(mainWindow);
 
   // Get preferences
-  ipcMain.handle('notifications:get-prefs', async () => {
+  registerHandler('notifications:get-prefs', async () => {
     return notificationService.getPreferences();
   });
 
   // Update preferences
-  ipcMain.handle('notifications:update-prefs', async (_, updates: Partial<NotificationPreferences>) => {
+  registerHandler('notifications:update-prefs', async (_, updates: Partial<NotificationPreferences>) => {
     notificationService.updatePreferences(updates);
     return { success: true };
   });
 
   // Send notification
-  ipcMain.handle('notifications:send', async (_, options: {
+  registerHandler('notifications:send', async (_, options: {
     type: 'task-completed' | 'agent-failure' | 'approval-request' | 'chat-mention' | 'info';
     title: string;
     body: string;
@@ -343,7 +344,7 @@ export function setupNotificationHandlers(mainWindow: BrowserWindow) {
   });
 
   // Test notification
-  ipcMain.handle('notifications:test', async () => {
+  registerHandler('notifications:test', async () => {
     notificationService.info(
       'Test Notification',
       'Native notifications are working! 🎉'

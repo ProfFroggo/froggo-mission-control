@@ -10,7 +10,7 @@
  * wizard completion or cancellation.
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createLogger } from './utils/logger';
@@ -92,14 +92,14 @@ async function deleteWizardState(sessionId: string) {
 // ── IPC Registration ──
 
 export function registerWritingWizardHandlers() {
-  ipcMain.handle('writing:wizard:save', async (_, sessionId: string, state: any) =>
+  registerHandler('writing:wizard:save', async (_, sessionId: string, state: any) =>
     saveWizardState(sessionId, state),
   );
-  ipcMain.handle('writing:wizard:load', async (_, sessionId: string) =>
+  registerHandler('writing:wizard:load', async (_, sessionId: string) =>
     loadWizardState(sessionId),
   );
-  ipcMain.handle('writing:wizard:list', async () => listPendingWizards());
-  ipcMain.handle('writing:wizard:delete', async (_, sessionId: string) =>
+  registerHandler('writing:wizard:list', async () => listPendingWizards());
+  registerHandler('writing:wizard:delete', async (_, sessionId: string) =>
     deleteWizardState(sessionId),
   );
 

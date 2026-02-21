@@ -7,7 +7,7 @@
  * Each line is a JSON-encoded ChatMessage object.
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
@@ -19,7 +19,7 @@ const logger = createLogger('WritingChat');
 
 export function registerWritingChatHandlers() {
   // Load chat history for a project
-  ipcMain.handle('writing:chat:loadHistory', async (_, projectId: string) => {
+  registerHandler('writing:chat:loadHistory', async (_, projectId: string) => {
     try {
       const filepath = writingMemoryPath(projectId, 'chat-history.jsonl');
       let raw: string;
@@ -52,7 +52,7 @@ export function registerWritingChatHandlers() {
   });
 
   // Append a single message to chat history
-  ipcMain.handle('writing:chat:appendMessage', async (_, projectId: string, message: object) => {
+  registerHandler('writing:chat:appendMessage', async (_, projectId: string, message: object) => {
     try {
       const filepath = writingMemoryPath(projectId, 'chat-history.jsonl');
       const dir = path.dirname(filepath);
@@ -66,7 +66,7 @@ export function registerWritingChatHandlers() {
   });
 
   // Clear chat history for a project
-  ipcMain.handle('writing:chat:clearHistory', async (_, projectId: string) => {
+  registerHandler('writing:chat:clearHistory', async (_, projectId: string) => {
     try {
       const filepath = writingMemoryPath(projectId, 'chat-history.jsonl');
       try {

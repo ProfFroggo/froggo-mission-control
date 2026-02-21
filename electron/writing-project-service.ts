@@ -9,7 +9,7 @@
  *     versions/            — (reserved for Phase 9)
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createLogger } from './utils/logger';
@@ -595,28 +595,28 @@ async function deleteChapter(projectId: string, chapterId: string) {
 // ── IPC Registration ──
 
 export function registerWritingProjectHandlers() {
-  ipcMain.handle('writing:project:list', async () => listProjects());
-  ipcMain.handle('writing:project:create', async (_, title: string, type: string) =>
+  registerHandler('writing:project:list', async () => listProjects());
+  registerHandler('writing:project:create', async (_, title: string, type: string) =>
     createProject(title, type));
-  ipcMain.handle('writing:project:createFromWizard', async (_, wizardData) =>
+  registerHandler('writing:project:createFromWizard', async (_, wizardData) =>
     createProjectFromWizard(wizardData));
-  ipcMain.handle('writing:project:get', async (_, projectId: string) => getProject(projectId));
-  ipcMain.handle('writing:project:update', async (_, projectId: string, updates: any) =>
+  registerHandler('writing:project:get', async (_, projectId: string) => getProject(projectId));
+  registerHandler('writing:project:update', async (_, projectId: string, updates: any) =>
     updateProject(projectId, updates));
-  ipcMain.handle('writing:project:delete', async (_, projectId: string) => deleteProject(projectId));
+  registerHandler('writing:project:delete', async (_, projectId: string) => deleteProject(projectId));
 
-  ipcMain.handle('writing:chapter:list', async (_, projectId: string) => listChapters(projectId));
-  ipcMain.handle('writing:chapter:create', async (_, projectId: string, title: string) =>
+  registerHandler('writing:chapter:list', async (_, projectId: string) => listChapters(projectId));
+  registerHandler('writing:chapter:create', async (_, projectId: string, title: string) =>
     createChapter(projectId, title));
-  ipcMain.handle('writing:chapter:read', async (_, projectId: string, chapterId: string) =>
+  registerHandler('writing:chapter:read', async (_, projectId: string, chapterId: string) =>
     readChapter(projectId, chapterId));
-  ipcMain.handle('writing:chapter:save', async (_, projectId: string, chapterId: string, content: string) =>
+  registerHandler('writing:chapter:save', async (_, projectId: string, chapterId: string, content: string) =>
     saveChapter(projectId, chapterId, content));
-  ipcMain.handle('writing:chapter:rename', async (_, projectId: string, chapterId: string, title: string) =>
+  registerHandler('writing:chapter:rename', async (_, projectId: string, chapterId: string, title: string) =>
     renameChapter(projectId, chapterId, title));
-  ipcMain.handle('writing:chapter:reorder', async (_, projectId: string, chapterIds: string[]) =>
+  registerHandler('writing:chapter:reorder', async (_, projectId: string, chapterIds: string[]) =>
     reorderChapters(projectId, chapterIds));
-  ipcMain.handle('writing:chapter:delete', async (_, projectId: string, chapterId: string) =>
+  registerHandler('writing:chapter:delete', async (_, projectId: string, chapterId: string) =>
     deleteChapter(projectId, chapterId));
 
   logger.debug('[writing] IPC handlers registered');

@@ -8,7 +8,7 @@
  *     fact_sources   -- many-to-many link between facts (JSON) and sources (SQLite)
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -265,25 +265,25 @@ export function closeAllResearchDbs(): void {
 
 export function registerWritingResearchHandlers(): void {
   // Sources CRUD
-  ipcMain.handle('writing:research:sources:list', (_, projectId: string) =>
+  registerHandler('writing:research:sources:list', (_, projectId: string) =>
     listSources(projectId));
-  ipcMain.handle('writing:research:sources:create', (_, projectId: string, data: any) =>
+  registerHandler('writing:research:sources:create', (_, projectId: string, data: any) =>
     createSource(projectId, data));
-  ipcMain.handle('writing:research:sources:update', (_, projectId: string, id: string, data: any) =>
+  registerHandler('writing:research:sources:update', (_, projectId: string, id: string, data: any) =>
     updateSource(projectId, id, data));
-  ipcMain.handle('writing:research:sources:delete', (_, projectId: string, id: string) =>
+  registerHandler('writing:research:sources:delete', (_, projectId: string, id: string) =>
     deleteSource(projectId, id));
 
   // Fact-source linking
-  ipcMain.handle('writing:research:links:forFact', (_, projectId: string, factId: string) =>
+  registerHandler('writing:research:links:forFact', (_, projectId: string, factId: string) =>
     getSourcesForFact(projectId, factId));
-  ipcMain.handle('writing:research:links:forSource', (_, projectId: string, sourceId: string) =>
+  registerHandler('writing:research:links:forSource', (_, projectId: string, sourceId: string) =>
     getFactsForSource(projectId, sourceId));
-  ipcMain.handle('writing:research:links:link', (_, projectId: string, factId: string, sourceId: string, notes?: string) =>
+  registerHandler('writing:research:links:link', (_, projectId: string, factId: string, sourceId: string, notes?: string) =>
     linkSourceToFact(projectId, factId, sourceId, notes));
-  ipcMain.handle('writing:research:links:unlink', (_, projectId: string, factId: string, sourceId: string) =>
+  registerHandler('writing:research:links:unlink', (_, projectId: string, factId: string, sourceId: string) =>
     unlinkSourceFromFact(projectId, factId, sourceId));
-  ipcMain.handle('writing:research:links:cleanup', (_, projectId: string, validFactIds: string[]) =>
+  registerHandler('writing:research:links:cleanup', (_, projectId: string, validFactIds: string[]) =>
     cleanOrphanedLinks(projectId, validFactIds));
 
   logger.debug('[writing-research] IPC handlers registered');
