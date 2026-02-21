@@ -20,18 +20,18 @@ interface Props {
 }
 
 const complexityColors: Record<string, string> = {
-  simple: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  complex: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  simple: 'bg-success-subtle text-success',
+  medium: 'bg-review-subtle text-review',
+  complex: 'bg-error-subtle text-error',
 };
 
 const agentColors: Record<string, string> = {
-  coder: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  'senior-coder': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  designer: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
-  'lead-engineer': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  writer: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  researcher: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+  coder: 'bg-info/20 text-info',
+  'senior-coder': 'bg-purple-500/20 text-purple-400',
+  designer: 'bg-pink-500/20 text-pink-400',
+  'lead-engineer': 'bg-orange-500/20 text-orange-400',
+  writer: 'bg-success-subtle text-success',
+  researcher: 'bg-cyan-500/20 text-cyan-400',
 };
 
 export default function SpecPreviewPanel({
@@ -52,17 +52,17 @@ export default function SpecPreviewPanel({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-950">
+    <div className="flex flex-col h-full bg-clawd-bg">
       {/* Header with tabs */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <div className="px-4 py-3 border-b border-clawd-border">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-base font-semibold text-clawd-text flex items-center gap-2">
             <Package size={18} />
             {spec.name || 'Untitled Module'}
           </h2>
           <div className="flex gap-1.5">
             {spec.type && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-medium">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-clawd-accent/20 text-clawd-accent font-medium">
                 {spec.type}
               </span>
             )}
@@ -78,14 +78,14 @@ export default function SpecPreviewPanel({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? 'bg-clawd-surface text-clawd-text shadow-sm'
+                  : 'text-clawd-text-dim hover:text-clawd-text'
               }`}
             >
               {tab.icon}
               {tab.label}
               {(tab.badge ?? 0) > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[9px] rounded-full bg-blue-500 text-white font-bold">
+                <span className="ml-1 px-1.5 py-0.5 text-[9px] rounded-full bg-clawd-accent text-white font-bold">
                   {tab.badge}
                 </span>
               )}
@@ -102,17 +102,17 @@ export default function SpecPreviewPanel({
       </div>
 
       {/* Action buttons */}
-      <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+      <div className="px-5 py-4 border-t border-clawd-border flex gap-3">
         <button
           onClick={onGenerateTasks}
           disabled={!isComplete}
-          className="flex-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-40 disabled:hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex-1 px-4 py-2.5 bg-clawd-accent hover:opacity-90 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-opacity"
         >
           Push to froggo-db
         </button>
         <button
           onClick={onExportJson}
-          className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium rounded-lg transition-colors"
+          className="px-4 py-2.5 border border-clawd-border text-clawd-text hover:bg-clawd-surface text-sm font-medium rounded-lg transition-colors"
         >
           Export JSON
         </button>
@@ -127,26 +127,26 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
   return (
     <div className="px-5 py-4 space-y-5">
       {spec.description && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{spec.description}</p>
+        <p className="text-sm text-clawd-text-dim">{spec.description}</p>
       )}
 
       {/* Section checklist */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+        <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2">
           Sections
         </h3>
         <div className="space-y-1.5">
           {sectionProgress.map(s => (
             <div key={s.id} className="flex items-center gap-2 text-sm">
               {s.complete ? (
-                <CheckCircle2 size={16} className="text-green-500" />
+                <CheckCircle2 size={16} className="text-success" />
               ) : (
-                <Circle size={16} className="text-gray-300 dark:text-gray-600" />
+                <Circle size={16} className="text-clawd-border" />
               )}
-              <span className={s.complete ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500'}>
+              <span className={s.complete ? 'text-clawd-text' : 'text-clawd-text-dim'}>
                 {s.label}
               </span>
-              <span className="text-[10px] text-gray-400 ml-auto">
+              <span className="text-[10px] text-clawd-text-dim ml-auto">
                 {s.answeredCount}/{s.questionCount}
               </span>
             </div>
@@ -157,10 +157,10 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Manifest preview */}
       {spec.id && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Code2 size={13} /> manifest.json
           </h3>
-          <pre className="bg-gray-900 dark:bg-gray-800 text-green-400 text-xs p-3 rounded-lg overflow-x-auto font-mono">
+          <pre className="bg-clawd-bg0 text-green-400 text-xs p-3 rounded-lg overflow-x-auto font-mono">
 {JSON.stringify({
   id: spec.id,
   name: spec.name,
@@ -177,20 +177,20 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Component wireframes */}
       {((spec.views?.length ?? 0) > 0 || (spec.components?.length ?? 0) > 0) && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Layers size={13} /> Components & Views
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {spec.views?.map(v => (
-              <div key={v.id} className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 text-center">
-                <div className="text-xs font-medium text-gray-700 dark:text-gray-300">{v.name}</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">{v.components.join(', ') || 'view'}</div>
+              <div key={v.id} className="border-2 border-dashed border-clawd-border rounded-lg p-3 text-center">
+                <div className="text-xs font-medium text-clawd-text">{v.name}</div>
+                <div className="text-[10px] text-clawd-text-dim mt-0.5">{v.components.join(', ') || 'view'}</div>
               </div>
             ))}
             {spec.components?.map(c => (
-              <div key={c.id} className="border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg p-3 text-center">
-                <div className="text-xs font-medium text-blue-700 dark:text-blue-400">{c.name}</div>
-                <div className="text-[10px] text-blue-400 dark:text-blue-500 mt-0.5">{c.type}</div>
+              <div key={c.id} className="border-2 border-dashed border-clawd-accent/40 rounded-lg p-3 text-center">
+                <div className="text-xs font-medium text-clawd-accent">{c.name}</div>
+                <div className="text-[10px] text-clawd-accent/70 mt-0.5">{c.type}</div>
               </div>
             ))}
           </div>
@@ -200,18 +200,18 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Dependencies / Services */}
       {((spec.services?.length ?? 0) > 0 || (spec.externalApis?.length ?? 0) > 0) && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Database size={13} /> Dependencies
           </h3>
           <ul className="space-y-1">
             {spec.services?.map(s => (
-              <li key={s.id} className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                {s.name} <span className="text-gray-400 text-xs">({s.type})</span>
+              <li key={s.id} className="text-sm text-clawd-text flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-info" />
+                {s.name} <span className="text-clawd-text-dim text-xs">({s.type})</span>
               </li>
             ))}
             {spec.externalApis?.map(api => (
-              <li key={api} className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <li key={api} className="text-sm text-clawd-text flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
                 {api}
               </li>
@@ -223,17 +223,17 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* IPC channels */}
       {((spec.ipcChannels?.handle?.length ?? 0) + (spec.ipcChannels?.on?.length ?? 0) > 0) && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2">
             IPC Channels
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {spec.ipcChannels?.handle?.map(ch => (
-              <span key={ch} className="text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono">
+              <span key={ch} className="text-[10px] px-2 py-0.5 rounded bg-clawd-border text-clawd-text-dim font-mono">
                 {ch}
               </span>
             ))}
             {spec.ipcChannels?.on?.map(ch => (
-              <span key={ch} className="text-[10px] px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-mono">
+              <span key={ch} className="text-[10px] px-2 py-0.5 rounded bg-clawd-border text-clawd-text-dim font-mono">
                 {ch}
               </span>
             ))}
@@ -244,13 +244,13 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Settings */}
       {(spec.settings?.length ?? 0) > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Settings size={13} /> Settings
           </h3>
           <ul className="space-y-1">
             {spec.settings?.map(s => (
-              <li key={s.key} className="text-sm text-gray-700 dark:text-gray-300">
-                {s.label} <span className="text-gray-400">({s.type})</span>
+              <li key={s.key} className="text-sm text-clawd-text">
+                {s.label} <span className="text-clawd-text-dim">({s.type})</span>
               </li>
             ))}
           </ul>
@@ -260,12 +260,12 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
       {/* Permissions */}
       {(spec.permissions?.length ?? 0) > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Shield size={13} /> Permissions
           </h3>
           <div className="flex flex-wrap gap-1.5">
             {spec.permissions?.map(p => (
-              <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-medium">
+              <span key={p} className="text-[10px] px-2 py-0.5 rounded-full bg-review-subtle text-review font-medium">
                 {p}
               </span>
             ))}
@@ -275,7 +275,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
 
       {/* Empty state */}
       {!spec.name && !spec.id && (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-600">
+        <div className="flex flex-col items-center justify-center py-12 text-clawd-text-dim">
           <Package size={48} strokeWidth={1} />
           <p className="mt-3 text-sm">Answer questions to build your module spec</p>
         </div>
@@ -289,7 +289,7 @@ function SpecTab({ spec, sectionProgress }: { spec: Partial<ModuleSpec>; section
 function WireframeTab({ wireframe, spec }: { wireframe: string; spec: Partial<ModuleSpec> }) {
   if (!wireframe) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 px-8">
+      <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim px-8">
         <LayoutGrid size={48} strokeWidth={1} />
         <p className="mt-3 text-sm text-center">
           Wireframe will generate after you complete the <strong>Features & UI</strong> section
@@ -300,13 +300,13 @@ function WireframeTab({ wireframe, spec }: { wireframe: string; spec: Partial<Mo
 
   return (
     <div className="p-5 space-y-4">
-      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+      <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider">
         {spec.name || 'Module'} Layout
       </h3>
-      <pre className="bg-gray-900 dark:bg-gray-800 text-green-400 text-xs p-4 rounded-lg overflow-x-auto font-mono leading-snug whitespace-pre">
+      <pre className="bg-clawd-bg0 text-green-400 text-xs p-4 rounded-lg overflow-x-auto font-mono leading-snug whitespace-pre">
 {wireframe}
       </pre>
-      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+      <p className="text-[10px] text-clawd-text-dim">
         Auto-generated wireframe based on layout: {spec.layout || 'single-panel'} with {spec.views?.length || 0} views
       </p>
     </div>
@@ -318,7 +318,7 @@ function WireframeTab({ wireframe, spec }: { wireframe: string; spec: Partial<Mo
 function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
   if (liveTasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-600 px-8">
+      <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim px-8">
         <ListChecks size={48} strokeWidth={1} />
         <p className="mt-3 text-sm text-center">
           Tasks will appear as you complete each section
@@ -330,20 +330,20 @@ function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
   return (
     <div className="p-5 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-wider">
           Build Plan ({liveTasks.length} tasks)
         </h3>
       </div>
 
       {liveTasks.map((task, i) => (
-        <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div key={i} className="border border-clawd-border rounded-lg overflow-hidden">
           {/* Task header */}
-          <div className="px-4 py-3 bg-white dark:bg-gray-900">
+          <div className="px-4 py-3 bg-clawd-surface">
             <div className="flex items-start justify-between gap-2">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-white leading-tight">
+              <h4 className="text-sm font-medium text-clawd-text leading-tight">
                 {task.title}
               </h4>
-              <span className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${agentColors[task.agent] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
+              <span className={`flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${agentColors[task.agent] || 'bg-clawd-border text-clawd-text-dim'}`}>
                 <User size={10} />
                 {task.agent}
               </span>
@@ -351,7 +351,7 @@ function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
 
             {/* Plan */}
             {task.plan && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+              <p className="text-xs text-clawd-text-dim mt-1.5 leading-relaxed">
                 {task.plan}
               </p>
             )}
@@ -359,11 +359,11 @@ function TasksTab({ liveTasks }: { liveTasks: LiveTask[] }) {
 
           {/* Subtasks */}
           {task.subtasks.length > 0 && (
-            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800">
+            <div className="px-4 py-2 bg-clawd-bg border-t border-clawd-border/50">
               <ul className="space-y-1">
                 {task.subtasks.map((sub, j) => (
-                  <li key={j} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <Circle size={10} className="mt-0.5 flex-shrink-0 text-gray-300 dark:text-gray-600" />
+                  <li key={j} className="flex items-start gap-2 text-xs text-clawd-text-dim">
+                    <Circle size={10} className="mt-0.5 flex-shrink-0 text-clawd-border" />
                     {sub}
                   </li>
                 ))}
