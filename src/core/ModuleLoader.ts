@@ -182,6 +182,59 @@ class ModuleLoaderClass {
     }
   }
 
+  /**
+   * Disable a module — disposes lifecycle (views + services unregistered).
+   * The module registration is retained so it can be re-enabled later.
+   */
+  disableModule(moduleId: string): void {
+    const reg = this.modules.get(moduleId);
+    if (!reg) {
+      console.warn(`[ModuleLoader] disableModule: module "${moduleId}" not found`);
+      return;
+    }
+    this.dispose(moduleId);
+    console.log(`[ModuleLoader] Module "${moduleId}" disabled`);
+  }
+
+  /**
+   * Re-enable a disabled module — re-runs lifecycle.init() to restore views and services.
+   *
+   * Note: IPC handlers registered in the main process are NOT re-registered after dispose.
+   * The dedup guard in ipc-registry.ts silently skips re-registration if the channel already
+   * exists. IPC handlers remain functional in the main process even when a module is "disabled"
+   * in the renderer. Full IPC lifecycle (register/unregister on toggle) is deferred to a future phase.
+   */
+  async enableModule(moduleId: string): Promise<void> {
+    const reg = this.modules.get(moduleId);
+    if (!reg) {
+      console.warn(`[ModuleLoader] enableModule: module "${moduleId}" not found`);
+      return;
+    }
+    if (reg.status === 'active') {
+      // Already enabled — nothing to do
+      return;
+    }
+    reg.status = 'initializing';
+    try {
+      await reg.lifecycle.init();
+      reg.status = 'active';
+      delete reg.error;
+      console.log(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
+    } catch (err) {
+      reg.status = 'error';
+      reg.error = err instanceof Error ? err.message : String(err);
+      console.error(`[ModuleLoader] Failed to re-enable module "${moduleId}":`, err);
+    }
+  }
+
+  /**
+   * Returns true if a module is currently active or initializing.
+   */
+  isModuleEnabled(moduleId: string): boolean {
+    const reg = this.modules.get(moduleId);
+    return reg?.status === 'active' || reg?.status === 'initializing';
+  }
+
   /** Dispose all modules (app shutdown) */
   async disposeAll(): Promise<void> {
     Array.from(this.modules.keys()).forEach(id => this.dispose(id));

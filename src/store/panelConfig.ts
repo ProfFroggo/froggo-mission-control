@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ViewRegistry } from '../core/ViewRegistry';
+import { ModuleLoader } from '../core/ModuleLoader';
 
 export interface PanelConfig {
   id: string;
@@ -90,6 +91,23 @@ export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
   openEditModal: () => set({ editModalOpen: true }),
   closeEditModal: () => set({ editModalOpen: false }),
   savePanels: (panels: PanelConfig[]) => {
+    // Detect visibility changes for module-owned panels and call lifecycle methods
+    const prevPanels = usePanelConfigStore.getState().panels;
+    for (const panel of panels) {
+      const prev = prevPanels.find(p => p.id === panel.id);
+      if (prev && prev.visible !== panel.visible) {
+        const view = ViewRegistry.get(panel.id);
+        if (view?.moduleId) {
+          if (!panel.visible) {
+            ModuleLoader.disableModule(view.moduleId);
+          } else {
+            ModuleLoader.enableModule(view.moduleId).catch(err => {
+              console.error(`[PanelConfig] Failed to re-enable module "${view.moduleId}":`, err);
+            });
+          }
+        }
+      }
+    }
     saveToStorage(panels);
     set({ panels, editModalOpen: false });
   },
