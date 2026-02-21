@@ -2,6 +2,7 @@
  * useConversationFlow — LLM-connected conversational interview.
  * Each question is explored via back-and-forth with the LLM until
  * the answer is solid, then the LLM signals readiness to advance.
+ * After key sections, generates wireframes and task plans on the right panel.
  */
 
 import { useState, useCallback, useMemo, useRef } from 'react';
@@ -12,9 +13,16 @@ import { gateway } from '../../lib/gateway';
 import type { UseModuleSpecReturn } from './useModuleSpec';
 
 // Sentinel the LLM embeds when the current question's answer is complete
-const ANSWER_READY_TAG = '[[ANSWER_READY]]';
-// Regex to extract the structured answer from inside the tag
 const ANSWER_EXTRACT_RE = /\[\[ANSWER_READY:(.+?)\]\]/s;
+
+/** A single task in the live build plan */
+export interface LiveTask {
+  title: string;
+  agent: string;
+  subtasks: string[];
+  plan: string;
+  section: SectionId;
+}
 
 interface ConversationFlowOptions {
   moduleSpec: UseModuleSpecReturn;
@@ -57,6 +65,55 @@ ${JSON.stringify(spec, null, 2)}
 - Be friendly but efficient — Kevin hates token waste.`;
 }
 
+function buildWireframePrompt(spec: Partial<ModuleSpec>): string {
+  return `You are a UI wireframe generator. Given this module spec, create an ASCII wireframe showing the layout.
+
+## Module Spec:
+${JSON.stringify(spec, null, 2)}
+
+## Rules:
+- Use box-drawing characters (┌─┐│└─┘├┤┬┴┼) for borders
+- Show the layout type (${spec.layout || 'single-panel'})
+- Label each view/section clearly
+- Show component placements (charts, tables, forms, etc.)
+- Include a header bar with module name and nav if applicable
+- Keep it under 30 lines, 60 chars wide
+- Output ONLY the wireframe, no explanations`;
+}
+
+function buildTaskPlanPrompt(spec: Partial<ModuleSpec>, section: SectionId): string {
+  const agentList = 'coder, senior-coder, designer, lead-engineer, writer, researcher';
+
+  return `You are a project planner for the Froggo agent platform. Generate build tasks for a new dashboard module based on the spec so far.
+
+## Module Spec:
+${JSON.stringify(spec, null, 2)}
+
+## Section just completed: ${section}
+
+## Available agents: ${agentList}
+
+## Agent assignment rules:
+- designer: UI/UX work, wireframes, styling, component design
+- coder: Standard implementation, views, components, store slices
+- senior-coder: Complex services, IPC handlers, API integrations, architecture
+- lead-engineer: System design decisions, module scaffold, registration
+- writer: Documentation, README, inline docs
+- researcher: API research, library evaluation
+
+## Output format (strict JSON array):
+[
+  {
+    "title": "task title",
+    "agent": "agent-id",
+    "subtasks": ["subtask 1", "subtask 2"],
+    "plan": "1-2 sentence implementation approach"
+  }
+]
+
+Generate tasks ONLY for what's been defined so far. Output ONLY the JSON array, no markdown fences, no explanation.`;
+}
+
 export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
   const { spec, updateSpec, markAnswered } = moduleSpec;
 
@@ -66,6 +123,10 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
   const [isStarted, setIsStarted] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+
+  // Live preview state
+  const [wireframe, setWireframe] = useState('');
+  const [liveTasks, setLiveTasks] = useState<LiveTask[]>([]);
 
   const sessionIdRef = useRef(`modulebuilder-${Date.now()}`);
   const abortRef = useRef(false);
@@ -99,18 +160,14 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
 
   // ─── LLM Call ──────────────────────────────────────────────────────
 
-  const sendToLLM = useCallback(
-    async (userMessage: string, question: InterviewQuestion, section: SectionId): Promise<string> => {
-      const sessionKey = `agent:froggo:modulebuilder:${sessionIdRef.current}:${question.id}`;
-
-      // Build the full prompt: system context + user message
-      const systemPrompt = buildSystemPrompt(question, section, spec);
-      const fullMessage = `${systemPrompt}\n\n---\n\nUser: ${userMessage}`;
+  const callLLM = useCallback(
+    async (prompt: string, sessionSuffix: string): Promise<string> => {
+      const sessionKey = `agent:chief:modulebuilder:${sessionIdRef.current}:${sessionSuffix}`;
 
       return new Promise<string>((resolve) => {
         let accumulated = '';
 
-        gateway.sendChatWithCallbacks(fullMessage, sessionKey, {
+        gateway.sendChatWithCallbacks(prompt, sessionKey, {
           onDelta: (delta) => {
             accumulated += delta;
           },
@@ -119,50 +176,115 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
           },
           onError: (error) => {
             console.error('Module Builder LLM error:', error);
-            resolve(accumulated || 'Sorry, I had trouble processing that. Could you try again?');
+            resolve(accumulated || '');
           },
         });
       });
     },
-    [spec],
+    [],
+  );
+
+  const sendToLLM = useCallback(
+    async (userMessage: string, question: InterviewQuestion, section: SectionId): Promise<string> => {
+      const systemPrompt = buildSystemPrompt(question, section, spec);
+      const fullMessage = `${systemPrompt}\n\n---\n\nUser: ${userMessage}`;
+      return callLLM(fullMessage, question.id);
+    },
+    [spec, callLLM],
+  );
+
+  // ─── Background generators (wireframe + tasks) ────────────────────
+
+  const generateWireframe = useCallback(
+    async (currentSpec: Partial<ModuleSpec>) => {
+      const prompt = buildWireframePrompt(currentSpec);
+      const result = await callLLM(prompt, 'wireframe');
+      if (result.trim()) {
+        setWireframe(result.trim());
+      }
+    },
+    [callLLM],
+  );
+
+  const generateTasksForSection = useCallback(
+    async (currentSpec: Partial<ModuleSpec>, section: SectionId) => {
+      const prompt = buildTaskPlanPrompt(currentSpec, section);
+      const result = await callLLM(prompt, `tasks-${section}`);
+      try {
+        // Strip markdown fences if LLM wrapped it
+        const cleaned = result.replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
+        const tasks: LiveTask[] = JSON.parse(cleaned);
+        if (Array.isArray(tasks)) {
+          setLiveTasks(tasks.map(t => ({ ...t, section })));
+        }
+      } catch {
+        // Parse failed — keep existing tasks
+        console.warn('Task plan parse failed:', result.slice(0, 200));
+      }
+    },
+    [callLLM],
+  );
+
+  // ─── Section completion handler ───────────────────────────────────
+
+  const onSectionComplete = useCallback(
+    (completedSection: SectionId, latestSpec: Partial<ModuleSpec>) => {
+      // After features section (has views/layout info) → generate wireframe
+      if (completedSection === 'features' || completedSection === 'type') {
+        generateWireframe(latestSpec);
+      }
+      // After every section → regenerate task plan with latest spec
+      generateTasksForSection(latestSpec, completedSection);
+    },
+    [generateWireframe, generateTasksForSection],
   );
 
   // ─── Advance Logic ────────────────────────────────────────────────
 
-  const advanceToNextQuestion = useCallback(() => {
-    const questions = getApplicableQuestions(currentSection, spec);
-    const nextIdx = currentQuestionIndex + 1;
+  const advanceToNextQuestion = useCallback(
+    (latestSpec?: Partial<ModuleSpec>) => {
+      const specSnapshot = latestSpec || spec;
+      const questions = getApplicableQuestions(currentSection, specSnapshot);
+      const nextIdx = currentQuestionIndex + 1;
 
-    if (nextIdx < questions.length) {
-      setCurrentQuestionIndex(nextIdx);
-      const nextQ = questions[nextIdx];
-      if (nextQ) {
-        addMessage('assistant', nextQ.text, currentSection);
-      }
-    } else {
-      const nextSectionIdx = currentSectionIndex + 1;
-      if (nextSectionIdx < SECTION_ORDER.length) {
-        setCurrentSectionIndex(nextSectionIdx);
-        setCurrentQuestionIndex(0);
-        const nextSec = SECTION_ORDER[nextSectionIdx];
-        const nextQuestions = getApplicableQuestions(nextSec, spec);
-        addMessage(
-          'assistant',
-          `Great! Let's move on to **${SECTION_LABELS[nextSec]}**.`,
-          nextSec,
-        );
-        if (nextQuestions[0]) {
-          addMessage('assistant', nextQuestions[0].text, nextSec);
+      if (nextIdx < questions.length) {
+        setCurrentQuestionIndex(nextIdx);
+        const nextQ = questions[nextIdx];
+        if (nextQ) {
+          addMessage('assistant', nextQ.text, currentSection);
         }
       } else {
-        setIsFinished(true);
-        addMessage(
-          'assistant',
-          "Interview complete! Your module spec is ready. Click **Generate Tasks** to create the build tasks, or review the spec in the preview panel.",
-        );
+        // Section complete — trigger background generation
+        onSectionComplete(currentSection, specSnapshot);
+
+        const nextSectionIdx = currentSectionIndex + 1;
+        if (nextSectionIdx < SECTION_ORDER.length) {
+          setCurrentSectionIndex(nextSectionIdx);
+          setCurrentQuestionIndex(0);
+          const nextSec = SECTION_ORDER[nextSectionIdx];
+          const nextQuestions = getApplicableQuestions(nextSec, specSnapshot);
+          addMessage(
+            'assistant',
+            `Great! Let's move on to **${SECTION_LABELS[nextSec]}**.`,
+            nextSec,
+          );
+          if (nextQuestions[0]) {
+            addMessage('assistant', nextQuestions[0].text, nextSec);
+          }
+        } else {
+          // All sections complete — final wireframe + task generation
+          onSectionComplete('settings', specSnapshot);
+          if (!wireframe) generateWireframe(specSnapshot);
+          setIsFinished(true);
+          addMessage(
+            'assistant',
+            "Interview complete! Your module spec, wireframe, and task plan are ready in the preview panel. Click **Generate Tasks** to push them to froggo-db.",
+          );
+        }
       }
-    }
-  }, [currentSection, currentSectionIndex, currentQuestionIndex, spec, addMessage]);
+    },
+    [currentSection, currentSectionIndex, currentQuestionIndex, spec, addMessage, onSectionComplete, generateWireframe, wireframe],
+  );
 
   // ─── User Answer Handler ──────────────────────────────────────────
 
@@ -170,37 +292,32 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
     async (answer: string) => {
       if (!currentQuestion || isFinished || isStreaming) return;
 
-      // Record user message
       addMessage('user', answer, currentSection);
       setIsStreaming(true);
 
       try {
         const llmResponse = await sendToLLM(answer, currentQuestion, currentSection);
-
-        // Check if the LLM signaled the answer is ready
         const readyMatch = llmResponse.match(ANSWER_EXTRACT_RE);
 
         if (readyMatch) {
-          // Strip the tag from the displayed message
           const displayContent = llmResponse
             .replace(ANSWER_EXTRACT_RE, '')
-            .replace(ANSWER_READY_TAG, '')
             .trim();
 
           if (displayContent) {
             addMessage('assistant', displayContent, currentSection);
           }
 
-          // Parse the extracted answer through the question's parse function
           const extractedAnswer = readyMatch[1].trim();
+          let latestSpec = spec;
           if (currentQuestion.parse) {
             const patch = currentQuestion.parse(extractedAnswer, spec);
             updateSpec(patch);
+            latestSpec = { ...spec, ...patch };
           }
           markAnswered(currentQuestion.id);
-          advanceToNextQuestion();
+          advanceToNextQuestion(latestSpec);
         } else {
-          // LLM wants more info — show response and wait for user's next message
           addMessage('assistant', llmResponse.trim(), currentSection);
         }
       } catch (err) {
@@ -221,12 +338,14 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
     setCurrentQuestionIndex(0);
     setMessages([]);
     setIsFinished(false);
+    setWireframe('');
+    setLiveTasks([]);
     abortRef.current = false;
     sessionIdRef.current = `modulebuilder-${Date.now()}`;
 
     addMessage(
       'assistant',
-      "Welcome to the Module Builder! I'll walk you through designing your module step by step. We'll take each question at your pace — I'll help clarify and suggest options as we go.\n\nLet's start with **Module Identity**.",
+      "Welcome to the Module Builder! I'll walk you through designing your module step by step. As we go, the wireframe and task plan will build up on the right.\n\nLet's start with **Module Identity**.",
     );
     const firstQuestions = getApplicableQuestions('identity', spec);
     if (firstQuestions[0]) {
@@ -265,6 +384,8 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
     isStarted,
     isFinished,
     isStreaming,
+    wireframe,
+    liveTasks,
     startInterview,
     submitAnswer,
     jumpToSection,
