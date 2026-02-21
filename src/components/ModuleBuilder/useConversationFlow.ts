@@ -166,18 +166,35 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
 
       return new Promise<string>((resolve) => {
         let accumulated = '';
+        let resolved = false;
+
+        const safeResolve = (val: string) => {
+          if (!resolved) { resolved = true; resolve(val); }
+        };
+
+        // Timeout: resolve after 60s if nothing comes back
+        const timeout = setTimeout(() => {
+          console.warn('[ModuleBuilder] LLM timeout for', sessionSuffix);
+          safeResolve(accumulated || '');
+        }, 60000);
 
         gateway.sendChatWithCallbacks(prompt, sessionKey, {
           onDelta: (delta) => {
             accumulated += delta;
           },
           onEnd: () => {
-            resolve(accumulated);
+            clearTimeout(timeout);
+            safeResolve(accumulated);
           },
           onError: (error) => {
+            clearTimeout(timeout);
             console.error('Module Builder LLM error:', error);
-            resolve(accumulated || '');
+            safeResolve(accumulated || '');
           },
+        }).catch((err) => {
+          clearTimeout(timeout);
+          console.error('Module Builder gateway error:', err);
+          safeResolve('');
         });
       });
     },
