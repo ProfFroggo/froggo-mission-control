@@ -41,18 +41,18 @@ export default function ModuleBuilderPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Module Builder</h1>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-clawd-border bg-clawd-surface">
+        <h1 className="text-lg font-semibold text-clawd-text">Module Builder</h1>
         <div className="flex gap-2">
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg rounded-lg transition-colors"
           >
             <RotateCcw size={14} /> Reset
           </button>
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-opacity"
           >
             <Plus size={14} /> New
           </button>
