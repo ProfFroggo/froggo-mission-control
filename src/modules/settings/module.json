@@ -7,6 +7,8 @@
   "icon": "Settings",
   "category": "system",
 
+  "credentials": [],
+
   "views": [
     {
       "id": "settings",

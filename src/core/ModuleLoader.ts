@@ -58,6 +58,14 @@ export interface ModuleManifest {
     network?: boolean;
     shell?: boolean;
   };
+
+  credentials?: Array<{
+    id: string;
+    label: string;
+    description?: string;
+    required?: boolean;
+    type: 'api_key' | 'oauth_token' | 'password' | 'url' | 'custom';
+  }>;
 }
 
 // ─── Lifecycle ──────────────────────────────────────────────────
