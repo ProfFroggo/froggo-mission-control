@@ -912,7 +912,16 @@ contextBridge.exposeInMainWorld('clawdbot', {
     status: () => ipcRenderer.invoke('memoryLifecycle:status'),
     rotate: (agentId: string) => ipcRenderer.invoke('memoryLifecycle:rotate', agentId),
   },
+  // Module Builder persistence
+  moduleBuilder: {
+    list: () => ipcRenderer.invoke('module:list'),
+    get: (id: string) => ipcRenderer.invoke('module:get', id),
+    save: (data: any) => ipcRenderer.invoke('module:save', data),
+    delete: (id: string) => ipcRenderer.invoke('module:delete', id),
+  },
+  // Generic module IPC passthrough — lets modules invoke IPC channels without per-channel preload entries
+  modules: {
+    invoke: (channel: string, ...args: unknown[]) =>
+      ipcRenderer.invoke(channel, ...args),
+  },
 });
-
-// Add to clawdbot object - chat message persistence
-// Note: This needs to be merged into the existing contextBridge.exposeInMainWorld call
