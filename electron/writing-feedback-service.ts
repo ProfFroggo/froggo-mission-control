@@ -8,7 +8,7 @@
  * (agent, selection, instructions, alternatives, accepted, timestamp).
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingMemoryPath } from './paths';
@@ -95,10 +95,10 @@ async function getFeedbackHistory(projectId: string, chapterId: string) {
 // ── IPC Registration ──
 
 export function registerWritingFeedbackHandlers() {
-  ipcMain.handle('writing:feedback:log', async (_, projectId: string, entry: FeedbackEntry) =>
+  registerHandler('writing:feedback:log', async (_, projectId: string, entry: FeedbackEntry) =>
     logFeedback(projectId, entry));
 
-  ipcMain.handle('writing:feedback:history', async (_, projectId: string, chapterId: string) =>
+  registerHandler('writing:feedback:history', async (_, projectId: string, chapterId: string) =>
     getFeedbackHistory(projectId, chapterId));
 
   logger.debug('[writing-feedback] IPC handlers registered');

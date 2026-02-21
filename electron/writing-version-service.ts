@@ -7,7 +7,7 @@
  *     v-{timestamp}.md  -- snapshot content copy
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as fs from 'fs';
 import * as path from 'path';
 import { writingProjectPath, writingChapterPath, writingVersionsPath } from './paths';
@@ -203,7 +203,7 @@ async function deleteVersion(projectId: string, chapterId: string, versionId: st
 // ── IPC Registration ──
 
 export function registerWritingVersionHandlers(): void {
-  ipcMain.handle('writing:version:list', async (_, projectId: string, chapterId: string) => {
+  registerHandler('writing:version:list', async (_, projectId: string, chapterId: string) => {
     try {
       return await listVersions(projectId, chapterId);
     } catch (e: any) {
@@ -212,7 +212,7 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  ipcMain.handle('writing:version:save', async (_, projectId: string, chapterId: string, label?: string) => {
+  registerHandler('writing:version:save', async (_, projectId: string, chapterId: string, label?: string) => {
     try {
       return await saveSnapshot(projectId, chapterId, label);
     } catch (e: any) {
@@ -221,7 +221,7 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  ipcMain.handle('writing:version:read', async (_, projectId: string, chapterId: string, versionId: string) => {
+  registerHandler('writing:version:read', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await readVersionContent(projectId, chapterId, versionId);
     } catch (e: any) {
@@ -230,7 +230,7 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  ipcMain.handle('writing:version:restore', async (_, projectId: string, chapterId: string, versionId: string) => {
+  registerHandler('writing:version:restore', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await restoreVersion(projectId, chapterId, versionId);
     } catch (e: any) {
@@ -239,7 +239,7 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  ipcMain.handle('writing:version:diff', async (_, projectId: string, chapterId: string, versionId: string) => {
+  registerHandler('writing:version:diff', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await computeDiff(projectId, chapterId, versionId);
     } catch (e: any) {
@@ -248,7 +248,7 @@ export function registerWritingVersionHandlers(): void {
     }
   });
 
-  ipcMain.handle('writing:version:delete', async (_, projectId: string, chapterId: string, versionId: string) => {
+  registerHandler('writing:version:delete', async (_, projectId: string, chapterId: string, versionId: string) => {
     try {
       return await deleteVersion(projectId, chapterId, versionId);
     } catch (e: any) {

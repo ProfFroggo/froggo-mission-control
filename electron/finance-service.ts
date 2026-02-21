@@ -10,7 +10,8 @@
  * The 5 financeAgent:* handlers remain in main.ts (they depend on the agent bridge singleton there).
  */
 
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { dialog, BrowserWindow } from 'electron';
+import { registerHandler } from './ipc-registry';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -203,7 +204,7 @@ export function registerFinanceHandlers(): void {
 
   // ============== EXISTING FINANCE HANDLERS (extracted from main.ts) ==============
 
-  ipcMain.handle('finance:getTransactions', async (_, opts?: { limit?: number; accountId?: string } | number) => {
+  registerHandler('finance:getTransactions', async (_, opts?: { limit?: number; accountId?: string } | number) => {
     try {
       // Backward compat: old callers pass a raw number
       let limit = 50;
@@ -232,7 +233,7 @@ export function registerFinanceHandlers(): void {
     }
   });
 
-  ipcMain.handle('finance:getBudgetStatus', async (_, optsOrType?: { budgetType?: string; accountId?: string } | string) => {
+  registerHandler('finance:getBudgetStatus', async (_, optsOrType?: { budgetType?: string; accountId?: string } | string) => {
     try {
       // Backward compat: old callers pass a raw string
       let budgetType: string | undefined;
@@ -268,7 +269,7 @@ export function registerFinanceHandlers(): void {
     }
   });
 
-  ipcMain.handle('finance:selectFile', async () => {
+  registerHandler('finance:selectFile', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile'],
       filters: [
@@ -290,7 +291,7 @@ export function registerFinanceHandlers(): void {
     };
   });
 
-  ipcMain.handle('finance:uploadCSV', async (_, csvContent: string, filename: string, accountId?: string) => {
+  registerHandler('finance:uploadCSV', async (_, csvContent: string, filename: string, accountId?: string) => {
     try {
       const targetAccount = accountId || 'acc-default';
 
@@ -428,7 +429,7 @@ ${csvContent.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string, accountId?: string) => {
+  registerHandler('finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string, accountId?: string) => {
     try {
       const targetAccount = accountId || 'acc-default';
       safeLog.log('[Finance] Processing PDF upload:', filename);
@@ -582,7 +583,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:getAlerts', async () => {
+  registerHandler('finance:getAlerts', async () => {
     try {
       const alerts = prepare(`SELECT id, type, severity, title, message, created_at AS timestamp FROM finance_alerts WHERE acknowledged = 0 ORDER BY created_at DESC LIMIT 50`).all();
       return { success: true, alerts };
@@ -592,7 +593,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:getInsights', async () => {
+  registerHandler('finance:getInsights', async () => {
     try {
       const insights = prepare(`SELECT id, type, title, content, severity, generated_at FROM finance_ai_insights WHERE dismissed = 0 ORDER BY generated_at DESC LIMIT 50`).all();
       return { success: true, insights };
@@ -602,7 +603,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:dismissInsight', async (_, insightId: string) => {
+  registerHandler('finance:dismissInsight', async (_, insightId: string) => {
     try {
       const stmt = prepare(`
         UPDATE finance_ai_insights
@@ -617,7 +618,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:createBudget', async (_, data: {
+  registerHandler('finance:createBudget', async (_, data: {
     name: string;
     budgetType: 'family' | 'crypto';
     totalBudget: number;
@@ -648,7 +649,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
+  registerHandler('finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
     try {
       const daysBack = options?.daysBack || 7;
       const focus = options?.focus || 'general';
@@ -689,7 +690,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== ACCOUNT CRUD HANDLERS ==============
 
-  ipcMain.handle('finance:account:list', async () => {
+  registerHandler('finance:account:list', async () => {
     try {
       const rows = prepare(
         `SELECT * FROM finance_accounts WHERE archived = 0 OR archived IS NULL ORDER BY created_at ASC`
@@ -701,7 +702,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:account:create', async (_, data: { name: string; type: string; currency?: string }) => {
+  registerHandler('finance:account:create', async (_, data: { name: string; type: string; currency?: string }) => {
     try {
       const slug = data.name
         .toLowerCase()
@@ -720,7 +721,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:account:update', async (_, id: string, updates: { name?: string }) => {
+  registerHandler('finance:account:update', async (_, id: string, updates: { name?: string }) => {
     try {
       const now = Date.now();
       if (updates.name) {
@@ -733,7 +734,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:account:archive', async (_, id: string) => {
+  registerHandler('finance:account:archive', async (_, id: string) => {
     try {
       const now = Date.now();
       prepare(`UPDATE finance_accounts SET archived = 1, updated_at = ? WHERE id = ?`).run(now, id);
@@ -745,7 +746,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:account:balances', async () => {
+  registerHandler('finance:account:balances', async () => {
     try {
       const rows = prepare(`
         SELECT a.id, a.name, a.type, a.currency, a.archived,
@@ -766,7 +767,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== RECURRING TRANSACTION DETECTION HANDLERS ==============
 
-  ipcMain.handle('finance:recurring:detect', async (_, accountId?: string) => {
+  registerHandler('finance:recurring:detect', async (_, accountId?: string) => {
     try {
       detectRecurring(accountId || undefined);
       return { success: true };
@@ -776,7 +777,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:recurring:list', async (_, accountId?: string) => {
+  registerHandler('finance:recurring:list', async (_, accountId?: string) => {
     try {
       const whereClause = accountId ? `WHERE account_id = ? AND status != 'dismissed'` : `WHERE status != 'dismissed'`;
       const params = accountId ? [accountId] : [];
@@ -788,7 +789,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:recurring:confirm', async (_, id: string) => {
+  registerHandler('finance:recurring:confirm', async (_, id: string) => {
     try {
       prepare(`UPDATE finance_recurring SET status = 'confirmed', updated_at = ? WHERE id = ?`).run(Date.now(), id);
       return { success: true };
@@ -797,7 +798,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:recurring:dismiss', async (_, id: string) => {
+  registerHandler('finance:recurring:dismiss', async (_, id: string) => {
     try {
       prepare(`UPDATE finance_recurring SET status = 'dismissed', updated_at = ? WHERE id = ?`).run(Date.now(), id);
       return { success: true };
@@ -806,7 +807,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  ipcMain.handle('finance:recurring:status', async (_, accountId?: string) => {
+  registerHandler('finance:recurring:status', async (_, accountId?: string) => {
     try {
       const whereClause = accountId ? `WHERE account_id = ?` : '';
       const params = accountId ? [accountId] : [];
@@ -819,7 +820,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== XLSX EXPORT HANDLER ==============
 
-  ipcMain.handle('finance:export:xlsx', async (_, opts: {
+  registerHandler('finance:export:xlsx', async (_, opts: {
     accountId?: string;
     dateFrom?: number;   // epoch ms, optional
     dateTo?: number;     // epoch ms, optional

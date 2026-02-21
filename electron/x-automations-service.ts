@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import { prepare } from './database';
 import { createLogger } from './utils/logger';
 
@@ -216,35 +216,35 @@ export function getRateLimit(automationId: string) {
 
 // Register IPC handlers
 export function registerXAutomationsHandlers() {
-  ipcMain.handle('x-automations:list', async () => {
+  registerHandler('x-automations:list', async () => {
     return listAutomations();
   });
 
-  ipcMain.handle('x-automations:get', async (_, id: string) => {
+  registerHandler('x-automations:get', async (_, id: string) => {
     return getAutomation(id);
   });
 
-  ipcMain.handle('x-automations:create', async (_, data) => {
+  registerHandler('x-automations:create', async (_, data) => {
     return createAutomation(data);
   });
 
-  ipcMain.handle('x-automations:update', async (_, id: string, updates) => {
+  registerHandler('x-automations:update', async (_, id: string, updates) => {
     return updateAutomation(id, updates);
   });
 
-  ipcMain.handle('x-automations:delete', async (_, id: string) => {
+  registerHandler('x-automations:delete', async (_, id: string) => {
     return deleteAutomation(id);
   });
 
-  ipcMain.handle('x-automations:toggle', async (_, id: string, enabled: boolean) => {
+  registerHandler('x-automations:toggle', async (_, id: string, enabled: boolean) => {
     return toggleAutomation(id, enabled);
   });
 
-  ipcMain.handle('x-automations:executions', async (_, automationId?: string, limit?: number) => {
+  registerHandler('x-automations:executions', async (_, automationId?: string, limit?: number) => {
     return getExecutions(automationId, limit);
   });
 
-  ipcMain.handle('x-automations:rate-limit', async (_, automationId: string) => {
+  registerHandler('x-automations:rate-limit', async (_, automationId: string) => {
     return getRateLimit(automationId);
   });
 

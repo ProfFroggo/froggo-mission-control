@@ -14,7 +14,7 @@
  *   x:analytics:summary:real — aggregated engagement summary from real data
  */
 
-import { ipcMain } from 'electron';
+import { registerHandler } from './ipc-registry';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { X_API_CLI, SHELL_PATH } from './paths';
@@ -68,17 +68,17 @@ async function getMyTweets(count: number = 20): Promise<any> {
  */
 export function registerXAnalyticsHandlers(): void {
   // Real profile data: followers, following, tweet_count
-  ipcMain.handle('x:analytics:profile', async () => {
+  registerHandler('x:analytics:profile', async () => {
     return getOwnProfile();
   });
 
   // Real tweet list with public_metrics
-  ipcMain.handle('x:analytics:tweets', async (_, count: number = 20) => {
+  registerHandler('x:analytics:tweets', async (_, count: number = 20) => {
     return getMyTweets(count);
   });
 
   // Summary using real API data (replaces fake multiplier version in main.ts)
-  ipcMain.handle('x:analytics:summary:real', async () => {
+  registerHandler('x:analytics:summary:real', async () => {
     try {
       const [profileResult, tweetsResult] = await Promise.all([
         getOwnProfile(),
