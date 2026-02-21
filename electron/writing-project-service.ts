@@ -598,7 +598,7 @@ export function registerWritingProjectHandlers() {
   registerHandler('writing:project:list', async () => listProjects());
   registerHandler('writing:project:create', async (_, title: string, type: string) =>
     createProject(title, type));
-  registerHandler('writing:project:createFromWizard', async (_, wizardData) =>
+  registerHandler('writing:project:createFromWizard', async (_, wizardData: any) =>
     createProjectFromWizard(wizardData));
   registerHandler('writing:project:get', async (_, projectId: string) => getProject(projectId));
   registerHandler('writing:project:update', async (_, projectId: string, updates: any) =>
