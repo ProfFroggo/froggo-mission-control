@@ -10,6 +10,7 @@ interface Props {
   overallProgress: number;
   isStarted: boolean;
   isFinished: boolean;
+  isStreaming: boolean;
   onSend: (content: string) => void;
   onStart: () => void;
   onJumpToSection: (sectionId: SectionId) => void;
@@ -22,6 +23,7 @@ export default function ConversationPanel({
   overallProgress,
   isStarted,
   isFinished,
+  isStreaming,
   onSend,
   onStart,
   onJumpToSection,
@@ -124,6 +126,20 @@ export default function ConversationPanel({
             )}
           </div>
         ))}
+        {isStreaming && (
+          <div className="flex gap-3">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
+              <Bot size={16} className="text-blue-600 dark:text-blue-400 animate-pulse" />
+            </div>
+            <div className="max-w-[80%] rounded-xl px-4 py-2.5 text-sm bg-gray-100 dark:bg-gray-800">
+              <span className="inline-flex gap-1 text-gray-400">
+                <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+              </span>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -134,13 +150,13 @@ export default function ConversationPanel({
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder={isFinished ? 'Interview complete! Review your spec →' : 'Type your answer...'}
-              disabled={isFinished}
+              placeholder={isFinished ? 'Interview complete! Review your spec →' : isStreaming ? 'Thinking...' : 'Type your answer...'}
+              disabled={isFinished || isStreaming}
               className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim() || isFinished}
+              disabled={!input.trim() || isFinished || isStreaming}
               className="px-3 py-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:hover:bg-blue-500 text-white rounded-lg transition-colors"
             >
               <Send size={16} />

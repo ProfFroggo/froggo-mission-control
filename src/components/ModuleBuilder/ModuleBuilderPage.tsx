@@ -69,6 +69,7 @@ export default function ModuleBuilderPage() {
             overallProgress={overallProgress}
             isStarted={flow.isStarted}
             isFinished={flow.isFinished}
+            isStreaming={flow.isStreaming}
             onSend={flow.submitAnswer}
             onStart={flow.startInterview}
             onJumpToSection={flow.jumpToSection}
