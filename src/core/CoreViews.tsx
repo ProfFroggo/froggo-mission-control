@@ -17,17 +17,13 @@ import {
   Mic,
   Bell,
   Inbox,
-  FolderOpen,
   Calendar,
   Code,
   Sparkles,
-  BarChart2,
   Mail,
   Cloud,
   MessagesSquare,
-  DollarSign,
   PenLine,
-  Settings,
   Boxes,
 } from 'lucide-react';
 
@@ -38,19 +34,15 @@ import {
   ChatPanel,
   MeetingsPanel,
   VoiceChatPanel,
-  SettingsPanel,
   NotificationsPanel,
   XPanel,
   InboxPanel,
   CommsInbox3Pane,
-  LibraryPanel,
   SchedulePanel,
   CodeAgentDashboard,
   ContextControlBoard,
-  AnalyticsDashboard,
   ConnectedAccountsPanel,
   DMFeed,
-  FinancePanel,
   WritingWorkspace,
   ModuleBuilderPage,
 } from '../components/ProtectedPanels';
@@ -65,10 +57,10 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
 );
 
 // Register all core views — order here doesn't matter, panelConfig controls display order
+// NOTE: finance, analytics, settings, library are registered by their respective modules (src/modules/*)
 [
   { id: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard,  component: Dashboard },
   { id: 'inbox',        label: 'Inbox',             icon: Mail,             component: CommsInbox3Pane },
-  { id: 'analytics',   label: 'Analytics',          icon: BarChart2,        component: AnalyticsDashboard },
   { id: 'kanban',      label: 'Tasks',              icon: Kanban,           component: KanbanPanel },
   { id: 'agents',      label: 'Agents',             icon: Bot,              component: AgentPanel },
   { id: 'agentdms',   label: 'Agent DMs',           icon: MessagesSquare,   component: DMFeed },
@@ -80,13 +72,10 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   { id: 'approvals',   label: 'Approvals',          icon: Inbox,            component: InboxPanel },
   { id: 'context',     label: 'Context',            icon: Sparkles,         component: ContextControlBoard },
   { id: 'codeagent',  label: 'Dev',                 icon: Code,             component: CodeAgentDashboard },
-  { id: 'library',     label: 'Library',            icon: FolderOpen,       component: LibraryPanel },
   { id: 'schedule',    label: 'Schedule',           icon: Calendar,         component: SchedulePanel },
   { id: 'notifications', label: 'Notifications',   icon: Bell,             component: NotificationsPanel },
   { id: 'writing',     label: 'Writing',            icon: PenLine,          component: WritingWorkspace },
-  { id: 'finance',     label: 'Finance',            icon: DollarSign,       component: FinancePanel },
   { id: 'modulebuilder', label: 'Module Builder',   icon: Boxes,            component: ModuleBuilderPage },
-  { id: 'settings',    label: 'Settings',           icon: Settings,         component: SettingsPanel },
   // Aliases (same component, different route IDs)
   { id: 'comms',       label: 'Communications',     icon: Mail,             component: CommsInbox3Pane },
 ].forEach(view => ViewRegistry.register(view));

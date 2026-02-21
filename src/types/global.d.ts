@@ -1453,6 +1453,17 @@ declare global {
         status: () => Promise<{ success: boolean; data?: unknown; error?: string }>;
         rotate: (agentId: string) => Promise<{ success: boolean; error?: string }>;
       };
+      // Module Builder persistence
+      moduleBuilder?: {
+        list: () => Promise<{ success: boolean; modules?: Array<{ id: string; name: string; description: string; status: string; overall_progress: number; created_at: number; updated_at: number }>; error?: string }>;
+        get: (id: string) => Promise<{ success: boolean; module?: { id: string; name: string; description: string; status: string; spec: any; conversation: any[]; conversation_state: any; overall_progress: number; created_at: number; updated_at: number }; error?: string }>;
+        save: (data: { id: string; name?: string; description?: string; status?: string; spec?: any; conversation?: any[]; conversation_state?: any; overall_progress?: number }) => Promise<{ success: boolean; error?: string }>;
+        delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+      };
+      // Generic module IPC passthrough
+      modules?: {
+        invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
+      };
       // Writing Module
       writing?: {
         project: {
