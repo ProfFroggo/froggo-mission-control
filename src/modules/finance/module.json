@@ -17,6 +17,13 @@
     }
   ],
 
+  "healthCheck": {
+    "type": "url",
+    "credentialId": "solana_rpc_url",
+    "method": "POST",
+    "successStatus": 200
+  },
+
   "views": [
     {
       "id": "finance",

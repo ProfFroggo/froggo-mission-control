@@ -30,6 +30,16 @@ export const CredentialDeclarationSchema = z.object({
   type: z.enum(['api_key', 'oauth_token', 'password', 'url', 'custom']),
 });
 
+export const HealthCheckSchema = z.object({
+  type: z.enum(['url', 'api_call']),
+  credentialId: z.string().optional(),
+  url: z.string().optional(),
+  method: z.enum(['GET', 'POST']).default('GET'),
+  successStatus: z.number().int().default(200),
+});
+
+export type ValidatedHealthCheck = z.infer<typeof HealthCheckSchema>;
+
 export const ModuleManifestSchema = z.object({
   id: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Module ID must be lowercase alphanumeric with hyphens'),
   name: z.string().min(1),
@@ -66,6 +76,8 @@ export const ModuleManifestSchema = z.object({
   }).optional(),
 
   credentials: z.array(CredentialDeclarationSchema).optional(),
+
+  healthCheck: HealthCheckSchema.optional(),
 });
 
 export type ValidatedManifest = z.infer<typeof ModuleManifestSchema>;
