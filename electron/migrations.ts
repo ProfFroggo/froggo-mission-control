@@ -125,4 +125,23 @@ export function runMigrations(db: Database.Database): void {
 
   // Index for faster message queries
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_messages_session_channel ON messages(session_key, channel)'); } catch (_e) { /* table may not exist yet */ }
+
+  // Module integrations table (wizard state for Phase 36)
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS module_integrations (
+      id TEXT PRIMARY KEY,
+      module_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      wizard_step INTEGER DEFAULT 0,
+      wizard_data TEXT DEFAULT '{}',
+      completed_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      CHECK(status IN ('pending', 'active', 'failed'))
+    )`);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_module_integrations_module_id ON module_integrations(module_id)');
+    safeLog.log('[Migration] module_integrations table ensured');
+  } catch (err) {
+    safeLog.error('[Migration] module_integrations migration error:', err);
+  }
 }
