@@ -45,9 +45,9 @@ async function spawnAgentSession(agent: DashboardAgent): Promise<boolean> {
   try {
     logger.debug(`[DashboardAgents] Spawning ${agent.name} at ${agent.sessionKey}...`);
     
-    // Use openclaw CLI to spawn an isolated agent session
-    // This creates a persistent session that stays alive
-    const cmd = `openclaw agent --agent ${agent.agentId} --message "You are now connected to the dashboard chat. Read your SOUL.md and be ready. Do NOT run onboarding or BOOTSTRAP.md — you are already set up. Reply with a single word: ready" --json`;
+    // Use openclaw CLI to spawn a persistent labeled session
+    // The --session-id parameter creates a persistent session that stays alive
+    const cmd = `openclaw agent --agent ${agent.agentId} --session-id "${agent.sessionKey}" --message "You are now connected to the dashboard chat. Read your SOUL.md and be ready. Do NOT run onboarding or BOOTSTRAP.md — you are already set up. Reply with a single word: ready" --json`;
     
     const { stderr } = await execAsync(cmd, {
       timeout: 30000,
@@ -129,12 +129,14 @@ export async function initializeDashboardAgents(): Promise<void> {
   logger.debug(`[DashboardAgents] Spawned ${successCount}/${DASHBOARD_AGENTS.length} agents`);
   
   // Start health check loop
+  // FIXED 2026-02-22: Now using persistent labeled sessions (task-1771780536455)
+  // Sessions are created with --session-id parameter, making them persistent
   if (healthCheckTimer) {
     clearInterval(healthCheckTimer);
   }
   healthCheckTimer = setInterval(healthCheckLoop, HEALTH_CHECK_INTERVAL);
   
-  logger.debug('[DashboardAgents] Health check monitoring started');
+  logger.debug('[DashboardAgents] Health check monitoring ENABLED (persistent sessions)');
 }
 
 /**
