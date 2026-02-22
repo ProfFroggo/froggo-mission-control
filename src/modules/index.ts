@@ -16,7 +16,8 @@ import './settings';
 import './analytics';
 import './library';
 
+import './twitter';
+
 // Future modules:
 // import './writing';
-// import './twitter';
 // import './comms';

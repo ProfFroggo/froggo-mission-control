@@ -1,0 +1,76 @@
+{
+  "id": "twitter",
+  "name": "X Publishing",
+  "version": "1.0.0",
+  "description": "Compose, post, schedule, and manage tweets and threads via the X API.",
+  "author": "Froggo Team",
+  "icon": "Share2",
+  "category": "social",
+
+  "credentials": [
+    {
+      "id": "api_key",
+      "label": "API Key (Consumer Key)",
+      "description": "X API consumer key from developer.x.com",
+      "required": true,
+      "type": "api_key"
+    },
+    {
+      "id": "api_secret",
+      "label": "API Secret (Consumer Secret)",
+      "description": "X API consumer secret from developer.x.com",
+      "required": true,
+      "type": "api_key"
+    },
+    {
+      "id": "access_token",
+      "label": "Access Token",
+      "description": "OAuth 1.0a access token for your X account",
+      "required": true,
+      "type": "oauth_token"
+    },
+    {
+      "id": "access_token_secret",
+      "label": "Access Token Secret",
+      "description": "OAuth 1.0a access token secret for your X account",
+      "required": true,
+      "type": "oauth_token"
+    }
+  ],
+
+  "views": [
+    {
+      "id": "twitter",
+      "label": "Social Media",
+      "icon": "Share2",
+      "entrypoint": "./views/XPanel.tsx"
+    }
+  ],
+
+  "ipcChannels": {
+    "handle": [
+      "x:publish:post",
+      "x:publish:thread",
+      "x:publish:rateLimit",
+      "x:publish:mediaUpload",
+      "x:publish:schedule",
+      "x:publish:scheduleThread",
+      "x:publish:scheduledList",
+      "x:publish:scheduledCancel",
+      "module-twitter:creds:import-env",
+      "module-twitter:health:check"
+    ]
+  },
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": ["x:*", "module-twitter:*"],
+    "filesystem": ["$DATA_DIR/"],
+    "network": true,
+    "shell": true
+  }
+}
