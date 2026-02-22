@@ -1,14 +1,15 @@
 /**
  * Module Credential Handlers
  *
- * Channels: module:cred:store, module:cred:status, module:cred:delete
+ * Channels: module:cred:store, module:cred:status, module:cred:delete, module:uninstall
  *
  * Cross-module infrastructure — uses registerHandler (not registerModuleHandler)
  * because these channels are not namespaced to a single module.
  *
- * 3 registerHandler calls total.
+ * 4 registerHandler calls total.
  */
 
+import { dialog } from 'electron';
 import { registerHandler } from '../ipc-registry';
 import {
   storeModuleSecret,
@@ -65,6 +66,38 @@ export function registerModuleCredentialHandlers(): void {
         return { success: true };
       } catch (err: any) {
         logger.error('[ModuleCreds] delete error:', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+  );
+
+  registerHandler(
+    'module:uninstall',
+    async (_event, moduleId: string, credentialIds: string[]) => {
+      try {
+        const { response } = await dialog.showMessageBox({
+          type: 'warning',
+          title: 'Uninstall Module',
+          message: `Remove "${moduleId}" and all its credentials?`,
+          detail: 'All stored credentials for this module will be permanently deleted. This cannot be undone.',
+          buttons: ['Cancel', 'Delete Credentials'],
+          defaultId: 0,
+          cancelId: 0,
+        });
+
+        if (response !== 1) {
+          return { success: false, cancelled: true };
+        }
+
+        deleteModuleCredentials(moduleId, credentialIds);
+        for (const credentialId of credentialIds) {
+          deleteBridgeFile(moduleId, credentialId);
+        }
+        deleteModuleBridgeDir(moduleId);
+        logger.info(`Module "${moduleId}" credentials removed`);
+        return { success: true };
+      } catch (err: any) {
+        logger.error('[ModuleCreds] uninstall error:', err.message);
         return { success: false, error: err.message };
       }
     },
