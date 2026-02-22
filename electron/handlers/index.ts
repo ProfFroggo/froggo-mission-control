@@ -23,6 +23,7 @@ export { registerCommsHandlers, startCommsPolling, startEmailAutoCheck } from '.
 export { registerCalendarHandlers } from './calendar-handlers';
 export { registerScheduleHandlers } from './schedule-handlers';
 export { registerModuleCredentialHandlers, registerModuleIntegrationHandlers } from './module-handlers';
+export { registerTwitterModuleHandlers } from './twitter-module-handlers';
 
 import { registerAgentHandlers } from './agent-handlers';
 import { registerNotificationHandlers } from './notification-handlers';
@@ -42,6 +43,7 @@ import { registerCommsHandlers } from './comms-handlers';
 import { registerCalendarHandlers } from './calendar-handlers';
 import { registerScheduleHandlers } from './schedule-handlers';
 import { registerModuleCredentialHandlers, registerModuleIntegrationHandlers } from './module-handlers';
+import { registerTwitterModuleHandlers } from './twitter-module-handlers';
 
 /**
  * Register ALL IPC handlers from all handler modules.
@@ -72,4 +74,5 @@ export function registerAllHandlers(): void {
   registerMiscHandlers();
   registerModuleCredentialHandlers();
   registerModuleIntegrationHandlers();
+  registerTwitterModuleHandlers();
 }
