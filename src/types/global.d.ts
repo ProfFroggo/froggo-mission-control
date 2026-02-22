@@ -1403,6 +1403,7 @@ declare global {
         scheduleThread: (tweets: string[], scheduledAt: number) => Promise<{ success: boolean; id?: string; error?: string }>;
         scheduledList: () => Promise<{ success: boolean; scheduled: unknown[]; error?: string }>;
         scheduledCancel: (id: string) => Promise<{ success: boolean; error?: string }>;
+        failedList: () => Promise<{ success: boolean; failed: Array<{ id: string; content: string; error?: string }>; error?: string }>;
       };
       // X Analytics — real follower/tweet metrics from X API
       xAnalytics?: {

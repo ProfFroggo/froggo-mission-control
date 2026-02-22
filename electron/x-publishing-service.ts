@@ -375,5 +375,21 @@ export function registerXPublishingHandlers(): void {
     }
   });
 
-  logger.debug('[XPublish] IPC handlers registered: post, thread, rateLimit, mediaUpload, schedule, scheduleThread, scheduledList, scheduledCancel');
+  // List failed scheduled posts (for notification banner on app open)
+  registerHandler('x:publish:failedList', async () => {
+    try {
+      const rows = prepare(`
+        SELECT id, content, scheduled_time, status, error, metadata
+        FROM scheduled_posts
+        WHERE status = 'failed'
+        ORDER BY scheduled_time DESC
+        LIMIT 10
+      `).all();
+      return { success: true, failed: rows };
+    } catch (e: any) {
+      return { success: false, failed: [], error: e.message };
+    }
+  });
+
+  logger.debug('[XPublish] IPC handlers registered: post, thread, rateLimit, mediaUpload, schedule, scheduleThread, scheduledList, scheduledCancel, failedList');
 }

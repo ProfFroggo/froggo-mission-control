@@ -812,6 +812,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
     scheduleThread: (tweets: string[], scheduledAt: number) => ipcRenderer.invoke('x:publish:scheduleThread', tweets, scheduledAt),
     scheduledList: () => ipcRenderer.invoke('x:publish:scheduledList'),
     scheduledCancel: (id: string) => ipcRenderer.invoke('x:publish:scheduledCancel', id),
+    failedList: () => ipcRenderer.invoke('x:publish:failedList'),
   },
   // Writing Module
   writing: {

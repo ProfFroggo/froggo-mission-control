@@ -29,6 +29,8 @@ interface ScheduledPost {
 
 const TWEET_CHAR_LIMIT = 280;
 const MAX_THREAD_TWEETS = 10;
+const DRAFT_KEY = 'x-compose-draft';
+const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
  * Count characters accounting for t.co URL wrapping.
@@ -180,11 +182,55 @@ export default function XPublishComposer() {
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [loadingScheduled, setLoadingScheduled] = useState(false);
 
-  // Load rate limit and scheduled posts on mount
+  // Post confirmation state
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Edit scheduled post state
+  const [editingScheduledId, setEditingScheduledId] = useState<string | null>(null);
+
+  // Failed posts state
+  const [failedPosts, setFailedPosts] = useState<Array<{ id: string; content: string; error?: string }>>([]);
+
+  // Draft persistence timer
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Composer ref for scroll-to-top on edit
+  const composerRef = useRef<HTMLDivElement>(null);
+
+  // Load rate limit, scheduled posts, failed posts and restore draft on mount
   useEffect(() => {
+    // Restore draft from localStorage
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft.savedAt && Date.now() - draft.savedAt < DRAFT_MAX_AGE_MS) {
+          if (draft.tweets?.length > 0) setTweets(draft.tweets);
+          if (draft.mode) setMode(draft.mode);
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+        }
+      }
+    } catch { /* ignore parse errors */ }
+
     loadRateLimit();
     loadScheduledList();
+    loadFailedPosts();
   }, []);
+
+  // Debounced draft save on tweet/mode change
+  useEffect(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const hasContent = tweets.some(t => t.trim().length > 0);
+      if (hasContent) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ mode, tweets, savedAt: Date.now() }));
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    }, 500);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [tweets, mode]);
 
   // Auto-dismiss success result after 5 seconds
   useEffect(() => {
@@ -229,6 +275,15 @@ export default function XPublishComposer() {
     } finally {
       setLoadingScheduled(false);
     }
+  };
+
+  const loadFailedPosts = async () => {
+    try {
+      const result = await window.clawdbot?.xPublish?.failedList?.();
+      if (result?.success && result.failed?.length > 0) {
+        setFailedPosts(result.failed);
+      }
+    } catch { /* ignore */ }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -281,6 +336,8 @@ export default function XPublishComposer() {
     const updated = [...tweets];
     updated[index] = value;
     setTweets(updated);
+    // Dismiss confirmation if user edits after clicking Post
+    if (showConfirm) setShowConfirm(false);
   };
 
   const addTweet = () => {
@@ -317,6 +374,7 @@ export default function XPublishComposer() {
 
     setPosting(true);
     setResult(null);
+    setShowConfirm(false);
 
     try {
       let res: PostResult;
@@ -327,6 +385,8 @@ export default function XPublishComposer() {
       }
 
       if (res.success) {
+        // Clear draft on successful post
+        localStorage.removeItem(DRAFT_KEY);
         setResult({ success: true, tweetId: res.tweetId, threadIds: res.threadIds || res.tweets?.map((t: { id: string }) => t.id) });
         setTimeout(() => {
           setTweets(['']);
@@ -353,6 +413,11 @@ export default function XPublishComposer() {
       return;
     }
 
+    // If editing a scheduled post, cancel the old one first
+    if (editingScheduledId) {
+      await window.clawdbot?.xPublish?.scheduledCancel?.(editingScheduledId);
+    }
+
     setSchedulingLoading(true);
     setScheduleResult(null);
 
@@ -372,11 +437,14 @@ export default function XPublishComposer() {
       }
 
       if (res?.success) {
+        // Clear draft on successful schedule
+        localStorage.removeItem(DRAFT_KEY);
         setScheduleResult({ success: true, message: `Scheduled for ${formatScheduledTime(timestampMs)}!` });
         // Clear form
         setTweets(['']);
         setScheduledAt('');
         setScheduling(false);
+        setEditingScheduledId(null);
         clearMedia();
         // Refresh list
         await loadScheduledList();
@@ -399,6 +467,28 @@ export default function XPublishComposer() {
     }
   };
 
+  const editScheduledPost = (post: ScheduledPost) => {
+    let postTweets: string[] = [post.content];
+    let postMode: PostMode = 'single';
+
+    if (post.metadata) {
+      try {
+        const meta = JSON.parse(post.metadata);
+        if (meta.type === 'thread' && Array.isArray(meta.tweets)) {
+          postTweets = meta.tweets;
+          postMode = 'thread';
+        }
+      } catch { /* use defaults */ }
+    }
+
+    setTweets(postTweets);
+    setMode(postMode);
+    setScheduledAt(new Date(post.scheduled_time).toISOString().slice(0, 16));
+    setScheduling(true);
+    setEditingScheduledId(post.id);
+    composerRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   // Rate limit banner color
   const rateLimitBannerClass = () => {
     if (!rateLimit) return '';
@@ -416,7 +506,7 @@ export default function XPublishComposer() {
   const showThread = mode === 'thread';
 
   return (
-    <div className="flex flex-col h-full bg-clawd-bg">
+    <div ref={composerRef} className="flex flex-col h-full bg-clawd-bg">
       {/* Header */}
       <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-clawd-border">
         <div className="flex items-center gap-3">
@@ -449,6 +539,31 @@ export default function XPublishComposer() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {/* Failed posts notification banner */}
+        {failedPosts.length > 0 && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <AlertCircle className="w-4 h-4 text-red-400" />
+              <span className="text-sm font-medium text-red-400">
+                {failedPosts.length} scheduled post{failedPosts.length > 1 ? 's' : ''} failed to publish
+              </span>
+            </div>
+            <div className="text-xs text-clawd-text-dim mt-1 space-y-1">
+              {failedPosts.slice(0, 3).map(fp => (
+                <div key={fp.id} className="truncate">
+                  "{fp.content.slice(0, 60)}{fp.content.length > 60 ? '...' : ''}" — {fp.error || 'Unknown error'}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setFailedPosts([])}
+              className="mt-2 text-xs text-clawd-text-dim hover:text-clawd-text underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Rate limit banner */}
         {!rateLimitLoading && rateLimit !== null && (
           <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm ${rateLimitBannerClass()}`}>
@@ -467,6 +582,7 @@ export default function XPublishComposer() {
             ) : (
               <span>
                 {rateLimit.remaining} post{rateLimit.remaining !== 1 ? 's' : ''} remaining today
+                <span className="text-clawd-text-dim/50 ml-1">(resets on restart)</span>
               </span>
             )}
           </div>
@@ -563,7 +679,12 @@ export default function XPublishComposer() {
         {/* Schedule datetime picker */}
         {scheduling && (
           <div className="p-4 bg-clawd-surface border border-clawd-border rounded-lg space-y-3">
-            <label className="block text-sm font-medium text-clawd-text">Schedule for</label>
+            <label className="block text-sm font-medium text-clawd-text">
+              Schedule for
+              {editingScheduledId && (
+                <span className="text-xs text-yellow-400 ml-2">(editing scheduled post)</span>
+              )}
+            </label>
             <input
               type="datetime-local"
               value={scheduledAt}
@@ -590,7 +711,9 @@ export default function XPublishComposer() {
               ) : (
                 <>
                   <Calendar className="w-4 h-4" />
-                  {mode === 'single' ? 'Schedule Tweet' : 'Schedule Thread'}
+                  {editingScheduledId
+                    ? (mode === 'single' ? 'Update Scheduled Tweet' : 'Update Scheduled Thread')
+                    : (mode === 'single' ? 'Schedule Tweet' : 'Schedule Thread')}
                 </>
               )}
             </button>
@@ -602,6 +725,29 @@ export default function XPublishComposer() {
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm bg-green-500/10 border border-green-500/30 text-green-400">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
             {scheduleResult.message}
+          </div>
+        )}
+
+        {/* Post confirmation inline bar */}
+        {showConfirm && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+            <span className="text-sm text-clawd-text flex-1">
+              {mode === 'single' ? 'Post this tweet to X?' : `Post this ${tweets.filter(t => t.trim()).length}-tweet thread to X?`}
+              {' '}This cannot be undone.
+            </span>
+            <button
+              onClick={() => { setShowConfirm(false); handlePost(); }}
+              className="px-4 py-1.5 bg-clawd-accent text-white text-sm font-medium rounded-lg hover:bg-clawd-accent/80 transition-colors"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="px-4 py-1.5 bg-clawd-surface text-clawd-text-dim text-sm font-medium rounded-lg hover:bg-clawd-surface/80 transition-colors border border-clawd-border"
+            >
+              Cancel
+            </button>
           </div>
         )}
 
@@ -670,7 +816,11 @@ export default function XPublishComposer() {
                 return (
                   <div
                     key={post.id}
-                    className="flex items-start gap-3 p-3 bg-clawd-surface border border-clawd-border rounded-lg"
+                    className={`flex items-start gap-3 p-3 bg-clawd-surface border rounded-lg ${
+                      editingScheduledId === post.id
+                        ? 'border-yellow-500/50 bg-yellow-500/5'
+                        : 'border-clawd-border'
+                    }`}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-clawd-text truncate">
@@ -681,6 +831,13 @@ export default function XPublishComposer() {
                         {formatScheduledTime(post.scheduled_time)}
                       </p>
                     </div>
+                    <button
+                      onClick={() => editScheduledPost(post)}
+                      className="px-2 py-1 text-xs text-clawd-accent hover:bg-clawd-accent/10 rounded transition-colors flex-shrink-0"
+                      title="Edit scheduled post"
+                    >
+                      Edit
+                    </button>
                     <button
                       onClick={() => handleCancelScheduled(post.id)}
                       className="text-clawd-text-dim hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors flex-shrink-0"
@@ -699,9 +856,9 @@ export default function XPublishComposer() {
       {/* Action buttons */}
       <div className="px-6 pb-6 pt-4 border-t border-clawd-border space-y-3">
         <div className="flex items-center gap-3">
-          {/* Post button */}
+          {/* Post button — shows confirmation first */}
           <button
-            onClick={handlePost}
+            onClick={() => setShowConfirm(true)}
             disabled={isPostDisabled}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-clawd-accent hover:bg-clawd-accent/80 disabled:bg-clawd-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
@@ -723,6 +880,10 @@ export default function XPublishComposer() {
             onClick={() => {
               setScheduling((s) => !s);
               setScheduleResult(null);
+              if (scheduling) {
+                // Cancelling schedule mode — also clear edit state
+                setEditingScheduledId(null);
+              }
             }}
             disabled={isScheduleDisabled}
             className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
