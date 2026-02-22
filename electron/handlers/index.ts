@@ -22,7 +22,7 @@ export { registerTaskHandlers } from './task-handlers';
 export { registerCommsHandlers, startCommsPolling, startEmailAutoCheck } from './comms-handlers';
 export { registerCalendarHandlers } from './calendar-handlers';
 export { registerScheduleHandlers } from './schedule-handlers';
-export { registerModuleCredentialHandlers } from './module-handlers';
+export { registerModuleCredentialHandlers, registerModuleIntegrationHandlers } from './module-handlers';
 
 import { registerAgentHandlers } from './agent-handlers';
 import { registerNotificationHandlers } from './notification-handlers';
@@ -41,7 +41,7 @@ import { registerTaskHandlers } from './task-handlers';
 import { registerCommsHandlers } from './comms-handlers';
 import { registerCalendarHandlers } from './calendar-handlers';
 import { registerScheduleHandlers } from './schedule-handlers';
-import { registerModuleCredentialHandlers } from './module-handlers';
+import { registerModuleCredentialHandlers, registerModuleIntegrationHandlers } from './module-handlers';
 
 /**
  * Register ALL IPC handlers from all handler modules.
@@ -71,4 +71,5 @@ export function registerAllHandlers(): void {
   registerFinanceAgentHandlers();
   registerMiscHandlers();
   registerModuleCredentialHandlers();
+  registerModuleIntegrationHandlers();
 }

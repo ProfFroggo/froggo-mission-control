@@ -1,16 +1,21 @@
 /**
- * Module Credential Handlers
+ * Module Credential + Integration Handlers
  *
- * Channels: module:cred:store, module:cred:status, module:cred:delete, module:uninstall
+ * Channels:
+ *   module:cred:store, module:cred:status, module:cred:delete, module:uninstall
+ *   module:integration:get, module:integration:upsert, module:integration:complete
+ *   module:health:test
  *
  * Cross-module infrastructure — uses registerHandler (not registerModuleHandler)
  * because these channels are not namespaced to a single module.
  *
- * 4 registerHandler calls total.
+ * 8 registerHandler calls total.
  */
 
 import { dialog } from 'electron';
+import crypto from 'node:crypto';
 import { registerHandler } from '../ipc-registry';
+import { db } from '../database';
 import {
   storeModuleSecret,
   hasModuleSecret,
@@ -98,6 +103,158 @@ export function registerModuleCredentialHandlers(): void {
         return { success: true };
       } catch (err: any) {
         logger.error('[ModuleCreds] uninstall error:', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+  );
+}
+
+export function registerModuleIntegrationHandlers(): void {
+  // Handler 1: module:integration:get
+  // Returns or creates integration state for a module
+  registerHandler(
+    'module:integration:get',
+    async (_event, moduleId: string) => {
+      try {
+        const row = db.prepare('SELECT * FROM module_integrations WHERE module_id = ?').get(moduleId) as Record<string, unknown> | undefined;
+        if (row) {
+          return {
+            success: true,
+            integration: {
+              ...row,
+              wizard_data: JSON.parse((row.wizard_data as string) || '{}'),
+            },
+          };
+        }
+
+        // No row — create a new pending integration record
+        const id = crypto.randomUUID();
+        const now = Date.now();
+        db.prepare(
+          `INSERT INTO module_integrations (id, module_id, status, wizard_step, wizard_data, created_at, updated_at)
+           VALUES (?, ?, 'pending', 0, '{}', ?, ?)`,
+        ).run(id, moduleId, now, now);
+
+        return {
+          success: true,
+          integration: {
+            id,
+            module_id: moduleId,
+            status: 'pending',
+            wizard_step: 0,
+            wizard_data: {},
+            completed_at: null,
+            created_at: now,
+            updated_at: now,
+          },
+        };
+      } catch (err: any) {
+        logger.error('[ModuleIntegration] get error:', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+  );
+
+  // Handler 2: module:integration:upsert
+  // Persists wizard step progress
+  registerHandler(
+    'module:integration:upsert',
+    async (_event, moduleId: string, step: number, wizardData: Record<string, unknown>) => {
+      try {
+        db.prepare(
+          `UPDATE module_integrations SET wizard_step = ?, wizard_data = ?, updated_at = ? WHERE module_id = ?`,
+        ).run(step, JSON.stringify(wizardData), Date.now(), moduleId);
+        return { success: true };
+      } catch (err: any) {
+        logger.error('[ModuleIntegration] upsert error:', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+  );
+
+  // Handler 3: module:integration:complete
+  // Marks integration as active with completion timestamp
+  registerHandler(
+    'module:integration:complete',
+    async (_event, moduleId: string) => {
+      try {
+        const now = Date.now();
+        db.prepare(
+          `UPDATE module_integrations SET status = 'active', completed_at = ?, updated_at = ? WHERE module_id = ?`,
+        ).run(now, now, moduleId);
+        return { success: true };
+      } catch (err: any) {
+        logger.error('[ModuleIntegration] complete error:', err.message);
+        return { success: false, error: err.message };
+      }
+    },
+  );
+
+  // Handler 4: module:health:test
+  // Performs HTTP health check against the resolved URL
+  registerHandler(
+    'module:health:test',
+    async (
+      _event,
+      _moduleId: string,
+      healthCheckConfig: {
+        type: string;
+        credentialId?: string;
+        url?: string;
+        method?: string;
+        successStatus?: number;
+      } | null,
+      credentialValues: Record<string, string>,
+    ) => {
+      try {
+        // No health check config = synthetic pass
+        if (!healthCheckConfig) {
+          return { success: true, synthetic: true };
+        }
+
+        // Resolve test URL
+        const testUrl = healthCheckConfig.credentialId
+          ? credentialValues[healthCheckConfig.credentialId]
+          : healthCheckConfig.url;
+
+        if (!testUrl) {
+          return { success: false, error: 'No URL to test' };
+        }
+
+        const method = healthCheckConfig.method || 'GET';
+        const successStatus = healthCheckConfig.successStatus || 200;
+
+        // Fetch with 10-second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
+        try {
+          const response = await fetch(testUrl, {
+            method,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (response.ok || response.status === successStatus) {
+            return { success: true, status: response.status };
+          }
+
+          const rawError = await response.text().catch(() => '');
+          return {
+            success: false,
+            error: `HTTP ${response.status}`,
+            rawError,
+          };
+        } catch (fetchErr: any) {
+          clearTimeout(timeoutId);
+          return {
+            success: false,
+            error: fetchErr.message,
+            rawError: String(fetchErr),
+          };
+        }
+      } catch (err: any) {
+        logger.error('[ModuleIntegration] health:test error:', err.message);
         return { success: false, error: err.message };
       }
     },

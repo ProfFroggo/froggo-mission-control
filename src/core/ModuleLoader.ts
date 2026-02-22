@@ -66,6 +66,14 @@ export interface ModuleManifest {
     required?: boolean;
     type: 'api_key' | 'oauth_token' | 'password' | 'url' | 'custom';
   }>;
+
+  healthCheck?: {
+    type: 'url' | 'api_call';
+    credentialId?: string;
+    url?: string;
+    method?: 'GET' | 'POST';
+    successStatus?: number;
+  };
 }
 
 // ─── Lifecycle ──────────────────────────────────────────────────
