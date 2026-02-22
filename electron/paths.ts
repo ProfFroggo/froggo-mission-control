@@ -65,6 +65,7 @@ export const SESSIONS_DB     = path.join(OPENCLAW_DIR, 'sessions.db');
 export const SESSIONS_DB_LEGACY = path.join(OPENCLAW_LEGACY, 'sessions.db');
 export const OPENCLAW_CONFIG = path.join(OPENCLAW_DIR, 'openclaw.json');
 export const OPENCLAW_CONFIG_LEGACY = path.join(OPENCLAW_LEGACY, 'openclaw.json');
+export const CREDENTIALS_DISPATCHER_DIR = path.join(OPENCLAW_DIR, 'credentials', 'dispatcher');
 
 // ── External binaries ──
 export const LOCAL_BIN     = path.join(HOME, '.local', 'bin');
