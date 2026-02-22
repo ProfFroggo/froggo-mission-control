@@ -87,3 +87,62 @@ export function deleteSecret(key: string): void {
     fs.unlinkSync(fp);
   }
 }
+
+// ── Module credential namespace wrappers ──
+
+export type CredentialStatus = 'green' | 'yellow' | 'red';
+
+/**
+ * Store a module credential using a namespaced key: {moduleId}:{credentialId}
+ */
+export function storeModuleSecret(moduleId: string, credentialId: string, value: string): void {
+  storeSecret(`${moduleId}:${credentialId}`, value);
+}
+
+/**
+ * Retrieve a module credential using a namespaced key: {moduleId}:{credentialId}
+ * Returns null if not found
+ */
+export function getModuleSecret(moduleId: string, credentialId: string): string | null {
+  return getSecret(`${moduleId}:${credentialId}`);
+}
+
+/**
+ * Check if a module credential exists
+ */
+export function hasModuleSecret(moduleId: string, credentialId: string): boolean {
+  return hasSecret(`${moduleId}:${credentialId}`);
+}
+
+/**
+ * Delete a single module credential
+ */
+export function deleteModuleSecret(moduleId: string, credentialId: string): void {
+  deleteSecret(`${moduleId}:${credentialId}`);
+}
+
+/**
+ * Compute credential status for a module:
+ *   green  — all credentials set (or no credentials declared)
+ *   yellow — some credentials set
+ *   red    — no credentials set
+ */
+export function getModuleCredentialStatus(
+  moduleId: string,
+  credentials: Array<{ id: string }>,
+): CredentialStatus {
+  if (credentials.length === 0) return 'green';
+  const setCount = credentials.filter(c => hasModuleSecret(moduleId, c.id)).length;
+  if (setCount === credentials.length) return 'green';
+  if (setCount === 0) return 'red';
+  return 'yellow';
+}
+
+/**
+ * Delete all credentials for a module by iterating credentialIds
+ */
+export function deleteModuleCredentials(moduleId: string, credentialIds: string[]): void {
+  for (const credentialId of credentialIds) {
+    deleteModuleSecret(moduleId, credentialId);
+  }
+}
