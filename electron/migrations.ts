@@ -144,4 +144,23 @@ export function runMigrations(db: Database.Database): void {
   } catch (err) {
     safeLog.error('[Migration] module_integrations migration error:', err);
   }
+
+  // Installed modules table (marketplace install tracking — Phase 40)
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS installed_modules (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      installed_version TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      installed_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      source TEXT NOT NULL DEFAULT 'marketplace',
+      sha256 TEXT,
+      registry_url TEXT
+    )`);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_installed_modules_enabled ON installed_modules(enabled)');
+    safeLog.log('[Migration] installed_modules table ensured');
+  } catch (err) {
+    safeLog.error('[Migration] installed_modules migration error:', err);
+  }
 }
