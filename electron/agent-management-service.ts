@@ -15,6 +15,7 @@ import * as os from 'os';
 import { registerHandler } from './ipc-registry';
 import { createLogger } from './utils/logger';
 import { SHARED_CONTEXT_DIR } from './paths';
+import { prepare } from './database';
 
 const logger = createLogger('AgentMgmt');
 
@@ -38,6 +39,8 @@ const ALLOWED_MODELS = [
 ];
 
 const MAX_FALLBACKS = 5;
+
+const PROTECTED_AGENTS = ['froggo', 'main', 'clara'];
 
 // ── Path helpers ────────────────────────────────────────────────────────────
 
@@ -325,6 +328,59 @@ async function handleCtxCheck(): Promise<CtxCheckResult> {
   }
 }
 
+// ── Handler 6: agentManagement:agent:status ─────────────────────────────────
+
+async function handleAgentStatus(_event: Electron.IpcMainInvokeEvent, agentId: string) {
+  try {
+    const idCheck = validateAgentId(agentId);
+    if (!idCheck.valid) return { success: false, error: idCheck.error };
+    const row = prepare('SELECT status FROM agent_registry WHERE id = ?').get(agentId) as { status: string } | undefined;
+    return {
+      success: true,
+      status: row?.status ?? 'unknown',
+      isProtected: PROTECTED_AGENTS.includes(agentId),
+    };
+  } catch (err: any) {
+    logger.error('[agent:status] Error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// ── Handler 7: agentManagement:agent:start ──────────────────────────────────
+
+async function handleAgentStart(_event: Electron.IpcMainInvokeEvent, agentId: string) {
+  try {
+    const idCheck = validateAgentId(agentId);
+    if (!idCheck.valid) return { success: false, error: idCheck.error };
+    prepare(`UPDATE agent_registry SET status = 'active', updated_at = ? WHERE id = ? AND status = 'disabled'`)
+      .run(Date.now(), agentId);
+    logger.info(`[agent:start] Restarted agent: ${agentId}`);
+    return { success: true };
+  } catch (err: any) {
+    logger.error('[agent:start] Error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// ── Handler 8: agentManagement:agent:stop ───────────────────────────────────
+
+async function handleAgentStop(_event: Electron.IpcMainInvokeEvent, agentId: string) {
+  try {
+    const idCheck = validateAgentId(agentId);
+    if (!idCheck.valid) return { success: false, error: idCheck.error };
+    if (PROTECTED_AGENTS.includes(agentId)) {
+      return { success: false, error: `Cannot stop protected agent: ${agentId}` };
+    }
+    prepare(`UPDATE agent_registry SET status = 'disabled', updated_at = ? WHERE id = ?`)
+      .run(Date.now(), agentId);
+    logger.info(`[agent:stop] Stopped agent: ${agentId}`);
+    return { success: true };
+  } catch (err: any) {
+    logger.error('[agent:stop] Error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ── IPC Registration ────────────────────────────────────────────────────────
 
 export function registerAgentManagementHandlers(): void {
@@ -333,5 +389,8 @@ export function registerAgentManagementHandlers(): void {
   registerHandler('agentManagement:models:read', handleModelsRead);
   registerHandler('agentManagement:models:write', handleModelsWrite);
   registerHandler('agentManagement:ctx:check', handleCtxCheck);
+  registerHandler('agentManagement:agent:status', handleAgentStatus);
+  registerHandler('agentManagement:agent:start', handleAgentStart);
+  registerHandler('agentManagement:agent:stop', handleAgentStop);
   logger.info('[AgentMgmt] Handlers registered');
 }

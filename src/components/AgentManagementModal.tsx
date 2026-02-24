@@ -6,8 +6,10 @@ const logger = createLogger('AgentManagementModal');
 
 const AVAILABLE_MODELS = [
   { id: 'anthropic/claude-opus-4-6', label: 'Claude Opus 4.6' },
+  { id: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
   { id: 'anthropic/claude-opus-4-5', label: 'Claude Opus 4.5' },
   { id: 'anthropic/claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+  { id: 'anthropic/claude-haiku-3-5', label: 'Claude Haiku 3.5' },
   { id: 'anthropic-direct/claude-opus-4-5', label: 'Claude Opus 4.5 (Direct)' },
   { id: 'anthropic-direct/claude-sonnet-4-5', label: 'Claude Sonnet 4.5 (Direct)' },
   { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
