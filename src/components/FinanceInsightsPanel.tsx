@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw, Zap } from 'lucide-react';
 import { showToast } from './Toast';
 
 interface Insight {
@@ -15,6 +15,7 @@ export default function FinanceInsightsPanel() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
+  const [detectingAnomalies, setDetectingAnomalies] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,6 +66,31 @@ export default function FinanceInsightsPanel() {
       showToast('error', 'Analysis failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const generateInsights = async () => {
+    try {
+      setDetectingAnomalies(true);
+      showToast('info', 'Detecting anomalies...', 'Running SQL-based spend analysis');
+
+      const result = await window.clawdbot?.finance?.generateInsights?.({ days: 30 });
+
+      if (result?.success) {
+        const count = result.generated ?? 0;
+        showToast(
+          'success',
+          'Anomaly detection complete',
+          count > 0 ? `${count} new insight${count !== 1 ? 's' : ''} generated` : 'No new anomalies found',
+        );
+        await loadInsights();
+      } else {
+        throw new Error(result?.error || 'Anomaly detection failed');
+      }
+    } catch (err: unknown) {
+      showToast('error', 'Detection failed', err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setDetectingAnomalies(false);
     }
   };
 
@@ -178,16 +204,33 @@ export default function FinanceInsightsPanel() {
           <span className="px-2 py-0.5 text-xs bg-warning-subtle text-warning rounded-full">
             {insights.length}
           </span>
+          {insights.filter((i) => i.type === 'anomaly').length > 0 && (
+            <span className="px-2 py-0.5 text-xs bg-error-subtle text-error rounded-full flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              {insights.filter((i) => i.type === 'anomaly').length} anomal{insights.filter((i) => i.type === 'anomaly').length === 1 ? 'y' : 'ies'}
+            </span>
+          )}
         </h3>
-        <button
-          onClick={triggerAnalysis}
-          disabled={analyzing}
-          className="px-3 py-1.5 bg-clawd-accent hover:bg-clawd-accent/90 disabled:bg-clawd-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
-          title="Run AI analysis on recent transactions"
-        >
-          <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
-          {analyzing ? 'Analyzing...' : 'Run Analysis'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={generateInsights}
+            disabled={detectingAnomalies || analyzing}
+            className="px-3 py-1.5 bg-warning/20 hover:bg-warning/30 disabled:opacity-50 disabled:cursor-not-allowed text-warning rounded-lg flex items-center gap-2 transition-colors text-sm border border-warning/30"
+            title="Run SQL-based anomaly detection on spending patterns"
+          >
+            <Zap className={`w-4 h-4 ${detectingAnomalies ? 'animate-pulse' : ''}`} />
+            {detectingAnomalies ? 'Detecting...' : 'Detect Anomalies'}
+          </button>
+          <button
+            onClick={triggerAnalysis}
+            disabled={analyzing || detectingAnomalies}
+            className="px-3 py-1.5 bg-clawd-accent hover:bg-clawd-accent/90 disabled:bg-clawd-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+            title="Run AI analysis on recent transactions"
+          >
+            <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
+            {analyzing ? 'Analyzing...' : 'Run Analysis'}
+          </button>
+        </div>
       </div>
 
       {insights.map((insight) => (

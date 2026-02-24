@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X } from 'lucide-react';
+import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X, Calculator, ChevronDown } from 'lucide-react';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
 import FinanceAgentChat from './FinanceAgentChat';
 import FinanceInsightsPanel from './FinanceInsightsPanel';
+import FinanceCategoryBreakdown from './FinanceCategoryBreakdown';
+import FinanceScenarioPanel from './FinanceScenarioPanel';
 
 interface Transaction {
   id: string;
@@ -92,6 +94,11 @@ export default function FinancePanel() {
   const [exportLoading, setExportLoading] = useState(false);
   const [exportResult, setExportResult] = useState<string | null>(null);
 
+  // ── Category breakdown + scenario state ──
+  const [showScenarios, setShowScenarios] = useState(false);
+  const [editingCategoryTxId, setEditingCategoryTxId] = useState<string | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<Array<{ name: string }>>([]);
+
   // ── Upload modal account selector ──
   const [uploadAccountId, setUploadAccountId] = useState<string>('acc-default');
 
@@ -169,6 +176,13 @@ export default function FinancePanel() {
     loadAccounts();
     loadRecurring();
     loadAlerts();
+
+    // Load category options for inline recategorization
+    window.clawdbot?.finance?.category?.list().then((res) => {
+      if (res?.success && res.categories) {
+        setCategoryOptions(res.categories as Array<{ name: string }>);
+      }
+    });
 
     // Check for new alerts every 30 seconds
     const alertInterval = setInterval(() => {
@@ -822,23 +836,57 @@ export default function FinancePanel() {
             {transactions.length > 0 ? (
               transactions.slice(0, 20).map((tx) => (
                 <div key={tx.id} className="p-4 hover:bg-clawd-bg/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="text-2xl">{getCategoryEmoji(tx.category)}</div>
-                      <div>
-                        <div className="font-medium">{tx.description}</div>
-                        <div className="text-sm text-clawd-text/60">
-                          {new Date(tx.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                          {' \u2022 '}
-                          {tx.category}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{tx.description}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-sm text-clawd-text/60">
+                            {new Date(tx.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                          {/* Inline category editor */}
+                          {editingCategoryTxId === tx.id ? (
+                            <select
+                              value={tx.category}
+                              onChange={async (e) => {
+                                const newCat = e.target.value;
+                                await window.clawdbot?.finance?.category?.updateTransaction(tx.id, newCat);
+                                setTransactions((prev) =>
+                                  prev.map((t) => t.id === tx.id ? { ...t, category: newCat } : t)
+                                );
+                                setEditingCategoryTxId(null);
+                                showToast('success', `Recategorized to ${newCat}`);
+                              }}
+                              onBlur={() => setEditingCategoryTxId(null)}
+                              className="bg-clawd-surface border border-clawd-border rounded px-2 py-0.5 text-xs text-clawd-text focus:outline-none focus:border-clawd-accent"
+                              aria-label={`Change category for ${tx.description}`}
+                            >
+                              {categoryOptions.length > 0
+                                ? categoryOptions.map((c) => (
+                                    <option key={c.name} value={c.name}>{c.name}</option>
+                                  ))
+                                : <option value={tx.category}>{tx.category}</option>
+                              }
+                            </select>
+                          ) : (
+                            <button
+                              className="text-xs px-2 py-0.5 bg-clawd-bg-alt border border-clawd-border rounded-full capitalize cursor-pointer hover:border-clawd-accent hover:text-clawd-accent transition-colors"
+                              onClick={() => setEditingCategoryTxId(tx.id)}
+                              title="Click to recategorize"
+                              aria-label={`Recategorize ${tx.description} (currently ${tx.category || 'other'})`}
+                            >
+                              {tx.category || 'other'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className={`text-lg font-semibold ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
+                    <div className={`text-lg font-semibold flex-shrink-0 ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
                       {tx.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(tx.amount), tx.currency)}
                     </div>
                   </div>
@@ -857,6 +905,24 @@ export default function FinancePanel() {
               />
             )}
           </div>
+        </div>
+        {/* Category Spend Breakdown */}
+        <div className="mt-6">
+          <FinanceCategoryBreakdown selectedAccountId={selectedAccountId} />
+        </div>
+
+        {/* Scenario Projections (collapsible) */}
+        <div className="mt-2 mb-6">
+          <button
+            onClick={() => setShowScenarios(!showScenarios)}
+            className="flex items-center gap-2 text-sm font-semibold text-clawd-text-dim uppercase tracking-wide mb-3 hover:text-clawd-text transition-colors w-full text-left"
+            aria-label={showScenarios ? 'Collapse scenario projections' : 'Expand scenario projections'}
+          >
+            <Calculator className="w-4 h-4" />
+            Scenario Projections
+            <ChevronDown className={`w-4 h-4 transition-transform ml-auto ${showScenarios ? 'rotate-180' : ''}`} />
+          </button>
+          {showScenarios && <FinanceScenarioPanel />}
         </div>
         </div>
 

@@ -653,8 +653,9 @@ function ScenarioBuilderTab() {
 
           {/* Name */}
           <div>
-            <label className="block text-xs text-clawd-text-dim mb-1">Name *</label>
+            <label htmlFor="scenario-name" className="block text-xs text-clawd-text-dim mb-1">Name *</label>
             <input
+              id="scenario-name"
               type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -665,8 +666,9 @@ function ScenarioBuilderTab() {
 
           {/* Description */}
           <div>
-            <label className="block text-xs text-clawd-text-dim mb-1">Description</label>
+            <label htmlFor="scenario-description" className="block text-xs text-clawd-text-dim mb-1">Description</label>
             <textarea
+              id="scenario-description"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Optional notes..."
@@ -678,8 +680,9 @@ function ScenarioBuilderTab() {
           {/* Account + Projection months */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-clawd-text-dim mb-1">Base Account</label>
+              <label htmlFor="scenario-account" className="block text-xs text-clawd-text-dim mb-1">Base Account</label>
               <select
+                id="scenario-account"
                 value={form.baseAccountId}
                 onChange={(e) => setForm((f) => ({ ...f, baseAccountId: e.target.value }))}
                 className="w-full bg-clawd-bg-alt border border-clawd-border rounded-lg px-3 py-2 text-sm text-clawd-text focus:outline-none focus:border-clawd-accent"
@@ -691,8 +694,9 @@ function ScenarioBuilderTab() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-clawd-text-dim mb-1">Projection months</label>
+              <label htmlFor="scenario-months" className="block text-xs text-clawd-text-dim mb-1">Projection months</label>
               <input
+                id="scenario-months"
                 type="number"
                 min={1}
                 max={60}
@@ -706,9 +710,9 @@ function ScenarioBuilderTab() {
           {/* Income adjustments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
+              <span className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
                 Income adjustments
-              </label>
+              </span>
               <button
                 onClick={() =>
                   setForm((f) => ({
@@ -768,9 +772,9 @@ function ScenarioBuilderTab() {
           {/* Expense adjustments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
+              <span className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
                 Expense adjustments
-              </label>
+              </span>
               <button
                 onClick={() =>
                   setForm((f) => ({
@@ -830,9 +834,9 @@ function ScenarioBuilderTab() {
           {/* One-time events */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
+              <span className="text-xs text-clawd-text-dim font-medium uppercase tracking-wide">
                 One-time events
-              </label>
+              </span>
               <button
                 onClick={() =>
                   setForm((f) => ({
