@@ -972,4 +972,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
       return () => ipcRenderer.removeListener('marketplace:restart-required', handler);
     },
   },
+  // Agent Packages — install/uninstall/status for agent workspace packages
+  agentPackage: {
+    install: (entry: any) => ipcRenderer.invoke('agent-package:install', entry),
+    uninstall: (packageId: string) => ipcRenderer.invoke('agent-package:uninstall', packageId),
+    status: (packageId: string) => ipcRenderer.invoke('agent-package:status', packageId),
+    list: () => ipcRenderer.invoke('agent-package:list'),
+  },
 });
