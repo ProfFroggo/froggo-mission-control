@@ -163,4 +163,24 @@ export function runMigrations(db: Database.Database): void {
   } catch (err) {
     safeLog.error('[Migration] installed_modules migration error:', err);
   }
+
+  // Installed agents table (marketplace agent package tracking — Phase 41)
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS installed_agents (
+      id TEXT PRIMARY KEY,
+      agent_id TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      installed_version TEXT NOT NULL,
+      workspace_path TEXT NOT NULL,
+      installed_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      source TEXT NOT NULL DEFAULT 'marketplace',
+      sha256 TEXT,
+      registry_url TEXT
+    )`);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_installed_agents_agent_id ON installed_agents(agent_id)');
+    safeLog.log('[Migration] installed_agents table ensured');
+  } catch (err) {
+    safeLog.error('[Migration] installed_agents migration error:', err);
+  }
 }
