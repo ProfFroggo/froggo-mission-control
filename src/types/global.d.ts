@@ -1502,6 +1502,11 @@ declare global {
             error?: string;
           }>;
         };
+        agent?: {
+          status: (agentId: string) => Promise<{ success: boolean; status?: string; isProtected?: boolean; error?: string }>;
+          start: (agentId: string) => Promise<{ success: boolean; error?: string }>;
+          stop: (agentId: string) => Promise<{ success: boolean; error?: string }>;
+        };
       };
       // Memory Lifecycle
       memoryLifecycle?: {

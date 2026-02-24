@@ -933,6 +933,11 @@ contextBridge.exposeInMainWorld('clawdbot', {
     ctx: {
       check: () => ipcRenderer.invoke('agentManagement:ctx:check'),
     },
+    agent: {
+      status: (agentId: string) => ipcRenderer.invoke('agentManagement:agent:status', agentId),
+      start: (agentId: string) => ipcRenderer.invoke('agentManagement:agent:start', agentId),
+      stop: (agentId: string) => ipcRenderer.invoke('agentManagement:agent:stop', agentId),
+    },
   },
   // Memory Lifecycle — health metrics + manual rotation
   memoryLifecycle: {
