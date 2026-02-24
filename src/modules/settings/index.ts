@@ -8,13 +8,14 @@
  */
 
 import { lazy } from 'react';
-import { Settings, Puzzle } from 'lucide-react';
+import { Settings, Puzzle, Store } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest, type ModuleLifecycle } from '../../core/ModuleLoader';
 import { ViewRegistry } from '../../core/ViewRegistry';
 import manifest from './module.json';
 
 const SettingsPanel = lazy(() => import('../../components/SettingsPanel'));
 const ModulesPage = lazy(() => import('../../components/ModulesPage'));
+const MarketplaceBrowse = lazy(() => import('../../components/MarketplaceBrowse'));
 
 const lifecycle: ModuleLifecycle = {
   async init() {
@@ -36,6 +37,16 @@ const lifecycle: ModuleLifecycle = {
       moduleId: 'froggo-settings',
       category: 'system',
       description: 'Manage installed modules and integrations',
+    });
+
+    ViewRegistry.register({
+      id: 'marketplace',
+      label: 'Marketplace',
+      icon: Store,
+      component: MarketplaceBrowse,
+      moduleId: 'froggo-settings',
+      category: 'system',
+      description: 'Browse and install modules from the marketplace',
     });
   },
 
