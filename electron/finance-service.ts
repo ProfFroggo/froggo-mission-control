@@ -96,6 +96,105 @@ function ensureFinanceSchema(): void {
   } catch (e: any) {
     safeLog.error('[Finance] ensureFinanceSchema finance_recurring error:', e.message);
   }
+
+  // 5. dismissed_count column on finance_recurring (for re-surface logic)
+  try {
+    prepare(`ALTER TABLE finance_recurring ADD COLUMN dismissed_count INTEGER DEFAULT 0`).run();
+    safeLog.log('[Finance] Added dismissed_count column to finance_recurring');
+  } catch (e: any) {
+    if (!e.message.includes('duplicate column')) {
+      safeLog.error('[Finance] ensureFinanceSchema dismissed_count error:', e.message);
+    }
+  }
+
+  // 6. dismissed_at column on finance_recurring (timestamp when dismissed, for re-surface comparison)
+  try {
+    prepare(`ALTER TABLE finance_recurring ADD COLUMN dismissed_at INTEGER`).run();
+    safeLog.log('[Finance] Added dismissed_at column to finance_recurring');
+  } catch (e: any) {
+    if (!e.message.includes('duplicate column')) {
+      safeLog.error('[Finance] ensureFinanceSchema dismissed_at error:', e.message);
+    }
+  }
+
+  // 7. finance_categories table (with 15 seeded standard categories)
+  try {
+    prepare(`CREATE TABLE IF NOT EXISTS finance_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      budget_type TEXT DEFAULT 'expense',
+      icon TEXT,
+      color TEXT,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
+    )`).run();
+    // Seed standard categories
+    const standardCategories = [
+      { name: 'groceries', budget_type: 'expense' },
+      { name: 'dining', budget_type: 'expense' },
+      { name: 'transport', budget_type: 'expense' },
+      { name: 'utilities', budget_type: 'expense' },
+      { name: 'entertainment', budget_type: 'expense' },
+      { name: 'health', budget_type: 'expense' },
+      { name: 'shopping', budget_type: 'expense' },
+      { name: 'subscriptions', budget_type: 'expense' },
+      { name: 'income', budget_type: 'income' },
+      { name: 'other', budget_type: 'expense' },
+      { name: 'housing', budget_type: 'expense' },
+      { name: 'transfer', budget_type: 'transfer' },
+      { name: 'crypto', budget_type: 'expense' },
+      { name: 'food', budget_type: 'expense' },
+      { name: 'savings', budget_type: 'savings' },
+    ];
+    const seedStmt = prepare(`INSERT OR IGNORE INTO finance_categories (id, name, budget_type) VALUES (?, ?, ?)`);
+    for (const cat of standardCategories) {
+      seedStmt.run(`cat-${cat.name}`, cat.name, cat.budget_type);
+    }
+  } catch (e: any) {
+    safeLog.error('[Finance] ensureFinanceSchema finance_categories error:', e.message);
+  }
+
+  // 8. finance_category_corrections table (for AI auto-tagging training)
+  try {
+    prepare(`CREATE TABLE IF NOT EXISTS finance_category_corrections (
+      id TEXT PRIMARY KEY,
+      transaction_id TEXT NOT NULL,
+      old_category TEXT,
+      new_category TEXT NOT NULL,
+      merchant_normalized TEXT,
+      corrected_at INTEGER NOT NULL,
+      FOREIGN KEY (transaction_id) REFERENCES finance_transactions(id)
+    )`).run();
+  } catch (e: any) {
+    safeLog.error('[Finance] ensureFinanceSchema finance_category_corrections error:', e.message);
+  }
+
+  // 9. finance_scenarios table (for named scenario projections)
+  try {
+    prepare(`CREATE TABLE IF NOT EXISTS finance_scenarios (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      base_account_id TEXT,
+      income_adjustments TEXT NOT NULL DEFAULT '[]',
+      expense_adjustments TEXT NOT NULL DEFAULT '[]',
+      one_time_events TEXT NOT NULL DEFAULT '[]',
+      projection_months INTEGER NOT NULL DEFAULT 12,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )`).run();
+  } catch (e: any) {
+    safeLog.error('[Finance] ensureFinanceSchema finance_scenarios error:', e.message);
+  }
+
+  // 10. metadata column on finance_ai_insights (for insight dedup keying)
+  try {
+    prepare(`ALTER TABLE finance_ai_insights ADD COLUMN metadata TEXT`).run();
+    safeLog.log('[Finance] Added metadata column to finance_ai_insights');
+  } catch (e: any) {
+    if (!e.message.includes('duplicate column')) {
+      safeLog.error('[Finance] ensureFinanceSchema insights metadata error:', e.message);
+    }
+  }
 }
 
 // ── Recurring Detection ──
@@ -173,10 +272,21 @@ function detectRecurring(accountId?: string): void {
     const recurringId = `rec-${merchant.replace(/\s/g, '-').substring(0, 20)}-${Math.abs(Math.round(txs[0].amount * 100))}`;
 
     // UPSERT: insert or update if not confirmed/dismissed (don't overwrite user decisions)
-    const existing = prepare(`SELECT id, status, detected_at FROM finance_recurring WHERE id = ?`).get(recurringId) as { id: string; status: string; detected_at: number } | undefined;
-    if (existing && (existing.status === 'confirmed' || existing.status === 'dismissed')) {
-      // Update next_expected_date only (preserve user decision)
+    const existing = prepare(`SELECT id, status, detected_at, dismissed_at FROM finance_recurring WHERE id = ?`).get(recurringId) as { id: string; status: string; detected_at: number; dismissed_at: number | null } | undefined;
+    if (existing && existing.status === 'confirmed') {
+      // Confirmed: update next_expected_date only (preserve user decision)
       prepare(`UPDATE finance_recurring SET next_expected_date = ?, updated_at = ? WHERE id = ?`).run(nextExpectedDate, now, recurringId);
+    } else if (existing && existing.status === 'dismissed') {
+      // Re-surface if 2+ new matches appeared since dismissal
+      const dismissedAt = existing.dismissed_at || 0;
+      const newTxsSinceDismiss = txs.filter(t => t.date > dismissedAt).length;
+      if (newTxsSinceDismiss >= 2) {
+        prepare(`UPDATE finance_recurring SET status = 'pending', next_expected_date = ? WHERE id = ?`).run(nextExpectedDate, recurringId);
+        safeLog.log(`[Finance] Re-surfaced dismissed recurring: ${recurringId} (${newTxsSinceDismiss} new matches)`);
+      } else {
+        // Still dismissed, only update next_expected_date — preserve dismissed_at for future passes
+        prepare(`UPDATE finance_recurring SET next_expected_date = ? WHERE id = ?`).run(nextExpectedDate, recurringId);
+      }
     } else {
       prepare(`INSERT OR REPLACE INTO finance_recurring (id, account_id, description, normalized_merchant, amount, currency, frequency, confidence, next_expected_date, status, detected_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
         recurringId,
@@ -325,6 +435,17 @@ export function registerFinanceHandlers(): void {
 
       // Send raw CSV to the finance agent — it parses and categorizes, returns JSON
       const bridge = getFinanceAgentBridge();
+
+      // Inject user category corrections for AI auto-tagging bias
+      let correctionContext = '';
+      try {
+        const corrections = prepare(`SELECT DISTINCT new_category, merchant_normalized FROM finance_category_corrections WHERE corrected_at > ? ORDER BY corrected_at DESC LIMIT 20`).all(Date.now() - 90 * 86400000) as Array<{ new_category: string; merchant_normalized: string }>;
+        if (corrections.length > 0) {
+          correctionContext = '\n\nThe user has previously recategorized these merchants (use these as guidance for similar merchants):\n' +
+            corrections.map(c => `- ${c.merchant_normalized || 'unknown'} -> ${c.new_category}`).join('\n') + '\n';
+        }
+      } catch (_) {}
+
       const prompt = `Parse this bank statement file "${filename}" and extract ALL transactions.
 
 Return ONLY a JSON object in this exact format (no markdown, no code fences, no extra text before or after):
@@ -337,7 +458,7 @@ Rules:
 - currency should match the statement (default EUR if unclear)
 - Return ALL transactions you can find
 - The JSON must be valid — no trailing commas
-
+${correctionContext}
 Here is the file content:
 
 ${csvContent.slice(0, 15000)}`;
@@ -457,6 +578,16 @@ ${csvContent.slice(0, 15000)}`;
         mainWindow.webContents.send('finance:analysisStatus', { status: 'started', type: 'pdf_upload' });
       }
 
+      // Inject user category corrections for AI auto-tagging bias
+      let correctionContextPdf = '';
+      try {
+        const correctionsPdf = prepare(`SELECT DISTINCT new_category, merchant_normalized FROM finance_category_corrections WHERE corrected_at > ? ORDER BY corrected_at DESC LIMIT 20`).all(Date.now() - 90 * 86400000) as Array<{ new_category: string; merchant_normalized: string }>;
+        if (correctionsPdf.length > 0) {
+          correctionContextPdf = '\n\nThe user has previously recategorized these merchants (use these as guidance for similar merchants):\n' +
+            correctionsPdf.map(c => `- ${c.merchant_normalized || 'unknown'} -> ${c.new_category}`).join('\n') + '\n';
+        }
+      } catch (_) {}
+
       // Extract text from PDF first, then send to AI
       const bridge = getFinanceAgentBridge();
       let pdfText = '';
@@ -494,7 +625,7 @@ Rules:
 - currency should match the statement (default EUR if unclear)
 - Return ALL transactions you can find
 - The JSON must be valid — no trailing commas
-
+${correctionContextPdf}
 Here is the extracted text from the PDF:
 
 ${pdfText.slice(0, 15000)}`;
@@ -800,7 +931,8 @@ ${pdfText.slice(0, 15000)}`;
 
   registerHandler('finance:recurring:dismiss', async (_, id: string) => {
     try {
-      prepare(`UPDATE finance_recurring SET status = 'dismissed', updated_at = ? WHERE id = ?`).run(Date.now(), id);
+      const dismissNow = Date.now();
+      prepare(`UPDATE finance_recurring SET status = 'dismissed', dismissed_count = COALESCE(dismissed_count, 0) + 1, dismissed_at = ?, updated_at = ? WHERE id = ?`).run(dismissNow, dismissNow, id);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -879,6 +1011,29 @@ ${pdfText.slice(0, 15000)}`;
         summarySheet.addRow({ metric: `  ${cat}`, value: amount.toFixed(2) });
       }
 
+      // Budget vs Actual
+      const budgets = prepare(`SELECT * FROM finance_budgets WHERE status = 'active'`).all() as any[];
+      if (budgets.length > 0) {
+        summarySheet.addRow({});
+        summarySheet.addRow({ metric: 'Budget vs Actual', value: '' });
+        summarySheet.getRow(summarySheet.rowCount).font = { bold: true };
+        for (const b of budgets) {
+          const budgetTxs = transactions.filter(t =>
+            t.amount < 0 && (!b.account_id || t.account_id === b.account_id)
+          );
+          const spent = budgetTxs.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+          const remaining = (b.total_budget || 0) - spent;
+          summarySheet.addRow({
+            metric: `  ${b.name}`,
+            value: `${spent.toFixed(2)} / ${(b.total_budget || 0).toFixed(2)} (${remaining >= 0 ? remaining.toFixed(2) + ' remaining' : Math.abs(remaining).toFixed(2) + ' over budget'})`,
+          });
+          const row = summarySheet.lastRow;
+          if (row) {
+            row.getCell('value').font = { color: { argb: remaining >= 0 ? 'FF009900' : 'FFCC0000' } };
+          }
+        }
+      }
+
       // Style header row bold
       summarySheet.getRow(1).font = { bold: true };
 
@@ -929,6 +1084,293 @@ ${pdfText.slice(0, 15000)}`;
       return { success: true, path: savePath.filePath };
     } catch (error: any) {
       safeLog.error('[Finance] Export XLSX error:', error.message);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ============== CATEGORY HANDLERS ==============
+
+  registerHandler('finance:category:list', async () => {
+    try {
+      const rows = prepare(`SELECT * FROM finance_categories ORDER BY budget_type, name`).all();
+      return { success: true, categories: rows };
+    } catch (error: any) {
+      safeLog.error('[Finance] Category list error:', error.message);
+      return { success: false, categories: [], error: error.message };
+    }
+  });
+
+  registerHandler('finance:category:getBreakdown', async (_, opts?: { accountId?: string; days?: number }) => {
+    try {
+      const days = opts?.days ?? 30;
+      const since = Date.now() - days * 24 * 60 * 60 * 1000;
+      const sql = opts?.accountId
+        ? `SELECT category, SUM(ABS(amount)) as total, COUNT(*) as count FROM finance_transactions WHERE amount < 0 AND date >= ? AND account_id = ? GROUP BY category ORDER BY total DESC`
+        : `SELECT category, SUM(ABS(amount)) as total, COUNT(*) as count FROM finance_transactions WHERE amount < 0 AND date >= ? GROUP BY category ORDER BY total DESC`;
+      const params = opts?.accountId ? [since, opts.accountId] : [since];
+      const rows = prepare(sql).all(...params);
+      return { success: true, breakdown: rows };
+    } catch (error: any) {
+      safeLog.error('[Finance] Category breakdown error:', error.message);
+      return { success: false, breakdown: [], error: error.message };
+    }
+  });
+
+  registerHandler('finance:category:corrections', async () => {
+    try {
+      const rows = prepare(`SELECT * FROM finance_category_corrections ORDER BY corrected_at DESC LIMIT 50`).all();
+      return { success: true, corrections: rows };
+    } catch (error: any) {
+      safeLog.error('[Finance] Category corrections error:', error.message);
+      return { success: false, corrections: [], error: error.message };
+    }
+  });
+
+  registerHandler('finance:transaction:updateCategory', async (_, id: string, category: string) => {
+    try {
+      const now = Date.now();
+      // Get old category and description before updating
+      const tx = prepare(`SELECT category, description FROM finance_transactions WHERE id = ?`).get(id) as { category: string; description: string } | undefined;
+      const oldCategory = tx?.category || null;
+      const merchantNormalized = tx ? normalizeDescription(tx.description) : null;
+
+      prepare(`UPDATE finance_transactions SET category = ?, updated_at = ? WHERE id = ?`).run(category, now, id);
+
+      // Record correction for AI training
+      const corrId = `corr-${now}-${Math.random().toString(36).substring(2, 8)}`;
+      prepare(`INSERT OR IGNORE INTO finance_category_corrections (id, transaction_id, old_category, new_category, merchant_normalized, corrected_at) VALUES (?, ?, ?, ?, ?, ?)`).run(corrId, id, oldCategory, category, merchantNormalized, now);
+
+      return { success: true };
+    } catch (error: any) {
+      safeLog.error('[Finance] Update category error:', error.message);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // ============== PROACTIVE INSIGHTS GENERATION ==============
+
+  registerHandler('finance:insights:generate', async (_, opts?: { days?: number }) => {
+    try {
+      const days = opts?.days ?? 30;
+      const now = Date.now();
+      const thisPeriodStart = now - days * 86400000;
+      const prevPeriodStart = now - 2 * days * 86400000;
+
+      // Query this period category totals
+      const thisPeriod = prepare(`SELECT category, SUM(ABS(amount)) as total FROM finance_transactions WHERE amount < 0 AND date >= ? GROUP BY category`).all(thisPeriodStart) as Array<{ category: string; total: number }>;
+
+      // Query previous period category totals
+      const prevPeriod = prepare(`SELECT category, SUM(ABS(amount)) as total FROM finance_transactions WHERE amount < 0 AND date >= ? AND date < ? GROUP BY category`).all(prevPeriodStart, thisPeriodStart) as Array<{ category: string; total: number }>;
+
+      const prevMap = new Map(prevPeriod.map(r => [r.category, r.total]));
+
+      let generated = 0;
+      const dedupeWindow = now - 7 * 86400000;
+
+      for (const cur of thisPeriod) {
+        const prev = prevMap.get(cur.category) || 0;
+        if (prev <= 0) continue; // no previous period data to compare
+
+        const percentChange = (cur.total - prev) / prev;
+        if (percentChange <= 0.3) continue; // less than 30% increase — skip
+
+        // Dedup: check if anomaly for this category already exists in the last 7 days
+        const existing = prepare(`SELECT id FROM finance_ai_insights WHERE type = 'anomaly' AND JSON_EXTRACT(metadata, '$.category') = ? AND generated_at > ?`).get(cur.category, dedupeWindow);
+        if (existing) continue;
+
+        const severity = percentChange > 0.5 ? 'warning' : 'info';
+        const insightId = `insight-anomaly-${cur.category}-${now}`;
+        const insightNow = now;
+        const metadata = JSON.stringify({ category: cur.category, percent_change: Math.round(percentChange * 100), period_days: days });
+        const content = `Your spending on ${cur.category} increased by ${Math.round(percentChange * 100)}% compared to the previous ${days}-day period (${prev.toFixed(2)} → ${cur.total.toFixed(2)}).`;
+
+        try {
+          prepare(`INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, metadata, generated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+            insightId,
+            'anomaly',
+            `Spending anomaly: ${cur.category}`,
+            content,
+            severity,
+            metadata,
+            insightNow,
+            insightNow,
+            insightNow,
+          );
+          generated++;
+        } catch (_) {}
+      }
+
+      safeLog.log(`[Finance] Generated ${generated} proactive insights`);
+      return { success: true, generated };
+    } catch (error: any) {
+      safeLog.error('[Finance] Insights generate error:', error.message);
+      return { success: false, generated: 0, error: error.message };
+    }
+  });
+
+  // ============== SCENARIO HANDLERS ==============
+
+  registerHandler('finance:scenario:list', async () => {
+    try {
+      const rows = prepare(`SELECT * FROM finance_scenarios ORDER BY updated_at DESC`).all();
+      return { success: true, scenarios: rows };
+    } catch (error: any) {
+      safeLog.error('[Finance] Scenario list error:', error.message);
+      return { success: false, scenarios: [], error: error.message };
+    }
+  });
+
+  registerHandler('finance:scenario:create', async (_, data: { name: string; description?: string; baseAccountId?: string; projectionMonths?: number }) => {
+    try {
+      const now = Date.now();
+      const id = `scenario-${now}`;
+      prepare(`INSERT INTO finance_scenarios (id, name, description, base_account_id, income_adjustments, expense_adjustments, one_time_events, projection_months, created_at, updated_at) VALUES (?, ?, ?, ?, '[]', '[]', '[]', ?, ?, ?)`).run(
+        id,
+        data.name,
+        data.description || null,
+        data.baseAccountId || null,
+        data.projectionMonths || 12,
+        now,
+        now,
+      );
+      return { success: true, id };
+    } catch (error: any) {
+      safeLog.error('[Finance] Scenario create error:', error.message);
+      return { success: false, error: error.message };
+    }
+  });
+
+  registerHandler('finance:scenario:update', async (_, id: string, updates: { name?: string; description?: string; income_adjustments?: string; expense_adjustments?: string; one_time_events?: string; projection_months?: number }) => {
+    try {
+      const now = Date.now();
+      const setClauses: string[] = [];
+      const params: any[] = [];
+      if (updates.name !== undefined) { setClauses.push('name = ?'); params.push(updates.name); }
+      if (updates.description !== undefined) { setClauses.push('description = ?'); params.push(updates.description); }
+      if (updates.income_adjustments !== undefined) { setClauses.push('income_adjustments = ?'); params.push(updates.income_adjustments); }
+      if (updates.expense_adjustments !== undefined) { setClauses.push('expense_adjustments = ?'); params.push(updates.expense_adjustments); }
+      if (updates.one_time_events !== undefined) { setClauses.push('one_time_events = ?'); params.push(updates.one_time_events); }
+      if (updates.projection_months !== undefined) { setClauses.push('projection_months = ?'); params.push(updates.projection_months); }
+      if (setClauses.length === 0) return { success: true };
+      setClauses.push('updated_at = ?');
+      params.push(now);
+      params.push(id);
+      prepare(`UPDATE finance_scenarios SET ${setClauses.join(', ')} WHERE id = ?`).run(...params);
+      return { success: true };
+    } catch (error: any) {
+      safeLog.error('[Finance] Scenario update error:', error.message);
+      return { success: false, error: error.message };
+    }
+  });
+
+  registerHandler('finance:scenario:delete', async (_, id: string) => {
+    try {
+      prepare(`DELETE FROM finance_scenarios WHERE id = ?`).run(id);
+      return { success: true };
+    } catch (error: any) {
+      safeLog.error('[Finance] Scenario delete error:', error.message);
+      return { success: false, error: error.message };
+    }
+  });
+
+  registerHandler('finance:scenario:project', async (_, scenarioId: string) => {
+    try {
+      const scenario = prepare(`SELECT * FROM finance_scenarios WHERE id = ?`).get(scenarioId) as any;
+      if (!scenario) return { success: false, error: 'Scenario not found' };
+
+      const confirmedRecurring = prepare(`SELECT * FROM finance_recurring WHERE status = 'confirmed'`).all() as any[];
+
+      // Compute base monthly expenses from recurring items
+      const frequencyMultipliers: Record<string, number> = {
+        weekly: 4.33,
+        biweekly: 2.17,
+        monthly: 1,
+        quarterly: 1 / 3,
+        annual: 1 / 12,
+      };
+      const baseMonthlyCost = confirmedRecurring.reduce((sum, r) => {
+        const mult = frequencyMultipliers[r.frequency as string] || 0;
+        return sum + Math.abs(r.amount) * mult;
+      }, 0);
+
+      // Load account balance if base_account_id set
+      let startingBalance = 0;
+      if (scenario.base_account_id) {
+        const acc = prepare(`SELECT balance FROM finance_accounts WHERE id = ?`).get(scenario.base_account_id) as { balance: number | null } | undefined;
+        startingBalance = acc?.balance || 0;
+      }
+
+      const incomeAdjustments: Array<{ label: string; monthly_delta: number }> = JSON.parse(scenario.income_adjustments || '[]');
+      const expenseAdjustments: Array<{ label: string; monthly_delta: number }> = JSON.parse(scenario.expense_adjustments || '[]');
+      const oneTimeEvents: Array<{ label: string; amount: number; date_ms: number }> = JSON.parse(scenario.one_time_events || '[]');
+
+      const totalIncomeDelta = incomeAdjustments.reduce((s, a) => s + a.monthly_delta, 0);
+      const totalExpenseDelta = expenseAdjustments.reduce((s, a) => s + a.monthly_delta, 0);
+
+      const now = Date.now();
+      const monthMs = 30 * 24 * 60 * 60 * 1000;
+      const months: Array<{ month: number; income: number; expenses: number; oneTime: number; net: number; runningBalance: number }> = [];
+      let runningBalance = startingBalance;
+
+      for (let i = 0; i < scenario.projection_months; i++) {
+        const monthStart = now + i * monthMs;
+        const monthEnd = monthStart + monthMs;
+        const oneTimeCost = oneTimeEvents
+          .filter(e => e.date_ms >= monthStart && e.date_ms < monthEnd)
+          .reduce((s, e) => s + e.amount, 0);
+
+        const income = totalIncomeDelta;
+        const expenses = baseMonthlyCost + totalExpenseDelta;
+        const net = income - expenses - oneTimeCost;
+        runningBalance += net;
+
+        months.push({ month: i + 1, income, expenses, oneTime: oneTimeCost, net, runningBalance });
+      }
+
+      return { success: true, months, baseMonthlyCost };
+    } catch (error: any) {
+      safeLog.error('[Finance] Scenario project error:', error.message);
+      return { success: false, error: error.message };
+    }
+  });
+
+  registerHandler('finance:scenario:projectSimple', async (_, adjustments: Array<{ recurringId: string; action: 'cancel' | 'adjust'; newAmount?: number }>) => {
+    try {
+      const confirmedRecurring = prepare(`SELECT * FROM finance_recurring WHERE status = 'confirmed'`).all() as any[];
+
+      const frequencyMultipliers: Record<string, number> = {
+        weekly: 4.33,
+        biweekly: 2.17,
+        monthly: 1,
+        quarterly: 1 / 3,
+        annual: 1 / 12,
+      };
+
+      const beforeMonthly = confirmedRecurring.reduce((sum, r) => {
+        const mult = frequencyMultipliers[r.frequency as string] || 0;
+        return sum + Math.abs(r.amount) * mult;
+      }, 0);
+      const beforeYearly = beforeMonthly * 12;
+
+      // Apply adjustments
+      const adjustmentMap = new Map(adjustments.map(a => [a.recurringId, a]));
+      const afterMonthly = confirmedRecurring.reduce((sum, r) => {
+        const adj = adjustmentMap.get(r.id);
+        if (adj?.action === 'cancel') return sum; // remove this item
+        const amount = adj?.action === 'adjust' && adj.newAmount !== undefined ? adj.newAmount : Math.abs(r.amount);
+        const mult = frequencyMultipliers[r.frequency as string] || 0;
+        return sum + amount * mult;
+      }, 0);
+      const afterYearly = afterMonthly * 12;
+
+      return {
+        success: true,
+        before: { monthly: beforeMonthly, yearly: beforeYearly },
+        after: { monthly: afterMonthly, yearly: afterYearly },
+        savings: { monthly: beforeMonthly - afterMonthly, yearly: beforeYearly - afterYearly },
+      };
+    } catch (error: any) {
+      safeLog.error('[Finance] Scenario projectSimple error:', error.message);
       return { success: false, error: error.message };
     }
   });

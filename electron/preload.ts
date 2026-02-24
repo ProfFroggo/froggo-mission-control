@@ -661,6 +661,32 @@ contextBridge.exposeInMainWorld('clawdbot', {
       xlsx: (opts: { accountId?: string; dateFrom?: number; dateTo?: number }) =>
         ipcRenderer.invoke('finance:export:xlsx', opts),
     },
+    // Category
+    category: {
+      list: () => ipcRenderer.invoke('finance:category:list'),
+      getBreakdown: (opts?: { accountId?: string; days?: number }) =>
+        ipcRenderer.invoke('finance:category:getBreakdown', opts),
+      corrections: () => ipcRenderer.invoke('finance:category:corrections'),
+      updateTransaction: (id: string, category: string) =>
+        ipcRenderer.invoke('finance:transaction:updateCategory', id, category),
+    },
+    // Insights generation (extends existing getInsights/dismissInsight)
+    generateInsights: (opts?: { days?: number }) =>
+      ipcRenderer.invoke('finance:insights:generate', opts),
+    // Scenarios
+    scenario: {
+      list: () => ipcRenderer.invoke('finance:scenario:list'),
+      create: (data: { name: string; description?: string; baseAccountId?: string; projectionMonths?: number }) =>
+        ipcRenderer.invoke('finance:scenario:create', data),
+      update: (id: string, updates: Record<string, unknown>) =>
+        ipcRenderer.invoke('finance:scenario:update', id, updates),
+      delete: (id: string) =>
+        ipcRenderer.invoke('finance:scenario:delete', id),
+      project: (id: string) =>
+        ipcRenderer.invoke('finance:scenario:project', id),
+      projectSimple: (adjustments: Array<{ recurringId: string; action: string; newAmount?: number }>) =>
+        ipcRenderer.invoke('finance:scenario:projectSimple', adjustments),
+    },
   },
   financeAgent: {
     sendMessage: (message: string, context?: any) => ipcRenderer.invoke('financeAgent:sendMessage', message, context),
