@@ -15,6 +15,12 @@
       "label": "Settings",
       "icon": "Settings",
       "entrypoint": "./views/SettingsPanel.tsx"
+    },
+    {
+      "id": "marketplace",
+      "label": "Marketplace",
+      "icon": "Store",
+      "entrypoint": "MarketplaceBrowse"
     }
   ],
 
