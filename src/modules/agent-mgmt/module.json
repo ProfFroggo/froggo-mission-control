@@ -1,0 +1,40 @@
+{
+  "id": "froggo-agent-mgmt",
+  "name": "Agent Management",
+  "version": "1.0.0",
+  "description": "View and edit agent personalities, model configurations, and lifecycle state.",
+  "author": "Froggo Team",
+  "icon": "Bot",
+  "category": "agent",
+  "credentials": [],
+  "views": [
+    {
+      "id": "agents",
+      "label": "Agents",
+      "icon": "Bot",
+      "entrypoint": "./views/AgentPanel.tsx"
+    }
+  ],
+  "ipcChannels": {
+    "handle": [
+      "agentManagement:soul:read",
+      "agentManagement:soul:write",
+      "agentManagement:models:read",
+      "agentManagement:models:write",
+      "agentManagement:ctx:check",
+      "agentManagement:agent:start",
+      "agentManagement:agent:stop",
+      "agentManagement:agent:status"
+    ]
+  },
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": ["agentManagement:*"],
+    "filesystem": ["$HOME/agent-*/SOUL.md", "$HOME/.openclaw/openclaw.json"],
+    "network": false,
+    "shell": false
+  }
+}
