@@ -641,6 +641,45 @@ declare global {
     status: 'pending' | 'confirmed' | 'dismissed';
     detected_at: number;
     updated_at: number;
+    dismissed_at?: number | null;
+    dismissed_count?: number;
+  }
+
+  interface FinanceCategoryBreakdownRow {
+    category: string;
+    total: number;
+    count: number;
+  }
+
+  interface FinanceCategoryCorrection {
+    id: string;
+    transaction_id: string;
+    old_category: string | null;
+    new_category: string;
+    merchant_normalized: string | null;
+    corrected_at: number;
+  }
+
+  interface FinanceScenario {
+    id: string;
+    name: string;
+    description: string | null;
+    base_account_id: string | null;
+    income_adjustments: string; // JSON array
+    expense_adjustments: string; // JSON array
+    one_time_events: string; // JSON array
+    projection_months: number;
+    created_at: number;
+    updated_at: number;
+  }
+
+  interface FinanceProjectionMonth {
+    month: number;
+    income: number;
+    expenses: number;
+    oneTime: number;
+    net: number;
+    runningBalance: number;
   }
 
   // Finance Insight type
@@ -1293,6 +1332,21 @@ declare global {
         };
         export?: {
           xlsx: (opts: { accountId?: string; dateFrom?: number; dateTo?: number }) => Promise<{ success: boolean; path?: string; canceled?: boolean; error?: string }>;
+        };
+        category?: {
+          list: () => Promise<{ success: boolean; categories?: unknown[]; error?: string }>;
+          getBreakdown: (opts?: { accountId?: string; days?: number }) => Promise<{ success: boolean; breakdown?: FinanceCategoryBreakdownRow[]; error?: string }>;
+          corrections: () => Promise<{ success: boolean; corrections?: FinanceCategoryCorrection[]; error?: string }>;
+          updateTransaction: (id: string, category: string) => Promise<{ success: boolean; error?: string }>;
+        };
+        generateInsights?: (opts?: { days?: number }) => Promise<{ success: boolean; generated?: number; error?: string }>;
+        scenario?: {
+          list: () => Promise<{ success: boolean; scenarios?: FinanceScenario[]; error?: string }>;
+          create: (data: { name: string; description?: string; baseAccountId?: string; projectionMonths?: number }) => Promise<{ success: boolean; id?: string; error?: string }>;
+          update: (id: string, updates: Record<string, unknown>) => Promise<{ success: boolean; error?: string }>;
+          delete: (id: string) => Promise<{ success: boolean; error?: string }>;
+          project: (id: string) => Promise<{ success: boolean; months?: FinanceProjectionMonth[]; baseMonthlyCost?: number; error?: string }>;
+          projectSimple: (adjustments: Array<{ recurringId: string; action: string; newAmount?: number }>) => Promise<{ success: boolean; before?: { monthly: number; yearly: number }; after?: { monthly: number; yearly: number }; savings?: { monthly: number; yearly: number }; error?: string }>;
         };
       };
       // Finance Agent
