@@ -11,7 +11,6 @@
 import {
   LayoutDashboard,
   Kanban,
-  Bot,
   MessageSquare,
   Users,
   Mic,
@@ -30,7 +29,6 @@ import {
 import {
   Dashboard,
   Kanban as KanbanPanel,
-  AgentPanel,
   ChatPanel,
   MeetingsPanel,
   VoiceChatPanel,
@@ -62,7 +60,6 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
   { id: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard,  component: Dashboard },
   { id: 'inbox',        label: 'Inbox',             icon: Mail,             component: CommsInbox3Pane },
   { id: 'kanban',      label: 'Tasks',              icon: Kanban,           component: KanbanPanel },
-  { id: 'agents',      label: 'Agents',             icon: Bot,              component: AgentPanel },
   { id: 'agentdms',   label: 'Agent DMs',           icon: MessagesSquare,   component: DMFeed },
   { id: 'twitter',     label: 'Social Media',        icon: XIcon,            component: XPanel },
   { id: 'meetings',    label: 'Meetings',           icon: Users,            component: MeetingsPanel },

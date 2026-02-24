@@ -17,6 +17,7 @@ import './analytics';
 import './library';
 
 import './twitter';
+import './agent-mgmt';
 
 // Future modules:
 // import './writing';
