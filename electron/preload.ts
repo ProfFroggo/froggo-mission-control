@@ -956,4 +956,20 @@ contextBridge.exposeInMainWorld('clawdbot', {
     invoke: (channel: string, ...args: unknown[]) =>
       ipcRenderer.invoke(channel, ...args),
   },
+  // Marketplace — registry fetch, install/uninstall, update detection
+  marketplace: {
+    fetchRegistry: () => ipcRenderer.invoke('marketplace:registry:fetch'),
+    installModule: (moduleId: string, name: string, version: string) =>
+      ipcRenderer.invoke('marketplace:module:install', moduleId, name, version),
+    uninstallModule: (moduleId: string) =>
+      ipcRenderer.invoke('marketplace:module:uninstall', moduleId),
+    getModuleStatus: (moduleId: string) =>
+      ipcRenderer.invoke('marketplace:module:status', moduleId),
+    checkUpdates: () => ipcRenderer.invoke('marketplace:registry:compare'),
+    onRestartRequired: (callback: (data: { moduleId: string }) => void) => {
+      const handler = (_: any, data: any) => callback(data);
+      ipcRenderer.on('marketplace:restart-required', handler);
+      return () => ipcRenderer.removeListener('marketplace:restart-required', handler);
+    },
+  },
 });

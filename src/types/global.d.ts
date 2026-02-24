@@ -1524,6 +1524,19 @@ declare global {
       modules?: {
         invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
       };
+      // Marketplace — registry fetch, install/uninstall, update detection
+      marketplace?: {
+        fetchRegistry: () => Promise<{ success: boolean; registry?: any; error?: string }>;
+        installModule: (moduleId: string, name: string, version: string) =>
+          Promise<{ success: boolean; restartRequired?: boolean; error?: string }>;
+        uninstallModule: (moduleId: string) =>
+          Promise<{ success: boolean; uninstalled?: boolean; error?: string }>;
+        getModuleStatus: (moduleId: string) =>
+          Promise<{ success: boolean; installed: boolean; module?: any; error?: string }>;
+        checkUpdates: () =>
+          Promise<{ success: boolean; updates?: Array<{ moduleId: string; installedVersion: string; latestVersion: string }>; error?: string }>;
+        onRestartRequired: (callback: (data: { moduleId: string }) => void) => () => void;
+      };
       // Writing Module
       writing?: {
         project: {
