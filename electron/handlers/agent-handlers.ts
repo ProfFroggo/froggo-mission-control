@@ -58,7 +58,7 @@ function getAgentRegistry(): Record<string, AgentRegistryEntry> {
 
 function getAgentsFromDB(): any[] {
   try {
-    const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all() as any[];
+    const rows = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status IN ('active', 'disabled', 'training') ORDER BY name`).all() as any[];
     return rows.map((r: any) => ({
       id: r.id,
       identityName: r.name || r.id,
@@ -152,7 +152,7 @@ export function registerAgentHandlers(): void {
 
   registerHandler('get-agent-registry', async () => {
     try {
-      const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status = 'active' ORDER BY name`).all();
+      const agents = prepare(`SELECT id, name, role, description, color, image_path, status, trust_tier FROM agent_registry WHERE status IN ('active', 'disabled', 'training') ORDER BY name`).all();
       safeLog.log(`[AgentRegistry] Loaded ${agents.length} agents from DB`);
       return agents;
     } catch (error: any) {

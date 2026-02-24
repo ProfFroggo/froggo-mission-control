@@ -76,7 +76,7 @@ export interface Agent {
   name: string;
   avatar?: string;
   description?: string;
-  status: 'active' | 'busy' | 'idle' | 'offline' | 'suspended' | 'archived' | 'draft';
+  status: 'active' | 'busy' | 'idle' | 'offline' | 'suspended' | 'archived' | 'draft' | 'disabled';
   capabilities?: string[];
   sessionKey?: string;
   currentTaskId?: string;
