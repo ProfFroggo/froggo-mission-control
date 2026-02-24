@@ -1537,6 +1537,42 @@ declare global {
           Promise<{ success: boolean; updates?: Array<{ moduleId: string; installedVersion: string; latestVersion: string }>; error?: string }>;
         onRestartRequired: (callback: (data: { moduleId: string }) => void) => () => void;
       };
+      // Agent Packages — install/uninstall/status for agent workspace packages
+      agentPackage?: {
+        install: (entry: any) => Promise<{
+          success: boolean;
+          agentId?: string;
+          workspacePath?: string;
+          needsCredentials?: boolean;
+          gatewayRestartRequired?: boolean;
+          error?: string;
+        }>;
+        uninstall: (packageId: string) => Promise<{
+          success: boolean;
+          uninstalled?: boolean;
+          gatewayRestartRequired?: boolean;
+          error?: string;
+        }>;
+        status: (packageId: string) => Promise<{
+          success: boolean;
+          installed: boolean;
+          agent?: any;
+          error?: string;
+        }>;
+        list: () => Promise<{
+          success: boolean;
+          agents?: Array<{
+            id: string;
+            agent_id: string;
+            name: string;
+            installed_version: string;
+            workspace_path: string;
+            installed_at: number;
+            updated_at: number;
+          }>;
+          error?: string;
+        }>;
+      };
       // Writing Module
       writing?: {
         project: {
