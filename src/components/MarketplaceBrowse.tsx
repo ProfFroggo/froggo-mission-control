@@ -45,8 +45,10 @@ import {
   Search,
   ShieldCheck,
   Loader2,
+  Bot,
 } from 'lucide-react';
 import { Skeleton } from './LoadingStates';
+import AgentInstallModal from './AgentInstallModal';
 
 // ─── Icon mapping ──────────────────────────────────────────────────────────────
 
@@ -72,6 +74,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Star,
   Layers,
   Store,
+  Bot,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,6 +100,8 @@ interface RegistryModule {
   manifestUrl: string;
   packageUrl: string;
   updatedAt?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  agent?: any;
 }
 
 interface InstalledModuleRow {
@@ -195,6 +200,12 @@ function ModuleCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-clawd-text text-sm">{mod.name}</span>
+            {mod.agent && (
+              <span className="inline-flex items-center gap-0.5 text-xs bg-clawd-accent/15 text-clawd-accent px-1.5 py-0.5 rounded font-medium">
+                <Bot size={10} />
+                Agent
+              </span>
+            )}
             {mod.verified && (
               <ShieldCheck size={13} className="text-blue-400 flex-shrink-0" aria-label="Verified" />
             )}
@@ -298,6 +309,9 @@ export default function MarketplaceBrowse() {
   const [installing, setInstalling] = useState<string | null>(null);
   const [restartBanner, setRestartBanner] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Agent package install modal state
+  const [agentInstallEntry, setAgentInstallEntry] = useState<RegistryModule | null>(null);
+  const [agentInstallOpen, setAgentInstallOpen] = useState(false);
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -370,6 +384,13 @@ export default function MarketplaceBrowse() {
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   async function handleInstall(mod: RegistryModule) {
+    // Agent package — route to agent install modal
+    if (mod.agent) {
+      setAgentInstallEntry(mod);
+      setAgentInstallOpen(true);
+      return;
+    }
+
     const mp = (window as any).clawdbot?.marketplace;
     if (!mp) return;
     setInstalling(mod.id);
@@ -535,6 +556,23 @@ export default function MarketplaceBrowse() {
             />
           ))}
         </div>
+      )}
+
+      {/* Agent install modal */}
+      {agentInstallOpen && agentInstallEntry?.agent && (
+        <AgentInstallModal
+          isOpen={agentInstallOpen}
+          entry={agentInstallEntry as any}
+          onInstalled={() => {
+            setAgentInstallOpen(false);
+            setAgentInstallEntry(null);
+            loadData();
+          }}
+          onCancel={() => {
+            setAgentInstallOpen(false);
+            setAgentInstallEntry(null);
+          }}
+        />
       )}
     </div>
   );
