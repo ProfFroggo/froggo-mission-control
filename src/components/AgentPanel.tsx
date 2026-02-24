@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bot, Play, Square, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
 import { gateway } from '../lib/gateway';
 import WorkerModal from './WorkerModal';
@@ -158,6 +158,32 @@ export default function AgentPanel() {
     finally { setIsRefreshing(false); }
   };
 
+  const handleAgentStop = async (agentId: string) => {
+    try {
+      const result = await window.clawdbot?.agentManagement?.agent?.stop(agentId);
+      if (result?.success) {
+        await fetchAgents(); // Refresh agent list from DB
+      } else {
+        logger.error('[AgentPanel] Stop failed:', result?.error);
+      }
+    } catch (err) {
+      logger.error('[AgentPanel] Stop error:', err);
+    }
+  };
+
+  const handleAgentStart = async (agentId: string) => {
+    try {
+      const result = await window.clawdbot?.agentManagement?.agent?.start(agentId);
+      if (result?.success) {
+        await fetchAgents(); // Refresh agent list from DB
+      } else {
+        logger.error('[AgentPanel] Start failed:', result?.error);
+      }
+    } catch (err) {
+      logger.error('[AgentPanel] Start error:', err);
+    }
+  };
+
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
 
@@ -169,6 +195,7 @@ export default function AgentPanel() {
     suspended:  { color: 'bg-error',    label: 'Suspended', hideDot: true },
     archived:   { color: 'bg-clawd-bg0',   label: 'Archived', hideDot: true },
     draft:      { color: 'bg-warning', label: 'Draft', hideDot: true },
+    disabled:   { color: 'bg-error',    label: 'Stopped', hideDot: true },
   };
 
   const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
@@ -183,6 +210,9 @@ export default function AgentPanel() {
     if (compareAgents.includes(agentId)) setCompareAgents(compareAgents.filter(id => id !== agentId));
     else if (compareAgents.length < 3) setCompareAgents([...compareAgents, agentId]);
   };
+
+  // Infrastructure agents that must never be stopped from UI
+  const PROTECTED_AGENTS = ['froggo', 'main', 'clara'];
 
   // Skip phantom/legacy agents — use exclusion so new agents auto-appear
   const PHANTOM_AGENTS = ['main', 'chat-agent'];
@@ -408,6 +438,26 @@ export default function AgentPanel() {
                           <Square size={12} /> Stop
                         </button>
                       )}
+                      {/* Lifecycle start/stop toggle — real DB-persisted enable/disable */}
+                      {agent.status === 'disabled' ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleAgentStart(agent.id); }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-success border border-success-border rounded hover:bg-success-subtle transition-colors"
+                          title="Re-enable agent for dispatcher"
+                        >
+                          <Play size={12} className="inline" /> Enable
+                        </button>
+                      ) : !PROTECTED_AGENTS.includes(agent.id) ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleAgentStop(agent.id); }}
+                          className="flex items-center gap-1 px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
+                          title="Disable agent — dispatcher will stop spawning it"
+                        >
+                          <StopCircle size={12} className="inline" /> Disable
+                        </button>
+                      ) : null}
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleExpanded(agent.id); }}
                         className={`flex items-center gap-1 px-2.5 py-1.5 text-xs text-clawd-text-dim hover:text-clawd-text border ${theme.border} rounded-lg hover:bg-clawd-border/30 transition-colors`}>
                         {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -590,10 +640,17 @@ export default function AgentPanel() {
                     </div>
                     <p className="text-xs text-clawd-text-dim truncate">{agent.description}</p>
                   </div>
-                  {agent.status === 'busy' ? (
-                    <button type="button" onClick={() => updateAgentStatus(agent.id, 'idle')}
-                      className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors">
-                      Stop
+                  {agent.status === 'disabled' ? (
+                    <button type="button" onClick={() => handleAgentStart(agent.id)}
+                      className="px-2 py-1 text-xs text-success border border-success-border rounded hover:bg-success-subtle transition-colors"
+                      title="Re-enable agent for dispatcher">
+                      <Play size={12} className="inline mr-1" /> Enable
+                    </button>
+                  ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id) ? (
+                    <button type="button" onClick={() => handleAgentStop(agent.id)}
+                      className="px-2 py-1 text-xs text-error border border-error-border rounded hover:bg-error-subtle transition-colors"
+                      title="Disable agent — dispatcher will stop spawning it">
+                      <StopCircle size={12} className="inline mr-1" /> Disable
                     </button>
                   ) : (
                     <span className="text-xs text-success">
