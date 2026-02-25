@@ -262,7 +262,7 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
 
   const generateTasksForSection = useCallback(
     async (currentSpec: Partial<ModuleSpec>, section: SectionId) => {
-      const agents = 'coder, senior-coder, designer, lead-engineer, writer, researcher';
+      const agents = 'coder, senior-coder, designer, writer, researcher';
       const prompt = `Generate build tasks for this module. Name: ${currentSpec.name}, Type: ${currentSpec.type}, Views: ${currentSpec.views?.map(v => v.name).join(',') || 'none'}, Services: ${currentSpec.services?.map(s => s.name).join(',') || 'none'}, APIs: ${currentSpec.externalApis?.join(',') || 'none'}. Agents: ${agents}. Output STRICT JSON array: [{"title":"...","agent":"...","subtasks":["..."],"plan":"..."}]. No markdown fences. No [[ANSWER_READY]] tag.`;
       const result = await tryLLMQuiet(prompt);
       try {

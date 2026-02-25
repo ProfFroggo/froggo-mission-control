@@ -326,7 +326,7 @@ export function registerAgentHandlers(): void {
       agentRules = fs.readFileSync(agentMdPath, 'utf-8');
     } catch (_e) {
       try {
-        const altPaths = [path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'), path.join(PROJECT_ROOT, 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'), ...dbIds.filter(id => id !== agentId).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md'))];
+        const altPaths = [path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'), ...dbIds.filter(id => id !== agentId).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md'))];
         for (const altPath of altPaths) { if (fs.existsSync(altPath)) { agentRules = fs.readFileSync(altPath, 'utf-8'); break; } }
       } catch (_e2) { /* keep default */ }
     }

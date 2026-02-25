@@ -130,7 +130,7 @@ export function matchTaskToAgent(taskTitle: string, taskDescription: string): st
     [/social media|twitter|x\.com|instagram|tiktok|linkedin|engagement|followers|hashtag/, 'social-manager'],
     [/growth|marketing|campaign|audience|conversion|funnel|analytics|seo|outreach/, 'growth-director'],
     [/hiring|onboard|team member|agent config|training|performance review|hr/, 'hr'],
-    [/architect|infrastructure|devops|deploy|ci\/cd|scaling|migration|refactor|technical debt/, 'lead-engineer'],
+    [/architect|infrastructure|devops|deploy|ci\/cd|scaling/, 'chief'],
     [/code|bug|fix|implement|build|develop|api|function|test|debug|typescript|react/, 'coder'],
     [/research|analyze|find|investigate|compare|report|data|metrics|study/, 'researcher'],
     [/write|draft|tweet|post|email|content|copy|edit|blog|article|newsletter/, 'writer'],
