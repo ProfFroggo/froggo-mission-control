@@ -3,6 +3,8 @@ import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOf
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
+import ContentBlock from './ContentBlock';
+import LiveActivity from './LiveActivity';
 import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
 import CreateRoomModal from './CreateRoomModal';
@@ -361,22 +363,16 @@ export default function ChatPanel() {
 
   // Setup streaming listeners
   useEffect(() => {
-    let deltaRafScheduled = false;
     const handleDelta = (data: any) => {
       if (data.delta && currentMsgIdRef.current) {
         currentResponseRef.current += data.delta;
-        // Rate-limit re-renders to once per animation frame
-        if (!deltaRafScheduled) {
-          deltaRafScheduled = true;
-          requestAnimationFrame(() => {
-            deltaRafScheduled = false;
-            setMessages(prev => prev.map(m =>
-              m.id === currentMsgIdRef.current
-                ? { ...m, content: currentResponseRef.current }
-                : m
-            ));
-          });
-        }
+        // Immediate update - no RAF throttling for real-time feel
+        // React 18 automatic batching handles performance
+        setMessages(prev => prev.map(m =>
+          m.id === currentMsgIdRef.current
+            ? { ...m, content: currentResponseRef.current }
+            : m
+        ));
         // Re-enable input on first delta (streaming has started)
         if (loading) {
           setLoading(false);
@@ -385,13 +381,26 @@ export default function ChatPanel() {
     };
 
     const handleMessage = (data: any) => {
-      if (data.content && currentMsgIdRef.current) {
-        currentResponseRef.current = data.content;
-        setMessages(prev => prev.map(m => 
-          m.id === currentMsgIdRef.current 
-            ? { ...m, content: data.content, streaming: false } 
-            : m
-        ));
+      if (currentMsgIdRef.current) {
+        // Extract ALL text blocks properly (handles thinking blocks)
+        let content = '';
+        if (data.message?.content && Array.isArray(data.message.content)) {
+          content = data.message.content
+            .filter((c: any) => c.type === 'text')
+            .map((c: any) => c.text)
+            .join('');
+        } else if (data.content) {
+          content = data.content;
+        }
+        
+        if (content) {
+          currentResponseRef.current = content;
+          setMessages(prev => prev.map(m => 
+            m.id === currentMsgIdRef.current 
+              ? { ...m, content, streaming: false } 
+              : m
+          ));
+        }
       }
     };
 
@@ -439,8 +448,17 @@ export default function ChatPanel() {
         return;
       }
 
-      // Extract content from message structure
-      const content = data.message?.content?.[0]?.text || data.content || '';
+      // Extract content from message structure - ALL text blocks, not just first
+      let content = '';
+      if (data.message?.content && Array.isArray(data.message.content)) {
+        content = data.message.content
+          .filter((c: any) => c.type === 'text')
+          .map((c: any) => c.text)
+          .join('');
+      } else if (data.content) {
+        content = data.content;
+      }
+      
       if (content) {
         // Only update if this is the final/complete content, not partial
         // Partial deltas are handled by handleDelta
@@ -1243,6 +1261,9 @@ export default function ChatPanel() {
         onClose={() => setShowCreateRoom(false)}
         onCreate={handleCreateRoom}
       />
+
+      {/* Live Activity Indicator */}
+      <LiveActivity sessionKey={selectedAgent?.dbSessionKey} />
     </div>
   );
 }

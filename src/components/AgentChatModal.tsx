@@ -9,6 +9,7 @@ import { getAgentTheme } from '../utils/agentThemes';
 interface AgentChatModalProps {
   agentId: string;
   onClose: () => void;
+  existingSessionKey?: string; // Optional: connect to existing session instead of spawning new
 }
 
 interface Message {
@@ -17,7 +18,7 @@ interface Message {
   timestamp: number;
 }
 
-export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps) {
+export default function AgentChatModal({ agentId, onClose, existingSessionKey }: AgentChatModalProps) {
   const { agents } = useStore();
   const [isClosing, setIsClosing] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +34,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   const agent = agents.find(a => a.id === agentId);
 
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const historyPollRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup timeouts and listeners on unmount
   useEffect(() => {
@@ -40,6 +42,9 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       streamCleanupRef.current?.();
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
+      }
+      if (historyPollRef.current) {
+        clearInterval(historyPollRef.current);
       }
     };
   }, []);
@@ -80,6 +85,14 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   }, [handleClose]);
 
   const initChat = async () => {
+    // If we have an existing session key, use it directly
+    if (existingSessionKey) {
+      setSessionKey(existingSessionKey);
+      setMessages([]); // History will be loaded by polling
+      return;
+    }
+
+    // Otherwise, spawn a new session
     setSpawning(true);
     setMessages([{
       role: 'system',
@@ -118,6 +131,134 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     }
     setSpawning(false);
   };
+
+  // Poll session history for real-time updates
+  const fetchHistory = useCallback(async () => {
+    if (!sessionKey) return;
+    
+    try {
+      const historyResult = await gateway.request('sessions.history', {
+        sessionKey,
+        limit: 100,
+      });
+
+      if (historyResult?.messages && Array.isArray(historyResult.messages)) {
+        const formattedMessages: Message[] = historyResult.messages
+          .filter((msg: any) => msg.role === 'user' || msg.role === 'assistant')
+          .map((msg: any) => {
+            // Extract text from content (handle both string and array formats)
+            let content = '';
+            if (typeof msg.content === 'string') {
+              content = msg.content;
+            } else if (Array.isArray(msg.content)) {
+              // Filter for text blocks only - skip tool calls, thinking, etc.
+              content = msg.content
+                .filter((c: any) => c.type === 'text')
+                .map((c: any) => c.text)
+                .join('');
+            }
+            
+            return {
+              role: msg.role,
+              content: content || '',
+              timestamp: msg.timestamp || Date.now(),
+            };
+          })
+          .filter((msg: Message) => msg.content.trim().length > 0); // Skip empty messages
+
+        // Only update if we have new messages (avoid flicker)
+        setMessages(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(formattedMessages)) {
+            return formattedMessages;
+          }
+          return prev;
+        });
+      }
+    } catch (e) {
+      // Silently fail - don't spam errors during polling
+    }
+  }, [sessionKey]);
+
+  // Set up real-time streaming listeners when sessionKey is available
+  useEffect(() => {
+    if (!sessionKey) return;
+
+    // Fetch initial history once
+    fetchHistory();
+
+    // Real-time streaming handler - appends chunks as they arrive
+    const handleDelta = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+      
+      if (data.chunk) {
+        // Instant streaming - append chunk to streaming content
+        setStreamingContent(prev => prev + data.chunk);
+      }
+    };
+
+    // Final message handler - convert streaming to message
+    const handleMessage = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+
+      const finalContent = data.content || data.response || data.text;
+      if (finalContent) {
+        // Add assistant message
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: finalContent,
+          timestamp: Date.now(),
+        }]);
+        setStreamingContent('');
+      }
+    };
+
+    // Unified chat event handler
+    const handleChat = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+
+      if (data.state === 'streaming' && data.chunk) {
+        setStreamingContent(prev => prev + data.chunk);
+      } else if (data.state === 'done' || data.state === 'complete') {
+        const finalContent = data.content || data.response;
+        if (finalContent) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: finalContent,
+            timestamp: Date.now(),
+          }]);
+          setStreamingContent('');
+        }
+      }
+    };
+
+    // User message events (from other sources like webchat)
+    const handleUserMessage = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+      
+      // Refresh history to catch user messages from other sources
+      fetchHistory();
+    };
+
+    // Subscribe to all chat events
+    const unsub1 = gateway.on('chat.delta', handleDelta);
+    const unsub2 = gateway.on('chat.message', handleMessage);
+    const unsub3 = gateway.on('chat', handleChat);
+    const unsub4 = gateway.on('chat.end', handleMessage);
+
+    // Fallback: poll every 10 seconds to catch any missed updates
+    historyPollRef.current = setInterval(fetchHistory, 10000);
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+      if (historyPollRef.current) {
+        clearInterval(historyPollRef.current);
+        historyPollRef.current = null;
+      }
+    };
+  }, [sessionKey, fetchHistory]);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionKey || sending) return;
