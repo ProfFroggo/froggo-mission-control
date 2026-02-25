@@ -136,11 +136,26 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       if (historyResult?.messages && Array.isArray(historyResult.messages)) {
         const formattedMessages: Message[] = historyResult.messages
           .filter((msg: any) => msg.role === 'user' || msg.role === 'assistant')
-          .map((msg: any) => ({
-            role: msg.role,
-            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
-            timestamp: msg.timestamp || Date.now(),
-          }));
+          .map((msg: any) => {
+            // Extract text from content (handle both string and array formats)
+            let content = '';
+            if (typeof msg.content === 'string') {
+              content = msg.content;
+            } else if (Array.isArray(msg.content)) {
+              // Filter for text blocks only - skip tool calls, thinking, etc.
+              content = msg.content
+                .filter((c: any) => c.type === 'text')
+                .map((c: any) => c.text)
+                .join('');
+            }
+            
+            return {
+              role: msg.role,
+              content: content || '',
+              timestamp: msg.timestamp || Date.now(),
+            };
+          })
+          .filter((msg: Message) => msg.content.trim().length > 0); // Skip empty messages
 
         // Only update if we have new messages (avoid flicker)
         setMessages(prev => {
