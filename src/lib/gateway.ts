@@ -278,7 +278,16 @@ class Gateway {
           const eventRunId = payload?.runId;
           if (eventRunId && this.runCallbacks.has(eventRunId)) {
             const cb = this.runCallbacks.get(eventRunId)!;
-            const content = payload?.message?.content?.[0]?.text || payload?.content || '';
+            // Extract ALL text blocks, not just the first one (handles thinking blocks)
+            let content = '';
+            if (payload?.message?.content && Array.isArray(payload.message.content)) {
+              content = payload.message.content
+                .filter((c: any) => c.type === 'text')
+                .map((c: any) => c.text)
+                .join('');
+            } else if (payload?.content) {
+              content = payload.content;
+            }
             if (msg.event === 'chat.delta' || (msg.event === 'chat' && payload?._event === 'delta')) {
               const delta = payload?.delta || '';
               if (delta && cb.onDelta) cb.onDelta(delta, payload);
@@ -792,7 +801,16 @@ class Gateway {
 
         if (data.state === 'final' || data.final) {
           // If chat.message already set authoritative content, use it; otherwise use what we accumulated
-          const text = data.message?.content?.[0]?.text || data.content || '';
+          // Extract ALL text blocks, not just the first one (handles thinking blocks)
+          let text = '';
+          if (data.message?.content && Array.isArray(data.message.content)) {
+            text = data.message.content
+              .filter((c: any) => c.type === 'text')
+              .map((c: any) => c.text)
+              .join('');
+          } else if (data.content) {
+            text = data.content;
+          }
           if (text && !responseContent) responseContent = text;
           logger.debug('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
           finish(responseContent);
