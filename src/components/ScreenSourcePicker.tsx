@@ -45,6 +45,15 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
       });
       const sources = result?.sources || [];
       console.log('[ScreenSourcePicker] Got sources:', sources.length);
+      
+      // Check if we got no sources (likely permission issue on macOS)
+      if (sources.length === 0) {
+        console.warn('[ScreenSourcePicker] No sources returned - possible screen recording permission issue');
+        setError('no-permission');
+        setLoading(false);
+        return;
+      }
+      
       setSources(sources as ScreenSource[]);
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
@@ -121,6 +130,40 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
             <div className="flex flex-col items-center justify-center py-12 text-clawd-text-dim">
               <Loader2 size={32} className="animate-spin mb-3" />
               <p className="text-sm">Loading available sources…</p>
+            </div>
+          ) : error === 'no-permission' ? (
+            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-lg font-semibold text-clawd-text mb-2">Screen Recording Permission Required</h3>
+              <p className="text-sm text-clawd-text-dim mb-4 max-w-md">
+                Froggo needs permission to access your screen. Please grant <strong>Screen Recording</strong> permission in System Settings.
+              </p>
+              <div className="bg-clawd-border rounded-lg p-4 text-left text-xs text-clawd-text-dim space-y-2 mb-4 max-w-md">
+                <p><strong>macOS:</strong></p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Open <strong>System Settings</strong></li>
+                  <li>Go to <strong>Privacy & Security</strong> → <strong>Screen Recording</strong></li>
+                  <li>Enable <strong>Froggo</strong></li>
+                  <li>Restart Froggo</li>
+                </ol>
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    // Open System Settings on macOS
+                    if (window.clawdbot?.shell?.openPath) {
+                      window.clawdbot.shell.openPath('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg bg-clawd-border text-clawd-text-dim hover:text-clawd-text text-sm font-medium"
+                >
+                  Open System Settings
+                </button>
+                <button type="button" onClick={fetchSources} className="px-4 py-2 rounded-lg bg-clawd-accent text-white text-sm font-medium hover:bg-clawd-accent-dim">
+                  Check Again
+                </button>
+              </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 text-error">

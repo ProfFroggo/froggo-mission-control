@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare } from 'lucide-react';
 import { useStore } from '../store/store';
+import AgentChatModal from './AgentChatModal';
 
 interface AgentDetailModalProps {
   agentId: string;
@@ -52,6 +53,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
   const [activeTab, setActiveTab] = useState<'performance' | 'skills' | 'tasks' | 'sessions' | 'rules'>('performance');
   const [details, setDetails] = useState<AgentDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewingSessionKey, setViewingSessionKey] = useState<string | null>(null);
   const agent = agents.find(a => a.id === agentId);
 
   const handleClose = () => {
@@ -220,6 +222,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
   };
 
   return (
+    <>
     <div 
       className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
@@ -524,8 +527,17 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
                               <span>{session.updatedAt > 0 ? new Date(session.updatedAt).toLocaleString() : '—'}</span>
                             </div>
                           </div>
-                          <div className="mt-2 text-[11px] text-clawd-text-dim/60 truncate" title={session.key}>
-                            {session.key}
+                          <div className="mt-3 pt-3 border-t border-clawd-border flex items-center justify-between">
+                            <div className="text-[11px] text-clawd-text-dim/60 truncate flex-1" title={session.key}>
+                              {session.key}
+                            </div>
+                            <button
+                              onClick={() => setViewingSessionKey(session.key)}
+                              className="ml-2 px-3 py-1.5 text-xs bg-clawd-accent/10 hover:bg-clawd-accent/20 text-clawd-accent rounded-lg flex items-center gap-1.5 transition-colors"
+                            >
+                              <MessageSquare size={12} />
+                              View Chat
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -585,5 +597,15 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
         </div>
       </div>
     </div>
+    
+    {/* Agent Chat Modal for viewing existing session */}
+    {viewingSessionKey && (
+      <AgentChatModal
+        agentId={agentId}
+        existingSessionKey={viewingSessionKey}
+        onClose={() => setViewingSessionKey(null)}
+      />
+    )}
+  </>
   );
 }
