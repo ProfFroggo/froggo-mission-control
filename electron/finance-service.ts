@@ -444,7 +444,9 @@ export function registerFinanceHandlers(): void {
           correctionContext = '\n\nThe user has previously recategorized these merchants (use these as guidance for similar merchants):\n' +
             corrections.map(c => `- ${c.merchant_normalized || 'unknown'} -> ${c.new_category}`).join('\n') + '\n';
         }
-      } catch (_) {}
+      } catch (_) {
+        // Optional feature - continue without user correction hints if query fails
+      }
 
       const prompt = `Parse this bank statement file "${filename}" and extract ALL transactions.
 
@@ -511,13 +513,17 @@ ${csvContent.slice(0, 15000)}`;
           const insightId = `insight-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
           const insightNow = Date.now();
           prepare(`INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, generated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(insightId, 'spending_pattern', `Upload Analysis: ${filename}`, summary, 'info', insightNow, insightNow, insightNow);
-        } catch (_) {}
+        } catch (_) {
+          // Non-critical: insight storage failure doesn't affect transaction import
+        }
       }
 
       // Update upload record
       try {
         prepare(`UPDATE finance_uploads SET status = ?, ai_summary = ?, updated_at = ? WHERE id = ?`).run(imported > 0 ? 'complete' : 'error', summary || result.error || '', Date.now(), uploadId);
-      } catch (_) {}
+      } catch (_) {
+        // Non-critical: upload metadata update failure doesn't affect imported transactions
+      }
 
       const mw = getMainWindow();
       if (mw) {
@@ -558,7 +564,9 @@ ${csvContent.slice(0, 15000)}`;
       // Ensure finance_uploads table
       try {
         prepare(`CREATE TABLE IF NOT EXISTS finance_uploads (id TEXT PRIMARY KEY, filename TEXT NOT NULL, file_type TEXT, file_path TEXT, file_size INTEGER, account_id TEXT DEFAULT 'acc-default', status TEXT DEFAULT 'processing', ai_summary TEXT, created_at INTEGER, updated_at INTEGER)`).run();
-      } catch (_) {}
+      } catch (_) {
+        // Table already exists or schema migration handled elsewhere
+      }
 
       // Save original PDF to uploads directory
       const uploadsDir = path.join(os.homedir(), 'froggo', 'uploads', 'finance');
@@ -586,7 +594,9 @@ ${csvContent.slice(0, 15000)}`;
           correctionContextPdf = '\n\nThe user has previously recategorized these merchants (use these as guidance for similar merchants):\n' +
             correctionsPdf.map(c => `- ${c.merchant_normalized || 'unknown'} -> ${c.new_category}`).join('\n') + '\n';
         }
-      } catch (_) {}
+      } catch (_) {
+        // Optional feature - continue without user correction hints if query fails
+      }
 
       // Extract text from PDF first, then send to AI
       const bridge = getFinanceAgentBridge();
@@ -676,13 +686,17 @@ ${pdfText.slice(0, 15000)}`;
           const insightId = `insight-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
           const insightNow = Date.now();
           prepare(`INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, generated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(insightId, 'spending_pattern', `Upload Analysis: ${filename}`, summary, 'info', insightNow, insightNow, insightNow);
-        } catch (_) {}
+        } catch (_) {
+          // Non-critical: insight storage failure doesn't affect transaction import
+        }
       }
 
       // Update upload record
       try {
         prepare(`UPDATE finance_uploads SET status = ?, ai_summary = ?, updated_at = ? WHERE id = ?`).run(imported > 0 ? 'complete' : 'error', summary || result.error || '', Date.now(), uploadId);
-      } catch (_) {}
+      } catch (_) {
+        // Non-critical: upload metadata update failure doesn't affect imported transactions
+      }
 
       const mw = getMainWindow();
       if (mw) {
@@ -1197,7 +1211,9 @@ ${pdfText.slice(0, 15000)}`;
             insightNow,
           );
           generated++;
-        } catch (_) {}
+        } catch (_) {
+          // Non-critical: skip duplicate or conflicting insights
+        }
       }
 
       safeLog.log(`[Finance] Generated ${generated} proactive insights`);
