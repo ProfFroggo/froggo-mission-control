@@ -9,6 +9,7 @@ import { getAgentTheme } from '../utils/agentThemes';
 interface AgentChatModalProps {
   agentId: string;
   onClose: () => void;
+  existingSessionKey?: string; // Optional: connect to existing session instead of spawning new
 }
 
 interface Message {
@@ -17,7 +18,7 @@ interface Message {
   timestamp: number;
 }
 
-export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps) {
+export default function AgentChatModal({ agentId, onClose, existingSessionKey }: AgentChatModalProps) {
   const { agents } = useStore();
   const [isClosing, setIsClosing] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,6 +85,14 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   }, [handleClose]);
 
   const initChat = async () => {
+    // If we have an existing session key, use it directly
+    if (existingSessionKey) {
+      setSessionKey(existingSessionKey);
+      setMessages([]); // History will be loaded by polling
+      return;
+    }
+
+    // Otherwise, spawn a new session
     setSpawning(true);
     setMessages([{
       role: 'system',
