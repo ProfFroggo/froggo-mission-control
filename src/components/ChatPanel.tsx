@@ -3,6 +3,8 @@ import { Send, Mic, MicOff, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOf
 import AgentAvatar from './AgentAvatar';
 import AgentSelector, { ChatAgent, fetchAgentList } from './AgentSelector';
 import MarkdownMessage from './MarkdownMessage';
+import ContentBlock from './ContentBlock';
+import LiveActivity from './LiveActivity';
 import VoiceChatPanel from './VoiceChatPanel';
 import FilePreviewModal from './FilePreviewModal';
 import CreateRoomModal from './CreateRoomModal';
@@ -1259,6 +1261,9 @@ export default function ChatPanel() {
         onClose={() => setShowCreateRoom(false)}
         onCreate={handleCreateRoom}
       />
+
+      {/* Live Activity Indicator */}
+      <LiveActivity sessionKey={selectedAgent?.dbSessionKey} />
     </div>
   );
 }
