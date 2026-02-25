@@ -25,8 +25,20 @@ export interface LiveTask {
   section: SectionId;
 }
 
+export interface ConversationFlowState {
+  messages: ConversationMessage[];
+  sectionIndex: number;
+  questionIndex: number;
+  isStarted: boolean;
+  isFinished: boolean;
+  sessionKey: string;
+  wireframe: string;
+  liveTasks: LiveTask[];
+}
+
 interface ConversationFlowOptions {
   moduleSpec: UseModuleSpecReturn;
+  initialState?: Partial<ConversationFlowState>;
 }
 
 // ─── Local conversation intelligence (fallback) ──────────────────────
@@ -155,21 +167,21 @@ function buildQuestionPrompt(
 
 // ─── Hook ────────────────────────────────────────────────────────────
 
-export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
+export function useConversationFlow({ moduleSpec, initialState }: ConversationFlowOptions) {
   const { spec, updateSpec, markAnswered } = moduleSpec;
 
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [isStarted, setIsStarted] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
+  const [messages, setMessages] = useState<ConversationMessage[]>(initialState?.messages || []);
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(initialState?.sectionIndex || 0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialState?.questionIndex || 0);
+  const [isStarted, setIsStarted] = useState(initialState?.isStarted || false);
+  const [isFinished, setIsFinished] = useState(initialState?.isFinished || false);
   const [isStreaming, setIsStreaming] = useState(false);
 
-  const [wireframe, setWireframe] = useState('');
-  const [liveTasks, setLiveTasks] = useState<LiveTask[]>([]);
+  const [wireframe, setWireframe] = useState(initialState?.wireframe || '');
+  const [liveTasks, setLiveTasks] = useState<LiveTask[]>(initialState?.liveTasks || []);
 
-  const sessionKeyRef = useRef('');
-  const bootstrapSentRef = useRef(false);
+  const sessionKeyRef = useRef(initialState?.sessionKey || '');
+  const bootstrapSentRef = useRef(!!initialState?.isStarted);
 
   const currentSection: SectionId = SECTION_ORDER[currentSectionIndex] ?? 'identity';
 
@@ -440,6 +452,17 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
     if (currentQuestion) addMessage('assistant', currentQuestion.text, currentSection);
   }, [currentQuestion, currentSection, addMessage]);
 
+  const getState = useCallback((): ConversationFlowState => ({
+    messages,
+    sectionIndex: currentSectionIndex,
+    questionIndex: currentQuestionIndex,
+    isStarted,
+    isFinished,
+    sessionKey: sessionKeyRef.current,
+    wireframe,
+    liveTasks,
+  }), [messages, currentSectionIndex, currentQuestionIndex, isStarted, isFinished, wireframe, liveTasks]);
+
   return {
     messages,
     currentSection,
@@ -453,6 +476,7 @@ export function useConversationFlow({ moduleSpec }: ConversationFlowOptions) {
     submitAnswer,
     jumpToSection,
     askCurrentQuestion,
+    getState,
   };
 }
 

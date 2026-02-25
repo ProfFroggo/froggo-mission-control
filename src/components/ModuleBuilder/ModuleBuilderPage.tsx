@@ -1,92 +1,42 @@
-import { Plus, RotateCcw } from 'lucide-react';
-import ConversationPanel from './ConversationPanel';
-import SpecPreviewPanel from './SpecPreviewPanel';
-import { useModuleSpec } from './useModuleSpec';
-import { useConversationFlow } from './useConversationFlow';
-import { generateTasks, exportSpecAsJson } from './TaskGenerator';
-import type { ModuleSpec } from './types';
+import { useState, useCallback } from 'react';
+import ModuleListView from './ModuleListView';
+import ModuleBuilderView from './ModuleBuilderView';
 
 export default function ModuleBuilderPage() {
-  const moduleSpec = useModuleSpec();
-  const { spec, resetSpec, sectionProgress, overallProgress, isComplete } = moduleSpec;
-  const flow = useConversationFlow({ moduleSpec });
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
 
-  const handleGenerateTasks = async () => {
+  const handleCreateNew = useCallback(async () => {
+    const id = `mod-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     try {
-      const result = await generateTasks(spec as ModuleSpec);
-      alert(`Created task ${result.taskId} with ${result.subtaskIds.length} subtasks!`);
-    } catch (err: any) {
-      alert(`Task generation failed: ${err.message}`);
+      await window.clawdbot.moduleBuilder?.save({
+        id,
+        name: '',
+        description: '',
+        status: 'in-progress',
+        spec: {},
+        conversation: [],
+        conversation_state: {},
+        overall_progress: 0,
+      });
+    } catch (err) {
+      console.error('[ModuleBuilder] Failed to create:', err);
     }
-  };
+    setActiveModuleId(id);
+  }, []);
 
-  const handleExportJson = () => {
-    const json = exportSpecAsJson(spec as ModuleSpec);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${spec.id || 'module'}-spec.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleReset = () => {
-    if (confirm('Reset the module builder? All progress will be lost.')) {
-      resetSpec();
-      window.location.reload();
-    }
-  };
+  if (activeModuleId === null) {
+    return (
+      <ModuleListView
+        onSelectModule={(id) => setActiveModuleId(id)}
+        onCreateNew={handleCreateNew}
+      />
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-clawd-border bg-clawd-surface">
-        <h1 className="text-lg font-semibold text-clawd-text">Module Builder</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg rounded-lg transition-colors"
-          >
-            <RotateCcw size={14} /> Reset
-          </button>
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-opacity"
-          >
-            <Plus size={14} /> New
-          </button>
-        </div>
-      </div>
-
-      {/* Split layout */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-1/2 min-w-0">
-          <ConversationPanel
-            messages={flow.messages}
-            sectionProgress={sectionProgress}
-            currentSection={flow.currentSection}
-            overallProgress={overallProgress}
-            isStarted={flow.isStarted}
-            isFinished={flow.isFinished}
-            isStreaming={flow.isStreaming}
-            onSend={flow.submitAnswer}
-            onStart={flow.startInterview}
-            onJumpToSection={flow.jumpToSection}
-          />
-        </div>
-        <div className="w-1/2 min-w-0">
-          <SpecPreviewPanel
-            spec={spec}
-            sectionProgress={sectionProgress}
-            isComplete={isComplete}
-            wireframe={flow.wireframe}
-            liveTasks={flow.liveTasks}
-            onGenerateTasks={handleGenerateTasks}
-            onExportJson={handleExportJson}
-          />
-        </div>
-      </div>
-    </div>
+    <ModuleBuilderView
+      moduleId={activeModuleId}
+      onBack={() => setActiveModuleId(null)}
+    />
   );
 }

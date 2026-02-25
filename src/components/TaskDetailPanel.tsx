@@ -23,7 +23,7 @@ interface TaskAttachment {
   file_path: string;
   filename: string;
   file_size: number;
-  mime_type: string;
+  mime_type: string | null;
   category: string;
   uploaded_by: string;
   uploaded_at: number;

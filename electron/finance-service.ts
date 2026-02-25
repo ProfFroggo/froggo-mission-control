@@ -444,8 +444,9 @@ export function registerFinanceHandlers(): void {
           correctionContext = '\n\nThe user has previously recategorized these merchants (use these as guidance for similar merchants):\n' +
             corrections.map(c => `- ${c.merchant_normalized || 'unknown'} -> ${c.new_category}`).join('\n') + '\n';
         }
-      } catch (_) {
+      } catch (err: unknown) {
         // Optional feature - continue without user correction hints if query fails
+        safeLog.warn('[Finance] Category corrections query failed (non-critical):', err);
       }
 
       const prompt = `Parse this bank statement file "${filename}" and extract ALL transactions.
@@ -513,16 +514,18 @@ ${csvContent.slice(0, 15000)}`;
           const insightId = `insight-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
           const insightNow = Date.now();
           prepare(`INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, generated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(insightId, 'spending_pattern', `Upload Analysis: ${filename}`, summary, 'info', insightNow, insightNow, insightNow);
-        } catch (_) {
+        } catch (err: unknown) {
           // Non-critical: insight storage failure doesn't affect transaction import
+          safeLog.warn('[Finance] Failed to store insight (non-critical):', err);
         }
       }
 
       // Update upload record
       try {
         prepare(`UPDATE finance_uploads SET status = ?, ai_summary = ?, updated_at = ? WHERE id = ?`).run(imported > 0 ? 'complete' : 'error', summary || result.error || '', Date.now(), uploadId);
-      } catch (_) {
+      } catch (err: unknown) {
         // Non-critical: upload metadata update failure doesn't affect imported transactions
+        safeLog.warn('[Finance] Failed to update CSV upload record (non-critical):', err);
       }
 
       const mw = getMainWindow();
@@ -564,8 +567,9 @@ ${csvContent.slice(0, 15000)}`;
       // Ensure finance_uploads table
       try {
         prepare(`CREATE TABLE IF NOT EXISTS finance_uploads (id TEXT PRIMARY KEY, filename TEXT NOT NULL, file_type TEXT, file_path TEXT, file_size INTEGER, account_id TEXT DEFAULT 'acc-default', status TEXT DEFAULT 'processing', ai_summary TEXT, created_at INTEGER, updated_at INTEGER)`).run();
-      } catch (_) {
+      } catch (err: unknown) {
         // Table already exists or schema migration handled elsewhere
+        safeLog.warn('[Finance] CREATE TABLE IF NOT EXISTS failed (likely already exists):', err);
       }
 
       // Save original PDF to uploads directory
@@ -594,8 +598,9 @@ ${csvContent.slice(0, 15000)}`;
           correctionContextPdf = '\n\nThe user has previously recategorized these merchants (use these as guidance for similar merchants):\n' +
             correctionsPdf.map(c => `- ${c.merchant_normalized || 'unknown'} -> ${c.new_category}`).join('\n') + '\n';
         }
-      } catch (_) {
+      } catch (err: unknown) {
         // Optional feature - continue without user correction hints if query fails
+        safeLog.warn('[Finance] PDF category corrections query failed (non-critical):', err);
       }
 
       // Extract text from PDF first, then send to AI
@@ -686,16 +691,18 @@ ${pdfText.slice(0, 15000)}`;
           const insightId = `insight-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
           const insightNow = Date.now();
           prepare(`INSERT OR IGNORE INTO finance_ai_insights (id, type, title, content, severity, generated_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(insightId, 'spending_pattern', `Upload Analysis: ${filename}`, summary, 'info', insightNow, insightNow, insightNow);
-        } catch (_) {
+        } catch (err: unknown) {
           // Non-critical: insight storage failure doesn't affect transaction import
+          safeLog.warn('[Finance] Failed to store PDF insight (non-critical):', err);
         }
       }
 
       // Update upload record
       try {
         prepare(`UPDATE finance_uploads SET status = ?, ai_summary = ?, updated_at = ? WHERE id = ?`).run(imported > 0 ? 'complete' : 'error', summary || result.error || '', Date.now(), uploadId);
-      } catch (_) {
+      } catch (err: unknown) {
         // Non-critical: upload metadata update failure doesn't affect imported transactions
+        safeLog.warn('[Finance] Failed to update PDF upload record (non-critical):', err);
       }
 
       const mw = getMainWindow();
@@ -1211,8 +1218,9 @@ ${pdfText.slice(0, 15000)}`;
             insightNow,
           );
           generated++;
-        } catch (_) {
+        } catch (err: unknown) {
           // Non-critical: skip duplicate or conflicting insights
+          safeLog.warn('[Finance] Failed to insert anomaly insight (likely duplicate):', err);
         }
       }
 
