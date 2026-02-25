@@ -179,17 +179,38 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
     }
   }, [sessionKey]);
 
-  // Set up history polling when sessionKey is available
+  // Set up real-time event listening + history polling when sessionKey is available
   useEffect(() => {
     if (!sessionKey) return;
 
-    // Fetch immediately on session start
+    // Fetch initial history
     fetchHistory();
 
-    // Poll every 2 seconds for updates
-    historyPollRef.current = setInterval(fetchHistory, 2000);
+    // Listen for any chat events on this session and refresh history
+    // This catches updates from other sources (webchat, other sessions, etc.)
+    const handleAnyEvent = (data: any) => {
+      // Only process events for THIS session
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+      
+      // Any event for our session = refresh history to stay in sync
+      // Debounced by the fetchHistory comparison check
+      fetchHistory();
+    };
+
+    // Subscribe to all chat events
+    const unsub1 = gateway.on('chat.delta', handleAnyEvent);
+    const unsub2 = gateway.on('chat.message', handleAnyEvent);
+    const unsub3 = gateway.on('chat', handleAnyEvent);
+    const unsub4 = gateway.on('chat.end', handleAnyEvent);
+
+    // Fallback polling every 3 seconds (in case events are missed)
+    historyPollRef.current = setInterval(fetchHistory, 3000);
 
     return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
       if (historyPollRef.current) {
         clearInterval(historyPollRef.current);
         historyPollRef.current = null;
