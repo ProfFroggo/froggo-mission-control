@@ -159,44 +159,36 @@ export function generateTaskPlan(spec: ModuleSpec): GeneratedTaskPlan {
   };
 }
 
-// ─── Execute via Electron IPC ───────────────────────────────────────
-
-declare global {
-  interface Window {
-    electronAPI?: {
-      invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
-    };
-  }
-}
+// ─── Execute via Electron IPC (window.clawdbot) ─────────────────────
 
 export async function generateTasks(spec: ModuleSpec): Promise<{ taskId: string; subtaskIds: string[] }> {
-  const ipc = window.electronAPI;
-  if (!ipc) {
-    throw new Error('Electron IPC not available. Are you running in the dashboard?');
+  const ipc = window.clawdbot;
+  if (!ipc?.tasks) {
+    throw new Error('Dashboard IPC not available.');
   }
 
   const plan = generateTaskPlan(spec);
+  const taskId = `task-${Date.now()}`;
 
-  // Create main task
-  const taskResult = await ipc.invoke('froggo-db:task-add', {
+  // Create main task via tasks:sync (upserts into froggo-db)
+  await ipc.tasks.sync({
+    id: taskId,
     title: plan.title,
-    description: plan.description,
-    assign: plan.assign,
-    priority: plan.priority,
-    deliverable: plan.deliverable,
+    status: 'todo',
+    assignedTo: plan.assign,
   });
 
-  const taskId = (taskResult as { id: string }).id;
   const subtaskIds: string[] = [];
 
   // Create subtasks
   for (const subtask of plan.subtasks) {
-    const result = await ipc.invoke('froggo-db:subtask-add', {
-      taskId,
+    const subId = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    await ipc.tasks.subtasks.add(taskId, {
+      id: subId,
       title: subtask.title,
       description: subtask.description,
     });
-    subtaskIds.push((result as { id: string }).id);
+    subtaskIds.push(subId);
   }
 
   return { taskId, subtaskIds };

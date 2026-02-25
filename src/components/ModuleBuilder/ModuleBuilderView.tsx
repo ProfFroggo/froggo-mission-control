@@ -1,0 +1,200 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import ConversationPanel from './ConversationPanel';
+import SpecPreviewPanel from './SpecPreviewPanel';
+import { useModuleSpec } from './useModuleSpec';
+import { useConversationFlow } from './useConversationFlow';
+import { generateTasks, exportSpecAsJson } from './TaskGenerator';
+import type { ModuleSpec } from './types';
+
+interface ModuleBuilderViewProps {
+  moduleId: string;
+  onBack: () => void;
+}
+
+interface SavedModule {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  spec: any;
+  conversation: any[];
+  conversation_state: any;
+  overall_progress: number;
+  created_at: number;
+  updated_at: number;
+}
+
+function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () => void }) {
+  const moduleSpec = useModuleSpec({
+    initialSpec: saved.spec,
+    initialAnswered: saved.conversation_state?.answeredQuestions || [],
+  });
+  const { spec, sectionProgress, overallProgress, isComplete } = moduleSpec;
+
+  const flow = useConversationFlow({
+    moduleSpec,
+    initialState: saved.conversation_state?.flow || undefined,
+  });
+
+  // ── Auto-save (2s debounce + flush on unmount) ──
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+
+  const doSave = useCallback(() => {
+    if (!isMountedRef.current) return;
+    const flowState = flow.getState();
+    window.clawdbot.moduleBuilder?.save({
+      id: saved.id,
+      name: (spec.name as string) || '',
+      description: (spec.description as string) || '',
+      status: isComplete ? 'finished' : 'in-progress',
+      spec,
+      conversation: flowState.messages,
+      conversation_state: {
+        answeredQuestions: moduleSpec.answeredQuestionsArray,
+        flow: flowState,
+      },
+      overall_progress: overallProgress,
+    }).catch(err => console.error('[ModuleBuilder] Auto-save failed:', err));
+  }, [saved.id, spec, isComplete, overallProgress, flow, moduleSpec.answeredQuestionsArray]);
+
+  const scheduleSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(doSave, 2000);
+  }, [doSave]);
+
+  // Trigger auto-save on spec / conversation changes
+  useEffect(() => {
+    if (flow.isStarted) scheduleSave();
+  }, [spec, flow.messages.length, overallProgress, flow.isStarted, scheduleSave]);
+
+  // Flush on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      // Synchronous final save
+      doSave();
+    };
+  }, [doSave]);
+
+  const handleGenerateTasks = async () => {
+    try {
+      const result = await generateTasks(spec as ModuleSpec);
+      alert(`Created task ${result.taskId} with ${result.subtaskIds.length} subtasks!`);
+    } catch (err: any) {
+      alert(`Task generation failed: ${err.message}`);
+    }
+  };
+
+  const handleExportJson = () => {
+    const json = exportSpecAsJson(spec as ModuleSpec);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${spec.id || 'module'}-spec.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-clawd-border bg-clawd-surface">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { doSave(); onBack(); }}
+            className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg rounded-lg transition-colors"
+          >
+            <ArrowLeft size={14} /> My Modules
+          </button>
+          <span className="text-clawd-border">|</span>
+          <h1 className="text-lg font-semibold text-clawd-text truncate">
+            {spec.name || 'Untitled Module'}
+          </h1>
+        </div>
+      </div>
+
+      {/* Split layout */}
+      <div className="flex-1 flex overflow-hidden">
+        <div className="w-1/2 min-w-0">
+          <ConversationPanel
+            messages={flow.messages}
+            sectionProgress={sectionProgress}
+            currentSection={flow.currentSection}
+            overallProgress={overallProgress}
+            isStarted={flow.isStarted}
+            isFinished={flow.isFinished}
+            isStreaming={flow.isStreaming}
+            onSend={flow.submitAnswer}
+            onStart={flow.startInterview}
+            onJumpToSection={flow.jumpToSection}
+          />
+        </div>
+        <div className="w-1/2 min-w-0">
+          <SpecPreviewPanel
+            spec={spec}
+            sectionProgress={sectionProgress}
+            isComplete={isComplete}
+            wireframe={flow.wireframe}
+            liveTasks={flow.liveTasks}
+            onGenerateTasks={handleGenerateTasks}
+            onExportJson={handleExportJson}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ModuleBuilderView({ moduleId, onBack }: ModuleBuilderViewProps) {
+  const [saved, setSaved] = useState<SavedModule | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await window.clawdbot.moduleBuilder?.get(moduleId);
+        if (cancelled) return;
+        if (result?.success && result.module) {
+          setSaved(result.module);
+        } else {
+          setError(result?.error || 'Module not found');
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [moduleId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full text-clawd-text-dim">
+        Loading module...
+      </div>
+    );
+  }
+
+  if (error || !saved) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim gap-3">
+        <p>Failed to load module: {error}</p>
+        <button onClick={onBack} className="text-clawd-accent hover:underline text-sm">
+          Back to list
+        </button>
+      </div>
+    );
+  }
+
+  return <ModuleBuilderInner key={saved.id} saved={saved} onBack={onBack} />;
+}

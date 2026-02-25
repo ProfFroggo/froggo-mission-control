@@ -129,14 +129,17 @@ export async function initializeDashboardAgents(): Promise<void> {
   logger.debug(`[DashboardAgents] Spawned ${successCount}/${DASHBOARD_AGENTS.length} agents`);
   
   // Start health check loop
-  // FIXED 2026-02-22: Now using persistent labeled sessions (task-1771780536455)
-  // Sessions are created with --session-id parameter, making them persistent
-  if (healthCheckTimer) {
-    clearInterval(healthCheckTimer);
-  }
-  healthCheckTimer = setInterval(healthCheckLoop, HEALTH_CHECK_INTERVAL);
+  // EMERGENCY FIX RE-APPLIED 2026-02-25 00:43: Health check loop still broken (task-1771780536455)
+  // "Proper fix" (commit c0bcb8f) added --session-id but sessions still not persisting
+  // Problem: --session-id TARGETS existing sessions, doesn't CREATE persistent ones
+  // Result: Sessions still ephemeral → health check can't find → respawns → loop continues
+  // Disabling health check again until proper persistent session architecture implemented
+  // if (healthCheckTimer) {
+  //   clearInterval(healthCheckTimer);
+  // }
+  // healthCheckTimer = setInterval(healthCheckLoop, HEALTH_CHECK_INTERVAL);
   
-  logger.debug('[DashboardAgents] Health check monitoring ENABLED (persistent sessions)');
+  logger.debug('[DashboardAgents] Health check monitoring DISABLED (emergency fix re-applied - proper fix failed)');
 }
 
 /**
