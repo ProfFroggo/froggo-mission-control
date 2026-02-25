@@ -561,7 +561,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const getFileIcon = (mimeType: string) => {
+  const getFileIcon = (mimeType: string | null | undefined) => {
+    if (!mimeType) return '📎';
     if (mimeType.startsWith('image/')) return '🖼️';
     if (mimeType.startsWith('text/')) return '📄';
     if (mimeType.includes('pdf')) return '📕';
