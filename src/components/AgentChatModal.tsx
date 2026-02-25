@@ -179,32 +179,74 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
     }
   }, [sessionKey]);
 
-  // Set up real-time event listening + history polling when sessionKey is available
+  // Set up real-time streaming listeners when sessionKey is available
   useEffect(() => {
     if (!sessionKey) return;
 
-    // Fetch initial history
+    // Fetch initial history once
     fetchHistory();
 
-    // Listen for any chat events on this session and refresh history
-    // This catches updates from other sources (webchat, other sessions, etc.)
-    const handleAnyEvent = (data: any) => {
-      // Only process events for THIS session
+    // Real-time streaming handler - appends chunks as they arrive
+    const handleDelta = (data: any) => {
       if (!data.sessionKey || data.sessionKey !== sessionKey) return;
       
-      // Any event for our session = refresh history to stay in sync
-      // Debounced by the fetchHistory comparison check
+      if (data.chunk) {
+        // Instant streaming - append chunk to streaming content
+        setStreamingContent(prev => prev + data.chunk);
+      }
+    };
+
+    // Final message handler - convert streaming to message
+    const handleMessage = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+
+      const finalContent = data.content || data.response || data.text;
+      if (finalContent) {
+        // Add assistant message
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: finalContent,
+          timestamp: Date.now(),
+        }]);
+        setStreamingContent('');
+      }
+    };
+
+    // Unified chat event handler
+    const handleChat = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+
+      if (data.state === 'streaming' && data.chunk) {
+        setStreamingContent(prev => prev + data.chunk);
+      } else if (data.state === 'done' || data.state === 'complete') {
+        const finalContent = data.content || data.response;
+        if (finalContent) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: finalContent,
+            timestamp: Date.now(),
+          }]);
+          setStreamingContent('');
+        }
+      }
+    };
+
+    // User message events (from other sources like webchat)
+    const handleUserMessage = (data: any) => {
+      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
+      
+      // Refresh history to catch user messages from other sources
       fetchHistory();
     };
 
     // Subscribe to all chat events
-    const unsub1 = gateway.on('chat.delta', handleAnyEvent);
-    const unsub2 = gateway.on('chat.message', handleAnyEvent);
-    const unsub3 = gateway.on('chat', handleAnyEvent);
-    const unsub4 = gateway.on('chat.end', handleAnyEvent);
+    const unsub1 = gateway.on('chat.delta', handleDelta);
+    const unsub2 = gateway.on('chat.message', handleMessage);
+    const unsub3 = gateway.on('chat', handleChat);
+    const unsub4 = gateway.on('chat.end', handleMessage);
 
-    // Fallback polling every 3 seconds (in case events are missed)
-    historyPollRef.current = setInterval(fetchHistory, 3000);
+    // Fallback: poll every 10 seconds to catch any missed updates
+    historyPollRef.current = setInterval(fetchHistory, 10000);
 
     return () => {
       unsub1();
