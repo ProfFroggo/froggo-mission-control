@@ -28,56 +28,122 @@ export default function LiveActivity({ sessionKey }: LiveActivityProps) {
   useEffect(() => {
     if (!sessionKey) return;
 
-    const handleThinking = (data: any) => {
-      if (data.sessionKey !== sessionKey) return;
-      
-      setActivities(prev => [...prev, {
-        id: `thinking-${Date.now()}`,
-        type: 'thinking',
-        status: 'active',
-        timestamp: Date.now(),
-      }]);
-    };
+    // Import gateway dynamically to avoid circular deps
+    import('../lib/gateway').then(({ gateway }) => {
+      const handleChatEvent = (data: any) => {
+        // Only process events for THIS session
+        if (!data.sessionKey || data.sessionKey !== sessionKey) return;
 
-    const handleToolUse = (data: any) => {
-      if (data.sessionKey !== sessionKey) return;
-      
-      // Extract tool name from content blocks
-      if (data.content && Array.isArray(data.content)) {
-        const toolBlocks = data.content.filter((c: any) => c.type === 'tool_use');
-        toolBlocks.forEach((tool: any) => {
-          setActivities(prev => [...prev, {
-            id: tool.id || `tool-${Date.now()}`,
-            type: 'tool_use',
-            name: tool.name,
-            status: 'active',
-            timestamp: Date.now(),
-          }]);
-        });
-      }
-    };
+        // Check message content for blocks
+        if (data.message?.content && Array.isArray(data.message.content)) {
+          // Detect thinking blocks
+          const thinkingBlocks = data.message.content.filter((c: any) => c.type === 'thinking');
+          if (thinkingBlocks.length > 0) {
+            setActivities(prev => {
+              // Only add if not already present
+              if (!prev.some(a => a.type === 'thinking' && Date.now() - a.timestamp < 1000)) {
+                return [...prev, {
+                  id: `thinking-${Date.now()}`,
+                  type: 'thinking',
+                  status: 'active',
+                  timestamp: Date.now(),
+                }];
+              }
+              return prev;
+            });
+          }
 
-    const handleToolResult = (data: any) => {
-      if (data.sessionKey !== sessionKey) return;
-      
-      if (data.content && Array.isArray(data.content)) {
-        const resultBlocks = data.content.filter((c: any) => c.type === 'tool_result');
-        resultBlocks.forEach((result: any) => {
-          const isError = result.text?.includes('error') || result.text?.includes('Error');
-          setActivities(prev => prev.map(a => 
-            a.id === result.tool_use_id 
-              ? { ...a, status: isError ? 'error' as const : 'complete' as const }
-              : a
-          ));
-        });
-      }
-    };
+          // Detect tool use blocks
+          const toolBlocks = data.message.content.filter((c: any) => c.type === 'tool_use');
+          toolBlocks.forEach((tool: any) => {
+            setActivities(prev => {
+              // Only add if not already present
+              if (!prev.some(a => a.id === tool.id)) {
+                return [...prev, {
+                  id: tool.id || `tool-${Date.now()}`,
+                  type: 'tool_use',
+                  name: tool.name,
+                  status: 'active',
+                  timestamp: Date.now(),
+                }];
+              }
+              return prev;
+            });
+          });
 
-    // Subscribe to events (we'll need to add these to gateway)
-    // For now, just show placeholder
-    
+          // Detect tool result blocks
+          const resultBlocks = data.message.content.filter((c: any) => c.type === 'tool_result');
+          resultBlocks.forEach((result: any) => {
+            const isError = result.text?.includes('error') || result.text?.includes('Error');
+            setActivities(prev => prev.map(a => 
+              a.id === result.tool_use_id 
+                ? { ...a, status: isError ? 'error' as const : 'complete' as const }
+                : a
+            ));
+          });
+        }
+
+        // Also detect from top-level content array
+        if (data.content && Array.isArray(data.content)) {
+          const thinkingBlocks = data.content.filter((c: any) => c.type === 'thinking');
+          if (thinkingBlocks.length > 0) {
+            setActivities(prev => {
+              if (!prev.some(a => a.type === 'thinking' && Date.now() - a.timestamp < 1000)) {
+                return [...prev, {
+                  id: `thinking-${Date.now()}`,
+                  type: 'thinking',
+                  status: 'active',
+                  timestamp: Date.now(),
+                }];
+              }
+              return prev;
+            });
+          }
+
+          const toolBlocks = data.content.filter((c: any) => c.type === 'tool_use');
+          toolBlocks.forEach((tool: any) => {
+            setActivities(prev => {
+              if (!prev.some(a => a.id === tool.id)) {
+                return [...prev, {
+                  id: tool.id || `tool-${Date.now()}`,
+                  type: 'tool_use',
+                  name: tool.name,
+                  status: 'active',
+                  timestamp: Date.now(),
+                }];
+              }
+              return prev;
+            });
+          });
+
+          const resultBlocks = data.content.filter((c: any) => c.type === 'tool_result');
+          resultBlocks.forEach((result: any) => {
+            const isError = result.text?.includes('error') || result.text?.includes('Error');
+            setActivities(prev => prev.map(a => 
+              a.id === result.tool_use_id 
+                ? { ...a, status: isError ? 'error' as const : 'complete' as const }
+                : a
+            ));
+          });
+        }
+      };
+
+      // Subscribe to all chat events
+      const unsub1 = gateway.on('chat.delta', handleChatEvent);
+      const unsub2 = gateway.on('chat.message', handleChatEvent);
+      const unsub3 = gateway.on('chat', handleChatEvent);
+      const unsub4 = gateway.on('chat.end', handleChatEvent);
+
+      return () => {
+        unsub1();
+        unsub2();
+        unsub3();
+        unsub4();
+      };
+    });
+
     return () => {
-      // Cleanup
+      // Cleanup handled by inner return
     };
   }, [sessionKey]);
 
