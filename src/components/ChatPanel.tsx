@@ -26,12 +26,27 @@ interface AttachedFile {
   dataUrl?: string;
 }
 
+interface ContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  input?: any;
+  id?: string;
+  tool_use_id?: string;
+  content?: any;
+  is_error?: boolean;
+}
+
+interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
+  content: string | ContentBlock[];
+}
+
 export default function ChatPanel() {
   const { addActivity } = useStore();
   const { rooms, activeRoomId, setActiveRoom, createRoom } = useChatRoomStore();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<StructuredChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [speakResponses, setSpeakResponses] = useState(false);
@@ -59,7 +74,7 @@ export default function ChatPanel() {
   }, [chatAgents, chatAgents.length, selectedAgent]);
   
   // Cache messages per agent so switching is instant
-  const messageCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
+  const messageCacheRef = useRef<Map<string, StructuredChatMessage[]>>(new Map());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -244,16 +259,22 @@ export default function ChatPanel() {
   };
 
   const filteredMessages = useMemo(() => {
-    const visible = messages.filter(msg =>
-      !isSystemReply(msg.content) &&
-      (msg.streaming || (msg.content && msg.content.trim().length > 0))
-    );
+    const visible = messages.filter(msg => {
+      const textContent = Array.isArray(msg.content)
+        ? msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
+        : msg.content;
+      return !isSystemReply(textContent) &&
+        (msg.streaming || (textContent && textContent.trim().length > 0));
+    });
     if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
-    return visible.filter(msg => 
-      msg.content.toLowerCase().includes(query) ||
-      msg.role.toLowerCase().includes(query)
-    );
+    return visible.filter(msg => {
+      const textContent = Array.isArray(msg.content)
+        ? msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
+        : msg.content;
+      return textContent.toLowerCase().includes(query) ||
+        msg.role.toLowerCase().includes(query);
+    });
   }, [messages, searchQuery]);
 
   // Scroll to bottom
@@ -290,18 +311,24 @@ export default function ChatPanel() {
     try {
       const res = await gateway.getChatHistory(30) as { messages?: any[] } | null;
       if (res?.messages && Array.isArray(res.messages)) {
-        const history: ChatMessage[] = res.messages
+        const history: StructuredChatMessage[] = res.messages
           .filter((m: any) => m.role === 'user' || m.role === 'assistant')
           .map((m: any, i: number) => {
-            // Extract text from content (handle both string and array formats)
-            let content = '';
+            // Preserve structured content if available, else extract text
+            let content: string | ContentBlock[] = '';
             if (typeof m.content === 'string') {
               content = m.content;
             } else if (Array.isArray(m.content)) {
-              content = m.content
-                .filter((c: any) => c.type === 'text')
-                .map((c: any) => c.text)
-                .join('');
+              // Keep the full array for assistant messages to show tool calls
+              if (m.role === 'assistant') {
+                content = m.content;
+              } else {
+                // For user messages, extract text only
+                content = m.content
+                  .filter((c: any) => c.type === 'text')
+                  .map((c: any) => c.text)
+                  .join('');
+              }
             }
 
             return {
@@ -382,19 +409,23 @@ export default function ChatPanel() {
 
     const handleMessage = (data: any) => {
       if (currentMsgIdRef.current) {
-        // Extract ALL text blocks properly (handles thinking blocks)
-        let content = '';
+        // Store the FULL content structure (blocks array or string)
+        let content: string | ContentBlock[] = '';
+        
         if (data.message?.content && Array.isArray(data.message.content)) {
-          content = data.message.content
+          // Keep structured content blocks
+          content = data.message.content;
+          // Also extract text for legacy currentResponseRef
+          currentResponseRef.current = data.message.content
             .filter((c: any) => c.type === 'text')
             .map((c: any) => c.text)
             .join('');
         } else if (data.content) {
           content = data.content;
+          currentResponseRef.current = data.content;
         }
         
         if (content) {
-          currentResponseRef.current = content;
           setMessages(prev => prev.map(m => 
             m.id === currentMsgIdRef.current 
               ? { ...m, content, streaming: false } 
@@ -448,22 +479,28 @@ export default function ChatPanel() {
         return;
       }
 
-      // Extract content from message structure - ALL text blocks, not just first
-      let content = '';
+      // Store the FULL content structure (blocks array or string)
+      let content: string | ContentBlock[] = '';
+      let textContent = '';
+      
       if (data.message?.content && Array.isArray(data.message.content)) {
-        content = data.message.content
+        // Keep structured content blocks
+        content = data.message.content;
+        // Extract text for legacy operations (speech, DB save)
+        textContent = data.message.content
           .filter((c: any) => c.type === 'text')
           .map((c: any) => c.text)
           .join('');
       } else if (data.content) {
         content = data.content;
+        textContent = data.content;
       }
       
       if (content) {
         // Only update if this is the final/complete content, not partial
         // Partial deltas are handled by handleDelta
-        if (data.state === 'final' || content.length > currentResponseRef.current.length) {
-          currentResponseRef.current = content;
+        if (data.state === 'final' || (typeof textContent === 'string' && textContent.length > currentResponseRef.current.length)) {
+          currentResponseRef.current = textContent;
           setMessages(prev => prev.map(m => 
             m.id === currentMsgIdRef.current 
               ? { ...m, content } 
@@ -482,7 +519,7 @@ export default function ChatPanel() {
             : m
         ));
         
-        // Save assistant message to database
+        // Save assistant message to database (just text for now)
         if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
           window.clawdbot?.chat.saveMessage({
             role: 'assistant',
@@ -1273,14 +1310,14 @@ export default function ChatPanel() {
 // ============================================
 
 interface MessageItemProps {
-  msg: ChatMessage;
+  msg: StructuredChatMessage;
   isUser: boolean;
   showAvatar: boolean;
   isLastInGroup: boolean;
   time: string;
   isStarred: boolean;
   selectedAgent: ChatAgent;
-  onToggleStar: (msg: ChatMessage, e: React.MouseEvent) => void;
+  onToggleStar: (msg: StructuredChatMessage, e: React.MouseEvent) => void;
 }
 
 const MessageItem = memo(function MessageItem({
@@ -1342,7 +1379,13 @@ const MessageItem = memo(function MessageItem({
               </button>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(msg.content);
+                  const textToCopy = Array.isArray(msg.content)
+                    ? msg.content
+                        .filter((b: any) => b.type === 'text')
+                        .map((b: any) => b.text)
+                        .join('')
+                    : msg.content;
+                  navigator.clipboard.writeText(textToCopy);
                   showToast('Copied to clipboard', 'success');
                 }}
                 className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
@@ -1373,9 +1416,20 @@ const MessageItem = memo(function MessageItem({
                 </span>
               </div>
             ) : msg.role === 'assistant' ? (
-              <MarkdownMessage content={msg.content} />
+              // Render structured content blocks if available, else fall back to markdown
+              Array.isArray(msg.content) ? (
+                <div className="space-y-1">
+                  {msg.content.map((block, idx) => (
+                    <ContentBlock key={idx} block={block} index={idx} />
+                  ))}
+                </div>
+              ) : (
+                <MarkdownMessage content={msg.content} />
+              )
             ) : (
-              <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              <div className="whitespace-pre-wrap leading-relaxed">
+                {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+              </div>
             )}
             {msg.streaming && msg.content && (
               <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
