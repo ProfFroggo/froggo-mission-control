@@ -33,6 +33,7 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
   const agent = agents.find(a => a.id === agentId);
 
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const historyPollRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup timeouts and listeners on unmount
   useEffect(() => {
@@ -40,6 +41,9 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
       streamCleanupRef.current?.();
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
+      }
+      if (historyPollRef.current) {
+        clearInterval(historyPollRef.current);
       }
     };
   }, []);
@@ -118,6 +122,56 @@ export default function AgentChatModal({ agentId, onClose }: AgentChatModalProps
     }
     setSpawning(false);
   };
+
+  // Poll session history for real-time updates
+  const fetchHistory = useCallback(async () => {
+    if (!sessionKey) return;
+    
+    try {
+      const historyResult = await gateway.request('sessions.history', {
+        sessionKey,
+        limit: 100,
+      });
+
+      if (historyResult?.messages && Array.isArray(historyResult.messages)) {
+        const formattedMessages: Message[] = historyResult.messages
+          .filter((msg: any) => msg.role === 'user' || msg.role === 'assistant')
+          .map((msg: any) => ({
+            role: msg.role,
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+            timestamp: msg.timestamp || Date.now(),
+          }));
+
+        // Only update if we have new messages (avoid flicker)
+        setMessages(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(formattedMessages)) {
+            return formattedMessages;
+          }
+          return prev;
+        });
+      }
+    } catch (e) {
+      // Silently fail - don't spam errors during polling
+    }
+  }, [sessionKey]);
+
+  // Set up history polling when sessionKey is available
+  useEffect(() => {
+    if (!sessionKey) return;
+
+    // Fetch immediately on session start
+    fetchHistory();
+
+    // Poll every 2 seconds for updates
+    historyPollRef.current = setInterval(fetchHistory, 2000);
+
+    return () => {
+      if (historyPollRef.current) {
+        clearInterval(historyPollRef.current);
+        historyPollRef.current = null;
+      }
+    };
+  }, [sessionKey, fetchHistory]);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || !sessionKey || sending) return;
