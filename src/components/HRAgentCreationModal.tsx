@@ -137,11 +137,17 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         output = raw?.success === false ? raw?.error || raw?.stderr || 'Command failed' : '';
       }
 
-      // Parse response — openclaw --json returns { content: "..." } or similar
+      // Parse response — openclaw --json returns nested structure
       let reply = '';
       try {
         const parsed = JSON.parse(output);
-        reply = parsed.content || parsed.message || parsed.response || parsed.text || String(output);
+        // Extract from result.payloads[0].text structure
+        if (parsed.result?.payloads?.[0]?.text) {
+          reply = parsed.result.payloads[0].text;
+        } else {
+          // Fallback to other common fields
+          reply = parsed.content || parsed.message || parsed.response || parsed.text || String(output);
+        }
       } catch {
         reply = String(output).trim();
       }
@@ -221,6 +227,21 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
         // Don't fall back to String(result) which produces "[object Object]"
         output = result?.success === false ? result?.error || result?.stderr || 'Command failed' : '';
       }
+      
+      // For openclaw --json commands, parse the response and check for errors in the payload
+      if (cmd.includes('openclaw agent') && cmd.includes('--json')) {
+        try {
+          const parsed = JSON.parse(output);
+          if (parsed.status === 'error' || parsed.result?.error) {
+            const errMsg = parsed.error || parsed.result?.error || 'Agent command failed';
+            updateStep(id, 'error', errMsg.slice(0, 80));
+            return false;
+          }
+        } catch {
+          // Not JSON or parse failed - treat as plain output
+        }
+      }
+      
       if (!result?.success || (typeof output === 'string' && output.toLowerCase().startsWith('error'))) {
         updateStep(id, 'error', output?.slice(0, 80) || 'Command failed');
         return false;

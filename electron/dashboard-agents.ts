@@ -31,7 +31,6 @@ const DASHBOARD_AGENTS: DashboardAgent[] = [
   { id: 'voice', name: 'Voice', sessionKey: 'agent:voice:dashboard', agentId: 'voice', spawned: false },
   { id: 'social-manager', name: 'Social Manager', sessionKey: 'agent:social-manager:dashboard', agentId: 'social-manager', spawned: false },
   { id: 'growth-director', name: 'Growth Director', sessionKey: 'agent:growth-director:dashboard', agentId: 'growth-director', spawned: false },
-  { id: 'lead-engineer', name: 'Lead Engineer', sessionKey: 'agent:lead-engineer:dashboard', agentId: 'lead-engineer', spawned: false },
   { id: 'degen-frog', name: 'Degen Frog', sessionKey: 'agent:degen-frog:dashboard', agentId: 'degen-frog', spawned: false },
 ];
 

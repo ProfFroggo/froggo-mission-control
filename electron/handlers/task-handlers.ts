@@ -51,7 +51,7 @@ function inferFileCategory(filename: string, _mimeType?: string, taskTitle?: str
     if (/\b(test|qa|checklist|verification|e2e|playwright|benchmark|coverage)\b/.test(ctx)) return 'test-logs';
     if (/\b(research|analysis|investigation|audit|review|study)\b/.test(ctx)) return 'research';
     if (/\b(discord|telegram|twitter|instagram|social)\b/.test(ctx) || ctx.includes('x api') || ['social-manager', 'growth-director'].includes(agent)) return 'social';
-    if (/\b(implementation|refactor|migration|schema|api|fix|bug|deploy|build|lint|react|electron)\b/.test(ctx) || ['coder', 'senior-coder', 'lead-engineer'].includes(agent)) return 'dev';
+    if (/\b(implementation|refactor|migration|schema|api|fix|bug|deploy|build|lint|react|electron)\b/.test(ctx) || ['coder', 'senior-coder'].includes(agent)) return 'dev';
 
     return 'content';
   }
