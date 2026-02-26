@@ -10,6 +10,9 @@ import { createLogger } from './utils/logger';
 const logger = createLogger('IPC');
 const registeredHandlers = new Set<string>();
 
+/** Tracks which IPC channels belong to each module (moduleId -> Set of channels) */
+const moduleHandlers = new Map<string, Set<string>>();
+
 /**
  * Generic type for IPC handler arguments
  */
@@ -50,6 +53,19 @@ export function registerHandler<TArgs extends unknown[], TReturn>(
   
   registeredHandlers.add(channel);
   ipcMain.handle(channel, handler as IpcHandler);
+}
+
+/**
+ * Unregister an IPC handler and remove it from the dedup guard.
+ * After calling this, the channel can be re-registered with registerHandler().
+ */
+export function unregisterHandler(channel: string): void {
+  if (!registeredHandlers.has(channel)) {
+    logger.warn(`[IPC] unregisterHandler: '${channel}' not registered, skipping`);
+    return;
+  }
+  ipcMain.removeHandler(channel);
+  registeredHandlers.delete(channel);
 }
 
 /**
@@ -115,4 +131,40 @@ export function registerModuleHandler<TArgs extends unknown[], TReturn>(
 ): void {
   validateModuleChannel(moduleId, channel);
   registerHandler(channel, handler);
+
+  // Track channel ownership for module lifecycle
+  if (!moduleHandlers.has(moduleId)) {
+    moduleHandlers.set(moduleId, new Set());
+  }
+  moduleHandlers.get(moduleId)!.add(channel);
 }
+
+/**
+ * Unregister all IPC handlers belonging to a module.
+ * Clears from both ipcMain and the dedup guard so handlers can be re-registered on enable.
+ */
+export function unregisterModuleHandlers(moduleId: string): number {
+  const channels = moduleHandlers.get(moduleId);
+  if (!channels || channels.size === 0) {
+    logger.info(`[IPC] unregisterModuleHandlers: no handlers tracked for module "${moduleId}"`);
+    return 0;
+  }
+  let count = 0;
+  for (const channel of channels) {
+    unregisterHandler(channel);
+    count++;
+  }
+  moduleHandlers.delete(moduleId);
+  logger.info(`[IPC] Removed ${count} handler(s) for module "${moduleId}"`);
+  return count;
+}
+
+/**
+ * IPC bridge: renderer calls this to trigger handler removal for a disabled module.
+ * Registered eagerly so it's always available (it's a core lifecycle channel, not module-owned).
+ */
+ipcMain.handle('module:ipc:removeHandlers', (_event, moduleId: string) => {
+  const count = unregisterModuleHandlers(moduleId);
+  return { success: true, removed: count };
+});
+registeredHandlers.add('module:ipc:removeHandlers');
