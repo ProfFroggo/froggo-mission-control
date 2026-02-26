@@ -80,6 +80,7 @@ export default function ChatPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentResponseRef = useRef<string>('');
+  const currentContentRef = useRef<string | ContentBlock[]>(''); // Full structured content
   const currentMsgIdRef = useRef<string>('');
   const currentRunIdRef = useRef<string>('');
 
@@ -115,8 +116,19 @@ export default function ChatPanel() {
     if (window.clawdbot?.chat?.loadMessages) {
       const result = await window.clawdbot?.chat.loadMessages(50, agent.dbSessionKey);
       if (result?.success && result.messages?.length > 0) {
-        setMessages(result.messages);
-        messageCacheRef.current.set(agent.id, result.messages);
+        // Parse JSON content back to structured blocks if needed
+        const parsedMessages = result.messages.map((msg: ChatMessage) => {
+          if (typeof msg.content === 'string' && msg.content.startsWith('[')) {
+            try {
+              return { ...msg, content: JSON.parse(msg.content) };
+            } catch {
+              return msg; // Keep as string if parse fails
+            }
+          }
+          return msg;
+        });
+        setMessages(parsedMessages);
+        messageCacheRef.current.set(agent.id, parsedMessages);
       }
     }
   }, [selectedAgent, messages]);
@@ -415,13 +427,15 @@ export default function ChatPanel() {
         if (data.message?.content && Array.isArray(data.message.content)) {
           // Keep structured content blocks
           content = data.message.content;
-          // Also extract text for legacy currentResponseRef
+          currentContentRef.current = content; // Store full structure
+          // Also extract text for legacy operations
           currentResponseRef.current = data.message.content
             .filter((c: any) => c.type === 'text')
             .map((c: any) => c.text)
             .join('');
         } else if (data.content) {
           content = data.content;
+          currentContentRef.current = content;
           currentResponseRef.current = data.content;
         }
         
@@ -437,7 +451,8 @@ export default function ChatPanel() {
 
     const handleEnd = () => {
       if (currentMsgIdRef.current) {
-        const finalContent = currentResponseRef.current;
+        const finalTextContent = currentResponseRef.current;
+        const finalFullContent = currentContentRef.current;
 
         // Update UI immediately — no blocking
         setMessages(prev => prev.map(m =>
@@ -449,23 +464,29 @@ export default function ChatPanel() {
         const runId = currentRunIdRef.current;
         currentMsgIdRef.current = '';
         currentResponseRef.current = '';
+        currentContentRef.current = '';
         if (runId) { gateway.clearRunId(runId); currentRunIdRef.current = ''; }
 
         // Fire-and-forget: DB save, speech, routing — all parallel, non-blocking
-        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+        // Save FULL structured content to DB (not just text!)
+        if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          const contentToSave = typeof finalFullContent === 'string' 
+            ? finalFullContent 
+            : JSON.stringify(finalFullContent);
+          
           window.clawdbot.chat.saveMessage({
             role: 'assistant',
-            content: finalContent,
+            content: contentToSave,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => logger.error('Error saving assistant message:', err));
         }
 
-        if (speakResponses && finalContent) {
-          requestIdleCallback(() => speak(finalContent), { timeout: 5000 });
+        if (speakResponses && finalTextContent) {
+          requestIdleCallback(() => speak(finalTextContent), { timeout: 5000 });
         }
 
-        const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
+        const brainMatch = finalTextContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           gateway.sendToMain(`[From Chat Agent]\n${brainMatch[1].trim()}`)
             .catch((err: any) => logger.error('Brain routing error:', err));
@@ -486,13 +507,15 @@ export default function ChatPanel() {
       if (data.message?.content && Array.isArray(data.message.content)) {
         // Keep structured content blocks
         content = data.message.content;
-        // Extract text for legacy operations (speech, DB save)
+        currentContentRef.current = content; // Store full structure
+        // Extract text for legacy operations (speech)
         textContent = data.message.content
           .filter((c: any) => c.type === 'text')
           .map((c: any) => c.text)
           .join('');
       } else if (data.content) {
         content = data.content;
+        currentContentRef.current = content;
         textContent = data.content;
       }
       
@@ -511,7 +534,8 @@ export default function ChatPanel() {
 
       // Check if final
       if (data.state === 'final') {
-        const finalContent = currentResponseRef.current;
+        const finalTextContent = currentResponseRef.current;
+        const finalFullContent = currentContentRef.current;
         
         setMessages(prev => prev.map(m => 
           m.id === currentMsgIdRef.current 
@@ -519,11 +543,15 @@ export default function ChatPanel() {
             : m
         ));
         
-        // Save assistant message to database (just text for now)
-        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+        // Save assistant message to database with full structured content
+        if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          const contentToSave = typeof finalFullContent === 'string' 
+            ? finalFullContent 
+            : JSON.stringify(finalFullContent);
+            
           window.clawdbot?.chat.saveMessage({
             role: 'assistant',
-            content: finalContent,
+            content: contentToSave,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => {
@@ -531,8 +559,8 @@ export default function ChatPanel() {
           });
         }
         
-        if (speakResponses && finalContent) {
-          speak(finalContent);
+        if (speakResponses && finalTextContent) {
+          speak(finalTextContent);
         }
         
         // Check for @Brain: routing - forward to main session (Brain/Froggo)
