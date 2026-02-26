@@ -147,7 +147,7 @@ export default function ChatPanel() {
   }, [selectedAgent]);
 
   // Toggle star on a message
-  const handleToggleStar = async (msg: ChatMessage, e: React.MouseEvent) => {
+  const handleToggleStar = async (msg: StructuredChatMessage, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (!window.clawdbot?.starred) {
@@ -564,7 +564,7 @@ export default function ChatPanel() {
         }
         
         // Check for @Brain: routing - forward to main session (Brain/Froggo)
-        const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
+        const brainMatch = finalTextContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           const brainMessage = brainMatch[1].trim();
           // Send to main session via gateway WebSocket (sends to Discord #get_shit_done)
@@ -653,7 +653,9 @@ export default function ChatPanel() {
       // Extract last 10 messages for context
       const context = messages.slice(-10).map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: typeof msg.content === 'string'
+          ? msg.content
+          : msg.content.filter(b => b.type === 'text').map(b => b.text ?? '').join(''),
       }));
       
       if (window.clawdbot?.chat?.suggestReplies) {
