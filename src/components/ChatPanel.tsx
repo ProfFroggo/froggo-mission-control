@@ -1408,15 +1408,35 @@ const MessageItem = memo(function MessageItem({
                 />
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const textToCopy = Array.isArray(msg.content)
                     ? msg.content
                         .filter((b: any) => b.type === 'text')
                         .map((b: any) => b.text)
                         .join('')
                     : msg.content;
-                  navigator.clipboard.writeText(textToCopy);
-                  showToast('Copied to clipboard', 'success');
+                  
+                  try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    showToast('success', 'Copied', 'Message copied to clipboard');
+                  } catch (err) {
+                    // Fallback for when clipboard API fails
+                    const textArea = document.createElement('textarea');
+                    textArea.value = textToCopy;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                      document.execCommand('copy');
+                      showToast('success', 'Copied', 'Message copied to clipboard');
+                    } catch (fallbackErr) {
+                      console.error('Copy failed:', err, fallbackErr);
+                      showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
+                    } finally {
+                      document.body.removeChild(textArea);
+                    }
+                  }
                 }}
                 className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
                 title="Copy message"
