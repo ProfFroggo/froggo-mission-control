@@ -15,6 +15,7 @@ import { useChatRoomStore } from '../store/chatRoomStore';
 import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
+import { copyToClipboard } from '../utils/clipboard';
 
 const logger = createLogger('ChatPanel');
 
@@ -1416,26 +1417,11 @@ const MessageItem = memo(function MessageItem({
                         .join('')
                     : msg.content;
                   
-                  try {
-                    await navigator.clipboard.writeText(textToCopy);
+                  const success = await copyToClipboard(textToCopy);
+                  if (success) {
                     showToast('success', 'Copied', 'Message copied to clipboard');
-                  } catch (err) {
-                    // Fallback for when clipboard API fails
-                    const textArea = document.createElement('textarea');
-                    textArea.value = textToCopy;
-                    textArea.style.position = 'fixed';
-                    textArea.style.left = '-999999px';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                      document.execCommand('copy');
-                      showToast('success', 'Copied', 'Message copied to clipboard');
-                    } catch (fallbackErr) {
-                      console.error('Copy failed:', err, fallbackErr);
-                      showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
-                    } finally {
-                      document.body.removeChild(textArea);
-                    }
+                  } else {
+                    showToast('error', 'Copy Failed', 'Unable to copy to clipboard');
                   }
                 }}
                 className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"

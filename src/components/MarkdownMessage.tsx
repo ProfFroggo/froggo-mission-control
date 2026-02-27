@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
 
 interface MarkdownMessageProps {
@@ -150,28 +151,12 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
+    const success = await copyToClipboard(code);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      // Fallback for when clipboard API fails
-      const textArea = document.createElement('textarea');
-      textArea.value = code;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (fallbackErr) {
-        console.error('Copy failed:', err, fallbackErr);
-        alert('Failed to copy code. Please copy manually.');
-      } finally {
-        document.body.removeChild(textArea);
-      }
+    } else {
+      alert('Failed to copy code. Please copy manually.');
     }
   };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, MessageSquare, TrendingUp, Zap, X, ChevronRight, Copy, Check, Loader2 } from 'lucide-react';
 import { gateway } from '../lib/gateway';
 import { showToast } from './Toast';
+import { copyToClipboard } from '../utils/clipboard';
 
 interface InboxItem {
   id: number;
@@ -237,11 +238,15 @@ Provide a brief, actionable summary.`;
     }
   };
 
-  const handleCopySuggestion = (suggestion: Suggestion) => {
-    navigator.clipboard.writeText(suggestion.text);
-    setCopiedId(suggestion.id);
-    setTimeout(() => setCopiedId(null), 2000);
-    showToast('success', 'Copied to clipboard');
+  const handleCopySuggestion = async (suggestion: Suggestion) => {
+    const success = await copyToClipboard(suggestion.text);
+    if (success) {
+      setCopiedId(suggestion.id);
+      setTimeout(() => setCopiedId(null), 2000);
+      showToast('success', 'Copied to clipboard');
+    } else {
+      showToast('error', 'Copy failed', 'Unable to copy to clipboard');
+    }
   };
 
   const handleApplySuggestion = (suggestion: Suggestion) => {
