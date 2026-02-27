@@ -3,6 +3,7 @@ import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, User
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
+import MarkdownWithMentions from './MarkdownWithMentions';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
 import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
@@ -180,8 +181,18 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
 
   /** Extract @AgentName or @agent-id mentions from text */
   const extractMentions = (text: string, agentIds: string[]): string[] => {
+    // Strip markdown formatting that might wrap mentions
+    // Remove: **text**, __text__, *text*, _text_, `text`, [text](url)
+    const cleanText = text
+      .replace(/\*\*([^*]+)\*\*/g, '$1')  // bold
+      .replace(/__([^_]+)__/g, '$1')      // bold alt
+      .replace(/\*([^*]+)\*/g, '$1')      // italic
+      .replace(/_([^_]+)_/g, '$1')        // italic alt
+      .replace(/`([^`]+)`/g, '$1')        // inline code
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1'); // links
+    
     // Check for @all first - expands to all agents in room
-    if (/@all\b/i.test(text)) {
+    if (/@all\b/i.test(cleanText)) {
       return [...agentIds]; // Return all agents
     }
     
@@ -190,7 +201,7 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
       const name = agentName(id);
       const namePattern = new RegExp(`@${name}\\b`, 'i');
       const idPattern = new RegExp(`@${id}\\b`, 'i');
-      if (namePattern.test(text) || idPattern.test(text)) {
+      if (namePattern.test(cleanText) || idPattern.test(cleanText)) {
         mentioned.push(id);
       }
     }
@@ -354,6 +365,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       if (responseContent?.trim()) {
         const mentioned = extractMentions(responseContent, room.agents);
         const targets = mentioned.filter(id => id !== next.agentId);
+        
+        if (targets.length > 0) {
+          console.log(`[ChatRoom] ${next.agentId} mentioned:`, targets.map(id => agentName(id)));
+        }
+        
         for (const target of targets) {
           queue.push({ agentId: target, content: responseContent, fromAgent: next.agentId });
         }
