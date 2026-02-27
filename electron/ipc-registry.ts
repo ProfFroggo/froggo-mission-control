@@ -13,6 +13,9 @@ const registeredHandlers = new Set<string>();
 /** Tracks which IPC channels belong to each module (moduleId -> Set of channels) */
 const moduleHandlers = new Map<string, Set<string>>();
 
+/** Persistent handler factories — survives unregisterModuleHandlers() so re-registration works */
+const moduleFactories = new Map<string, Map<string, IpcHandler>>();
+
 /**
  * Generic type for IPC handler arguments
  */
@@ -137,6 +140,10 @@ export function registerModuleHandler<TArgs extends unknown[], TReturn>(
     moduleHandlers.set(moduleId, new Set());
   }
   moduleHandlers.get(moduleId)!.add(channel);
+
+  // Store factory for re-registration (persistent — not cleared on unregister)
+  if (!moduleFactories.has(moduleId)) moduleFactories.set(moduleId, new Map());
+  moduleFactories.get(moduleId)!.set(channel, handler as IpcHandler);
 }
 
 /**
@@ -160,6 +167,38 @@ export function unregisterModuleHandlers(moduleId: string): number {
 }
 
 /**
+ * Re-register all previously registered IPC handlers for a module using stored factories.
+ *
+ * Used during module re-enable: after unregisterModuleHandlers() clears the dedup guard,
+ * this replays the factories to restore handlers without requiring a full app restart.
+ *
+ * Returns the count of re-registered handlers. Returns 0 if no factories stored.
+ */
+export function reregisterModuleHandlers(moduleId: string): number {
+  const factories = moduleFactories.get(moduleId);
+  if (!factories || factories.size === 0) {
+    logger.info(`[IPC] reregisterModuleHandlers: no factories stored for module "${moduleId}"`);
+    return 0;
+  }
+
+  // Ensure moduleHandlers tracking is fresh for this module
+  if (!moduleHandlers.has(moduleId)) {
+    moduleHandlers.set(moduleId, new Set());
+  }
+
+  let count = 0;
+  for (const [channel, handler] of factories) {
+    // registerHandler has a dedup guard — unregisterModuleHandlers() cleared it, so this re-registers cleanly
+    registerHandler(channel, handler);
+    moduleHandlers.get(moduleId)!.add(channel);
+    count++;
+  }
+
+  logger.info(`[IPC] Re-registered ${count} handler(s) for module "${moduleId}"`);
+  return count;
+}
+
+/**
  * IPC bridge: renderer calls this to trigger handler removal for a disabled module.
  * Registered eagerly so it's always available (it's a core lifecycle channel, not module-owned).
  */
@@ -168,3 +207,13 @@ ipcMain.handle('module:ipc:removeHandlers', (_event, moduleId: string) => {
   return { success: true, removed: count };
 });
 registeredHandlers.add('module:ipc:removeHandlers');
+
+/**
+ * IPC bridge: renderer calls this to trigger handler re-registration for a re-enabled module.
+ * Registered eagerly alongside module:ipc:removeHandlers — it's a core lifecycle channel.
+ */
+ipcMain.handle('module:ipc:registerHandlers', (_event, moduleId: string) => {
+  const count = reregisterModuleHandlers(moduleId);
+  return { success: true, registered: count };
+});
+registeredHandlers.add('module:ipc:registerHandlers');
