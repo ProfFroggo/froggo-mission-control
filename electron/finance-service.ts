@@ -11,7 +11,7 @@
  */
 
 import { dialog, BrowserWindow } from 'electron';
-import { registerHandler } from './ipc-registry';
+import { registerModuleHandler } from './ipc-registry';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -314,7 +314,7 @@ export function registerFinanceHandlers(): void {
 
   // ============== EXISTING FINANCE HANDLERS (extracted from main.ts) ==============
 
-  registerHandler('finance:getTransactions', async (_, opts?: { limit?: number; accountId?: string } | number) => {
+  registerModuleHandler('froggo-finance', 'finance:getTransactions', async (_, opts?: { limit?: number; accountId?: string } | number) => {
     try {
       // Backward compat: old callers pass a raw number
       let limit = 50;
@@ -343,7 +343,7 @@ export function registerFinanceHandlers(): void {
     }
   });
 
-  registerHandler('finance:getBudgetStatus', async (_, optsOrType?: { budgetType?: string; accountId?: string } | string) => {
+  registerModuleHandler('froggo-finance', 'finance:getBudgetStatus', async (_, optsOrType?: { budgetType?: string; accountId?: string } | string) => {
     try {
       // Backward compat: old callers pass a raw string
       let budgetType: string | undefined;
@@ -379,7 +379,7 @@ export function registerFinanceHandlers(): void {
     }
   });
 
-  registerHandler('finance:selectFile', async () => {
+  registerModuleHandler('froggo-finance', 'finance:selectFile', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile'],
       filters: [
@@ -401,7 +401,7 @@ export function registerFinanceHandlers(): void {
     };
   });
 
-  registerHandler('finance:uploadCSV', async (_, csvContent: string, filename: string, accountId?: string) => {
+  registerModuleHandler('froggo-finance', 'finance:uploadCSV', async (_, csvContent: string, filename: string, accountId?: string) => {
     try {
       const targetAccount = accountId || 'acc-default';
 
@@ -559,7 +559,7 @@ ${csvContent.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string, accountId?: string) => {
+  registerModuleHandler('froggo-finance', 'finance:uploadPDF', async (_, pdfBuffer: ArrayBuffer, filename: string, accountId?: string) => {
     try {
       const targetAccount = accountId || 'acc-default';
       safeLog.log('[Finance] Processing PDF upload:', filename);
@@ -735,7 +735,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:getAlerts', async () => {
+  registerModuleHandler('froggo-finance', 'finance:getAlerts', async () => {
     try {
       const alerts = prepare(`SELECT id, type, severity, title, message, created_at AS timestamp FROM finance_alerts WHERE acknowledged = 0 ORDER BY created_at DESC LIMIT 50`).all();
       return { success: true, alerts };
@@ -745,7 +745,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:getInsights', async () => {
+  registerModuleHandler('froggo-finance', 'finance:getInsights', async () => {
     try {
       const insights = prepare(`SELECT id, type, title, content, severity, generated_at FROM finance_ai_insights WHERE dismissed = 0 ORDER BY generated_at DESC LIMIT 50`).all();
       return { success: true, insights };
@@ -755,7 +755,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:dismissInsight', async (_, insightId: string) => {
+  registerModuleHandler('froggo-finance', 'finance:dismissInsight', async (_, insightId: string) => {
     try {
       const stmt = prepare(`
         UPDATE finance_ai_insights
@@ -770,7 +770,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:createBudget', async (_, data: {
+  registerModuleHandler('froggo-finance', 'finance:createBudget', async (_, data: {
     name: string;
     budgetType: 'family' | 'crypto';
     totalBudget: number;
@@ -801,7 +801,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
+  registerModuleHandler('froggo-finance', 'finance:triggerAnalysis', async (_, options?: { daysBack?: number; focus?: string }) => {
     try {
       const daysBack = options?.daysBack || 7;
       const focus = options?.focus || 'general';
@@ -842,7 +842,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== ACCOUNT CRUD HANDLERS ==============
 
-  registerHandler('finance:account:list', async () => {
+  registerModuleHandler('froggo-finance', 'finance:account:list', async () => {
     try {
       const rows = prepare(
         `SELECT * FROM finance_accounts WHERE archived = 0 OR archived IS NULL ORDER BY created_at ASC`
@@ -854,7 +854,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:account:create', async (_, data: { name: string; type: string; currency?: string }) => {
+  registerModuleHandler('froggo-finance', 'finance:account:create', async (_, data: { name: string; type: string; currency?: string }) => {
     try {
       const slug = data.name
         .toLowerCase()
@@ -873,7 +873,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:account:update', async (_, id: string, updates: { name?: string }) => {
+  registerModuleHandler('froggo-finance', 'finance:account:update', async (_, id: string, updates: { name?: string }) => {
     try {
       const now = Date.now();
       if (updates.name) {
@@ -886,7 +886,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:account:archive', async (_, id: string) => {
+  registerModuleHandler('froggo-finance', 'finance:account:archive', async (_, id: string) => {
     try {
       const now = Date.now();
       prepare(`UPDATE finance_accounts SET archived = 1, updated_at = ? WHERE id = ?`).run(now, id);
@@ -898,7 +898,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:account:balances', async () => {
+  registerModuleHandler('froggo-finance', 'finance:account:balances', async () => {
     try {
       const rows = prepare(`
         SELECT a.id, a.name, a.type, a.currency, a.archived,
@@ -919,7 +919,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== RECURRING TRANSACTION DETECTION HANDLERS ==============
 
-  registerHandler('finance:recurring:detect', async (_, accountId?: string) => {
+  registerModuleHandler('froggo-finance', 'finance:recurring:detect', async (_, accountId?: string) => {
     try {
       detectRecurring(accountId || undefined);
       return { success: true };
@@ -929,7 +929,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:recurring:list', async (_, accountId?: string) => {
+  registerModuleHandler('froggo-finance', 'finance:recurring:list', async (_, accountId?: string) => {
     try {
       const whereClause = accountId ? `WHERE account_id = ? AND status != 'dismissed'` : `WHERE status != 'dismissed'`;
       const params = accountId ? [accountId] : [];
@@ -941,7 +941,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:recurring:confirm', async (_, id: string) => {
+  registerModuleHandler('froggo-finance', 'finance:recurring:confirm', async (_, id: string) => {
     try {
       prepare(`UPDATE finance_recurring SET status = 'confirmed', updated_at = ? WHERE id = ?`).run(Date.now(), id);
       return { success: true };
@@ -950,7 +950,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:recurring:dismiss', async (_, id: string) => {
+  registerModuleHandler('froggo-finance', 'finance:recurring:dismiss', async (_, id: string) => {
     try {
       const dismissNow = Date.now();
       prepare(`UPDATE finance_recurring SET status = 'dismissed', dismissed_count = COALESCE(dismissed_count, 0) + 1, dismissed_at = ?, updated_at = ? WHERE id = ?`).run(dismissNow, dismissNow, id);
@@ -960,7 +960,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:recurring:status', async (_, accountId?: string) => {
+  registerModuleHandler('froggo-finance', 'finance:recurring:status', async (_, accountId?: string) => {
     try {
       const whereClause = accountId ? `WHERE account_id = ?` : '';
       const params = accountId ? [accountId] : [];
@@ -973,7 +973,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== XLSX EXPORT HANDLER ==============
 
-  registerHandler('finance:export:xlsx', async (_, opts: {
+  registerModuleHandler('froggo-finance', 'finance:export:xlsx', async (_, opts: {
     accountId?: string;
     dateFrom?: number;   // epoch ms, optional
     dateTo?: number;     // epoch ms, optional
@@ -1111,7 +1111,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== CATEGORY HANDLERS ==============
 
-  registerHandler('finance:category:list', async () => {
+  registerModuleHandler('froggo-finance', 'finance:category:list', async () => {
     try {
       const rows = prepare(`SELECT * FROM finance_categories ORDER BY budget_type, name`).all();
       return { success: true, categories: rows };
@@ -1121,7 +1121,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:category:getBreakdown', async (_, opts?: { accountId?: string; days?: number }) => {
+  registerModuleHandler('froggo-finance', 'finance:category:getBreakdown', async (_, opts?: { accountId?: string; days?: number }) => {
     try {
       const days = opts?.days ?? 30;
       const since = Date.now() - days * 24 * 60 * 60 * 1000;
@@ -1137,7 +1137,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:category:corrections', async () => {
+  registerModuleHandler('froggo-finance', 'finance:category:corrections', async () => {
     try {
       const rows = prepare(`SELECT * FROM finance_category_corrections ORDER BY corrected_at DESC LIMIT 50`).all();
       return { success: true, corrections: rows };
@@ -1147,7 +1147,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:transaction:updateCategory', async (_, id: string, category: string) => {
+  registerModuleHandler('froggo-finance', 'finance:transaction:updateCategory', async (_, id: string, category: string) => {
     try {
       const now = Date.now();
       // Get old category and description before updating
@@ -1170,7 +1170,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== PROACTIVE INSIGHTS GENERATION ==============
 
-  registerHandler('finance:insights:generate', async (_, opts?: { days?: number }) => {
+  registerModuleHandler('froggo-finance', 'finance:insights:generate', async (_, opts?: { days?: number }) => {
     try {
       const days = opts?.days ?? 30;
       const now = Date.now();
@@ -1234,7 +1234,7 @@ ${pdfText.slice(0, 15000)}`;
 
   // ============== SCENARIO HANDLERS ==============
 
-  registerHandler('finance:scenario:list', async () => {
+  registerModuleHandler('froggo-finance', 'finance:scenario:list', async () => {
     try {
       const rows = prepare(`SELECT * FROM finance_scenarios ORDER BY updated_at DESC`).all();
       return { success: true, scenarios: rows };
@@ -1244,7 +1244,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:scenario:create', async (_, data: { name: string; description?: string; baseAccountId?: string; projectionMonths?: number }) => {
+  registerModuleHandler('froggo-finance', 'finance:scenario:create', async (_, data: { name: string; description?: string; baseAccountId?: string; projectionMonths?: number }) => {
     try {
       const now = Date.now();
       const id = `scenario-${now}`;
@@ -1264,7 +1264,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:scenario:update', async (_, id: string, updates: { name?: string; description?: string; income_adjustments?: string; expense_adjustments?: string; one_time_events?: string; projection_months?: number }) => {
+  registerModuleHandler('froggo-finance', 'finance:scenario:update', async (_, id: string, updates: { name?: string; description?: string; income_adjustments?: string; expense_adjustments?: string; one_time_events?: string; projection_months?: number }) => {
     try {
       const now = Date.now();
       const setClauses: string[] = [];
@@ -1287,7 +1287,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:scenario:delete', async (_, id: string) => {
+  registerModuleHandler('froggo-finance', 'finance:scenario:delete', async (_, id: string) => {
     try {
       prepare(`DELETE FROM finance_scenarios WHERE id = ?`).run(id);
       return { success: true };
@@ -1297,7 +1297,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:scenario:project', async (_, scenarioId: string) => {
+  registerModuleHandler('froggo-finance', 'finance:scenario:project', async (_, scenarioId: string) => {
     try {
       const scenario = prepare(`SELECT * FROM finance_scenarios WHERE id = ?`).get(scenarioId) as any;
       if (!scenario) return { success: false, error: 'Scenario not found' };
@@ -1358,7 +1358,7 @@ ${pdfText.slice(0, 15000)}`;
     }
   });
 
-  registerHandler('finance:scenario:projectSimple', async (_, adjustments: Array<{ recurringId: string; action: 'cancel' | 'adjust'; newAmount?: number }>) => {
+  registerModuleHandler('froggo-finance', 'finance:scenario:projectSimple', async (_, adjustments: Array<{ recurringId: string; action: 'cancel' | 'adjust'; newAmount?: number }>) => {
     try {
       const confirmedRecurring = prepare(`SELECT * FROM finance_recurring WHERE status = 'confirmed'`).all() as any[];
 
