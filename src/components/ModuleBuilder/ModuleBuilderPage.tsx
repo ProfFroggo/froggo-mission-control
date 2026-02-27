@@ -4,6 +4,7 @@ import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
 import { useConversationFlow } from './useConversationFlow';
 import { generateTasks, exportSpecAsJson } from './TaskGenerator';
+import { showToast } from '../Toast';
 import type { ModuleSpec } from './types';
 
 export default function ModuleBuilderPage() {
@@ -14,9 +15,9 @@ export default function ModuleBuilderPage() {
   const handleGenerateTasks = async () => {
     try {
       const result = await generateTasks(spec as ModuleSpec);
-      alert(`Created task ${result.taskId} with ${result.subtaskIds.length} subtasks!`);
+      showToast('success', 'Tasks Created', `Created task ${result.taskId} with ${result.subtaskIds.length} subtasks!`);
     } catch (err: any) {
-      alert(`Task generation failed: ${err.message}`);
+      showToast('error', 'Task Generation Failed', err.message);
     }
   };
 
