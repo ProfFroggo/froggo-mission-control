@@ -332,6 +332,7 @@ contextBridge.exposeInMainWorld('clawdbot', {
   // Library
   library: {
     list: (category?: string) => ipcRenderer.invoke('library:list', category),
+    sync: () => ipcRenderer.invoke('library:sync'),
     upload: () => ipcRenderer.invoke('library:upload'),
     delete: (fileId: string) => ipcRenderer.invoke('library:delete', fileId),
     link: (fileId: string, taskId: string) => ipcRenderer.invoke('library:link', fileId, taskId),

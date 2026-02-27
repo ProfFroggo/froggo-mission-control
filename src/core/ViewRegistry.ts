@@ -32,7 +32,11 @@ class ViewRegistryClass {
 
   register(view: ViewRegistration) {
     if (this.views.has(view.id)) {
-      console.warn(`[ViewRegistry] View "${view.id}" already registered — overwriting`);
+      const existing = this.views.get(view.id)!;
+      console.warn(
+        `[ViewRegistry] Duplicate view ID "${view.id}" — ` +
+        `overwriting (was: moduleId="${existing.moduleId ?? 'core'}", now: moduleId="${view.moduleId ?? 'core'}")`
+      );
     }
     this.views.set(view.id, view);
   }

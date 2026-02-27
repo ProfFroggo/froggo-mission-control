@@ -81,6 +81,9 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   const loadFiles = useCallback(async () => {
     setLoading(true);
     try {
+      // Sync filesystem to database first
+      await window.clawdbot?.library?.sync();
+      
       // Always fetch all files — category filtering happens in render
       const libraryResult = await window.clawdbot?.library?.list();
       const libraryFiles: LibraryFileItem[] = libraryResult?.success ? ((libraryResult.files || []) as unknown as LibraryFileItem[]) : [];
