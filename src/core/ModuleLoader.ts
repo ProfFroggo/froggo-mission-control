@@ -191,7 +191,7 @@ class ModuleLoaderClass {
   }
 
   /**
-   * Disable a module — disposes lifecycle (views + services unregistered).
+   * Disable a module — disposes lifecycle (views + services unregistered) and removes IPC handlers.
    * The module registration is retained so it can be re-enabled later.
    */
   disableModule(moduleId: string): void {
@@ -201,16 +201,30 @@ class ModuleLoaderClass {
       return;
     }
     this.dispose(moduleId);
+
+    // Remove IPC handlers registered by this module in the main process
+    // Always call — registerModuleHandler() tracking handles no-op if nothing tracked
+    window.clawdbot?.modules?.invoke?.('module:ipc:removeHandlers', moduleId)
+      .then((result: { success: boolean; removed: number }) => {
+        if (result?.removed > 0) {
+          // eslint-disable-next-line no-console
+          console.log(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
+        }
+      })
+      .catch((_err: unknown) => {
+        // IPC removal is best-effort — module is already disposed
+      });
+
+    // eslint-disable-next-line no-console
     console.log(`[ModuleLoader] Module "${moduleId}" disabled`);
   }
 
   /**
    * Re-enable a disabled module — re-runs lifecycle.init() to restore views and services.
    *
-   * Note: IPC handlers registered in the main process are NOT re-registered after dispose.
-   * The dedup guard in ipc-registry.ts silently skips re-registration if the channel already
-   * exists. IPC handlers remain functional in the main process even when a module is "disabled"
-   * in the renderer. Full IPC lifecycle (register/unregister on toggle) is deferred to a future phase.
+   * IPC handlers: disableModule() calls unregisterModuleHandlers() which clears the dedup guard.
+   * When the module's electron-side registration runs again (e.g., via module:ipc:registerHandlers
+   * or at next app restart), handlers will re-register cleanly.
    */
   async enableModule(moduleId: string): Promise<void> {
     const reg = this.modules.get(moduleId);

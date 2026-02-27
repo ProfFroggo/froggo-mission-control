@@ -37,11 +37,27 @@ describe('ViewRegistry', () => {
   });
 
   it('should overwrite on duplicate ID', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     ViewRegistry.register({ id: 'dup', label: 'First', icon: DummyIcon, component: DummyComponent });
     ViewRegistry.register({ id: 'dup', label: 'Second', icon: DummyIcon, component: DummyComponent });
 
     expect(ViewRegistry.get('dup')?.label).toBe('Second');
     expect(ViewRegistry.getAll()).toHaveLength(1);
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy.mock.calls[0][0]).toContain('dup');
+    warnSpy.mockRestore();
+  });
+
+  it('should include both moduleIds in the duplicate warning', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    ViewRegistry.register({ id: 'dup2', label: 'First', icon: DummyIcon, component: DummyComponent, moduleId: 'module-a' });
+    ViewRegistry.register({ id: 'dup2', label: 'Second', icon: DummyIcon, component: DummyComponent, moduleId: 'module-b' });
+
+    expect(warnSpy).toHaveBeenCalledOnce();
+    const warnMsg = warnSpy.mock.calls[0][0];
+    expect(warnMsg).toContain('module-a');
+    expect(warnMsg).toContain('module-b');
+    warnSpy.mockRestore();
   });
 
   it('should filter by module', () => {

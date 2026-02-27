@@ -26,12 +26,27 @@ interface AttachedFile {
   dataUrl?: string;
 }
 
+interface ContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  input?: any;
+  id?: string;
+  tool_use_id?: string;
+  content?: any;
+  is_error?: boolean;
+}
+
+interface StructuredChatMessage extends Omit<ChatMessage, 'content'> {
+  content: string | ContentBlock[];
+}
+
 export default function ChatPanel() {
   const { addActivity } = useStore();
   const { rooms, activeRoomId, setActiveRoom, createRoom } = useChatRoomStore();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showRoomList, setShowRoomList] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<StructuredChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [speakResponses, setSpeakResponses] = useState(false);
@@ -59,12 +74,13 @@ export default function ChatPanel() {
   }, [chatAgents, chatAgents.length, selectedAgent]);
   
   // Cache messages per agent so switching is instant
-  const messageCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
+  const messageCacheRef = useRef<Map<string, StructuredChatMessage[]>>(new Map());
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentResponseRef = useRef<string>('');
+  const currentContentRef = useRef<string | ContentBlock[]>(''); // Full structured content
   const currentMsgIdRef = useRef<string>('');
   const currentRunIdRef = useRef<string>('');
 
@@ -100,8 +116,19 @@ export default function ChatPanel() {
     if (window.clawdbot?.chat?.loadMessages) {
       const result = await window.clawdbot?.chat.loadMessages(50, agent.dbSessionKey);
       if (result?.success && result.messages?.length > 0) {
-        setMessages(result.messages);
-        messageCacheRef.current.set(agent.id, result.messages);
+        // Parse JSON content back to structured blocks if needed
+        const parsedMessages = result.messages.map((msg: ChatMessage) => {
+          if (typeof msg.content === 'string' && msg.content.startsWith('[')) {
+            try {
+              return { ...msg, content: JSON.parse(msg.content) };
+            } catch {
+              return msg; // Keep as string if parse fails
+            }
+          }
+          return msg;
+        });
+        setMessages(parsedMessages);
+        messageCacheRef.current.set(agent.id, parsedMessages);
       }
     }
   }, [selectedAgent, messages]);
@@ -120,7 +147,7 @@ export default function ChatPanel() {
   }, [selectedAgent]);
 
   // Toggle star on a message
-  const handleToggleStar = async (msg: ChatMessage, e: React.MouseEvent) => {
+  const handleToggleStar = async (msg: StructuredChatMessage, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (!window.clawdbot?.starred) {
@@ -244,16 +271,22 @@ export default function ChatPanel() {
   };
 
   const filteredMessages = useMemo(() => {
-    const visible = messages.filter(msg =>
-      !isSystemReply(msg.content) &&
-      (msg.streaming || (msg.content && msg.content.trim().length > 0))
-    );
+    const visible = messages.filter(msg => {
+      const textContent = Array.isArray(msg.content)
+        ? msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
+        : msg.content;
+      return !isSystemReply(textContent) &&
+        (msg.streaming || (textContent && textContent.trim().length > 0));
+    });
     if (!searchQuery.trim()) return visible;
     const query = searchQuery.toLowerCase();
-    return visible.filter(msg => 
-      msg.content.toLowerCase().includes(query) ||
-      msg.role.toLowerCase().includes(query)
-    );
+    return visible.filter(msg => {
+      const textContent = Array.isArray(msg.content)
+        ? msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
+        : msg.content;
+      return textContent.toLowerCase().includes(query) ||
+        msg.role.toLowerCase().includes(query);
+    });
   }, [messages, searchQuery]);
 
   // Scroll to bottom
@@ -290,18 +323,24 @@ export default function ChatPanel() {
     try {
       const res = await gateway.getChatHistory(30) as { messages?: any[] } | null;
       if (res?.messages && Array.isArray(res.messages)) {
-        const history: ChatMessage[] = res.messages
+        const history: StructuredChatMessage[] = res.messages
           .filter((m: any) => m.role === 'user' || m.role === 'assistant')
           .map((m: any, i: number) => {
-            // Extract text from content (handle both string and array formats)
-            let content = '';
+            // Preserve structured content if available, else extract text
+            let content: string | ContentBlock[] = '';
             if (typeof m.content === 'string') {
               content = m.content;
             } else if (Array.isArray(m.content)) {
-              content = m.content
-                .filter((c: any) => c.type === 'text')
-                .map((c: any) => c.text)
-                .join('');
+              // Keep the full array for assistant messages to show tool calls
+              if (m.role === 'assistant') {
+                content = m.content;
+              } else {
+                // For user messages, extract text only
+                content = m.content
+                  .filter((c: any) => c.type === 'text')
+                  .map((c: any) => c.text)
+                  .join('');
+              }
             }
 
             return {
@@ -382,19 +421,25 @@ export default function ChatPanel() {
 
     const handleMessage = (data: any) => {
       if (currentMsgIdRef.current) {
-        // Extract ALL text blocks properly (handles thinking blocks)
-        let content = '';
+        // Store the FULL content structure (blocks array or string)
+        let content: string | ContentBlock[] = '';
+        
         if (data.message?.content && Array.isArray(data.message.content)) {
-          content = data.message.content
+          // Keep structured content blocks
+          content = data.message.content;
+          currentContentRef.current = content; // Store full structure
+          // Also extract text for legacy operations
+          currentResponseRef.current = data.message.content
             .filter((c: any) => c.type === 'text')
             .map((c: any) => c.text)
             .join('');
         } else if (data.content) {
           content = data.content;
+          currentContentRef.current = content;
+          currentResponseRef.current = data.content;
         }
         
         if (content) {
-          currentResponseRef.current = content;
           setMessages(prev => prev.map(m => 
             m.id === currentMsgIdRef.current 
               ? { ...m, content, streaming: false } 
@@ -406,7 +451,8 @@ export default function ChatPanel() {
 
     const handleEnd = () => {
       if (currentMsgIdRef.current) {
-        const finalContent = currentResponseRef.current;
+        const finalTextContent = currentResponseRef.current;
+        const finalFullContent = currentContentRef.current;
 
         // Update UI immediately — no blocking
         setMessages(prev => prev.map(m =>
@@ -418,23 +464,29 @@ export default function ChatPanel() {
         const runId = currentRunIdRef.current;
         currentMsgIdRef.current = '';
         currentResponseRef.current = '';
+        currentContentRef.current = '';
         if (runId) { gateway.clearRunId(runId); currentRunIdRef.current = ''; }
 
         // Fire-and-forget: DB save, speech, routing — all parallel, non-blocking
-        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+        // Save FULL structured content to DB (not just text!)
+        if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          const contentToSave = typeof finalFullContent === 'string' 
+            ? finalFullContent 
+            : JSON.stringify(finalFullContent);
+          
           window.clawdbot.chat.saveMessage({
             role: 'assistant',
-            content: finalContent,
+            content: contentToSave,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => logger.error('Error saving assistant message:', err));
         }
 
-        if (speakResponses && finalContent) {
-          requestIdleCallback(() => speak(finalContent), { timeout: 5000 });
+        if (speakResponses && finalTextContent) {
+          requestIdleCallback(() => speak(finalTextContent), { timeout: 5000 });
         }
 
-        const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
+        const brainMatch = finalTextContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           gateway.sendToMain(`[From Chat Agent]\n${brainMatch[1].trim()}`)
             .catch((err: any) => logger.error('Brain routing error:', err));
@@ -448,22 +500,30 @@ export default function ChatPanel() {
         return;
       }
 
-      // Extract content from message structure - ALL text blocks, not just first
-      let content = '';
+      // Store the FULL content structure (blocks array or string)
+      let content: string | ContentBlock[] = '';
+      let textContent = '';
+      
       if (data.message?.content && Array.isArray(data.message.content)) {
-        content = data.message.content
+        // Keep structured content blocks
+        content = data.message.content;
+        currentContentRef.current = content; // Store full structure
+        // Extract text for legacy operations (speech)
+        textContent = data.message.content
           .filter((c: any) => c.type === 'text')
           .map((c: any) => c.text)
           .join('');
       } else if (data.content) {
         content = data.content;
+        currentContentRef.current = content;
+        textContent = data.content;
       }
       
       if (content) {
         // Only update if this is the final/complete content, not partial
         // Partial deltas are handled by handleDelta
-        if (data.state === 'final' || content.length > currentResponseRef.current.length) {
-          currentResponseRef.current = content;
+        if (data.state === 'final' || (typeof textContent === 'string' && textContent.length > currentResponseRef.current.length)) {
+          currentResponseRef.current = textContent;
           setMessages(prev => prev.map(m => 
             m.id === currentMsgIdRef.current 
               ? { ...m, content } 
@@ -474,7 +534,8 @@ export default function ChatPanel() {
 
       // Check if final
       if (data.state === 'final') {
-        const finalContent = currentResponseRef.current;
+        const finalTextContent = currentResponseRef.current;
+        const finalFullContent = currentContentRef.current;
         
         setMessages(prev => prev.map(m => 
           m.id === currentMsgIdRef.current 
@@ -482,11 +543,15 @@ export default function ChatPanel() {
             : m
         ));
         
-        // Save assistant message to database
-        if (finalContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+        // Save assistant message to database with full structured content
+        if (finalFullContent && selectedAgent && window.clawdbot?.chat?.saveMessage) {
+          const contentToSave = typeof finalFullContent === 'string' 
+            ? finalFullContent 
+            : JSON.stringify(finalFullContent);
+            
           window.clawdbot?.chat.saveMessage({
             role: 'assistant',
-            content: finalContent,
+            content: contentToSave,
             timestamp: Date.now(),
             sessionKey: selectedAgent.dbSessionKey,
           }).catch((err: any) => {
@@ -494,12 +559,12 @@ export default function ChatPanel() {
           });
         }
         
-        if (speakResponses && finalContent) {
-          speak(finalContent);
+        if (speakResponses && finalTextContent) {
+          speak(finalTextContent);
         }
         
         // Check for @Brain: routing - forward to main session (Brain/Froggo)
-        const brainMatch = finalContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
+        const brainMatch = finalTextContent.match(/@Brain:\s*([\s\S]*?)(?:$|(?=\n\n))/i);
         if (brainMatch) {
           const brainMessage = brainMatch[1].trim();
           // Send to main session via gateway WebSocket (sends to Discord #get_shit_done)
@@ -588,7 +653,9 @@ export default function ChatPanel() {
       // Extract last 10 messages for context
       const context = messages.slice(-10).map(msg => ({
         role: msg.role,
-        content: msg.content
+        content: typeof msg.content === 'string'
+          ? msg.content
+          : msg.content.filter(b => b.type === 'text').map(b => b.text ?? '').join(''),
       }));
       
       if (window.clawdbot?.chat?.suggestReplies) {
@@ -1273,14 +1340,14 @@ export default function ChatPanel() {
 // ============================================
 
 interface MessageItemProps {
-  msg: ChatMessage;
+  msg: StructuredChatMessage;
   isUser: boolean;
   showAvatar: boolean;
   isLastInGroup: boolean;
   time: string;
   isStarred: boolean;
   selectedAgent: ChatAgent;
-  onToggleStar: (msg: ChatMessage, e: React.MouseEvent) => void;
+  onToggleStar: (msg: StructuredChatMessage, e: React.MouseEvent) => void;
 }
 
 const MessageItem = memo(function MessageItem({
@@ -1342,7 +1409,13 @@ const MessageItem = memo(function MessageItem({
               </button>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(msg.content);
+                  const textToCopy = Array.isArray(msg.content)
+                    ? msg.content
+                        .filter((b: any) => b.type === 'text')
+                        .map((b: any) => b.text)
+                        .join('')
+                    : msg.content;
+                  navigator.clipboard.writeText(textToCopy);
                   showToast('Copied to clipboard', 'success');
                 }}
                 className="p-1.5 rounded-lg bg-clawd-surface/90 backdrop-blur-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-border border border-clawd-border transition-all"
@@ -1373,9 +1446,20 @@ const MessageItem = memo(function MessageItem({
                 </span>
               </div>
             ) : msg.role === 'assistant' ? (
-              <MarkdownMessage content={msg.content} />
+              // Render structured content blocks if available, else fall back to markdown
+              Array.isArray(msg.content) ? (
+                <div className="space-y-1">
+                  {msg.content.map((block, idx) => (
+                    <ContentBlock key={idx} block={block} index={idx} />
+                  ))}
+                </div>
+              ) : (
+                <MarkdownMessage content={msg.content} />
+              )
             ) : (
-              <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              <div className="whitespace-pre-wrap leading-relaxed">
+                {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)}
+              </div>
             )}
             {msg.streaming && msg.content && (
               <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>

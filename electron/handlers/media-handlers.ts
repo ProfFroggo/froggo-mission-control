@@ -101,6 +101,86 @@ export function registerMediaHandlers(): void {
     return { success: false, error: 'No main window' };
   });
 
+  // Sync froggo-library filesystem to database
+  async function syncLibraryFromFilesystem() {
+    const libraryRoot = LIBRARY_DIR;
+    const categories = ['content', 'creative', 'dev', 'finance', 'marketing', 'projects', 'reports', 'research', 'social', 'test-logs', 'ui-design', 'docs', 'other'];
+    const scannedFiles: any[] = [];
+    
+    for (const category of categories) {
+      const categoryPath = path.join(libraryRoot, category);
+      if (!fs.existsSync(categoryPath)) continue;
+      
+      function scanDir(dirPath: string, relativeCategory: string) {
+        const items = fs.readdirSync(dirPath, { withFileTypes: true });
+        for (const item of items) {
+          if (item.name.startsWith('.')) continue;
+          const fullPath = path.join(dirPath, item.name);
+          
+          if (item.isDirectory()) {
+            scanDir(fullPath, relativeCategory);
+          } else {
+            const stats = fs.statSync(fullPath);
+            const relativePath = path.relative(libraryRoot, fullPath);
+            scannedFiles.push({
+              id: `fs-${Buffer.from(relativePath).toString('base64').substring(0, 20)}`,
+              name: item.name,
+              path: fullPath,
+              category: relativeCategory,
+              size: stats.size,
+              createdAt: stats.birthtime.toISOString(),
+              updatedAt: stats.mtime.toISOString(),
+            });
+          }
+        }
+      }
+      
+      scanDir(categoryPath, category);
+    }
+    
+    // Create table if not exists
+    db.exec(`CREATE TABLE IF NOT EXISTS library (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      category TEXT DEFAULT 'other',
+      size INTEGER,
+      mime_type TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      linked_tasks TEXT,
+      tags TEXT,
+      project TEXT
+    )`);
+    
+    const upsertStmt = prepare(`INSERT OR REPLACE INTO library 
+      (id, name, path, category, size, created_at, updated_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`);
+      
+    for (const file of scannedFiles) {
+      upsertStmt.run(
+        file.id,
+        file.name,
+        file.path,
+        file.category,
+        file.size,
+        file.createdAt,
+        file.updatedAt
+      );
+    }
+    
+    return { success: true, synced: scannedFiles.length };
+  }
+
+  registerHandler('library:sync', async () => {
+    try {
+      return await syncLibraryFromFilesystem();
+    } catch (error: any) {
+      safeLog.error('[library:sync] Error:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   registerHandler('library:list', async (_event, category?: string) => {
     if (!fs.existsSync(LIBRARY_DIR)) fs.mkdirSync(LIBRARY_DIR, { recursive: true });
     try {

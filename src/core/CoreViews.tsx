@@ -53,7 +53,7 @@ import { ViewRegistry } from './ViewRegistry';
   { id: 'inbox',        label: 'Inbox',             icon: Mail,             component: CommsInbox3Pane },
   { id: 'kanban',      label: 'Tasks',              icon: Kanban,           component: KanbanPanel },
   { id: 'agentdms',   label: 'Agent DMs',           icon: MessagesSquare,   component: DMFeed },
-  // NOTE: twitter/Social Media view is registered by the twitter module (src/modules/twitter/index.ts)
+
   { id: 'meetings',    label: 'Meetings',           icon: Users,            component: MeetingsPanel },
   { id: 'voicechat',  label: 'Voice Chat',          icon: Mic,              component: VoiceChatPanel },
   { id: 'chat',        label: 'Chat',               icon: MessageSquare,    component: ChatPanel },

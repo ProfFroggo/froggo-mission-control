@@ -1,6 +1,7 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
 import { AlertTriangle, RefreshCw, Bug, XCircle } from 'lucide-react';
 import { createLogger } from '../utils/logger';
+import { showToast } from './Toast';
 
 const logger = createLogger('ErrorBoundary');
 
@@ -78,8 +79,7 @@ Time: ${new Date().toISOString()}
     `.trim();
 
     navigator.clipboard.writeText(errorDetails).then(() => {
-      // Show feedback - using alert for simplicity as toast might not be available in error state
-      alert('Error details copied to clipboard. Please share with the development team.');
+      showToast('success', 'Error Details Copied', 'Please share with the development team.');
     }).catch((err) => {
       logger.error('Failed to copy error details to clipboard:', err);
     });
