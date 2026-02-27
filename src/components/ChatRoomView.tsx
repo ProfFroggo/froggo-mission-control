@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
+import MentionText from './MentionText';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
 import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
@@ -694,7 +695,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                     ) : !isUser ? (
                       <MarkdownMessage content={msg.content} />
                     ) : (
-                      <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                      <MentionText 
+                        text={msg.content} 
+                        agentIds={room.agents}
+                        agentNames={Object.fromEntries(room.agents.map(id => [id, agentName(id)]))}
+                      />
                     )}
                     {msg.streaming && msg.content && (
                       <div className="flex items-center gap-1.5 mt-2 opacity-60">
