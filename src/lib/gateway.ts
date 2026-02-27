@@ -540,7 +540,7 @@ class Gateway {
       params: {
         minProtocol: 3, 
         maxProtocol: 3,
-        client: { id: 'openclaw-control-ui', version: '1.0.0', platform: 'electron', mode: 'control-ui' },
+        client: { id: 'openclaw-control-ui', version: '1.0.0', platform: 'electron', mode: 'ui' },
         role: 'operator',
         scopes: ['operator.admin', 'operator.write', 'operator.read'],
         caps: ['streaming'],
