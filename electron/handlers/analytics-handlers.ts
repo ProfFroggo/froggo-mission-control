@@ -12,13 +12,13 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { registerHandler } from '../ipc-registry';
+import { registerModuleHandler } from '../ipc-registry';
 import { prepare, getSessionsDb } from '../database';
 import { safeLog } from '../logger';
 import { FROGGO_DB_CLI } from '../paths';
 
 export function registerAnalyticsHandlers(): void {
-  registerHandler('analytics:getData', async (_event, timeRange: string) => {
+  registerModuleHandler('froggo-analytics', 'analytics:getData', async (_event, timeRange: string) => {
     try {
       const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
       const completions = prepare(`SELECT date(updated_at/1000, 'unixepoch') as date, COUNT(*) as tasks_completed FROM tasks WHERE status = 'done' AND (cancelled IS NULL OR cancelled = 0) AND updated_at >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date ORDER BY date`).all();
@@ -32,21 +32,21 @@ export function registerAnalyticsHandlers(): void {
     }
   });
 
-  registerHandler('analytics:subtaskStats', async () => {
+  registerModuleHandler('froggo-analytics', 'analytics:subtaskStats', async () => {
     try {
       const data = prepare(`SELECT t.id as taskId, t.title as taskTitle, COUNT(s.id) as totalSubtasks, SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) as completedSubtasks, ROUND(CASE WHEN COUNT(s.id) > 0 THEN CAST(SUM(CASE WHEN s.completed = 1 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(s.id) * 100 ELSE 0 END, 2) as completionRate FROM tasks t LEFT JOIN subtasks s ON t.id = s.task_id WHERE t.status != 'done' AND (t.cancelled IS NULL OR t.cancelled = 0) GROUP BY t.id, t.title HAVING COUNT(s.id) > 0 ORDER BY completionRate ASC`).all();
       return { success: true, data };
     } catch (error: any) { safeLog.error('[analytics:subtaskStats] Error:', error.message); return { success: true, data: [] }; }
   });
 
-  registerHandler('analytics:heatmap', async (_event, days: number = 30) => {
+  registerModuleHandler('froggo-analytics', 'analytics:heatmap', async (_event, days: number = 30) => {
     try {
       const data = prepare(`SELECT date(timestamp / 1000, 'unixepoch') as date, CAST(strftime('%w', timestamp / 1000, 'unixepoch') AS INTEGER) as dayOfWeek, CAST(strftime('%H', timestamp / 1000, 'unixepoch') AS INTEGER) as hour, COUNT(*) as activityCount FROM task_activity WHERE timestamp >= (strftime('%s', 'now', '-${days} days') * 1000) GROUP BY date, dayOfWeek, hour ORDER BY date, hour`).all();
       return { success: true, data };
     } catch (error: any) { safeLog.error('[analytics:heatmap] Error:', error.message); return { success: true, data: [] }; }
   });
 
-  registerHandler('analytics:timeTracking', async (_event, projectFilter?: string) => {
+  registerModuleHandler('froggo-analytics', 'analytics:timeTracking', async (_event, projectFilter?: string) => {
     try {
       let query = `SELECT id as taskId, title as taskTitle, COALESCE(project, 'Uncategorized') as project, COALESCE(assigned_to, 'Unassigned') as agent, started_at as startTime, completed_at as endTime, CASE WHEN completed_at IS NOT NULL AND started_at IS NOT NULL THEN completed_at - started_at WHEN started_at IS NOT NULL AND status = 'in-progress' THEN (strftime('%s','now') * 1000) - started_at ELSE NULL END as duration, status FROM tasks WHERE (cancelled IS NULL OR cancelled = 0) AND started_at IS NOT NULL`;
       if (projectFilter && projectFilter !== 'all') {
@@ -60,7 +60,7 @@ export function registerAnalyticsHandlers(): void {
     } catch (error: any) { safeLog.error('[analytics:timeTracking] Error:', error.message); return { success: true, data: [] }; }
   });
 
-  registerHandler('tokens:summary', async (_event, args?: { agent?: string; period?: string }) => {
+  registerModuleHandler('froggo-analytics', 'tokens:summary', async (_event, args?: { agent?: string; period?: string }) => {
     try {
       const sdb = getSessionsDb();
       if (!sdb) return { error: 'sessions.db not found', by_agent: [] };
@@ -101,7 +101,7 @@ export function registerAnalyticsHandlers(): void {
     } catch (err: any) { return { error: err.message, by_agent: [] }; }
   });
 
-  registerHandler('tokens:log', async (_event, args?: { agent?: string; limit?: number; since?: number }) => {
+  registerModuleHandler('froggo-analytics', 'tokens:log', async (_event, args?: { agent?: string; limit?: number; since?: number }) => {
     try {
       const sdb = getSessionsDb();
       if (!sdb) return { error: 'sessions.db not found', entries: [] };
@@ -119,7 +119,7 @@ export function registerAnalyticsHandlers(): void {
     } catch (err: any) { return { error: err.message, entries: [] }; }
   });
 
-  registerHandler('tokens:budget', async (_event, agent: string) => {
+  registerModuleHandler('froggo-analytics', 'tokens:budget', async (_event, agent: string) => {
     try {
       const budgetRow = prepare(`SELECT daily_token_limit, alert_threshold, hard_limit FROM token_budgets WHERE agent_id = ?`).get(agent) as any;
       if (!budgetRow) return { agent, daily_limit: 0, used_today: 0, remaining: 0, percentage_used: 0, percent_used: 0, alert_threshold: 0.9, over_budget: false, hard_limit: false };
@@ -134,7 +134,7 @@ export function registerAnalyticsHandlers(): void {
     } catch (err: any) { return { error: err.message }; }
   });
 
-  registerHandler('get-performance-report', async (_event, args?: { days?: number }) => {
+  registerModuleHandler('froggo-analytics', 'get-performance-report', async (_event, args?: { days?: number }) => {
     try {
       const days = args?.days || 30;
       const result = execSync(`${FROGGO_DB_CLI} performance-report --days ${days} --json`, { encoding: 'utf-8', timeout: 10000, env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' } });
@@ -142,7 +142,7 @@ export function registerAnalyticsHandlers(): void {
     } catch (err: any) { return { error: err.message, agents: [] }; }
   });
 
-  registerHandler('get-agent-audit', async (_event, args: { agentId: string; days?: number }) => {
+  registerModuleHandler('froggo-analytics', 'get-agent-audit', async (_event, args: { agentId: string; days?: number }) => {
     try {
       const days = args.days || 30;
       const result = execSync(`${FROGGO_DB_CLI} agent-audit ${args.agentId} --days ${days} --json`, { encoding: 'utf-8', timeout: 10000, env: { ...process.env, PATH: process.env.PATH + ':/usr/local/bin:/opt/homebrew/bin' } });
@@ -150,14 +150,14 @@ export function registerAnalyticsHandlers(): void {
     } catch (err: any) { return { error: err.message, timeline: [] }; }
   });
 
-  registerHandler('get-dm-history', async (_event, args?: { limit?: number; agent?: string }) => {
+  registerModuleHandler('froggo-analytics', 'get-dm-history', async (_event, args?: { limit?: number; agent?: string }) => {
     try {
       const limit = args?.limit || 50;
       return prepare('SELECT id, correlation_id, from_agent, to_agent, message_type, subject, body, status, created_at, read_at FROM agent_messages ORDER BY created_at DESC LIMIT ?').all(limit);
     } catch (e: any) { safeLog.error('get-dm-history error:', e); return []; }
   });
 
-  registerHandler('get-circuit-status', async () => {
+  registerModuleHandler('froggo-analytics', 'get-circuit-status', async () => {
     try {
       const stateFile = path.join(os.homedir(), '.openclaw', 'dispatcher-state.json');
       const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
