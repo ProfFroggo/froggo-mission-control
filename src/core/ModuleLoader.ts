@@ -32,6 +32,7 @@ export interface ModuleManifest {
   author?: string;
   icon?: string;
   category?: string;
+  core?: boolean;
 
   views?: ModuleViewDeclaration[];
 
@@ -198,6 +199,10 @@ class ModuleLoaderClass {
     const reg = this.modules.get(moduleId);
     if (!reg) {
       console.warn(`[ModuleLoader] disableModule: module "${moduleId}" not found`);
+      return;
+    }
+    if (reg.manifest.core) {
+      console.error(`[ModuleLoader] Cannot disable core module "${moduleId}"`);
       return;
     }
     this.dispose(moduleId);

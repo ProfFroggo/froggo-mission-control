@@ -281,12 +281,18 @@ function ModuleCard({
           </div>
         </div>
 
-        {/* Toggle */}
-        <ToggleSwitch
-          checked={panelVisible}
-          onChange={(val) => onToggle(data, val)}
-          disabled={data.viewId == null}
-        />
+        {/* Toggle or Core pill */}
+        {manifest.core ? (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-accent/20 text-clawd-accent font-medium">
+            Core
+          </span>
+        ) : (
+          <ToggleSwitch
+            checked={panelVisible}
+            onChange={(val) => onToggle(data, val)}
+            disabled={data.viewId == null}
+          />
+        )}
       </div>
 
       {/* Description */}
