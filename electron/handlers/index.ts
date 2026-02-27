@@ -5,6 +5,7 @@
  * Import registerAllHandlers() in main.ts to register everything.
  */
 
+export { registerModuleStateHandlers } from './module-state-handlers';
 export { registerAgentHandlers } from './agent-handlers';
 export { registerNotificationHandlers } from './notification-handlers';
 export { registerSettingsHandlers } from './settings-handlers';
@@ -27,6 +28,7 @@ export { registerTwitterModuleHandlers } from './twitter-module-handlers';
 export { registerMarketplaceHandlers } from './marketplace-handlers';
 export { registerAgentPackageHandlers } from './agent-package-handlers';
 
+import { registerModuleStateHandlers } from './module-state-handlers';
 import { registerAgentHandlers } from './agent-handlers';
 import { registerNotificationHandlers } from './notification-handlers';
 import { registerSettingsHandlers } from './settings-handlers';
@@ -54,6 +56,10 @@ import { registerAgentPackageHandlers } from './agent-package-handlers';
  * Call once in app.whenReady().
  */
 export function registerAllHandlers(): void {
+  // Core infrastructure handlers — registered FIRST so disabled state cache is populated
+  // before any module handler registrations run
+  registerModuleStateHandlers();
+
   // Wave 1 handlers
   registerXTwitterHandlers();
   registerTaskHandlers();

@@ -133,9 +133,26 @@ class ModuleLoaderClass {
   async initAll(): Promise<void> {
     if (this.initialized) return;
 
+    // Load disabled module state from disk before initializing
+    let disabledModules: string[] = [];
+    try {
+      const stateResult = await window.clawdbot?.modules?.invoke?.('module:state:load') as { disabled: string[] } | undefined;
+      if (stateResult?.disabled) {
+        disabledModules = stateResult.disabled;
+      }
+    } catch {
+      // State load failure is non-fatal — all modules init as enabled
+    }
+
     const sorted = this.topologicalSort();
 
     for (const reg of sorted) {
+      // Skip disabled modules — but never skip core modules regardless of state file
+      if (disabledModules.includes(reg.manifest.id) && !reg.manifest.core) {
+        reg.status = 'disposed';
+        console.log(`[ModuleLoader] Skipped disabled module "${reg.manifest.name}"`);
+        continue;
+      }
       reg.status = 'initializing';
       try {
         await reg.lifecycle.init();
@@ -210,7 +227,8 @@ class ModuleLoaderClass {
     // Remove IPC handlers registered by this module in the main process
     // Always call — registerModuleHandler() tracking handles no-op if nothing tracked
     window.clawdbot?.modules?.invoke?.('module:ipc:removeHandlers', moduleId)
-      .then((result: { success: boolean; removed: number }) => {
+      .then((res: unknown) => {
+        const result = res as { success: boolean; removed: number };
         if (result?.removed > 0) {
           // eslint-disable-next-line no-console
           console.log(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
@@ -219,6 +237,10 @@ class ModuleLoaderClass {
       .catch((_err: unknown) => {
         // IPC removal is best-effort — module is already disposed
       });
+
+    // Persist disabled state to disk
+    window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, false)
+      .catch((_err: unknown) => { /* state persistence is best-effort */ });
 
     // eslint-disable-next-line no-console
     console.log(`[ModuleLoader] Module "${moduleId}" disabled`);
@@ -247,6 +269,21 @@ class ModuleLoaderClass {
       reg.status = 'active';
       delete reg.error;
       console.log(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
+
+      // Re-register IPC handlers from stored factories (fire-and-forget)
+      window.clawdbot?.modules?.invoke?.('module:ipc:registerHandlers', moduleId)
+        .then((res: unknown) => {
+          const result = res as { success: boolean; registered: number };
+          if (result?.registered > 0) {
+            // eslint-disable-next-line no-console
+            console.log(`[ModuleLoader] Re-registered ${result.registered} IPC handler(s) for "${moduleId}"`);
+          }
+        })
+        .catch((_err: unknown) => { /* IPC re-registration is best-effort */ });
+
+      // Persist enabled state to disk (fire-and-forget)
+      window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, true)
+        .catch((_err: unknown) => { /* state persistence is best-effort */ });
     } catch (err) {
       reg.status = 'error';
       reg.error = err instanceof Error ? err.message : String(err);
