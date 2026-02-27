@@ -205,15 +205,17 @@ class ModuleLoaderClass {
     // Remove IPC handlers registered by this module in the main process
     // Always call — registerModuleHandler() tracking handles no-op if nothing tracked
     window.clawdbot?.modules?.invoke?.('module:ipc:removeHandlers', moduleId)
-      .then((result: any) => {
+      .then((result: { success: boolean; removed: number }) => {
         if (result?.removed > 0) {
+          // eslint-disable-next-line no-console
           console.log(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
         }
       })
-      .catch((err: any) => {
-        console.error(`[ModuleLoader] Failed to remove IPC handlers for "${moduleId}":`, err);
+      .catch((_err: unknown) => {
+        // IPC removal is best-effort — module is already disposed
       });
 
+    // eslint-disable-next-line no-console
     console.log(`[ModuleLoader] Module "${moduleId}" disabled`);
   }
 
