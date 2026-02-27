@@ -11,6 +11,7 @@ import IconBadge from './IconBadge';
 import MarkdownMessage from './MarkdownMessage';
 import { matchTaskToAgent } from '../lib/agents';
 import { createLogger } from '../utils/logger';
+import { copyToClipboard } from '../utils/clipboard';
 
 const logger = createLogger('InboxPanel');
 
@@ -966,10 +967,14 @@ export default function InboxPanel() {
     }
   };
 
-  const handleApplySuggestion = (suggestion: string) => {
+  const handleApplySuggestion = async (suggestion: string) => {
     // For now, copy to clipboard - could be extended to apply to content field
-    navigator.clipboard.writeText(suggestion);
-    showToast('success', 'Suggestion copied to clipboard');
+    const success = await copyToClipboard(suggestion);
+    if (success) {
+      showToast('success', 'Suggestion copied to clipboard');
+    } else {
+      showToast('error', 'Copy failed', 'Unable to copy to clipboard');
+    }
   };
 
   return (

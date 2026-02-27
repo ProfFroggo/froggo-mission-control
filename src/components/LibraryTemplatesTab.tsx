@@ -3,6 +3,7 @@ import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star,
 import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { showToast } from './Toast';
+import { copyToClipboard } from '../utils/clipboard';
 
 // X logo component
 const XIcon = ({ size = 16 }: { size?: number }) => (
@@ -97,12 +98,16 @@ export default function LibraryTemplatesTab() {
     return matchesSearch && matchesType;
   });
 
-  const handleCopy = (template: Template) => {
-    navigator.clipboard.writeText(template.content);
-    setTemplates(prev => prev.map(t => 
-      t.id === template.id ? { ...t, usageCount: t.usageCount + 1 } : t
-    ));
-    showToast('success', 'Copied!', template.name);
+  const handleCopy = async (template: Template) => {
+    const success = await copyToClipboard(template.content);
+    if (success) {
+      setTemplates(prev => prev.map(t => 
+        t.id === template.id ? { ...t, usageCount: t.usageCount + 1 } : t
+      ));
+      showToast('success', 'Copied!', template.name);
+    } else {
+      showToast('error', 'Copy failed', 'Unable to copy to clipboard');
+    }
   };
 
   const handleStar = (id: string) => {

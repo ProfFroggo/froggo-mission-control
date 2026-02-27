@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { ArrowDownToLine, Copy, Check, RotateCcw } from 'lucide-react';
 import { useWritingStore } from '../../store/writingStore';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
+import { copyToClipboard } from '../../utils/clipboard';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -18,12 +19,10 @@ export default function ChatMessage({ message, isStreaming, streamContent, onRet
   const isUser = message.role === 'user';
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(content);
+    const success = await copyToClipboard(content);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API may fail in some contexts
     }
   };
 

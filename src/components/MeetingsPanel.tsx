@@ -19,6 +19,7 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { createLogger } from '../utils/logger';
+import { copyToClipboard } from '../utils/clipboard';
 
 const logger = createLogger('Meetings');
 
@@ -2072,7 +2073,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               )}
                             </button>
                             <button
-                              onClick={() => navigator.clipboard.writeText(transcriptionResult)}
+                              onClick={async () => {
+                                const success = await copyToClipboard(transcriptionResult);
+                                if (!success) {
+                                  alert('Failed to copy transcription. Please copy manually.');
+                                }
+                              }}
                               className="px-4 py-3 bg-clawd-surface border border-clawd-border rounded-xl text-sm hover:border-clawd-accent transition-all"
                             >
                               Copy Text
