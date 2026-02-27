@@ -17,8 +17,15 @@ export default function MentionText({ text, agentIds, agentNames, currentUserId 
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
     
-    // Build regex to match @agentName or @agent-id
+    // Build regex to match @agentName or @agent-id or @all
     const patterns: { id: string; pattern: RegExp }[] = [];
+    
+    // Add @all pattern first (special case)
+    patterns.push({
+      id: 'all',
+      pattern: new RegExp(`(@all\\b)`, 'gi')
+    });
+    
     agentIds.forEach(id => {
       const name = agentNames[id] || id;
       // Match @name or @id (case insensitive, word boundary)
@@ -60,11 +67,14 @@ export default function MentionText({ text, agentIds, agentNames, currentUserId 
 
       // Add highlighted mention
       const isSelf = mention.id === currentUserId;
+      const isAll = mention.id === 'all';
       parts.push(
         <span
           key={`mention-${i}`}
           className={`font-medium px-1.5 py-0.5 rounded ${
-            isSelf
+            isAll
+              ? 'bg-clawd-accent/20 text-clawd-accent'
+              : isSelf
               ? 'bg-clawd-accent/20 text-clawd-accent'
               : 'bg-clawd-border/50 text-clawd-text'
           }`}

@@ -180,6 +180,11 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
 
   /** Extract @AgentName or @agent-id mentions from text */
   const extractMentions = (text: string, agentIds: string[]): string[] => {
+    // Check for @all first - expands to all agents in room
+    if (/@all\b/i.test(text)) {
+      return [...agentIds]; // Return all agents
+    }
+    
     const mentioned: string[] = [];
     for (const id of agentIds) {
       const name = agentName(id);
@@ -435,10 +440,11 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   };
 
   const insertMention = (agentId: string) => {
-    const name = agentName(agentId);
     const lastAt = input.lastIndexOf('@');
     const before = input.slice(0, lastAt);
-    setInput(`${before}@${name} `);
+    // Special case for @all
+    const mentionText = agentId === 'all' ? 'all' : agentName(agentId);
+    setInput(`${before}@${mentionText} `);
     setShowMentions(false);
     setMentionFilter('');
     inputRef.current?.focus();
@@ -452,10 +458,17 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     );
   }
 
-  const filteredAgents = room.agents.filter(id => {
+  // Build filtered agents list with @all option
+  const agentMatches = room.agents.filter(id => {
     const name = agentName(id);
     return name.toLowerCase().includes(mentionFilter);
   });
+  
+  // Add @all option if it matches the filter and there are multiple agents
+  const filteredAgents = [
+    ...(room.agents.length > 1 && 'all'.includes(mentionFilter) ? ['all'] : []),
+    ...agentMatches
+  ];
 
   // Detect if this is a team meeting (has all or nearly all agents)
   const totalAgents = agents.length;
@@ -607,10 +620,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   ))}
                 </div>
                 <p className="text-xs mb-4">
-                  Address everyone at once, or use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
+                  Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone, or <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center max-w-sm mx-auto">
-                  {["Everyone, let's discuss the sprint plan", "Team status update please", "@Chief What are the priorities?"].map((q, i) => (
+                  {["@all Let's discuss the sprint plan", "@all Team status update", "@Chief What are the priorities?"].map((q, i) => (
                     <button
                       key={i}
                       onClick={() => setInput(q)}
@@ -629,8 +642,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   Start a conversation with {room.agents.map(id => agentName(id)).join(' and ')}.
                 </p>
                 <p className="text-xs">
-                  Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> to address specific agents,
-                  or just type to talk to everyone.
+                  Use <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone,
+                  or <span className="font-mono bg-clawd-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
               </>
             )}
@@ -793,6 +806,23 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         {showMentions && filteredAgents.length > 0 && (
           <div className="absolute bottom-full left-4 right-4 mb-2 bg-clawd-surface border border-clawd-border rounded-xl shadow-xl overflow-hidden">
             {filteredAgents.map(id => {
+              // Special case for @all
+              if (id === 'all') {
+                return (
+                  <button
+                    key="all"
+                    onClick={() => insertMention('all')}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-clawd-bg transition-colors border-b border-clawd-border"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-clawd-accent/20 flex items-center justify-center">
+                      <UsersRound size={16} className="text-clawd-accent" />
+                    </div>
+                    <span className="font-medium text-sm text-clawd-accent">all</span>
+                    <span className="text-xs text-clawd-text-dim">Notify all {room.agents.length} agents</span>
+                  </button>
+                );
+              }
+              
               const agent = agents.find(a => a.id === id);
               const theme = getAgentTheme(id);
               return (
