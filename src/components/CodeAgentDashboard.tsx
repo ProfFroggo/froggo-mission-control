@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle } from 'lucide-react';
+import { Code, GitCommit, Terminal, Zap, RefreshCw, ChevronRight, FileCode, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import CronTab from './CronTab';
 import DebugTab from './DebugTab';
+import EmptyState from './EmptyState';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('CodeAgent');
@@ -40,14 +41,17 @@ export default function CodeAgentDashboard() {
   const [sessions, setSessions] = useState<DevSession[]>([]);
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [tasks, setTasks] = useState<DevTask[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [totalTokens, setTotalTokens] = useState(0);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       // Safety check - bail if clawdbot APIs not available
       if (!window.clawdbot) {
+        setError('Dashboard APIs not available. Ensure the app is running in Electron.');
         return;
       }
       // Load recent git commits
@@ -129,8 +133,9 @@ export default function CodeAgentDashboard() {
         setTasks(devTasks);
       }
 
-    } catch (error) {
-      // 'Failed to load dev data:', error;
+    } catch (err) {
+      logger.error('Failed to load dev data:', err);
+      setError('Could not load dev data. Ensure git is available and sessions are active.');
     } finally {
       setLoading(false);
     }
@@ -213,7 +218,24 @@ export default function CodeAgentDashboard() {
       {activeTab === 'cron' && <CronTab />}
       {activeTab === 'debug' && <DebugTab />}
 
-      {activeTab === 'dashboard' && <>
+      {activeTab === 'dashboard' && loading && (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 size={24} className="animate-spin text-clawd-text-dim" />
+        </div>
+      )}
+
+      {activeTab === 'dashboard' && !loading && error && (
+        <div className="flex-1 flex items-center justify-center p-6">
+          <EmptyState
+            icon={AlertCircle}
+            title="Unable to load dev data"
+            description={error}
+            action={{ label: 'Retry', onClick: loadData }}
+          />
+        </div>
+      )}
+
+      {activeTab === 'dashboard' && !loading && !error && <>
       {/* Stats Bar */}
       <div className="px-6 pt-4 pb-2 bg-clawd-surface border-b border-clawd-border">
         <div className="grid grid-cols-4 gap-4">
