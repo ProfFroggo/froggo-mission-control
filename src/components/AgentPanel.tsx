@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bot, Play, Square, StopCircle, RefreshCw, Plus, MessageSquare, Zap, Clock, CheckCircle, AlertCircle, ChevronDown, ChevronRight, Award, FileText, GitCompare, BarChart3, Settings } from 'lucide-react';
 import { useStore, Agent } from '../store/store';
+import { useShallow } from 'zustand/react/shallow';
 import { gateway } from '../lib/gateway';
 import WorkerModal from './WorkerModal';
 import AgentDetailModal from './AgentDetailModal';
@@ -38,7 +39,18 @@ const HOVER_BG_MAP: Record<string, string> = {
 };
 
 export default function AgentPanel() {
-  const { agents, tasks, spawnAgentForTask, updateAgentStatus, fetchAgents, gatewaySessions, loadGatewaySessions, loadTasksFromDB } = useStore();
+  const { agents, tasks, gatewaySessions } = useStore(
+    useShallow(s => ({
+      agents: s.agents,
+      tasks: s.tasks,
+      gatewaySessions: s.gatewaySessions,
+    }))
+  );
+  const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
+  const updateAgentStatus = useStore(s => s.updateAgentStatus);
+  const fetchAgents = useStore(s => s.fetchAgents);
+  const loadGatewaySessions = useStore(s => s.loadGatewaySessions);
+  const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [compareAgents, setCompareAgents] = useState<string[]>([]);
