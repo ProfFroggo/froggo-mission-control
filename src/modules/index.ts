@@ -31,7 +31,7 @@ import './notifications';
 import './meetings';
 import './voice';
 import './schedule';
+import './writing';
 
 // Future modules:
-// import './writing';
 // import './comms';
