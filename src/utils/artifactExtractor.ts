@@ -135,6 +135,33 @@ export function extractArtifactsFromMessage(message: ChatMessage): Artifact[] {
 }
 
 /**
+ * Check if text contains artifacts (code blocks)
+ */
+export function containsArtifacts(content: string): boolean {
+  return /```\w*\n[\s\S]*?```/.test(content);
+}
+
+/**
+ * Extract all artifacts from a content string
+ */
+export function extractAllArtifacts(content: string): Artifact[] {
+  const message: ChatMessage = {
+    id: `inline-${Date.now()}`,
+    content,
+    timestamp: Date.now(),
+    role: 'assistant',
+  };
+  return extractArtifactsFromMessage(message);
+}
+
+/**
+ * Generate a title for an artifact
+ */
+export function generateArtifactTitle(artifact: Artifact): string {
+  return artifact.title || artifact.metadata?.filename || 'Untitled';
+}
+
+/**
  * Extract artifacts from all messages
  */
 export function extractArtifactsFromMessages(messages: ChatMessage[]): Artifact[] {

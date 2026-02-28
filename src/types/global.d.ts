@@ -959,6 +959,7 @@ declare global {
         download: (fileId: string) => Promise<{ success: boolean; path?: string; error?: string }>;
         update: (fileId: string, updates: { category?: string; tags?: string[]; project?: string | null }) => Promise<{ success: boolean; error?: string }>;
         uploadBuffer: (file: { name: string; type: string; buffer: ArrayBuffer | string | null }) => Promise<{ success: boolean; error?: string }>;
+        sync: () => Promise<{ success: boolean; error?: string }>;
       };
       // Shell helpers
       shell?: {
