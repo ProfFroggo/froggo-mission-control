@@ -37,11 +37,7 @@ module.exports = {
   afterPack: async (context) => {
     const electronBinaryPath = path.join(
       context.appOutDir,
-      `${context.packager.appInfo.productFilename}.app`,
-      'Contents',
-      'Frameworks',
-      'Electron Framework.framework',
-      'Electron Framework'
+      `${context.packager.appInfo.productFilename}.app`
     );
 
     await flipFuses(electronBinaryPath, {
