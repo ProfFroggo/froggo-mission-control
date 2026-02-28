@@ -10,7 +10,6 @@
 
 import {
   LayoutDashboard,
-  Calendar,
   Code,
   Sparkles,
   Cloud,
@@ -20,7 +19,6 @@ import {
 
 import {
   Dashboard,
-  SchedulePanel,
   CodeAgentDashboard,
   ContextControlBoard,
   ConnectedAccountsPanel,
@@ -31,14 +29,13 @@ import {
 import { ViewRegistry } from './ViewRegistry';
 
 // Register all core views — order here doesn't matter, panelConfig controls display order
-// NOTE: finance, analytics, settings, library, inbox, chat, agentdms, kanban, approvals, notifications, meetings, voicechat are registered by their respective modules (src/modules/*)
+// NOTE: finance, analytics, settings, library, inbox, chat, agentdms, kanban, approvals, notifications, meetings, voicechat, schedule are registered by their respective modules (src/modules/*)
 [
   { id: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard,  component: Dashboard },
 
   { id: 'accounts',    label: 'Accounts',           icon: Cloud,            component: ConnectedAccountsPanel },
   { id: 'context',     label: 'Context',            icon: Sparkles,         component: ContextControlBoard },
   { id: 'codeagent',  label: 'Dev',                 icon: Code,             component: CodeAgentDashboard },
-  { id: 'schedule',    label: 'Schedule',           icon: Calendar,         component: SchedulePanel },
   { id: 'writing',     label: 'Writing',            icon: PenLine,          component: WritingWorkspace },
   { id: 'modulebuilder', label: 'Module Builder',   icon: Boxes,            component: ModuleBuilderPage },
 ].forEach(view => ViewRegistry.register(view));
