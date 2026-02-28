@@ -317,15 +317,7 @@ function ActivityFeed({
                 <div
                   key={task.id}
                   className="p-3 hover:bg-clawd-bg/30 transition-colors cursor-pointer"
-                  role="button"
-                  tabIndex={0}
                   onClick={() => onNavigate?.('kanban')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onNavigate?.('kanban');
-                    }
-                  }}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse flex-shrink-0" />

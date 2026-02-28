@@ -11,7 +11,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { exec, execFile } from 'child_process';
+import { exec } from 'child_process';
 import { desktopCapturer, systemPreferences } from 'electron';
 import { registerModuleHandler } from '../ipc-registry';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from '../secret-store';
@@ -122,12 +122,14 @@ export function registerSettingsHandlers(): void {
     } catch (err) { safeLog.debug('[TTS] Failed to load ElevenLabs API key:', err); }
 
     const outputPath = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
-    const sagArgs = ['-v', voice || 'Brian', '--model-id', 'eleven_flash_v2_5', '-o', outputPath, text];
-    safeLog.log('[Voice] TTS execFile: sag', sagArgs.slice(0, 4).join(' '), '...');
+    const voiceArg = voice ? `-v "${voice}"` : '-v Brian';
+    const escapedText = text.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    const cmd = `sag ${voiceArg} --model-id eleven_flash_v2_5 -o "${outputPath}" "${escapedText}"`;
+    safeLog.log('[Voice] TTS command:', cmd.slice(0, 120) + '...');
     return new Promise((resolve) => {
       const env = { ...process.env };
       if (elevenlabsApiKey) env.ELEVENLABS_API_KEY = elevenlabsApiKey;
-      execFile('sag', sagArgs, { timeout: 30000, env, encoding: 'utf-8' }, (error, _stdout, stderr) => {
+      exec(cmd, { timeout: 30000, env }, (error, _stdout, stderr) => {
         if (error) { safeLog.error('[Voice] TTS error:', error.message); safeLog.error('[Voice] TTS stderr:', stderr); resolve({ success: false, error: error.message }); }
         else { safeLog.log('[Voice] TTS generated:', outputPath); resolve({ success: true, path: outputPath }); }
       });

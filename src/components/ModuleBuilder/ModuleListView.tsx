@@ -97,15 +97,7 @@ export default function ModuleListView({ onSelectModule, onCreateNew }: ModuleLi
             {modules.map(mod => (
               <div
                 key={mod.id}
-                role="button"
-                tabIndex={0}
                 onClick={() => onSelectModule(mod.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelectModule(mod.id);
-                  }
-                }}
                 className="group relative bg-clawd-surface border border-clawd-border rounded-xl p-4 cursor-pointer hover:border-clawd-accent/50 transition-colors"
               >
                 {/* Status badge */}

@@ -1327,9 +1327,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     ) : showTitleInput ? (
                       <div className="space-y-4">
                         <div>
-                          <label htmlFor="meeting-title" className="block text-sm font-medium text-clawd-text mb-1.5">Title</label>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Title</label>
                           <input
-                            id="meeting-title"
                             type="text"
                             value={meetingTitle}
                             onChange={(e) => { setMeetingTitle(e.target.value); setStartError(null); }}
@@ -1340,9 +1339,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           />
                         </div>
                         <div>
-                          <label htmlFor="meeting-agenda" className="block text-sm font-medium text-clawd-text mb-1.5">Agenda</label>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Agenda</label>
                           <textarea
-                            id="meeting-agenda"
                             value={meetingAgenda}
                             onChange={(e) => setMeetingAgenda(e.target.value)}
                             placeholder="Topics to discuss..."
@@ -1351,9 +1349,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           />
                         </div>
                         <div>
-                          <label htmlFor="meeting-participants" className="block text-sm font-medium text-clawd-text mb-1.5">Participants</label>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Participants</label>
                           <input
-                            id="meeting-participants"
                             type="text"
                             value={meetingParticipants}
                             onChange={(e) => setMeetingParticipants(e.target.value)}
@@ -1362,9 +1359,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           />
                         </div>
                         <div>
-                          <label htmlFor="meeting-notes" className="block text-sm font-medium text-clawd-text mb-1.5">Notes</label>
+                          <label className="block text-sm font-medium text-clawd-text mb-1.5">Notes</label>
                           <textarea
-                            id="meeting-notes"
                             value={meetingNotes}
                             onChange={(e) => setMeetingNotes(e.target.value)}
                             placeholder="Pre-meeting notes..."
@@ -2070,9 +2066,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         </div>
                         <div className="space-y-3">
                           <div>
-                            <label htmlFor="transcription-file-name" className="block text-sm font-medium text-clawd-text mb-1.5">Meeting Name</label>
+                            <label className="block text-sm font-medium text-clawd-text mb-1.5">Meeting Name</label>
                             <input
-                              id="transcription-file-name"
                               type="text"
                               value={transcriptionFileName}
                               onChange={(e) => setTranscriptionFileName(e.target.value)}
