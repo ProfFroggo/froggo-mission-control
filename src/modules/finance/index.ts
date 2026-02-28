@@ -39,17 +39,17 @@ const lifecycle: ModuleLifecycle = {
 
   async activate() {
     // Called when user navigates to finance view
-    console.log('[Finance Module] Activated');
+    console.debug('[Finance Module] Activated');
   },
 
   deactivate() {
-    console.log('[Finance Module] Deactivated');
+    console.debug('[Finance Module] Deactivated');
   },
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);
     ServiceRegistry.disposeModule(manifest.id);
-    console.log('[Finance Module] Disposed');
+    console.debug('[Finance Module] Disposed');
   },
 };
 
