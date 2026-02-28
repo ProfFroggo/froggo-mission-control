@@ -46,6 +46,7 @@ import { registerAgentManagementHandlers } from './agent-management-service';
 import { registerMemoryLifecycleHandlers } from './memory-lifecycle-service';
 import { registerSearchHandlers } from './search-service';
 import { registerKnowledgeHandlers } from './knowledge-service';
+import { registerOnboardingHandlers } from './onboarding-service';
 
 // xApi namespace wrapper for backwards compatibility
 const xApi = {
@@ -980,6 +981,9 @@ app.whenReady().then(() => {
 
   // Register Knowledge feed IPC handlers (shared_knowledge table)
   registerKnowledgeHandlers();
+
+  // Register Onboarding wizard IPC handlers (deps, permissions, sample data)
+  registerOnboardingHandlers();
 
   // Start task notification watcher
   startTaskNotifyWatcher();
