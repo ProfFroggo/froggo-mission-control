@@ -605,7 +605,7 @@ async function processScheduledItems() {
   // Query for pending items and filter in JS (handles various datetime formats)
   let items: any[] = [];
   try {
-    items = prepare("SELECT * FROM schedule WHERE status = 'pending'").all() as any[];
+    items = prepare("SELECT id, type, content, scheduled_for, status, created_at, sent_at, error, metadata FROM schedule WHERE status = 'pending'").all() as any[];
   } catch (e: any) {
     safeLog.error('[ScheduleProcessor] Query error:', e.message);
     return;
@@ -1399,7 +1399,7 @@ ipcMain.handle('tasks:sync', async (_, task: {
 // Get notification settings for a specific conversation
 ipcMain.handle('notification-settings:get', async (_, sessionKey: string) => {
   try {
-    const row = prepare('SELECT * FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
+    const row = prepare('SELECT id, session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, created_at, updated_at, created_by, notes FROM conversation_notification_settings WHERE session_key = ?').get(sessionKey);
     return { success: true, settings: row || null };
   } catch (error: any) {
     safeLog.error('[NotificationSettings] Get error:', error);
@@ -1512,7 +1512,7 @@ ipcMain.handle('notification-settings:delete', async (_, sessionKey: string) => 
 // Get global notification defaults
 ipcMain.handle('notification-settings:global-defaults', async () => {
   try {
-    const row = prepare('SELECT * FROM global_notification_defaults WHERE id = 1').get();
+    const row = prepare('SELECT id, default_notification_level, default_sound_enabled, default_sound_type, default_desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, default_priority_level, do_not_disturb_enabled, dnd_until, enable_batching, batch_interval_minutes, updated_at FROM global_notification_defaults WHERE id = 1').get();
     return { success: true, defaults: row || null };
   } catch (error: any) {
     safeLog.error('[NotificationSettings] Get global defaults error:', error);
@@ -1578,7 +1578,7 @@ ipcMain.handle('notification-settings:set-global-defaults', async (_, defaults: 
 // Get effective settings (with global fallback)
 ipcMain.handle('notification-settings:get-effective', async (_, sessionKey: string) => {
   try {
-    const row = prepare('SELECT * FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
+    const row = prepare('SELECT session_key, notification_level, sound_enabled, sound_type, desktop_notifications, quiet_hours_enabled, quiet_start, quiet_end, keyword_alerts, priority_level, mute_until, notification_frequency, show_message_preview, badge_count_enabled, global_dnd, global_dnd_until, is_effectively_muted FROM effective_notification_settings WHERE session_key = ?').get(sessionKey);
     return { success: true, settings: row || null };
   } catch (error: any) {
     safeLog.error('[NotificationSettings] Get effective error:', error);
@@ -1750,7 +1750,7 @@ ipcMain.handle('tasks:search', async (_, query: string, includeArchived = true) 
 // Get task with full details including progress (for audit)
 ipcMain.handle('tasks:getWithProgress', async (_, taskId: string) => {
   try {
-    const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+    const task = prepare('SELECT id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, metadata, progress, started_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, gates_passed, gates_total, approval_required, approval_status, approved_by, approved_at, independent_review_required, independent_review_status, archived, is_test, archived_at, attempted_agents, tags, project_name, stage_number, stage_name, next_stage, parent_task_id, blocked_by, blocks_tasks FROM tasks WHERE id = ?').get(taskId);
     return { success: true, task: task || null };
   } catch (error: any) {
     safeLog.error('[tasks:getWithProgress] Error:', error.message);
@@ -2016,7 +2016,7 @@ const froggoDbPath = FROGGO_DB;
 
 ipcMain.handle('subtasks:list', async (_, taskId: string) => {
   try {
-    const rows = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY position, created_at').all(taskId);
+    const rows = prepare('SELECT id, task_id, title, description, completed, completed_at, completed_by, assigned_to, position, created_at, updated_at FROM subtasks WHERE task_id = ? ORDER BY position, created_at').all(taskId);
     const subtasks = rows.map((st: any) => ({
       id: st.id,
       taskId: st.task_id,
@@ -2193,7 +2193,7 @@ ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
 ipcMain.handle('activity:list', async (_, taskId: string, limit?: number) => {
   try {
     const lim = limit || 50;
-    const rows = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?').all(taskId, lim);
+    const rows = prepare('SELECT id, task_id, agent_id, action, message, details, timestamp FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?').all(taskId, lim);
     const activities = rows.map((a: any) => ({
       id: a.id,
       taskId: a.task_id,
@@ -2758,7 +2758,7 @@ ipcMain.handle('pins:count', async () => {
 // List all snoozed conversations
 ipcMain.handle('snooze:list', async () => {
   try {
-    const snoozes = prepare('SELECT * FROM conversation_snoozes ORDER BY snooze_until ASC').all();
+    const snoozes = prepare('SELECT id, session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at FROM conversation_snoozes ORDER BY snooze_until ASC').all();
     return { success: true, snoozes };
   } catch (error: any) {
     safeLog.error('[Snooze] List error:', error);
@@ -2769,7 +2769,7 @@ ipcMain.handle('snooze:list', async () => {
 // Check if a session is snoozed
 ipcMain.handle('snooze:get', async (_, sessionKey: string) => {
   try {
-    const row = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
+    const row = prepare('SELECT id, session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey);
     return { success: true, snooze: row || null };
   } catch (error: any) {
     safeLog.error('[Snooze] Get error:', error);
@@ -2806,7 +2806,7 @@ ipcMain.handle('snooze:unset', async (_, sessionKey: string) => {
     const now = Date.now();
 
     // Get the snooze data for history
-    const snooze = prepare('SELECT * FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as any;
+    const snooze = prepare('SELECT id, session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at FROM conversation_snoozes WHERE session_id = ? LIMIT 1').get(sessionKey) as any;
 
     if (!snooze) {
       // Not snoozed, nothing to do
@@ -2845,7 +2845,7 @@ ipcMain.handle('snooze:markReminderSent', async (_, sessionKey: string) => {
 ipcMain.handle('snooze:expired', async () => {
   try {
     const now = Date.now();
-    const snoozes = prepare('SELECT * FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
+    const snoozes = prepare('SELECT id, session_id, snooze_until, snooze_reason, reminder_sent, created_at, updated_at FROM conversation_snoozes WHERE snooze_until <= ? AND reminder_sent = 0 ORDER BY snooze_until ASC').all(now);
     return { success: true, snoozes };
   } catch (error: any) {
     safeLog.error('[Snooze] Expired list error:', error);
@@ -2857,7 +2857,7 @@ ipcMain.handle('snooze:expired', async () => {
 ipcMain.handle('snooze:history', async (_, sessionKey: string, limit: number = 10) => {
   try {
     const safeLimit = Math.max(1, Math.min(Math.floor(limit), 100));
-    const history = prepare('SELECT * FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
+    const history = prepare('SELECT id, session_id, snooze_until, snooze_reason, unsnoozed_at, created_at FROM snooze_history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?').all(sessionKey, safeLimit);
     return { success: true, history };
   } catch (error: any) {
     safeLog.error('[Snooze] History error:', error);
@@ -3208,7 +3208,7 @@ ipcMain.handle('inbox:list', async (_, status?: string) => {
   try {
     safeLog.log('[Inbox:list] Executing parameterized query for status:', effectiveStatus);
 
-    const items = prepare('SELECT * FROM inbox WHERE status = ? ORDER BY created DESC LIMIT 50').all(effectiveStatus);
+    const items = prepare('SELECT id, created, type, title, content, context, status, metadata, source_channel, source_session, reviewed_at, feedback, priority_score, priority_metadata FROM inbox WHERE status = ? ORDER BY created DESC LIMIT 50').all(effectiveStatus);
 
     safeLog.log('[Inbox:list] SUCCESS - Found', (items as any[]).length, 'items with status:', effectiveStatus);
     return { success: true, items };
@@ -3328,7 +3328,7 @@ ipcMain.handle('inbox:approveAll', async () => {
 // List items that need revision (for agents to process)
 ipcMain.handle('inbox:listRevisions', async () => {
   try {
-    const items = prepare("SELECT * FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
+    const items = prepare("SELECT id, created, type, title, content, context, status, metadata, source_channel, source_session, reviewed_at, feedback, priority_score, priority_metadata FROM inbox WHERE status = 'needs-revision' ORDER BY created DESC").all();
     return { success: true, items };
   } catch (error: any) {
     safeLog.error('[Inbox] List revisions error:', error);
@@ -3343,7 +3343,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
 
   try {
     // Get the original item
-    const original = prepare('SELECT * FROM inbox WHERE id = ?').get(originalId) as any;
+    const original = prepare('SELECT id, created, type, title, content, context, status, metadata, source_channel, source_session, reviewed_at, feedback, priority_score, priority_metadata FROM inbox WHERE id = ?').get(originalId) as any;
     if (!original) {
       return { success: false, error: 'Original item not found' };
     }
@@ -3385,7 +3385,7 @@ ipcMain.handle('inbox:submitRevision', async (_, originalId: number, revisedCont
 // Get revision details for a specific item (includes original content and feedback)
 ipcMain.handle('inbox:getRevisionContext', async (_, itemId: number) => {
   try {
-    const item = prepare("SELECT * FROM inbox WHERE id = ? AND status = 'needs-revision'").get(itemId) as any;
+    const item = prepare("SELECT id, created, type, title, content, context, status, metadata, source_channel, source_session, reviewed_at, feedback, priority_score, priority_metadata FROM inbox WHERE id = ? AND status = 'needs-revision'").get(itemId) as any;
     if (!item) {
       return { success: false, error: 'Item not found or not in needs-revision status' };
     }
@@ -3742,7 +3742,7 @@ ipcMain.handle('schedule:list', async () => {
       )
     `);
 
-    const rows = prepare('SELECT * FROM schedule ORDER BY scheduled_for ASC').all() as any[];
+    const rows = prepare('SELECT id, type, content, scheduled_for, status, created_at, sent_at, error, metadata FROM schedule ORDER BY scheduled_for ASC').all() as any[];
     const items = rows.map((row: any) => ({
       id: row.id,
       type: row.type,
@@ -3874,7 +3874,7 @@ ipcMain.handle('schedule:update', async (_, id: string, item: { type?: string; c
 ipcMain.handle('schedule:sendNow', async (_, id: string) => {
   try {
     // Get the scheduled item
-    const item = prepare('SELECT * FROM schedule WHERE id = ?').get(id) as any;
+    const item = prepare('SELECT id, type, content, scheduled_for, status, created_at, sent_at, error, metadata FROM schedule WHERE id = ?').get(id) as any;
     if (!item) {
       return { success: false, error: 'Item not found' };
     }
@@ -4224,9 +4224,9 @@ ipcMain.handle('library:list', async (_, category?: string) => {
   try {
     let rawFiles: any[];
     if (category) {
-      rawFiles = prepare('SELECT * FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as any[];
+      rawFiles = prepare('SELECT id, name, path, category, size, mime_type, created_at, updated_at, linked_tasks, tags, project FROM library WHERE category = ? ORDER BY updated_at DESC').all(category) as any[];
     } else {
-      rawFiles = prepare('SELECT * FROM library ORDER BY updated_at DESC').all() as any[];
+      rawFiles = prepare('SELECT id, name, path, category, size, mime_type, created_at, updated_at, linked_tasks, tags, project FROM library ORDER BY updated_at DESC').all() as any[];
     }
 
     // Transform snake_case to camelCase for frontend
