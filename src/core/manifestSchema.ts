@@ -49,6 +49,7 @@ export const ModuleManifestSchema = z.object({
   icon: z.string().optional(),
   category: z.string().optional(),
   core: z.boolean().optional(),
+  defaultDisabled: z.boolean().optional(),
 
   views: z.array(ModuleViewDeclarationSchema).optional(),
 

@@ -33,6 +33,7 @@ export interface ModuleManifest {
   icon?: string;
   category?: string;
   core?: boolean;
+  defaultDisabled?: boolean;
 
   views?: ModuleViewDeclaration[];
 
@@ -135,10 +136,14 @@ class ModuleLoaderClass {
 
     // Load disabled module state from disk before initializing
     let disabledModules: string[] = [];
+    let knownModules: string[] = [];
     try {
-      const stateResult = await window.clawdbot?.modules?.invoke?.('module:state:load') as { disabled: string[] } | undefined;
+      const stateResult = await window.clawdbot?.modules?.invoke?.('module:state:load') as { disabled: string[]; known?: string[] } | undefined;
       if (stateResult?.disabled) {
         disabledModules = stateResult.disabled;
+      }
+      if (stateResult?.known) {
+        knownModules = stateResult.known;
       }
     } catch {
       // State load failure is non-fatal — all modules init as enabled
@@ -152,6 +157,21 @@ class ModuleLoaderClass {
         reg.status = 'disposed';
         console.log(`[ModuleLoader] Skipped disabled module "${reg.manifest.name}"`);
         continue;
+      }
+      // defaultDisabled: auto-disable modules on first encounter (not yet in known list)
+      if (reg.manifest.defaultDisabled && !reg.manifest.core && !knownModules.includes(reg.manifest.id)) {
+        reg.status = 'disposed';
+        console.log(`[ModuleLoader] Auto-disabled "${reg.manifest.name}" (defaultDisabled, first run)`);
+        window.clawdbot?.modules?.invoke?.('module:state:save', reg.manifest.id, false)
+          .catch(() => { /* best-effort */ });
+        window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
+          .catch(() => { /* best-effort */ });
+        continue;
+      }
+      // Mark module as known (if not already) so defaultDisabled doesn't re-trigger
+      if (!knownModules.includes(reg.manifest.id)) {
+        window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
+          .catch(() => { /* best-effort */ });
       }
       reg.status = 'initializing';
       try {
