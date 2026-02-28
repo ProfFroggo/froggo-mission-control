@@ -14,13 +14,14 @@ import {
 } from 'recharts';
 import { Users, Award, Clock } from 'lucide-react';
 import { getAgentUtilization, AgentUtilization } from '../services/analyticsService';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS } from '../lib/chartTheme';
 
 const AGENT_COLORS: { [key: string]: string } = {
-  coder: '#3B82F6',
-  researcher: '#8B5CF6',
-  writer: '#10B981',
-  chief: '#F59E0B',
-  unassigned: '#6B7280',
+  coder: CHART_COLORS.blue,
+  researcher: CHART_COLORS.purple,
+  writer: CHART_COLORS.green,
+  chief: CHART_COLORS.amber,
+  unassigned: CHART_COLORS.gray,
 };
 
 export default function AgentUtilizationChart() {
@@ -144,14 +145,14 @@ export default function AgentUtilizationChart() {
               data={data}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="agentName" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
+              <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+              <XAxis dataKey="agentName" stroke={CHART_AXIS.stroke} />
+              <YAxis stroke={CHART_AXIS.stroke} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="tasksCompleted" name="Completed" fill="#10B981" />
-              <Bar dataKey="tasksInProgress" name="In Progress" fill="#F59E0B" />
-              <Bar dataKey="tasksAssigned" name="Total Assigned" fill="#3B82F6" />
+              <Bar dataKey="tasksCompleted" name="Completed" fill={CHART_COLORS.green} />
+              <Bar dataKey="tasksInProgress" name="In Progress" fill={CHART_COLORS.amber} />
+              <Bar dataKey="tasksAssigned" name="Total Assigned" fill={CHART_COLORS.blue} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -172,7 +173,7 @@ export default function AgentUtilizationChart() {
                 {data.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={AGENT_COLORS[entry.agentId] || '#6B7280'}
+                    fill={AGENT_COLORS[entry.agentId] || CHART_COLORS.gray}
                   />
                 ))}
               </Pie>
@@ -202,7 +203,7 @@ export default function AgentUtilizationChart() {
                   <div className="flex items-center gap-2">
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: AGENT_COLORS[agent.agentId] || '#6B7280' }}
+                      style={{ backgroundColor: AGENT_COLORS[agent.agentId] || CHART_COLORS.gray }}
                     />
                     <span className="font-medium">{agent.agentName}</span>
                   </div>
