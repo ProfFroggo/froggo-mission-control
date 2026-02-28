@@ -1205,7 +1205,16 @@ Start now.`;
   )
 );
 
-// Setup gateway listeners
+// ---- Module-Level Gateway Listeners ----------------------------------------
+// These listeners are intentionally module-scoped (never cleaned up).
+// The Zustand store is a process-lifetime singleton -- these run once on
+// import and persist for the entire app session. This is correct behavior.
+// Do NOT wrap these in useEffect or add cleanup -- they are not per-component.
+//
+// Component-level listeners (e.g. WorkerModal, SkillModal, VoiceChatPanel)
+// each manage their own cleanup via unsubscribe() or useEffect return.
+// ---- End Listener Lifecycle Note -------------------------------------------
+
 gateway.on('stateChange', ({ state, oldState }: { state: string; oldState: string }) => {
   const connected = state === 'connected';
   useStore.getState().setConnected(connected);
