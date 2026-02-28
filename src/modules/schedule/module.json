@@ -1,0 +1,20 @@
+{
+  "id": "froggo-schedule",
+  "name": "Schedule",
+  "version": "1.0.0",
+  "description": "Calendar and schedule management for planning events and tasks.",
+  "author": "Froggo Team",
+  "icon": "Calendar",
+  "category": "productivity",
+  "credentials": [],
+  "views": [
+    {
+      "id": "schedule",
+      "label": "Schedule",
+      "icon": "Calendar",
+      "entrypoint": "./views/SchedulePanel.tsx"
+    }
+  ],
+  "dependencies": { "core": ">=1.0.0", "modules": [] },
+  "permissions": { "ipc": [], "filesystem": [], "network": false, "shell": false }
+}

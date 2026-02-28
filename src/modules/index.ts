@@ -30,6 +30,7 @@ import './notifications';
 // Phase 46: Optional module migrations — wave 1
 import './meetings';
 import './voice';
+import './schedule';
 
 // Future modules:
 // import './writing';
