@@ -20,6 +20,7 @@ const logger = createLogger('ModuleState');
 interface ModuleState {
   version: 1;
   disabled: string[];
+  known?: string[];
   updatedAt: number;
 }
 
@@ -59,7 +60,7 @@ export function registerModuleStateHandlers(): void {
   registerHandler('module:state:load', async () => {
     const state = readState();
     cachedDisabled = state.disabled;
-    return { disabled: state.disabled };
+    return { disabled: state.disabled, known: state.known || [] };
   });
 
   // Save module state — called by ModuleLoader.disableModule/enableModule
@@ -72,6 +73,11 @@ export function registerModuleStateHandlers(): void {
         state.disabled.push(moduleId);
       }
     }
+    // Also mark as known so defaultDisabled doesn't re-trigger
+    if (!state.known) state.known = [];
+    if (!state.known.includes(moduleId)) {
+      state.known.push(moduleId);
+    }
     state.updatedAt = Date.now();
     writeState(state);
     cachedDisabled = state.disabled;
@@ -82,6 +88,18 @@ export function registerModuleStateHandlers(): void {
       win.webContents.send('module-state-changed', { disabled: state.disabled });
     }
 
+    return { success: true };
+  });
+
+  // Mark module as known — called by ModuleLoader.initAll() for defaultDisabled tracking
+  registerHandler('module:state:markKnown', async (_event, moduleId: string) => {
+    const state = readState();
+    if (!state.known) state.known = [];
+    if (!state.known.includes(moduleId)) {
+      state.known.push(moduleId);
+      state.updatedAt = Date.now();
+      writeState(state);
+    }
     return { success: true };
   });
 
