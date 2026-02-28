@@ -718,6 +718,7 @@ export default function Kanban() {
           return (
             <div
               key={column.id}
+              data-column={column.id}
               className={`flex-shrink-0 w-96 min-w-[320px] flex flex-col rounded-2xl border transition-all ${
                 isDragOver 
                   ? 'border-clawd-accent border-dashed bg-clawd-accent/10 scale-[1.01] shadow-lg shadow-clawd-accent/20' 
