@@ -280,11 +280,10 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
               {/* Primary model */}
               <div className="mb-6">
-                <label htmlFor="primary-model" className="text-xs font-medium text-clawd-muted uppercase tracking-wider">
+                <label className="text-xs font-medium text-clawd-muted uppercase tracking-wider">
                   Primary Model
                 </label>
                 <select
-                  id="primary-model"
                   className="mt-1 w-full bg-clawd-bg0 border border-clawd-border rounded px-3 py-2 text-clawd-text focus:outline-none focus:border-clawd-accent"
                   value={primaryModel}
                   onChange={(e) => {
@@ -301,9 +300,9 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
               {/* Fallback chain */}
               <div className="mb-4">
-                <div className="text-xs font-medium text-clawd-muted uppercase tracking-wider block">
+                <label className="text-xs font-medium text-clawd-muted uppercase tracking-wider">
                   Fallback Chain
-                </div>
+                </label>
                 <p className="text-xs text-clawd-muted mt-0.5 mb-2">(tried in order when primary fails)</p>
 
                 {fallbacks.length === 0 ? (

@@ -18,7 +18,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { exec, execFile } from 'child_process';
+import { exec } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
 import { safeLog } from '../logger';
@@ -383,10 +383,10 @@ Task: "${title}" (ID: ${taskId})
 The user is poking you to ask what's happening with this task. Give a brief, personality-driven status update.
 Keep it SHORT (2-3 sentences max). This is a quick status check, not an essay.`;
 
+    const escapedPrompt = pokePrompt.replace(/"/g, '\\"');
     const response = await new Promise<string>((resolve, reject) => {
-      execFile(
-        'openclaw',
-        ['agent', '--local', '--message', pokePrompt, '--agent', taskAgent, '--json', '--timeout', '30'],
+      exec(
+        `openclaw agent --local --message "${escapedPrompt}" --agent ${taskAgent} --json --timeout 30`,
         {
           encoding: 'utf-8',
           timeout: 35000,
@@ -811,7 +811,7 @@ async function handleAttachmentsOpen(
                   process.platform === 'win32' ? 'start' : 'xdg-open';
 
   return new Promise((resolve) => {
-    execFile(openCmd, [filePath], (error) => {
+    exec(`${openCmd} "${filePath}"`, (error) => {
       resolve({ success: !error, error: error?.message });
     });
   });

@@ -168,12 +168,11 @@ export default function LiveActivity({ sessionKey }: LiveActivityProps) {
         return id;
       },
       completeTool: (id: string, error = false) => {
-        setActivities(prev => prev.map(a =>
+        setActivities(prev => prev.map(a => 
           a.id === id ? { ...a, status: error ? 'error' as const : 'complete' as const } : a
         ));
       },
     };
-    return () => { delete (window as any).__liveActivity; };
   }, []);
 
   if (activities.length === 0) return null;
