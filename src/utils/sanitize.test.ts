@@ -2,12 +2,12 @@
  * Tests for sanitize utility
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock DOMPurify
 vi.mock('dompurify', () => ({
   default: {
-    sanitize: vi.fn((html, config) => html),
+    sanitize: vi.fn((html: string) => html),
   },
 }));
 
@@ -31,16 +31,16 @@ describe('sanitize utilities', () => {
   describe('sanitizeHtml', () => {
     it('should remove dangerous HTML tags', () => {
       const dangerousHtml = '<script>alert("xss")</script><p>Safe text</p>';
-      const result = sanitizeHtml(dangerousHtml);
-      
+      sanitizeHtml(dangerousHtml);
+
       // DOMPurify should have sanitized the input
       expect(DOMPurify.sanitize).toHaveBeenCalled();
     });
 
     it('should allow basic formatting tags', () => {
       const formattedHtml = '<p><strong>Bold</strong> and <em>italic</em></p>';
-      const result = sanitizeHtml(formattedHtml);
-      
+      sanitizeHtml(formattedHtml);
+
       expect(DOMPurify.sanitize).toHaveBeenCalled();
     });
 
@@ -58,8 +58,8 @@ describe('sanitize utilities', () => {
   describe('sanitizePlainText', () => {
     it('should remove all HTML tags', () => {
       const html = '<div><span>Text</span> with <strong>tags</strong></div>';
-      const result = sanitizePlainText(html);
-      
+      sanitizePlainText(html);
+
       expect(DOMPurify.sanitize).toHaveBeenCalled();
     });
 
@@ -74,8 +74,8 @@ describe('sanitize utilities', () => {
   describe('sanitizeSearchSnippet', () => {
     it('should allow mark tags for highlighting', () => {
       const snippet = 'Some text <mark>highlighted</mark> here';
-      const result = sanitizeSearchSnippet(snippet);
-      
+      sanitizeSearchSnippet(snippet);
+
       expect(DOMPurify.sanitize).toHaveBeenCalled();
     });
 
@@ -217,8 +217,8 @@ describe('sanitize utilities', () => {
   describe('sanitizeEventDescription', () => {
     it('should call sanitizePlainText', () => {
       const description = '<p>Event <strong>description</strong></p>';
-      const result = sanitizeEventDescription(description);
-      
+      sanitizeEventDescription(description);
+
       expect(DOMPurify.sanitize).toHaveBeenCalled();
     });
 

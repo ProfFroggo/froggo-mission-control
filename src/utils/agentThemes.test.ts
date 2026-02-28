@@ -10,7 +10,6 @@ import {
   registerAgentTheme,
   getAgentTheme,
   getAgentColor,
-  AgentTheme,
 } from './agentThemes';
 
 describe('agentThemes utilities', () => {
@@ -114,7 +113,7 @@ describe('agentThemes utilities', () => {
     });
 
     it('should register new theme for unknown agent', () => {
-      const theme = generateThemeFromColor('#ABC123', 'new-agent.png');
+      generateThemeFromColor('#ABC123', 'new-agent.png');
       registerAgentTheme('new-agent', '#ABC123', 'new-agent.png');
       
       // The theme should now be available via getAgentTheme
@@ -183,7 +182,7 @@ describe('agentThemes utilities', () => {
 
   describe('theme consistency', () => {
     it('should have matching color values across properties', () => {
-      Object.entries(agentThemes).forEach(([agent, theme]) => {
+      Object.entries(agentThemes).forEach(([_agent, theme]) => {
         expect(theme.color).toMatch(/^#[0-9A-Fa-f]{6}$/);
         // Hardcoded themes use Tailwind classes for dot (e.g. 'bg-green-400'), not raw hex
         expect(theme.dot).toBeDefined();
