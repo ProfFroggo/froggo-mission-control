@@ -29,7 +29,6 @@ const agentColors: Record<string, string> = {
   coder: 'bg-info/20 text-info',
   'senior-coder': 'bg-purple-500/20 text-purple-400',
   designer: 'bg-pink-500/20 text-pink-400',
-  'lead-engineer': 'bg-orange-500/20 text-orange-400',
   writer: 'bg-success-subtle text-success',
   researcher: 'bg-cyan-500/20 text-cyan-400',
 };

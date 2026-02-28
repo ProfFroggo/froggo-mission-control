@@ -41,16 +41,16 @@ const lifecycle: ModuleLifecycle = {
   },
 
   async activate() {
-    console.log('[Twitter Module] Activated');
+    console.debug('[Twitter Module] Activated');
   },
 
   deactivate() {
-    console.log('[Twitter Module] Deactivated');
+    console.debug('[Twitter Module] Deactivated');
   },
 
   dispose() {
     ViewRegistry.unregisterModule(manifest.id);
-    console.log('[Twitter Module] Disposed');
+    console.debug('[Twitter Module] Disposed');
   },
 };
 

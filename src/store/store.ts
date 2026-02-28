@@ -4,6 +4,7 @@ import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { matchTaskToAgent } from '../lib/agents';
 import { createLogger } from '../utils/logger';
+import { showToast } from '../components/Toast';
 
 const storeLogger = createLogger('Store');
 
@@ -612,6 +613,7 @@ export const useStore = create<Store>()(
           })
           .catch((err: Error) => {
             console.error('[Store] Task update exception:', err);
+            showToast('error', 'Task update failed', err.message);
             if (rollbackValues) {
               set((s: Store) => ({
                 tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...rollbackValues } : t)
@@ -622,7 +624,21 @@ export const useStore = create<Store>()(
       moveTask: (id: string, status: TaskStatus) => {
         const task = get().tasks.find((t: Task) => t.id === id);
         if (!task) return;
-        
+
+        // Status transition validation
+        const VALID_TRANSITIONS: Record<string, string[]> = {
+          'todo': ['internal-review', 'in-progress'],
+          'internal-review': ['todo', 'in-progress'],
+          'in-progress': ['review', 'todo'],
+          'review': ['done', 'in-progress'],
+          'done': ['in-progress'],
+        };
+        const allowed = VALID_TRANSITIONS[task.status];
+        if (allowed && !allowed.includes(status)) {
+          showToast('error', 'Invalid status change', `Cannot move from "${task.status}" to "${status}"`);
+          return;
+        }
+
         // B+C ENFORCEMENT: Both requirements must be met before marking done
         if (status === 'done') {
           const errors: string[] = [];
@@ -670,7 +686,14 @@ export const useStore = create<Store>()(
         // Broadcast status change to main session
         gateway.sendToSession('main', `[TASK_UPDATE] "${task.title}" moved to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         // Sync to froggo-db
-        window.clawdbot?.tasks?.update(task.id, { status }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+        window.clawdbot?.tasks?.update(task.id, { status }).catch((err: Error) => {
+          console.error("[Store] Task move failed:", err);
+          showToast('error', 'Task move failed', err.message);
+          // Rollback optimistic update
+          set((s: Store) => ({
+            tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, status: previousStatus } : t)
+          }));
+        });
         
         // Log activity to task_activity table
         get().logTaskActivity(id, 'status_changed', `Status changed from ${previousStatus} to ${status}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
@@ -683,12 +706,21 @@ export const useStore = create<Store>()(
         });
       },
       deleteTask: async (id: string) => {
+        // Snapshot task for rollback
+        const taskToDelete = get().tasks.find((t: Task) => t.id === id);
+        // Optimistic remove from UI
+        set((s: Store) => ({ tasks: s.tasks.filter((t: Task) => t.id !== id) }));
         try {
           await window.clawdbot?.tasks?.delete(id);
         } catch (e) {
+          const errMsg = e instanceof Error ? e.message : String(e);
           console.error('Failed to delete task from DB:', e);
+          showToast('error', 'Task delete failed', errMsg);
+          // Rollback: restore the removed task
+          if (taskToDelete) {
+            set((s: Store) => ({ tasks: [...s.tasks, taskToDelete] }));
+          }
         }
-        set((s: Store) => ({ tasks: s.tasks.filter((t: Task) => t.id !== id) }));
       },
       assignTask: (id: string, agentId?: string) => {
         const task = get().tasks.find((t: Task) => t.id === id);
@@ -1064,6 +1096,9 @@ Start now.`;
           
           // Execute the action asynchronously
           executeApproval(item).then(async (result) => {
+            if (!result.success) {
+              showToast('error', 'Approval execution failed', result.error || `Failed to execute ${item.type}`);
+            }
             const taskData = {
               id: `task-exec-${Date.now()}`,
               title: `${result.success ? 'Done' : 'Failed'}: ${item.type}: ${item.title}`,
@@ -1084,6 +1119,9 @@ Start now.`;
             if (result.success) {
               gateway.sendToSession('main', `[EXECUTED] ${item.type}: "${item.title}" completed successfully`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
             }
+          }).catch((err: Error) => {
+            console.error('[Store] Approval execution error:', err);
+            showToast('error', 'Approval failed', err.message);
           });
         }
       },
@@ -1097,7 +1135,10 @@ Start now.`;
             title: item.title,
             content: item.content,
             reason: 'User rejected',
-          }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+          }).catch((err: Error) => {
+            console.error("[Store] Rejection log failed:", err);
+            showToast('error', 'Rejection log failed', err.message);
+          });
           // Notify main session
           gateway.sendToSession('main', `[REJECTED] ${item.type}: "${item.title}" - logged to rejected_decisions`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         }
@@ -1130,7 +1171,10 @@ Start now.`;
           // Sync task to DB (not local-only)
           window.clawdbot?.tasks?.sync?.(revisionTask).then(() => {
             useStore.getState().loadTasksFromDB();
-          }).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
+          }).catch((err: Error) => {
+            console.error("[Store] Revision task sync failed:", err);
+            showToast('error', 'Revision task failed', err.message);
+          });
           // Notify for revision
           gateway.sendToSession('main', `[REVISION_NEEDED] ${item.type}: "${item.title}"\n\nFeedback: ${feedback}\n\nOriginal:\n${item.content}`).catch((err: Error) => { console.error("[Store] Operation failed:", err); });
         }

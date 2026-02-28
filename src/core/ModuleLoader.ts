@@ -32,6 +32,8 @@ export interface ModuleManifest {
   author?: string;
   icon?: string;
   category?: string;
+  core?: boolean;
+  defaultDisabled?: boolean;
 
   views?: ModuleViewDeclaration[];
 
@@ -132,14 +134,50 @@ class ModuleLoaderClass {
   async initAll(): Promise<void> {
     if (this.initialized) return;
 
+    // Load disabled module state from disk before initializing
+    let disabledModules: string[] = [];
+    let knownModules: string[] = [];
+    try {
+      const stateResult = await window.clawdbot?.modules?.invoke?.('module:state:load') as { disabled: string[]; known?: string[] } | undefined;
+      if (stateResult?.disabled) {
+        disabledModules = stateResult.disabled;
+      }
+      if (stateResult?.known) {
+        knownModules = stateResult.known;
+      }
+    } catch {
+      // State load failure is non-fatal — all modules init as enabled
+    }
+
     const sorted = this.topologicalSort();
 
     for (const reg of sorted) {
+      // Skip disabled modules — but never skip core modules regardless of state file
+      if (disabledModules.includes(reg.manifest.id) && !reg.manifest.core) {
+        reg.status = 'disposed';
+        console.debug(`[ModuleLoader] Skipped disabled module "${reg.manifest.name}"`);
+        continue;
+      }
+      // defaultDisabled: auto-disable modules on first encounter (not yet in known list)
+      if (reg.manifest.defaultDisabled && !reg.manifest.core && !knownModules.includes(reg.manifest.id)) {
+        reg.status = 'disposed';
+        console.debug(`[ModuleLoader] Auto-disabled "${reg.manifest.name}" (defaultDisabled, first run)`);
+        window.clawdbot?.modules?.invoke?.('module:state:save', reg.manifest.id, false)
+          .catch(() => { /* best-effort */ });
+        window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
+          .catch(() => { /* best-effort */ });
+        continue;
+      }
+      // Mark module as known (if not already) so defaultDisabled doesn't re-trigger
+      if (!knownModules.includes(reg.manifest.id)) {
+        window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
+          .catch(() => { /* best-effort */ });
+      }
       reg.status = 'initializing';
       try {
         await reg.lifecycle.init();
         reg.status = 'active';
-        console.log(`[ModuleLoader] ✅ Initialized "${reg.manifest.name}" v${reg.manifest.version}`);
+        console.debug(`[ModuleLoader] Initialized "${reg.manifest.name}" v${reg.manifest.version}`);
       } catch (err) {
         reg.status = 'error';
         reg.error = err instanceof Error ? err.message : String(err);
@@ -200,23 +238,30 @@ class ModuleLoaderClass {
       console.warn(`[ModuleLoader] disableModule: module "${moduleId}" not found`);
       return;
     }
+    if (reg.manifest.core) {
+      console.error(`[ModuleLoader] Cannot disable core module "${moduleId}"`);
+      return;
+    }
     this.dispose(moduleId);
 
     // Remove IPC handlers registered by this module in the main process
     // Always call — registerModuleHandler() tracking handles no-op if nothing tracked
     window.clawdbot?.modules?.invoke?.('module:ipc:removeHandlers', moduleId)
-      .then((result: { success: boolean; removed: number }) => {
+      .then((res: unknown) => {
+        const result = res as { success: boolean; removed: number };
         if (result?.removed > 0) {
-          // eslint-disable-next-line no-console
-          console.log(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
+          console.debug(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
         }
       })
       .catch((_err: unknown) => {
         // IPC removal is best-effort — module is already disposed
       });
 
-    // eslint-disable-next-line no-console
-    console.log(`[ModuleLoader] Module "${moduleId}" disabled`);
+    // Persist disabled state to disk
+    window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, false)
+      .catch((_err: unknown) => { /* state persistence is best-effort */ });
+
+    console.debug(`[ModuleLoader] Module "${moduleId}" disabled`);
   }
 
   /**
@@ -241,7 +286,21 @@ class ModuleLoaderClass {
       await reg.lifecycle.init();
       reg.status = 'active';
       delete reg.error;
-      console.log(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
+      console.debug(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
+
+      // Re-register IPC handlers from stored factories (fire-and-forget)
+      window.clawdbot?.modules?.invoke?.('module:ipc:registerHandlers', moduleId)
+        .then((res: unknown) => {
+          const result = res as { success: boolean; registered: number };
+          if (result?.registered > 0) {
+            console.debug(`[ModuleLoader] Re-registered ${result.registered} IPC handler(s) for "${moduleId}"`);
+          }
+        })
+        .catch((_err: unknown) => { /* IPC re-registration is best-effort */ });
+
+      // Persist enabled state to disk (fire-and-forget)
+      window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, true)
+        .catch((_err: unknown) => { /* state persistence is best-effort */ });
     } catch (err) {
       reg.status = 'error';
       reg.error = err instanceof Error ? err.message : String(err);

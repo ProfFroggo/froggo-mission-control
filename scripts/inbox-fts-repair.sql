@@ -12,7 +12,7 @@
 --   - FTS triggers fail to update index on inbox table changes
 --
 -- Usage:
---   sqlite3 ~/clawd/data/froggo.db < ~/froggo-dashboard/scripts/inbox-fts-repair.sql
+--   sqlite3 ~/froggo/data/froggo.db < ~/froggo-dashboard/scripts/inbox-fts-repair.sql
 --
 -- Created: 2026-02-13
 -- Context: Task 1770981822850 - Fix ghost approvals

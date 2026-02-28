@@ -1,0 +1,32 @@
+{
+  "id": "froggo-accounts",
+  "name": "Accounts",
+  "version": "1.0.0",
+  "description": "Connected accounts management for third-party service integrations.",
+  "author": "Froggo Team",
+  "icon": "Cloud",
+  "category": "system",
+
+  "credentials": [],
+
+  "views": [
+    {
+      "id": "accounts",
+      "label": "Accounts",
+      "icon": "Cloud",
+      "entrypoint": "./views/ConnectedAccountsPanel.tsx"
+    }
+  ],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

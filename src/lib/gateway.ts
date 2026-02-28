@@ -540,7 +540,7 @@ class Gateway {
       params: {
         minProtocol: 3, 
         maxProtocol: 3,
-        client: { id: 'webchat-ui', version: '1.0.0', platform: 'electron', mode: 'webchat' },
+        client: { id: 'openclaw-control-ui', version: '1.0.0', platform: 'electron', mode: 'ui' },
         role: 'operator',
         scopes: ['operator.admin', 'operator.write', 'operator.read'],
         caps: ['streaming'],
@@ -780,27 +780,30 @@ class Gateway {
       };
 
       // Delta accumulator — append-only streaming content
-      const unsub2 = this.on('chat.delta', (_event: string, data: ChatEventData) => {
+      // NOTE: gateway.on() calls listeners with a single argument (the payload),
+      // not (event, data) — so all callbacks take one parameter.
+      const unsub2 = this.on('chat.delta', (data: ChatEventData) => {
         captureRunId(data);
         if (!isOurEvent(data)) return;
         if (data.delta) responseContent += data.delta;
       });
 
-      // Final message — authoritative full content replaces accumulated deltas
-      const unsub3 = this.on('chat.message', (_event: string, data: ChatEventData) => {
+      // Final message — use authoritative content if available, otherwise keep accumulated deltas
+      const unsub3 = this.on('chat.message', (data: ChatEventData) => {
         captureRunId(data);
         if (!isOurEvent(data)) return;
-        if (data.content) responseContent = data.content;
+        if (data.content && data.content.length > responseContent.length) {
+          responseContent = data.content;
+        }
         finish(responseContent);
       });
 
-      // Unified chat event — only used for final-state detection (no content mutation)
-      const unsub1 = this.on('chat', (_event: string, data: ChatEventData) => {
+      // Unified chat event — handles final-state detection
+      const unsub1 = this.on('chat', (data: ChatEventData) => {
         captureRunId(data);
         if (!isOurEvent(data)) return;
 
         if (data.state === 'final' || data.final) {
-          // If chat.message already set authoritative content, use it; otherwise use what we accumulated
           // Extract ALL text blocks, not just the first one (handles thinking blocks)
           let text = '';
           if (data.message?.content && Array.isArray(data.message.content)) {
@@ -811,7 +814,10 @@ class Gateway {
           } else if (data.content) {
             text = data.content;
           }
-          if (text && !responseContent) responseContent = text;
+          // Only replace if we have better content than what deltas accumulated
+          if (text && text.length > responseContent.length) {
+            responseContent = text;
+          }
           logger.debug('[Gateway] Chat final received for runId:', ourRunId, 'content:', responseContent.slice(0, 100));
           finish(responseContent);
         }
@@ -820,9 +826,9 @@ class Gateway {
       const unsub4 = this.on('chat.end', () => {
         finish(responseContent);
       });
-      
-      const unsub5 = this.on('chat.error', (_event: string, data: ChatErrorData) => {
-        fail(new Error(data.message || data.error || 'Chat error'));
+
+      const unsub5 = this.on('chat.error', (data: ChatErrorData) => {
+        fail(new Error(data?.message || data?.error || 'Chat error'));
       });
 
       // Timeout after 60 seconds (if deltas are streaming, content will be non-empty)

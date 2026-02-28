@@ -1,0 +1,32 @@
+{
+  "id": "froggo-module-builder",
+  "name": "Module Builder",
+  "version": "1.0.0",
+  "description": "Visual tool for creating and configuring new dashboard modules.",
+  "author": "Froggo Team",
+  "icon": "Boxes",
+  "category": "system",
+
+  "credentials": [],
+
+  "views": [
+    {
+      "id": "modulebuilder",
+      "label": "Module Builder",
+      "icon": "Boxes",
+      "entrypoint": "./views/ModuleBuilderPage.tsx"
+    }
+  ],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

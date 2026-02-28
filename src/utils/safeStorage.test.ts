@@ -1,8 +1,9 @@
+/// <reference types="vitest" />
 /**
  * Tests for safeStorage utility
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { safeStorage } from './safeStorage';
 
 describe('safeStorage', () => {
@@ -54,7 +55,7 @@ describe('safeStorage', () => {
     });
 
     it('should handle errors gracefully', () => {
-      (localStorage.getItem as vi.Mock).mockImplementation(() => {
+      (localStorage.getItem as Mock).mockImplementation(() => {
         throw new Error('Storage error');
       });
       
@@ -78,7 +79,7 @@ describe('safeStorage', () => {
     });
 
     it('should handle errors gracefully', () => {
-      (localStorage.setItem as vi.Mock).mockImplementation(() => {
+      (localStorage.setItem as Mock).mockImplementation(() => {
         throw new Error('Storage error');
       });
       
@@ -113,7 +114,7 @@ describe('safeStorage', () => {
     });
 
     it('should handle errors gracefully', () => {
-      (localStorage.removeItem as vi.Mock).mockImplementation(() => {
+      (localStorage.removeItem as Mock).mockImplementation(() => {
         throw new Error('Storage error');
       });
       

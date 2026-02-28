@@ -23,7 +23,7 @@ interface TaskAttachment {
   file_path: string;
   filename: string;
   file_size: number;
-  mime_type: string;
+  mime_type: string | null;
   category: string;
   uploaded_by: string;
   uploaded_at: number;
@@ -35,7 +35,15 @@ interface TaskDetailPanelProps {
 }
 
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
-  const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
+  const agents = useStore(s => s.agents);
+  const updateTask = useStore(s => s.updateTask);
+  const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
+  const loadSubtasksForTask = useStore(s => s.loadSubtasksForTask);
+  const addSubtask = useStore(s => s.addSubtask);
+  const updateSubtask = useStore(s => s.updateSubtask);
+  const deleteSubtask = useStore(s => s.deleteSubtask);
+  const loadTaskActivity = useStore(s => s.loadTaskActivity);
+  const logTaskActivity = useStore(s => s.logTaskActivity);
   const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
@@ -561,7 +569,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const getFileIcon = (mimeType: string) => {
+  const getFileIcon = (mimeType: string | null | undefined) => {
+    if (!mimeType) return '📎';
     if (mimeType.startsWith('image/')) return '🖼️';
     if (mimeType.startsWith('text/')) return '📄';
     if (mimeType.includes('pdf')) return '📕';

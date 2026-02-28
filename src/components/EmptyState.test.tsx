@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import EmptyState, { EmptyStatePresets } from './EmptyState';
-import { LucideIcon, Inbox, Search } from 'lucide-react';
+import { LucideIcon, Inbox } from 'lucide-react';
 
 describe('EmptyState', () => {
   describe('preset types', () => {
@@ -61,7 +61,7 @@ describe('EmptyState', () => {
 
   describe('custom icon and text', () => {
     it('should render custom icon and title', () => {
-      const MockIcon: LucideIcon = (props: any) => <svg {...props} data-testid="custom-icon" />;
+      const MockIcon = ((props: any) => <svg {...props} data-testid="custom-icon" />) as unknown as LucideIcon;
 
       render(
         <EmptyState

@@ -22,6 +22,11 @@ export const db = new Database(FROGGO_DB_PATH, { fileMustExist: true });
 // Enable WAL mode for concurrent read performance
 db.pragma('journal_mode = WAL');
 db.pragma('wal_autocheckpoint = 1000');
+db.pragma('synchronous = normal');   // Reduce fsync frequency. Safe with WAL mode.
+db.pragma('cache_size = -32000');    // 32MB page cache (negative = KB). Default is 2MB.
+db.pragma('temp_store = memory');    // Temp tables/indices in RAM, not disk.
+db.pragma('mmap_size = 134217728'); // 128MB memory-mapped I/O. Reduces syscalls.
+db.pragma('busy_timeout = 5000');   // 5s retry on lock instead of immediate SQLITE_BUSY.
 
 // Prepared statement cache
 const statementCache = new Map<string, Database.Statement>();
@@ -50,6 +55,11 @@ export function getScheduleDb(): Database.Database {
     scheduleDb = new Database(SCHEDULE_DB_PATH, { fileMustExist: true });
     scheduleDb.pragma('journal_mode = WAL');
     scheduleDb.pragma('wal_autocheckpoint = 1000');
+    scheduleDb.pragma('synchronous = normal');
+    scheduleDb.pragma('cache_size = -32000');
+    scheduleDb.pragma('temp_store = memory');
+    scheduleDb.pragma('mmap_size = 134217728');
+    scheduleDb.pragma('busy_timeout = 5000');
   }
   return scheduleDb;
 }
@@ -67,6 +77,11 @@ export function getSecurityDb(): Database.Database {
     securityDb = new Database(SECURITY_DB_PATH);
     securityDb.pragma('journal_mode = WAL');
     securityDb.pragma('wal_autocheckpoint = 1000');
+    securityDb.pragma('synchronous = normal');
+    securityDb.pragma('cache_size = -32000');
+    securityDb.pragma('temp_store = memory');
+    securityDb.pragma('mmap_size = 134217728');
+    securityDb.pragma('busy_timeout = 5000');
   }
   return securityDb;
 }
@@ -87,6 +102,9 @@ export function getSessionsDb(): Database.Database | null {
     if (!existsSync(dbPath)) return null;
     sessionsDb = new Database(dbPath, { readonly: true, fileMustExist: true });
     sessionsDb.pragma('journal_mode = WAL');
+    sessionsDb.pragma('cache_size = -32000');    // 32MB page cache
+    sessionsDb.pragma('temp_store = memory');    // Temp tables in RAM
+    sessionsDb.pragma('mmap_size = 134217728'); // 128MB memory-mapped I/O
   }
   return sessionsDb;
 }

@@ -36,12 +36,14 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
   }, []);
   const [inboxCount, setInboxCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
-  const { tasks, activities } = useStore();
+  // Computed selectors — only re-render when the derived value changes
+  const activeTasks = useStore(s =>
+    s.tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length
+  );
+  const activities = useStore(s => s.activities);
   const { panels: panelConfig, openEditModal } = usePanelConfigStore();
   const { focusMode, setFocusMode } = useFocusMode();
   const [focusSelectorOpen, setFocusSelectorOpen] = useState(false);
-  
-  const activeTasks = tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length;
 
   // Keyboard shortcut: Cmd+Shift+E to open Edit Panels
   useEffect(() => {

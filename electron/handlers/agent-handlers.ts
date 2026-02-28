@@ -22,6 +22,8 @@ import {
   OPENCLAW_CONFIG, OPENCLAW_CONFIG_LEGACY, agentWorkspace,
 } from '../paths';
 
+const OPENCLAW = '/opt/homebrew/bin/openclaw';
+
 // ── Agent registry helpers ──
 
 interface AgentRegistryEntry {
@@ -75,7 +77,7 @@ function getAgentsFromDB(): any[] {
 }
 
 // Debug file logger for agent issues
-const debugLogPath = '/tmp/clawd-dashboard-debug.log';
+const debugLogPath = '/tmp/froggo-dashboard-debug.log';
 function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
@@ -132,7 +134,7 @@ export function registerAgentHandlers(): void {
     return new Promise((resolve) => {
       const args = ['sessions', 'list', '--json'];
       if (activeMinutes) args.push('--active', String(activeMinutes));
-      exec(`openclaw ${args.join(' ')}`, { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout) => {
+      execFile(OPENCLAW, args, { timeout: 10000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (error, stdout) => {
         if (error) {
           safeLog.warn('[Sessions] CLI failed:', error.message);
           resolve({ success: false, error: error.message, sessions: [] });
@@ -326,7 +328,7 @@ export function registerAgentHandlers(): void {
       agentRules = fs.readFileSync(agentMdPath, 'utf-8');
     } catch (_e) {
       try {
-        const altPaths = [path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'), path.join(PROJECT_ROOT, 'agents', agentId === 'chief' ? 'lead-engineer' : agentId, 'AGENT.md'), ...dbIds.filter(id => id !== agentId).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md'))];
+        const altPaths = [path.join(PROJECT_ROOT, 'agents', agentId.toLowerCase(), 'AGENT.md'), ...dbIds.filter(id => id !== agentId).map(id => path.join(PROJECT_ROOT, 'agents', id, 'AGENT.md'))];
         for (const altPath of altPaths) { if (fs.existsSync(altPath)) { agentRules = fs.readFileSync(altPath, 'utf-8'); break; } }
       } catch (_e2) { /* keep default */ }
     }
@@ -380,7 +382,7 @@ export function registerAgentHandlers(): void {
   registerHandler('agents:spawnForTask', async (_event, taskId: string, agentId: string) => {
     try {
       const result = await new Promise<string>((resolve, reject) => {
-        exec(`openclaw agent --agent "${agentId}" --message "Task assigned: ${taskId}" --json`, { encoding: 'utf-8', timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
+        execFile(OPENCLAW, ['agent', '--agent', agentId, '--message', `Task assigned: ${taskId}`, '--json'], { encoding: 'utf-8', timeout: 30000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
           if (error) reject(new Error(stderr || error.message)); else resolve(stdout.trim());
         });
       });
@@ -407,8 +409,8 @@ export function registerAgentHandlers(): void {
                 safeLog.log(`[agents:spawnChat] Session ${sessionKey} not found, spawning...`);
                 const chatRegistry = getAgentRegistry();
                 const systemPrompt = chatRegistry[agentId]?.prompt || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
-                const spawnCmd = `openclaw agent --agent ${agentId} --message "${systemPrompt.replace(/"/g, '\\"')}\n\nYou are now connected to the dashboard chat. Reply with: ready" --json`;
-                exec(spawnCmd, { timeout: 30000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (spawnError) => {
+                const spawnMsg = `${systemPrompt}\n\nYou are now connected to the dashboard chat. Reply with: ready`;
+                execFile(OPENCLAW, ['agent', '--agent', agentId, '--message', spawnMsg, '--json'], { timeout: 30000, env: { ...process.env, PATH: `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin` } }, (spawnError) => {
                   if (spawnError) { safeLog.error(`[agents:spawnChat] Spawn failed:`, spawnError.message); reject(spawnError); }
                   else { safeLog.log(`[agents:spawnChat] Session ${sessionKey} spawned successfully`); resolve(); }
                 });
@@ -429,11 +431,10 @@ export function registerAgentHandlers(): void {
     try {
       const agentId = sessionKey.split(':')[1];
       if (!agentId) return { success: false, error: `Invalid sessionKey format: ${sessionKey}` };
-      const escapedMsg = message.replace(/'/g, "'\\''");
       let response: string;
       try {
         const cliResult = await new Promise<string>((resolve, reject) => {
-          exec(`openclaw agent --agent ${agentId} --message '${escapedMsg}' --json`, { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
+          execFile(OPENCLAW, ['agent', '--agent', agentId, '--message', message, '--json'], { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout, stderr) => {
             if (error) reject(new Error(stderr || error.message)); else resolve(stdout.trim());
           });
         });
@@ -458,11 +459,9 @@ export function registerAgentHandlers(): void {
 
   registerHandler('agents:create', async (_event, config: { id: string; name: string; role: string; emoji: string; color: string; personality: string; voice?: string }) => {
     const script = path.join(SCRIPTS_DIR, 'agent-onboard-full.sh');
-    const esc = (s: string) => s.replace(/'/g, "'\\''");
-    const args = [config.id, config.name, config.role, config.emoji, config.color, config.personality, config.voice || 'Puck'].map(a => `'${esc(a)}'`).join(' ');
     safeLog.log(`[agents:create] Creating agent: ${config.id} (${config.name})`);
     return new Promise((resolve) => {
-      exec(`bash ${script} ${args}`, { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+      execFile('bash', [script, config.id, config.name, config.role, config.emoji, config.color, config.personality, config.voice || 'Puck'], { encoding: 'utf-8', timeout: 120000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` }, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
         if (error) { safeLog.error(`[agents:create] Failed: ${error.message}`); resolve({ success: false, error: error.message, output: stdout || '', stderr: stderr || '' }); }
         else { safeLog.log(`[agents:create] Success for ${config.id}`); resolve({ success: true, output: stdout || '' }); }
       });

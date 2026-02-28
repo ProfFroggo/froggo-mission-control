@@ -49,7 +49,9 @@ describe('Module Manifest Validation', () => {
       });
 
       it('should have an index.ts entry point', () => {
-        expect(fs.existsSync(path.join(MODULES_DIR, dir, 'index.ts'))).toBe(true);
+        const hasTs = fs.existsSync(path.join(MODULES_DIR, dir, 'index.ts'));
+        const hasTsx = fs.existsSync(path.join(MODULES_DIR, dir, 'index.tsx'));
+        expect(hasTs || hasTsx).toBe(true);
       });
 
       it('should declare at least one view', () => {

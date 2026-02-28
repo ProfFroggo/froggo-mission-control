@@ -19,6 +19,25 @@ import './library';
 import './twitter';
 import './agent-mgmt';
 
+// Phase 45: Core view migrations
+import './inbox';
+import './chat';
+import './agentdms';
+import './kanban';
+import './approvals';
+import './notifications';
+
+// Phase 46: Optional module migrations — wave 1
+import './meetings';
+import './voice';
+import './schedule';
+import './writing';
+
+// Phase 47: Optional module migrations — wave 2
+import './accounts';
+import './context';
+import './dev';
+import './module-builder';
+
 // Future modules:
-// import './writing';
 // import './comms';

@@ -1,10 +1,20 @@
 import { Users, Bot, CheckSquare, Activity } from 'lucide-react';
 import { useStore } from '../store/store';
+import { useShallow } from 'zustand/react/shallow';
 import AgentAvatar from './AgentAvatar';
 import WidgetLoading from './WidgetLoading';
 
 export default function QuickStatsWidget() {
-  const { sessions, agents, tasks, activities, gatewaySessions, loading } = useStore();
+  const { sessions, agents, tasks, activities, gatewaySessions, loading } = useStore(
+    useShallow(s => ({
+      sessions: s.sessions,
+      agents: s.agents,
+      tasks: s.tasks,
+      activities: s.activities,
+      gatewaySessions: s.gatewaySessions,
+      loading: s.loading,
+    }))
+  );
 
   // Show loading state while initial data is loading
   if (loading.tasks || loading.agents) {

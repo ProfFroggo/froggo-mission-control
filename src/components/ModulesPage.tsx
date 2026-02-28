@@ -24,9 +24,14 @@ import {
   Users,
   Zap,
   Globe,
+  Mail,
   MessageSquare,
+  MessagesSquare,
+  Kanban,
+  Inbox,
   Calendar,
   Bell,
+  Cloud,
   Code2,
   BookOpen,
   Mic,
@@ -34,6 +39,10 @@ import {
   Layout,
   Star,
   Layers,
+  PenLine,
+  Sparkles,
+  Code,
+  Boxes,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -54,9 +63,14 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Users,
   Zap,
   Globe,
+  Mail,
   MessageSquare,
+  MessagesSquare,
+  Kanban,
+  Inbox,
   Calendar,
   Bell,
+  Cloud,
   Code2,
   BookOpen,
   Mic,
@@ -64,6 +78,10 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Layout,
   Star,
   Layers,
+  PenLine,
+  Sparkles,
+  Code,
+  Boxes,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,7 +92,7 @@ function resolveIcon(iconName?: string): React.ComponentType<any> {
 
 // ─── Category filter ──────────────────────────────────────────────────────────
 
-const CATEGORIES = ['productivity', 'social', 'finance', 'system', 'agent'] as const;
+const CATEGORIES = ['productivity', 'communications', 'social', 'finance', 'system', 'agent'] as const;
 type Category = (typeof CATEGORIES)[number];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -239,19 +257,22 @@ function ModuleCard({
 
   // Determine visual state
   const isActive = moduleStatus === 'active' && panelVisible;
+  const isDisabled = moduleStatus === 'disposed';
   const isUnconfigured =
     hasCredentials &&
     integration != null &&
     (integration.status === 'pending' || integration.status === 'failed');
 
-  const cardOpacity = isActive ? '' : 'opacity-60';
+  const cardClass = isDisabled
+    ? 'opacity-40 grayscale'
+    : isActive ? '' : 'opacity-60';
 
   const IconComponent = resolveIcon(manifest.icon);
   const category = manifest.category ?? 'system';
 
   return (
     <div
-      className={`bg-clawd-surface border border-clawd-border rounded-xl p-4 transition-all hover:border-clawd-text-dim/30 ${cardOpacity}`}
+      className={`bg-clawd-surface border border-clawd-border rounded-xl p-4 transition-all hover:border-clawd-text-dim/30 ${cardClass}`}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -281,12 +302,26 @@ function ModuleCard({
           </div>
         </div>
 
-        {/* Toggle */}
-        <ToggleSwitch
-          checked={panelVisible}
-          onChange={(val) => onToggle(data, val)}
-          disabled={data.viewId == null}
-        />
+        {/* Toggle or Core pill or Re-enable */}
+        {manifest.core ? (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-clawd-accent/20 text-clawd-accent font-medium">
+            Core
+          </span>
+        ) : isDisabled ? (
+          <button
+            type="button"
+            onClick={() => onToggle(data, true)}
+            className="text-xs px-2.5 py-1 rounded-lg border border-clawd-border text-clawd-text-dim hover:text-clawd-text hover:border-clawd-text-dim transition-colors"
+          >
+            Re-enable
+          </button>
+        ) : (
+          <ToggleSwitch
+            checked={panelVisible}
+            onChange={(val) => onToggle(data, val)}
+            disabled={data.viewId == null}
+          />
+        )}
       </div>
 
       {/* Description */}
@@ -304,6 +339,10 @@ function ModuleCard({
 
         {isUnconfigured && (
           <span className="text-xs text-red-400">Unconfigured</span>
+        )}
+
+        {isDisabled && (
+          <span className="text-xs text-clawd-text-dim">Disabled</span>
         )}
 
         {hasCredentials && (
@@ -440,9 +479,13 @@ export default function ModulesPage() {
       );
       savePanels(updated);
     }
-    // Refresh card data to reflect new visibility
+    // Refresh card data to reflect new visibility and module status optimistically
     setCards((prev) =>
-      prev.map((c) => (c.viewId === viewId ? { ...c, panelVisible: visible } : c)),
+      prev.map((c) =>
+        c.viewId === viewId
+          ? { ...c, panelVisible: visible, moduleStatus: visible ? 'active' : 'disposed' }
+          : c
+      ),
     );
   }
 

@@ -74,10 +74,14 @@ export default function ContextControlBoard() {
     if (!selectedFile) return;
     setSaving(true);
     try {
-      await window.clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
-      setOriginalContent(fileContent);
-      setEditing(false);
-      showToast('success', 'Saved', selectedFile.name);
+      const result = await window.clawdbot?.exec?.run(`cat > "${selectedFile.path}" << 'EOFCONTENTMARKER'\n${fileContent}\nEOFCONTENTMARKER`);
+      if (result && result.success === false) {
+        showToast('error', 'Failed to save', result.stderr || result.error || 'Unknown error');
+      } else {
+        setOriginalContent(fileContent);
+        setEditing(false);
+        showToast('success', 'Saved', selectedFile.name);
+      }
     } catch (e) {
       showToast('error', 'Failed to save', String(e));
     } finally {

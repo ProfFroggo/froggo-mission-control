@@ -175,8 +175,8 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
   const exec = window.clawdbot?.exec?.run;
   if (!exec || !isCleanAgentId(agentId)) return {};
 
-  // Non-froggo agents live at ~/clawd-<id>, froggo lives at ~/clawd
-  const base = (agentId === 'froggo' || agentId === 'main') ? '~/clawd' : `~/clawd-${agentId}`;
+  // Non-froggo agents live at ~/agent-<id>, froggo lives at ~/froggo
+  const base = (agentId === 'froggo' || agentId === 'main') ? '~/froggo' : `~/agent-${agentId}`;
   const today = new Date().toISOString().split('T')[0];
 
   const fileSpecs = [
@@ -209,7 +209,7 @@ async function loadAgentMemory(agentId: string): Promise<string | null> {
     if (window.clawdbot?.exec?.run) {
       // Try reading the agent's daily memory
       const today = new Date().toISOString().split('T')[0];
-      const memBase = (agentId === 'froggo' || agentId === 'main') ? '~/clawd' : `~/clawd-${agentId}`;
+      const memBase = (agentId === 'froggo' || agentId === 'main') ? '~/froggo' : `~/agent-${agentId}`;
       const r = await window.clawdbot.exec.run(
         `head -100 ${memBase}/memory/${today}.md 2>/dev/null || echo ""`
       );

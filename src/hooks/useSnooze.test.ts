@@ -1,8 +1,9 @@
+/// <reference types="vitest" />
 /**
  * Tests for useSnooze hook
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSnooze } from './useSnooze';
 
@@ -10,7 +11,7 @@ import { useSnooze } from './useSnooze';
 global.fetch = vi.fn();
 
 describe('useSnooze', () => {
-  const mockFetch = global.fetch as unknown as vi.Mock;
+  const mockFetch = global.fetch as unknown as Mock;
   
   const mockSnoozeData = [
     {
@@ -59,7 +60,7 @@ describe('useSnooze', () => {
         json: async () => mockSnoozeData,
       });
 
-      const { result } = renderHook(() => useSnooze());
+      renderHook(() => useSnooze());
       
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith('http://localhost:3742/api/snooze/list');
