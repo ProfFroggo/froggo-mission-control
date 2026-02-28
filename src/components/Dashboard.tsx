@@ -300,10 +300,6 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
     return last || 'Unknown';
   };
 
-  // TODO: these are used when Add Widget panel is re-enabled
-  // const visibleWidgets = WIDGET_CONFIGS.filter(w => !hiddenWidgets.has(w.id));
-  // const availableWidgets = WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable);
-
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">
       {/* Grid Layout */}
