@@ -7927,7 +7927,7 @@ initSecurityDB();
 ipcMain.handle('security:listKeys', async () => {
   try {
     const secDb = getSecurityDb();
-    const keys = secDb.prepare('SELECT * FROM api_keys ORDER BY created_at DESC').all();
+    const keys = secDb.prepare('SELECT id, name, service, key, created_at, last_used FROM api_keys ORDER BY created_at DESC').all();
     return { success: true, keys };
   } catch (error: any) {
     safeLog.error('[Security] List keys error:', error);
@@ -7967,7 +7967,7 @@ ipcMain.handle('security:deleteKey', async (_, keyId: string) => {
 ipcMain.handle('security:listAuditLogs', async () => {
   try {
     const secDb = getSecurityDb();
-    const logs = secDb.prepare('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all();
+    const logs = secDb.prepare('SELECT id, timestamp, severity, category, finding, details, recommendation, status FROM audit_logs ORDER BY timestamp DESC LIMIT 100').all();
     return { success: true, logs };
   } catch (error: any) {
     safeLog.error('[Security] List audit logs error:', error);
@@ -7992,7 +7992,7 @@ ipcMain.handle('security:updateAuditLog', async (_, logId: string, updates: { st
 ipcMain.handle('security:listAlerts', async () => {
   try {
     const secDb = getSecurityDb();
-    const alerts = secDb.prepare('SELECT * FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all();
+    const alerts = secDb.prepare('SELECT id, timestamp, severity, message, source, dismissed FROM security_alerts WHERE dismissed = 0 ORDER BY timestamp DESC LIMIT 20').all();
     return { success: true, alerts };
   } catch (error: any) {
     safeLog.error('[Security] List alerts error:', error);
@@ -8348,7 +8348,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
 
 ipcMain.handle('x:research:list', async (_, filters?: { status?: string; limit?: number }) => {
   try {
-    let query = 'SELECT * FROM x_research_ideas';
+    let query = 'SELECT id, title, description, citations, proposed_by, approved_by, status, created_at, updated_at, file_path, metadata FROM x_research_ideas';
     const params: any[] = [];
     
     if (filters?.status) {
@@ -8542,7 +8542,7 @@ ${description}
 
 ipcMain.handle('x:plan:list', async (_, filters?: { status?: string; contentType?: string; limit?: number }) => {
   try {
-    let query = 'SELECT * FROM x_content_plans WHERE 1=1';
+    let query = 'SELECT id, research_idea_id, title, content_type, thread_length, has_media, proposed_by, approved_by, status, created_at, updated_at, file_path, metadata FROM x_content_plans WHERE 1=1';
     const params: any[] = [];
     
     if (filters?.status) {
@@ -8731,7 +8731,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
 
 ipcMain.handle('x:draft:list', async (_, filters?: { status?: string; planId?: string; limit?: number }) => {
   try {
-    let query = 'SELECT * FROM x_drafts WHERE 1=1';
+    let query = 'SELECT id, plan_id, version, content, media_paths, proposed_by, approved_by, status, created_at, updated_at, file_path, metadata FROM x_drafts WHERE 1=1';
     const params: any[] = [];
     
     if (filters?.status) {
@@ -8919,7 +8919,7 @@ ipcMain.handle('x:schedule:create', async (_, data: {
     const id = `sched-${now}`;
     
     // Verify draft exists and is approved
-    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    const draft = prepare('SELECT id, plan_id, version, content, media_paths, proposed_by, approved_by, status, created_at, updated_at, file_path, metadata FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
     if (!draft) {
       throw new Error('Draft not found or not approved');
     }
@@ -9082,7 +9082,7 @@ ipcMain.handle('x:schedule', async (_, text: string, scheduledTime: number) => {
 ipcMain.handle('x:scheduled', async () => {
   try {
     const stmt = prepare(`
-      SELECT * FROM scheduled_posts 
+      SELECT id, content, scheduled_time, status, created_at, posted_at, error, metadata FROM scheduled_posts
       ORDER BY scheduled_time ASC
     `);
     const results = stmt.all();
@@ -9129,7 +9129,7 @@ try {
 
 ipcMain.handle('x:campaign:list', async () => {
   try {
-    const rows = prepare('SELECT * FROM x_campaigns ORDER BY created_at DESC').all() as any[];
+    const rows = prepare('SELECT id, title, subject, stages, status, start_date, created_at, updated_at FROM x_campaigns ORDER BY created_at DESC').all() as any[];
     const campaigns = rows.map(r => ({
       ...r,
       stages: r.stages ? JSON.parse(r.stages) : [],
@@ -9182,7 +9182,7 @@ function startScheduledPoster() {
     try {
       const now = Date.now();
       const stmt = prepare(`
-        SELECT * FROM scheduled_posts 
+        SELECT id, content, scheduled_time, status, created_at, posted_at, error, metadata FROM scheduled_posts
         WHERE status = 'pending' AND scheduled_time <= ?
       `);
       const pending = stmt.all(now) as { id: string; content: string }[];
@@ -9215,7 +9215,7 @@ startScheduledPoster();
 
 ipcMain.handle('x:campaign:list', async () => {
   try {
-    const rows = prepare('SELECT * FROM x_campaigns ORDER BY updated_at DESC').all();
+    const rows = prepare('SELECT id, title, subject, stages, status, start_date, created_at, updated_at FROM x_campaigns ORDER BY updated_at DESC').all();
     const campaigns = (rows as any[]).map(r => ({
       ...r,
       stages: JSON.parse(r.stages || '[]'),
@@ -9345,7 +9345,7 @@ ipcMain.handle('x:mention:list', async (_, filters?: {
 }) => {
   try {
     let query = `
-      SELECT * FROM x_mentions
+      SELECT id, author_username, author_display_name, content, mentioned_at, replied_to, reply_draft_id, fetched_at, metadata, tweet_id, author_id, author_name, text, created_at, conversation_id, in_reply_to_user_id, reply_status, replied_at, replied_with_id, updated_at FROM x_mentions
       WHERE 1=1
     `;
     
@@ -9691,7 +9691,7 @@ ipcMain.handle('x:replyGuy:createQuickDraft', async (_, data: {
     const id = `draft-${now}`;
     
     // Get mention details
-    const mention = prepare('SELECT * FROM x_mentions WHERE id = ?').get(mentionId) as any;
+    const mention = prepare('SELECT id, author_username, author_display_name, content, mentioned_at, replied_to, reply_draft_id, fetched_at, metadata, tweet_id, author_id, author_name, text, created_at, conversation_id, in_reply_to_user_id, reply_status, replied_at, replied_with_id, updated_at FROM x_mentions WHERE id = ?').get(mentionId) as any;
     if (!mention) {
       throw new Error('Mention not found');
     }
@@ -9774,7 +9774,7 @@ ipcMain.handle('x:replyGuy:postNow', async (_, data: {
     const now = Date.now();
     
     // Get draft
-    const draft = prepare('SELECT * FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
+    const draft = prepare('SELECT id, plan_id, version, content, media_paths, proposed_by, approved_by, status, created_at, updated_at, file_path, metadata FROM x_drafts WHERE id = ? AND status = ?').get(draftId, 'approved') as any;
     if (!draft) {
       throw new Error('Draft not found or not approved');
     }
@@ -9908,7 +9908,7 @@ ipcMain.handle('x:reddit:createMonitor', async (_, data: {
 ipcMain.handle('x:reddit:listMonitors', async () => {
   try {
     const monitors = prepare(`
-      SELECT * FROM x_reddit_monitors WHERE status = 'active' ORDER BY created_at DESC
+      SELECT id, product_url, keywords, subreddits, status, created_at, updated_at FROM x_reddit_monitors WHERE status = 'active' ORDER BY created_at DESC
     `).all();
     
     return { success: true, monitors };
@@ -9922,7 +9922,7 @@ ipcMain.handle('x:reddit:fetch', async () => {
   try {
     // Get active monitors
     const monitors = prepare(`
-      SELECT * FROM x_reddit_monitors WHERE status = 'active'
+      SELECT id, product_url, keywords, subreddits, status, created_at, updated_at FROM x_reddit_monitors WHERE status = 'active'
     `).all() as any[];
     
     if (monitors.length === 0) {
@@ -9973,7 +9973,7 @@ ipcMain.handle('x:reddit:listThreads', async (_, filters?: {
   offset?: number;
 }) => {
   try {
-    let query = `SELECT * FROM x_reddit_threads WHERE 1=1`;
+    let query = `SELECT id, post_id, subreddit, title, text, author, url, upvotes, comment_count, created_at, fetched_at, reply_status, drafted_reply, posted_at, monitor_id FROM x_reddit_threads WHERE 1=1`;
     const params: any[] = [];
     
     if (filters?.status) {
@@ -10077,7 +10077,7 @@ ipcMain.handle('x:reddit:postReply', async (_, data: {
     const { threadId, replyText } = data;
     
     // Get thread info
-    const thread = prepare('SELECT * FROM x_reddit_threads WHERE id = ?').get(threadId) as any;
+    const thread = prepare('SELECT id, post_id, subreddit, title, text, author, url, upvotes, comment_count, created_at, fetched_at, reply_status, drafted_reply, posted_at, monitor_id FROM x_reddit_threads WHERE id = ?').get(threadId) as any;
     if (!thread) {
       throw new Error('Thread not found');
     }
