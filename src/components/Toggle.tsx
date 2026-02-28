@@ -51,7 +51,7 @@ export function Toggle({
         }}
       >
         <div
-          className="absolute top-0.5 left-0.5 bg-white rounded-full shadow-sm transition-transform duration-200 ease-in-out"
+          className="absolute top-0.5 left-0.5 bg-white rounded-full shadow-md ring-1 ring-black/5 transition-transform duration-200 ease-in-out"
           style={{
             width: `${config.thumbSize}px`,
             height: `${config.thumbSize}px`,
