@@ -7655,6 +7655,18 @@ ipcMain.handle('get-circuit-status', async () => {
 // Index for faster message queries
 try { db.exec('CREATE INDEX IF NOT EXISTS idx_messages_session_channel ON messages(session_key, channel)'); } catch (_e) { /* table may not exist yet */ }
 
+// Additional indexes for frequently-queried tables
+// Wrapped in individual try/catch — tables may not exist yet
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at DESC)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_conversation_snoozes_until ON conversation_snoozes(snooze_until)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_conversation_snoozes_session ON conversation_snoozes(session_id)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_library_category ON library(category)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_library_updated ON library(updated_at DESC)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_x_mentions_created ON x_mentions(created_at DESC)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_x_campaigns_created ON x_campaigns(created_at DESC)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_x_campaigns_updated ON x_campaigns(updated_at DESC)'); } catch (_e) { /* */ }
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_scheduled_posts_time ON scheduled_posts(scheduled_time)'); } catch (_e) { /* */ }
+
 // ============== CHAT MESSAGES IPC HANDLERS (froggo-db backed) ==============
 ipcMain.handle('chat:saveMessage', async (_, msg: { role: string; content: string; timestamp: number; sessionKey?: string; channel?: string }) => {
   const session = msg.sessionKey || 'dashboard';
