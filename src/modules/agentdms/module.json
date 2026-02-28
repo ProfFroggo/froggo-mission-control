@@ -1,0 +1,33 @@
+{
+  "id": "froggo-agentdms",
+  "name": "Agent DMs",
+  "version": "1.0.0",
+  "description": "Direct message feed for agent-to-agent and agent-to-user communications.",
+  "author": "Froggo Team",
+  "icon": "MessagesSquare",
+  "category": "communications",
+  "core": true,
+
+  "credentials": [],
+
+  "views": [
+    {
+      "id": "agentdms",
+      "label": "Agent DMs",
+      "icon": "MessagesSquare",
+      "entrypoint": "./views/DMFeed.tsx"
+    }
+  ],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

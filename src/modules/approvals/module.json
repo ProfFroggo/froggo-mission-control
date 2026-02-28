@@ -1,0 +1,33 @@
+{
+  "id": "froggo-approvals",
+  "name": "Approvals",
+  "version": "1.0.0",
+  "description": "Approval queue for reviewing and approving agent-generated content.",
+  "author": "Froggo Team",
+  "icon": "Inbox",
+  "category": "communications",
+  "core": true,
+
+  "credentials": [],
+
+  "views": [
+    {
+      "id": "approvals",
+      "label": "Approvals",
+      "icon": "Inbox",
+      "entrypoint": "./views/InboxPanel.tsx"
+    }
+  ],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}
