@@ -1,4 +1,4 @@
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
@@ -47,15 +47,9 @@ export default function ModuleBuilderPage() {
         <div className="flex gap-2">
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-clawd-text-dim hover:text-clawd-text hover:bg-clawd-bg rounded-lg transition-colors"
-          >
-            <RotateCcw size={14} /> Reset
-          </button>
-          <button
-            onClick={handleReset}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-clawd-accent hover:opacity-90 text-white rounded-lg transition-opacity"
           >
-            <Plus size={14} /> New
+            <Plus size={14} /> New Module
           </button>
         </div>
       </div>
