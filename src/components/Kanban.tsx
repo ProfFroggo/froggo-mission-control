@@ -11,6 +11,7 @@ import PokeModal from './PokeModal';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 
@@ -684,7 +685,18 @@ export default function Kanban() {
       </div>
 
       {/* Kanban Board */}
-      <div className="flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto">
+      {!loading.tasks && filteredTasks.length === 0 && (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            type="tasks"
+            description={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+              ? 'No tasks match your current filters. Try adjusting your search or filters.'
+              : 'No tasks yet. Create a task to get started.'}
+            action={{ label: 'New Task', onClick: () => setModalOpen(true) }}
+          />
+        </div>
+      )}
+      <div className={`flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}>
         {columns.map((column) => {
           const columnTasks = getColumnTasks(column.id);
           const settings = columnSettings[column.id];
@@ -859,13 +871,8 @@ export default function Kanban() {
                   ))
                 )}
                 
-                {columnTasks.length === 0 && (
-                  <div className="text-center py-8 text-clawd-text-dim">
-                    <div className="icon-badge-lg mx-auto mb-2 bg-clawd-border/50">
-                      <Plus size={16} className="flex-shrink-0" />
-                    </div>
-                    <p className="text-xs">Drop here or click +</p>
-                  </div>
+                {columnTasks.length === 0 && !loading.tasks && (
+                  <EmptyState type="kanban" compact />
                 )}
               </div>
             </div>

@@ -13,6 +13,7 @@ import { useChatRoomStore } from '../store/chatRoomStore';
 import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
+import EmptyState from './EmptyState';
 
 const logger = createLogger('ChatPanel');
 
@@ -1049,17 +1050,10 @@ export default function ChatPanel() {
             </div>
           </div>
         ) : searchQuery && filteredMessages.length === 0 ? (
-          <div className="text-center py-16 text-clawd-text-dim">
-            <Search size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium mb-2">No results found</p>
-            <p className="text-sm">Try a different search term</p>
-            <button
-              onClick={() => setSearchQuery('')}
-              className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Clear search
-            </button>
-          </div>
+          <EmptyState
+            type="search"
+            action={{ label: 'Clear search', onClick: () => setSearchQuery('') }}
+          />
         ) : (
           filteredMessages.map((msg, idx) => {
             const isUser = msg.role === 'user';
