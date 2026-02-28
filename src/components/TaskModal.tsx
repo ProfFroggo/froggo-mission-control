@@ -882,7 +882,7 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 >
                   Create Task
                   {assignedTo && <span className="text-xs opacity-75">& Assign</span>}
-                  <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">⌘S</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">⌘S</kbd>
                 </button>
               </div>
             </form>

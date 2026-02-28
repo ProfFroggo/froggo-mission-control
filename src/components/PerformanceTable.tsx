@@ -89,7 +89,7 @@ export default function PerformanceTable() {
 
   const getStatusColor = (agent: PerformanceData) => {
     // Gray for low sample size
-    if (agent.total_tasks < 5) return 'bg-gray-500';
+    if (agent.total_tasks < 5) return 'bg-muted';
 
     // Red/Yellow/Green based on success rate and Clara approval
     const success = agent.success_rate;

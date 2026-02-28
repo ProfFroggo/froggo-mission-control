@@ -143,7 +143,7 @@ export default function PanelHeader({
                   )}
                   {action.label && <span>{action.label}</span>}
                   {action.kbd && (
-                    <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                    <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">
                       {action.kbd}
                     </kbd>
                   )}

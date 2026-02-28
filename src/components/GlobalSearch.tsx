@@ -421,7 +421,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             >
               <Filter size={16} className={activeFilters > 0 ? 'text-clawd-accent' : 'text-clawd-text-dim'} />
               {activeFilters > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-clawd-accent text-black text-xs rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-clawd-accent text-clawd-bg text-xs rounded-full flex items-center justify-center font-bold">
                   {activeFilters}
                 </span>
               )}
@@ -448,7 +448,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     onClick={() => setTypeFilter(type)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       typeFilter === type
-                        ? 'bg-clawd-accent text-black font-medium'
+                        ? 'bg-clawd-accent text-clawd-bg font-medium'
                         : 'bg-clawd-border hover:bg-clawd-border/70 text-clawd-text-dim'
                     }`}
                   >
@@ -468,7 +468,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     onClick={() => setDateFilter(date)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       dateFilter === date
-                        ? 'bg-clawd-accent text-black font-medium'
+                        ? 'bg-clawd-accent text-clawd-bg font-medium'
                         : 'bg-clawd-border hover:bg-clawd-border/70 text-clawd-text-dim'
                     }`}
                   >
@@ -488,7 +488,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     onClick={() => setStatusFilter(status)}
                     className={`px-2 py-1 text-xs rounded transition-colors ${
                       statusFilter === status
-                        ? 'bg-clawd-accent text-black font-medium'
+                        ? 'bg-clawd-accent text-clawd-bg font-medium'
                         : 'bg-clawd-border hover:bg-clawd-border/70 text-clawd-text-dim'
                     }`}
                   >

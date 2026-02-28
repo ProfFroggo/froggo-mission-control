@@ -604,7 +604,7 @@ export default function Kanban() {
             >
               <Plus size={16} className="flex-shrink-0" />
               New Task
-              <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">N</kbd>
+              <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">N</kbd>
             </button>
           </div>
         </div>

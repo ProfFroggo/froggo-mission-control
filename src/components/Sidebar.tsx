@@ -166,7 +166,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
                         position="inline"
                         variant={isActive ? 'secondary' : 'primary'}
                         size="sm"
-                        className={isActive ? 'bg-white/20 text-white' : 'bg-clawd-accent/20 text-clawd-accent'}
+                        className={isActive ? 'bg-clawd-text/20 text-clawd-text' : 'bg-clawd-accent/20 text-clawd-accent'}
                       />
                     )}
                   </>

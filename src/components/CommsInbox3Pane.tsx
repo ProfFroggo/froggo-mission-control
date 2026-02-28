@@ -359,7 +359,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
             ref={iframeRef}
             srcDoc={sanitizeEmailHtml(body)}
             sandbox="allow-same-origin"
-            className="w-full border-0 min-h-[200px] bg-white rounded"
+            className="w-full border-0 min-h-[200px] bg-clawd-surface rounded"
             style={{ colorScheme: 'light' }}
             title="Email content"
           />

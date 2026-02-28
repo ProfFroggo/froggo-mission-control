@@ -361,7 +361,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               }`}
             >
               <div
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
                   rule.enabled ? 'translate-x-7' : 'translate-x-1'
                 }`}
               />
