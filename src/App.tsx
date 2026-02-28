@@ -23,6 +23,7 @@ import EditPanelsModal from './components/EditPanelsModal';
 import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
 import { useFirstTimeUser } from './hooks/useFirstTimeUser';
+import OnboardingWizard from './components/OnboardingWizard';
 import NetworkStatus from './components/NetworkStatus';
 
 // View IDs are dynamic — any registered view ID is valid
@@ -51,7 +52,7 @@ function App() {
   const [, setSidebarWidth] = useState(208); // Track sidebar width for sidebar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
   const { activeTour, completeTour, skipTour, startTour, hasCompletedTour } = useTour();
-  useFirstTimeUser(startTour, hasCompletedTour);
+  const { showOnboardingWizard, completeOnboarding, skipOnboarding } = useFirstTimeUser(startTour, hasCompletedTour);
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
@@ -414,9 +415,19 @@ function App() {
           />
         </ErrorBoundary>
 
+        {/* Onboarding Wizard (first-run only) */}
+        {showOnboardingWizard && (
+          <ErrorBoundary panelName="Onboarding Wizard">
+            <OnboardingWizard
+              onComplete={(startTour) => completeOnboarding(startTour)}
+              onSkip={() => skipOnboarding()}
+            />
+          </ErrorBoundary>
+        )}
+
         {/* Tour Guide */}
         <ErrorBoundary panelName="Tour Guide">
-          <TourGuide 
+          <TourGuide
             tour={activeTour}
             onComplete={completeTour}
             onSkip={skipTour}
