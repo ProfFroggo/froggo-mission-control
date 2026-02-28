@@ -31,6 +31,7 @@ import {
   Inbox,
   Calendar,
   Bell,
+  Cloud,
   Code2,
   BookOpen,
   Mic,
@@ -39,6 +40,7 @@ import {
   Star,
   Layers,
   PenLine,
+  Sparkles,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -66,6 +68,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Inbox,
   Calendar,
   Bell,
+  Cloud,
   Code2,
   BookOpen,
   Mic,
@@ -74,6 +77,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Star,
   Layers,
   PenLine,
+  Sparkles,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
