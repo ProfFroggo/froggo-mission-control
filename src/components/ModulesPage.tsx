@@ -38,6 +38,7 @@ import {
   Layout,
   Star,
   Layers,
+  PenLine,
 } from 'lucide-react';
 import { ModuleLoader, type ModuleManifest } from '../core/ModuleLoader';
 import { ViewRegistry } from '../core/ViewRegistry';
@@ -72,6 +73,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Layout,
   Star,
   Layers,
+  PenLine,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
