@@ -253,7 +253,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = true, descrip
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between mb-3 group"
       >
-        <h2 className="text-lg font-medium flex items-center gap-2 group-hover:text-clawd-accent transition-colors">
+        <h2 className="text-heading-3 flex items-center gap-2 group-hover:text-clawd-accent transition-colors">
           {icon}
           {title}
         </h2>
@@ -489,10 +489,10 @@ export default function EnhancedSettingsPanel() {
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+              <h1 className="text-heading-2 mb-2 flex items-center gap-2">
                 <Settings size={24} /> Settings
               </h1>
-              <p className="text-clawd-text-dim">Configure Froggo dashboard preferences</p>
+              <p className="text-secondary">Configure Froggo dashboard preferences</p>
             </div>
             <div className="flex gap-2">
               <button

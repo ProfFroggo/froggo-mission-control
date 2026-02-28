@@ -267,10 +267,10 @@ export default function SettingsPanel() {
       <div className="max-w-8xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+          <h1 className="text-heading-2 mb-2 flex items-center gap-2">
             <Settings size={24} /> Settings
           </h1>
-          <p className="text-clawd-text-dim">Configure Froggo dashboard preferences</p>
+          <p className="text-secondary">Configure Froggo dashboard preferences</p>
         </div>
 
         {/* Tabs */}
@@ -407,7 +407,7 @@ export default function SettingsPanel() {
           <div className="space-y-8">
             {/* Connection */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Wifi size={16} /> Connection
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -442,7 +442,7 @@ export default function SettingsPanel() {
 
             {/* Default Panel */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Monitor size={16} /> Startup
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -471,7 +471,7 @@ export default function SettingsPanel() {
 
             {/* Navigation */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Monitor size={16} /> Navigation
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -494,7 +494,7 @@ export default function SettingsPanel() {
 
             {/* Voice */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Volume2 size={16} /> Voice
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -528,7 +528,7 @@ export default function SettingsPanel() {
 
             {/* Data */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <RefreshCw size={16} /> Data Refresh
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -564,7 +564,7 @@ export default function SettingsPanel() {
 
             {/* Export/Import */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Download size={16} /> Backup & Restore
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -604,7 +604,7 @@ export default function SettingsPanel() {
           <div className="space-y-8">
             {/* Theme */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Moon size={16} /> Theme
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -657,7 +657,7 @@ export default function SettingsPanel() {
 
             {/* Typography */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Type size={16} /> Typography
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">
@@ -716,7 +716,7 @@ export default function SettingsPanel() {
 
             {/* Dashboard-specific Notification Preferences */}
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Bell size={16} /> Dashboard Notification Preferences
               </h2>
               <p className="text-sm text-clawd-text-dim mb-4">
@@ -850,7 +850,7 @@ export default function SettingsPanel() {
           <div className="space-y-8">
             <section>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium flex items-center gap-2">
+                <h2 className="text-heading-3 flex items-center gap-2">
                   <Keyboard size={16} /> Keyboard Shortcuts
                 </h2>
                 <button
@@ -910,7 +910,7 @@ export default function SettingsPanel() {
         {activeTab === 'automation' && (
           <div className="space-y-8">
             <section>
-              <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+              <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 ⚡ Automation
               </h2>
               <div className="bg-clawd-surface rounded-xl border border-clawd-border p-4 space-y-4">

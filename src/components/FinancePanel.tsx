@@ -448,7 +448,7 @@ export default function FinancePanel() {
       <div className="flex items-center justify-between p-4 border-b border-clawd-border">
         <div className="flex items-center gap-2">
           <DollarSign size={24} className="text-success" />
-          <h1 className="text-xl font-semibold">Finance Manager</h1>
+          <h1 className="text-heading-2">Finance Manager</h1>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -575,7 +575,7 @@ export default function FinancePanel() {
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-4 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <Bell size={18} className="text-warning" />
-              <h2 className="text-base font-semibold">System Alerts</h2>
+              <h2 className="text-heading-3">System Alerts</h2>
             </div>
 
             <div className="space-y-2">
@@ -609,7 +609,7 @@ export default function FinancePanel() {
           {/* Family Budget */}
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
+              <h2 className="text-heading-3 flex items-center gap-2">
                 <DollarSign size={20} className="text-info" />
                 Family Budget
               </h2>
@@ -686,7 +686,7 @@ export default function FinancePanel() {
           {/* Crypto Budget */}
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
+              <h2 className="text-heading-3 flex items-center gap-2">
                 <Coins size={20} className="text-review" />
                 Crypto Budget
               </h2>
@@ -810,7 +810,7 @@ export default function FinancePanel() {
         {/* Recent Transactions */}
         <div className="bg-clawd-surface border border-clawd-border rounded-xl">
           <div className="flex items-center justify-between p-4 border-b border-clawd-border">
-            <h2 className="text-lg font-semibold">Recent Transactions</h2>
+            <h2 className="text-heading-3">Recent Transactions</h2>
             <span className="text-sm text-clawd-text-dim">
               {selectedAccountId
                 ? accounts.find(a => a.id === selectedAccountId)?.name || 'Account'
@@ -877,7 +877,7 @@ export default function FinancePanel() {
       {uploadModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4">Upload Bank Statement</h2>
+            <h2 className="text-heading-3 mb-4">Upload Bank Statement</h2>
 
             <div className="space-y-4">
               {/* Account selector */}
@@ -928,7 +928,7 @@ export default function FinancePanel() {
       {budgetModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4">
+            <h2 className="text-heading-3 mb-4">
               Create {budgetModalType === 'family' ? 'Family' : 'Crypto'} Budget
             </h2>
 
@@ -1018,7 +1018,7 @@ export default function FinancePanel() {
       {showCreateAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-lg font-semibold mb-4">Create Account</h2>
+            <h2 className="text-heading-3 mb-4">Create Account</h2>
 
             <div className="space-y-4">
               <div>
@@ -1088,7 +1088,7 @@ export default function FinancePanel() {
       {showExportModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-clawd-bg border border-clawd-border rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-lg font-semibold text-clawd-text mb-4">Export Transactions</h2>
+            <h2 className="text-heading-3 mb-4">Export Transactions</h2>
 
             <div className="space-y-4">
               {/* Account filter */}

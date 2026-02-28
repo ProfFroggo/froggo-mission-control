@@ -516,13 +516,13 @@ export default function Kanban() {
       <div className="p-6 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold icon-text">
+            <h1 className="text-heading-2 icon-text">
               Task Board
-              <span className="text-sm font-normal text-clawd-text-dim">
+              <span className="text-secondary font-normal">
                 Press <kbd className="px-1.5 py-0.5 bg-clawd-bg rounded text-xs">?</kbd> for shortcuts
               </span>
             </h1>
-            <div className="flex items-center gap-4 text-sm text-clawd-text-dim mt-1">
+            <div className="flex items-center gap-4 text-secondary mt-1">
               <span>{tasks.length} tasks</span>
               {stats.inProgress > 0 && (
                 <span className="icon-text-tight text-warning">
@@ -897,7 +897,7 @@ export default function Kanban() {
             role="presentation"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="icon-text text-lg font-semibold">
+              <h2 className="icon-text text-heading-3">
                 <Keyboard size={20} className="flex-shrink-0" /> Keyboard Shortcuts
               </h2>
               <button type="button" onClick={() => setShowKeyboardHelp(false)} className="icon-btn-sm">
@@ -950,7 +950,7 @@ export default function Kanban() {
       {showArchiveConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-clawd-bg1 rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
-            <h3 className="text-lg font-semibold mb-2">Archive Done Tasks</h3>
+            <h3 className="text-heading-3 mb-2">Archive Done Tasks</h3>
             <p className="text-clawd-text-dim mb-4">
               Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
               They will be removed from the board but can still be accessed in the archive.

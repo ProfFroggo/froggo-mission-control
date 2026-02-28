@@ -144,8 +144,8 @@ export default function NotificationsPanel() {
               <Bell size={24} className="text-clawd-accent" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Notifications</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <h1 className="text-heading-2">Notifications</h1>
+              <p className="text-secondary">
                 {unreadCount} unread {urgentCount > 0 && `• ${urgentCount} urgent`}
               </p>
             </div>

@@ -58,15 +58,15 @@ export default function PanelHeader({
   };
 
   const titleStyles = {
-    compact: 'text-lg',
-    default: 'text-2xl',
-    large: 'text-3xl',
+    compact: 'text-heading-3',
+    default: 'text-heading-2',
+    large: 'text-heading-1',
   };
 
   const subtitleStyles = {
-    compact: 'text-xs',
-    default: 'text-sm',
-    large: 'text-base',
+    compact: 'text-caption',
+    default: 'text-secondary',
+    large: 'text-body',
   };
 
   return (
@@ -94,7 +94,7 @@ export default function PanelHeader({
 
           {/* Title & Subtitle */}
           <div className="min-w-0 flex-1">
-            <h1 className={`${titleStyles[variant]} font-semibold truncate flex items-center gap-2`}>
+            <h1 className={`${titleStyles[variant]} truncate flex items-center gap-2`}>
               {title}
               {badge !== undefined && (
                 <span className="px-2 py-0.5 bg-clawd-accent/20 text-clawd-accent rounded-full text-sm font-normal">
@@ -103,7 +103,7 @@ export default function PanelHeader({
               )}
             </h1>
             {subtitle && (
-              <div className={`${subtitleStyles[variant]} text-clawd-text-dim mt-0.5`}>
+              <div className={`${subtitleStyles[variant]} mt-0.5`}>
                 {subtitle}
               </div>
             )}
