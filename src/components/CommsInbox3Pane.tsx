@@ -359,7 +359,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
             ref={iframeRef}
             srcDoc={sanitizeEmailHtml(body)}
             sandbox="allow-same-origin"
-            className="w-full border-0 min-h-[200px] bg-white rounded"
+            className="w-full border-0 min-h-[200px] bg-clawd-surface rounded"
             style={{ colorScheme: 'light' }}
             title="Email content"
           />
@@ -749,7 +749,7 @@ function InboxDashboard({
       <div className="px-5 py-4 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center gap-2 mb-1">
           <Sparkles size={18} className="text-clawd-accent" />
-          <h2 className="font-bold text-base">Smart Inbox</h2>
+          <h2 className="text-heading-2">Smart Inbox</h2>
           {analysisLoading && <RefreshCw size={12} className="animate-spin text-clawd-text-dim ml-auto" />}
         </div>
         <p className="text-xs text-clawd-text-dim">AI-powered overview of your communications</p>

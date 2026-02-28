@@ -24,6 +24,7 @@ import { registerMemoryLifecycleHandlers } from './memory-lifecycle-service';
 import { registerSearchHandlers } from './search-service';
 import { registerKnowledgeHandlers } from './knowledge-service';
 import { registerAllHandlers, startCommsPolling, startEmailAutoCheck } from './handlers/index';
+import { registerOnboardingHandlers } from './onboarding-service';
 import { prepare, closeDb, db } from './database';
 import { DATA_DIR } from './paths';
 import { runMigrations } from './migrations';
@@ -195,7 +196,12 @@ const SCHEDULE_CHECK_INTERVAL = 30000;
 
 async function processScheduledItems() {
   let items: any[] = [];
-  try { items = prepare("SELECT * FROM schedule WHERE status = 'pending'").all() as any[]; } catch { return; }
+  try {
+    items = prepare("SELECT id, type, content, scheduled_for, status, created_at, sent_at, error, metadata FROM schedule WHERE status = 'pending'").all() as any[];
+  } catch (e: any) {
+    safeLog.error('[ScheduleProcessor] Query error:', e.message);
+    return;
+  }
   if (items.length === 0) return;
   const now = new Date();
   items = items.filter(item => item.scheduled_for && new Date(item.scheduled_for) <= now);
@@ -303,6 +309,9 @@ app.whenReady().then(() => {
   registerMemoryLifecycleHandlers();
   registerSearchHandlers();
   registerKnowledgeHandlers();
+
+  // Register Onboarding wizard IPC handlers (deps, permissions, sample data)
+  registerOnboardingHandlers();
 
   // Start background services
   startTaskNotifyWatcher();

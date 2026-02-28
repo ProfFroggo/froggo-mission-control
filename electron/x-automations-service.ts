@@ -12,7 +12,7 @@ function generateId(): string {
 // List all automations
 export function listAutomations() {
   try {
-    const automations = prepare('SELECT * FROM x_automations ORDER BY created_at DESC').all();
+    const automations = prepare('SELECT id, name, description, enabled, trigger_type, trigger_config, conditions, actions, max_executions_per_hour, max_executions_per_day, total_executions, last_executed_at, created_at, updated_at, created_by FROM x_automations ORDER BY created_at DESC').all();
     return { success: true, automations };
   } catch (e: any) {
     logger.error('[x-automations] List error:', e.message);
@@ -23,7 +23,7 @@ export function listAutomations() {
 // Get single automation
 export function getAutomation(id: string) {
   try {
-    const automation = prepare('SELECT * FROM x_automations WHERE id = ?').get(id);
+    const automation = prepare('SELECT id, name, description, enabled, trigger_type, trigger_config, conditions, actions, max_executions_per_hour, max_executions_per_day, total_executions, last_executed_at, created_at, updated_at, created_by FROM x_automations WHERE id = ?').get(id);
     if (!automation) {
       return { success: false, error: 'Automation not found' };
     }
@@ -169,12 +169,14 @@ export function getExecutions(automationId?: string, limit: number = 50) {
   try {
     let executions: any[];
     if (automationId) {
+      const execCols = 'id, automation_id, trigger_data, actions_executed, status, error_message, executed_at';
       executions = prepare(
-        'SELECT * FROM x_automation_executions WHERE automation_id = ? ORDER BY executed_at DESC LIMIT ?'
+        `SELECT ${execCols} FROM x_automation_executions WHERE automation_id = ? ORDER BY executed_at DESC LIMIT ?`
       ).all(automationId, limit);
     } else {
+      const execCols = 'id, automation_id, trigger_data, actions_executed, status, error_message, executed_at';
       executions = prepare(
-        'SELECT * FROM x_automation_executions ORDER BY executed_at DESC LIMIT ?'
+        `SELECT ${execCols} FROM x_automation_executions ORDER BY executed_at DESC LIMIT ?`
       ).all(limit);
     }
     return { success: true, executions };

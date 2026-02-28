@@ -91,7 +91,7 @@ function generateId(prefix: string): string {
 function listSources(projectId: string) {
   try {
     const db = getDb(projectId);
-    const sources = db.prepare('SELECT * FROM sources ORDER BY title').all() as ResearchSource[];
+    const sources = db.prepare('SELECT id, title, author, type, url, notes, created_at, updated_at FROM sources ORDER BY title').all() as ResearchSource[];
     return { success: true, sources };
   } catch (e: any) {
     logger.error('[writing-research] listSources error:', e.message);
@@ -110,7 +110,7 @@ function createSource(projectId: string, data: Omit<ResearchSource, 'id' | 'crea
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, data.title || '', data.author || '', data.type || 'other', data.url || '', data.notes || '', now, now);
 
-    const source = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource;
+    const source = db.prepare('SELECT id, title, author, type, url, notes, created_at, updated_at FROM sources WHERE id = ?').get(id) as ResearchSource;
     return { success: true, source };
   } catch (e: any) {
     logger.error('[writing-research] createSource error:', e.message);
@@ -121,7 +121,7 @@ function createSource(projectId: string, data: Omit<ResearchSource, 'id' | 'crea
 function updateSource(projectId: string, id: string, data: Partial<ResearchSource>) {
   try {
     const db = getDb(projectId);
-    const existing = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource | undefined;
+    const existing = db.prepare('SELECT id, title, author, type, url, notes, created_at, updated_at FROM sources WHERE id = ?').get(id) as ResearchSource | undefined;
     if (!existing) return { success: false, error: 'Source not found' };
 
     const now = new Date().toISOString();
@@ -138,7 +138,7 @@ function updateSource(projectId: string, id: string, data: Partial<ResearchSourc
       id,
     );
 
-    const source = db.prepare('SELECT * FROM sources WHERE id = ?').get(id) as ResearchSource;
+    const source = db.prepare('SELECT id, title, author, type, url, notes, created_at, updated_at FROM sources WHERE id = ?').get(id) as ResearchSource;
     return { success: true, source };
   } catch (e: any) {
     logger.error('[writing-research] updateSource error:', e.message);
@@ -164,7 +164,7 @@ function getSourcesForFact(projectId: string, factId: string) {
   try {
     const db = getDb(projectId);
     const sources = db.prepare(`
-      SELECT s.*, fs.notes AS link_notes, fs.created_at AS linked_at
+      SELECT s.id, s.title, s.author, s.type, s.url, s.notes, s.created_at, s.updated_at, fs.notes AS link_notes, fs.created_at AS linked_at
       FROM sources s
       JOIN fact_sources fs ON fs.source_id = s.id
       WHERE fs.fact_id = ?

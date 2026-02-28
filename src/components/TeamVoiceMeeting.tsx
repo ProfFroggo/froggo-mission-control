@@ -847,7 +847,7 @@ Respond as ${agentName(agentId)}:`;
             {listening && !speakingAgent && !processingAgent && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-indigo-400">Listening…</span>
-                <Waveform level={micLevel} color="#818cf8" bars={10} height={32} />
+                <Waveform level={micLevel} color="var(--color-info)" bars={10} height={32} />
               </div>
             )}
             {speakingAgent && (

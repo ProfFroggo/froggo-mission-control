@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useStore } from '../store/store';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 interface PerformanceStats {
   tasksCompleted: number;
@@ -171,33 +172,33 @@ export default function OxAnalytics() {
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={completionTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                <XAxis 
-                  dataKey="day" 
-                  stroke="#9CA3AF" 
+                <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  stroke={CHART_AXIS.stroke}
                   fontSize={12}
                   tickLine={false}
                 />
-                <YAxis 
-                  stroke="#9CA3AF" 
+                <YAxis
+                  stroke={CHART_AXIS.stroke}
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
-                    borderRadius: '8px',
-                    color: '#fff'
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: CHART_TOOLTIP.backgroundColor,
+                    border: CHART_TOOLTIP.border,
+                    borderRadius: CHART_TOOLTIP.borderRadius,
+                    color: CHART_TOOLTIP.color,
                   }}
-                  labelStyle={{ color: '#9CA3AF' }}
+                  labelStyle={{ color: CHART_AXIS.stroke }}
                   formatter={(value: number | undefined) => [(value ?? 0), 'Completed'] as const}
                 />
-                <Bar 
-                  dataKey="completed" 
-                  name="Completed" 
-                  fill="#22c55e" 
+                <Bar
+                  dataKey="completed"
+                  name="Completed"
+                  fill={CHART_COLORS.green}
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>

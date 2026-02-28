@@ -231,7 +231,7 @@ export default function SecuritySettings() {
                 </div>
                 <button
                   onClick={() => dismissAlert(alert.id)}
-                  className="p-1 hover:bg-white/10 rounded transition-colors"
+                  className="p-1 hover:bg-clawd-text/10 rounded transition-colors"
                   title="Dismiss"
                 >
                   <XCircle size={16} />

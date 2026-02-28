@@ -249,7 +249,7 @@ export default function SkillsTab() {
                             skill.enabled ? 'bg-clawd-accent' : 'bg-clawd-border'
                           }`}
                         >
-                          <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                          <div className={`w-4 h-4 rounded-full bg-clawd-text shadow transition-transform ${
                             skill.enabled ? 'translate-x-5' : 'translate-x-0.5'
                           }`} />
                         </button>

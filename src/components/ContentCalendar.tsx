@@ -23,7 +23,7 @@ interface ScheduledItem {
 }
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  tweet: { icon: XIcon, color: 'text-white', bg: 'bg-white/10' },
+  tweet: { icon: XIcon, color: 'text-clawd-text', bg: 'bg-clawd-text/10' },
   email: { icon: Mail, color: 'text-error', bg: 'bg-error-subtle' },
   message: { icon: MessageSquare, color: 'text-success', bg: 'bg-success-subtle' },
   post: { icon: Calendar, color: 'text-review', bg: 'bg-review-subtle' },

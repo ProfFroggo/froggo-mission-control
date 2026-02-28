@@ -9,6 +9,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Spinner } from './LoadingStates';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 interface PostMetrics {
   id: string;
@@ -51,7 +52,7 @@ interface Suggestion {
   icon: string;
 }
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
 
 
 type AnalyticsView = 'overview' | 'posts' | 'heatmap' | 'insights';
@@ -373,18 +374,18 @@ export function XEnhancedAnalyticsView() {
                     <AreaChart data={data.impressionsOverTime}>
                       <defs>
                         <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 10 }} tickLine={false} />
-                      <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} tickLine={false} tickFormatter={formatNumber} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
+                      <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} tickFormatter={formatNumber} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                        labelStyle={{ color: '#f3f4f6' }}
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
+                        labelStyle={{ color: CHART_TOOLTIP.color }}
                       />
-                      <Area type="monotone" dataKey="impressions" stroke="#3b82f6" fillOpacity={1} fill="url(#colorImpressions)" />
+                      <Area type="monotone" dataKey="impressions" stroke={CHART_COLORS.blue} fillOpacity={1} fill="url(#colorImpressions)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -399,14 +400,14 @@ export function XEnhancedAnalyticsView() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.followerGrowth}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis dataKey="date" tick={{ fill: '#9ca3af', fontSize: 10 }} tickLine={false} />
-                      <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} tickLine={false} domain={['dataMin - 100', 'dataMax + 100']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
+                      <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} domain={['dataMin - 100', 'dataMax + 100']} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
-                        labelStyle={{ color: '#f3f4f6' }}
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
+                        labelStyle={{ color: CHART_TOOLTIP.color }}
                       />
-                      <Line type="monotone" dataKey="followers" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="followers" stroke={CHART_COLORS.purple} strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -439,7 +440,7 @@ export function XEnhancedAnalyticsView() {
                         ))}
                       </Pie>
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -454,14 +455,14 @@ export function XEnhancedAnalyticsView() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data.contentTypes} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 10 }} />
-                      <YAxis type="category" dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} width={80} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <XAxis type="number" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} />
+                      <YAxis type="category" dataKey="name" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} width={80} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                        contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
                         formatter={((value: number) => [`${value}%`, 'Engagement']) as any}
                       />
-                      <Bar dataKey="engagement" fill="#10b981" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="engagement" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -647,7 +648,7 @@ export function XEnhancedAnalyticsView() {
                               key={hour}
                               className="flex-1 h-8 rounded-sm transition-colors"
                               style={{
-                                backgroundColor: value === 0 ? '#1f2937' : `rgba(59, 130, 246, ${intensity})`,
+                                backgroundColor: value === 0 ? CHART_TOOLTIP.backgroundColor : `rgba(59, 130, 246, ${intensity})`,
                               }}
                               title={`${day} ${hour}:00 - Engagement: ${value}`}
                             />

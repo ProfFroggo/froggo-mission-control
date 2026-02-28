@@ -226,7 +226,7 @@ export default function ConfigTab() {
                               onClick={() => updateField(field.path, !field.value)}
                               className={`w-10 h-5 rounded-full transition-colors ${field.value ? 'bg-clawd-accent' : 'bg-clawd-border'}`}
                             >
-                              <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                              <div className={`w-4 h-4 rounded-full bg-clawd-text shadow transition-transform ${field.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
                             </button>
                           </div>
                         ) : field.type === 'number' ? (

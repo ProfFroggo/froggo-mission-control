@@ -5,11 +5,14 @@ import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
 import MarkdownWithMentions from './MarkdownWithMentions';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
+import ArtifactPanel from './ArtifactPanel';
 import { gateway } from '../lib/gateway';
 import { getAgentTheme } from '../utils/agentThemes';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
+import { useArtifactStore } from '../store/artifactStore';
 import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
+import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 
 interface AttachedFile {
   id: string;
@@ -33,6 +36,23 @@ export default function ChatRoomView({ roomId, onBack }: ChatRoomViewProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
+  const { isCollapsed: artifactPanelCollapsed } = useArtifactStore();
+
+  // Auto-extract artifacts from messages
+  useArtifactExtraction(
+    room?.messages.map(m => ({
+      id: m.id,
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content,
+      timestamp: m.timestamp,
+    })) || [],
+    roomId,
+    {
+      autoExtract: true,
+      extractFromAssistant: true,
+      extractFromUser: false,
+    }
+  );
 
   // Helper to get agent name from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
@@ -491,13 +511,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   const isTeamMeeting = room.agents.length >= totalAgents - 1 || room.name.toLowerCase().includes('team meeting');
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className={`p-4 border-b flex items-center gap-3 ${
-        isTeamMeeting
-          ? 'bg-warning/10 border-amber-500/30'
-          : 'bg-clawd-surface border-clawd-border'
-      }`}>
+    <div className="h-full flex">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className={`p-4 border-b flex items-center gap-3 ${
+          isTeamMeeting
+            ? 'bg-warning/10 border-amber-500/30'
+            : 'bg-clawd-surface border-clawd-border'
+        }`}>
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-clawd-border transition-colors"
@@ -537,7 +559,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               <div key={id} className="relative group">
                 <AgentAvatar agentId={id} size="xs" />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-success border border-white/80 dark:border-white" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-clawd-surface text-clawd-text text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {agentName(id)}
                 </div>
               </div>
@@ -963,6 +985,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         cancelLabel={config.cancelLabel}
         type={config.type}
       />
+      </div>
+      
+      {/* Artifact Panel */}
+      <ArtifactPanel sessionId={roomId} />
     </div>
   );
 }

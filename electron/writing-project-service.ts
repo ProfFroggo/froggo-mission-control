@@ -77,7 +77,7 @@ async function listProjects() {
 
       try {
         const db = ensureBookDb(entry.name);
-        const meta = db.prepare('SELECT * FROM project LIMIT 1').get() as any;
+        const meta = db.prepare('SELECT id, title, type, genre, premise, themes, story_arc, wizard_complete, created_at, updated_at FROM project LIMIT 1').get() as any;
         if (!meta) continue;
 
         // Get chapter count and total word count
@@ -243,13 +243,13 @@ async function createProjectFromWizard(wizardData: {
 async function getProject(projectId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const meta = db.prepare('SELECT * FROM project WHERE id = ?').get(projectId) as any;
+    const meta = db.prepare('SELECT id, title, type, genre, premise, themes, story_arc, wizard_complete, created_at, updated_at FROM project WHERE id = ?').get(projectId) as any;
 
     if (!meta) {
       return { success: false, error: 'Project not found' };
     }
 
-    const chapters = db.prepare('SELECT * FROM chapters ORDER BY position').all() as any[];
+    const chapters = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters ORDER BY position').all() as any[];
 
     const chaptersWithWordCount = [];
     for (const ch of chapters) {
@@ -306,7 +306,7 @@ async function updateProject(projectId: string, updates: { title?: string; type?
       db.prepare('UPDATE project SET type = ?, updated_at = ? WHERE id = ?').run(updates.type, now, projectId);
     }
 
-    const meta = db.prepare('SELECT * FROM project WHERE id = ?').get(projectId) as any;
+    const meta = db.prepare('SELECT id, title, type, genre, premise, themes, story_arc, wizard_complete, created_at, updated_at FROM project WHERE id = ?').get(projectId) as any;
     return { success: true, project: { ...meta, createdAt: meta.created_at, updatedAt: meta.updated_at } };
   } catch (e: any) {
     logger.error('[writing] updateProject error:', e.message);
@@ -331,7 +331,7 @@ async function deleteProject(projectId: string) {
 async function listChapters(projectId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const chapters = db.prepare('SELECT * FROM chapters ORDER BY position').all() as any[];
+    const chapters = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters ORDER BY position').all() as any[];
 
     const chaptersWithWordCount = [];
     for (const ch of chapters) {
@@ -400,7 +400,7 @@ async function createChapter(projectId: string, title: string) {
 async function readChapter(projectId: string, chapterId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const chapter = db.prepare('SELECT * FROM chapters WHERE id = ?').get(chapterId) as any;
+    const chapter = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters WHERE id = ?').get(chapterId) as any;
 
     if (!chapter) {
       return { success: false, error: 'Chapter not found' };
@@ -434,7 +434,7 @@ async function readChapter(projectId: string, chapterId: string) {
 async function saveChapter(projectId: string, chapterId: string, content: string) {
   try {
     const db = ensureBookDb(projectId);
-    const chapter = db.prepare('SELECT * FROM chapters WHERE id = ?').get(chapterId) as any;
+    const chapter = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters WHERE id = ?').get(chapterId) as any;
 
     if (!chapter) {
       return { success: false, error: 'Chapter not found' };
@@ -462,7 +462,7 @@ async function saveChapter(projectId: string, chapterId: string, content: string
 async function renameChapter(projectId: string, chapterId: string, newTitle: string) {
   try {
     const db = ensureBookDb(projectId);
-    const chapter = db.prepare('SELECT * FROM chapters WHERE id = ?').get(chapterId) as any;
+    const chapter = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters WHERE id = ?').get(chapterId) as any;
 
     if (!chapter) {
       return { success: false, error: 'Chapter not found' };
@@ -500,7 +500,7 @@ async function renameChapter(projectId: string, chapterId: string, newTitle: str
 async function reorderChapters(projectId: string, chapterIds: string[]) {
   try {
     const db = ensureBookDb(projectId);
-    const chapters = db.prepare('SELECT * FROM chapters ORDER BY position').all() as any[];
+    const chapters = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters ORDER BY position').all() as any[];
 
     // First pass: rename to temp files to avoid collisions
     const reordered: any[] = [];
@@ -552,7 +552,7 @@ async function reorderChapters(projectId: string, chapterIds: string[]) {
     });
     updateTx();
 
-    const updatedChapters = db.prepare('SELECT * FROM chapters ORDER BY position').all() as any[];
+    const updatedChapters = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters ORDER BY position').all() as any[];
     return {
       success: true,
       chapters: updatedChapters.map((ch: any) => ({
@@ -569,7 +569,7 @@ async function reorderChapters(projectId: string, chapterIds: string[]) {
 async function deleteChapter(projectId: string, chapterId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const chapter = db.prepare('SELECT * FROM chapters WHERE id = ?').get(chapterId) as any;
+    const chapter = db.prepare('SELECT id, title, filename, position, synopsis, word_count, created_at, updated_at FROM chapters WHERE id = ?').get(chapterId) as any;
 
     if (!chapter) {
       return { success: false, error: 'Chapter not found' };

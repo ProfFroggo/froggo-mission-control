@@ -12,6 +12,8 @@ import PokeModal from './PokeModal';
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { Spinner, TaskCardSkeleton } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
+import EmptyState from './EmptyState';
 import HealthCheckModal from './HealthCheckModal';
 import { safeStorage } from '../utils/safeStorage';
 
@@ -77,6 +79,7 @@ export default function Kanban() {
   const updateTask = useStore(s => s.updateTask);
   
   // Local loading states for operations
+  const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletingTasks, setDeletingTasks] = useState<Set<string>>(new Set());
   const [spawningTasks, setSpawningTasks] = useState<Set<string>>(new Set());
@@ -89,7 +92,7 @@ export default function Kanban() {
   
   // Load tasks from froggo-db on mount and poll (only when visible)
   useEffect(() => {
-    loadTasksFromDB();
+    loadTasksFromDB().catch(err => setTaskLoadError(err instanceof Error ? err.message : 'Failed to load tasks'));
     
     // Polling with visibility detection - stop polling when tab hidden
     // Increased to 30s for better performance
@@ -523,19 +526,29 @@ export default function Kanban() {
     }
   };
 
+  if (taskLoadError) {
+    return (
+      <ErrorDisplay
+        error={taskLoadError}
+        context={{ action: 'load tasks', resource: 'task board' }}
+        onRetry={() => { setTaskLoadError(null); loadTasksFromDB().catch(err => setTaskLoadError(err instanceof Error ? err.message : 'Failed to load tasks')); }}
+      />
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-semibold icon-text">
+            <h1 className="text-heading-2 icon-text">
               Task Board
-              <span className="text-sm font-normal text-clawd-text-dim">
+              <span className="text-secondary font-normal">
                 Press <kbd className="px-1.5 py-0.5 bg-clawd-bg rounded text-xs">?</kbd> for shortcuts
               </span>
             </h1>
-            <div className="flex items-center gap-4 text-sm text-clawd-text-dim mt-1">
+            <div className="flex items-center gap-4 text-secondary mt-1">
               <span>{tasks.length} tasks</span>
               {stats.inProgress > 0 && (
                 <span className="icon-text-tight text-warning">
@@ -618,7 +631,7 @@ export default function Kanban() {
             >
               <Plus size={16} className="flex-shrink-0" />
               New Task
-              <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">N</kbd>
+              <kbd className="px-1.5 py-0.5 bg-clawd-text/20 rounded text-xs">N</kbd>
             </button>
           </div>
         </div>
@@ -698,7 +711,18 @@ export default function Kanban() {
       </div>
 
       {/* Kanban Board */}
-      <div className="flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto">
+      {!loading.tasks && filteredTasks.length === 0 && (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState
+            type="tasks"
+            description={filters.search || filters.project !== 'all' || filters.priority !== 'all' || filters.assignee !== 'all'
+              ? 'No tasks match your current filters. Try adjusting your search or filters.'
+              : 'No tasks yet. Create a task to get started.'}
+            action={{ label: 'New Task', onClick: () => setModalOpen(true) }}
+          />
+        </div>
+      )}
+      <div className={`flex-1 min-w-0 flex gap-4 p-4 overflow-x-auto ${!loading.tasks && filteredTasks.length === 0 ? 'hidden' : ''}`}>
         {columns.map((column) => {
           const columnTasks = getColumnTasks(column.id);
           const settings = columnSettings[column.id];
@@ -708,6 +732,7 @@ export default function Kanban() {
           return (
             <div
               key={column.id}
+              data-column={column.id}
               className={`flex-shrink-0 w-96 min-w-[320px] flex flex-col rounded-2xl border transition-all ${
                 isDragOver 
                   ? 'border-clawd-accent border-dashed bg-clawd-accent/10 scale-[1.01] shadow-lg shadow-clawd-accent/20' 
@@ -873,13 +898,8 @@ export default function Kanban() {
                   ))
                 )}
                 
-                {columnTasks.length === 0 && (
-                  <div className="text-center py-8 text-clawd-text-dim">
-                    <div className="icon-badge-lg mx-auto mb-2 bg-clawd-border/50">
-                      <Plus size={16} className="flex-shrink-0" />
-                    </div>
-                    <p className="text-xs">Drop here or click +</p>
-                  </div>
+                {columnTasks.length === 0 && !loading.tasks && (
+                  <EmptyState type="kanban" compact />
                 )}
               </div>
             </div>
@@ -904,7 +924,7 @@ export default function Kanban() {
             role="presentation"
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="icon-text text-lg font-semibold">
+              <h2 className="icon-text text-heading-3">
                 <Keyboard size={20} className="flex-shrink-0" /> Keyboard Shortcuts
               </h2>
               <button type="button" onClick={() => setShowKeyboardHelp(false)} className="icon-btn-sm">
@@ -957,7 +977,7 @@ export default function Kanban() {
       {showArchiveConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-clawd-bg1 rounded-lg p-6 max-w-md w-full mx-4 border border-clawd-border">
-            <h3 className="text-lg font-semibold mb-2">Archive Done Tasks</h3>
+            <h3 className="text-heading-3 mb-2">Archive Done Tasks</h3>
             <p className="text-clawd-text-dim mb-4">
               Are you sure you want to archive all {tasks.filter(t => t.status === 'done').length} done tasks? 
               They will be removed from the board but can still be accessed in the archive.

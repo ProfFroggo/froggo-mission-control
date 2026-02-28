@@ -1027,4 +1027,12 @@ contextBridge.exposeInMainWorld('clawdbot', {
     status: (packageId: string) => ipcRenderer.invoke('agent-package:status', packageId),
     list: () => ipcRenderer.invoke('agent-package:list'),
   },
+  // Onboarding wizard — dependency checks, permissions, sample data
+  onboarding: {
+    checkDependencies: () => ipcRenderer.invoke('onboarding:checkDependencies'),
+    checkPermissions: () => ipcRenderer.invoke('onboarding:checkPermissions'),
+    requestPermission: (mediaType: 'camera' | 'microphone') => ipcRenderer.invoke('onboarding:requestPermission', mediaType),
+    testGatewayConnection: () => ipcRenderer.invoke('onboarding:testGatewayConnection'),
+    populateSampleData: () => ipcRenderer.invoke('onboarding:populateSampleData'),
+  },
 });

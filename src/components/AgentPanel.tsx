@@ -10,7 +10,9 @@ import AgentChatModal from './AgentChatModal';
 import AgentManagementModal from './AgentManagementModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
-import { InlineLoader } from './LoadingStates';
+import { InlineLoader, Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
+import EmptyState from './EmptyState';
 import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 
 import { getAgentTheme } from '../utils/agentThemes';
@@ -60,6 +62,8 @@ export default function AgentPanel() {
   const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
   const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
@@ -110,9 +114,13 @@ export default function AgentPanel() {
   };
 
   useEffect(() => {
-    fetchAgents(); // Load agents from registry
-    loadGatewaySessions();
-    loadTasksFromDB(); // Ensure tasks are loaded for agent detail modals
+    Promise.all([fetchAgents(), loadGatewaySessions(), loadTasksFromDB()])
+      .catch(err => {
+        logger.error('Failed to load agent data:', err);
+        setLoadError(err instanceof Error ? err.message : 'Failed to load agents');
+      })
+      .finally(() => setInitialLoading(false));
+    // Load agents from registry
     
     // Set up event-based updates for real-time status changes
     const unsubscribeTaskUpdated = gateway.on('task.updated', () => {
@@ -237,16 +245,34 @@ export default function AgentPanel() {
   const mainAgents = uniqueAgents.filter(a => !a.id.startsWith('worker-'));
   const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
 
+  if (initialLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Spinner size={32} />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorDisplay
+        error={loadError}
+        context={{ action: 'load agents', resource: 'agent registry' }}
+        onRetry={() => { setLoadError(null); setInitialLoading(true); fetchAgents().catch(err => setLoadError(err instanceof Error ? err.message : 'Failed to load agents')).finally(() => setInitialLoading(false)); }}
+      />
+    );
+  }
+
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-4">
       <div className="w-full">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="icon-text text-2xl font-bold tracking-tight mb-1">
+            <h1 className="icon-text text-heading-2 tracking-tight mb-1">
               <Bot size={24} className="flex-shrink-0" /> Agents
             </h1>
-            <p className="text-clawd-text-dim text-sm">
+            <p className="text-secondary">
               {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running · {realSubagents.length} total
             </p>
           </div>
@@ -271,8 +297,8 @@ export default function AgentPanel() {
 
         {/* Analytics */}
         {showAnalytics && (
-          <div className="mb-8 rounded-xl border border-clawd-border p-5">
-            <h2 className="icon-text text-base font-semibold mb-4">
+          <div className="mb-6 rounded-xl border border-clawd-border p-5">
+            <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
@@ -298,7 +324,7 @@ export default function AgentPanel() {
         )}
 
         {/* Circuit Breaker Status */}
-        <div className="mb-8">
+        <div className="mb-6">
           <CircuitBreakerStatus />
         </div>
 
@@ -306,7 +332,7 @@ export default function AgentPanel() {
         <HRSection />
 
         {/* Core Agents — Profile Card Grid */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest">Core Agents</h2>
             {compareAgents.length > 0 && (
@@ -316,6 +342,14 @@ export default function AgentPanel() {
             )}
           </div>
 
+          {mainAgents.length === 0 ? (
+            <EmptyState
+              icon={Bot}
+              title="No agents found"
+              description="No agents are registered yet. Create a worker or check your agent configuration."
+              action={{ label: 'New Worker', onClick: () => setShowCreateModal(true) }}
+            />
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {mainAgents.map((agent) => {
               const theme = getTheme(agent.id);
@@ -389,7 +423,7 @@ export default function AgentPanel() {
                             </span>
                           )}
                           {agent.status === 'archived' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-500/20 text-clawd-text-dim">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted-subtle text-clawd-text-dim">
                               Archived
                             </span>
                           )}
@@ -587,11 +621,12 @@ export default function AgentPanel() {
               );
             })}
           </div>
+          )}
         </div>
 
         {/* Sub-Agents */}
         {realSubagents.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-6">
             <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest mb-3">
               Sub-Agents ({activeSubagents.length} active / {realSubagents.length} total)
             </h2>

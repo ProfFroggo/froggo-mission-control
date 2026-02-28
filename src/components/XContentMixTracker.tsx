@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
+import { CHART_COLORS } from '../lib/chartTheme';
 
 interface ContentMixData {
   type: string;
@@ -14,10 +15,10 @@ interface ContentMixData {
 
 export const XContentMixTracker: React.FC = () => {
   const [mixData, setMixData] = useState<ContentMixData[]>([
-    { type: 'Educational', count: 0, target: 40, color: '#3b82f6' },
-    { type: 'Meme', count: 0, target: 30, color: '#f59e0b' },
-    { type: 'Thread', count: 0, target: 20, color: '#10b981' },
-    { type: 'Announcement', count: 0, target: 10, color: '#8b5cf6' },
+    { type: 'Educational', count: 0, target: 40, color: CHART_COLORS.blue },
+    { type: 'Meme', count: 0, target: 30, color: CHART_COLORS.amber },
+    { type: 'Thread', count: 0, target: 20, color: CHART_COLORS.green },
+    { type: 'Announcement', count: 0, target: 10, color: CHART_COLORS.purple },
   ]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'week' | 'month'>('week');

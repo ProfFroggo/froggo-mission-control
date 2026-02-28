@@ -137,15 +137,15 @@ export default function NotificationsPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-clawd-accent/20 rounded-xl">
               <Bell size={24} className="text-clawd-accent" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Notifications</h1>
-              <p className="text-sm text-clawd-text-dim">
+              <h1 className="text-heading-2">Notifications</h1>
+              <p className="text-secondary">
                 {unreadCount} unread {urgentCount > 0 && `• ${urgentCount} urgent`}
               </p>
             </div>
@@ -181,7 +181,7 @@ export default function NotificationsPanel() {
       </div>
 
       {/* Notifications List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {filteredNotifications.length === 0 ? (
           <EmptyState 
             type="notifications" 

@@ -16,6 +16,9 @@ import { showToast } from './Toast';
 import { getUserFriendlyError } from '../utils/errorMessages';
 import { createLogger } from '../utils/logger';
 import { copyToClipboard } from '../utils/clipboard';
+import EmptyState from './EmptyState';
+import { Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 
 const logger = createLogger('ChatPanel');
 
@@ -62,6 +65,7 @@ export default function ChatPanel() {
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [starredMessageIds, setStarredMessageIds] = useState<Set<string>>(new Set());
+  const [loadError, setLoadError] = useState<string | null>(null);
   const agents = useStore(s => s.agents);
   const chatAgents = fetchAgentList();
   const [selectedAgent, setSelectedAgent] = useState<ChatAgent | null>(chatAgents.length > 0 ? chatAgents[0] : null);
@@ -359,7 +363,8 @@ export default function ChatPanel() {
       }
       setHistoryLoaded(true);
     } catch (e) {
-      // '[Chat] Failed to load history:', e;
+      logger.error('Failed to load history:', e);
+      setLoadError(e instanceof Error ? e.message : 'Failed to load chat history');
       setHistoryLoaded(true); // Don't retry
     }
   }, [messages]);
@@ -920,11 +925,18 @@ export default function ChatPanel() {
   if (!selectedAgent) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 size={48} className="mx-auto mb-4 animate-spin text-clawd-accent" />
-          <p className="text-lg font-medium">Loading agents...</p>
-        </div>
+        <Spinner size={32} />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorDisplay
+        error={loadError}
+        context={{ action: 'load chat', resource: 'messages' }}
+        onRetry={() => { setLoadError(null); setHistoryLoaded(false); }}
+      />
     );
   }
 
@@ -1141,17 +1153,10 @@ export default function ChatPanel() {
             </div>
           </div>
         ) : searchQuery && filteredMessages.length === 0 ? (
-          <div className="text-center py-16 text-clawd-text-dim">
-            <Search size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium mb-2">No results found</p>
-            <p className="text-sm">Try a different search term</p>
-            <button
-              onClick={() => setSearchQuery('')}
-              className="mt-4 px-4 py-2 bg-clawd-accent text-white rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Clear search
-            </button>
-          </div>
+          <EmptyState
+            type="search"
+            action={{ label: 'Clear search', onClick: () => setSearchQuery('') }}
+          />
         ) : (
           filteredMessages.map((msg, idx) => {
             const isUser = msg.role === 'user';
@@ -1449,9 +1454,9 @@ const MessageItem = memo(function MessageItem({
             {msg.streaming && !msg.content ? (
               <div className="flex items-center gap-2 py-1">
                 <div className="flex gap-1">
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
                 </div>
                 <span className={`text-sm ${isUser ? 'text-white/80' : 'text-clawd-text-dim'}`}>
                   Thinking...
@@ -1475,7 +1480,7 @@ const MessageItem = memo(function MessageItem({
             )}
             {msg.streaming && msg.content && (
               <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-white' : 'bg-clawd-accent'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-clawd-text' : 'bg-clawd-accent'}`} />
                 <span className={`text-xs ${isUser ? 'text-white/90' : 'text-clawd-text-dim'}`}>
                   typing...
                 </span>

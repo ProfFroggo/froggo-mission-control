@@ -93,7 +93,12 @@ class NotificationService {
     // Initial load for immediate data display
     await this.refresh();
 
-    // Subscribe to gateway events for real-time updates (replaces 30s polling)
+    // ---- Module-Level Gateway Listeners ------------------------------------
+    // NotificationService is a singleton (exported instance at bottom of file).
+    // init() is called once. These gateway listeners persist for the app
+    // lifetime. This is intentional -- do NOT add cleanup or unsubscribe logic.
+    // The destroy() method exists only for test teardown, not normal operation.
+    // ---- End Listener Lifecycle Note ---------------------------------------
     gateway.on('task.created', () => this.handleTaskEvent());
     gateway.on('task.updated', () => this.handleTaskEvent());
     gateway.on('approval.request', () => this.handleApprovalEvent());

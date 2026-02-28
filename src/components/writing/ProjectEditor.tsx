@@ -150,8 +150,8 @@ export default function ProjectEditor() {
 
       <Separator className="w-2 bg-clawd-border hover:bg-clawd-accent data-[separator=active]:bg-clawd-accent transition-colors cursor-col-resize group flex items-center justify-center">
         <div className="flex items-center gap-px">
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
         </div>
       </Separator>
 
@@ -172,8 +172,8 @@ export default function ProjectEditor() {
 
       <Separator className="w-2 bg-clawd-border hover:bg-clawd-accent data-[separator=active]:bg-clawd-accent transition-colors cursor-col-resize group flex items-center justify-center">
         <div className="flex items-center gap-px">
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
-          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-white/50 group-data-[separator=active]:bg-white/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
+          <div className="w-px h-5 rounded-full bg-clawd-text-dim/30 group-hover:bg-clawd-text/50 group-data-[separator=active]:bg-clawd-text/70 transition-colors" />
         </div>
       </Separator>
 
