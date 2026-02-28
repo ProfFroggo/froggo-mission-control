@@ -37,7 +37,7 @@ async function handleNotificationSettingsGet(
   sessionKey: string
 ): Promise<{ success: boolean; settings?: NotificationSettings | null; error?: string }> {
   try {
-    const settings = prepare('SELECT * FROM notification_settings WHERE session_key = ?').get(sessionKey) as NotificationSettings | undefined;
+    const settings = prepare('SELECT session_key, settings, updated_at, muted_until FROM notification_settings WHERE session_key = ?').get(sessionKey) as NotificationSettings | undefined;
     return { success: true, settings: settings || null };
   } catch (error) {
     safeLog.error('[NotificationSettings] Get error:', (error as Error).message);
