@@ -129,6 +129,26 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  // Production CSP — override via session headers (stricter than meta tag)
+  if (!isDev) {
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' blob:; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data: https: blob:; " +
+            "media-src 'self' blob:; " +
+            "connect-src 'self' http://127.0.0.1:18789 http://localhost:18789 ws://127.0.0.1:18789 wss://127.0.0.1:18789 ws://localhost:18789 wss://localhost:18789 ws://127.0.0.1:18891 wss://127.0.0.1:18891 https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com https://api.elevenlabs.io https://api.twitter.com https://api.x.com https://wttr.in;"
+          ],
+        },
+      });
+    });
+  }
+
   mainWindow.on('close', () => {
     if (mainWindow) { safeLog.log('[Main] Window closing - sending cleanup signal...'); safeSend('app-closing'); }
   });
