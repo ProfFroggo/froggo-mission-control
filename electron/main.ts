@@ -66,7 +66,7 @@ const xApi = {
   getFollowers: xGetFollowers,
   getFollowing: xGetFollowing,
 };
-import { prepare, closeDb, db, getSessionsDb, getSecurityDb } from './database';
+import { prepare, closeDb, db, getSessionsDb, getSecurityDb, runTransaction } from './database';
 import {
   PROJECT_ROOT, DATA_DIR, SCRIPTS_DIR, TOOLS_DIR, LIBRARY_DIR, UPLOADS_DIR,
   REPORTS_DIR, FROGGO_DB, OPENCLAW_CONFIG, OPENCLAW_CONFIG_LEGACY,
@@ -2178,8 +2178,10 @@ ipcMain.handle('subtasks:reorder', async (_, subtaskIds: string[]) => {
     const now = Date.now();
     const stmt = prepare('UPDATE subtasks SET position = ?, updated_at = ? WHERE id = ?');
 
-    subtaskIds.forEach((id, idx) => {
-      stmt.run(idx, now, id);
+    runTransaction(() => {
+      subtaskIds.forEach((id, idx) => {
+        stmt.run(idx, now, id);
+      });
     });
 
     return { success: true };
@@ -2561,17 +2563,19 @@ ipcMain.handle('folders:auto-assign', async (_, sessionKey: string, conversation
     const folders = prepare('SELECT f.id, f.name, f.rules FROM message_folders f WHERE f.is_smart = 1 AND f.rules IS NOT NULL').all() as any[];
     const matchedFolderIds: number[] = [];
 
-    for (const folder of folders) {
-      try {
-        const rule = JSON.parse(folder.rules);
-        if (evaluateRuleSimple(rule, conversationData)) {
-          matchedFolderIds.push(folder.id);
-          prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(folder.id, sessionKey, 'rule');
+    runTransaction(() => {
+      for (const folder of folders) {
+        try {
+          const rule = JSON.parse(folder.rules);
+          if (evaluateRuleSimple(rule, conversationData)) {
+            matchedFolderIds.push(folder.id);
+            prepare('INSERT OR IGNORE INTO conversation_folders (folder_id, session_key, added_by) VALUES (?, ?, ?)').run(folder.id, sessionKey, 'rule');
+          }
+        } catch (e) {
+          safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
         }
-      } catch (e) {
-        safeLog.error(`[FolderRules] Error evaluating rule for folder ${folder.id}:`, e);
       }
-    }
+    });
 
     return { success: true, matchedFolderIds };
   } catch (error: any) {
@@ -2730,9 +2734,11 @@ ipcMain.handle('pins:reorder', async (_, sessionKeys: string[]) => {
 
   try {
     const updateStmt = prepare('UPDATE conversation_pins SET pin_order = ? WHERE session_key = ?');
-    for (let i = 0; i < sessionKeys.length; i++) {
-      updateStmt.run(i, sessionKeys[i]);
-    }
+    runTransaction(() => {
+      for (let i = 0; i < sessionKeys.length; i++) {
+        updateStmt.run(i, sessionKeys[i]);
+      }
+    });
     safeLog.log('[Pins] Reordered', sessionKeys.length, 'pins');
     return { success: true };
   } catch (error: any) {
