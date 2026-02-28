@@ -14,6 +14,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { CHART_COLORS, CHART_AXIS } from '../lib/chartTheme';
 
 interface UsageStats {
   totalMessages: number;
@@ -267,19 +268,19 @@ export default function UsageStatsPanel() {
           <AreaChart data={stats.messagesPerDay}>
             <defs>
               <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
             <XAxis
               dataKey="date"
-              stroke="#9CA3AF"
+              stroke={CHART_AXIS.stroke}
               tickFormatter={(date) =>
                 new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
               }
             />
-            <YAxis stroke="#9CA3AF" />
+            <YAxis stroke={CHART_AXIS.stroke} />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'var(--clawd-surface)',
@@ -290,7 +291,7 @@ export default function UsageStatsPanel() {
             <Area
               type="monotone"
               dataKey="count"
-              stroke="#3B82F6"
+              stroke={CHART_COLORS.blue}
               fillOpacity={1}
               fill="url(#colorMessages)"
             />
@@ -306,8 +307,8 @@ export default function UsageStatsPanel() {
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={stats.channelBreakdown} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
-              <XAxis type="number" stroke="#9CA3AF" />
-              <YAxis dataKey="channel" type="category" stroke="#9CA3AF" width={80} />
+              <XAxis type="number" stroke={CHART_AXIS.stroke} />
+              <YAxis dataKey="channel" type="category" stroke={CHART_AXIS.stroke} width={80} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'var(--clawd-surface)',
@@ -315,7 +316,7 @@ export default function UsageStatsPanel() {
                   borderRadius: '8px',
                 }}
               />
-              <Bar dataKey="count" fill="#8B5CF6" />
+              <Bar dataKey="count" fill={CHART_COLORS.purple} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -328,10 +329,10 @@ export default function UsageStatsPanel() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
               <XAxis
                 dataKey="hour"
-                stroke="#9CA3AF"
+                stroke={CHART_AXIS.stroke}
                 tickFormatter={(hour) => `${hour}:00`}
               />
-              <YAxis stroke="#9CA3AF" />
+              <YAxis stroke={CHART_AXIS.stroke} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'var(--clawd-surface)',
@@ -340,7 +341,7 @@ export default function UsageStatsPanel() {
                 }}
                 labelFormatter={(hour) => `${hour}:00 - ${hour + 1}:00`}
               />
-              <Bar dataKey="count" fill="#10B981" />
+              <Bar dataKey="count" fill={CHART_COLORS.green} />
             </BarChart>
           </ResponsiveContainer>
         </div>

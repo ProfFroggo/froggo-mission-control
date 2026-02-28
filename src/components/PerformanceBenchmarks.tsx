@@ -21,6 +21,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { CHART_COLORS, CHART_AXIS } from '../lib/chartTheme';
 
 interface BenchmarkData {
   period: string;
@@ -362,8 +363,8 @@ export default function PerformanceBenchmarks() {
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={benchmarks}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
-              <XAxis dataKey="period" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
+              <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
+              <YAxis stroke={CHART_AXIS.stroke} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'var(--clawd-surface)',
@@ -375,9 +376,9 @@ export default function PerformanceBenchmarks() {
               <Line
                 type="monotone"
                 dataKey="tasksCompleted"
-                stroke="#10B981"
+                stroke={CHART_COLORS.green}
                 strokeWidth={2}
-                dot={{ fill: '#10B981' }}
+                dot={{ fill: CHART_COLORS.green }}
                 name="Tasks Completed"
               />
             </LineChart>
@@ -390,8 +391,8 @@ export default function PerformanceBenchmarks() {
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={benchmarks}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
-              <XAxis dataKey="period" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" domain={[0, 100]} />
+              <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
+              <YAxis stroke={CHART_AXIS.stroke} domain={[0, 100]} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'var(--clawd-surface)',
@@ -404,9 +405,9 @@ export default function PerformanceBenchmarks() {
               <Line
                 type="monotone"
                 dataKey="completionRate"
-                stroke="#8B5CF6"
+                stroke={CHART_COLORS.purple}
                 strokeWidth={2}
-                dot={{ fill: '#8B5CF6' }}
+                dot={{ fill: CHART_COLORS.purple }}
                 name="Completion Rate (%)"
               />
             </LineChart>
@@ -420,8 +421,8 @@ export default function PerformanceBenchmarks() {
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={benchmarks}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
-                <XAxis dataKey="period" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
+                <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
+                <YAxis stroke={CHART_AXIS.stroke} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'var(--clawd-surface)',
@@ -433,9 +434,9 @@ export default function PerformanceBenchmarks() {
                 <Line
                   type="monotone"
                   dataKey="avgCompletionTime"
-                  stroke="#F59E0B"
+                  stroke={CHART_COLORS.amber}
                   strokeWidth={2}
-                  dot={{ fill: '#F59E0B' }}
+                  dot={{ fill: CHART_COLORS.amber }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -446,8 +447,8 @@ export default function PerformanceBenchmarks() {
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={benchmarks}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--clawd-border)" />
-                <XAxis dataKey="period" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
+                <XAxis dataKey="period" stroke={CHART_AXIS.stroke} />
+                <YAxis stroke={CHART_AXIS.stroke} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'var(--clawd-surface)',
@@ -459,9 +460,9 @@ export default function PerformanceBenchmarks() {
                 <Line
                   type="monotone"
                   dataKey="totalHours"
-                  stroke="#3B82F6"
+                  stroke={CHART_COLORS.blue}
                   strokeWidth={2}
-                  dot={{ fill: '#3B82F6' }}
+                  dot={{ fill: CHART_COLORS.blue }}
                 />
               </LineChart>
             </ResponsiveContainer>

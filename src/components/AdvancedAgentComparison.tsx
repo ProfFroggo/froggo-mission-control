@@ -26,6 +26,7 @@ import {
 } from 'recharts';
 import { getAgentUtilization, AgentUtilization } from '../services/analyticsService';
 import BaseModal from './BaseModal';
+import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
 
 interface AdvancedAgentComparisonProps {
   isOpen: boolean;
@@ -158,7 +159,7 @@ export default function AdvancedAgentComparison({
     });
   };
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444'];
+  const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.purple, CHART_COLORS.red];
 
   const getTrendIcon = (value: number, threshold: number) => {
     if (value > threshold) return <ArrowUpRight size={16} className="text-success" />;
@@ -211,9 +212,9 @@ export default function AdvancedAgentComparison({
               <h3 className="font-semibold mb-4">Performance Radar</h3>
               <ResponsiveContainer width="100%" height={400}>
                 <RadarChart data={getRadarData()}>
-                  <PolarGrid stroke="#374151" />
-                  <PolarAngleAxis dataKey="category" stroke="#9CA3AF" />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#9CA3AF" />
+                  <PolarGrid stroke={CHART_GRID.stroke} />
+                  <PolarAngleAxis dataKey="category" stroke={CHART_AXIS.stroke} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} stroke={CHART_AXIS.stroke} />
                   {selectedAgents.map((agent, index) => (
                     <Radar
                       key={agent}
@@ -234,19 +235,19 @@ export default function AdvancedAgentComparison({
               <h3 className="font-semibold mb-4">Task Completion Comparison</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={getComparisonData()}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
+                  <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+                  <XAxis dataKey="name" stroke={CHART_AXIS.stroke} />
+                  <YAxis stroke={CHART_AXIS.stroke} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: '1px solid #374151',
-                      borderRadius: '8px',
+                      backgroundColor: CHART_TOOLTIP.backgroundColor,
+                      border: CHART_TOOLTIP.border,
+                      borderRadius: CHART_TOOLTIP.borderRadius,
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="completed" fill="#10B981" name="Completed" />
-                  <Bar dataKey="inProgress" fill="#F59E0B" name="In Progress" />
+                  <Bar dataKey="completed" fill={CHART_COLORS.green} name="Completed" />
+                  <Bar dataKey="inProgress" fill={CHART_COLORS.amber} name="In Progress" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
