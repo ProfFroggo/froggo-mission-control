@@ -151,7 +151,7 @@ export default function PromptDialog({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={4}
-            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-primary focus:border-transparent resize-none"
+            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:border-transparent resize-none"
             disabled={isSubmitting}
           />
         ) : (
@@ -162,7 +162,7 @@ export default function PromptDialog({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-primary focus:border-transparent"
+            className="w-full px-3 py-2 bg-clawd-bg border border-clawd-border rounded-lg text-clawd-text placeholder-clawd-text-dim focus:outline-none focus:ring-2 focus:ring-clawd-accent focus:border-transparent"
             disabled={isSubmitting}
           />
         )}
@@ -185,7 +185,7 @@ export default function PromptDialog({
             onClick={handleSubmit}
             loading={isSubmitting || loading}
             disabled={!value.trim()}
-            className="px-4 py-2 text-sm font-medium bg-clawd-primary text-white rounded-lg hover:bg-clawd-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium bg-clawd-accent text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmLabel}
           </LoadingButton>
