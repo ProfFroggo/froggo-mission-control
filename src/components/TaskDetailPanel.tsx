@@ -35,7 +35,15 @@ interface TaskDetailPanelProps {
 }
 
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
-  const { agents, updateTask, spawnAgentForTask, loadSubtasksForTask, addSubtask, updateSubtask, deleteSubtask, loadTaskActivity, logTaskActivity } = useStore();
+  const agents = useStore(s => s.agents);
+  const updateTask = useStore(s => s.updateTask);
+  const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
+  const loadSubtasksForTask = useStore(s => s.loadSubtasksForTask);
+  const addSubtask = useStore(s => s.addSubtask);
+  const updateSubtask = useStore(s => s.updateSubtask);
+  const deleteSubtask = useStore(s => s.deleteSubtask);
+  const loadTaskActivity = useStore(s => s.loadTaskActivity);
+  const logTaskActivity = useStore(s => s.logTaskActivity);
   const { showConfirm, closeConfirm, onConfirm, config, open } = useConfirmDialog();
   const [newSubtask, setNewSubtask] = useState('');
   const [activeTab, setActiveTab] = useState<'subtasks' | 'planning' | 'activity' | 'files' | 'review'>('subtasks');
