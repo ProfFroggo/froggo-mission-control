@@ -36,6 +36,8 @@ import './writing';
 // Phase 47: Optional module migrations — wave 2
 import './accounts';
 import './context';
+import './dev';
+import './module-builder';
 
 // Future modules:
 // import './comms';
