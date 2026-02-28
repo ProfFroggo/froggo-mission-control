@@ -177,7 +177,7 @@ export function XEnhancedAnalyticsView() {
       });
 
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      console.error('[XAnalytics] Failed to load analytics:', error);
       // On error, show empty state (not mock data)
       setData(null);
     } finally {
