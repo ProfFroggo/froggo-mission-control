@@ -12,6 +12,7 @@ import type { LayoutItem } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
+import EmptyState from './EmptyState';
 import AgentAvatar from './AgentAvatar';
 import TodayCalendarWidget from './TodayCalendarWidget';
 import QuickStatsWidget from './QuickStatsWidget';
@@ -678,17 +679,12 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                         <TaskCardSkeleton />
                       </div>
                     ) : [...inProgressTasks, ...needsReview].length === 0 ? (
-                      <div className="p-12 text-center">
-                        <CheckCircle size={48} className="mx-auto mb-4 text-success/50" />
-                        <p className="text-lg font-medium text-clawd-text-dim mb-2">All caught up!</p>
-                        <p className="text-sm text-clawd-text-dim mb-4">No active tasks at the moment</p>
-                        <button 
-                          onClick={() => onNavigate?.('kanban')}
-                          className="px-4 py-2 bg-clawd-accent text-white rounded-lg hover:bg-clawd-accent-dim transition-colors"
-                        >
-                          Create a task
-                        </button>
-                      </div>
+                      <EmptyState
+                        icon={CheckCircle}
+                        title="All caught up!"
+                        description="No active tasks at the moment."
+                        action={{ label: 'Create a task', onClick: () => onNavigate?.('kanban') }}
+                      />
                     ) : (
                       [...inProgressTasks, ...needsReview].slice(0, 8).map((task) => {
                         const agent = agents.find(a => a.id === task.assignedTo);
@@ -895,7 +891,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                                 <SessionCardSkeleton />
                               </>
                             ) : sessions.length === 0 ? (
-                              <p className="text-sm text-clawd-text-dim text-center py-8">No active sessions</p>
+                              <EmptyState type="generic" description="No active sessions." compact />
                             ) : (
                               sessions.slice(0, 6).map((s: SessionInfo & { updatedAt?: number }) => {
                                 const isActive = Date.now() - (s.updatedAt || 0) < 300000;
@@ -979,10 +975,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
                           </div>
                           <div className="space-y-2 max-h-64 overflow-y-auto">
                             {activities.length === 0 ? (
-                              <div className="text-center py-8">
-                                <Bell size={32} className="mx-auto mb-2 text-clawd-text-dim/30" />
-                                <p className="text-sm text-clawd-text-dim">All caught up</p>
-                              </div>
+                              <EmptyState type="notifications" compact />
                             ) : (
                               activities.slice(0, 8).map((a) => (
                                 <div 
