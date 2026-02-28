@@ -171,7 +171,7 @@ export async function exportTasks(options: ExportOptions): Promise<string> {
   if (taskIds.length > 0) {
     const placeholders = taskIds.map(() => '?').join(',');
     subtasks = prepare(`
-      SELECT * FROM subtasks
+      SELECT id, task_id, title, description, completed, completed_at, completed_by, assigned_to, position, created_at, updated_at FROM subtasks
       WHERE task_id IN (${placeholders})
       ORDER BY task_id, created_at
     `).all(...taskIds) as any[];

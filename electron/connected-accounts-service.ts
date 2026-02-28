@@ -164,7 +164,7 @@ class ConnectedAccountsService {
   async getAccountPermissions(accountId: string): Promise<AccountPermission[]> {
     try {
       return await dbQuery<AccountPermission>(
-        `SELECT * FROM account_permissions WHERE account_id = ? ORDER BY granted_at DESC`,
+        `SELECT id, account_id, permission_type, permission_scope, granted_at, last_used_at FROM account_permissions WHERE account_id = ? ORDER BY granted_at DESC`,
         [accountId]
       );
     } catch (err) {
@@ -448,7 +448,7 @@ class ConnectedAccountsService {
   async getSyncHistory(accountId: string, limit: number = 10): Promise<Record<string, unknown>[]> {
     try {
       return await dbQuery<Record<string, unknown>>(
-        `SELECT * FROM account_sync_log
+        `SELECT id, account_id, sync_time, sync_type, status, items_synced, error_message, duration_ms FROM account_sync_log
         WHERE account_id = ?
         ORDER BY sync_time DESC
         LIMIT ?`,
