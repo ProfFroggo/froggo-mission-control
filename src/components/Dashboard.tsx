@@ -21,6 +21,7 @@ import HealthStatusWidget from './HealthStatusWidget';
 import InboxWidget from './InboxWidget';
 import NewContentWidget from './NewContentWidget';
 import { useStore } from '../store/store';
+import { useShallow } from 'zustand/react/shallow';
 
 type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'context' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'agentdms' | 'finance' | 'writing';
 
@@ -146,10 +147,24 @@ function DashboardWidget({
 }
 
 export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
-  const { 
-    connected, sessions, tasks, agents, activities, approvals, 
-    fetchSessions, fetchAgents, clearActivities, gatewaySessions, loadGatewaySessions, loading 
-  } = useStore();
+  // Data fields — useShallow prevents re-render unless these specific values change
+  const { connected, sessions, tasks, agents, activities, approvals, gatewaySessions, loading } = useStore(
+    useShallow(s => ({
+      connected: s.connected,
+      sessions: s.sessions,
+      tasks: s.tasks,
+      agents: s.agents,
+      activities: s.activities,
+      approvals: s.approvals,
+      gatewaySessions: s.gatewaySessions,
+      loading: s.loading,
+    }))
+  );
+  // Action functions — stable references, no re-render risk
+  const fetchSessions = useStore(s => s.fetchSessions);
+  const fetchAgents = useStore(s => s.fetchAgents);
+  const clearActivities = useStore(s => s.clearActivities);
+  const loadGatewaySessions = useStore(s => s.loadGatewaySessions);
   
   const [greeting, setGreeting] = useState('');
   const [showActivityStream, setShowActivityStream] = useState(false);
