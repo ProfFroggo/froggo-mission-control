@@ -340,7 +340,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   // ── Call controls ──
   const startCall = async () => {
     if (!apiKey.current) {
-      addSystemMessage('⚠️ No Gemini API key. Set VITE_GEMINI_API_KEY in .env');
+      addSystemMessage('Gemini API key not configured. Add it in Settings \u2192 API Keys.');
       return;
     }
     
@@ -521,9 +521,9 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
     <div className="flex flex-col h-full bg-clawd-bg">
       {/* API Key Warning */}
       {!apiKey.current && (
-        <div className="bg-error-subtle border-b border-error-border px-4 py-2 text-center">
-          <p className="text-error text-sm font-medium">⚠️ No Gemini API key found</p>
-          <p className="text-error text-xs mt-1">Set VITE_GEMINI_API_KEY in .env file</p>
+        <div className="bg-error-subtle border-b border-error-border px-4 py-3 text-center">
+          <p className="text-error text-sm font-medium">Gemini API key not configured</p>
+          <p className="text-error/80 text-xs mt-1">Add it in Settings &rarr; API Keys</p>
         </div>
       )}
       
