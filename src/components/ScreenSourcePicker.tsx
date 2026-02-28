@@ -38,14 +38,12 @@ export default function ScreenSourcePicker({ onSelect, onCancel }: ScreenSourceP
         setLoading(false);
         return;
       }
-      console.log('[ScreenSourcePicker] Fetching screen sources via Electron API');
       const result = await api.getSources({
         types: ['screen', 'window'],
         thumbnailSize: { width: 320, height: 180 },
       });
       const sources = result?.sources || [];
-      console.log('[ScreenSourcePicker] Got sources:', sources.length);
-      
+
       // Check if we got no sources (likely permission issue on macOS)
       if (sources.length === 0) {
         console.warn('[ScreenSourcePicker] No sources returned - possible screen recording permission issue');
