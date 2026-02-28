@@ -142,7 +142,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
     if (!rulesContent) {
       try {
         const result = await window.clawdbot?.exec?.run(
-          `cat ~/clawd/agents/${agentId}/AGENT.md 2>/dev/null || cat ~/clawd-${agentId}/AGENTS.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
+          `cat ~/froggo/agents/${agentId}/AGENT.md 2>/dev/null || cat ~/agent-${agentId}/AGENTS.md 2>/dev/null || echo "No AGENT.md found for ${agentId}"`
         );
         if (result?.stdout) {
           rulesContent = result.stdout;
@@ -155,7 +155,7 @@ export default function AgentDetailModal({ agentId, onClose }: AgentDetailModalP
     if (brainNotes.length === 0) {
       try {
         const memResult = await window.clawdbot?.exec?.run(
-          `ls -1 ~/clawd/clawd-${agentId}/memory/ 2>/dev/null | tail -5`
+          `ls -1 ~/agent-${agentId}/memory/ 2>/dev/null | tail -5`
         );
         if (memResult?.stdout?.trim()) {
           const files = memResult.stdout.trim().split('\n');

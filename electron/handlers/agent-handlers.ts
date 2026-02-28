@@ -75,7 +75,7 @@ function getAgentsFromDB(): any[] {
 }
 
 // Debug file logger for agent issues
-const debugLogPath = '/tmp/clawd-dashboard-debug.log';
+const debugLogPath = '/tmp/froggo-dashboard-debug.log';
 function debugLog(...args: any[]) {
   try {
     const ts = new Date().toISOString();
