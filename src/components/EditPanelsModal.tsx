@@ -18,6 +18,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePanelConfigStore, PanelConfig } from '../store/panelConfig';
+import { ViewRegistry } from '../core/ViewRegistry';
+import { ModuleLoader } from '../core/ModuleLoader';
 import { Toggle } from './Toggle';
 
 function SortableItem({ panel, isLastVisible, onToggle }: {
@@ -73,7 +75,15 @@ export default function EditPanelsModal() {
 
   useEffect(() => {
     if (editModalOpen) {
-      setDraft([...savedPanels].sort((a, b) => a.order - b.order));
+      const filtered = [...savedPanels]
+        .sort((a, b) => a.order - b.order)
+        .filter(panel => {
+          const view = ViewRegistry.get(panel.id);
+          if (!view?.moduleId) return true; // core/unowned panel — always include
+          const reg = ModuleLoader.get(view.moduleId);
+          return reg?.status !== 'disposed';
+        });
+      setDraft(filtered);
     }
   }, [editModalOpen, savedPanels]);
 
