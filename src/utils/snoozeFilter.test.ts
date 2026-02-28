@@ -2,24 +2,16 @@
  * Tests for snoozeFilter utilities
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   filterSessionsBySnooze,
   getSnoozeStatus,
   sortSessionsWithReminders,
   formatSnoozeTime,
   getTimeUntilExpiry,
-  SnoozeData,
   SnoozedSessions,
 } from './snoozeFilter';
-
-// Mock Session type
-interface MockSession {
-  key: string;
-  title: string;
-  agentId?: string;
-  [key: string]: unknown;
-}
+import type { Session } from '../store/store';
 
 describe('snoozeFilter utilities', () => {
   describe('filterSessionsBySnooze', () => {
@@ -27,12 +19,12 @@ describe('snoozeFilter utilities', () => {
     const hourMs = 60 * 60 * 1000;
     const dayMs = 24 * hourMs;
 
-    const mockSessions: MockSession[] = [
+    const mockSessions = [
       { key: 'session-1', title: 'Active Session', agentId: 'coder' },
       { key: 'session-2', title: 'Snoozed Session', agentId: 'researcher' },
       { key: 'session-3', title: 'Expired Snooze', agentId: 'writer' },
       { key: 'session-4', title: 'No Snooze', agentId: 'chief' },
-    ];
+    ] as unknown as Session[];
 
     const mockSnoozed: SnoozedSessions = {
       'session-2': {
@@ -160,15 +152,15 @@ describe('snoozeFilter utilities', () => {
       const hourMs = 60 * 60 * 1000;
 
       const sessions = [
-        { key: 'a', hasReminder: false, snoozeData: { snooze_until: baseTime + 3 * hourMs } },
-        { key: 'b', hasReminder: false, snoozeData: { snooze_until: baseTime + 1 * hourMs } },
-        { key: 'c', hasReminder: false, snoozeData: { snooze_until: baseTime + 2 * hourMs } },
+        { key: 'a', hasReminder: false, snoozeData: { snooze_until: baseTime + 3 * hourMs, session_id: 'a', reminder_sent: 0, created_at: baseTime } },
+        { key: 'b', hasReminder: false, snoozeData: { snooze_until: baseTime + 1 * hourMs, session_id: 'b', reminder_sent: 0, created_at: baseTime } },
+        { key: 'c', hasReminder: false, snoozeData: { snooze_until: baseTime + 2 * hourMs, session_id: 'c', reminder_sent: 0, created_at: baseTime } },
       ];
 
       const result = sortSessionsWithReminders(sessions);
-      expect(result[0].key).toBe('b');
-      expect(result[1].key).toBe('c');
-      expect(result[2].key).toBe('a');
+      expect((result[0] as any).key).toBe('b');
+      expect((result[1] as any).key).toBe('c');
+      expect((result[2] as any).key).toBe('a');
     });
 
     it('should handle sessions without snoozeData', () => {

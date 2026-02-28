@@ -10,7 +10,6 @@ import {
   validateFile,
   formatFileSize,
   ValidationRule,
-  ValidationResult,
 } from './validation';
 
 // Mock File class for testing
@@ -291,13 +290,13 @@ describe('validation utilities', () => {
   describe('validateFile', () => {
     it('should pass for valid file', () => {
       const file = new MockFile('test.txt', 1024, 'text/plain');
-      const result = validateFile(file);
+      const result = validateFile(file as unknown as File);
       expect(result.valid).toBe(true);
     });
 
     it('should fail for file exceeding max size', () => {
       const file = new MockFile('large.txt', 20 * 1024 * 1024, 'text/plain'); // 20MB
-      const result = validateFile(file, { maxSize: 10 * 1024 * 1024 }); // 10MB max
+      const result = validateFile(file as unknown as File, { maxSize: 10 * 1024 * 1024 }); // 10MB max
       expect(result.valid).toBe(false);
       expect(result.error).toContain('too large');
       expect(result.error).toContain('10MB');
@@ -305,33 +304,33 @@ describe('validation utilities', () => {
 
     it('should fail for disallowed MIME type', () => {
       const file = new MockFile('file.exe', 1024, 'application/x-msdownload');
-      const result = validateFile(file, { allowedTypes: ['image/*', 'text/*'] });
+      const result = validateFile(file as unknown as File, { allowedTypes: ['image/*', 'text/*'] });
       expect(result.valid).toBe(false);
       expect(result.error).toContain('File type not allowed');
     });
 
     it('should pass for allowed MIME type', () => {
       const file = new MockFile('image.png', 1024, 'image/png');
-      const result = validateFile(file, { allowedTypes: ['image/png'] });
+      const result = validateFile(file as unknown as File, { allowedTypes: ['image/png'] });
       expect(result.valid).toBe(true);
     });
 
     it('should fail for disallowed file extension', () => {
       const file = new MockFile('file.js', 1024, 'text/javascript');
-      const result = validateFile(file, { allowedExtensions: ['.txt', '.md'] });
+      const result = validateFile(file as unknown as File, { allowedExtensions: ['.txt', '.md'] });
       expect(result.valid).toBe(false);
       expect(result.error).toContain('File extension not allowed');
     });
 
     it('should pass for allowed file extension', () => {
       const file = new MockFile('document.md', 1024, 'text/markdown');
-      const result = validateFile(file, { allowedExtensions: ['md'] });
+      const result = validateFile(file as unknown as File, { allowedExtensions: ['md'] });
       expect(result.valid).toBe(true);
     });
 
     it('should use default max size of 10MB', () => {
       const file = new MockFile('file.txt', 10 * 1024 * 1024 + 1, 'text/plain');
-      const result = validateFile(file);
+      const result = validateFile(file as unknown as File);
       expect(result.valid).toBe(false);
     });
   });

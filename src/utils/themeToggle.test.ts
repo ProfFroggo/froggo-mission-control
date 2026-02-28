@@ -1,8 +1,9 @@
+/// <reference types="vitest" />
 /**
  * Tests for themeToggle utility
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 
 // Mock safeStorage before importing
 vi.mock('./safeStorage', () => ({
@@ -108,7 +109,7 @@ describe('themeToggle utilities', () => {
 
   describe('getCurrentTheme', () => {
     it('should return default theme when no saved settings', () => {
-      (safeStorage.getItem as vi.Mock).mockReturnValue(null);
+      (safeStorage.getItem as Mock).mockReturnValue(null);
       
       const result = getCurrentTheme();
       
@@ -118,7 +119,7 @@ describe('themeToggle utilities', () => {
 
     it('should return saved theme from storage', () => {
       const savedSettings = JSON.stringify({ theme: 'light', accentColor: '#3b82f6' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       const result = getCurrentTheme();
       
@@ -127,7 +128,7 @@ describe('themeToggle utilities', () => {
     });
 
     it('should return default theme when parsing fails', () => {
-      (safeStorage.getItem as vi.Mock).mockReturnValue('invalid json');
+      (safeStorage.getItem as Mock).mockReturnValue('invalid json');
       
       const result = getCurrentTheme();
       
@@ -137,7 +138,7 @@ describe('themeToggle utilities', () => {
 
     it('should use saved accent color', () => {
       const savedSettings = JSON.stringify({ accentColor: '#ff0000' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       const result = getCurrentTheme();
       
@@ -146,7 +147,7 @@ describe('themeToggle utilities', () => {
 
     it('should use default accent color when not saved', () => {
       const savedSettings = JSON.stringify({ theme: 'dark' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       const result = getCurrentTheme();
       
@@ -157,7 +158,7 @@ describe('themeToggle utilities', () => {
   describe('toggleTheme', () => {
     it('should toggle from dark to light', () => {
       const savedSettings = JSON.stringify({ theme: 'dark', accentColor: '#22c55e' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       const result = toggleTheme();
       
@@ -167,7 +168,7 @@ describe('themeToggle utilities', () => {
 
     it('should toggle from light to dark', () => {
       const savedSettings = JSON.stringify({ theme: 'light', accentColor: '#22c55e' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       const result = toggleTheme();
       
@@ -176,7 +177,7 @@ describe('themeToggle utilities', () => {
 
     it('should save new theme to storage', () => {
       const savedSettings = JSON.stringify({ theme: 'dark', accentColor: '#22c55e' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       toggleTheme();
       
@@ -188,7 +189,7 @@ describe('themeToggle utilities', () => {
 
     it('should preserve accent color when toggling', () => {
       const savedSettings = JSON.stringify({ theme: 'dark', accentColor: '#ff0000' });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       toggleTheme();
       
@@ -200,7 +201,7 @@ describe('themeToggle utilities', () => {
 
     it('should use default accent color when settings are invalid', () => {
       const savedSettings = JSON.stringify({ theme: 'dark', accentColor: null });
-      (safeStorage.getItem as vi.Mock).mockReturnValue(savedSettings);
+      (safeStorage.getItem as Mock).mockReturnValue(savedSettings);
       
       toggleTheme();
       

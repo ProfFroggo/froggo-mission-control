@@ -1,9 +1,11 @@
+/// <reference types="vitest" />
 /**
  * Tests for useAccessibility hooks
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import React from 'react';
 import {
   useAnnounce,
   useFocusTrap,
@@ -44,7 +46,7 @@ describe('useAccessibility hooks', () => {
         setAttribute: vi.fn(),
         textContent: '',
       };
-      (document.getElementById as vi.Mock).mockReturnValue(mockAnnouncer);
+      (document.getElementById as Mock).mockReturnValue(mockAnnouncer);
       
       const { result } = renderHook(() => useAnnounce());
       
@@ -60,7 +62,7 @@ describe('useAccessibility hooks', () => {
         setAttribute: vi.fn(),
         textContent: '',
       };
-      (document.getElementById as vi.Mock).mockReturnValue(mockAnnouncer);
+      (document.getElementById as Mock).mockReturnValue(mockAnnouncer);
       
       const { result } = renderHook(() => useAnnounce());
       
@@ -76,7 +78,7 @@ describe('useAccessibility hooks', () => {
         setAttribute: vi.fn(),
         textContent: '',
       };
-      (document.getElementById as vi.Mock).mockReturnValue(mockAnnouncer);
+      (document.getElementById as Mock).mockReturnValue(mockAnnouncer);
       
       const { result } = renderHook(() => useAnnounce());
       
@@ -92,7 +94,7 @@ describe('useAccessibility hooks', () => {
         setAttribute: vi.fn(),
         textContent: '',
       };
-      (document.getElementById as vi.Mock).mockReturnValue(mockAnnouncer);
+      (document.getElementById as Mock).mockReturnValue(mockAnnouncer);
       
       const { result } = renderHook(() => useAnnounce());
       
@@ -110,7 +112,7 @@ describe('useAccessibility hooks', () => {
         setAttribute: vi.fn(),
         textContent: '',
       };
-      (document.getElementById as vi.Mock).mockReturnValue(mockAnnouncer);
+      (document.getElementById as Mock).mockReturnValue(mockAnnouncer);
       
       const { result } = renderHook(() => useAnnounce());
       
@@ -130,7 +132,7 @@ describe('useAccessibility hooks', () => {
     });
 
     it('should handle missing announcer element', () => {
-      (document.getElementById as vi.Mock).mockReturnValue(null);
+      (document.getElementById as Mock).mockReturnValue(null);
       
       const { result } = renderHook(() => useAnnounce());
       
@@ -163,7 +165,7 @@ describe('useAccessibility hooks', () => {
       );
 
       // Set the ref while inactive
-      result.current.current = mockContainer as unknown as HTMLElement;
+      (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
 
       // Activate to trigger the effect with the ref set
       rerender({ active: true });
@@ -184,9 +186,9 @@ describe('useAccessibility hooks', () => {
       const { result } = renderHook(() => useFocusTrap(false));
       
       act(() => {
-        result.current.current = mockContainer as unknown as HTMLElement;
+        (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
-      
+
       expect(mockContainer.querySelectorAll).not.toHaveBeenCalled();
     });
 
@@ -204,7 +206,7 @@ describe('useAccessibility hooks', () => {
         { initialProps: { active: false } }
       );
 
-      result.current.current = mockContainer as unknown as HTMLElement;
+      (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       rerender({ active: true });
 
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -242,7 +244,7 @@ describe('useAccessibility hooks', () => {
         { initialProps: { active: false } }
       );
 
-      result.current.current = mockContainer as unknown as HTMLElement;
+      (result.current as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       rerender({ active: true });
 
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -347,7 +349,7 @@ describe('useAccessibility hooks', () => {
       );
       
       act(() => {
-        result.current.containerRef.current = mockContainer as unknown as HTMLElement;
+        (result.current.containerRef as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
       
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -376,7 +378,7 @@ describe('useAccessibility hooks', () => {
       );
       
       act(() => {
-        result.current.containerRef.current = mockContainer as unknown as HTMLElement;
+        (result.current.containerRef as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
       
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -405,7 +407,7 @@ describe('useAccessibility hooks', () => {
       );
       
       act(() => {
-        result.current.containerRef.current = mockContainer as unknown as HTMLElement;
+        (result.current.containerRef as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
       
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -434,7 +436,7 @@ describe('useAccessibility hooks', () => {
       );
       
       act(() => {
-        result.current.containerRef.current = mockContainer as unknown as HTMLElement;
+        (result.current.containerRef as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
       
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -463,7 +465,7 @@ describe('useAccessibility hooks', () => {
       );
       
       act(() => {
-        result.current.containerRef.current = mockContainer as unknown as HTMLElement;
+        (result.current.containerRef as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
       
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
@@ -495,7 +497,7 @@ describe('useAccessibility hooks', () => {
       );
       
       act(() => {
-        result.current.containerRef.current = mockContainer as unknown as HTMLElement;
+        (result.current.containerRef as React.MutableRefObject<HTMLElement | null>).current = mockContainer as unknown as HTMLElement;
       });
       
       const keydownHandler = mockContainer.addEventListener.mock.calls.find(
