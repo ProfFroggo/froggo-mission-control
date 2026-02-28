@@ -33,7 +33,7 @@ function ensureBookDb(projectId: string) {
 async function listCharacters(projectId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const rows = db.prepare('SELECT * FROM characters ORDER BY name').all() as any[];
+    const rows = db.prepare('SELECT id, name, role, description, traits, created_at, updated_at FROM characters ORDER BY name').all() as any[];
     const characters = rows.map(r => ({
       id: r.id,
       name: r.name,
@@ -74,7 +74,7 @@ async function createCharacter(projectId: string, data: { name?: string; relatio
 async function updateCharacter(projectId: string, id: string, updates: Record<string, any>) {
   try {
     const db = ensureBookDb(projectId);
-    const existing = db.prepare('SELECT * FROM characters WHERE id = ?').get(id) as any;
+    const existing = db.prepare('SELECT id, name, role, description, traits, created_at, updated_at FROM characters WHERE id = ?').get(id) as any;
     if (!existing) return { success: false, error: 'Character not found' };
 
     const now = new Date().toISOString();
@@ -113,7 +113,7 @@ async function deleteCharacter(projectId: string, id: string) {
 async function listTimeline(projectId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const rows = db.prepare('SELECT * FROM timeline ORDER BY position').all() as any[];
+    const rows = db.prepare('SELECT id, date, description, chapter_refs, position, created_at, updated_at FROM timeline ORDER BY position').all() as any[];
     const timeline = rows.map(r => ({
       id: r.id,
       date: r.date,
@@ -157,7 +157,7 @@ async function createTimelineEvent(projectId: string, data: { date?: string; des
 async function updateTimelineEvent(projectId: string, id: string, updates: Record<string, any>) {
   try {
     const db = ensureBookDb(projectId);
-    const existing = db.prepare('SELECT * FROM timeline WHERE id = ?').get(id) as any;
+    const existing = db.prepare('SELECT id, date, description, chapter_refs, position, created_at, updated_at FROM timeline WHERE id = ?').get(id) as any;
     if (!existing) return { success: false, error: 'Timeline event not found' };
 
     const now = new Date().toISOString();
@@ -196,7 +196,7 @@ async function deleteTimelineEvent(projectId: string, id: string) {
 async function listFacts(projectId: string) {
   try {
     const db = ensureBookDb(projectId);
-    const rows = db.prepare('SELECT * FROM facts ORDER BY created_at').all() as any[];
+    const rows = db.prepare('SELECT id, claim, source, status, created_at, updated_at FROM facts ORDER BY created_at').all() as any[];
     const facts = rows.map(r => ({
       id: r.id,
       claim: r.claim,
@@ -236,7 +236,7 @@ async function createFact(projectId: string, data: { claim?: string; source?: st
 async function updateFact(projectId: string, id: string, updates: Record<string, any>) {
   try {
     const db = ensureBookDb(projectId);
-    const existing = db.prepare('SELECT * FROM facts WHERE id = ?').get(id) as any;
+    const existing = db.prepare('SELECT id, claim, source, status, created_at, updated_at FROM facts WHERE id = ?').get(id) as any;
     if (!existing) return { success: false, error: 'Fact not found' };
 
     const now = new Date().toISOString();

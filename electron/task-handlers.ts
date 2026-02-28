@@ -262,10 +262,11 @@ async function handleTaskSearch(
     const pattern = `%${query}%`;
     const archiveFilter = includeArchived ? '' : 'AND (archived IS NULL OR archived = 0)';
     
+    const columns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived, started_at, tags';
     const tasks = prepare(`
-      SELECT * FROM tasks 
+      SELECT ${columns} FROM tasks
       WHERE (title LIKE ? OR description LIKE ?) ${archiveFilter}
-      ORDER BY created_at DESC 
+      ORDER BY created_at DESC
       LIMIT 100
     `).all(pattern, pattern);
 
@@ -281,14 +282,18 @@ async function handleTaskGetWithProgress(
   taskId: string
 ): Promise<{ success: boolean; task?: Record<string, unknown>; error?: string }> {
   try {
-    const task = prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as TaskRow | undefined;
+    const taskColumns = 'id, title, description, status, project, assigned_to, created_at, updated_at, completed_at, priority, due_date, last_agent_update, reviewerId, reviewStatus, planning_notes, cancelled, archived, started_at, tags, metadata, progress, gates_passed, gates_total, approval_required, approval_status, approved_by, approved_at, independent_review_required, independent_review_status, is_test, archived_at, attempted_agents, project_name, stage_number, stage_name, next_stage, parent_task_id, blocked_by, blocks_tasks';
+    const task = prepare(`SELECT ${taskColumns} FROM tasks WHERE id = ?`).get(taskId) as TaskRow | undefined;
     if (!task) {
       return { success: false, error: 'Task not found' };
     }
 
-    const progress = prepare('SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC').all(taskId) as ActivityRow[];
-    const subtasks = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId) as SubtaskRow[];
-    const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC').all(taskId) as AttachmentRow[];
+    const activityColumns = 'id, task_id, agent_id, action, message, details, timestamp';
+    const subtaskColumns = 'id, task_id, title, description, completed, completed_at, completed_by, assigned_to, position, created_at, updated_at';
+    const attachmentColumns = 'id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at, metadata';
+    const progress = prepare(`SELECT ${activityColumns} FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC`).all(taskId) as ActivityRow[];
+    const subtasks = prepare(`SELECT ${subtaskColumns} FROM subtasks WHERE task_id = ? ORDER BY created_at ASC`).all(taskId) as SubtaskRow[];
+    const attachments = prepare(`SELECT ${attachmentColumns} FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC`).all(taskId) as AttachmentRow[];
 
     return {
       success: true,
@@ -417,7 +422,7 @@ async function handleSubtaskList(
   taskId: string
 ): Promise<{ success: boolean; subtasks: SubtaskRow[]; error?: string }> {
   try {
-    const subtasks = prepare('SELECT * FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId) as SubtaskRow[];
+    const subtasks = prepare('SELECT id, task_id, title, description, completed, completed_at, completed_by, assigned_to, position, created_at, updated_at FROM subtasks WHERE task_id = ? ORDER BY created_at ASC').all(taskId) as SubtaskRow[];
     return { success: true, subtasks };
   } catch (error) {
     safeLog.error('[Subtasks] List error:', (error as Error).message);
@@ -540,9 +545,10 @@ async function handleActivityList(
   limit?: number
 ): Promise<{ success: boolean; activity: ActivityRow[]; error?: string }> {
   try {
+    const actCols = 'id, task_id, agent_id, action, message, details, timestamp';
     const sql = limit
-      ? 'SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?'
-      : 'SELECT * FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC';
+      ? `SELECT ${actCols} FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC LIMIT ?`
+      : `SELECT ${actCols} FROM task_activity WHERE task_id = ? ORDER BY timestamp DESC`;
     const params = limit ? [taskId, limit] : [taskId];
     const activity = prepare(sql).all(...params) as ActivityRow[];
 
@@ -587,7 +593,8 @@ async function handleAttachmentsList(
   taskId: string
 ): Promise<{ success: boolean; attachments: AttachmentRow[]; error?: string }> {
   try {
-    const attachments = prepare('SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC').all(taskId) as AttachmentRow[];
+    const attCols = 'id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at, metadata';
+    const attachments = prepare(`SELECT ${attCols} FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC`).all(taskId) as AttachmentRow[];
     return { success: true, attachments };
   } catch (error) {
     safeLog.error('[Attachments] List error:', (error as Error).message);
@@ -597,7 +604,8 @@ async function handleAttachmentsList(
 
 async function handleAttachmentsListAll(): Promise<{ success: boolean; attachments: AttachmentRow[]; error?: string }> {
   try {
-    const attachments = prepare('SELECT * FROM task_attachments ORDER BY created_at DESC LIMIT 1000').all() as AttachmentRow[];
+    const attCols = 'id, task_id, file_path, filename, file_size, mime_type, category, uploaded_by, uploaded_at, metadata';
+    const attachments = prepare(`SELECT ${attCols} FROM task_attachments ORDER BY created_at DESC LIMIT 1000`).all() as AttachmentRow[];
     return { success: true, attachments };
   } catch (error) {
     safeLog.error('[Attachments] ListAll error:', (error as Error).message);
