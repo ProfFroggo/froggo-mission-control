@@ -907,6 +907,14 @@ contextBridge.exposeInMainWorld('clawdbot', {
     status: () => ipcRenderer.invoke('memoryLifecycle:status'),
     rotate: (agentId: string) => ipcRenderer.invoke('memoryLifecycle:rotate', agentId),
   },
+  // Onboarding wizard — dependency checks, permissions, sample data
+  onboarding: {
+    checkDependencies: () => ipcRenderer.invoke('onboarding:checkDependencies'),
+    checkPermissions: () => ipcRenderer.invoke('onboarding:checkPermissions'),
+    requestPermission: (mediaType: 'camera' | 'microphone') => ipcRenderer.invoke('onboarding:requestPermission', mediaType),
+    testGatewayConnection: () => ipcRenderer.invoke('onboarding:testGatewayConnection'),
+    populateSampleData: () => ipcRenderer.invoke('onboarding:populateSampleData'),
+  },
 });
 
 // Add to clawdbot object - chat message persistence
