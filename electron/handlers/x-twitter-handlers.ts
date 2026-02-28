@@ -13,8 +13,8 @@ import { dialog } from 'electron';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { execSync } from 'child_process';
-import { exec } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { registerHandler } from '../ipc-registry';
 import { prepare } from '../database';
@@ -38,6 +38,12 @@ import {
 } from '../x-api-client';
 
 const execAsync = promisify(exec);
+
+const FROGGO_DB = '/opt/homebrew/bin/froggo-db';
+const X_API = '/opt/homebrew/bin/x-api';
+
+/** Sanitize strings interpolated into shell commands (for git commit chains that need shell) */
+const sanitizeForShell = (s: string): string => s.replace(/[`$\\!"]/g, '');
 
 // xApi namespace wrapper
 const xApi = {
@@ -153,7 +159,7 @@ export function registerXTwitterHandlers(): void {
 
 async function handleExecuteTweet(_: Electron.IpcMainInvokeEvent, content: string, taskId?: string): Promise<any> {
   if (taskId) {
-    exec(`froggo-db task-progress "${taskId}" "Posting tweet via X API..." --step "Execution"`, () => {});
+    execFile(FROGGO_DB, ['task-progress', taskId, 'Posting tweet via X API...', '--step', 'Execution'], () => {});
   }
 
   try {
@@ -161,22 +167,22 @@ async function handleExecuteTweet(_: Electron.IpcMainInvokeEvent, content: strin
     if (result.success) {
       safeLog.log('[Execute] Tweet posted:', result.id);
       if (taskId) {
-        exec(`froggo-db task-progress "${taskId}" "Tweet posted successfully" --step "Complete"`, () => {});
-        exec(`froggo-db task-complete "${taskId}" --outcome success`, () => {});
+        execFile(FROGGO_DB, ['task-progress', taskId, 'Tweet posted successfully', '--step', 'Complete'], () => {});
+        execFile(FROGGO_DB, ['task-complete', taskId, '--outcome', 'success'], () => {});
       }
       return { success: true, id: result.id };
     } else {
       safeLog.error('[Execute] Tweet error:', result.error);
       if (taskId) {
-        exec(`froggo-db task-progress "${taskId}" "Failed: ${result.error}" --step "Error"`, () => {});
-        exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
+        execFile(FROGGO_DB, ['task-progress', taskId, `Failed: ${result.error}`, '--step', 'Error'], () => {});
+        execFile(FROGGO_DB, ['task-update', taskId, '--status', 'failed'], () => {});
       }
       return { success: false, error: result.error };
     }
   } catch (e: any) {
     safeLog.error('[Execute] Tweet exception:', e.message);
     if (taskId) {
-      exec(`froggo-db task-update "${taskId}" --status failed`, () => {});
+      execFile(FROGGO_DB, ['task-update', taskId, '--status', 'failed'], () => {});
     }
     return { success: false, error: e.message };
   }
@@ -447,7 +453,7 @@ ${citations.map(url => `- ${url}`).join('\n')}
     prepare('UPDATE x_research_ideas SET file_path = ? WHERE id = ?').run(filePath, id);
 
     // Git commit
-    execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "feat: Add research idea '${title}' (proposed by ${proposedBy})"`, {
+    execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "feat: Add research idea '${sanitizeForShell(title)}' (proposed by ${sanitizeForShell(proposedBy)})"`, {
       encoding: 'utf-8'
     });
 
@@ -528,7 +534,7 @@ async function handleXResearchApprove(_: Electron.IpcMainInvokeEvent, data: { id
 
       // Git commit
       const filename = path.basename(idea.file_path);
-      execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "approve: Research idea ${id} (approved by ${approvedBy})"`, {
+      execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "approve: Research idea ${sanitizeForShell(id)} (approved by ${sanitizeForShell(approvedBy)})"`, {
         encoding: 'utf-8'
       });
     }
@@ -570,7 +576,7 @@ async function handleXResearchReject(_: Electron.IpcMainInvokeEvent, data: { id:
 
       // Git commit
       const filename = path.basename(idea.file_path);
-      execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "reject: Research idea ${id}"`, {
+      execSync(`cd ~/froggo/x-content && git add research/${filename} && git commit -m "reject: Research idea ${sanitizeForShell(id)}"`, {
         encoding: 'utf-8'
       });
     }
@@ -641,7 +647,7 @@ ${description}
     prepare('UPDATE x_content_plans SET file_path = ? WHERE id = ?').run(filePath, id);
 
     // Git commit
-    execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "feat: Add content plan '${title}' (${contentType}, ${threadLength} tweets, proposed by ${proposedBy})"`, {
+    execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "feat: Add content plan '${sanitizeForShell(title)}' (${sanitizeForShell(contentType)}, ${threadLength} tweets, proposed by ${sanitizeForShell(proposedBy)})"`, {
       encoding: 'utf-8'
     });
 
@@ -712,7 +718,7 @@ async function handleXPlanApprove(_: Electron.IpcMainInvokeEvent, data: { id: st
 
       // Git commit
       const filename = path.basename(plan.file_path);
-      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "approve: Content plan ${id} (approved by ${approvedBy})"`, {
+      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "approve: Content plan ${sanitizeForShell(id)} (approved by ${sanitizeForShell(approvedBy)})"`, {
         encoding: 'utf-8'
       });
     }
@@ -754,7 +760,7 @@ async function handleXPlanReject(_: Electron.IpcMainInvokeEvent, data: { id: str
 
       // Git commit
       const filename = path.basename(plan.file_path);
-      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "reject: Content plan ${id}${reason ? ': ' + reason : ''}"`, {
+      execSync(`cd ~/froggo/x-content && git add plans/${filename} && git commit -m "reject: Content plan ${sanitizeForShell(id)}${reason ? ': ' + sanitizeForShell(reason) : ''}"`, {
         encoding: 'utf-8'
       });
     }
@@ -830,7 +836,7 @@ ${mediaUrls && mediaUrls.length > 0 ? `\n## Media\n${mediaUrls.map(url => `- ![]
     prepare('UPDATE x_drafts SET file_path = ? WHERE id = ?').run(filePath, id);
 
     // Git commit
-    execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "feat: Add draft ${version} for plan ${planId} (proposed by ${proposedBy})"`, {
+    execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "feat: Add draft ${sanitizeForShell(version)} for plan ${sanitizeForShell(planId)} (proposed by ${sanitizeForShell(proposedBy)})"`, {
       encoding: 'utf-8'
     });
 
@@ -916,7 +922,7 @@ async function handleXDraftApprove(_: Electron.IpcMainInvokeEvent, data: { id: s
 
       // Git commit
       const filename = path.basename(draft.file_path);
-      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "approve: Draft ${id} (approved by ${approvedBy})"`, {
+      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "approve: Draft ${sanitizeForShell(id)} (approved by ${sanitizeForShell(approvedBy)})"`, {
         encoding: 'utf-8'
       });
     }
@@ -958,7 +964,7 @@ async function handleXDraftReject(_: Electron.IpcMainInvokeEvent, data: { id: st
 
       // Git commit
       const filename = path.basename(draft.file_path);
-      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "reject: Draft ${id}${reason ? ': ' + reason : ''}"`, {
+      execSync(`cd ~/froggo/x-content && git add drafts/${filename} && git commit -m "reject: Draft ${sanitizeForShell(id)}${reason ? ': ' + sanitizeForShell(reason) : ''}"`, {
         encoding: 'utf-8'
       });
     }
@@ -1273,7 +1279,7 @@ async function handleXCampaignDelete(_: Electron.IpcMainInvokeEvent, id: string)
 async function handleXMentionFetch(): Promise<any> {
   try {
     // Fetch mentions from X API
-    const result = execSync('x-api mentions --count 50', {
+    const result = execFileSync(X_API, ['mentions', '--count', '50'], {
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024,
     });
@@ -1451,7 +1457,7 @@ async function handleXMentionReply(_: Electron.IpcMainInvokeEvent, data: {
     const now = Date.now();
 
     // Send reply via x-api
-    const result = execSync(`x-api reply ${tweetId} "${replyText.replace(/"/g, '\\"')}"`, {
+    const result = execFileSync(X_API, ['reply', tweetId, replyText], {
       encoding: 'utf-8',
     });
 
@@ -1604,7 +1610,7 @@ ${replyText}
     fs.writeFileSync(draftPath, draftContent, 'utf-8');
 
     // Git commit
-    execSync(`cd ~/froggo/x-content && git add drafts/${id}.md && git commit -m "draft: Reply Guy quick draft ${id}"`, {
+    execSync(`cd ~/froggo/x-content && git add drafts/${sanitizeForShell(id)}.md && git commit -m "draft: Reply Guy quick draft ${sanitizeForShell(id)}"`, {
       encoding: 'utf-8'
     });
 
@@ -1639,7 +1645,7 @@ async function handleXReplyGuyPostNow(_: Electron.IpcMainInvokeEvent, data: {
     }
 
     // Post via x-api
-    const result = execSync(`x-api reply ${replyTo} "${replyText.replace(/"/g, '\\"')}"`, {
+    const result = execFileSync(X_API, ['reply', replyTo, replyText], {
       encoding: 'utf-8',
     });
 

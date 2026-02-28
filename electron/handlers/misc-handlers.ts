@@ -9,7 +9,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
@@ -92,9 +92,8 @@ export function registerMiscHandlers(): void {
   registerHandler('exec:validate', async (_event, command: string) => validateCommand(command));
 
   registerHandler('search:local', async (_event, query: string) => {
-    const escapedQuery = query.replace(/'/g, "'\\''");
     return new Promise((resolve) => {
-      exec(`froggo-db search '${escapedQuery}' --limit 20 --json`, { timeout: 15000 }, (error, stdout) => {
+      execFile('/opt/homebrew/bin/froggo-db', ['search', query, '--limit', '20', '--json'], { timeout: 15000 }, (error, stdout) => {
         if (error) { safeLog.error('[Search] Local search error:', error); resolve({ success: false, results: [] }); return; }
         try {
           const data = JSON.parse(stdout);
