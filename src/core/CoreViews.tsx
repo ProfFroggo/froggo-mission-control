@@ -11,7 +11,6 @@
 import {
   LayoutDashboard,
   Kanban,
-  MessageSquare,
   Users,
   Mic,
   Bell,
@@ -19,7 +18,6 @@ import {
   Calendar,
   Code,
   Sparkles,
-  Mail,
   Cloud,
   MessagesSquare,
   PenLine,
@@ -29,12 +27,10 @@ import {
 import {
   Dashboard,
   Kanban as KanbanPanel,
-  ChatPanel,
   MeetingsPanel,
   VoiceChatPanel,
   NotificationsPanel,
   InboxPanel,
-  CommsInbox3Pane,
   SchedulePanel,
   CodeAgentDashboard,
   ContextControlBoard,
@@ -47,16 +43,14 @@ import {
 import { ViewRegistry } from './ViewRegistry';
 
 // Register all core views — order here doesn't matter, panelConfig controls display order
-// NOTE: finance, analytics, settings, library are registered by their respective modules (src/modules/*)
+// NOTE: finance, analytics, settings, library, inbox, chat are registered by their respective modules (src/modules/*)
 [
   { id: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard,  component: Dashboard },
-  { id: 'inbox',        label: 'Inbox',             icon: Mail,             component: CommsInbox3Pane },
   { id: 'kanban',      label: 'Tasks',              icon: Kanban,           component: KanbanPanel },
   { id: 'agentdms',   label: 'Agent DMs',           icon: MessagesSquare,   component: DMFeed },
 
   { id: 'meetings',    label: 'Meetings',           icon: Users,            component: MeetingsPanel },
   { id: 'voicechat',  label: 'Voice Chat',          icon: Mic,              component: VoiceChatPanel },
-  { id: 'chat',        label: 'Chat',               icon: MessageSquare,    component: ChatPanel },
   { id: 'accounts',    label: 'Accounts',           icon: Cloud,            component: ConnectedAccountsPanel },
   { id: 'approvals',   label: 'Approvals',          icon: Inbox,            component: InboxPanel },
   { id: 'context',     label: 'Context',            icon: Sparkles,         component: ContextControlBoard },
@@ -65,6 +59,4 @@ import { ViewRegistry } from './ViewRegistry';
   { id: 'notifications', label: 'Notifications',   icon: Bell,             component: NotificationsPanel },
   { id: 'writing',     label: 'Writing',            icon: PenLine,          component: WritingWorkspace },
   { id: 'modulebuilder', label: 'Module Builder',   icon: Boxes,            component: ModuleBuilderPage },
-  // Aliases (same component, different route IDs)
-  { id: 'comms',       label: 'Communications',     icon: Mail,             component: CommsInbox3Pane },
 ].forEach(view => ViewRegistry.register(view));

@@ -24,6 +24,7 @@ import {
   Users,
   Zap,
   Globe,
+  Mail,
   MessageSquare,
   Calendar,
   Bell,
@@ -54,6 +55,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Users,
   Zap,
   Globe,
+  Mail,
   MessageSquare,
   Calendar,
   Bell,
@@ -74,7 +76,7 @@ function resolveIcon(iconName?: string): React.ComponentType<any> {
 
 // ─── Category filter ──────────────────────────────────────────────────────────
 
-const CATEGORIES = ['productivity', 'social', 'finance', 'system', 'agent'] as const;
+const CATEGORIES = ['productivity', 'communications', 'social', 'finance', 'system', 'agent'] as const;
 type Category = (typeof CATEGORIES)[number];
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -19,6 +19,10 @@ import './library';
 import './twitter';
 import './agent-mgmt';
 
+// Phase 45: Core view migrations
+import './inbox';
+import './chat';
+
 // Future modules:
 // import './writing';
 // import './comms';
