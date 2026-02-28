@@ -10,6 +10,38 @@ import { createLogger } from './utils/logger';
 const logger = createLogger('IPC');
 const registeredHandlers = new Set<string>();
 
+const isDev = process.env.ELECTRON_DEV === '1';
+
+/** Allowed origins for IPC sender validation */
+const ALLOWED_ORIGINS: string[] = isDev
+  ? ['http://localhost:5173']
+  : ['file://'];
+
+/**
+ * Validate that an IPC event comes from an allowed origin.
+ * Returns true if the sender's URL origin matches the allowed list.
+ * In production, Electron file:// URLs have origin "null" (string) — we normalize this to "file://".
+ */
+function validateSender(event: IpcMainInvokeEvent): boolean {
+  try {
+    const senderUrl = event.senderFrame?.url;
+    if (!senderUrl) return false;
+
+    // file:// URLs return origin "null" — normalize
+    let origin: string;
+    try {
+      const parsed = new URL(senderUrl);
+      origin = parsed.origin === 'null' ? 'file://' : parsed.origin;
+    } catch {
+      return false;
+    }
+
+    return ALLOWED_ORIGINS.includes(origin);
+  } catch {
+    return false;
+  }
+}
+
 /** Tracks which IPC channels belong to each module (moduleId -> Set of channels) */
 const moduleHandlers = new Map<string, Set<string>>();
 
@@ -55,7 +87,13 @@ export function registerHandler<TArgs extends unknown[], TReturn>(
   }
   
   registeredHandlers.add(channel);
-  ipcMain.handle(channel, handler as IpcHandler);
+  ipcMain.handle(channel, (event: IpcMainInvokeEvent, ...args: unknown[]) => {
+    if (!validateSender(event)) {
+      logger.error(`[IPC] BLOCKED: unauthorized sender for '${channel}' from ${event.senderFrame?.url || 'unknown'}`);
+      throw new Error('IPC access denied: unauthorized origin');
+    }
+    return (handler as IpcHandler)(event, ...args);
+  });
 }
 
 /**
@@ -202,7 +240,11 @@ export function reregisterModuleHandlers(moduleId: string): number {
  * IPC bridge: renderer calls this to trigger handler removal for a disabled module.
  * Registered eagerly so it's always available (it's a core lifecycle channel, not module-owned).
  */
-ipcMain.handle('module:ipc:removeHandlers', (_event, moduleId: string) => {
+ipcMain.handle('module:ipc:removeHandlers', (event, moduleId: string) => {
+  if (!validateSender(event)) {
+    logger.error('[IPC] BLOCKED: unauthorized sender for module:ipc:removeHandlers');
+    throw new Error('IPC access denied: unauthorized origin');
+  }
   const count = unregisterModuleHandlers(moduleId);
   return { success: true, removed: count };
 });
@@ -212,7 +254,11 @@ registeredHandlers.add('module:ipc:removeHandlers');
  * IPC bridge: renderer calls this to trigger handler re-registration for a re-enabled module.
  * Registered eagerly alongside module:ipc:removeHandlers — it's a core lifecycle channel.
  */
-ipcMain.handle('module:ipc:registerHandlers', (_event, moduleId: string) => {
+ipcMain.handle('module:ipc:registerHandlers', (event, moduleId: string) => {
+  if (!validateSender(event)) {
+    logger.error('[IPC] BLOCKED: unauthorized sender for module:ipc:registerHandlers');
+    throw new Error('IPC access denied: unauthorized origin');
+  }
   const count = reregisterModuleHandlers(moduleId);
   return { success: true, registered: count };
 });
