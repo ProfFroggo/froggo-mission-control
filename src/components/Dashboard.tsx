@@ -12,6 +12,7 @@ import type { LayoutItem } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { TaskCardSkeleton, SessionCardSkeleton } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import AgentAvatar from './AgentAvatar';
 import TodayCalendarWidget from './TodayCalendarWidget';
@@ -154,6 +155,7 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   
   const [greeting, setGreeting] = useState('');
   const [showActivityStream, setShowActivityStream] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   
   // Widget customization state
@@ -217,13 +219,13 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   }, []);
 
   useEffect(() => {
-    fetchAgents();
+    fetchAgents().catch(err => setDashboardError(err instanceof Error ? err.message : 'Failed to load agents'));
   }, [fetchAgents]);
 
   useEffect(() => {
     if (connected) {
-      loadGatewaySessions();
-      const interval = setInterval(loadGatewaySessions, 30000);
+      loadGatewaySessions().catch(err => setDashboardError(err instanceof Error ? err.message : 'Failed to load sessions'));
+      const interval = setInterval(() => loadGatewaySessions().catch(() => {}), 30000);
       return () => clearInterval(interval);
     }
   }, [connected, loadGatewaySessions]);
@@ -304,6 +306,16 @@ export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
   // TODO: these are used when Add Widget panel is re-enabled
   // const visibleWidgets = WIDGET_CONFIGS.filter(w => !hiddenWidgets.has(w.id));
   // const availableWidgets = WIDGET_CONFIGS.filter(w => hiddenWidgets.has(w.id) && w.removable);
+
+  if (dashboardError) {
+    return (
+      <ErrorDisplay
+        error={dashboardError}
+        context={{ action: 'load dashboard', resource: 'dashboard data' }}
+        onRetry={() => { setDashboardError(null); fetchAgents().catch(() => {}); loadGatewaySessions().catch(() => {}); }}
+      />
+    );
+  }
 
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-clawd-bg to-clawd-surface">

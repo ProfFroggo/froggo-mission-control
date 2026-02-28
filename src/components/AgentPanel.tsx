@@ -9,7 +9,8 @@ import AgentChatModal from './AgentChatModal';
 import AgentManagementModal from './AgentManagementModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
-import { InlineLoader } from './LoadingStates';
+import { InlineLoader, Spinner } from './LoadingStates';
+import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
 import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 
@@ -49,6 +50,8 @@ export default function AgentPanel() {
   const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [managingAgent, setManagingAgent] = useState<{ id: string; name: string } | null>(null);
   const [ctxHealth, setCtxHealth] = useState<Record<string, { AGENTS: boolean; USER: boolean; TOOLS: boolean }>>({});
@@ -99,9 +102,13 @@ export default function AgentPanel() {
   };
 
   useEffect(() => {
-    fetchAgents(); // Load agents from registry
-    loadGatewaySessions();
-    loadTasksFromDB(); // Ensure tasks are loaded for agent detail modals
+    Promise.all([fetchAgents(), loadGatewaySessions(), loadTasksFromDB()])
+      .catch(err => {
+        logger.error('Failed to load agent data:', err);
+        setLoadError(err instanceof Error ? err.message : 'Failed to load agents');
+      })
+      .finally(() => setInitialLoading(false));
+    // Load agents from registry
     
     // Set up event-based updates for real-time status changes
     const unsubscribeTaskUpdated = gateway.on('task.updated', () => {
@@ -195,6 +202,24 @@ export default function AgentPanel() {
   // Split into main agents and workers
   const mainAgents = uniqueAgents.filter(a => !a.id.startsWith('worker-'));
   const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
+
+  if (initialLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Spinner size={32} />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <ErrorDisplay
+        error={loadError}
+        context={{ action: 'load agents', resource: 'agent registry' }}
+        onRetry={() => { setLoadError(null); setInitialLoading(true); fetchAgents().catch(err => setLoadError(err instanceof Error ? err.message : 'Failed to load agents')).finally(() => setInitialLoading(false)); }}
+      />
+    );
+  }
 
   return (
     <div className="h-full overflow-auto p-4">

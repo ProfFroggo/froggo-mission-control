@@ -28,22 +28,22 @@ export function getChartColor(index: number): string {
   return CHART_PALETTE[index % CHART_PALETTE.length];
 }
 
-// Axis styling constants
+// Axis styling constants — uses CSS variables for theme adaptation
 export const CHART_AXIS = {
-  stroke: '#9CA3AF',
+  stroke: 'var(--clawd-text-dim)',
   fontSize: 10,
-} as const;
+};
 
-// Grid styling constants
+// Grid styling constants — uses CSS variables for theme adaptation
 export const CHART_GRID = {
-  stroke: '#374151',
+  stroke: 'var(--clawd-border)',
   strokeDasharray: '3 3',
-} as const;
+};
 
-// Tooltip styling constants (for Recharts contentStyle prop)
+// Tooltip styling constants (for Recharts contentStyle prop) — uses CSS variables for theme adaptation
 export const CHART_TOOLTIP = {
-  backgroundColor: '#1F2937',
-  border: '1px solid #374151',
+  backgroundColor: 'var(--clawd-surface)',
+  border: '1px solid var(--clawd-border)',
   borderRadius: '8px',
-  color: '#F3F4F6',
-} as const;
+  color: 'var(--clawd-text)',
+};
