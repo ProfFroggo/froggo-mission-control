@@ -68,7 +68,7 @@ function createWindow() {
     width: 1400, height: 900, minWidth: 1000, minHeight: 700,
     titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 15, y: 15 },
     backgroundColor: '#0f0f0f',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, webSecurity: true },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, webSecurity: true, sandbox: true },
   });
 
   const isDevApp = app.getName().includes('Dev') || isDev;
@@ -104,6 +104,29 @@ function createWindow() {
 
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     safeLog.log('[Main] RENDERER CRASHED:', details.reason, details.exitCode);
+  });
+
+  // Navigation lockdown — block navigation to non-app URLs
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowedOrigins = isDev
+      ? ['http://localhost:5173']
+      : ['file://'];
+    const parsed = new URL(url);
+    const origin = parsed.origin === 'null' ? 'file://' : parsed.origin;
+    if (!allowedOrigins.includes(origin)) {
+      event.preventDefault();
+      safeLog.warn(`[Security] Blocked navigation to: ${url}`);
+      shell.openExternal(url).catch(() => {});
+    }
+  });
+
+  // Block popup windows — open safe URLs in system browser instead
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      shell.openExternal(url).catch(() => {});
+    }
+    safeLog.warn(`[Security] Blocked window.open: ${url}`);
+    return { action: 'deny' };
   });
 
   mainWindow.on('close', () => {
