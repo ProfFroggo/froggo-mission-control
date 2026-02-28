@@ -1,4 +1,5 @@
 const { FuseV1Options, FuseVersion, flipFuses } = require('@electron/fuses');
+const { execSync } = require('child_process');
 const path = require('path');
 
 /** @type {import('electron-builder').Configuration} */
@@ -49,5 +50,10 @@ module.exports = {
       [FuseV1Options.OnlyLoadAppFromAsar]: false, // asar: false in config
     });
     console.log('[afterPack] Electron Fuses flipped for production');
+
+    // Re-sign with ad-hoc signature after fuse modification to prevent
+    // SIGKILL (Code Signature Invalid) on launch
+    execSync(`codesign --force --deep --sign - "${electronBinaryPath}"`, { stdio: 'inherit' });
+    console.log('[afterPack] Ad-hoc re-signed after fuse flip');
   },
 };
