@@ -685,7 +685,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
       {callActive && audioState === 'suspended' && (
         <div className="px-4 py-2 border-t border-warning-border bg-warning-subtle">
           <button onClick={handleEnableAudio}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-black font-medium transition-colors">
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-yellow-500 hover:bg-warning text-clawd-bg font-medium transition-colors">
             <Volume2 size={18} />
             Enable Audio
           </button>

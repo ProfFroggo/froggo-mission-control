@@ -1343,9 +1343,9 @@ const MessageItem = memo(function MessageItem({
             {msg.streaming && !msg.content ? (
               <div className="flex items-center gap-2 py-1">
                 <div className="flex gap-1">
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-white/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '0ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '150ms' }} />
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${isUser ? 'bg-clawd-text/70' : 'bg-clawd-accent'}`} style={{ animationDelay: '300ms' }} />
                 </div>
                 <span className={`text-sm ${isUser ? 'text-white/80' : 'text-clawd-text-dim'}`}>
                   Thinking...
@@ -1358,7 +1358,7 @@ const MessageItem = memo(function MessageItem({
             )}
             {msg.streaming && msg.content && (
               <div className={`flex items-center gap-1.5 mt-2 ${isUser ? 'opacity-70' : 'opacity-60'}`}>
-                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-white' : 'bg-clawd-accent'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isUser ? 'bg-clawd-text' : 'bg-clawd-accent'}`} />
                 <span className={`text-xs ${isUser ? 'text-white/90' : 'text-clawd-text-dim'}`}>
                   typing...
                 </span>

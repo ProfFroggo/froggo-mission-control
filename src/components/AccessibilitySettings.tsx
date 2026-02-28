@@ -87,7 +87,7 @@ export default function AccessibilitySettings() {
               aria-label="Toggle reduced motion"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
                   settings.reducedMotion ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -123,7 +123,7 @@ export default function AccessibilitySettings() {
               aria-label="Toggle high contrast mode"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
                   settings.highContrast ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -229,7 +229,7 @@ export default function AccessibilitySettings() {
               aria-label="Toggle keyboard focus indicators"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
                   settings.keyboardNavVisible ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"
@@ -278,7 +278,7 @@ export default function AccessibilitySettings() {
               aria-label="Toggle screen reader announcements"
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 left-1 w-4 h-4 bg-clawd-text rounded-full transition-transform ${
                   settings.screenReaderEnabled ? 'translate-x-5' : ''
                 }`}
                 aria-hidden="true"

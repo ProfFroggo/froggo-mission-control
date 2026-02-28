@@ -349,7 +349,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
                     <span className="flex-1 text-left">{cmd.label}</span>
                     {cmd.shortcut && (
                       <kbd className={`px-2 py-0.5 text-xs rounded ${
-                        isSelected ? 'bg-white/20' : 'bg-clawd-border'
+                        isSelected ? 'bg-clawd-text/20' : 'bg-clawd-border'
                       }`} aria-hidden="true">
                         {cmd.shortcut}
                       </kbd>

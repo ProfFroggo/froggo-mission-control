@@ -100,7 +100,7 @@ export default function ErrorDisplay({
                 <button
                   key={idx}
                   onClick={() => handleRecoveryAction(action)}
-                  className={`text-xs px-2 py-1 rounded ${colorScheme.text} hover:bg-white/5 transition-colors`}
+                  className={`text-xs px-2 py-1 rounded ${colorScheme.text} hover:bg-clawd-text/5 transition-colors`}
                 >
                   {action.label}
                 </button>
@@ -111,7 +111,7 @@ export default function ErrorDisplay({
         {onDismiss && (
           <button
             onClick={onDismiss}
-            className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors text-clawd-text-dim"
+            className="flex-shrink-0 p-1 hover:bg-clawd-text/10 rounded transition-colors text-clawd-text-dim"
           >
             ×
           </button>

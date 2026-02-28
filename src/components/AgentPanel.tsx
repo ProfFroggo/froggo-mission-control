@@ -347,7 +347,7 @@ export default function AgentPanel() {
                             </span>
                           )}
                           {agent.status === 'archived' && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-500/20 text-clawd-text-dim">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted-subtle text-clawd-text-dim">
                               Archived
                             </span>
                           )}

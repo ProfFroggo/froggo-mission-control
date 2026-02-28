@@ -1081,7 +1081,7 @@ export default function InboxPanel() {
             <Inbox size={16} className="flex-shrink-0" />
             All
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'all' ? 'bg-white/20' : 'bg-clawd-bg'
+              activeTab === 'all' ? 'bg-clawd-text/20' : 'bg-clawd-bg'
             }`}>
               {pendingItems.length}
             </span>
@@ -1097,7 +1097,7 @@ export default function InboxPanel() {
             <ShieldAlert size={16} className="flex-shrink-0" />
             Approvals
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'approvals' ? 'bg-white/20' : 'bg-clawd-bg'
+              activeTab === 'approvals' ? 'bg-clawd-text/20' : 'bg-clawd-bg'
             }`}>
               {pendingItems.filter(i => !isReviewItem(i)).length}
             </span>
@@ -1113,7 +1113,7 @@ export default function InboxPanel() {
             <CheckCircle size={16} className="flex-shrink-0" />
             Reviews
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-              activeTab === 'reviews' ? 'bg-white/20' : 'bg-clawd-bg'
+              activeTab === 'reviews' ? 'bg-clawd-text/20' : 'bg-clawd-bg'
             }`}>
               {pendingItems.filter(i => isReviewItem(i)).length}
             </span>
