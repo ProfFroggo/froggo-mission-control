@@ -147,7 +147,7 @@ export default function AnalyticsPanel() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -334,7 +334,7 @@ export default function AnalyticsPanel() {
         {view === 'time' && <TimeTrackingPanel />}
         
         {view === 'projects' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
               <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Calendar size={16} className="text-clawd-accent" />

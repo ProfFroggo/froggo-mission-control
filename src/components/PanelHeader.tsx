@@ -52,9 +52,9 @@ export default function PanelHeader({
 }: PanelHeaderProps) {
   // Variant-specific spacing
   const variantStyles = {
-    compact: 'p-4',
-    default: 'p-6',
-    large: 'p-8',
+    compact: 'p-3',
+    default: 'p-4',
+    large: 'p-6',
   };
 
   const titleStyles = {
