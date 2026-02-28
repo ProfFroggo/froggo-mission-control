@@ -72,7 +72,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
       // 1. Google Calendar accounts (from user settings)
       const userAccounts = useUserSettings.getState().emailAccounts;
-      const defaultColors = ['#3b82f6', '#8b5cf6', '#22c55e', '#ef4444', '#f59e0b'];
+      const defaultColors = ['var(--color-info)', 'var(--color-review)', 'var(--color-success)', 'var(--color-error)', 'var(--color-warning)'];
       const googleAccounts = userAccounts.map((a, i) => ({
         email: a.email,
         name: a.label,
@@ -128,7 +128,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         id: 'social:twitter',
         name: 'Twitter/X Scheduled Posts',
         type: 'social',
-        color: '#1da1f2',
+        color: 'var(--channel-telegram)',
         enabled: enabledIds ? enabledIds.includes('social:twitter') : true,
       });
 
@@ -137,7 +137,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         id: 'mission-control:tasks',
         name: 'Mission Control Tasks',
         type: 'mission-control',
-        color: '#f59e0b',
+        color: 'var(--color-warning)',
         enabled: enabledIds ? enabledIds.includes('mission-control:tasks') : true,
       });
 
@@ -146,7 +146,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         id: 'holidays:gibraltar',
         name: 'Gibraltar Holidays',
         type: 'holidays',
-        color: '#ef4444',
+        color: 'var(--color-error)',
         enabled: enabledIds ? enabledIds.includes('holidays:gibraltar') : true,
       });
 
