@@ -197,10 +197,10 @@ export default function AgentPanel() {
   const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-4">
       <div className="w-full">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="icon-text text-heading-2 tracking-tight mb-1">
               <Bot size={24} className="flex-shrink-0" /> Agents
@@ -230,7 +230,7 @@ export default function AgentPanel() {
 
         {/* Analytics */}
         {showAnalytics && (
-          <div className="mb-8 rounded-xl border border-clawd-border p-5">
+          <div className="mb-6 rounded-xl border border-clawd-border p-5">
             <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
@@ -257,7 +257,7 @@ export default function AgentPanel() {
         )}
 
         {/* Circuit Breaker Status */}
-        <div className="mb-8">
+        <div className="mb-6">
           <CircuitBreakerStatus />
         </div>
 
@@ -265,7 +265,7 @@ export default function AgentPanel() {
         <HRSection />
 
         {/* Core Agents — Profile Card Grid */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest">Core Agents</h2>
             {compareAgents.length > 0 && (
@@ -539,7 +539,7 @@ export default function AgentPanel() {
 
         {/* Sub-Agents */}
         {realSubagents.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-6">
             <h2 className="text-xs font-semibold text-clawd-text-dim uppercase tracking-widest mb-3">
               Sub-Agents ({activeSubagents.length} active / {realSubagents.length} total)
             </h2>

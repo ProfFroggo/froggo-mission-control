@@ -137,7 +137,7 @@ export default function NotificationsPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-clawd-border bg-clawd-surface">
+      <div className="p-4 border-b border-clawd-border bg-clawd-surface">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-clawd-accent/20 rounded-xl">
@@ -181,7 +181,7 @@ export default function NotificationsPanel() {
       </div>
 
       {/* Notifications List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {filteredNotifications.length === 0 ? (
           <EmptyState 
             type="notifications" 

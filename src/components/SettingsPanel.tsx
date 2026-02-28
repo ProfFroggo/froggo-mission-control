@@ -263,10 +263,10 @@ export default function SettingsPanel() {
   };
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-4">
       <div className="max-w-8xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-heading-2 mb-2 flex items-center gap-2">
             <Settings size={24} /> Settings
           </h1>
@@ -404,7 +404,7 @@ export default function SettingsPanel() {
         
         {/* GENERAL TAB */}
         {activeTab === 'general' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Connection */}
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
@@ -601,7 +601,7 @@ export default function SettingsPanel() {
 
         {/* APPEARANCE TAB */}
         {activeTab === 'appearance' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Theme */}
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
@@ -708,7 +708,7 @@ export default function SettingsPanel() {
 
         {/* NOTIFICATIONS TAB */}
         {activeTab === 'notifications' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Global Notification Settings */}
             <section>
               <GlobalNotificationSettings />
@@ -847,7 +847,7 @@ export default function SettingsPanel() {
 
         {/* KEYBOARD SHORTCUTS TAB */}
         {activeTab === 'shortcuts' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-heading-3 flex items-center gap-2">
@@ -908,7 +908,7 @@ export default function SettingsPanel() {
 
         {/* AUTOMATION TAB */}
         {activeTab === 'automation' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             <section>
               <h2 className="text-heading-3 mb-4 flex items-center gap-2">
                 ⚡ Automation

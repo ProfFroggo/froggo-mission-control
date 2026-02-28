@@ -65,7 +65,7 @@ export default function SchedulePanel() {
     <div className="h-full flex flex-col">
       {/* Tab Header */}
       <div className="border-b border-clawd-border bg-clawd-surface">
-        <div className="flex items-center px-6">
+        <div className="flex items-center px-4">
           <button
             onClick={() => setActiveTab('calendar')}
             className={`flex items-center gap-2 px-4 py-4 font-medium transition-all border-b-2 ${

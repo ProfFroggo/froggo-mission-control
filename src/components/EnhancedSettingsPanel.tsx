@@ -483,10 +483,10 @@ export default function EnhancedSettingsPanel() {
   };
 
   return (
-    <div className="h-full overflow-auto p-6">
+    <div className="h-full overflow-auto p-4">
       <div className="max-w-8xl mx-auto">
         {/* Header with Search */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-heading-2 mb-2 flex items-center gap-2">
