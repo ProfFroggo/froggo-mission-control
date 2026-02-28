@@ -27,6 +27,10 @@ import './kanban';
 import './approvals';
 import './notifications';
 
+// Phase 46: Optional module migrations — wave 1
+import './meetings';
+import './voice';
+
 // Future modules:
 // import './writing';
 // import './comms';

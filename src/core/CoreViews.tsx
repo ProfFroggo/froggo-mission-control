@@ -10,8 +10,6 @@
 
 import {
   LayoutDashboard,
-  Users,
-  Mic,
   Calendar,
   Code,
   Sparkles,
@@ -22,8 +20,6 @@ import {
 
 import {
   Dashboard,
-  MeetingsPanel,
-  VoiceChatPanel,
   SchedulePanel,
   CodeAgentDashboard,
   ContextControlBoard,
@@ -35,12 +31,10 @@ import {
 import { ViewRegistry } from './ViewRegistry';
 
 // Register all core views — order here doesn't matter, panelConfig controls display order
-// NOTE: finance, analytics, settings, library, inbox, chat, agentdms, kanban, approvals, notifications are registered by their respective modules (src/modules/*)
+// NOTE: finance, analytics, settings, library, inbox, chat, agentdms, kanban, approvals, notifications, meetings, voicechat are registered by their respective modules (src/modules/*)
 [
   { id: 'dashboard',    label: 'Dashboard',        icon: LayoutDashboard,  component: Dashboard },
 
-  { id: 'meetings',    label: 'Meetings',           icon: Users,            component: MeetingsPanel },
-  { id: 'voicechat',  label: 'Voice Chat',          icon: Mic,              component: VoiceChatPanel },
   { id: 'accounts',    label: 'Accounts',           icon: Cloud,            component: ConnectedAccountsPanel },
   { id: 'context',     label: 'Context',            icon: Sparkles,         component: ContextControlBoard },
   { id: 'codeagent',  label: 'Dev',                 icon: Code,             component: CodeAgentDashboard },
