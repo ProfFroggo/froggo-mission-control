@@ -22,6 +22,9 @@ import './agent-mgmt';
 // Phase 45: Core view migrations
 import './inbox';
 import './chat';
+import './agentdms';
+import './kanban';
+import './approvals';
 
 // Future modules:
 // import './writing';
