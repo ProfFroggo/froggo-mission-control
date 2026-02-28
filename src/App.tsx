@@ -22,6 +22,7 @@ import HelpPanel from './components/HelpPanel';
 import EditPanelsModal from './components/EditPanelsModal';
 import { usePanelConfigStore } from './store/panelConfig';
 import TourGuide, { useTour } from './components/TourGuide';
+import { useFirstTimeUser } from './hooks/useFirstTimeUser';
 import NetworkStatus from './components/NetworkStatus';
 
 // View IDs are dynamic — any registered view ID is valid
@@ -49,7 +50,8 @@ function App() {
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
   const [, setSidebarWidth] = useState(208); // Track sidebar width for sidebar positioning
   const quickActionsRef = useRef<QuickActionsRef>(null);
-  const { activeTour, completeTour, skipTour } = useTour();
+  const { activeTour, completeTour, skipTour, startTour, hasCompletedTour } = useTour();
+  useFirstTimeUser(startTour, hasCompletedTour);
   // DISABLED: Morning brief no longer auto-shows on startup (slow, mostly useless info)
   // Can be manually triggered from Dashboard if needed
   const [showMorningBrief, setShowMorningBrief] = useState(false);
