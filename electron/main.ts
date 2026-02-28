@@ -2,7 +2,7 @@ import { app, BrowserWindow, shell, dialog, screen, systemPreferences, desktopCa
 import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
-import { exec, execSync } from 'child_process';
+import { exec, execFile, execSync, execFileSync } from 'child_process';
 import { setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
 import { registerXAutomationsHandlers } from './x-automations-service';
@@ -214,14 +214,13 @@ async function processScheduledItems() {
         continue;
       } catch (e: any) { safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message); }
     } else if (item.type === 'email') {
-      const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
+      const recipient = metadata.recipient || metadata.to || '';
       const account = metadata.account || '';
       if (!recipient?.trim()) { updateScheduleStatus(item.id, 'failed', 'Missing recipient'); continue; }
       if (!account?.trim()) { updateScheduleStatus(item.id, 'failed', 'Missing GOG account'); continue; }
-      const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
-      const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-      const execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
-      exec(execCmd, { timeout: 60000 }, (execError) => {
+      const subject = metadata.subject || 'No subject';
+      const body = item.content;
+      execFile('/opt/homebrew/bin/gog', ['gmail', 'send', '--to', recipient, '--subject', subject, '--body', body], { timeout: 60000, env: { ...process.env, GOG_ACCOUNT: account } }, (execError) => {
         if (execError) { updateScheduleStatus(item.id, 'failed', (execError.message || '').slice(0, 500)); safeSend('schedule-processed', { id: item.id, type: item.type, success: false, error: execError.message }); }
         else { updateScheduleStatus(item.id, 'sent'); safeSend('schedule-processed', { id: item.id, type: item.type, success: true }); }
       });
@@ -249,7 +248,7 @@ function startScheduledPoster() {
       const pending = prepare(`SELECT * FROM scheduled_posts WHERE status = 'pending' AND scheduled_time <= ?`).all(now) as { id: string; content: string }[];
       for (const post of pending) {
         try {
-          execSync(`x-api post "${post.content.replace(/"/g, '\\"')}"`, { encoding: 'utf-8' });
+          execFileSync('/opt/homebrew/bin/x-api', ['post', post.content], { encoding: 'utf-8' });
           prepare('UPDATE scheduled_posts SET status = ? WHERE id = ?').run('posted', post.id);
           safeLog.log(`[X/AutoPost] Posted scheduled tweet: ${post.id}`);
         } catch (postError: any) {
