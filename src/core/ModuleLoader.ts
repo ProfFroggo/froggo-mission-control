@@ -155,13 +155,13 @@ class ModuleLoaderClass {
       // Skip disabled modules — but never skip core modules regardless of state file
       if (disabledModules.includes(reg.manifest.id) && !reg.manifest.core) {
         reg.status = 'disposed';
-        console.log(`[ModuleLoader] Skipped disabled module "${reg.manifest.name}"`);
+        console.debug(`[ModuleLoader] Skipped disabled module "${reg.manifest.name}"`);
         continue;
       }
       // defaultDisabled: auto-disable modules on first encounter (not yet in known list)
       if (reg.manifest.defaultDisabled && !reg.manifest.core && !knownModules.includes(reg.manifest.id)) {
         reg.status = 'disposed';
-        console.log(`[ModuleLoader] Auto-disabled "${reg.manifest.name}" (defaultDisabled, first run)`);
+        console.debug(`[ModuleLoader] Auto-disabled "${reg.manifest.name}" (defaultDisabled, first run)`);
         window.clawdbot?.modules?.invoke?.('module:state:save', reg.manifest.id, false)
           .catch(() => { /* best-effort */ });
         window.clawdbot?.modules?.invoke?.('module:state:markKnown', reg.manifest.id)
@@ -177,7 +177,7 @@ class ModuleLoaderClass {
       try {
         await reg.lifecycle.init();
         reg.status = 'active';
-        console.log(`[ModuleLoader] ✅ Initialized "${reg.manifest.name}" v${reg.manifest.version}`);
+        console.debug(`[ModuleLoader] Initialized "${reg.manifest.name}" v${reg.manifest.version}`);
       } catch (err) {
         reg.status = 'error';
         reg.error = err instanceof Error ? err.message : String(err);
@@ -250,8 +250,7 @@ class ModuleLoaderClass {
       .then((res: unknown) => {
         const result = res as { success: boolean; removed: number };
         if (result?.removed > 0) {
-          // eslint-disable-next-line no-console
-          console.log(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
+          console.debug(`[ModuleLoader] Removed ${result.removed} IPC handler(s) for "${moduleId}"`);
         }
       })
       .catch((_err: unknown) => {
@@ -262,8 +261,7 @@ class ModuleLoaderClass {
     window.clawdbot?.modules?.invoke?.('module:state:save', moduleId, false)
       .catch((_err: unknown) => { /* state persistence is best-effort */ });
 
-    // eslint-disable-next-line no-console
-    console.log(`[ModuleLoader] Module "${moduleId}" disabled`);
+    console.debug(`[ModuleLoader] Module "${moduleId}" disabled`);
   }
 
   /**
@@ -288,15 +286,14 @@ class ModuleLoaderClass {
       await reg.lifecycle.init();
       reg.status = 'active';
       delete reg.error;
-      console.log(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
+      console.debug(`[ModuleLoader] Module "${moduleId}" re-enabled successfully`);
 
       // Re-register IPC handlers from stored factories (fire-and-forget)
       window.clawdbot?.modules?.invoke?.('module:ipc:registerHandlers', moduleId)
         .then((res: unknown) => {
           const result = res as { success: boolean; registered: number };
           if (result?.registered > 0) {
-            // eslint-disable-next-line no-console
-            console.log(`[ModuleLoader] Re-registered ${result.registered} IPC handler(s) for "${moduleId}"`);
+            console.debug(`[ModuleLoader] Re-registered ${result.registered} IPC handler(s) for "${moduleId}"`);
           }
         })
         .catch((_err: unknown) => { /* IPC re-registration is best-effort */ });
