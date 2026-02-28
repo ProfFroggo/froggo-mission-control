@@ -33,5 +33,9 @@ import './voice';
 import './schedule';
 import './writing';
 
+// Phase 47: Optional module migrations — wave 2
+import './accounts';
+import './context';
+
 // Future modules:
 // import './comms';
