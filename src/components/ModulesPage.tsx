@@ -446,9 +446,13 @@ export default function ModulesPage() {
       );
       savePanels(updated);
     }
-    // Refresh card data to reflect new visibility
+    // Refresh card data to reflect new visibility and module status optimistically
     setCards((prev) =>
-      prev.map((c) => (c.viewId === viewId ? { ...c, panelVisible: visible } : c)),
+      prev.map((c) =>
+        c.viewId === viewId
+          ? { ...c, panelVisible: visible, moduleStatus: visible ? 'active' : 'disposed' }
+          : c
+      ),
     );
   }
 
