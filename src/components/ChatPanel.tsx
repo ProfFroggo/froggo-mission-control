@@ -591,13 +591,16 @@ export default function ChatPanel() {
           action: 'send your message',
           technical: data.message || data.error
         });
-        setMessages(prev => prev.map(m => 
-          m.id === currentMsgIdRef.current 
-            ? { ...m, content: friendlyError, streaming: false } 
+        setMessages(prev => prev.map(m =>
+          m.id === currentMsgIdRef.current
+            ? { ...m, content: friendlyError, streaming: false }
             : m
         ));
         setLoading(false);
+        currentResponseRef.current = '';
+        currentContentRef.current = '';
         currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
+        showToast('error', 'Message failed', data.message || data.error || 'Could not send message');
       }
     };
 
@@ -825,13 +828,16 @@ export default function ChatPanel() {
         action: 'send your message',
         resource: 'chat'
       });
-      setMessages(prev => prev.map(m => 
-        m.id === assistantId 
-          ? { ...m, content: friendlyError, streaming: false } 
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId
+          ? { ...m, content: friendlyError, streaming: false }
           : m
       ));
       setLoading(false);
+      currentResponseRef.current = '';
+      currentContentRef.current = '';
       currentMsgIdRef.current = ''; if (currentRunIdRef.current) { gateway.clearRunId(currentRunIdRef.current); currentRunIdRef.current = ''; }
+      showToast('error', 'Message failed', e instanceof Error ? e.message : 'Could not send message');
     }
   };
 
