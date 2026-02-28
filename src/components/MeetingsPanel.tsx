@@ -19,6 +19,7 @@ import MarkdownMessage from './MarkdownMessage';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { createLogger } from '../utils/logger';
+import EmptyState from './EmptyState';
 
 const logger = createLogger('Meetings');
 
@@ -1936,11 +1937,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <Loader2 size={24} className="animate-spin text-clawd-text-dim" />
                       </div>
                     ) : pastMeetings.length === 0 ? (
-                      <div className="text-center py-12 bg-clawd-surface border border-clawd-border rounded-2xl">
-                        <Calendar size={48} className="mx-auto mb-4 text-clawd-text-dim opacity-30" />
-                        <p className="text-clawd-text-dim">No past meetings found</p>
-                        <p className="text-sm text-clawd-text-dim/60 mt-1">Meetings are saved to ~/froggo/meetings/</p>
-                      </div>
+                      <EmptyState
+                        icon={Calendar}
+                        title="No meetings recorded"
+                        description="Start a meeting to see it here. Recordings are saved to ~/froggo/meetings/."
+                      />
                     ) : (
                       <div className="space-y-3">
                         {pastMeetings.map((meeting) => (

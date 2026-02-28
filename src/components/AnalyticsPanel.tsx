@@ -32,6 +32,8 @@ import {
   type ProjectStats,
 } from '../services/analyticsService';
 import { Spinner } from './LoadingStates';
+import EmptyState from './EmptyState';
+import ErrorDisplay from './ErrorDisplay';
 
 type TimeRange = '7d' | '30d' | '90d';
 type AnalyticsView = 'overview' | 'tasks' | 'agents' | 'time' | 'projects';
@@ -40,7 +42,8 @@ export default function AnalyticsPanel() {
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [view, setView] = useState<AnalyticsView>('overview');
   const [loading, setLoading] = useState(true);
-  
+  const [error, setError] = useState<Error | null>(null);
+
   // Analytics data
   const [completionTrends, setCompletionTrends] = useState<TaskCompletionTrend[]>([]);
   const [agentUtilization, setAgentUtilization] = useState<AgentUtilization[]>([]);
@@ -55,9 +58,10 @@ export default function AnalyticsPanel() {
 
   const loadAnalytics = async () => {
     setLoading(true);
+    setError(null);
     try {
       const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
-      
+
       const [trends, agents, heatmap, projects, vel, subtasks] = await Promise.all([
         getTaskCompletionTrends(days),
         getAgentUtilization(),
@@ -73,8 +77,8 @@ export default function AnalyticsPanel() {
       setProjectStats(projects);
       setVelocity(vel);
       setSubtaskStats(subtasks);
-    } catch (error) {
-      // 'Failed to load analytics:', error;
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load analytics'));
     } finally {
       setLoading(false);
     }
@@ -114,6 +118,30 @@ export default function AnalyticsPanel() {
     return (
       <div className="h-full flex items-center justify-center">
         <Spinner size={32} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorDisplay
+        error={error}
+        context={{ action: 'load analytics', resource: 'analytics data' }}
+        onRetry={loadAnalytics}
+      />
+    );
+  }
+
+  const hasData = completionTrends.length > 0 || agentUtilization.length > 0 || projectStats.length > 0;
+  if (!hasData) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <EmptyState
+          icon={BarChart3}
+          title="No analytics data yet"
+          description="Analytics data appears as agents process tasks. Check back after some activity."
+          action={{ label: 'Refresh', onClick: loadAnalytics }}
+        />
       </div>
     );
   }
