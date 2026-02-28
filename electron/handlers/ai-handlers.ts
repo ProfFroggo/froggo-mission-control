@@ -16,6 +16,8 @@ import { prepare } from '../database';
 import { safeLog } from '../logger';
 import { FROGGO_DB_CLI, OPENCLAW_CONFIG, OPENCLAW_CONFIG_LEGACY } from '../paths';
 
+const OPENCLAW = '/opt/homebrew/bin/openclaw';
+
 // Read API keys at invocation time, NOT module level
 function getAnthropicApiKey(): string {
   let key = process.env.ANTHROPIC_API_KEY || '';
@@ -102,9 +104,8 @@ export function registerAiHandlers(): void {
       if (type === 'ideas') {
         fullPrompt = `Generate 5 engaging X/Twitter content ideas about: ${prompt}\n\nFor each idea, provide:\n1. The main idea/angle\n2. A compelling hook/opening line\n\nReturn as JSON array: [{ "idea": "...", "hook": "..." }]`;
       } else { fullPrompt = prompt; }
-      const escapedPrompt = fullPrompt.replace(/'/g, "'\\''");
       const response = await new Promise<string>((resolve, reject) => {
-        exec(`openclaw agent --agent ${agentId} --message '${escapedPrompt}' --json`, { encoding: 'utf-8', timeout: 60000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout) => {
+        execFile(OPENCLAW, ['agent', '--agent', agentId, '--message', fullPrompt, '--json'], { encoding: 'utf-8', timeout: 60000, env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${process.env.PATH}` } }, (error, stdout) => {
           if (error) { safeLog.error('[AI:Generate] CLI error:', error.message); reject(error); return; }
           let output = stdout.trim();
           try { const parsed = JSON.parse(output); const payloads = parsed?.result?.payloads; if (Array.isArray(payloads) && payloads.length > 0) output = payloads.map((p: any) => p.text || '').join('\n').trim(); if (!output && parsed?.result?.text) output = parsed.result.text; } catch { /* not JSON */ }
