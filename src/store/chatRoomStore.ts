@@ -252,7 +252,7 @@ export const useChatRoomStore = create<ChatRoomState>()(
         set(state => ({
           rooms: state.rooms.map(r =>
             r.id === roomId
-              ? { ...r, activeArtifactId: artifactId }
+              ? { ...r, activeArtifactId: artifactId ?? undefined }
               : r
           ),
         }));
