@@ -25,6 +25,7 @@ import './chat';
 import './agentdms';
 import './kanban';
 import './approvals';
+import './notifications';
 
 // Future modules:
 // import './writing';
