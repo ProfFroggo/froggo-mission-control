@@ -10,6 +10,7 @@ import AgentManagementModal from './AgentManagementModal';
 import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import { InlineLoader } from './LoadingStates';
+import EmptyState from './EmptyState';
 import { CircuitBreakerStatus } from './CircuitBreakerStatus';
 
 import { getAgentTheme } from '../utils/agentThemes';
@@ -274,6 +275,14 @@ export default function AgentPanel() {
             )}
           </div>
 
+          {mainAgents.length === 0 ? (
+            <EmptyState
+              icon={Bot}
+              title="No agents found"
+              description="No agents are registered yet. Create a worker or check your agent configuration."
+              action={{ label: 'New Worker', onClick: () => setShowCreateModal(true) }}
+            />
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {mainAgents.map((agent) => {
               const theme = getTheme(agent.id);
@@ -525,6 +534,7 @@ export default function AgentPanel() {
               );
             })}
           </div>
+          )}
         </div>
 
         {/* Sub-Agents */}

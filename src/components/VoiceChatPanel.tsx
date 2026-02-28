@@ -22,6 +22,7 @@ import { gateway } from '../lib/gateway';
 import { geminiLive, GeminiTool, GeminiToolCall, VideoMode, getGeminiVoiceForAgent } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext, AgentContext } from '../lib/agentContext';
 import { createLogger } from '../utils/logger';
+import EmptyState from './EmptyState';
 
 const logger = createLogger('VoiceChat');
 
@@ -626,21 +627,15 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
           </div>
         )}
         {historyLoaded && messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-clawd-text-dim">
+          <div className="flex flex-col items-center justify-center h-full">
             <div className="relative mb-4">
               <AgentAvatar agentId={selectedAgent.id} size="2xl" />
             </div>
-            <p className="text-lg font-medium text-clawd-text mb-1">Voice Chat with {selectedAgent.name}</p>
-            <p className="text-sm text-center max-w-xs">
-              Press call to connect via <span className="text-warning">Gemini Live</span>. Real-time audio streaming with {selectedAgent.name}.
-              {selectedAgent.role && <span className="block mt-1 text-xs opacity-70">{selectedAgent.role}</span>}
-              {agentContext && (
-                <span className="block mt-2 text-xs opacity-60">
-                  🧠 {agentContext.tasks.length} task{agentContext.tasks.length !== 1 ? 's' : ''}
-                  {agentContext.sessions.length > 0 && ` · ${agentContext.sessions.length} session${agentContext.sessions.length !== 1 ? 's' : ''}`}
-                </span>
-              )}
-            </p>
+            <EmptyState
+              type="generic"
+              description={`Press call to connect via Gemini Live. Real-time audio streaming with ${selectedAgent.name}.`}
+              compact
+            />
           </div>
         )}
         
