@@ -948,8 +948,9 @@ export default function FinancePanel() {
             <div className="space-y-4">
               {/* Account selector */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Import to Account</label>
+                <label htmlFor="upload-account-id" className="block text-sm text-clawd-text-dim mb-1">Import to Account</label>
                 <select
+                  id="upload-account-id"
                   value={uploadAccountId}
                   onChange={(e) => setUploadAccountId(e.target.value)}
                   className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none text-sm"
@@ -1000,8 +1001,9 @@ export default function FinancePanel() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Budget Name</label>
+                <label htmlFor="budget-name" className="block text-sm text-clawd-text-dim mb-1">Budget Name</label>
                 <input
+                  id="budget-name"
                   type="text"
                   value={budgetName}
                   onChange={(e) => setBudgetName(e.target.value)}
@@ -1012,8 +1014,9 @@ export default function FinancePanel() {
 
               {/* Account scope selector */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Scope to Account</label>
+                <label htmlFor="budget-account-id" className="block text-sm text-clawd-text-dim mb-1">Scope to Account</label>
                 <select
+                  id="budget-account-id"
                   value={budgetAccountId}
                   onChange={(e) => setBudgetAccountId(e.target.value)}
                   className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none text-sm"
@@ -1026,9 +1029,10 @@ export default function FinancePanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Total Budget</label>
+                <label htmlFor="budget-amount" className="block text-sm text-clawd-text-dim mb-1">Total Budget</label>
                 <div className="flex gap-2">
                   <input
+                    id="budget-amount"
                     type="number"
                     value={budgetAmount}
                     onChange={(e) => setBudgetAmount(e.target.value)}
@@ -1050,7 +1054,7 @@ export default function FinancePanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Period</label>
+                <div className="block text-sm text-clawd-text-dim mb-1">Period</div>
                 <p className="text-sm text-clawd-text">
                   {new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                   {' - '}
@@ -1088,8 +1092,9 @@ export default function FinancePanel() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Account Name</label>
+                <label htmlFor="new-account-name" className="block text-sm text-clawd-text-dim mb-1">Account Name</label>
                 <input
+                  id="new-account-name"
                   type="text"
                   value={newAccountName}
                   onChange={(e) => setNewAccountName(e.target.value)}
@@ -1099,8 +1104,9 @@ export default function FinancePanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Account Type</label>
+                <label htmlFor="new-account-type" className="block text-sm text-clawd-text-dim mb-1">Account Type</label>
                 <select
+                  id="new-account-type"
                   value={newAccountType}
                   onChange={(e) => setNewAccountType(e.target.value)}
                   className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none text-sm"
@@ -1113,8 +1119,9 @@ export default function FinancePanel() {
               </div>
 
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Currency</label>
+                <label htmlFor="new-account-currency" className="block text-sm text-clawd-text-dim mb-1">Currency</label>
                 <input
+                  id="new-account-currency"
                   type="text"
                   value={newAccountCurrency}
                   onChange={(e) => setNewAccountCurrency(e.target.value.toUpperCase())}
@@ -1159,8 +1166,9 @@ export default function FinancePanel() {
             <div className="space-y-4">
               {/* Account filter */}
               <div>
-                <label className="block text-sm text-clawd-text-dim mb-1">Account</label>
+                <label htmlFor="export-account-id" className="block text-sm text-clawd-text-dim mb-1">Account</label>
                 <select
+                  id="export-account-id"
                   value={exportAccountId}
                   onChange={e => setExportAccountId(e.target.value)}
                   className="w-full bg-clawd-surface border border-clawd-border rounded-lg px-3 py-2 text-clawd-text focus:border-clawd-accent outline-none"
@@ -1175,8 +1183,9 @@ export default function FinancePanel() {
               {/* Date range */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">From</label>
+                  <label htmlFor="export-date-from" className="block text-sm text-clawd-text-dim mb-1">From</label>
                   <input
+                    id="export-date-from"
                     type="date"
                     value={exportDateFrom}
                     onChange={e => setExportDateFrom(e.target.value)}
@@ -1184,8 +1193,9 @@ export default function FinancePanel() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-clawd-text-dim mb-1">To</label>
+                  <label htmlFor="export-date-to" className="block text-sm text-clawd-text-dim mb-1">To</label>
                   <input
+                    id="export-date-to"
                     type="date"
                     value={exportDateTo}
                     onChange={e => setExportDateTo(e.target.value)}

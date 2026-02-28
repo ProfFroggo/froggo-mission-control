@@ -2,7 +2,7 @@ import { app, BrowserWindow, shell, dialog, screen, systemPreferences, desktopCa
 import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
-import { exec, execSync } from 'child_process';
+import { exec, execFile, execSync, execFileSync } from 'child_process';
 import { setupNotificationHandlers } from './notification-service';
 import { setupNotificationEvents } from './notification-events';
 import { registerXAutomationsHandlers } from './x-automations-service';
@@ -68,7 +68,7 @@ function createWindow() {
     width: 1400, height: 900, minWidth: 1000, minHeight: 700,
     titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 15, y: 15 },
     backgroundColor: '#0f0f0f',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, webSecurity: true },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, webSecurity: true, sandbox: true },
   });
 
   const isDevApp = app.getName().includes('Dev') || isDev;
@@ -105,6 +105,49 @@ function createWindow() {
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     safeLog.log('[Main] RENDERER CRASHED:', details.reason, details.exitCode);
   });
+
+  // Navigation lockdown — block navigation to non-app URLs
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowedOrigins = isDev
+      ? ['http://localhost:5173']
+      : ['file://'];
+    const parsed = new URL(url);
+    const origin = parsed.origin === 'null' ? 'file://' : parsed.origin;
+    if (!allowedOrigins.includes(origin)) {
+      event.preventDefault();
+      safeLog.warn(`[Security] Blocked navigation to: ${url}`);
+      shell.openExternal(url).catch(() => {});
+    }
+  });
+
+  // Block popup windows — open safe URLs in system browser instead
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      shell.openExternal(url).catch(() => {});
+    }
+    safeLog.warn(`[Security] Blocked window.open: ${url}`);
+    return { action: 'deny' };
+  });
+
+  // Production CSP — override via session headers (stricter than meta tag)
+  if (!isDev) {
+    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' blob:; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com; " +
+            "img-src 'self' data: https: blob:; " +
+            "media-src 'self' blob:; " +
+            "connect-src 'self' http://127.0.0.1:18789 http://localhost:18789 ws://127.0.0.1:18789 wss://127.0.0.1:18789 ws://localhost:18789 wss://localhost:18789 ws://127.0.0.1:18891 wss://127.0.0.1:18891 https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com https://api.elevenlabs.io https://api.twitter.com https://api.x.com https://wttr.in;"
+          ],
+        },
+      });
+    });
+  }
 
   mainWindow.on('close', () => {
     if (mainWindow) { safeLog.log('[Main] Window closing - sending cleanup signal...'); safeSend('app-closing'); }
@@ -171,14 +214,13 @@ async function processScheduledItems() {
         continue;
       } catch (e: any) { safeLog.error(`[ScheduleProcessor] Tweet error:`, e.message); }
     } else if (item.type === 'email') {
-      const recipient = (metadata.recipient || metadata.to || '').replace(/"/g, '\\"');
+      const recipient = metadata.recipient || metadata.to || '';
       const account = metadata.account || '';
       if (!recipient?.trim()) { updateScheduleStatus(item.id, 'failed', 'Missing recipient'); continue; }
       if (!account?.trim()) { updateScheduleStatus(item.id, 'failed', 'Missing GOG account'); continue; }
-      const subject = (metadata.subject || 'No subject').replace(/"/g, '\\"');
-      const body = item.content.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-      const execCmd = `GOG_ACCOUNT="${account}" gog gmail send --to "${recipient}" --subject "${subject}" --body "${body}"`;
-      exec(execCmd, { timeout: 60000 }, (execError) => {
+      const subject = metadata.subject || 'No subject';
+      const body = item.content;
+      execFile('/opt/homebrew/bin/gog', ['gmail', 'send', '--to', recipient, '--subject', subject, '--body', body], { timeout: 60000, env: { ...process.env, GOG_ACCOUNT: account } }, (execError) => {
         if (execError) { updateScheduleStatus(item.id, 'failed', (execError.message || '').slice(0, 500)); safeSend('schedule-processed', { id: item.id, type: item.type, success: false, error: execError.message }); }
         else { updateScheduleStatus(item.id, 'sent'); safeSend('schedule-processed', { id: item.id, type: item.type, success: true }); }
       });
@@ -206,7 +248,7 @@ function startScheduledPoster() {
       const pending = prepare(`SELECT * FROM scheduled_posts WHERE status = 'pending' AND scheduled_time <= ?`).all(now) as { id: string; content: string }[];
       for (const post of pending) {
         try {
-          execSync(`x-api post "${post.content.replace(/"/g, '\\"')}"`, { encoding: 'utf-8' });
+          execFileSync('/opt/homebrew/bin/x-api', ['post', post.content], { encoding: 'utf-8' });
           prepare('UPDATE scheduled_posts SET status = ? WHERE id = ?').run('posted', post.id);
           safeLog.log(`[X/AutoPost] Posted scheduled tweet: ${post.id}`);
         } catch (postError: any) {

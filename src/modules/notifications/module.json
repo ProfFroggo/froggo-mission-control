@@ -1,0 +1,33 @@
+{
+  "id": "froggo-notifications",
+  "name": "Notifications",
+  "version": "1.0.0",
+  "description": "System notifications, alerts, and activity feed.",
+  "author": "Froggo Team",
+  "icon": "Bell",
+  "category": "productivity",
+  "core": true,
+
+  "credentials": [],
+
+  "views": [
+    {
+      "id": "notifications",
+      "label": "Notifications",
+      "icon": "Bell",
+      "entrypoint": "./views/NotificationsPanelV2.tsx"
+    }
+  ],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

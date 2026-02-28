@@ -71,7 +71,7 @@ const CAUTION_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\bkill\b/i, reason: 'Process kill' },
   { pattern: /\bpkill\b/i, reason: 'Process kill by name' },
   { pattern: /\blaunchctl\b/i, reason: 'System service management' },
-  { pattern: /(?<!2)>\s*\/(?!Users\/worker\/clawd|tmp\/)/i, reason: 'Redirect to absolute path outside workspace' },
+  { pattern: /(?<!2)>\s*\/(?!Users\/worker\/froggo|tmp\/)/i, reason: 'Redirect to absolute path outside workspace' },
   { pattern: /\benv\b.*\bPATH=/i, reason: 'PATH modification' },
 ];
 
@@ -83,8 +83,8 @@ const SAFE_PREFIXES = [
   'node --version', 'npm --version', 'npm list', 'npm ls',
   'clawdbot', 'openclaw', 'froggo-db',
   'sqlite3', 'mkdir',
-  'bash ~/clawd', 'bash /Users/worker/clawd',
-  '(cat ~/clawd', '(cat /Users/worker/clawd',
+  'bash ~/froggo', 'bash /Users/worker/froggo',
+  '(cat ~/froggo', '(cat /Users/worker/froggo',
 ];
 
 /** Paths that should never be written to */
@@ -101,7 +101,7 @@ const PROTECTED_WRITE_PATHS = [
 
 // --- Audit Logger ---
 
-const AUDIT_DIR = path.join(process.env.HOME || '/tmp', '.clawd', 'audit');
+const AUDIT_DIR = path.join(process.env.HOME || '/tmp', '.openclaw', 'audit');
 const AUDIT_FILE = path.join(AUDIT_DIR, 'shell-operations.jsonl');
 
 function ensureAuditDir(): void {

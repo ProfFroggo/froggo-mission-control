@@ -5,6 +5,7 @@ import {
   CheckSquare, Filter, Search, AlertTriangle, Calendar, ArrowUp, ArrowDown, RefreshCw, Keyboard, X, Flag, Circle, Hand, Stethoscope, Archive
 } from 'lucide-react';
 import { useStore, Task, TaskStatus, TaskPriority } from '../store/store';
+import { useShallow } from 'zustand/react/shallow';
 import TaskModal from './TaskModal';
 import TaskDetailPanel from './TaskDetailPanel';
 import PokeModal from './PokeModal';
@@ -60,7 +61,20 @@ interface Filters {
 }
 
 export default function Kanban() {
-  const { tasks, agents, moveTask, deleteTask, assignTask, spawnAgentForTask, loadTasksFromDB, updateTask, loading, taskCounts } = useStore();
+  const { tasks, agents, loading, taskCounts } = useStore(
+    useShallow(s => ({
+      tasks: s.tasks,
+      agents: s.agents,
+      loading: s.loading,
+      taskCounts: s.taskCounts,
+    }))
+  );
+  const moveTask = useStore(s => s.moveTask);
+  const deleteTask = useStore(s => s.deleteTask);
+  const assignTask = useStore(s => s.assignTask);
+  const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
+  const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
+  const updateTask = useStore(s => s.updateTask);
   
   // Local loading states for operations
   const [isRefreshing, setIsRefreshing] = useState(false);

@@ -13,7 +13,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { exec } from 'child_process';
 import { desktopCapturer, systemPreferences } from 'electron';
-import { registerHandler } from '../ipc-registry';
+import { registerModuleHandler } from '../ipc-registry';
 import { getSecret, storeSecret, hasSecret, deleteSecret } from '../secret-store';
 import { safeLog } from '../logger';
 
@@ -26,23 +26,23 @@ const WHISPER_PATH = '/opt/homebrew/bin/whisper';
 const TEMP_DIR = os.tmpdir();
 
 export function registerSettingsHandlers(): void {
-  registerHandler('settings:getApiKey', async (_event, keyName: string) => {
+  registerModuleHandler('froggo-settings', 'settings:getApiKey', async (_event, keyName: string) => {
     try { return getSecret(keyName); } catch (err: any) { safeLog.error('[Settings] getApiKey error:', err.message); return null; }
   });
 
-  registerHandler('settings:storeApiKey', async (_event, keyName: string, value: string) => {
+  registerModuleHandler('froggo-settings', 'settings:storeApiKey', async (_event, keyName: string, value: string) => {
     try { storeSecret(keyName, value); return { success: true }; } catch (err: any) { safeLog.error('[Settings] storeApiKey error:', err.message); return { success: false, error: err.message }; }
   });
 
-  registerHandler('settings:hasApiKey', async (_event, keyName: string) => {
+  registerModuleHandler('froggo-settings', 'settings:hasApiKey', async (_event, keyName: string) => {
     try { return hasSecret(keyName); } catch (err: any) { safeLog.error('[Settings] hasApiKey error:', err.message); return false; }
   });
 
-  registerHandler('settings:deleteApiKey', async (_event, keyName: string) => {
+  registerModuleHandler('froggo-settings', 'settings:deleteApiKey', async (_event, keyName: string) => {
     try { deleteSecret(keyName); return { success: true }; } catch (err: any) { safeLog.error('[Settings] deleteApiKey error:', err.message); return { success: false, error: err.message }; }
   });
 
-  registerHandler('screen:getSources', async (_event, opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }) => {
+  registerModuleHandler('froggo-settings', 'screen:getSources', async (_event, opts?: { types?: string[]; thumbnailSize?: { width: number; height: number } }) => {
     try {
       const sources = await desktopCapturer.getSources({
         types: (opts?.types as any) || ['window', 'screen'],
@@ -58,7 +58,7 @@ export function registerSettingsHandlers(): void {
     }
   });
 
-  registerHandler('media:checkPermissions', async () => {
+  registerModuleHandler('froggo-settings', 'media:checkPermissions', async () => {
     if (process.platform === 'darwin') {
       const camera = systemPreferences.getMediaAccessStatus('camera');
       const microphone = systemPreferences.getMediaAccessStatus('microphone');
@@ -68,12 +68,12 @@ export function registerSettingsHandlers(): void {
     return { camera: 'granted', microphone: 'granted', screen: 'granted' };
   });
 
-  registerHandler('media:requestPermission', async (_event, mediaType: 'camera' | 'microphone') => {
+  registerModuleHandler('froggo-settings', 'media:requestPermission', async (_event, mediaType: 'camera' | 'microphone') => {
     if (process.platform === 'darwin') return await systemPreferences.askForMediaAccess(mediaType);
     return true;
   });
 
-  registerHandler('whisper:transcribe', async (_event, audioData: ArrayBuffer) => {
+  registerModuleHandler('froggo-settings', 'whisper:transcribe', async (_event, audioData: ArrayBuffer) => {
     const tempFile = path.join(TEMP_DIR, `whisper-${Date.now()}.webm`);
     try {
       fs.writeFileSync(tempFile, Buffer.from(audioData));
@@ -97,19 +97,19 @@ export function registerSettingsHandlers(): void {
     }
   });
 
-  registerHandler('whisper:check', async () => {
+  registerModuleHandler('froggo-settings', 'whisper:check', async () => {
     const available = fs.existsSync(WHISPER_PATH);
     safeLog.log('Whisper check:', WHISPER_PATH, 'exists:', available);
     return { available, path: WHISPER_PATH };
   });
 
-  registerHandler('voice:getModelUrl', async () => {
+  registerModuleHandler('froggo-settings', 'voice:getModelUrl', async () => {
     const url = isDev ? '/models/model.tar.gz' : `http://127.0.0.1:${modelServerPort}/model.tar.gz`;
     safeLog.log('[Voice] getModelUrl called, isDev:', isDev, 'returning:', url);
     return url;
   });
 
-  registerHandler('voice:speak', async (_event, text: string, voice?: string) => {
+  registerModuleHandler('froggo-settings', 'voice:speak', async (_event, text: string, voice?: string) => {
     // Read ElevenLabs API key at invocation time
     let elevenlabsApiKey = process.env.ELEVENLABS_API_KEY || '';
     try {

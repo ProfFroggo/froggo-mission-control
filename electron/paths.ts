@@ -58,6 +58,9 @@ export const FROGGO_DB    = path.join(DATA_DIR, 'froggo.db');
 export const SCHEDULE_DB  = path.join(DATA_DIR, 'schedule.db');
 export const SECURITY_DB  = path.join(DATA_DIR, 'security.db');
 
+// ── Module state ──
+export const MODULE_STATE_PATH = path.join(DATA_DIR, 'module-state.json');
+
 // ── OpenClaw directories ──
 export const OPENCLAW_DIR    = path.join(HOME, '.openclaw');
 export const OPENCLAW_LEGACY = path.join(HOME, '.clawdbot');

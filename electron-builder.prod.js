@@ -1,3 +1,6 @@
+const { FuseV1Options, FuseVersion, flipFuses } = require('@electron/fuses');
+const path = require('path');
+
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId: 'com.froggo.app',
@@ -30,5 +33,25 @@ module.exports = {
   },
   extraMetadata: {
     main: 'dist-electron/main.js',
+  },
+  afterPack: async (context) => {
+    const electronBinaryPath = path.join(
+      context.appOutDir,
+      `${context.packager.appInfo.productFilename}.app`,
+      'Contents',
+      'Frameworks',
+      'Electron Framework.framework',
+      'Electron Framework'
+    );
+
+    await flipFuses(electronBinaryPath, {
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: false, // asar: false in config
+    });
+    console.log('[afterPack] Electron Fuses flipped for production');
   },
 };

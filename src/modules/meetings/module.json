@@ -1,0 +1,28 @@
+{
+  "id": "froggo-meetings",
+  "name": "Meetings",
+  "version": "1.0.0",
+  "description": "Meetings management panel for scheduling and tracking meetings.",
+  "author": "Froggo Team",
+  "icon": "Users",
+  "category": "productivity",
+  "credentials": [],
+  "views": [
+    {
+      "id": "meetings",
+      "label": "Meetings",
+      "icon": "Users",
+      "entrypoint": "./views/MeetingsPanel.tsx"
+    }
+  ],
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

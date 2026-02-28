@@ -13,7 +13,7 @@ interface ContentBlockProps {
   index: number;
 }
 
-export default function ContentBlock({ block, index }: ContentBlockProps) {
+export default function ContentBlock({ block, index: _index }: ContentBlockProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Text blocks - render normally

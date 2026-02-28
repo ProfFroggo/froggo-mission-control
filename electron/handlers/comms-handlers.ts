@@ -21,7 +21,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { exec, execSync } from 'child_process';
+import { exec, execSync, execFileSync } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
@@ -1060,24 +1060,24 @@ export function registerCommsHandlers(): void {
   registerHandler('messages:send', async (_, { platform, to, message }: { platform: string; to: string; message: string }) => {
     const PATHS = {
       wacli: '/opt/homebrew/bin/wacli',
-      tgcli: '~/.local/bin/tgcli',
-      gog: '/opt/homebrew/bin/gog'
+      tgcli: path.join(os.homedir(), '.local', 'bin', 'tgcli'),
+      gog: '/opt/homebrew/bin/gog',
+      openclaw: '/opt/homebrew/bin/openclaw'
     };
-    const escapeShell = (s: string) => `'${s.replace(/'/g, "'\\''")}'`;
     try {
       let result: string;
       switch (platform) {
         case 'whatsapp':
-          result = execSync(`${PATHS.wacli} send ${escapeShell(to)} ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+          result = execFileSync(PATHS.wacli, ['send', to, message], { encoding: 'utf-8', timeout: 30000 });
           break;
         case 'telegram':
-          result = execSync(`${PATHS.tgcli} send ${escapeShell(to)} ${escapeShell(message)} --yes`, { encoding: 'utf-8', timeout: 30000 });
+          result = execFileSync(PATHS.tgcli, ['send', to, message, '--yes'], { encoding: 'utf-8', timeout: 30000 });
           break;
         case 'email':
-          result = execSync(`${PATHS.gog} gmail send --to ${escapeShell(to)} --body ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+          result = execFileSync(PATHS.gog, ['gmail', 'send', '--to', to, '--body', message], { encoding: 'utf-8', timeout: 30000 });
           break;
         case 'discord':
-          result = execSync(`openclaw message send --channel discord --to ${escapeShell(to)} --message ${escapeShell(message)}`, { encoding: 'utf-8', timeout: 30000 });
+          result = execFileSync(PATHS.openclaw, ['message', 'send', '--channel', 'discord', '--to', to, '--message', message], { encoding: 'utf-8', timeout: 30000 });
           break;
         default:
           return { success: false, error: `Unknown platform: ${platform}` };

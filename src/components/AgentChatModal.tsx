@@ -140,7 +140,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
       const historyResult = await gateway.request('sessions.history', {
         sessionKey,
         limit: 100,
-      });
+      }) as any;
 
       if (historyResult?.messages && Array.isArray(historyResult.messages)) {
         const formattedMessages: Message[] = historyResult.messages
@@ -229,14 +229,6 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
           setStreamingContent('');
         }
       }
-    };
-
-    // User message events (from other sources like webchat)
-    const handleUserMessage = (data: any) => {
-      if (!data.sessionKey || data.sessionKey !== sessionKey) return;
-      
-      // Refresh history to catch user messages from other sources
-      fetchHistory();
     };
 
     // Subscribe to all chat events

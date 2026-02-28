@@ -813,6 +813,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   // Gemini Live Transcription
   const connectGeminiTranscription = useCallback(async (_stream: MediaStream) => {
     const apiKey = await getGeminiApiKey();
+    if (!apiKey || apiKey.trim() === '') {
+      throw new Error('Gemini API key not configured. Add it in Settings \u2192 API Keys.');
+    }
     return new Promise<WebSocket>((resolve, reject) => {
       const url = `${GEMINI_WS_URL}?key=${apiKey}`;
       const ws = new WebSocket(url);
@@ -974,8 +977,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
     // Check Gemini API key before anything else
     const apiKey = await getGeminiApiKey();
-    if (!apiKey) {
-      setStartError('Gemini API key not configured. Add it in Settings or set VITE_GEMINI_API_KEY.');
+    if (!apiKey || apiKey.trim() === '') {
+      setStartError('Gemini API key not configured. Add it in Settings \u2192 API Keys.');
       setStatusMessage('');
       return;
     }

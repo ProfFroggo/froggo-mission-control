@@ -1,0 +1,32 @@
+{
+  "id": "froggo-writing",
+  "name": "Writing",
+  "version": "1.0.0",
+  "description": "Writing workspace for drafting, editing, and publishing content.",
+  "author": "Froggo Team",
+  "icon": "PenLine",
+  "category": "productivity",
+
+  "credentials": [],
+
+  "views": [
+    {
+      "id": "writing",
+      "label": "Writing",
+      "icon": "PenLine",
+      "entrypoint": "./views/WritingWorkspace.tsx"
+    }
+  ],
+
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

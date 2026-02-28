@@ -3,6 +3,45 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Detect if running in dev or prod mode via env var (set by start script)
 const isDev = process.env.ELECTRON_DEV === '1';
 
+// ── Module state: track disabled modules for IPC interception ──
+
+// Load initial disabled module list synchronously at preload time
+let disabledModuleIds: Set<string> = new Set();
+try {
+  const state = ipcRenderer.sendSync('module:state:getDisabledSync') as { disabled: string[] };
+  if (state?.disabled) {
+    disabledModuleIds = new Set(state.disabled);
+  }
+} catch {
+  // Non-fatal — all modules treated as enabled if state unavailable
+}
+
+// Listen for runtime state changes (when modules are toggled)
+ipcRenderer.on('module-state-changed', (_event: Electron.IpcRendererEvent, data: { disabled: string[] }) => {
+  disabledModuleIds = new Set(data.disabled);
+});
+
+/**
+ * Determine which module owns an IPC channel, if any.
+ * Checks module-{id}: prefix first (namespaced channels), then legacy prefixes.
+ * Returns null for core/infrastructure channels — those are never intercepted.
+ */
+function getChannelModuleId(channel: string): string | null {
+  // Namespaced channels: module-{id}:*
+  const moduleMatch = channel.match(/^module-([a-z0-9-]+):/);
+  if (moduleMatch) return moduleMatch[1];
+
+  // Legacy channel prefixes (pre-namespace migration)
+  if (channel.startsWith('finance:') || channel.startsWith('account:') || channel.startsWith('recurring:')) return 'froggo-finance';
+  if (channel.startsWith('analytics:')) return 'froggo-analytics';
+  if (channel.startsWith('settings:') || channel.startsWith('security:') || channel.startsWith('backup:') || channel.startsWith('export:')) return 'froggo-settings';
+  if (channel.startsWith('x:publish:')) return 'twitter';
+  if (channel.startsWith('library:')) return 'froggo-library';
+  if (channel.startsWith('agentManagement:')) return 'froggo-agent-mgmt';
+
+  return null; // Core/infrastructure channel — no module ownership
+}
+
 contextBridge.exposeInMainWorld('clawdbot', {
   // App lifecycle events
   app: {
@@ -954,8 +993,16 @@ contextBridge.exposeInMainWorld('clawdbot', {
   },
   // Generic module IPC passthrough — lets modules invoke IPC channels without per-channel preload entries
   modules: {
-    invoke: (channel: string, ...args: unknown[]) =>
-      ipcRenderer.invoke(channel, ...args),
+    invoke: (channel: string, ...args: unknown[]) => {
+      // Check if this channel belongs to a disabled module
+      const moduleId = getChannelModuleId(channel);
+      if (moduleId && disabledModuleIds.has(moduleId)) {
+        // eslint-disable-next-line no-console
+        console.debug(`[IPC] Channel "${channel}" called but module "${moduleId}" is disabled`);
+        return Promise.resolve(null);
+      }
+      return ipcRenderer.invoke(channel, ...args);
+    },
   },
   // Marketplace — registry fetch, install/uninstall, update detection
   marketplace: {

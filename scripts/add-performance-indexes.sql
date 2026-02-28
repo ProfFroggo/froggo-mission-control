@@ -1,6 +1,6 @@
 -- Performance Indexes for Froggo Dashboard
 -- Run this script to optimize database queries
--- Usage: sqlite3 ~/clawd/data/froggo.db < add-performance-indexes.sql
+-- Usage: sqlite3 ~/froggo/data/froggo.db < add-performance-indexes.sql
 
 -- Task queries (most common)
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);

@@ -7,9 +7,18 @@ import type { ModuleSpec, SectionProgress } from './types';
 import { createEmptySpec, SECTION_ORDER, SECTION_LABELS } from './types';
 import { getApplicableQuestions } from './questionBank';
 
-export function useModuleSpec() {
-  const [spec, setSpec] = useState<Partial<ModuleSpec>>(createEmptySpec());
-  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(new Set());
+interface UseModuleSpecOptions {
+  initialSpec?: Partial<ModuleSpec>;
+  initialAnswered?: string[];
+}
+
+export function useModuleSpec(options?: UseModuleSpecOptions) {
+  const [spec, setSpec] = useState<Partial<ModuleSpec>>(
+    options?.initialSpec ? { ...createEmptySpec(), ...options.initialSpec } : createEmptySpec()
+  );
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<string>>(
+    new Set(options?.initialAnswered || [])
+  );
 
   const updateSpec = useCallback((patch: Partial<ModuleSpec>) => {
     setSpec((prev) => ({ ...prev, ...patch }));
@@ -79,6 +88,8 @@ export function useModuleSpec() {
     [sectionProgress],
   );
 
+  const answeredQuestionsArray = useMemo(() => Array.from(answeredQuestions), [answeredQuestions]);
+
   return {
     spec,
     updateSpec,
@@ -93,6 +104,7 @@ export function useModuleSpec() {
     overallProgress,
     isComplete,
     answeredQuestions,
+    answeredQuestionsArray,
   };
 }
 
