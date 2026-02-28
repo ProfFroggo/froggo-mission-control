@@ -5,6 +5,7 @@
  * - finance:getTransactions / getBudgetStatus / getAlerts / getInsights / dismissInsight
  * - finance:selectFile / uploadCSV / uploadPDF
  * - finance:createBudget / triggerAnalysis
+ * - finance:getWalletInfo / getAgentBudgets
  * - finance:account:* CRUD (list, create, update, archive, balances)
  *
  * The 5 financeAgent:* handlers remain in main.ts (they depend on the agent bridge singleton there).
@@ -1357,6 +1358,46 @@ ${pdfText.slice(0, 15000)}`;
       return { success: false, error: error.message };
     }
   });
+
+  // ── Wallet Info ──
+
+  registerModuleHandler('froggo-finance', 'finance:getWalletInfo', async () => {
+    try {
+      // Check if wallet table exists
+      const tableExists = prepare(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='finance_wallets'`
+      ).get();
+      if (!tableExists) {
+        return { success: true, wallets: [] };
+      }
+      const wallets = prepare(`SELECT * FROM finance_wallets ORDER BY created_at DESC`).all();
+      return { success: true, wallets };
+    } catch (error: any) {
+      safeLog.error('[Finance] Get wallet info error:', error.message);
+      return { success: true, wallets: [] };
+    }
+  });
+
+  // ── Agent Budgets ──
+
+  registerModuleHandler('froggo-finance', 'finance:getAgentBudgets', async () => {
+    try {
+      // Check if agent_budgets table exists
+      const tableExists = prepare(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='finance_agent_budgets'`
+      ).get();
+      if (!tableExists) {
+        return { success: true, budgets: [] };
+      }
+      const budgets = prepare(`SELECT * FROM finance_agent_budgets ORDER BY agent_name ASC`).all();
+      return { success: true, budgets };
+    } catch (error: any) {
+      safeLog.error('[Finance] Get agent budgets error:', error.message);
+      return { success: true, budgets: [] };
+    }
+  });
+
+  // ── Scenario: Project Simple ──
 
   registerModuleHandler('froggo-finance', 'finance:scenario:projectSimple', async (_, adjustments: Array<{ recurringId: string; action: 'cancel' | 'adjust'; newAmount?: number }>) => {
     try {
