@@ -151,11 +151,11 @@ export default function AnalyticsPanel() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+          <h2 className="text-heading-2 flex items-center gap-2">
             <BarChart3 className="text-clawd-accent" size={20} />
             Analytics & Insights
           </h2>
-          <p className="text-sm text-clawd-text-dim mt-1">
+          <p className="text-secondary mt-1">
             Comprehensive productivity tracking and performance metrics
           </p>
         </div>
@@ -234,8 +234,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-info mb-1">
                   {totalCompleted}
                 </div>
-                <div className="text-sm text-clawd-text-dim">Tasks Completed</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Tasks Completed</div>
+                <div className="mt-2 text-caption">
                   {totalCreated} created • {avgCompletionRate}% rate
                 </div>
               </div>
@@ -248,8 +248,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-review mb-1">
                   {agentUtilization.length}
                 </div>
-                <div className="text-sm text-clawd-text-dim">Active Agents</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Active Agents</div>
+                <div className="mt-2 text-caption">
                   {agentUtilization.filter(a => a.tasksInProgress > 0).length} working now
                 </div>
               </div>
@@ -262,8 +262,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-warning mb-1">
                   {totalHours.toFixed(0)}h
                 </div>
-                <div className="text-sm text-clawd-text-dim">Total Hours</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Total Hours</div>
+                <div className="mt-2 text-caption">
                   Last {timeRange === '7d' ? '7' : timeRange === '30d' ? '30' : '90'} days
                 </div>
               </div>
@@ -276,8 +276,8 @@ export default function AnalyticsPanel() {
                 <div className="text-3xl font-bold text-success mb-1">
                   {avgVelocity > 0 ? '+' : ''}{avgVelocity}
                 </div>
-                <div className="text-sm text-clawd-text-dim">Avg Velocity</div>
-                <div className="mt-2 text-xs text-clawd-text-dim">
+                <div className="text-secondary">Avg Velocity</div>
+                <div className="mt-2 text-caption">
                   Tasks/day throughput
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function AnalyticsPanel() {
             {/* Subtask Progress */}
             {subtaskStats.length > 0 && (
               <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                   <Target size={16} className="text-clawd-accent" />
                   Active Tasks - Subtask Progress
                 </h3>
@@ -336,7 +336,7 @@ export default function AnalyticsPanel() {
         {view === 'projects' && (
           <div className="space-y-4">
             <div className="bg-clawd-surface border border-clawd-border rounded-xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <h3 className="text-heading-3 mb-4 flex items-center gap-2">
                 <Calendar size={16} className="text-clawd-accent" />
                 Project Statistics
               </h3>
@@ -349,7 +349,7 @@ export default function AnalyticsPanel() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="font-medium">{project.project}</div>
-                        <div className="text-sm text-clawd-text-dim">
+                        <div className="text-secondary">
                           {project.totalTasks} total • {project.completedTasks} completed
                         </div>
                       </div>
@@ -359,7 +359,7 @@ export default function AnalyticsPanel() {
                             ? Math.round((project.completedTasks / project.totalTasks) * 100)
                             : 0}%
                         </div>
-                        <div className="text-xs text-clawd-text-dim">completion</div>
+                        <div className="text-caption">completion</div>
                       </div>
                     </div>
 

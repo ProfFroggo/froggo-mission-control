@@ -984,7 +984,7 @@ export default function InboxPanel() {
               <Inbox size={24} className="text-clawd-accent" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Approval Inbox</h1>
+              <h1 className="text-heading-2">Approval Inbox</h1>
               <p className="text-sm text-clawd-text-dim">
                 {pendingItems.length} pending • {completedItems.length} completed
                 <span className="ml-2 text-clawd-text-dim/50">
@@ -1561,7 +1561,7 @@ export default function InboxPanel() {
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
           >
-            <h3 className="text-lg font-semibold mb-4">Why are you rejecting this?</h3>
+            <h3 className="text-heading-3 mb-4">Why are you rejecting this?</h3>
             <p className="text-sm text-clawd-text-dim mb-4">This helps me learn what you don&apos;t want.</p>
             <input
               ref={rejectInputRef}
@@ -1615,7 +1615,7 @@ export default function InboxPanel() {
                 {scheduleModal.item.type === 'tweet' ?  <Send size={20} className="flex-shrink-0" /> :  <Mail size={20} className="flex-shrink-0" />}
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Send or Schedule?</h3>
+                <h3 className="text-heading-3">Send or Schedule?</h3>
                 <p className="text-sm text-clawd-text-dim">{scheduleModal.item.title}</p>
               </div>
             </div>
@@ -1843,7 +1843,7 @@ export default function InboxPanel() {
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold mb-1">⌨️ Keyboard Shortcuts</h2>
+                <h2 className="text-heading-2 mb-1">Keyboard Shortcuts</h2>
                 <p className="text-sm text-clawd-text-dim">Gmail-style navigation and actions</p>
               </div>
               <button
@@ -1937,7 +1937,7 @@ export default function InboxPanel() {
                 <AlertTriangle size={24} className="text-warning" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Agent Still Active</h3>
+                <h3 className="text-heading-3">Agent Still Active</h3>
                 <p className="text-sm text-clawd-text-dim">Cannot approve yet</p>
               </div>
             </div>

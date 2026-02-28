@@ -1186,7 +1186,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 <Phone size={20} className="text-success" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-clawd-text">Meetings</h1>
+                <h1 className="text-heading-2">Meetings</h1>
                 <p className="text-sm text-clawd-text-dim">
                   {isMeetingActive ? 'Recording in progress' : 'Transcribe and review meetings'}
                 </p>
@@ -1389,7 +1389,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-success-subtle flex items-center justify-center">
                           <Phone size={36} className="text-success" />
                         </div>
-                        <h2 className="text-xl font-semibold text-clawd-text mb-2">Start a Meeting</h2>
+                        <h2 className="text-heading-3 mb-2">Start a Meeting</h2>
                         <p className="text-clawd-text-dim mb-6 max-w-md mx-auto">
                           Record, transcribe, and extract action items from your meetings with AI-powered transcription.
                         </p>
@@ -1793,10 +1793,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                     {/* Meeting Info */}
                     <div className="bg-clawd-surface border border-clawd-border rounded-2xl p-6">
-                      <h2 className="text-xl font-semibold text-clawd-text mb-2">
+                      <h2 className="text-heading-3 mb-2">
                         {selectedMeeting.title || selectedMeeting.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       </h2>
-                      <div className="flex items-center gap-4 text-sm text-clawd-text-dim">
+                      <div className="flex items-center gap-4 text-secondary">
                         <span className="flex items-center gap-1">
                           <Calendar size={14} />
                           {selectedMeeting.date.toLocaleDateString()}
@@ -1921,7 +1921,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                   <div>
                     {/* Past Meetings List */}
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-clawd-text">Past Meetings</h2>
+                      <h2 className="text-heading-3">Past Meetings</h2>
                       <button 
                         onClick={loadPastMeetings} 
                         disabled={loadingPastMeetings}
@@ -1997,7 +1997,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
             {/* Transcribe Audio File View */}
             {activeView === 'transcribe' && (
               <div className="p-6 max-w-2xl mx-auto">
-                <h2 className="text-xl font-semibold text-clawd-text mb-4">Transcribe Audio File</h2>
+                <h2 className="text-heading-3 mb-4">Transcribe Audio File</h2>
                 <p className="text-clawd-text-dim mb-6">
                   Upload an audio file (MP3, WAV, M4A) to transcribe using Gemini AI.
                 </p>

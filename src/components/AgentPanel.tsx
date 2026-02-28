@@ -202,10 +202,10 @@ export default function AgentPanel() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="icon-text text-2xl font-bold tracking-tight mb-1">
+            <h1 className="icon-text text-heading-2 tracking-tight mb-1">
               <Bot size={24} className="flex-shrink-0" /> Agents
             </h1>
-            <p className="text-clawd-text-dim text-sm">
+            <p className="text-secondary">
               {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running · {realSubagents.length} total
             </p>
           </div>
@@ -231,7 +231,7 @@ export default function AgentPanel() {
         {/* Analytics */}
         {showAnalytics && (
           <div className="mb-8 rounded-xl border border-clawd-border p-5">
-            <h2 className="icon-text text-base font-semibold mb-4">
+            <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
               {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
