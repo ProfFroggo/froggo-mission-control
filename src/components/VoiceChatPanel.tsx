@@ -554,7 +554,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
                   🧠 {agentContext.tasks.length}
                 </span>
               )}
-              {speaking && <Waveform level={speakLevel} color="#4ade80" bars={5} height={20} />}
+              {speaking && <Waveform level={speakLevel} color="var(--color-success)" bars={5} height={20} />}
             </div>
           )}
         </div>
@@ -700,13 +700,13 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
             {listening && !speaking && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-indigo-400 font-medium">⚡ Listening…</span>
-                <Waveform level={micLevel} color="#818cf8" bars={12} height={40} />
+                <Waveform level={micLevel} color="var(--color-info)" bars={12} height={40} />
               </div>
             )}
             {speaking && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-success font-medium">{selectedAgent.name} speaking</span>
-                <Waveform level={speakLevel} color="#4ade80" bars={12} height={40} />
+                <Waveform level={speakLevel} color="var(--color-success)" bars={12} height={40} />
               </div>
             )}
             {!listening && !speaking && <span className="text-xs text-clawd-text-dim">Tap mic to speak</span>}
