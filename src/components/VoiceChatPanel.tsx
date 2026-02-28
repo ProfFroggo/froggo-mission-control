@@ -1115,14 +1115,14 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
       }
       case 'memory_search': {
         const agent = isCleanId(args.agent_id) ? args.agent_id : 'froggo';
-        const memBase = agent === 'froggo' ? '~/clawd' : `~/clawd-${agent}`;
+        const memBase = agent === 'froggo' ? '~/froggo' : `~/agent-${agent}`;
         const safeQ = shellSafe(args.query || '');
         const r = await exec(`grep -rli "${safeQ}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -10 && echo "---" && grep -rhi "${safeQ}" ${memBase}/memory/ ${memBase}/MEMORY.md 2>/dev/null | head -30`);
         return { results: r.stdout?.trim() || 'No matches found' };
       }
       case 'write_memory': {
         const agent = args.agent_id || 'voice';
-        const memBase = agent === 'froggo' ? '~/clawd' : `~/clawd-${agent}`;
+        const memBase = agent === 'froggo' ? '~/froggo' : `~/agent-${agent}`;
         const today = new Date().toISOString().split('T')[0];
         const note = (args.note || '').replace(/"/g, '\\"');
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1201,7 +1201,7 @@ Use these proactively when needed:
 - read_file ~/froggo/SOUL.md for your full personality
 - read_file ~/froggo/AGENTS.md for workflow rules
 - run_command froggo-db task-list for current work
-- read_file ~/clawd-{agent}/SOUL.md for other agents' details
+- read_file ~/agent-{agent}/SOUL.md for other agents' details
 
 Don't say "I don't have access to that info" — use tools to GET the info.`);
 

@@ -8,15 +8,14 @@ import path from 'path';
 const execAsync = promisify(exec);
 const router = express.Router();
 
-const DB_PATH = path.join(process.env.HOME || '/Users/worker', 'clawd/data/froggo.db');
-// Pattern A ONLY: Each agent lives at /Users/worker/clawd-{agent}/
-// No more /clawd/agents/ directory (deprecated and removed)
+const DB_PATH = path.join(process.env.HOME || '/Users/worker', 'froggo/data/froggo.db');
+// Pattern A ONLY: Each agent lives at /Users/worker/agent-{agent}/
 const HOME = process.env.HOME || '/Users/worker';
 function resolveAgentWorkspace(agentId: string): string {
   if (agentId === 'main' || agentId === 'froggo') {
-    return path.join(HOME, 'clawd');
+    return path.join(HOME, 'froggo');
   }
-  return path.join(HOME, `clawd-${agentId}`);
+  return path.join(HOME, `agent-${agentId}`);
 }
 
 // Get agent metrics overview
@@ -131,7 +130,7 @@ router.get('/:agentId/details', async (req, res) => {
 
     db.close();
 
-    // Load AGENTS.md rules (Pattern A: /clawd-{agent}/AGENTS.md)
+    // Load AGENTS.md rules (Pattern A: /agent-{agent}/AGENTS.md)
     let agentRules = '';
     try {
       const workspace = resolveAgentWorkspace(agentId);
@@ -228,7 +227,7 @@ router.post('/spawn-chat', async (req, res) => {
       chief: 'You are Chief, the executive oversight agent. You help with planning, prioritization, and strategic decisions.',
     };
 
-    // Load AGENTS.md from Pattern A workspace (/clawd-{agent}/AGENTS.md)
+    // Load AGENTS.md from Pattern A workspace (/agent-{agent}/AGENTS.md)
     let agentPrompt = agentPrompts[agentId] || `You are the ${agentId} agent. Help the user with tasks related to your role.`;
     try {
       const workspace = resolveAgentWorkspace(agentId);

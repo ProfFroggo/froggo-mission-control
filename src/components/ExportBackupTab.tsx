@@ -336,7 +336,7 @@ export default function ExportBackupTab() {
           </div>
 
           <div className="text-xs text-clawd-text-dim">
-            Exports are saved to: <code className="bg-clawd-bg px-1 py-0.5 rounded">~/clawd/exports/</code>
+            Exports are saved to: <code className="bg-clawd-bg px-1 py-0.5 rounded">~/froggo/exports/</code>
           </div>
         </div>
       </section>
@@ -427,7 +427,7 @@ export default function ExportBackupTab() {
           </div>
 
           <div className="text-xs text-clawd-text-dim">
-            Backups are saved to: <code className="bg-clawd-bg px-1 py-0.5 rounded">~/clawd/backups/</code>
+            Backups are saved to: <code className="bg-clawd-bg px-1 py-0.5 rounded">~/froggo/backups/</code>
           </div>
         </div>
       </section>
