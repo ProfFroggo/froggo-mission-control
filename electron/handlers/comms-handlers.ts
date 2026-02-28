@@ -21,7 +21,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { exec, execSync, execFileSync } from 'child_process';
+import { exec, execSync, execFile, execFileSync } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { registerHandler } from '../ipc-registry';
 import { prepare, db } from '../database';
@@ -1287,12 +1287,9 @@ export function registerCommsHandlers(): void {
       return { success: false, error: 'Missing account - please specify which email account to send from' };
     }
     return new Promise((resolve) => {
-      const escapedTo = options.to.replace(/"/g, '\\"');
-      const escapedSubject = (options.subject || 'No Subject').replace(/"/g, '\\"');
-      const escapedBody = options.body.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-      const cmd = `GOG_ACCOUNT="${options.account}" gog gmail send --to "${escapedTo}" --subject "${escapedSubject}" --body "${escapedBody}"`;
-      safeLog.log('[Email:send] Command:', cmd.slice(0, 100) + '...');
-      exec(cmd, { timeout: 60000 }, (error, stdout, stderr) => {
+      const gogArgs = ['gmail', 'send', '--to', options.to, '--subject', options.subject || 'No Subject', '--body', options.body];
+      safeLog.log('[Email:send] execFile: gog', gogArgs.slice(0, 4).join(' '), '...');
+      execFile('gog', gogArgs, { timeout: 60000, encoding: 'utf-8', env: { ...process.env, GOG_ACCOUNT: options.account || '' } }, (error, stdout, stderr) => {
         if (error) {
           safeLog.error('[Email:send] Error:', error.message, stderr);
           resolve({ success: false, error: error.message });

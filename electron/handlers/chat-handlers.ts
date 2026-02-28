@@ -7,11 +7,13 @@
  * 10 registerHandler calls total.
  */
 
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { registerHandler } from '../ipc-registry';
 import { prepare } from '../database';
 import { safeLog } from '../logger';
 import { FROGGO_DB, CLAUDE_CLI } from '../paths';
+
+const FROGGO_DB_CLI = '/opt/homebrew/bin/froggo-db';
 
 export function registerChatHandlers(): void {
   registerHandler('chat:saveMessage', async (_event, msg: { role: string; content: string; timestamp: number; sessionKey?: string; channel?: string }) => {
@@ -51,9 +53,8 @@ export function registerChatHandlers(): void {
       const recentMessages = context.slice(-10);
       const conversationContext = recentMessages.map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`).join('\n\n');
       const prompt = `Based on this conversation, suggest 2-3 brief, contextually appropriate reply options (each under 15 words). Provide ONLY the suggestions, one per line, no numbering or explanations.\n\nConversation:\n${conversationContext}\n\nSuggestions:`;
-      const claudeCmd = `${CLAUDE_CLI} --print "${prompt.replace(/"/g, '\\"')}"`;
       safeLog.log('[SuggestedReplies] Generating suggestions...');
-      exec(claudeCmd, { timeout: 15000, maxBuffer: 1024 * 1024 }, (error, stdout, stderr) => {
+      execFile(CLAUDE_CLI, ['--print', prompt], { timeout: 15000, maxBuffer: 1024 * 1024, encoding: 'utf-8' }, (error, stdout) => {
         if (error) {
           safeLog.error('[SuggestedReplies] Error:', error.message);
           resolve({ success: false, error: 'Failed to generate suggestions', suggestions: [] });
@@ -72,11 +73,11 @@ export function registerChatHandlers(): void {
   });
 
   registerHandler('starred:star', async (_event, messageId: number, note?: string, category?: string) => {
-    const noteArg = note ? `--note "${note.replace(/"/g, '\\"')}"` : '';
-    const catArg = category ? `--category "${category}"` : '';
-    const cmd = `froggo-db star-message ${messageId} ${noteArg} ${catArg}`;
+    const args = ['star-message', String(messageId)];
+    if (note) args.push('--note', note);
+    if (category) args.push('--category', category);
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000 }, (error, _stdout, stderr) => {
+      execFile(FROGGO_DB_CLI, args, { timeout: 5000, encoding: 'utf-8' }, (error, _stdout, stderr) => {
         if (error) { safeLog.error('[Starred] Star error:', stderr || error.message); resolve({ success: false, error: stderr || error.message }); }
         else { safeLog.log('[Starred] Message starred:', messageId); resolve({ success: true }); }
       });
@@ -84,9 +85,8 @@ export function registerChatHandlers(): void {
   });
 
   registerHandler('starred:unstar', async (_event, identifier: number) => {
-    const cmd = `froggo-db unstar-message ${identifier}`;
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000 }, (error, _stdout, stderr) => {
+      execFile(FROGGO_DB_CLI, ['unstar-message', String(identifier)], { timeout: 5000, encoding: 'utf-8' }, (error, _stdout, stderr) => {
         if (error) { safeLog.error('[Starred] Unstar error:', stderr || error.message); resolve({ success: false, error: stderr || error.message }); }
         else { safeLog.log('[Starred] Message unstarred:', identifier); resolve({ success: true }); }
       });
@@ -94,12 +94,13 @@ export function registerChatHandlers(): void {
   });
 
   registerHandler('starred:list', async (_event, options?: { category?: string; sessionKey?: string; limit?: number }) => {
-    const catArg = options?.category ? `--category "${options.category}"` : '';
-    const sessionArg = options?.sessionKey ? `--session "${options.sessionKey}"` : '';
-    const limitArg = options?.limit ? `--limit ${options.limit}` : '';
-    const cmd = `froggo-db starred-list ${catArg} ${sessionArg} ${limitArg} --json`;
+    const args = ['starred-list'];
+    if (options?.category) args.push('--category', options.category);
+    if (options?.sessionKey) args.push('--session', options.sessionKey);
+    if (options?.limit) args.push('--limit', String(options.limit));
+    args.push('--json');
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      execFile(FROGGO_DB_CLI, args, { timeout: 5000, maxBuffer: 5 * 1024 * 1024, encoding: 'utf-8' }, (error, stdout, stderr) => {
         if (error) { safeLog.error('[Starred] List error:', stderr || error.message); resolve({ success: false, error: stderr || error.message, starred: [] }); }
         else { try { resolve({ success: true, starred: JSON.parse(stdout) }); } catch (e: any) { resolve({ success: false, error: e.message, starred: [] }); } }
       });
@@ -107,10 +108,11 @@ export function registerChatHandlers(): void {
   });
 
   registerHandler('starred:search', async (_event, query: string, limit?: number) => {
-    const limitArg = limit ? `--limit ${limit}` : '';
-    const cmd = `froggo-db starred-search "${query.replace(/"/g, '\\"')}" ${limitArg} --json`;
+    const args = ['starred-search', query];
+    if (limit) args.push('--limit', String(limit));
+    args.push('--json');
     return new Promise((resolve) => {
-      exec(cmd, { timeout: 5000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout, stderr) => {
+      execFile(FROGGO_DB_CLI, args, { timeout: 5000, maxBuffer: 5 * 1024 * 1024, encoding: 'utf-8' }, (error, stdout, stderr) => {
         if (error) { safeLog.error('[Starred] Search error:', stderr || error.message); resolve({ success: false, error: stderr || error.message, results: [] }); }
         else { try { resolve({ success: true, results: JSON.parse(stdout) }); } catch (e: any) { resolve({ success: false, error: e.message, results: [] }); } }
       });
@@ -128,12 +130,11 @@ export function registerChatHandlers(): void {
   });
 
   registerHandler('starred:check', async (_event, messageId: number) => {
-    const cmd = `sqlite3 "${FROGGO_DB}" "SELECT id FROM starred_messages WHERE message_id=${messageId}"`;
-    return new Promise((resolve) => {
-      exec(cmd, { timeout: 2000 }, (error, stdout) => {
-        const isStarred = !error && stdout.trim().length > 0;
-        resolve({ success: true, isStarred });
-      });
-    });
+    try {
+      const row = prepare('SELECT id FROM starred_messages WHERE message_id = ?').get(messageId);
+      return { success: true, isStarred: !!row };
+    } catch {
+      return { success: true, isStarred: false };
+    }
   });
 }

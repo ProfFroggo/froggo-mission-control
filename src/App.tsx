@@ -370,18 +370,20 @@ function App() {
           <PerformanceProfiler id={`${currentView}-panel`}>
             <Suspense fallback={<LoadingPanel />}>
               {/* Dynamic view rendering — driven by ViewRegistry */}
-              {currentView === 'contacts'
-                ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
-                : (() => {
-                    const reg = ViewRegistry.get(currentView);
-                    if (!reg) return null;
-                    const Comp = reg.component;
-                    if (currentView === 'dashboard') {
-                      return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
-                    }
-                    return <Comp />;
-                  })()
-              }
+              <div key={currentView} className="animate-panel-in h-full">
+                {currentView === 'contacts'
+                  ? <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+                  : (() => {
+                      const reg = ViewRegistry.get(currentView);
+                      if (!reg) return null;
+                      const Comp = reg.component;
+                      if (currentView === 'dashboard') {
+                        return <Comp onNavigate={setCurrentView} onShowBrief={() => setShowMorningBrief(true)} />;
+                      }
+                      return <Comp />;
+                    })()
+                }
+              </div>
             </Suspense>
           </PerformanceProfiler>
         </main>

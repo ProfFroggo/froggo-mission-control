@@ -902,8 +902,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                 {showMultiStage && (
                   <div className="p-3 space-y-3 border-t border-clawd-border">
                     <div>
-                      <label className="block text-xs text-clawd-text-dim mb-1">Project Name</label>
+                      <label htmlFor="project-name" className="block text-xs text-clawd-text-dim mb-1">Project Name</label>
                       <input
+                        id="project-name"
                         type="text"
                         value={projectName}
                         onChange={e => setProjectName(e.target.value)}
@@ -913,8 +914,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-clawd-text-dim mb-1">Stage Number</label>
+                        <label htmlFor="stage-number" className="block text-xs text-clawd-text-dim mb-1">Stage Number</label>
                         <select
+                          id="stage-number"
                           value={stageNumber}
                           onChange={e => setStageNumber(Number(e.target.value))}
                           className="w-full bg-clawd-bg border border-clawd-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-clawd-accent"
@@ -925,8 +927,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-clawd-text-dim mb-1">Stage Name</label>
+                        <label htmlFor="stage-name" className="block text-xs text-clawd-text-dim mb-1">Stage Name</label>
                         <input
+                          id="stage-name"
                           type="text"
                           value={stageName}
                           onChange={e => setStageName(e.target.value)}
@@ -936,8 +939,9 @@ export default function TaskModal({ isOpen, onClose, initialStatus = 'todo', ini
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-clawd-text-dim mb-1">Next Stage (auto-creates on completion)</label>
+                      <label htmlFor="next-stage" className="block text-xs text-clawd-text-dim mb-1">Next Stage (auto-creates on completion)</label>
                       <input
+                        id="next-stage"
                         type="text"
                         value={nextStage}
                         onChange={e => setNextStage(e.target.value)}

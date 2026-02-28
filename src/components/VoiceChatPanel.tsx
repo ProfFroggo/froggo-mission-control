@@ -337,7 +337,16 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   }, [selectedAgent.id]);
   
   // Cleanup on unmount
-  useEffect(() => { return () => { if (geminiLive.connected) geminiLive.disconnect(); }; }, []);
+  useEffect(() => {
+    return () => {
+      if (geminiLive.connected) geminiLive.disconnect();
+      const w = window as any;
+      if (w._userTranscriptTimer) { clearTimeout(w._userTranscriptTimer); delete w._userTranscriptTimer; }
+      if (w._modelTranscriptTimer) { clearTimeout(w._modelTranscriptTimer); delete w._modelTranscriptTimer; }
+      delete w._userTranscriptBuf;
+      delete w._modelTranscriptBuf;
+    };
+  }, []);
   
   // ── Helpers ──
   const addSystemMessage = (content: string) => {
