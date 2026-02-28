@@ -212,7 +212,15 @@ export const XRedditView: React.FC = () => {
     return (
       <div
         key={thread.id}
+        role="button"
+        tabIndex={0}
         onClick={() => setSelectedThread(thread)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setSelectedThread(thread);
+          }
+        }}
         className={`border-b border-clawd-border p-4 hover:bg-clawd-surface transition-colors cursor-pointer ${
           isSelected ? 'bg-clawd-surface' : ''
         }`}
@@ -312,10 +320,11 @@ export const XRedditView: React.FC = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-clawd-text mb-2">
+                <label htmlFor="product-url" className="block text-sm font-medium text-clawd-text mb-2">
                   Product URL to Monitor
                 </label>
                 <input
+                  id="product-url"
                   type="url"
                   value={productUrl}
                   onChange={(e) => setProductUrl(e.target.value)}
@@ -325,10 +334,11 @@ export const XRedditView: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-clawd-text mb-2">
+                <label htmlFor="keywords" className="block text-sm font-medium text-clawd-text mb-2">
                   Keywords (comma-separated)
                 </label>
                 <input
+                  id="keywords"
                   type="text"
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
@@ -338,10 +348,11 @@ export const XRedditView: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-clawd-text mb-2">
+                <label htmlFor="subreddits" className="block text-sm font-medium text-clawd-text mb-2">
                   Subreddits (comma-separated or "all")
                 </label>
                 <input
+                  id="subreddits"
                   type="text"
                   value={subreddits}
                   onChange={(e) => setSubreddits(e.target.value)}

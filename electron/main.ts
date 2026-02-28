@@ -117,7 +117,9 @@ function createWindow() {
     if (!allowedOrigins.includes(origin)) {
       event.preventDefault();
       safeLog.warn(`[Security] Blocked navigation to: ${url}`);
-      shell.openExternal(url).catch(() => {});
+      if (url.startsWith('https://') || url.startsWith('http://')) {
+        shell.openExternal(url).catch(() => {});
+      }
     }
   });
 
@@ -138,7 +140,7 @@ function createWindow() {
           ...details.responseHeaders,
           'Content-Security-Policy': [
             "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' blob:; " +
+            "script-src 'self' blob:; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "font-src 'self' https://fonts.gstatic.com; " +
             "img-src 'self' data: https: blob:; " +
@@ -254,7 +256,9 @@ function startScheduledPoster() {
       const pending = prepare(`SELECT * FROM scheduled_posts WHERE status = 'pending' AND scheduled_time <= ?`).all(now) as { id: string; content: string }[];
       for (const post of pending) {
         try {
-          execFileSync('/opt/homebrew/bin/x-api', ['post', post.content], { encoding: 'utf-8' });
+          await new Promise<void>((resolve, reject) => {
+            execFile('/opt/homebrew/bin/x-api', ['post', post.content], { encoding: 'utf-8', timeout: 30000 }, (err) => err ? reject(err) : resolve());
+          });
           prepare('UPDATE scheduled_posts SET status = ? WHERE id = ?').run('posted', post.id);
           safeLog.log(`[X/AutoPost] Posted scheduled tweet: ${post.id}`);
         } catch (postError: any) {

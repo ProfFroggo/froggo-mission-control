@@ -363,8 +363,9 @@ export default function XDraftComposer() {
           <div className="mt-6 pt-6 border-t border-clawd-border">
             <div className="flex gap-3 items-end">
               <div className="flex-1">
-                <label className="block text-sm text-clawd-text-dim mb-2">Schedule for later</label>
+                <label htmlFor="schedule-time" className="block text-sm text-clawd-text-dim mb-2">Schedule for later</label>
                 <input
+                  id="schedule-time"
                   type="datetime-local"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}

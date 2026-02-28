@@ -43,6 +43,8 @@ function ToastItem({ toast, onDismiss }: ToastProps) {
 
   return (
     <div
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
       className={`flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg animate-slide-in ${colors[toast.type]}`}
     >
       <Icon size={20} className="flex-shrink-0 mt-0.5" />
